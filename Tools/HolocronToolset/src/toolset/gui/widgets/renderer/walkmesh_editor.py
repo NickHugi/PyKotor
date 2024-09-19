@@ -1,20 +1,43 @@
 from __future__ import annotations
 
 import math
-from typing import Optional, List, Dict, Any, Tuple
+
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from PyQt5.QtCore import QRectF, Qt, pyqtSignal as Signal
+from PyQt5.QtGui import QBrush, QColor, QPainter, QPen
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton, 
-    QLabel, QSlider, QUndoStack, QGraphicsScene, QGraphicsView, QGraphicsItem, 
-    QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QInputDialog, 
-    QMessageBox, QDialog, QFormLayout, QLineEdit, QComboBox, QDoubleSpinBox
+    QComboBox,
+    QDialog,
+    QDoubleSpinBox,
+    QFormLayout,
+    QGraphicsEllipseItem,
+    QGraphicsLineItem,
+    QGraphicsRectItem,
+    QGraphicsScene,
+    QHBoxLayout,
+    QLineEdit,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QUndoStack,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt5.QtCore import pyqtSignal as Signal, Qt, QRectF, QPointF
-from PyQt5.QtGui import QPainter, QPen, QColor, QBrush, QMouseEvent, QWheelEvent
-from pykotor.common.geometry import Vector3
-from pykotor.resource.formats.lyt.lyt_data import LYT, LYTRoom, LYTTrack, LYTObstacle, LYTDoorHook
-from pykotor.resource.formats.bwm.bwm_data import BWM
-from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from PyQt5.uic import loadUi
+
+from pykotor.common.geometry import Vector3
+from pykotor.resource.formats.bwm.bwm_data import BWM
+from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
+
+if TYPE_CHECKING:
+    from PyQt5.QtCore import QPointF
+    from PyQt5.QtGui import QMouseEvent, QWheelEvent
+    from PyQt5.QtWidgets import (
+        QGraphicsItem,
+    )
+
 
 class LYTEditor(QWidget):
     lytUpdated = Signal(LYT)
@@ -309,8 +332,8 @@ class LYTEditor(QWidget):
         self.scene.addItem(line)
 
     def addObstacleToScene(self, obstacle: LYTObstacle):
-        ellipse = QGraphicsEllipseItem(obstacle.position.x - obstacle.radius, 
-                                       obstacle.position.y - obstacle.radius, 
+        ellipse = QGraphicsEllipseItem(obstacle.position.x - obstacle.radius,
+                                       obstacle.position.y - obstacle.radius,
                                        obstacle.radius * 2, obstacle.radius * 2)
         ellipse.setBrush(QBrush(QColor(0, 255, 0, 100)))
         ellipse.setData(0, obstacle)
@@ -923,7 +946,7 @@ class MoveObstacleCommand(QUndoCommand):
     def updateSceneItem(self):
         for item in self.editor.scene.items():
             if item.data(0) == self.obstacle:
-                item.setPos(self.obstacle.position.x - self.obstacle.radius, 
+                item.setPos(self.obstacle.position.x - self.obstacle.radius,
                             self.obstacle.position.y - self.obstacle.radius)
                 break
 

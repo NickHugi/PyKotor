@@ -42,10 +42,11 @@ if TYPE_CHECKING:
 # that the subclasses will inherit the real qt views before they call the function anyway.
 class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
     def __init__(self, parent: QWidget | None = None, *, settings_name: str | None = None):
-        super().__init__(parent)
-        self._settings_name: str = settings_name or self.__class__.__name__
+        self._settings_name: str = settings_name and settings_name.strip() or getattr(self, "objectName", lambda: self.__class__.__name__)()
+
         self._settings_cache: dict[str, QSettings] = {}
         self.original_stylesheet: str = self.styleSheet()
+        self._initialized: bool = False
 
     def _all_settings(self, settings_group: str) -> QSettings:
         if settings_group not in self._settings_cache:
@@ -74,7 +75,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             if cls.__name__ == self._settings_name:
                 continue  # Skip, as we've already checked this
             value = (
-                self._all_settings(cls.__name__).value(key, None, val_type)
+                self._all_settings(cls.__name__).value(key, None)
                 if val_type is None
                 else self._all_settings(cls.__name__).value(key, None, val_type)
             )
@@ -83,6 +84,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         return default
 
     def set_setting(self, key: str, value: Any):
+        print("key:", key, "value:", value)
         settings = self._all_settings(self._settings_name)
         settings.setValue(key, value)
 
@@ -95,7 +97,9 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
     ) -> Any:
         current_value = get_func()
         initial_value = self.get_setting(settings_key, current_value, current_value.__class__ if param_type is None else param_type)
-        set_func(initial_value)
+        if not self._initialized:
+            print("Initializing setting:", settings_key, "with value:", initial_value)
+            set_func(initial_value)
         return initial_value
 
     def _add_menu_action(  # noqa: PLR0913
@@ -164,11 +168,11 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             action = QAction(option_name, self)
             action.setCheckable(True)
             action.setChecked(initial_value == option_value)
-            action.triggered.connect(lambda checked, val=option_value: [set_func(val), self.set_setting(settings_key, val)] if checked else None)
+            action.triggered.connect(lambda checked, val=option_value: [set_func(val), self.set_setting(settings_key, val)])
             sub_menu.addAction(action)
             action_group.addAction(action)
 
-    def _add_multi_option_menu_action(
+    def _add_multi_option_menu_action(  # noqa: PLR0913
         self,
         menu: QMenu,
         title: str,

@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 import sys
-import random
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QGridLayout, QGraphicsDropShadowEffect, QTextEdit
-from PyQt5.QtGui import QPixmap, QFont, QColor, QPainter, QLinearGradient
+
+from typing import TYPE_CHECKING
+
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QColor, QFont, QLinearGradient, QPainter, QPixmap
 from PyQt5.QtMultimedia import QSound
-from PyQt5.QtCore import Qt, QTimer, QSize
-from PyQt5.QtWidgets import QMessageBox
-from playpazaak import PazaakGame, Player, PazaakSideCard, CardType, PazaakInterface
+from PyQt5.QtWidgets import QApplication, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QTextEdit, QVBoxLayout, QWidget
+from playpazaak import CardType, PazaakGame, PazaakInterface, PazaakSideCard
+
+if TYPE_CHECKING:
+    from playpazaak import Player
+
 
 class CardWidget(QLabel):
     def __init__(self, card, parent=None):
@@ -63,7 +70,7 @@ class PlayerHandWidget(QWidget):
         self.update_display()
 
     def update_display(self):
-        for i in reversed(range(self.layout.count())): 
+        for i in reversed(range(self.layout.count())):
             self.layout.itemAt(i).widget().setParent(None)
         
         for card in self.player.hand:
@@ -78,7 +85,7 @@ class SideDeckWidget(QWidget):
         self.update_display()
 
     def update_display(self):
-        for i in reversed(range(self.layout.count())): 
+        for i in reversed(range(self.layout.count())):
             self.layout.itemAt(i).widget().setParent(None)
         
         for card in self.player.active_side_hand:

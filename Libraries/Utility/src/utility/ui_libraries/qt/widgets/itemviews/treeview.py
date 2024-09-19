@@ -4,14 +4,15 @@ from typing import TYPE_CHECKING, cast
 
 import qtpy
 
-from qtpy.QtCore import QAbstractItemModel, QModelIndex, QTimer, Qt
+from qtpy.QtCore import QAbstractItemModel, QTimer, Qt
 from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QHeaderView, QMenu, QPushButton, QStyle, QStyleOptionViewItem, QTreeView, QTreeWidget, QTreeWidgetItem, QVBoxLayout
+from qtpy.QtWidgets import QHeaderView, QMenu, QPushButton, QStyle, QStyleOptionViewItem, QTreeView, QVBoxLayout
 
 from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 
 if TYPE_CHECKING:
+    from qtpy.QtCore import QModelIndex
     from qtpy.QtGui import QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QAbstractItemDelegate, QStyledItemDelegate, QWidget
 
@@ -283,41 +284,6 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         for column in range(model.columnCount()):
             self.resizeColumnToContents(column)
 
-    def get_identifying_text(self, indexOrItem: QModelIndex | QStandardItem | None) -> str:  # noqa: N803, C901, PLR0911
-        if indexOrItem is None:
-            return "(None)"
-        if isinstance(indexOrItem, QStandardItem):
-            try:
-                indexOrItem = indexOrItem.index()
-            except RuntimeError as e: # wrapped C/C++ object of type x has been deleted
-                return str(e)
-        if not isinstance(indexOrItem, QModelIndex):
-            return f"(Unknown index/item: {indexOrItem})"
-        if not indexOrItem.isValid():
-            return f"(invalid index at row '{indexOrItem.row()}', column '{indexOrItem.column()}')"
-
-        model = self.model()
-        if model is None:
-            return "(no model associated with the view)"
-
-        if isinstance(model, QStandardItemModel):
-            item = model.itemFromIndex(indexOrItem)
-            if item is None:
-                return f"(no item associated with index at row '{indexOrItem.row()}', column '{indexOrItem.column()}')"
-            text = item.text().strip()
-        else:
-            text = model.data(indexOrItem, Qt.ItemDataRole.DisplayRole)
-            if text is None:
-                return f"(no data associated with index at row '{indexOrItem.row()}', column '{indexOrItem.column()}')"
-            text = str(text).strip()
-        parent_count = 0
-        current_index = indexOrItem.parent()
-        while current_index.isValid():
-            parent_count += 1
-            current_index = current_index.parent()
-
-        return f"Item/Index at Row: {indexOrItem.row()}, Column: {indexOrItem.column()}, Ancestors: {parent_count}\nText for above item: {text}\n"
-
     def branch_connectors_drawn(self) -> bool:
         return self.branch_connectors_enabled
 
@@ -473,114 +439,6 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
             #    option.backgroundBrush = QColor(Qt.GlobalColor.lightGray)
 
         return option
-
-
-class RobustTreeWidget(QTreeWidget, RobustTreeView):
-    """A tree widget that supports common features and settings."""
-    def __init__(
-        self,
-        parent: QWidget | None = None,
-        *,
-        use_columns: bool = False,
-    ):
-        QTreeWidget.__init__(self, parent)
-        RobustTreeView.__init__(self, parent, use_columns=use_columns)
-
-    def build_context_menu(self) -> QMenu:
-        menu = super().build_context_menu()
-
-        tree_widget_menu = menu.addMenu("TreeWidget")
-        advanced_menu = tree_widget_menu.addMenu("Advanced")
-
-        # Tree-specific actions
-        self._add_menu_action(
-            tree_widget_menu,
-            "Expand Current Item",
-            lambda: self.isExpanded(self.currentIndex()),
-            lambda x: self.expandItem(self.currentItem()) if x else self.collapseItem(self.currentItem()),
-            "expandCurrentItem",
-        )
-        self._add_simple_action(tree_widget_menu, "Scroll to Current Item", lambda: self.scrollToItem(self.currentItem()))
-        self._add_menu_action(
-            tree_widget_menu,
-            "Sort Items",
-            self.isSortingEnabled,
-            self.setSortingEnabled,
-            "sortingEnabled",
-        )
-        self._add_menu_action(
-            tree_widget_menu,
-            "Column Count",
-            self.columnCount,
-            self.setColumnCount,
-            "columnCount",
-            param_type=int,
-        )
-
-        # Advanced actions
-        self._add_menu_action(
-            advanced_menu,
-            "Header Hidden",
-            self.isHeaderHidden,
-            self.setHeaderHidden,
-            "headerHidden",
-        )
-        self._add_menu_action(
-            advanced_menu,
-            "Root Is Decorated",
-            self.rootIsDecorated,
-            self.setRootIsDecorated,
-            "rootIsDecorated",
-        )
-        self._add_menu_action(
-            advanced_menu,
-            "Items Expandable",
-            self.itemsExpandable,
-            self.setItemsExpandable,
-            "itemsExpandable",
-        )
-        self._add_menu_action(
-            advanced_menu,
-            "Animated",
-            self.isAnimated,
-            self.setAnimated,
-            "animated",
-        )
-        self._add_menu_action(
-            advanced_menu,
-            "Allow Expand on Single Click",
-            self.allColumnsShowFocus,
-            self.setAllColumnsShowFocus,
-            "allColumnsShowFocus",
-        )
-        self._add_menu_action(
-            advanced_menu,
-            "Word Wrap",
-            self.wordWrap,
-            self.setWordWrap,
-            "wordWrap",
-        )
-
-        # Item manipulation actions
-        item_menu = tree_widget_menu.addMenu("Item Actions")
-        self._add_simple_action(item_menu, "Add Top Level Item", lambda: self.addTopLevelItem(QTreeWidgetItem(["New Item"])))
-        self._add_simple_action(item_menu, "Remove Current Item", lambda: self.takeTopLevelItem(self.indexOfTopLevelItem(self.currentItem())) if self.currentItem() else None)
-        self._add_simple_action(item_menu, "Clear All Items", self.clear)
-        self._add_simple_action(item_menu, "Edit Current Item", lambda: self.editItem(self.currentItem(), 0) if self.currentItem() else None)
-
-        return menu
-
-    def get_identifying_text(self, item: QTreeWidgetItem | None) -> str:
-        if item is None:
-            return "(None)"
-        text = item.text(0).strip()
-        parent_count = 0
-        current_item = item.parent()
-        while current_item is not None:
-            parent_count += 1
-            current_item = current_item.parent()
-
-        return f"Item at Row: {item.indexOfChild(item)}, Ancestors: {parent_count}\nText for above item: {text}\n"
 
 
 if __name__ == "__main__":

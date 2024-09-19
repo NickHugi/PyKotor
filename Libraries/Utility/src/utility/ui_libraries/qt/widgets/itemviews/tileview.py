@@ -6,15 +6,30 @@ from qtpy.QtCore import QRect, QSize, Qt
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QListView, QStyle, QStyledItemDelegate
 
-from utility.ui_libraries.qt.debug.print_qobject import print_qt_class_calls
+from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex
     from qtpy.QtGui import QPainter
-    from qtpy.QtWidgets import QStyleOptionViewItem
+    from qtpy.QtWidgets import QStyleOptionViewItem, QWidget
 
 
-@print_qt_class_calls(exclude_funcs=["paint", "sizeHint"])
+class RobustTileView(RobustListView):
+    """A view that displays items in a 2D grid."""
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.setViewMode(QListView.ViewMode.IconMode)
+        self.setResizeMode(QListView.ResizeMode.Adjust)
+        self.setWrapping(True)
+        self.setUniformItemSizes(False)
+        self.setItemDelegate(TileItemDelegate(self))
+
+    def setIconSize(self, size: QSize):
+        super().setIconSize(size)
+        self.setGridSize(QSize(size.width(), size.height()))
+
+
 class TileItemDelegate(QStyledItemDelegate):
     """A delegate that paints items in a 2D grid."""
 

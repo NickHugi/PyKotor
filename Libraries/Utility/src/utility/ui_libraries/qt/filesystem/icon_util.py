@@ -4,6 +4,9 @@ import os
 import pathlib
 import sys
 
+from io import BytesIO
+from typing import Literal
+
 from loggerplus import RobustLogger
 
 
@@ -44,7 +47,6 @@ else:
     raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
 
 
-
 from qtpy.QtCore import QFileInfo, QTemporaryFile, Qt  # noqa: E402
 from qtpy.QtGui import QIcon, QPainter, QPixmap  # noqa: E402
 from qtpy.QtWidgets import QApplication, QFileIconProvider, QStyle  # noqa: E402
@@ -71,6 +73,7 @@ def qpixmap_to_qicon(
 
     return QIcon(pixmap)
 
+
 def qicon_from_file_ext(extension: str) -> QIcon:
     temp_file = QTemporaryFile(f"XXXXXX.{extension}")
     temp_file.setAutoRemove(False)
@@ -86,3 +89,71 @@ def qicon_from_file_ext(extension: str) -> QIcon:
     finally:
         temp_file.close()
         temp_file.remove()
+
+
+def get_image_from_resource(
+    row: int,
+    filepath: os.PathLike | str,
+    mipmap: int = 64,
+    img_format: Literal["RGBA", "RGB", "RGBX", "BGR", "BGRA", "Default"] = "RGBA",
+) -> tuple[int, tuple[int, int, bytes]]:  # noqa: E501
+    filepath_obj = pathlib.Path(filepath)
+
+    # Try to handle the image with Qt
+    try:
+        from qtpy.QtCore import Qt
+        from qtpy.QtGui import QImage, QImageReader
+
+        if filepath_obj.suffix.lower() in [
+            bytes(x.data()).decode().lower()
+            for x in QImageReader.supportedImageFormats()
+        ]:
+            qimg = QImage()
+            if qimg.loadFromData(filepath_obj.read_bytes()):
+                if mipmap < qimg.width() or mipmap < qimg.height():
+                    qimg = qimg.scaled(mipmap, mipmap, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                return row, (qimg.width(), qimg.height(), bytes(qimg.constBits().asarray()))
+            RobustLogger().warning(f"Failed to load image from data using QImageReader for resource type: {filepath_obj.suffix.lower()!r}")
+    except ImportError:  # noqa: S110
+        RobustLogger().warning(f"Qt not available for resource type: {filepath_obj.suffix.lower()!r}")
+
+    # Try to handle the image with Pillow
+    try:
+        from PIL import Image
+
+        if filepath_obj.suffix.lower() in Image.registered_extensions():
+            with Image.open(BytesIO(filepath_obj.read_bytes())) as img:
+                if mipmap < img.width or mipmap < img.height:
+                    img = img.resize((mipmap, mipmap), Image.Resampling.LANCZOS)  # noqa: PLW2901
+                if img_format == "RGB":
+                    pil_img = img.convert("RGB")
+                elif img_format == "RGBX":
+                    pil_img = img.convert("RGBX")
+                elif img_format == "BGR":
+                    pil_img = img.convert("BGR")
+                elif img_format == "BGRA":
+                    pil_img = img.convert("BGRA")
+                elif img_format == "RGBA":
+                    pil_img = img.convert("RGBA")
+                else:
+                    pil_img = img
+        RobustLogger().warning(f"Failed to load image from data using Pillow for resource type: {filepath_obj.suffix.lower()!r}")
+    except ImportError:  # noqa: S110
+        RobustLogger().warning(f"Pillow not available for resource type: {filepath_obj.suffix.lower()!r}")
+    else:
+        return row, (pil_img.width, pil_img.height, pil_img.tobytes())
+
+    # Fallback to handling the image with PyKotor for .tpc files
+    if filepath_obj.suffix.lower() == ".tpc":
+        try:
+            from pykotor.resource.formats.tpc.tpc_auto import read_tpc
+            from pykotor.resource.formats.tpc.tpc_data import TPCTextureFormat
+            tpc = read_tpc(filepath_obj.read_bytes())
+            best_mipmap = next((i for i in range(tpc.mipmap_count()) if tpc.get(i).width <= mipmap), 0)
+            width, height, data = tpc.convert(TPCTextureFormat.RGBA, best_mipmap)
+        except ImportError:  # noqa: S110
+            RobustLogger().warning(f"PyKotor not available for resource type: {filepath_obj.suffix.lower()!r}")
+        else:
+            return row, (width, height, data)
+
+    raise ValueError(f"No suitable image processing library available for resource type: {filepath_obj.suffix.lower()!r}")

@@ -4,7 +4,7 @@ import tkinter as tk
 
 from typing import TYPE_CHECKING
 
-from utility.string_util import insert_newlines
+from utility.common.misc_string.util import insert_newlines
 
 if TYPE_CHECKING:
     from collections.abc import Callable

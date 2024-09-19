@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.string_util import WrappedStr
+from utility.common.misc_string.mutable_str import WrappedStr
 
 if TYPE_CHECKING:
     from collections.abc import Callable

@@ -1,10 +1,11 @@
-# This Python file uses the following encoding: utf-8
+from __future__ import annotations
+
 import sys
+
 from pathlib import Path
 
 from PySide2.QtGui import QGuiApplication
 from PySide2.QtQml import QQmlApplicationEngine
-
 
 if __name__ == "__main__":
     app = QGuiApplication(sys.argv)

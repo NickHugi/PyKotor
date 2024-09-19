@@ -484,7 +484,7 @@ class Memory2DAModifierGFF(ModifyGFF):
 
         if isinstance(dest_field, _GFFField):
             logger.add_verbose("assign dest ptr field.")
-            assert source_field is None or dest_field.field_type() is source_field.field_type(), f"Not a _GFFField: {ptr_to_src} ({display_src_name}) OR {dest_field.field_type()} != {source_field.field_type()}"
+            assert source_field is None or dest_field.field_type() is source_field.field_type(), f"Not a _GFFField: {ptr_to_src} ({display_src_name}) OR {dest_field.field_type()} == {source_field.field_type()}"
             dest_field._value = FieldValueConstant(ptr_to_src).value(memory, dest_field.field_type())
         else:
             memory.memory_2da[self.dest_token_id] = ptr_to_dest

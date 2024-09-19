@@ -100,17 +100,17 @@ class TestDLGStandardItemModel(unittest.TestCase):
 
         def verify_list_index(node: DLGNode):
             for i, link in enumerate(node.links):
-                self.assertEqual(link.list_index, i, f"Link list_index {link.list_index} != {i} before loading to the model")
+                self.assertEqual(link.list_index, i, f"Link list_index {link.list_index} == {i} before loading to the model")
                 verify_list_index(link.node)
 
         for i, link in enumerate(dlg.starters):
-            self.assertEqual(link.list_index, i, f"Starter link list_index {link.list_index} != {i} before loading to the model")
+            self.assertEqual(link.list_index, i, f"Starter link list_index {link.list_index} == {i} before loading to the model")
             verify_list_index(link.node)
 
         self.editor._loadDLG(dlg)
 
         for i, link in enumerate(dlg.starters):
-            self.assertEqual(link.list_index, i, f"Starter link list_index {link.list_index} != {i} after loading to the model")
+            self.assertEqual(link.list_index, i, f"Starter link list_index {link.list_index} == {i} after loading to the model")
             verify_list_index(link.node)
 
         items: list[DLGStandardItem] = []
@@ -118,7 +118,7 @@ class TestDLGStandardItemModel(unittest.TestCase):
             items.extend(self.model.linkToItems.get(link, []))
 
         for index, item in enumerate(items):
-            self.assertEqual(item.link.list_index, index, f"{item.link.list_index} != {index}")
+            self.assertEqual(item.link.list_index, index, f"{item.link.list_index} == {index}")
 
 
     def test_shift_item(self):  # sourcery skip: class-extract-method

@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import math
-import multiprocessing
 import queue
 
 from copy import deepcopy
 from queue import Empty
-from threading import Lock
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
-from qtpy.QtCore import QEvent, QLine, QMutex, QMutexLocker, QPoint, QRect, QThread, Qt, Signal  # pyright: ignore[reportPrivateImportUsage]
+from qtpy.QtCore import QEvent, QLine, QMutexLocker, QPoint, QRect, QThread, Qt, Signal  # pyright: ignore[reportPrivateImportUsage]
 from qtpy.QtGui import QBrush, QColor, QPainter, QPen
 from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QMessageBox, QPushButton, QSlider, QVBoxLayout, QWidget
 
@@ -17,7 +15,6 @@ from pykotor.common.geometry import Vector2, Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace
 from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
-from utility.system.app_process.task_consumer import TaskConsumer
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QDragEnterEvent, QDropEvent, QKeyEvent, QMouseEvent
@@ -27,15 +24,18 @@ if TYPE_CHECKING:
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 
-from PyQt5.QtWidgets import QWidget, QUndoStack
+from typing import Any, Dict, Optional
+
 from PyQt5.QtCore import pyqtSignal as Signal
+from PyQt5.QtWidgets import QUndoStack, QWidget
 from PyQt5.uic import loadUi
+
 from pykotor.common.geometry import Vector3
-from pykotor.resource.formats.lyt import LYT, LYTRoom, LYTTrack, LYTObstacle, LYTDoorHook
 from pykotor.resource.formats.bwm import BWM, BWMFace
-from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
+from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
 from toolset.gui.widgets.renderer.lyt_commands import AddRoomCommand, MoveRoomCommand, RotateRoomCommand
-from typing import Optional, List, Dict, Any
+from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
+
 
 class LYTEditor(QWidget):
     lytUpdated = Signal(LYT)
@@ -198,7 +198,7 @@ class LYTEditor(QWidget):
         # This might involve creating a separate WalkmeshEditor widget
 
     def applyTexture(self, texture_name: str):
-        if self.selected_element and hasattr(self.selected_element, 'texture'):
+        if self.selected_element and hasattr(self.selected_element, "texture"):
             self.selected_element.texture = texture_name
             self.scene.updateLYTElementTexture(self.selected_element, texture_name)
             self.lytUpdated.emit(self._lyt)

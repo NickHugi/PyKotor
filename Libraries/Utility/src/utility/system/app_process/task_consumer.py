@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import multiprocessing
 import sys
 import time
@@ -158,18 +159,6 @@ class TaskConsumer(Generic[P, R], multiprocessing.Process):
                 RobustLogger().warning("Failed to close job object", exc_info=True)
 
 
-def wrap_task(fn: Callable[[], R | Exception], *args: Any, **kwargs: Any) -> Callable[[], R | Exception]:
-    """Wrap a task function to be executed by the task consumer.
-
-    This function is used to wrap a task function to be executed by the task consumer.
-    """
-    import functools
-    f = functools.partial(fn, *args, **kwargs)
-    f.__name__ = getattr(fn, "__name__", "anonymous")  # pyright: ignore[reportAttributeAccessIssue]
-    f.__qualname__ = getattr(fn, "__qualname__", "anonymous")
-    return f
-
-
 if __name__ == "__main__":
     """Test the task consumer."""
     from multiprocessing import JoinableQueue, Queue
@@ -179,15 +168,15 @@ if __name__ == "__main__":
     task_consumer = TaskConsumer(task_queue=task_queue, result_queue=result_queue, daemon=True)
     task_consumer.start()
 
-    task_queue.put(wrap_task(str, "Task 1 completed"))
-    task_queue.put(wrap_task(str, "Task 2 completed"))
-    task_queue.put(wrap_task(str, "Task 3 completed"))
-    task_queue.put(wrap_task(str, "Task 4 completed"))
-    task_queue.put(wrap_task(str, "Task 5 completed"))
-    task_queue.put(wrap_task(str, "Task 6 completed"))
-    task_queue.put(wrap_task(str, "Task 7 completed"))
-    task_queue.put(wrap_task(str, "Task 8 completed"))
-    task_queue.put(wrap_task(str, "Task 9 completed"))
+    task_queue.put(functools.partial(str, "Task 1 completed"))
+    task_queue.put(functools.partial(str, "Task 2 completed"))
+    task_queue.put(functools.partial(str, "Task 3 completed"))
+    task_queue.put(functools.partial(str, "Task 4 completed"))
+    task_queue.put(functools.partial(str, "Task 5 completed"))
+    task_queue.put(functools.partial(str, "Task 6 completed"))
+    task_queue.put(functools.partial(str, "Task 7 completed"))
+    task_queue.put(functools.partial(str, "Task 8 completed"))
+    task_queue.put(functools.partial(str, "Task 9 completed"))
 
     result1 = result_queue.get()
     result2 = result_queue.get()

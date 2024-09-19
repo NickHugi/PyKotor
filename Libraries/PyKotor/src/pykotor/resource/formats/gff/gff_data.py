@@ -13,8 +13,8 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
+from utility.common.misc_string.util import format_text
 from utility.error_handling import safe_repr
-from utility.string_util import format_text
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:

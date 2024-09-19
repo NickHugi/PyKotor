@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
+
 
 class CardType:
     POSITIVE = "+"
@@ -12,7 +12,7 @@ class CardType:
 
 @dataclass
 class PazaakSideCard:
-    value: int | List[int]
+    value: int | list[int]
     card_type: CardType
 
     def __str__(self) -> str:
@@ -20,7 +20,7 @@ class PazaakSideCard:
             return f"Yellow {self.value}"
         return f"{self.card_type.value.replace('+', f'+{self.value}').replace('-', f'-{self.value}')}"
 
-    def get_value(self, choice: Optional[str] = None) -> int:
+    def get_value(self, choice: str | None = None) -> int:
         if self.card_type == CardType.POSITIVE:
             return self.value
         elif self.card_type == CardType.NEGATIVE:
@@ -35,9 +35,9 @@ class PazaakSideCard:
 @dataclass
 class Player:
     name: str
-    hand: List[int | PazaakSideCard] = field(default_factory=list)
-    side_deck: List[PazaakSideCard] = field(default_factory=list)
-    active_side_hand: List[PazaakSideCard] = field(default_factory=list)
+    hand: list[int | PazaakSideCard] = field(default_factory=list)
+    side_deck: list[PazaakSideCard] = field(default_factory=list)
+    active_side_hand: list[PazaakSideCard] = field(default_factory=list)
     score: int = 0
     stands: bool = False
 
@@ -52,7 +52,7 @@ class Player:
         self.stands = False
 
 class PazaakGame:
-    MAIN_DECK_VALUES: List[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    MAIN_DECK_VALUES: list[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     MAX_HAND_VALUE: int = 20
     SETS_TO_WIN: int = 3
 
@@ -63,8 +63,8 @@ class PazaakGame:
         self.current_player = self.player
         self.winner = None
 
-    def create_deck(self) -> List[int]:
-        deck: List[int] = []
+    def create_deck(self) -> list[int]:
+        deck: list[int] = []
         for card in self.MAIN_DECK_VALUES:
             deck.extend(card for _ in range(4))
         random.shuffle(deck)
@@ -84,7 +84,7 @@ class PazaakGame:
         self.current_player = self.player
         self.winner = None
 
-    def choose_side_deck(self) -> List[PazaakSideCard]:
+    def choose_side_deck(self) -> list[PazaakSideCard]:
         side_deck = [
             PazaakSideCard(1, CardType.POS_OR_NEG),
             PazaakSideCard(2, CardType.POS_OR_NEG),
@@ -108,7 +108,7 @@ class PazaakGame:
         ]
         return random.sample(side_deck, 10)
 
-    def auto_choose_side_deck(self) -> List[PazaakSideCard]:
+    def auto_choose_side_deck(self) -> list[PazaakSideCard]:
         return self.choose_side_deck()
 
     def draw_card(self) -> int:
@@ -127,7 +127,7 @@ class PazaakGame:
     def switch_player(self):
         self.current_player = self.ai if self.current_player == self.player else self.player
 
-    def check_winner(self) -> Optional[Player]:
+    def check_winner(self) -> Player | None:
         if self.player.is_bust():
             return self.ai
         elif self.ai.is_bust():
@@ -143,13 +143,13 @@ class PazaakGame:
                 return None  # Tie
         return None
 
-    def update_score(self, winner: Optional[Player]):
+    def update_score(self, winner: Player | None):
         if winner:
             winner.score += 1
         if winner and winner.score >= self.SETS_TO_WIN:
             self.winner = winner
 
-    def ai_strategy(self) -> Tuple[str, Optional[PazaakSideCard]]:
+    def ai_strategy(self) -> tuple[str, PazaakSideCard | None]:
         ai_value = self.ai.calculate_hand_value()
         player_value = self.player.calculate_hand_value()
         best_choice = None
@@ -187,7 +187,7 @@ class PazaakInterface(ABC):
         pass
 
     @abstractmethod
-    def end_round(self, winner: Optional[Player]):
+    def end_round(self, winner: Player | None):
         pass
 
     @abstractmethod
@@ -224,17 +224,17 @@ class ConsolePazaak(PazaakInterface):
 
         while True:
             action = input("Do you want to hit (h), stand (s), end turn (e), or use a side card (u)? ").lower()
-            if action == 's':
+            if action == "s":
                 self.game.player.stands = True
                 print("You chose to stand.")
                 break
-            elif action == 'h':
+            elif action == "h":
                 print("You chose to hit.")
                 break
-            elif action == 'e':
+            elif action == "e":
                 print("You chose to end your turn.")
                 break
-            elif action == 'u':
+            elif action == "u":
                 if self.game.player.active_side_hand:
                     self.use_side_card(self.game.player)
                     if self.game.player.is_bust():
@@ -301,7 +301,7 @@ class ConsolePazaak(PazaakInterface):
     def print_scores(self):
         print(f"Current score - Player: {self.game.player.score}, AI: {self.game.ai.score}")
 
-    def end_round(self, winner: Optional[Player]):
+    def end_round(self, winner: Player | None):
         if winner:
             print(f"\n{winner.name} wins this round!")
         else:
@@ -358,7 +358,7 @@ if __name__ == "__main__":
     while play_again:
         console_game.play_game()
         choice = input("Do you want to play again? (y/n): ").lower()
-        if choice != 'y':
+        if choice != "y":
             play_again = False
         else:
             console_game = ConsolePazaak()

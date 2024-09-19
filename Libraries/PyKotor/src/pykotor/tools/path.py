@@ -9,12 +9,13 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from pykotor.tools.registry import find_software_key, winreg_key
-from utility.string_util import ireplace
+from utility.common.misc_string.util import ireplace
 from utility.system.path import (
-    Path as InternalPath,
-    PosixPath as InternalPosixPath,
-    PurePath as InternalPurePath,
-    WindowsPath as InternalWindowsPath,
+    Path as CustomPath,
+    PosixPath as CustomPosixPath,
+    PurePath as CustomPurePath,
+    WindowsPath as CustomWindowsPath,
+    cached_normpath,
 )
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
 
     from pykotor.common.misc import Game
-    from utility.system.path import PathElem
+    from utility.system.path import StrBytesOrPathLike
 
 
 def is_filesystem_case_sensitive(path: os.PathLike | str) -> bool | None:
@@ -165,14 +166,14 @@ def create_case_insensitive_pathlib_class(cls: type[CaseAwarePath]):
 
 
 # TODO(th3w1zard1): Move to pykotor.common
-class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
+class CaseAwarePath(CustomWindowsPath if os.name == "nt" else CustomPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
 
     __slots__: tuple[str] = ("_tail_cached",)
     _original_methods: ClassVar[dict[str, Callable[..., Any]]] = {}
 
     @staticmethod
-    def extract_absolute_prefix(relative_path: InternalPath, absolute_path: InternalPath) -> tuple[str, ...]:
+    def extract_absolute_prefix(relative_path: CustomPath, absolute_path: CustomPath) -> tuple[str, ...]:
         # Ensure the absolute path is absolute and the relative path is resolved relative to it
         absolute_path = absolute_path.absolute()
         relative_path_resolved = (absolute_path.parent / relative_path).absolute()
@@ -215,22 +216,22 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
     def relative_to(
         self,
-        *args: PathElem,
+        *args: StrBytesOrPathLike,
         walk_up: bool = False,
         **kwargs,
-    ) -> InternalPath:
+    ) -> CustomPath:
         if not args or "other" in kwargs:
             raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 
         other, *_deprecated = args
         resolved_self = self
-        if isinstance(resolved_self, InternalPath):
-            if not isinstance(other, InternalPath):
+        if isinstance(resolved_self, CustomPath):
+            if not isinstance(other, CustomPath):
                 other = self.__class__(other)
             parsed_other = self.with_segments(other, *_deprecated).absolute()
             resolved_self = resolved_self.absolute()
         else:
-            parsed_other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
+            parsed_other = other if isinstance(other, CustomPurePath) else CustomPurePath(other)
             parsed_other = parsed_other.with_segments(other, *_deprecated)
 
         self_str, other_str = map(str, (resolved_self, parsed_other))
@@ -239,15 +240,15 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             msg = f"self '{self_str}' is not relative to other '{other_str}'"
             raise ValueError(msg)
 
-        if isinstance(self, CaseAwarePath) and not pathlib.Path(replacement).exists():
-            prefixes = self.extract_absolute_prefix(InternalPath(replacement), InternalPath(parsed_other))
+        if isinstance(self, CaseAwarePath) and not os.path.exists(str(replacement)):  # noqa: PTH110
+            prefixes = self.extract_absolute_prefix(CustomPath(replacement), CustomPath(parsed_other))
             return self.get_case_sensitive_path(replacement, prefixes)
         return self.__class__(replacement)
 
     @classmethod
     def get_case_sensitive_path(
         cls,
-        path: PathElem,
+        path: StrBytesOrPathLike,
         prefixes: list[str] | tuple[str, ...] | None = None,
     ):
         """Get a case sensitive path.
@@ -272,14 +273,14 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             return cls.pathify(path)
 
         prefixes = prefixes or []
-        pathlib_path = pathlib.Path(path)
-        pathlib_abspath = pathlib.Path(*prefixes, path).absolute() if prefixes else pathlib_path.absolute()
-        num_differing_parts = len(pathlib_abspath.parts) - len(pathlib_path.parts)  # keeps the path relative if it already was.
-        parts = list(pathlib_abspath.parts)
+        str_path = str(path)
+        str_abspath = cached_normpath(os.path.abspath(os.path.join(*prefixes, str_path)) if prefixes else os.path.abspath(str_path))  # noqa: PTH118, PTH100
+        num_differing_parts = len(str_abspath.split(os.sep)) - len(str_path.split(os.sep))  # keeps the path relative if it already was.  # noqa: PTH206
+        parts = str_abspath.split(os.sep)  # noqa: PTH206
 
         for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
-            base_path: InternalPath = InternalPath(*parts[:i])
-            next_path: InternalPath = InternalPath(*parts[: i + 1])
+            base_path: CustomPath = CustomPath(*parts[:i])
+            next_path: CustomPath = CustomPath(*parts[: i + 1])
 
             if not next_path.safe_isdir() and base_path.safe_isdir():
                 # Find the first non-existent case-sensitive file/folder in hierarchy
@@ -302,7 +303,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
     def find_closest_match(
         cls,
         target: str,
-        candidates: Generator[InternalPath, None, None],
+        candidates: Generator[CustomPath, None, None],
     ) -> str:
         """Finds the closest match from candidates to the target string.
 
@@ -496,7 +497,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
                 if path and path.name and path.safe_isdir():
                     locations[game].add(path)
         amazon_k1_path_str: str | None = find_software_key("AmazonGames/Star Wars - Knights of the Old")
-        if amazon_k1_path_str is not None and InternalPath(amazon_k1_path_str).safe_isdir():
+        if amazon_k1_path_str is not None and CustomPath(amazon_k1_path_str).safe_isdir():
             locations[Game.K1].add(CaseAwarePath(amazon_k1_path_str))
 
     # don't return nested sets, return as lists.

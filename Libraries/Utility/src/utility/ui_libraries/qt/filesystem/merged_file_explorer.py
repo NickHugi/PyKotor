@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 import difflib
-import fnmatch
 import hashlib
-import logging
-import mimetypes
 import os
 import platform
 import shutil
@@ -26,9 +23,7 @@ from loggerplus import RobustLogger
 from qtpy.QtCore import (
     QDir,
     QEvent,
-    QFile,
     QFileInfo,
-    QItemSelection,
     QItemSelectionModel,
     QMimeData,
     QModelIndex,
@@ -39,61 +34,48 @@ from qtpy.QtCore import (
     QUrl,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
-    QAbstractProxyModel,
 )
-from qtpy.QtGui import QCursor, QDesktopServices, QDrag, QGuiApplication, QIcon, QKeySequence, QWheelEvent
+from qtpy.QtGui import QDesktopServices, QDrag, QKeySequence, QWheelEvent
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QApplication,
-    QComboBox,
     QCompleter,
     QDialog,
-    QDialogButtonBox,
-    QDockWidget,
     QFileDialog,
     QFileIconProvider,
     QFileSystemModel,
-    QFrame,
-    QHBoxLayout,
     QInputDialog,
     QLabel,
     QLineEdit,
     QListView,
     QMainWindow,
     QMenu,
-    QMenuBar,
     QMessageBox,
     QProgressBar,
     QProgressDialog,
     QPushButton,
-    QShortcut,
-    QSizePolicy,
-    QSplitter,
     QStackedWidget,
-    QTabWidget,
     QTableView,
     QTextEdit,
-    QToolButton,
     QUndoStack,
     QVBoxLayout,
     QWidget,
-    QAbstractItemDelegate,
 )
 
-from utility.ui_libraries.qt.filesystem.address_bar import PyQAddressBar
 from utility.ui_libraries.qt.filesystem.file_explorer_context_menu import FileExplorerContextMenu
 from utility.ui_libraries.qt.filesystem.undo_commands import CopyCommand, DeleteCommand, MoveCommand, RenameCommand
-from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
-from utility.ui_libraries.qt.widgets.itemviews.tileview import QTileView
-from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
+from utility.ui_libraries.qt.widgets.itemviews.tileview import RobustTileView
 
 if TYPE_CHECKING:
     from concurrent.futures import Future
 
-    from qtpy.QtCore import QObject, QPoint, QRect
-    from qtpy.QtGui import QCloseEvent, QDragEnterEvent, QDropEvent, QKeyEvent, QMouseEvent, QResizeEvent
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtCore import QAbstractProxyModel, QByteArray, QItemSelection, QObject, QPoint, QRect
+    from qtpy.QtGui import QClipboard, QCloseEvent, QDragEnterEvent, QDropEvent, QKeyEvent, QMouseEvent
+    from qtpy.QtWidgets import QSplitter, QStyledItemDelegate
+    from typing_extensions import Literal
+
+    from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 
 
 class ViewMode(Enum):
@@ -142,24 +124,42 @@ class FirstColumnInteractableTableView(RobustTableView):
         self.selectionModel().select(QModelIndex(), QItemSelectionModel.Clear | QItemSelectionModel.Rows)
 
 
-class MergedFileExplorer(QFileDialog):
+class MergedFileExplorer(QWidget):
     fileSelected: Signal = Signal(str)
     filesSelected: Signal = Signal(list)
     currentChanged: Signal = Signal(str)
     directoryEntered: Signal = Signal(str)
     filterSelected: Signal = Signal(str)
+    directoryUrlEntered: Signal = Signal(str)
+    currentUrlChanged: Signal = Signal(str)
     urlsSelected: Signal = Signal(list)
+    urlSelected: Signal = Signal(str)
+
+    getOpenFileName = QFileDialog.getOpenFileName
+    getOpenFileNames = QFileDialog.getOpenFileNames
+    getExistingDirectory = QFileDialog.getExistingDirectory
+    getExistingDirectoryUrl = QFileDialog.getExistingDirectoryUrl
+    getOpenFileUrl = QFileDialog.getOpenFileUrl
+    getOpenFileUrls = QFileDialog.getOpenFileUrls
+    getSaveFileUrl = QFileDialog.getSaveFileUrl
+    getSaveFileName = QFileDialog.getSaveFileName
+    saveFileContent = QFileDialog.saveFileContent
+
+    # Leave here to show confirmation that we expose every function that QFileDialog provides, except these.
+    def restoreState(self, state: QByteArray | bytes | bytearray) -> bool: ...
+    def saveState(self) -> QByteArray: ...
+    def changeEvent(self, e: QEvent) -> None: ...
+    def accept(self) -> None: ...
+    def done(self, result: int) -> None: ...
 
     def __init__(
         self,
         parent: QWidget | None = None,
         caption: str = "",
         directory: str = "",
-        file_filter: str = "",
-        initial_filter: str = "",
         options: QFileDialog.Options | None = None,
     ):
-        super().__init__(parent, caption, directory, file_filter)
+        super().__init__(parent)
         if qtpy.API_NAME == "PyQt5":
             from utility.ui_libraries.qt.uic.pyqt5.filesystem.file_system_explorer_widget import Ui_FileSystemExplorerWidget
         elif qtpy.API_NAME == "PySide6":
@@ -174,71 +174,334 @@ class MergedFileExplorer(QFileDialog):
         self.ui = Ui_FileSystemExplorerWidget()
         self.ui.setupUi(self)
         self.resize(800, 600)
-        self.setSizeGripEnabled(True)
 
         self._options: QFileDialog.Option | QFileDialog.Options = QFileDialog.Options() if options is None else options
         self._fileMode: QFileDialog.FileMode | int = QFileDialog.FileMode.AnyFile
         self._acceptMode: QFileDialog.AcceptMode | int = QFileDialog.AcceptMode.AcceptOpen
         self._viewMode: QFileDialog.ViewMode | int = QFileDialog.ViewMode.Detail
-        self._currentPath: str = QDir.homePath()
-        self._selectedFiles: list[str] = []
-        self._nameFilters: list[str] = []
+        self.current_path: str = QDir.homePath()
         self.mime_type_filters: list[str] = []
         self.default_suffix: str = ""
         self._sidebar_urls: list[QUrl] = []
         self.tabs: list[QWidget] = []
         self.recent_directories: deque[str] = deque(maxlen=10)
         self.settings = QSettings("QtCustomWidgets", "MergedFileExplorer")
-        self.file_operation_queue: list[tuple[Callable[[], Any], Callable[[Exception], Any] | None]] = []
-        self.process_pool = ProcessPoolExecutor(max_workers=min(4, (os.cpu_count() or 1)))
+        self.file_operation_queue: list[tuple[Callable[[], Any], Literal["copy", "move", "delete", "rename"], str, str | None]] = []
+        self.process_pool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=min(4, (os.cpu_count() or 1)))
         self.lazy_load_batch_size: int = 100
-
-        self.current_path: Path = Path.home()
         self.navigation_history: list[Path] = []
         self.navigation_index: int = -1
-        self.clipboard = QApplication.clipboard()
-        self.undo_stack = QUndoStack(self)
+        self.clipboard: QClipboard = QApplication.clipboard()
+        self.undo_stack: QUndoStack = QUndoStack(self)
+
+        self._history: list[str] = []
+
+        self.fsModel: QFileSystemModel = QFileSystemModel(self)
+        self.fsModel.setIconProvider(QFileIconProvider())
+        self.fsModel.setOption(QFileSystemModel.Option.DontWatchForChanges)
 
         self.setup_ui(caption)
         self.setup_menu()
         self.setup_connections()
-
-        self.fileSystemModel: QFileSystemModel = QFileSystemModel(self)
-        self.fileSystemModel.setIconProvider(QFileIconProvider())
-        self.fileSystemModel.setOption(QFileSystemModel.Option.DontWatchForChanges)
         self.setup_sidebar()
 
-        self.setup_logging()
-
         self.setDirectory(directory or QDir.homePath())
-        if file_filter:
-            self.setNameFilters(file_filter.split(";;"))
-        if initial_filter and initial_filter.strip() and initial_filter not in self.nameFilters():
-            self.setNameFilter(initial_filter)
-
-        self._history = []
-
         self.setup_file_operations()
 
-        # Setup progress bar
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setVisible(False)
-        self.ui.status_bar.addPermanentWidget(self.progress_bar)
+        self.ui.status_bar.addPermanentWidget(self.progress_bar)  # pyright: ignore[reportArgumentType]
 
-        # Setup COM interfaces for Windows
         if platform.system() == "Windows":
             self.setup_com_interfaces()
 
-        # Setup context menu handler
         self.context_menu_handler = FileExplorerContextMenu(self)
-
-        # Setup custom icon provider
         self.icon_provider = QFileIconProvider()
-        self.fileSystemModel.setIconProvider(self.icon_provider)
+        self.fsModel.setIconProvider(self.icon_provider)
+        self.fsModel.setReadOnly(False)
+        self.fsModel.setOption(QFileSystemModel.DontWatchForChanges, False)
 
-        # Setup file watcher
-        self.fileSystemModel.setReadOnly(False)
-        self.fileSystemModel.setOption(QFileSystemModel.DontWatchForChanges, False)
+    def set_current_path(self, path: os.PathLike | str):
+        self.current_path = os.path.normpath(path)
+
+    def handle_process_result(
+        self,
+        future: Future,
+        callback: Callable[[Any], Any],
+        error_callback: Callable[[Exception], Any],
+    ):
+        try:
+            result = future.result()
+            QTimer.singleShot(0, lambda: self._handle_process_result(result, callback))
+        except Exception as e:
+            RobustLogger().exception("Error in process execution")
+            if error_callback is None:
+                return
+            QTimer.singleShot(0, lambda e=e: error_callback(e))
+
+    def _handle_process_result(self, result: Any, callback: Callable[[Any], Any]):
+        if callback and result is not None:
+            callback(result)
+
+    def go_to_parent(self):
+        parent_path = os.path.dirname(self.current_path)  # noqa: PTH120
+        self.setDirectory(parent_path)
+
+    def create_new_folder_in(self, directory: str):
+        new_folder_name, ok = QInputDialog.getText(self, "Create New Folder", "Folder name:")
+        if ok and new_folder_name:
+            new_folder_path = os.path.join(directory, new_folder_name)  # noqa: PTH118
+            try:
+                os.makedirs(new_folder_path)  # noqa: PTH103
+                self.setDirectory(directory)  # Refresh the view
+                RobustLogger().info(f"Created new folder: {new_folder_path}")
+            except OSError:
+                RobustLogger().exception("Failed to create folder")
+                QMessageBox.warning(self, "Error", "Failed to create folder")
+
+    def lazy_load_directory(self, root_index: QModelIndex):
+        total_items = self.fsModel.rowCount(root_index)
+        self.load_batch(root_index, 0, min(self.lazy_load_batch_size, total_items))
+
+    def load_batch(self, root_index: QModelIndex, start: int, end: int):
+        def fetch_batch(root: QModelIndex) -> int:
+            for i in range(start, end):
+                self.fsModel.fetchMore(self.fsModel.index(i, 0, root))
+            return end
+
+        def continue_loading(end: int):
+            total_items = self.fsModel.rowCount(root_index)
+            if end < total_items:
+                next_end = min(end + self.lazy_load_batch_size, total_items)
+                self.run_in_background(fetch_batch, callback=lambda _: continue_loading(next_end))
+            else:
+                RobustLogger().debug(f"Finished lazy loading directory: {self.current_path}")
+
+        self.run_in_background(fetch_batch, callback=lambda _: continue_loading(end))
+
+    def expand_sidebar_to_current_directory(self, directory: str):
+        index = self.fsModel.index(os.path.abspath(directory))  # noqa: PTH100
+        while index.isValid():
+            self.ui.navigation_pane.expand(index)  # pyright: ignore[reportArgumentType]
+            index = index.parent()
+
+    def get_permissions_string(self, file_info: QFileInfo) -> str:
+        permissions = []
+        if file_info.isReadable():
+            permissions.append("Read")
+        if file_info.isWritable():
+            permissions.append("Write")
+        if file_info.isExecutable():
+            permissions.append("Execute")
+        return ", ".join(permissions)
+
+    def calculate_checksum(self, file_path: str):
+        try:
+            with open(file_path, "rb") as f:  # noqa: PTH123
+                file_hash = hashlib.sha256()
+                chunk = f.read(8192)
+                while chunk:
+                    file_hash.update(chunk)
+                    chunk = f.read(8192)
+            checksum = file_hash.hexdigest()
+            QMessageBox.information(self, "Checksum", f"SHA256 Checksum for {os.path.basename(file_path)}:\n{checksum}")  # noqa: PTH119
+            RobustLogger().info(f"Calculated checksum for {file_path}: {checksum}")
+        except Exception as e:
+            error_msg = f"Could not calculate checksum: {e}"
+            RobustLogger().exception(error_msg)
+            QMessageBox.warning(self, "Error", error_msg)
+
+    def compare_files(self):
+        selected_files = self.get_selected_files()
+        if len(selected_files) != 2:
+            error_msg = "Please select exactly two files to compare."
+            RobustLogger().warning(error_msg)
+            QMessageBox.warning(self, "Error", error_msg)
+            return
+
+        try:
+            with open(selected_files[0]) as file1, open(selected_files[1]) as file2:  # noqa: PTH123
+                diff = difflib.unified_diff(
+                    file1.readlines(),
+                    file2.readlines(),
+                    fromfile=selected_files[0],
+                    tofile=selected_files[1],
+                )
+                diff_text = "".join(diff)
+                if diff_text:
+                    comparison_dialog = QDialog(self)
+                    comparison_dialog.setWindowTitle("File Comparison")
+                    layout = QVBoxLayout(comparison_dialog)
+                    text_edit = QTextEdit()
+                    text_edit.setPlainText(diff_text)
+                    layout.addWidget(text_edit)
+                    comparison_dialog.exec_()
+                else:
+                    QMessageBox.information(self, "File Comparison", "The selected files are identical.")
+            RobustLogger().info(f"Compared files: {selected_files[0]} and {selected_files[1]}")
+        except Exception as e:  # noqa: BLE001
+            error_msg = f"Error comparing files: {e}"
+            RobustLogger().exception(error_msg)
+            QMessageBox.warning(self, "Error", error_msg)
+
+    def open(self, slot: Callable[[QUrl], None] | None = None):
+        selected_files = self.get_selected_files()
+        if not selected_files:
+            QMessageBox.warning(self, "Error", "Please select a file to open.")
+            return
+        file_path = selected_files[0]
+        url = QUrl.fromLocalFile(file_path)
+        if slot is None:
+            QDesktopServices.openUrl(url)
+        else:
+            slot(url)
+
+    def setVisible(self, visible: bool):  # noqa: FBT001
+        super().setVisible(visible)
+        if visible:
+            self.refresh_view()
+
+    def secure_delete(self, file_path: str | None = None):
+        if not file_path:
+            selected_files = self.get_selected_files()
+            if not selected_files:
+                QMessageBox.warning(self, "Error", "Please select a file to securely delete.")
+                return
+            file_path = selected_files[0]
+
+        reply = QMessageBox.question(
+            self,
+            "Confirm Secure Delete",
+            f"Are you sure you want to securely delete {file_path}? This action cannot be undone.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        try:
+            assert file_path is not None, "File path is None"
+            with open(file_path, "ba+", buffering=0) as f:  # noqa: PTH123
+                length = f.seek(0, os.SEEK_END)
+                f.seek(0)
+                f.write(os.urandom(length))
+            os.remove(file_path)  # noqa: PTH107
+            QMessageBox.information(self, "Success", f"File {file_path} has been securely deleted.")
+            RobustLogger().info(f"Securely deleted file: {file_path}")
+            self.refresh_view()
+        except Exception as e:  # noqa: BLE001
+            error_msg = f"Error securely deleting file: {e}"
+            RobustLogger().exception(error_msg)
+            QMessageBox.warning(self, "Error", error_msg)
+
+    def show_disk_usage(self):
+        try:
+            import psutil
+        except ImportError:
+            QMessageBox.warning(self, "Error", "psutil is not installed. Please install psutil to use this feature.")
+            return
+        disk_usage = psutil.disk_usage(self.current_path)
+        usage_dialog = QDialog(self)
+        usage_dialog.setWindowTitle("Disk Usage")
+        layout = QVBoxLayout(usage_dialog)
+        layout.addWidget(QLabel(f"Total: {self.format_size(disk_usage.total)}"))
+        layout.addWidget(QLabel(f"Used: {self.format_size(disk_usage.used)} ({disk_usage.percent}%)"))
+        layout.addWidget(QLabel(f"Free: {self.format_size(disk_usage.free)}"))
+        usage_dialog.exec_()
+        RobustLogger().info(f"Displayed disk usage for {self.current_path}")
+
+    def setDirectory(self, directory: str, *, add_to_history: bool = True):
+        abs_directory = os.path.abspath(os.path.normpath(directory))  # noqa: PTH100
+        if not abs_directory or not os.path.isdir(abs_directory):  # noqa: PTH112
+            RobustLogger().warning(f"Invalid directory: {abs_directory}")
+            return
+
+        self.fsModel.setRootPath(abs_directory)
+        path_obj = Path(abs_directory)
+        if path_obj.is_dir():
+            self.current_path = abs_directory
+            root_index = self.fsModel.index(abs_directory)
+            self.ui.file_list_view.setRootIndex(root_index)  # pyright: ignore[reportArgumentType]
+            self.table_view.setRootIndex(root_index)  # pyright: ignore[reportArgumentType]
+            self.tiles_view.setRootIndex(root_index)  # pyright: ignore[reportArgumentType]
+            self.list_view.setRootIndex(root_index)  # pyright: ignore[reportArgumentType]
+            self.ui.navigation_pane.setCurrentIndex(root_index)  # pyright: ignore[reportArgumentType]
+            self.ui.address_bar.setText(self.current_path)  # pyright: ignore[reportArgumentType]
+            self.directoryEntered.emit(self.current_path)
+            self.add_to_history(path_obj)
+            self.update_ui()
+        else:
+            self.ui.address_bar.setText(self.current_path)  # pyright: ignore[reportArgumentType]
+        self.currentChanged.emit(self.current_path)
+        if add_to_history:
+            self._history.append(abs_directory)
+            self.recent_directories.appendleft(abs_directory)
+        self.save_session()
+        self.directoryEntered.emit(abs_directory)
+        self.expand_sidebar_to_current_directory(abs_directory)
+        self.update_sidebar()
+        self.lazy_load_directory(root_index)
+        RobustLogger().debug(f"Set directory to: {abs_directory}")
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        elif event.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
+            event.acceptProposedAction()
+        else:
+            RobustLogger().warning("Unknown mime data format: %s", event.mimeData().formats())
+
+    def startDrag(self, supported_actions: Qt.DropAction | Qt.DropActions):
+        drag = QDrag(self)
+        mime_data: QMimeData = QMimeData()
+        view = cast(QAbstractItemView, self.sender())
+        model: QFileSystemModel = cast(QFileSystemModel, view.model())
+        urls: list[QUrl] = [QUrl.fromLocalFile(model.filePath(index)) for index in view.selectedIndexes()]
+        mime_data.setUrls(urls)
+        drag.setMimeData(mime_data)
+        result = drag.exec_(supported_actions)
+        if result == Qt.DropAction.MoveAction:
+            for url in urls:
+                file_path = url.toLocalFile()
+                try:
+                    if os.path.isdir(file_path):  # noqa: PTH112
+                        shutil.rmtree(file_path)
+                    else:
+                        os.remove(file_path)  # noqa: PTH107
+                except OSError as e:
+                    QMessageBox.warning(self, "Error", f"Could not remove {file_path}: {e}")
+            self.refresh_view()
+
+        elif not self._selectedFiles:
+            self._selectedFiles = self.get_selected_files()
+        if self._acceptMode == QFileDialog.AcceptMode.AcceptSave and self.default_suffix and not self._selectedFiles[0].endswith(self.default_suffix):
+            self._selectedFiles[0] += f".{self.default_suffix}"
+
+    def __del__(self):
+        RobustLogger().info("PyFileExplorer instance destroyed")
+        self.process_pool.shutdown(wait=True)
+
+    def save_session(self):
+        self.settings = QSettings("YourOrganizationName", "YourAppName")
+        self.settings.setValue("recentDirectories", list(self.recent_directories))
+        self.settings.setValue("lastDirectory", self.current_path)
+        self.settings.setValue("viewMode", self.viewMode())
+        self.settings.setValue("splitterState", self.saveState())
+
+    def load_session(self):
+        recent_directories = self.settings.value("recentDirectories", [])
+        if isinstance(recent_directories, list):
+            self.recent_directories = deque(recent_directories, maxlen=self.recent_directories.maxlen)
+        else:
+            self.recent_directories = deque([], maxlen=self.recent_directories.maxlen)
+        last_directory = self.settings.value("lastDirectory")
+        if last_directory and os.path.exists(last_directory) and os.path.isdir(last_directory):  # noqa: PTH112, PTH110
+            self.setDirectory(last_directory, add_to_history=False)
+        view_mode = self.settings.value("viewMode")
+        if view_mode:
+            self.setViewMode(view_mode)
+        splitter_state = self.settings.value("splitterState")
+        if splitter_state:
+            self.ui.splitter.restoreState(splitter_state)
 
     def setup_com_interfaces(self):
         with suppress(ImportError):
@@ -262,17 +525,13 @@ class MergedFileExplorer(QFileDialog):
     def setup_ui(self, caption: str):
         self.setWindowTitle(caption or "Select File")
 
-        # Setup address bar
-        self.address_bar: PyQAddressBar = PyQAddressBar()
-        self.ui.toolbar_widget.layout().insertWidget(7, self.address_bar)
-
         # Setup views
         self.setup_views()
 
         # Setup completer
         self.completer: QCompleter = QCompleter(self)
-        self.completer.setModel(self.fileSystemModel)
-        self.ui.address_bar.setCompleter(self.completer)
+        self.completer.setModel(self.fsModel)
+        self.ui.address_bar.setCompleter(self.completer)  # pyright: ignore[reportArgumentType]
 
         # Setup icon sizes
         self.base_icon_size: int = 16
@@ -287,14 +546,14 @@ class MergedFileExplorer(QFileDialog):
         self.maximum_multiplier: float = 16.0
 
         # Setup splitter
-        self.splitter: QSplitter = self.ui.splitter
+        self.splitter: QSplitter = self.ui.splitter  # pyright: ignore[reportAttributeAccessIssue]
 
         # Setup stacked widget
         self.stacked_widget: QStackedWidget = QStackedWidget()
         self.splitter.replaceWidget(1, self.stacked_widget)
 
         # Add views to stacked widget
-        self.stacked_widget.addWidget(self.ui.file_list_view)
+        self.stacked_widget.addWidget(self.ui.file_list_view)  # pyright: ignore[reportArgumentType]
         self.stacked_widget.addWidget(self.table_view)
         self.stacked_widget.addWidget(self.tiles_view)
 
@@ -303,14 +562,18 @@ class MergedFileExplorer(QFileDialog):
         self.stacked_widget.setCurrentWidget(self.table_view)
 
     def setup_views(self):
-        self.list_view: RobustListView = self.ui.file_list_view
+        self.list_view: RobustListView = self.ui.file_list_view  # pyright: ignore[reportAttributeAccessIssue]
         self.table_view: FirstColumnInteractableTableView = FirstColumnInteractableTableView()
-        self.tiles_view: QTileView = QTileView()
+        self.tiles_view: RobustTileView = RobustTileView()
         self.preview_view: QLabel = QLabel()
 
+        self.list_view.viewport().installEventFilter(self)
+        self.table_view.viewport().installEventFilter(self)
+        self.tiles_view.viewport().installEventFilter(self)
+
         for view in (self.list_view, self.table_view, self.tiles_view):
-            view.setModel(self.fileSystemModel)
-            view.setRootIndex(self.fileSystemModel.index(str(self.current_path)))
+            view.setModel(self.fsModel)
+            view.setRootIndex(self.fsModel.index(str(self.current_path)))
             view.doubleClicked.connect(self.on_item_double_clicked)
             view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             view.customContextMenuRequested.connect(self.show_context_menu)
@@ -329,13 +592,13 @@ class MergedFileExplorer(QFileDialog):
         self.table_view.setColumnWidth(0, 200)
         self.table_view.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
 
-        self.ui.navigation_pane.setModel(self.fileSystemModel)
-        self.ui.navigation_pane.setRootIndex(self.fileSystemModel.index(""))
+        self.ui.navigation_pane.setModel(self.fsModel)  # pyright: ignore[reportArgumentType]
+        self.ui.navigation_pane.setRootIndex(self.fsModel.index(""))  # pyright: ignore[reportArgumentType]
         self.ui.navigation_pane.expandToDepth(0)
         self.ui.navigation_pane.setHeaderHidden(True)
         self.ui.navigation_pane.clicked.connect(self.on_tree_view_clicked)
 
-        for i in range(1, self.fileSystemModel.columnCount()):
+        for i in range(1, self.fsModel.columnCount()):
             self.ui.navigation_pane.hideColumn(i)
 
     def setup_menu(self):
@@ -356,12 +619,13 @@ class MergedFileExplorer(QFileDialog):
         self.ui.forward_button.clicked.connect(self.go_forward)
         self.ui.up_button.clicked.connect(self.go_up)
         self.ui.go_button.clicked.connect(self.on_go_button_clicked)
-        self.ui.search_bar.textChanged.connect(self.on_search_text_changed)
+        self.ui.search_bar.editingFinished.connect(self.on_search_text_changed)
 
-        self.address_bar.path_changed.connect(self.on_address_bar_path_changed)
-        self.fileSystemModel.directoryLoaded.connect(self.on_directory_loaded)
+        self.ui.address_bar.editingFinished.connect(self.on_address_bar_path_changed)
+        self.fsModel.directoryLoaded.connect(self.on_directory_loaded)
 
         for view in [self.list_view, self.table_view, self.tiles_view]:
+            assert isinstance(view, QAbstractItemView), "Invalid view type: " + view.__class__.__name__
             view.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
         self.ui.action_new_window.triggered.connect(self.new_window)
@@ -379,11 +643,63 @@ class MergedFileExplorer(QFileDialog):
         self.file_operation_queue.clear()
         QTimer.singleShot(0, self.process_file_operations)
 
-    def setup_logging(self, log_file: str = "merged_file_explorer.log"):
-        logging.basicConfig(filename=log_file, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", filemode="w")
-        logging.getLogger().addHandler(logging.StreamHandler())
-        logging.getLogger().setLevel(logging.INFO)
-        self.logger = logging.getLogger(__name__)
+    def add_file_operation(self, operation: Callable[[], None], source: str, destination: str | None = None):
+        self.file_operation_queue.append((operation, source, destination))
+        QTimer.singleShot(0, self.process_file_operations)
+        RobustLogger().info(f"Added file operation: {operation} - {source} to {destination}")
+
+    def process_file_operations(self):
+        if not self.file_operation_queue:
+            return
+
+        operation, source, destination = self.file_operation_queue.pop(0)
+        progress_dialog = QProgressDialog("Processing file operation...", "Cancel", 0, 100, self)
+        progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        progress_dialog.setAutoClose(True)
+        progress_dialog.setAutoReset(True)
+
+        def update_progress(progress: float):
+            progress_dialog.setValue(int(progress * 100))
+            QApplication.processEvents()
+
+        def operation_callback(result: tuple[str, str, str | None]):
+            RobustLogger().info(f"File operation completed: {result}")
+            self.refresh_view()
+            QTimer.singleShot(0, self.process_file_operations)
+
+        def error_callback(error: Exception):
+            RobustLogger().exception("Error in file operation")
+            QMessageBox.warning(self, "Error", f"An error occurred during the file operation: {error}")
+
+        self.run_in_background(
+            self._execute_file_operation,
+            operation,
+            source,
+            destination,
+            callback=operation_callback,
+            error_callback=error_callback,
+        )
+
+    def _execute_file_operation(self, operation: Literal["copy", "move", "delete", "rename"], source: str, destination: str | None = None) -> tuple[str, str, str | None]:
+        if operation == "copy":
+            assert destination is not None, "Destination is None"
+            if os.path.isdir(source):  # noqa: PTH112
+                shutil.copytree(source, os.path.join(destination, os.path.basename(source)))  # noqa: PTH118, PTH119
+            else:
+                shutil.copy2(source, destination)
+        elif operation == "move":
+            assert destination is not None, "Destination is None"
+            shutil.move(source, destination)
+        elif operation == "delete":
+            if os.path.isfile(source):  # noqa: PTH113
+                os.remove(source)  # noqa: PTH107
+            else:
+                shutil.rmtree(source, ignore_errors=True, onerror=RobustLogger().exception)
+        elif operation == "rename":
+            assert destination is not None, "Destination is None"
+            os.rename(source, destination)  # noqa: PTH104
+        RobustLogger().info(f"Completed file operation: {operation} - {source} to {destination}")
+        return operation, source, destination
 
     def setup_sidebar(self):
         self._sidebarUrls: list[QUrl] = [
@@ -397,35 +713,35 @@ class MergedFileExplorer(QFileDialog):
     def update_sidebar(self):
         self.ui.navigation_pane.blockSignals(True)
         for url in self.sidebarUrls():
-            index = self.fileSystemModel.index(url.toLocalFile())
+            index = self.fsModel.index(url.toLocalFile())
             if index.isValid():
-                self.ui.navigation_pane.setCurrentIndex(index)
-                self.ui.navigation_pane.scrollTo(index)
-            self.ui.navigation_pane.setExpanded(index, True)
-        self.ui.navigation_pane.blockSignals(False)
+                self.ui.navigation_pane.setCurrentIndex(index)  # pyright: ignore[reportArgumentType]
+                self.ui.navigation_pane.scrollTo(index)  # pyright: ignore[reportArgumentType]
+            self.ui.navigation_pane.setExpanded(index, True)  # pyright: ignore[reportArgumentType]  # noqa: FBT003
+        self.ui.navigation_pane.blockSignals(False)  # noqa: FBT003
 
     def on_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
         selected_indexes = selected.indexes()
         if selected_indexes:
-            file_path = self.fileSystemModel.filePath(selected_indexes[0])
+            file_path = self.fsModel.filePath(selected_indexes[0])
             self.ui.address_bar.setText(QFileInfo(file_path).fileName())
             if len(selected_indexes) == 1:
                 self.fileSelected.emit(file_path)
-            self.filesSelected.emit([self.fileSystemModel.filePath(index) for index in selected_indexes])
+            self.filesSelected.emit([self.fsModel.filePath(index) for index in selected_indexes])
         else:
             self.ui.address_bar.clear()
             self.fileSelected.emit("")
             self.filesSelected.emit([])
 
     def on_item_double_clicked(self, index: QModelIndex):
-        path = Path(self.fileSystemModel.filePath(index))
+        path = Path(self.fsModel.filePath(index))
         if path.is_dir():
             self.set_current_path(path)
         else:
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
 
     def on_tree_view_clicked(self, index: QModelIndex):
-        path = Path(self.fileSystemModel.filePath(index))
+        path = Path(self.fsModel.filePath(index))
         self.set_current_path(path)
 
     def on_go_button_clicked(self):
@@ -434,7 +750,7 @@ class MergedFileExplorer(QFileDialog):
 
     def on_search_text_changed(self, text: str):
         proxy_model = QSortFilterProxyModel(self)
-        proxy_model.setSourceModel(self.fileSystemModel)
+        proxy_model.setSourceModel(self.fsModel)
         proxy_model.setFilterRegExp(text)
         proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.list_view.setModel(proxy_model)
@@ -449,24 +765,8 @@ class MergedFileExplorer(QFileDialog):
         if loaded_path == self.current_path:
             self.update_address_bar(loaded_path)
 
-    def setDirectory(self, directory: str):
-        path_obj = Path(directory)
-        if path_obj.is_dir():
-            self._currentPath = str(path_obj)
-            index = self.fileSystemModel.index(self._currentPath)
-            self.list_view.setRootIndex(index)
-            self.table_view.setRootIndex(index)
-            self.tiles_view.setRootIndex(index)
-            self.ui.navigation_pane.setCurrentIndex(index)
-            self.address_bar.setText(self._currentPath)
-            self.directoryEntered.emit(self._currentPath)
-            self.add_to_history(path_obj)
-            self.update_ui()
-        else:
-            self.address_bar.setText(self._currentPath)
-
     def directory(self) -> str:
-        return self._currentPath
+        return self.current_path
 
     def add_to_history(self, path: Path):
         if self.navigation_index < len(self.navigation_history) - 1:
@@ -485,7 +785,7 @@ class MergedFileExplorer(QFileDialog):
             self.set_current_path(self.navigation_history[self.navigation_index])
 
     def go_up(self):
-        parent_path = self.current_path.parent
+        parent_path = os.path.dirname(self.current_path)  # noqa: PTH120
         if parent_path != self.current_path:
             self.set_current_path(parent_path)
 
@@ -500,21 +800,21 @@ class MergedFileExplorer(QFileDialog):
 
     def update_status_bar(self):
         selected_items = len(self.list_view.selectedIndexes())
-        total_items = self.fileSystemModel.rowCount(self.list_view.rootIndex())
+        total_items = self.fsModel.rowCount(self.list_view.rootIndex())
         if selected_items > 0:
             status_text = f"{selected_items} item{'s' if selected_items > 1 else ''} selected"
         else:
             status_text = f"{total_items} item{'s' if total_items > 1 else ''}"
         self.ui.status_items.setText(status_text)
 
-        total_size = sum(self.fileSystemModel.size(self.fileSystemModel.index(i, 0, self.list_view.rootIndex())) for i in range(total_items))
+        total_size = sum(self.fsModel.size(self.fsModel.index(i, 0, self.list_view.rootIndex())) for i in range(total_items))
         self.ui.status_size.setText(self.format_size(total_size))
 
     def format_size(self, size: int) -> str:
         for unit in ["B", "KB", "MB", "GB", "TB"]:
-            if size < 1024.0:
+            if size < 1024.0:  # noqa: PLR2004
                 return f"{size:.1f} {unit}"
-            size /= 1024.0
+            size = int(size / 1024.0)
         return f"{size:.1f} PB"
 
     def new_window(self):
@@ -522,12 +822,14 @@ class MergedFileExplorer(QFileDialog):
         new_window.show()
 
     def open_windows_terminal(self):
-        subprocess.Popen(f'start cmd /K "cd /d {self.current_path}"', shell=True)
+        import shlex
+        command = f'start cmd /K "cd /d {shlex.quote(str(self.current_path))}"'
+        subprocess.Popen(shlex.split(command))  # noqa: S603
 
     def show_properties(self):
         selected_indexes = self.list_view.selectedIndexes()
         if selected_indexes:
-            file_path = Path(self.fileSystemModel.filePath(selected_indexes[0]))
+            file_path = Path(self.fsModel.filePath(selected_indexes[0]))
             properties = f"Name: {file_path.name}\n"
             properties += f"Type: {'Directory' if file_path.is_dir() else 'File'}\n"
             properties += f"Size: {self.format_size(file_path.stat().st_size)}\n"
@@ -537,80 +839,91 @@ class MergedFileExplorer(QFileDialog):
 
             QMessageBox.information(self, "Properties", properties)
 
-    def cut_file(self):
-        self.copy_file(cut=True)
-
-    def copy_file(self, cut: bool = False):
+    def cut_file(self, slot: bool = False):  # noqa: FBT002, FBT001
         selected_indexes = self.list_view.selectedIndexes()
-        if selected_indexes:
-            source_paths = [Path(self.fileSystemModel.filePath(index)) for index in selected_indexes]
-            mime_data = QMimeData()
-            urls = [QUrl.fromLocalFile(str(path)) for path in source_paths]
-            mime_data.setUrls(urls)
-            self.clipboard.setMimeData(mime_data)
+        if not selected_indexes:
+            return
+        source_paths = [Path(self.fsModel.filePath(index)) for index in selected_indexes]
+        # TODO: some code to put onto the os clipboard (windows, linux, macos, etc). Then use in paste_file.
+        # TODO: set transparency of the cut files to 50%
 
-            if cut:
-                self.to_cut = source_paths
-            else:
-                self.to_cut = None
+    def copy_file(self, slot: bool = False):  # noqa: FBT002, FBT001
+        selected_indexes = self.list_view.selectedIndexes()
+        if not selected_indexes:
+            return
+        source_paths = [Path(self.fsModel.filePath(index)) for index in selected_indexes]
+        # TODO: some code to put onto the os clipboard (windows, linux, macos, etc). Then use in paste_file.
+        # TODO: set transparency of the copied files to 50%
 
-    def paste_file(self):
+    def paste_file(self, slot: bool = False):  # noqa: FBT002, FBT001
         mime_data = self.clipboard.mimeData()
-        if mime_data.hasUrls():
-            source_paths = [Path(url.toLocalFile()) for url in mime_data.urls()]
-            destination_path = self.current_path
+        if not mime_data.hasUrls():
+            return
+        source_paths = [Path(url.toLocalFile()) for url in mime_data.urls()]
+        destination_path = Path(self.current_path)
 
-            if hasattr(self, "to_cut") and self.to_cut:
-                command = MoveCommand(source_paths, destination_path)
-            else:
-                command = CopyCommand(source_paths, destination_path)
+        if self.undo_stack.undoText() == "Cut":
+            command = MoveCommand(source_paths, destination_path)
+        else:
+            command = CopyCommand(source_paths, destination_path)
 
+        self.undo_stack.push(command)
+        self.refresh_view()
+
+    def delete_file(self, slot: bool = False):  # noqa: FBT002, FBT001
+        selected_indexes = self.list_view.selectedIndexes()
+        if not selected_indexes:
+            return
+        paths = [Path(self.fsModel.filePath(index)) for index in selected_indexes]
+        reply = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            f"Are you sure you want to delete {len(paths)} item(s)?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            command = DeleteCommand(paths)
             self.undo_stack.push(command)
             self.refresh_view()
 
-            if hasattr(self, "to_cut"):
-                self.to_cut = None
-
-    def delete_file(self):
+    def rename_file(self, slot: bool = False):  # noqa: FBT002, FBT001
         selected_indexes = self.list_view.selectedIndexes()
-        if selected_indexes:
-            paths = [Path(self.fileSystemModel.filePath(index)) for index in selected_indexes]
-            reply = QMessageBox.question(
-                self,
-                "Confirm Delete",
-                f"Are you sure you want to delete {len(paths)} item(s)?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No,
-            )
-            if reply == QMessageBox.Yes:
-                command = DeleteCommand(paths)
-                self.undo_stack.push(command)
-                self.refresh_view()
-
-    def rename_file(self):
-        selected_indexes = self.list_view.selectedIndexes()
-        if selected_indexes:
-            file_path = Path(self.fileSystemModel.filePath(selected_indexes[0]))
-            new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", QLineEdit.Normal, file_path.name)
-            if ok and new_name:
-                new_path = file_path.with_name(new_name)
-                if new_path.exists():
-                    QMessageBox.warning(self, "Rename", "A file with this name already exists.")
-                else:
-                    command = RenameCommand(file_path, new_path)
-                    self.undo_stack.push(command)
-                    self.refresh_view()
+        if not selected_indexes:
+            return
+        file_path = Path(self.fsModel.filePath(selected_indexes[0]))
+        new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", QLineEdit.EchoMode.Normal, file_path.name)
+        if not ok or not new_name:
+            return
+        new_path = file_path.with_name(new_name)
+        if new_path.exists():
+            QMessageBox.warning(self, "Rename", "A file with this name already exists.")
+        else:
+            command = RenameCommand(file_path, new_path)
+            self.undo_stack.push(command)
+            self.refresh_view()
 
     def run_in_background(
         self,
-        func: Callable,
-        *args,
-        callback: Callable[[Future[Any]], None] | None = None,
-        **kwargs,
+        func: Callable[..., Any],
+        *args: Any,
+        callback: Callable[..., Any] | None = None,
+        error_callback: Callable[[Exception], Any] | None = None,
     ):
-        future = self.process_pool.submit(func, *args, **kwargs)
-        if callback is not None:
-            future.add_done_callback(callback)
+        try:
+            future = self.process_pool.submit(func, *args)
+            if callback is None and error_callback is None:
+                return
+            if callback is None:
+                callback = lambda _: None  # noqa: E731
+            if error_callback is None:
+                error_callback = lambda _: None  # noqa: E731
+        except Exception as e:
+            RobustLogger().exception("Error submitting task to process pool")
+            if error_callback:
+                error_callback(e)
+        else:
+            future.add_done_callback(lambda f: self.handle_process_result(f, callback, error_callback))
 
     def update_progress(self, value: int):
         self.progress_bar.setValue(value)
@@ -622,18 +935,18 @@ class MergedFileExplorer(QFileDialog):
     def create_new_folder(self):
         new_folder_name, ok = QInputDialog.getText(self, "Create New Folder", "Folder name:")
         if ok and new_folder_name:
-            new_folder_path = self.current_path / new_folder_name
+            new_folder_path = os.path.join(self.current_path, new_folder_name)  # noqa: PTH118
             try:
-                new_folder_path.mkdir(parents=True, exist_ok=True)
+                os.makedirs(new_folder_path, exist_ok=True)  # noqa: PTH103
                 self.refresh_view()
-                self.logger.info(f"Created new folder: {new_folder_path}")
+                RobustLogger().info(f"Created new folder: {new_folder_path}")
             except OSError:
-                self.logger.exception("Failed to create folder")
+                RobustLogger().exception("Failed to create folder")
                 QMessageBox.warning(self, "Error", "Failed to create folder")
 
     def show_context_menu(self, pos: QPoint):
         sender = self.sender()
-        assert isinstance(sender, QAbstractItemView)
+        assert isinstance(sender, QAbstractItemView), f"Expected QAbstractItemView, got {sender.__class__.__name__}"
         global_pos = sender.mapToGlobal(pos)
         index = sender.indexAt(pos)
 
@@ -650,7 +963,7 @@ class MergedFileExplorer(QFileDialog):
 
         action = menu.exec_(global_pos)
 
-        file_path = self.fileSystemModel.filePath(index)
+        file_path = self.fsModel.filePath(index)
 
         if action == open_action:
             self.on_item_double_clicked(index)
@@ -675,45 +988,45 @@ class MergedFileExplorer(QFileDialog):
         zip_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Zip File",
-            os.path.dirname(file_path),
+            os.path.dirname(file_path),  # noqa: PTH120
             "Zip Files (*.zip)",
         )
         if not zip_path or not zip_path.strip():
             return
         try:
             with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                if os.path.isfile(file_path):
-                    zipf.write(file_path, os.path.basename(file_path))
-                else:
-                    for root, _, files in os.walk(file_path):
-                        for file in files:
-                            zipf.write(
-                                os.path.join(root, file),
-                                os.path.relpath(
-                                    os.path.join(root, file),
-                                    os.path.join(file_path, ".."),
-                                ),
-                            )
+                if os.path.isfile(file_path):  # noqa: PTH113
+                    zipf.write(file_path, os.path.basename(file_path))  # noqa: PTH119
+                    return
+                for root, _, files in os.walk(file_path):
+                    for file in files:
+                        zipf.write(
+                            os.path.join(root, file),  # noqa: PTH118
+                            os.path.relpath(
+                                os.path.join(root, file),  # noqa: PTH118
+                                os.path.join(file_path, ".."),  # noqa: PTH118
+                            ),
+                        )  # noqa: PTH118
                 QMessageBox.information(self, "Success", f"File(s) compressed successfully to {zip_path}")
-        except Exception as e:
-            error_msg = f"Could not compress file(s): {e}"
-            self.logger.exception(error_msg)
-            QMessageBox.warning(self, "Error", error_msg)
+        except Exception as e:  # noqa: BLE001
+            error_msg = "Could not compress file(s)"
+            RobustLogger().exception(error_msg)
+            QMessageBox.warning(self, "Error", f"{error_msg}: {e}")
 
     def extract_file(self, file_path: str):
         if not file_path.lower().endswith(".zip"):
             QMessageBox.warning(self, "Error", "Selected file is not a zip file")
             return
-        extract_path = QFileDialog.getExistingDirectory(self, "Select Extraction Directory", os.path.dirname(file_path))
+        extract_path = QFileDialog.getExistingDirectory(self, "Select Extraction Directory", os.path.dirname(file_path))  # noqa: PTH120
         if not extract_path or not extract_path.strip():
             return
         try:
             with zipfile.ZipFile(file_path, "r") as zipf:
                 zipf.extractall(extract_path)
             QMessageBox.information(self, "Success", f"File(s) extracted successfully to {extract_path}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             error_msg = f"Could not extract file(s): {e}"
-            self.logger.exception(error_msg)
+            RobustLogger().exception(error_msg)
             QMessageBox.warning(self, "Error", error_msg)
 
     def show_file_properties(self, file_path: str):
@@ -744,119 +1057,16 @@ class MergedFileExplorer(QFileDialog):
 
         properties_dialog.exec_()
 
-    def get_permissions_string(self, file_info: QFileInfo) -> str:
-        permissions = []
-        if file_info.isReadable():
-            permissions.append("Read")
-        if file_info.isWritable():
-            permissions.append("Write")
-        if file_info.isExecutable():
-            permissions.append("Execute")
-        return ", ".join(permissions)
-
-    def calculate_checksum(self, file_path: str):
-        try:
-            with open(file_path, "rb") as f:
-                file_hash = hashlib.sha256()
-                chunk = f.read(8192)
-                while chunk:
-                    file_hash.update(chunk)
-                    chunk = f.read(8192)
-            checksum = file_hash.hexdigest()
-            QMessageBox.information(self, "Checksum", f"SHA256 Checksum for {os.path.basename(file_path)}:\n{checksum}")
-            self.logger.info(f"Calculated checksum for {file_path}: {checksum}")
-        except Exception as e:
-            error_msg = f"Could not calculate checksum: {e}"
-            self.logger.exception(error_msg)
-            QMessageBox.warning(self, "Error", error_msg)
-
-    def compare_files(self):
-        selected_files = self.get_selected_files()
-        if len(selected_files) != 2:
-            QMessageBox.warning(self, "Error", "Please select exactly two files to compare.")
-            return
-
-        try:
-            with open(selected_files[0]) as file1, open(selected_files[1]) as file2:
-                diff = difflib.unified_diff(
-                    file1.readlines(),
-                    file2.readlines(),
-                    fromfile=selected_files[0],
-                    tofile=selected_files[1],
-                )
-                diff_text = "".join(diff)
-                if diff_text:
-                    comparison_dialog = QDialog(self)
-                    comparison_dialog.setWindowTitle("File Comparison")
-                    layout = QVBoxLayout(comparison_dialog)
-                    text_edit = QTextEdit()
-                    text_edit.setPlainText(diff_text)
-                    layout.addWidget(text_edit)
-                    comparison_dialog.exec_()
-                else:
-                    QMessageBox.information(self, "File Comparison", "The selected files are identical.")
-            self.logger.info(f"Compared files: {selected_files[0]} and {selected_files[1]}")
-        except Exception as e:
-            error_msg = f"Error comparing files: {e}"
-            self.logger.exception(error_msg)
-            QMessageBox.warning(self, "Error", error_msg)
-
-    def secure_delete(self, file_path: str | None = None):
-        if not file_path:
-            selected_files = self.get_selected_files()
-            if not selected_files:
-                QMessageBox.warning(self, "Error", "Please select a file to securely delete.")
-                return
-            file_path = selected_files[0]
-
-        reply = QMessageBox.question(
-            self,
-            "Confirm Secure Delete",
-            f"Are you sure you want to securely delete {file_path}? This action cannot be undone.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-        if reply != QMessageBox.Yes:
-            return
-        try:
-            assert file_path is not None, "File path is None"
-            with open(file_path, "ba+", buffering=0) as f:
-                length = f.seek(0, os.SEEK_END)
-                f.seek(0)
-                f.write(os.urandom(length))
-            os.remove(file_path)
-            QMessageBox.information(self, "Success", f"File {file_path} has been securely deleted.")
-            self.logger.info(f"Securely deleted file: {file_path}")
-            self.refresh_view()
-        except Exception as e:
-            error_msg = f"Error securely deleting file: {e}"
-            self.logger.exception(error_msg)
-            QMessageBox.warning(self, "Error", error_msg)
-
-    def show_disk_usage(self):
-        try:
-            import psutil
-        except ImportError:
-            QMessageBox.warning(self, "Error", "psutil is not installed. Please install psutil to use this feature.")
-            return
-        disk_usage = psutil.disk_usage(str(self.current_path))
-        usage_dialog = QDialog(self)
-        usage_dialog.setWindowTitle("Disk Usage")
-        layout = QVBoxLayout(usage_dialog)
-        layout.addWidget(QLabel(f"Total: {self.format_size(disk_usage.total)}"))
-        layout.addWidget(QLabel(f"Used: {self.format_size(disk_usage.used)} ({disk_usage.percent}%)"))
-        layout.addWidget(QLabel(f"Free: {self.format_size(disk_usage.free)}"))
-        usage_dialog.exec_()
-        self.logger.info(f"Displayed disk usage for {self.current_path}")
-
     def get_selected_files(self) -> list[str]:
-        selected_files = []
-        for view in [self.list_view, self.table_view, self.tiles_view]:
+        selected_files: list[str] = []
+        for view in (self.list_view, self.table_view, self.tiles_view):
+            assert isinstance(view, QAbstractItemView), f"Expected QAbstractItemView, got {view.__class__.__name__}"
             selected_indexes = view.selectedIndexes()
             for index in selected_indexes:
-                file_path = self.fileSystemModel.filePath(index)
-                if file_path not in selected_files:
-                    selected_files.append(file_path)
+                file_path = self.fsModel.filePath(index)
+                if file_path in selected_files:
+                    continue
+                selected_files.append(file_path)
         return selected_files
 
     def change_view_mode(self, mode: ViewMode):
@@ -907,37 +1117,47 @@ class MergedFileExplorer(QFileDialog):
             raise ValueError(f"Invalid view mode: {self.current_view}")
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if isinstance(event, QWheelEvent) and event.type() == QEvent.Type.Wheel and bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+        if (
+            isinstance(event, QWheelEvent)
+            and event.type() == QEvent.Type.Wheel
+            and bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier)
+        ):
             delta = event.angleDelta().y() / 120
             self.change_icon_size(delta * 0.25)
             return True
         return super().eventFilter(obj, event)
 
     def update_address_bar(self, path: Path):
-        self.address_bar.update_path(path)
+        self.ui.address_bar.setText(str(path))
 
     def toggle_hidden_items(self):
-        filters = self.fileSystemModel.filter()
+        filters = self.fsModel.filter()
         if bool(filters & QDir.Hidden):
-            self.fileSystemModel.setFilter(filters & ~QDir.Hidden)
+            self.fsModel.setFilter(filters & ~QDir.Hidden)
             self.ui.action_show_hidden_items.setText("Show Hidden Items")
         else:
-            self.fileSystemModel.setFilter(filters | QDir.Hidden)
+            self.fsModel.setFilter(filters | QDir.Hidden)
             self.ui.action_show_hidden_items.setText("Hide Hidden Items")
         self.refresh_view()
 
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-
     def dropEvent(self, event: QDropEvent):
-        for url in event.mimeData().urls():
-            source_path = Path(url.toLocalFile())
-            destination_path = self.current_path / source_path.name
-            if source_path.is_dir():
-                shutil.copytree(source_path, destination_path)
-            else:
-                shutil.copy2(source_path, destination_path)
+        if event.mimeData().hasUrls():
+            urls: list[QUrl] = event.mimeData().urls()
+            for url in urls:
+                file_path = url.toLocalFile()
+                if os.path.isdir(file_path):  # noqa: PTH112
+                    self.setDirectory(file_path)
+                else:
+                    self.copy_file(file_path)  # FIXME: figure out why it's relying on selectedIndexes and figure out how to set these as selected?
+        elif event.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
+            source_widget = cast(QAbstractItemView, event.source())
+            if source_widget != self.sender():
+                indexes = source_widget.selectedIndexes()
+                for index in indexes:
+                    source_path: str = self.fsModel.filePath(index)
+                    self.copy_file(source_path)  # FIXME: figure out why it's relying on selectedIndexes and figure out how to set these as selected?
+        else:
+            RobustLogger().warning("Unknown mime data format: %s", event.mimeData().formats())
         self.refresh_view()
 
     def keyPressEvent(self, event: QKeyEvent):
@@ -952,14 +1172,6 @@ class MergedFileExplorer(QFileDialog):
         self.process_pool.shutdown(wait=False)
         super().closeEvent(event)
 
-    def selectFile(self, filename: str):
-        self.fileNameEdit.setText(filename)
-        self._selectedFiles = [filename]
-        self.fileSelected.emit(filename)
-
-    def selectedFiles(self) -> list[str]:
-        return self._selectedFiles
-
     def setViewMode(self, mode: QFileDialog.ViewMode):
         self._viewMode = mode
         if mode == QFileDialog.ViewMode.List:
@@ -967,72 +1179,11 @@ class MergedFileExplorer(QFileDialog):
         elif mode == QFileDialog.ViewMode.Detail:
             self.change_view_mode(ViewMode.DETAILS)
 
-    def viewMode(self) -> QFileDialog.ViewMode:
+    def viewMode(self) -> QFileDialog.ViewMode | int:
         return self._viewMode
 
     def setFileMode(self, mode: QFileDialog.FileMode):
         self._fileMode = mode
-
-    def fileMode(self) -> QFileDialog.FileMode:
-        return self._fileMode
-
-    def setAcceptMode(self, mode: QFileDialog.AcceptMode):
-        self._acceptMode = mode
-
-    def acceptMode(self) -> QFileDialog.AcceptMode:
-        return self._acceptMode
-
-    def setNameFilter(self, filter: str):
-        self.setNameFilters([filter])
-
-    def setNameFilters(self, filters: list[str]):
-        self._nameFilters = filters
-        self.ui.fileTypeCombo.clear()
-        self.ui.fileTypeCombo.addItems(self._nameFilters)
-        self.apply_filter(self._nameFilters[0] if self._nameFilters else "*")
-
-    def nameFilters(self) -> list[str]:
-        return self._nameFilters
-
-    def selectNameFilter(self, filter: str):
-        index = self.ui.fileTypeCombo.findText(filter)
-        if index >= 0:
-            self.ui.fileTypeCombo.setCurrentIndex(index)
-
-    def selectedNameFilter(self) -> str:
-        return self.ui.fileTypeCombo.currentText()
-
-    def setOption(self, option: QFileDialog.Option, on: bool = True):
-        if on:
-            self._options |= option
-        else:
-            self._options &= ~option
-
-    def testOption(self, option: QFileDialog.Option) -> bool:
-        return bool(self._options & option)
-
-    def options(self) -> QFileDialog.Options:
-        return self._options
-
-    def setOptions(self, options: QFileDialog.Options):
-        self._options = options
-
-    def setMimeTypeFilters(self, filters: list[str]):
-        self.mime_type_filters = filters
-        self.ui.fileTypeCombo.clear()
-        self.ui.fileTypeCombo.addItems(self.mime_type_filters)
-        self.apply_filter()
-
-    def mimeTypeFilters(self) -> list[str]:
-        return self.mime_type_filters
-
-    def selectedMimeTypeFilter(self) -> str:
-        return self.ui.fileTypeCombo.currentText()
-
-    def selectMimeTypeFilter(self, filter: str):
-        index = self.ui.fileTypeCombo.findText(filter)
-        if index >= 0:
-            self.ui.fileTypeCombo.setCurrentIndex(index)
 
     def setSidebarUrls(self, urls: list[QUrl]):
         self._sidebarUrls = urls
@@ -1040,31 +1191,6 @@ class MergedFileExplorer(QFileDialog):
 
     def sidebarUrls(self) -> list[QUrl]:
         return self._sidebarUrls
-
-    def setLabelText(self, label: QFileDialog.DialogLabel, text: str):
-        if label == QFileDialog.DialogLabel.FileName:
-            self.ui.fileNameLabel.setText(text)
-        elif label == QFileDialog.DialogLabel.Accept:
-            self.ui.okButton.setText(text)
-        elif label == QFileDialog.DialogLabel.Reject:
-            self.ui.cancelButton.setText(text)
-        elif label == QFileDialog.DialogLabel.LookIn:
-            self.ui.lookInLabel.setText(text)
-        elif label == QFileDialog.DialogLabel.FileType:
-            self.ui.fileTypeLabel.setText(text)
-
-    def labelText(self, label: QFileDialog.DialogLabel) -> str:
-        if label == QFileDialog.DialogLabel.FileName:
-            return self.ui.fileNameLabel.text()
-        elif label == QFileDialog.DialogLabel.Accept:
-            return self.ui.okButton.text()
-        elif label == QFileDialog.DialogLabel.Reject:
-            return self.ui.cancelButton.text()
-        elif label == QFileDialog.DialogLabel.LookIn:
-            return self.ui.lookInLabel.text()
-        elif label == QFileDialog.DialogLabel.FileType:
-            return self.ui.fileTypeLabel.text()
-        return ""
 
     def setProxyModel(self, model: QAbstractProxyModel):
         self.proxy_model = model
@@ -1077,7 +1203,7 @@ class MergedFileExplorer(QFileDialog):
 
     def setIconProvider(self, provider: QFileIconProvider):
         self.icon_provider = provider
-        self.fileSystemModel.setIconProvider(self.icon_provider)
+        self.fsModel.setIconProvider(self.icon_provider)
 
     def iconProvider(self) -> QFileIconProvider:
         return self.icon_provider
@@ -1089,34 +1215,34 @@ class MergedFileExplorer(QFileDialog):
     def history(self) -> list[str]:
         return [str(path) for path in self.navigation_history]
 
-    def setItemDelegate(self, delegate: QAbstractItemDelegate):
+    def setItemDelegate(self, delegate: QStyledItemDelegate):
         self.list_view.setItemDelegate(delegate)
         self.table_view.setItemDelegate(delegate)
         self.tiles_view.setItemDelegate(delegate)
 
-    def itemDelegate(self) -> QAbstractItemDelegate:
+    def itemDelegate(self) -> QStyledItemDelegate:
         return self.list_view.itemDelegate()
 
     def setFilter(self, filters: QDir.Filters):
-        self.fileSystemModel.setFilter(filters)
+        self.fsModel.setFilter(filters)
 
     def filter(self) -> QDir.Filters:
-        return self.fileSystemModel.filter()
+        return self.fsModel.filter()
 
     def setDefaultSuffix(self, suffix: str):
-        self.default_suffix = suffix.lstrip('.')
+        self.default_suffix = suffix.lstrip(".")
 
     def defaultSuffix(self) -> str:
         return self.default_suffix
 
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    main_window = QMainWindow()
     file_explorer = MergedFileExplorer(caption="Merged File Explorer")
     file_explorer.setFileMode(QFileDialog.FileMode.ExistingFiles)
     file_explorer.setViewMode(QFileDialog.ViewMode.Detail)
-    file_explorer.setNameFilter("All Files (*);;Text Files (*.txt);;Python Files (*.py)")
     file_explorer.resize(1000, 600)
-    if file_explorer.exec_() == QDialog.Accepted:
-        selected_files = file_explorer.selectedFiles()
-        print("Selected files:", selected_files)
+    main_window.setCentralWidget(file_explorer)
+    main_window.show()
     sys.exit(app.exec_())

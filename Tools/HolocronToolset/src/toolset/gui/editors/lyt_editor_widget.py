@@ -56,6 +56,7 @@ elif qtpy.QT6:
 else:
     raise RuntimeError("Unsupported Qt version")
 if TYPE_CHECKING:
+    from gui.widgets.renderer.walkmesh_editor import WalkmeshEditor
     from qtpy.QtCore import QObject
     from qtpy.QtGui import (
         QCloseEvent,
@@ -72,7 +73,6 @@ if TYPE_CHECKING:
         QWheelEvent,
     )
 
-    from gui.widgets.renderer.walkmesh_editor import WalkmeshEditor
     from ui.module import ModuleRenderer
 
 

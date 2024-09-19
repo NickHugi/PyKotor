@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import atexit
+import faulthandler
 import gc
 import importlib
 import multiprocessing
@@ -199,13 +200,13 @@ def main_init():
         multiprocessing.freeze_support()
         if is_main_process:
             set_qt_api()
+        faulthandler.disable()
     else:
         fix_sys_and_cwd_path()
         fix_qt_env_var()
-        # DO NOT USE `faulthandler` IN THIS TOOLSET!!
-        #import faulthandler
+        # If you run into bugs, consider disabling faulthandler.
         # https://bugreports.qt.io/browse/PYSIDE-2359
-        #faulthandler.enable()
+        faulthandler.enable()
 
 
 def setupPostInitSettings():
@@ -274,7 +275,11 @@ if __name__ == "__main__":
 
     toolWindow.checkForUpdates(silent=True)
 
-    loop = QEventLoop(app)
-    asyncio.set_event_loop(loop)
-    with loop:
-        loop.run_forever()
+    use_qasync = False
+    if use_qasync:
+        loop = QEventLoop(app)
+        asyncio.set_event_loop(loop)
+        with loop:
+            loop.run_forever()
+    else:
+        sys.exit(app.exec())

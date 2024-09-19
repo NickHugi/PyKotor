@@ -1,12 +1,12 @@
-
 from __future__ import annotations
 
 import math
 import threading
 import traceback
 
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
-from queue import Queue
+from multiprocessing import JoinableQueue, Queue
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
@@ -63,18 +63,39 @@ from pykotor.gl.models.predefined_mdl import (
     WAYPOINT_MDX_DATA,
 )
 from pykotor.gl.models.read_mdl import gl_load_stitched_model
-from pykotor.gl.shader import KOTOR_FSHADER, KOTOR_VSHADER, PICKER_FSHADER, PICKER_VSHADER, PLAIN_FSHADER, PLAIN_VSHADER, Shader, Texture
-from pykotor.resource.formats.lyt import LYT, LYTRoom
+from pykotor.gl.shader import (
+    KOTOR_FSHADER,
+    KOTOR_VSHADER,
+    PICKER_FSHADER,
+    PICKER_VSHADER,
+    PLAIN_FSHADER,
+    PLAIN_VSHADER,
+    Shader,
+    Texture,
+)
+from pykotor.resource.formats.lyt import LYTRoom
+from pykotor.resource.formats.lyt.lyt_data import LYT
 from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import TwoDA, read_2da
-from pykotor.resource.generics.git import GIT, GITCamera, GITCreature, GITDoor, GITEncounter, GITInstance, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
+from pykotor.resource.generics.git import (
+    GIT,
+    GITCamera,
+    GITCreature,
+    GITDoor,
+    GITEncounter,
+    GITInstance,
+    GITPlaceable,
+    GITSound,
+    GITStore,
+    GITTrigger,
+    GITWaypoint,
+)
 from pykotor.resource.generics.utd import UTD
 from pykotor.resource.generics.utp import UTP
 from pykotor.resource.generics.uts import UTS
 from pykotor.resource.type import ResourceType
 from pykotor.tools import creature
 from utility.common.more_collections import CaseInsensitiveDict
-from utility.system.app_process.task_consumer import TaskConsumer
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -100,7 +121,27 @@ SEARCH_ORDER: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CH
 class Scene:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
-    def __init__(self, *, installation: Installation | None = None, module: Module | None = None):
+    def __init__(
+        self,
+        *,
+        installation: Installation | None = None,
+        module: Module | None = None,
+    ):
+        """Initializes the renderer.
+
+        Args:
+        ----
+            installation: Installation: The installation to load resources from
+            module: Module: The active module
+
+        Processing Logic:
+        ----------------
+            - Initializes OpenGL settings
+            - Sets up default textures, shaders, camera
+            - Loads 2DA tables from installation
+            - Hides certain object types by default
+            - Sets other renderer options.
+        """
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().info("Start initialize Scene%s", module_id_part)
 
@@ -108,11 +149,11 @@ class Scene:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glCullFace(GL_BACK)
 
-        self.texture_task_queue: Queue[tuple[str, bool]] = Queue()
-        self.textures_data_queue: Queue[tuple[str, TPC | None, bool]] = Queue()
+        self.executor = ThreadPoolExecutor(max_workers=4)
+        self.texture_data_futures = {}
+        self.textures_data_queue: dict[str, tuple[TPC | None, bool]] = {}  # This will hold the texture data loaded in the background
         self.textures_data_lock: threading.Lock = threading.Lock()
-        
-        self.model_task_queue: Queue[str] = Queue()
+        self.model_data_futures = {}
         self.models_data_queue: dict[str, Any] = {}
         self.models_data_lock: threading.Lock = threading.Lock()
 
@@ -132,6 +173,11 @@ class Scene:
         self.git: GIT | None = None
         self.layout: LYT | None = None
         self.clearCacheBuffer: list[ResourceIdentifier] = []
+
+        self.texture_task_queue: JoinableQueue = JoinableQueue()
+        self.model_task_queue: JoinableQueue = JoinableQueue()
+        self.texture_result_queue: Queue = Queue()
+        self.model_result_queue: Queue = Queue()
 
         self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
         self.plain_shader: Shader = Shader(PLAIN_VSHADER, PLAIN_FSHADER)
@@ -165,92 +211,6 @@ class Scene:
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().debug("Completed pre-initialize Scene%s", module_id_part)
 
-        self.lyt_objects: dict[Any, RenderObject] = {}
-        self.show_lyt: bool = False
-
-        # Create TaskConsumers for background processing
-        self.texture_consumer = TaskConsumer(self.texture_task_queue, self.process_texture_task)
-        self.model_consumer = TaskConsumer(self.model_task_queue, self.process_model_task)
-        
-        self.texture_consumer.start()
-        self.model_consumer.start()
-
-    def setLYT(self, lyt: LYT):
-        self.layout = lyt
-        self.clearLYTObjects()
-        for room in lyt.rooms:
-            self.addLYTRoom(room)
-        for track in lyt.tracks:
-            self.addLYTTrack(track)
-        for obstacle in lyt.obstacles:
-            self.addLYTObstacle(obstacle)
-        for doorhook in lyt.doorhooks:
-            self.addLYTDoorHook(doorhook)
-
-    def clearLYTObjects(self):
-        for obj in self.lyt_objects.values():
-            if obj in self.objects:
-                del self.objects[obj]
-        self.lyt_objects.clear()
-
-    def addLYTRoom(self, room: LYTRoom):
-        obj = RenderObject("lyt_room", vec3(room.position.x, room.position.y, room.position.z))
-        self.lyt_objects[room] = obj
-        self.objects[obj] = obj
-
-    def addLYTTrack(self, track: LYTTrack):
-        obj = RenderObject("lyt_track", vec3(track.start.x, track.start.y, track.start.z))
-        obj.end_position = vec3(track.end.x, track.end.y, track.end.z)
-        self.lyt_objects[track] = obj
-        self.objects[obj] = obj
-
-    def addLYTObstacle(self, obstacle: LYTObstacle):
-        obj = RenderObject("lyt_obstacle", vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z))
-        self.lyt_objects[obstacle] = obj
-        self.objects[obj] = obj
-
-    def addLYTDoorHook(self, doorhook: LYTDoorHook):
-        obj = RenderObject("lyt_doorhook", vec3(doorhook.position.x, doorhook.position.y, doorhook.position.z))
-        self.lyt_objects[doorhook] = obj
-        self.objects[obj] = obj
-
-    def pickLYTElement(self, x: float, y: float) -> Any:
-        picked_object = self.pick(x, y)
-        for lyt_element, render_object in self.lyt_objects.items():
-            if render_object == picked_object:
-                return lyt_element
-        return None
-
-    def startLYTElementTransform(self, element: Any, tool: str, x: float, y: float):
-        if element in self.lyt_objects:
-            self.selection = [self.lyt_objects[element]]
-            self.movingInstance = tool == "move"
-            self.rotatingInstance = tool == "rotate"
-            self.movingInstanceStartPos = self.screenToWorld(x, y)
-
-    def updateLYTElementTransform(self, x: float, y: float):
-        if self.selection and (self.movingInstance or self.rotatingInstance):
-            current_pos = self.screenToWorld(x, y)
-            delta = current_pos - self.movingInstanceStartPos
-            for obj in self.selection:
-                if self.movingInstance:
-                    obj.set_position(obj.position().x + delta.x, obj.position().y + delta.y, obj.position().z)
-                elif self.rotatingInstance:
-                    # Implement rotation logic here
-                    pass
-
-    def endLYTElementTransform(self) -> Vector3:
-        self.movingInstance = False
-        self.rotatingInstance = False
-        if self.selection:
-            return Vector3(self.selection[0].position().x, self.selection[0].position().y, self.selection[0].position().z)
-        return Vector3(0, 0, 0)
-
-    def updateLYTElementTexture(self, element: Any, texture_name: str):
-        if element in self.lyt_objects:
-            render_object = self.lyt_objects[element]
-            render_object.override_texture = texture_name
-
     def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -258,38 +218,29 @@ class Scene:
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
-    def process_texture_task(self, task: tuple[str, bool]):
-        name, is_lightmap = task
-        tpc = self.fetch_texture_data(name, lightmap=is_lightmap)
-        self.textures_data_queue.put((name, tpc, is_lightmap))
 
-    def process_model_task(self, name: str):
-        model = self.fetch_model_data(name)
-        with self.models_data_lock:
-            self.models_data_queue[name] = (name, model)
+    def getCreatureRenderObject(
+        self,
+        instance: GITCreature,
+        utc: UTC | None = None,
+    ) -> RenderObject:
+        """Generates a render object for a creature instance.
 
-    def fetch_texture_data(self, name: str, *, lightmap: bool = False) -> TPC | None:
-        type_name = "lightmap" if lightmap else "texture"
-        try:
-            tpc: TPC | None = None
-            if self._module is not None:
-                RobustLogger().debug(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
-                module_tex = self.module.texture(name)
-                if module_tex is not None:
-                    RobustLogger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
-                    tpc = module_tex.resource()
+        Args:
+        ----
+            instance: {Creature instance}: Creature instance to generate render object for
+            utc: {Optional timestamp}: Timestamp to use for generation or current time if None
 
-            if tpc is None and self.installation:
-                RobustLogger().debug(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
-                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
-            if tpc is None:
-                RobustLogger().warning(f"MISSING {type_name.upper()}: '%s'", name)
-        except Exception:  # noqa: BLE001
-            RobustLogger().exception("Exception thrown while loading %s.", type_name)
-            tpc = TPC()
-        return tpc
+        Returns:
+        -------
+            RenderObject: Render object representing the creature
 
-    def getCreatureRenderObject(self, instance: GITCreature, utc: UTC | None = None) -> RenderObject:
+        Processing Logic:
+        ----------------
+            - Gets body, head, weapon and mask models/textures based on creature appearance
+            - Creates base render object and attaches head, hands and mask sub-objects
+            - Catches exceptions and returns default "unknown" render object if model loading fails.
+        """
         assert self.installation is not None
         try:
             if utc is None:
@@ -359,7 +310,12 @@ class Scene:
 
         return obj
 
-    def _transform_hand(self, modelname: str, hook: Node, obj: RenderObject):
+    def _transform_hand(
+        self,
+        modelname: str,
+        hook: Node,
+        obj: RenderObject,
+    ):
         rhand_obj = RenderObject(modelname)
         rhand_obj.set_transform(hook.global_transform())
         obj.children.append(rhand_obj)
@@ -396,7 +352,11 @@ class Scene:
             return None
         return git_resource
 
-    def _resource_from_gitinstance(self, instance: GITInstance, lookup_func: Callable[..., ModuleResource[T] | None]) -> T | None:
+    def _resource_from_gitinstance(
+        self,
+        instance: GITInstance,
+        lookup_func: Callable[..., ModuleResource[T] | None],
+    ) -> T | None:
         resource = lookup_func(str(instance.resref))
         if resource is None:
             RobustLogger().error(f"The module '{self.module.root()}' does not store '{instance.identifier()}' needed to render a Scene.")
@@ -407,7 +367,24 @@ class Scene:
             return None
         return resource_data
 
-    def buildCache(self, *, clear_cache: bool = False):
+    def buildCache(
+        self,
+        *,
+        clear_cache: bool = False,
+    ):
+        """Builds and caches game objects from the module.
+
+        Args:
+        ----
+            clear_cache (bool): Whether to clear the existing cache
+
+        Processing Logic:
+        ----------------
+            - Clear existing cache if clear_cache is True
+            - Delete objects matching identifiers in clearCacheBuffer
+            - Retrieve/update game objects from module
+            - Add/update objects in cache..
+        """
         if self._module is None:
             return
 
@@ -557,35 +534,6 @@ class Scene:
         for obj in copy(self.objects):
             self._del_git_objects(obj, self.git, self.objects)
 
-        if self.layout:
-            self.build_lyt_cache()
-
-    def build_lyt_cache(self):
-        if self.layout is None:
-            return
-
-        for room in self.layout.rooms:
-            if room not in self.lyt_objects:
-                position = vec3(room.position.x, room.position.y, room.position.z)
-                self.lyt_objects[room] = RenderObject("lyt_room", position, data=room)
-
-        for track in self.layout.tracks:
-            if track not in self.lyt_objects:
-                start = vec3(track.start.x, track.start.y, track.start.z)
-                end = vec3(track.end.x, track.end.y, track.end.z)
-                self.lyt_objects[track] = RenderObject("lyt_track", start, data=track)
-                self.lyt_objects[track].end_position = end
-
-        for obstacle in self.layout.obstacles:
-            if obstacle not in self.lyt_objects:
-                position = vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z)
-                self.lyt_objects[obstacle] = RenderObject("lyt_obstacle", position, data=obstacle)
-
-        for doorhook in self.layout.doorhooks:
-            if doorhook not in self.lyt_objects:
-                position = vec3(doorhook.position.x, doorhook.position.y, doorhook.position.z)
-                self.lyt_objects[doorhook] = RenderObject("lyt_doorhook", position, data=doorhook)
-
     def _fetch2da(self, resname: str, installation: Installation) -> ResourceResult:
         result = installation.resource(resname, ResourceType.TwoDA, SEARCH_ORDER_2DA)
         if result is None:
@@ -593,7 +541,11 @@ class Scene:
         return result
 
     @staticmethod
-    def _del_git_objects(obj: GITInstance | LYTRoom, git: GIT, objects: dict[GITInstance | LYTRoom, RenderObject]):
+    def _del_git_objects(
+        obj: GITInstance | LYTRoom,
+        git: GIT,
+        objects: dict[GITInstance | LYTRoom, RenderObject],
+    ):
         if isinstance(obj, GITCreature) and obj not in git.creatures:
             del objects[obj]
         if isinstance(obj, GITPlaceable) and obj not in git.placeables:
@@ -688,54 +640,16 @@ class Scene:
             self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
             self._render_object(self.plain_shader, self.cursor, mat4())
 
-        if self.show_lyt:
-            self.render_lyt()
-
-    def render_lyt(self):
-        self.plain_shader.use()
-        self.plain_shader.set_matrix4("view", self.camera.view())
-        self.plain_shader.set_matrix4("projection", self.camera.projection())
-
-        # Render rooms
-        self.plain_shader.set_vector4("color", vec4(0.5, 0.5, 1.0, 0.3))  # Semi-transparent blue
-        for obj in self.lyt_objects.values():
-            if obj.model == "lyt_room":
-                room: LYTRoom = obj.data
-                cube = Cube(self, obj.position(), room.size)
-                cube.draw(self.plain_shader, obj.transform())
-
-        # Render tracks
-        self.plain_shader.set_vector4("color", vec4(1.0, 0.5, 0.5, 1.0))  # Red
-        for obj in self.lyt_objects.values():
-            if obj.model == "lyt_track":
-                line = Line(self, obj.position(), obj.end_position)
-                line.draw(self.plain_shader, obj.transform())
-
-        # Render obstacles
-        self.plain_shader.set_vector4("color", vec4(1.0, 1.0, 0.0, 0.7))  # Yellow
-        for obj in self.lyt_objects.values():
-            if obj.model == "lyt_obstacle":
-                sphere = Sphere(self, obj.position(), 0.5)  # Assuming a radius of 0.5
-                sphere.draw(self.plain_shader, obj.transform())
-
-        # Render doorhooks
-        self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.7))  # Green
-        for obj in self.lyt_objects.values():
-            if obj.model == "lyt_doorhook":
-                cube = Cube(self, obj.position(), (1, 1, 2))  # Assuming a size for visualization
-                cube.draw(self.plain_shader, obj.transform())
-
-    def toggle_lyt_visualization(self):
-        self.show_lyt = not self.show_lyt
-
     def update_textures(self):
         """Create OpenGL textures from data loaded in background."""
         with self.textures_data_lock:
-            while not self.textures_data_queue.empty():
-                name, tpc, is_lightmap = self.textures_data_queue.get()
+            for name, result in list(self.textures_data_queue.items()):
+                if result is None:  # still processing...
+                    continue
+                tpc, is_lightmap = result
                 if name in self.textures:
                     continue  # Skip if already created
-                if tpc is None:  # Use blank texture if loading failed
+                if tpc is None:
                     if self.blank_lightmap is None or self.blank_texture is None:
                         return
                     self.textures[name] = self.blank_lightmap if is_lightmap else self.blank_texture
@@ -820,13 +734,22 @@ class Scene:
         for child in obj.children:
             self._picker_render_object(child, obj.transform())
 
-    def pick(self, x: float, y: float) -> RenderObject | None:
+    def pick(
+        self,
+        x: float,
+        y: float,
+    ) -> RenderObject | None:
         self.picker_render()
         pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
         instances = list(self.objects.values())
         return instances[pixel] if pixel != 0xFFFFFF else None  # noqa: PLR2004
 
-    def select(self, target: RenderObject | GITInstance, *, clear_existing: bool = True):
+    def select(
+        self,
+        target: RenderObject | GITInstance,
+        *,
+        clear_existing: bool = True,
+    ):
         if clear_existing:
             self.selection.clear()
 
@@ -869,13 +792,19 @@ class Scene:
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
 
-    def loadTexture(self, name: str, *, lightmap: bool = False):
+    def loadTexture(
+        self,
+        name: str,
+        *,
+        lightmap: bool = False,
+    ):
         """Load texture data asynchronously."""
         if name in self.textures:
             return self.textures[name]
-        if self.texture_task_queue.qsize() < 100:  # Limit queue size to prevent memory issues
-            self.texture_task_queue.put((name, lightmap))
-        RobustLogger().debug(f"Queued texture load task for {name}")
+        with self.textures_data_lock:
+            if name in self.textures_data_queue:
+                return self.blank_lightmap if lightmap else self.blank_texture
+        self.executor.submit(self.fetch_texture_data, name, lightmap=lightmap)
         return self.blank_lightmap if lightmap else self.blank_texture
 
     def loadModel(self, name: str) -> Model:
@@ -883,22 +812,31 @@ class Scene:
         if name in self.models:
             return self.models[name]
         with self.models_data_lock:
-            RobustLogger().debug(f"Offloading {name}.mdl")
-            self.model_task_queue.put(name)
+            if name not in self.models_data_queue:
+                RobustLogger().debug(f"Offloading {name}.mdl")
+                self.executor.submit(self.fetch_model_data, name)
         return gl_load_stitched_model(
             self,
             BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
             BinaryReader.from_bytes(EMPTY_MDX_DATA),
         )
 
-    def fetch_model_data(self, name: str):
+    def fetch_model_data(
+        self,
+        name: str,
+    ):
         """This function runs in a background thread and handles the I/O and processing to get the model data.
 
         Currently unused.
         """
-        if name in self.models:
-            return
-        self.models_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
+        RobustLogger().debug(f"async queue {name}.mdl call")
+        mdl_data = EMPTY_MDL_DATA
+        mdx_data = EMPTY_MDX_DATA
+
+        with self.models_data_lock:
+            if name in self.models_data_queue:
+                return
+            self.models_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
         if name == "waypoint":
             mdl_data = WAYPOINT_MDL_DATA
             mdx_data = WAYPOINT_MDX_DATA
@@ -934,7 +872,7 @@ class Scene:
             mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER)
             if mdl_search is not None and mdx_search is not None and mdl_search.data:
                 mdl_data: bytes = mdl_search.data
-                mdx_data: bytes = mdx_search.data or b""
+                mdx_data: bytes = mdx_search.data
             try:
                 print(f"update from queue: {name}.mdl")
                 mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
@@ -948,7 +886,10 @@ class Scene:
                     BinaryReader.from_bytes(EMPTY_MDX_DATA),
                 )
 
-        return model
+        with self.models_data_lock:
+            RobustLogger().debug("async finally queue model data to load.")
+            self.models_data_queue[name] = (name, model)
+
     def model(self, name: str) -> Model:
         mdl_data = EMPTY_MDL_DATA
         mdx_data = EMPTY_MDX_DATA
@@ -1007,6 +948,41 @@ class Scene:
             self.models[name] = model
         return self.models[name]
 
+    def fetch_texture_data(
+        self,
+        name: str,
+        *,
+        lightmap: bool = False,
+    ):
+        """This function runs in a background thread and handles the I/O and processing to get the texture data."""
+        with self.textures_data_lock:
+            if name in self.textures_data_queue:
+                return
+            self.textures_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
+        type_name = "lightmap" if lightmap else "texture"
+        try:
+            tpc: TPC | None = None
+            # Check the textures linked to the module first
+            if self._module is not None:
+                RobustLogger().debug(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
+                module_tex = self.module.texture(name)
+                if module_tex is not None:
+                    RobustLogger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
+                    tpc = module_tex.resource()
+
+            # Otherwise just search through all relevant game files
+            if tpc is None and self.installation:
+                RobustLogger().debug(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
+                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+            if tpc is None:
+                RobustLogger().warning(f"MISSING {type_name.upper()}: '%s'", name)
+        except Exception:  # noqa: BLE001
+            RobustLogger().exception("Exception thrown while loading %s.", type_name)
+            # If an error occurs during the loading process, just use a blank image.
+            tpc = TPC()
+
+        with self.textures_data_lock:
+            self.textures_data_queue[name] = (tpc or TPC(), lightmap)
 
     def jump_to_entry_location(self):
         if self._module is None:
@@ -1021,7 +997,16 @@ class Scene:
 
 
 class RenderObject:
-    def __init__(self, model: str, position: vec3 | None = None, rotation: vec3 | None = None, *, data: Any = None, gen_boundary: Callable[[], Boundary] | None = None, override_texture: str | None = None):
+    def __init__(
+        self,
+        model: str,
+        position: vec3 | None = None,
+        rotation: vec3 | None = None,
+        *,
+        data: Any = None,
+        gen_boundary: Callable[[], Boundary] | None = None,
+        override_texture: str | None = None,
+    ):
         self.model: str = model
         self.children: list[RenderObject] = []
         self._transform: mat4 = mat4()
@@ -1090,7 +1075,14 @@ class RenderObject:
             abs(cube.max_point.z),
         )
 
-    def _cube_rec(self, scene: Scene, transform: mat4, obj: RenderObject, min_point: vec3, max_point: vec3):
+    def _cube_rec(
+        self,
+        scene: Scene,
+        transform: mat4,
+        obj: RenderObject,
+        min_point: vec3,
+        max_point: vec3,
+    ):
         obj_min, obj_max = scene.model(obj.model).box()
         obj_min = transform * obj_min
         obj_max = transform * obj_max
@@ -1185,7 +1177,15 @@ class Camera:
         self.y += translation.y
         self.z += translation.z
 
-    def rotate(self, yaw: float, pitch: float, *, clamp: bool = False, lower_limit: float = 0, upper_limit: float = math.pi):
+    def rotate(
+        self,
+        yaw: float,
+        pitch: float,
+        *,
+        clamp: bool = False,
+        lower_limit: float = 0,
+        upper_limit: float = math.pi,
+    ):
         """Rotates the object by yaw and pitch angles.
 
         Args:
@@ -1237,6 +1237,7 @@ class Camera:
             #RobustLogger.debug(f"Avoiding {'positive' if pitch > 0 else 'negative'} pitch gimbal lock. pitch: {self.pitch}, deltaPitch: {pitch}")
         #else:
             #RobustLogger.debug(f"New rotation yaw: {self.yaw}, pitch: {self.pitch}, deltaPitch: {pitch}")
+
 
 
     def forward(self, *, ignore_z: bool = True) -> vec3:

@@ -33,7 +33,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1286, 694)
+        MainWindow.resize(944, 819)
         MainWindow.setMouseTracking(True)
         MainWindow.setDockNestingEnabled(True)
         self.actionNew = QAction(MainWindow)
@@ -74,111 +74,6 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_main.addLayout(self.horizontalLayout_main)
 
-        self.gridLayout = QGridLayout()
-        self.gridLayout.setObjectName(u"gridLayout")
-        self.gridLayout.setHorizontalSpacing(5)
-        self.gridLayout.setContentsMargins(3, 0, 3, 0)
-        self.questEdit = QLineEdit(self.centralwidget)
-        self.questEdit.setObjectName(u"questEdit")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.questEdit.sizePolicy().hasHeightForWidth())
-        self.questEdit.setSizePolicy(sizePolicy)
-        self.questEdit.setMinimumSize(QSize(150, 0))
-        self.questEdit.setMaximumSize(QSize(250, 16777215))
-
-        self.gridLayout.addWidget(self.questEdit, 0, 3, 1, 1)
-
-        self.plotXpSpin = QDoubleSpinBox(self.centralwidget)
-        self.plotXpSpin.setObjectName(u"plotXpSpin")
-        sizePolicy.setHeightForWidth(self.plotXpSpin.sizePolicy().hasHeightForWidth())
-        self.plotXpSpin.setSizePolicy(sizePolicy)
-        self.plotXpSpin.setMinimumSize(QSize(150, 0))
-        self.plotXpSpin.setMaximumSize(QSize(250, 16777215))
-
-        self.gridLayout.addWidget(self.plotXpSpin, 2, 1, 1, 1)
-
-        self.questEntryLabel = QLabel(self.centralwidget)
-        self.questEntryLabel.setObjectName(u"questEntryLabel")
-
-        self.gridLayout.addWidget(self.questEntryLabel, 1, 2, 1, 1, Qt.AlignRight)
-
-        self.questLabel = QLabel(self.centralwidget)
-        self.questLabel.setObjectName(u"questLabel")
-
-        self.gridLayout.addWidget(self.questLabel, 0, 2, 1, 1, Qt.AlignRight)
-
-        self.listenerEdit = QLineEdit(self.centralwidget)
-        self.listenerEdit.setObjectName(u"listenerEdit")
-        sizePolicy.setHeightForWidth(self.listenerEdit.sizePolicy().hasHeightForWidth())
-        self.listenerEdit.setSizePolicy(sizePolicy)
-        self.listenerEdit.setMinimumSize(QSize(150, 0))
-        self.listenerEdit.setMaximumSize(QSize(250, 16777215))
-
-        self.gridLayout.addWidget(self.listenerEdit, 0, 1, 1, 1)
-
-        self.listenerTagLabel = QLabel(self.centralwidget)
-        self.listenerTagLabel.setObjectName(u"listenerTagLabel")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.listenerTagLabel.sizePolicy().hasHeightForWidth())
-        self.listenerTagLabel.setSizePolicy(sizePolicy1)
-
-        self.gridLayout.addWidget(self.listenerTagLabel, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.speakerEdit = QLineEdit(self.centralwidget)
-        self.speakerEdit.setObjectName(u"speakerEdit")
-        sizePolicy.setHeightForWidth(self.speakerEdit.sizePolicy().hasHeightForWidth())
-        self.speakerEdit.setSizePolicy(sizePolicy)
-        self.speakerEdit.setMinimumSize(QSize(150, 0))
-        self.speakerEdit.setMaximumSize(QSize(250, 16777215))
-
-        self.gridLayout.addWidget(self.speakerEdit, 1, 1, 1, 1)
-
-        self.questEntrySpin = GFFFieldSpinBox(self.centralwidget)
-        self.questEntrySpin.setObjectName(u"questEntrySpin")
-        self.questEntrySpin.setMinimumSize(QSize(150, 0))
-        self.questEntrySpin.setMaximumSize(QSize(250, 16777215))
-
-        self.gridLayout.addWidget(self.questEntrySpin, 1, 3, 1, 1)
-
-        self.speakerEditLabel = QLabel(self.centralwidget)
-        self.speakerEditLabel.setObjectName(u"speakerEditLabel")
-
-        self.gridLayout.addWidget(self.speakerEditLabel, 1, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.plotXpPercentLabel = QLabel(self.centralwidget)
-        self.plotXpPercentLabel.setObjectName(u"plotXpPercentLabel")
-
-        self.gridLayout.addWidget(self.plotXpPercentLabel, 2, 0, 1, 1, Qt.AlignRight)
-
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout.addItem(self.horizontalSpacer, 1, 4, 1, 1)
-
-        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout.addItem(self.horizontalSpacer_2, 0, 4, 1, 1)
-
-        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.gridLayout.addItem(self.horizontalSpacer_3, 2, 4, 1, 1)
-
-        self.plotIndexLabel = QLabel(self.centralwidget)
-        self.plotIndexLabel.setObjectName(u"plotIndexLabel")
-
-        self.gridLayout.addWidget(self.plotIndexLabel, 2, 2, 1, 1, Qt.AlignRight)
-
-        self.plotIndexCombo = ComboBox2DA(self.centralwidget)
-        self.plotIndexCombo.setObjectName(u"plotIndexCombo")
-
-        self.gridLayout.addWidget(self.plotIndexCombo, 2, 3, 1, 1)
-
-
-        self.verticalLayout_main.addLayout(self.gridLayout)
-
         MainWindow.setCentralWidget(self.centralwidget)
         self.rightDockWidget = QDockWidget(MainWindow)
         self.rightDockWidget.setObjectName(u"rightDockWidget")
@@ -191,7 +86,7 @@ class Ui_MainWindow(object):
         self.scrollArea_rightDock.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 449, 903))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 302, 903))
         self.verticalLayout_rightDock = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_rightDock.setSpacing(0)
         self.verticalLayout_rightDock.setObjectName(u"verticalLayout_rightDock")
@@ -210,11 +105,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.script1Label = QLabel(self.scrollAreaWidgetContents)
         self.script1Label.setObjectName(u"script1Label")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.script1Label.sizePolicy().hasHeightForWidth())
-        self.script1Label.setSizePolicy(sizePolicy2)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.script1Label.sizePolicy().hasHeightForWidth())
+        self.script1Label.setSizePolicy(sizePolicy)
         self.script1Label.setMinimumSize(QSize(100, 0))
         self.script1Label.setAlignment(Qt.AlignCenter)
 
@@ -222,11 +117,11 @@ class Ui_MainWindow(object):
 
         self.script1ResrefEdit = FilterComboBox(self.scrollAreaWidgetContents)
         self.script1ResrefEdit.setObjectName(u"script1ResrefEdit")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        sizePolicy3.setHorizontalStretch(0)
-        sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.script1ResrefEdit.sizePolicy().hasHeightForWidth())
-        self.script1ResrefEdit.setSizePolicy(sizePolicy3)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.script1ResrefEdit.sizePolicy().hasHeightForWidth())
+        self.script1ResrefEdit.setSizePolicy(sizePolicy1)
         self.script1ResrefEdit.setMinimumSize(QSize(150, 0))
         self.script1ResrefEdit.setMaximumSize(QSize(16777215, 16777215))
 
@@ -244,8 +139,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_script1Params.setObjectName(u"horizontalLayout_script1Params")
         self.script1Param1Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param1Spin.setObjectName(u"script1Param1Spin")
-        sizePolicy3.setHeightForWidth(self.script1Param1Spin.sizePolicy().hasHeightForWidth())
-        self.script1Param1Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.script1Param1Spin.sizePolicy().hasHeightForWidth())
+        self.script1Param1Spin.setSizePolicy(sizePolicy1)
         self.script1Param1Spin.setMinimumSize(QSize(30, 0))
         self.script1Param1Spin.setMinimum(-2147483648)
         self.script1Param1Spin.setMaximum(2147483647)
@@ -254,8 +149,8 @@ class Ui_MainWindow(object):
 
         self.script1Param2Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param2Spin.setObjectName(u"script1Param2Spin")
-        sizePolicy3.setHeightForWidth(self.script1Param2Spin.sizePolicy().hasHeightForWidth())
-        self.script1Param2Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.script1Param2Spin.sizePolicy().hasHeightForWidth())
+        self.script1Param2Spin.setSizePolicy(sizePolicy1)
         self.script1Param2Spin.setMinimumSize(QSize(30, 0))
         self.script1Param2Spin.setMinimum(-2147483648)
         self.script1Param2Spin.setMaximum(2147483647)
@@ -264,8 +159,8 @@ class Ui_MainWindow(object):
 
         self.script1Param3Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param3Spin.setObjectName(u"script1Param3Spin")
-        sizePolicy3.setHeightForWidth(self.script1Param3Spin.sizePolicy().hasHeightForWidth())
-        self.script1Param3Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.script1Param3Spin.sizePolicy().hasHeightForWidth())
+        self.script1Param3Spin.setSizePolicy(sizePolicy1)
         self.script1Param3Spin.setMinimumSize(QSize(30, 0))
         self.script1Param3Spin.setMinimum(-2147483648)
         self.script1Param3Spin.setMaximum(2147483647)
@@ -274,8 +169,8 @@ class Ui_MainWindow(object):
 
         self.script1Param4Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param4Spin.setObjectName(u"script1Param4Spin")
-        sizePolicy3.setHeightForWidth(self.script1Param4Spin.sizePolicy().hasHeightForWidth())
-        self.script1Param4Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.script1Param4Spin.sizePolicy().hasHeightForWidth())
+        self.script1Param4Spin.setSizePolicy(sizePolicy1)
         self.script1Param4Spin.setMinimumSize(QSize(30, 0))
         self.script1Param4Spin.setMinimum(-2147483648)
         self.script1Param4Spin.setMaximum(2147483647)
@@ -284,11 +179,11 @@ class Ui_MainWindow(object):
 
         self.script1Param5Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param5Spin.setObjectName(u"script1Param5Spin")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.script1Param5Spin.sizePolicy().hasHeightForWidth())
-        self.script1Param5Spin.setSizePolicy(sizePolicy4)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.script1Param5Spin.sizePolicy().hasHeightForWidth())
+        self.script1Param5Spin.setSizePolicy(sizePolicy2)
         self.script1Param5Spin.setMaximumSize(QSize(85, 16777215))
 
         self.horizontalLayout_script1Params.addWidget(self.script1Param5Spin)
@@ -299,11 +194,11 @@ class Ui_MainWindow(object):
 
         self.script1Param6Edit = QLineEdit(self.scrollAreaWidgetContents)
         self.script1Param6Edit.setObjectName(u"script1Param6Edit")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        sizePolicy5.setHorizontalStretch(0)
-        sizePolicy5.setVerticalStretch(0)
-        sizePolicy5.setHeightForWidth(self.script1Param6Edit.sizePolicy().hasHeightForWidth())
-        self.script1Param6Edit.setSizePolicy(sizePolicy5)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.script1Param6Edit.sizePolicy().hasHeightForWidth())
+        self.script1Param6Edit.setSizePolicy(sizePolicy3)
         self.script1Param6Edit.setMinimumSize(QSize(0, 0))
 
         self.horizontalLayout_script1Params.addWidget(self.script1Param6Edit)
@@ -316,8 +211,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.script2Label = QLabel(self.scrollAreaWidgetContents)
         self.script2Label.setObjectName(u"script2Label")
-        sizePolicy2.setHeightForWidth(self.script2Label.sizePolicy().hasHeightForWidth())
-        self.script2Label.setSizePolicy(sizePolicy2)
+        sizePolicy.setHeightForWidth(self.script2Label.sizePolicy().hasHeightForWidth())
+        self.script2Label.setSizePolicy(sizePolicy)
         self.script2Label.setMinimumSize(QSize(100, 0))
         self.script2Label.setAlignment(Qt.AlignCenter)
 
@@ -342,8 +237,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_script2Params.setObjectName(u"horizontalLayout_script2Params")
         self.script2Param1Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param1Spin.setObjectName(u"script2Param1Spin")
-        sizePolicy3.setHeightForWidth(self.script2Param1Spin.sizePolicy().hasHeightForWidth())
-        self.script2Param1Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.script2Param1Spin.sizePolicy().hasHeightForWidth())
+        self.script2Param1Spin.setSizePolicy(sizePolicy1)
         self.script2Param1Spin.setMinimumSize(QSize(30, 0))
         self.script2Param1Spin.setMinimum(-2147483648)
         self.script2Param1Spin.setMaximum(2147483647)
@@ -352,8 +247,8 @@ class Ui_MainWindow(object):
 
         self.script2Param2Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param2Spin.setObjectName(u"script2Param2Spin")
-        sizePolicy3.setHeightForWidth(self.script2Param2Spin.sizePolicy().hasHeightForWidth())
-        self.script2Param2Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.script2Param2Spin.sizePolicy().hasHeightForWidth())
+        self.script2Param2Spin.setSizePolicy(sizePolicy1)
         self.script2Param2Spin.setMinimumSize(QSize(30, 0))
         self.script2Param2Spin.setMinimum(-2147483648)
         self.script2Param2Spin.setMaximum(2147483647)
@@ -362,8 +257,8 @@ class Ui_MainWindow(object):
 
         self.script2Param3Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param3Spin.setObjectName(u"script2Param3Spin")
-        sizePolicy3.setHeightForWidth(self.script2Param3Spin.sizePolicy().hasHeightForWidth())
-        self.script2Param3Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.script2Param3Spin.sizePolicy().hasHeightForWidth())
+        self.script2Param3Spin.setSizePolicy(sizePolicy1)
         self.script2Param3Spin.setMinimumSize(QSize(30, 0))
         self.script2Param3Spin.setMinimum(-2147483648)
         self.script2Param3Spin.setMaximum(2147483647)
@@ -372,8 +267,8 @@ class Ui_MainWindow(object):
 
         self.script2Param4Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param4Spin.setObjectName(u"script2Param4Spin")
-        sizePolicy3.setHeightForWidth(self.script2Param4Spin.sizePolicy().hasHeightForWidth())
-        self.script2Param4Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.script2Param4Spin.sizePolicy().hasHeightForWidth())
+        self.script2Param4Spin.setSizePolicy(sizePolicy1)
         self.script2Param4Spin.setMinimumSize(QSize(30, 0))
         self.script2Param4Spin.setMinimum(-2147483648)
         self.script2Param4Spin.setMaximum(2147483647)
@@ -382,8 +277,8 @@ class Ui_MainWindow(object):
 
         self.script2Param5Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param5Spin.setObjectName(u"script2Param5Spin")
-        sizePolicy3.setHeightForWidth(self.script2Param5Spin.sizePolicy().hasHeightForWidth())
-        self.script2Param5Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.script2Param5Spin.sizePolicy().hasHeightForWidth())
+        self.script2Param5Spin.setSizePolicy(sizePolicy1)
         self.script2Param5Spin.setMinimumSize(QSize(30, 0))
         self.script2Param5Spin.setMinimum(-2147483648)
         self.script2Param5Spin.setMaximum(2147483647)
@@ -396,8 +291,8 @@ class Ui_MainWindow(object):
 
         self.script2Param6Edit = QLineEdit(self.scrollAreaWidgetContents)
         self.script2Param6Edit.setObjectName(u"script2Param6Edit")
-        sizePolicy5.setHeightForWidth(self.script2Param6Edit.sizePolicy().hasHeightForWidth())
-        self.script2Param6Edit.setSizePolicy(sizePolicy5)
+        sizePolicy3.setHeightForWidth(self.script2Param6Edit.sizePolicy().hasHeightForWidth())
+        self.script2Param6Edit.setSizePolicy(sizePolicy3)
 
         self.horizontalLayout_script2Params.addWidget(self.script2Param6Edit)
 
@@ -415,8 +310,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.conditional1Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional1Label.setObjectName(u"conditional1Label")
-        sizePolicy2.setHeightForWidth(self.conditional1Label.sizePolicy().hasHeightForWidth())
-        self.conditional1Label.setSizePolicy(sizePolicy2)
+        sizePolicy.setHeightForWidth(self.conditional1Label.sizePolicy().hasHeightForWidth())
+        self.conditional1Label.setSizePolicy(sizePolicy)
         self.conditional1Label.setMinimumSize(QSize(100, 0))
 
         self.horizontalLayout_3.addWidget(self.conditional1Label)
@@ -445,8 +340,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_condition1Params.setObjectName(u"horizontalLayout_condition1Params")
         self.condition1Param1Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param1Spin.setObjectName(u"condition1Param1Spin")
-        sizePolicy3.setHeightForWidth(self.condition1Param1Spin.sizePolicy().hasHeightForWidth())
-        self.condition1Param1Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition1Param1Spin.sizePolicy().hasHeightForWidth())
+        self.condition1Param1Spin.setSizePolicy(sizePolicy1)
         self.condition1Param1Spin.setMinimumSize(QSize(30, 0))
         self.condition1Param1Spin.setMinimum(-2147483648)
         self.condition1Param1Spin.setMaximum(2147483647)
@@ -455,8 +350,8 @@ class Ui_MainWindow(object):
 
         self.condition1Param2Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param2Spin.setObjectName(u"condition1Param2Spin")
-        sizePolicy3.setHeightForWidth(self.condition1Param2Spin.sizePolicy().hasHeightForWidth())
-        self.condition1Param2Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition1Param2Spin.sizePolicy().hasHeightForWidth())
+        self.condition1Param2Spin.setSizePolicy(sizePolicy1)
         self.condition1Param2Spin.setMinimumSize(QSize(30, 0))
         self.condition1Param2Spin.setMinimum(-2147483648)
         self.condition1Param2Spin.setMaximum(2147483647)
@@ -465,8 +360,8 @@ class Ui_MainWindow(object):
 
         self.condition1Param3Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param3Spin.setObjectName(u"condition1Param3Spin")
-        sizePolicy3.setHeightForWidth(self.condition1Param3Spin.sizePolicy().hasHeightForWidth())
-        self.condition1Param3Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition1Param3Spin.sizePolicy().hasHeightForWidth())
+        self.condition1Param3Spin.setSizePolicy(sizePolicy1)
         self.condition1Param3Spin.setMinimumSize(QSize(30, 0))
         self.condition1Param3Spin.setMinimum(-2147483648)
         self.condition1Param3Spin.setMaximum(2147483647)
@@ -475,8 +370,8 @@ class Ui_MainWindow(object):
 
         self.condition1Param4Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param4Spin.setObjectName(u"condition1Param4Spin")
-        sizePolicy3.setHeightForWidth(self.condition1Param4Spin.sizePolicy().hasHeightForWidth())
-        self.condition1Param4Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition1Param4Spin.sizePolicy().hasHeightForWidth())
+        self.condition1Param4Spin.setSizePolicy(sizePolicy1)
         self.condition1Param4Spin.setMinimumSize(QSize(30, 0))
         self.condition1Param4Spin.setMinimum(-2147483648)
         self.condition1Param4Spin.setMaximum(2147483647)
@@ -485,8 +380,8 @@ class Ui_MainWindow(object):
 
         self.condition1Param5Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param5Spin.setObjectName(u"condition1Param5Spin")
-        sizePolicy3.setHeightForWidth(self.condition1Param5Spin.sizePolicy().hasHeightForWidth())
-        self.condition1Param5Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition1Param5Spin.sizePolicy().hasHeightForWidth())
+        self.condition1Param5Spin.setSizePolicy(sizePolicy1)
         self.condition1Param5Spin.setMinimumSize(QSize(30, 0))
         self.condition1Param5Spin.setMinimum(-2147483648)
         self.condition1Param5Spin.setMaximum(2147483647)
@@ -495,8 +390,8 @@ class Ui_MainWindow(object):
 
         self.condition1Param6Edit = QLineEdit(self.scrollAreaWidgetContents)
         self.condition1Param6Edit.setObjectName(u"condition1Param6Edit")
-        sizePolicy5.setHeightForWidth(self.condition1Param6Edit.sizePolicy().hasHeightForWidth())
-        self.condition1Param6Edit.setSizePolicy(sizePolicy5)
+        sizePolicy3.setHeightForWidth(self.condition1Param6Edit.sizePolicy().hasHeightForWidth())
+        self.condition1Param6Edit.setSizePolicy(sizePolicy3)
 
         self.horizontalLayout_condition1Params.addWidget(self.condition1Param6Edit)
 
@@ -508,8 +403,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.conditional2Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional2Label.setObjectName(u"conditional2Label")
-        sizePolicy2.setHeightForWidth(self.conditional2Label.sizePolicy().hasHeightForWidth())
-        self.conditional2Label.setSizePolicy(sizePolicy2)
+        sizePolicy.setHeightForWidth(self.conditional2Label.sizePolicy().hasHeightForWidth())
+        self.conditional2Label.setSizePolicy(sizePolicy)
         self.conditional2Label.setMinimumSize(QSize(100, 0))
 
         self.horizontalLayout_4.addWidget(self.conditional2Label)
@@ -544,8 +439,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_condition2Params.setObjectName(u"horizontalLayout_condition2Params")
         self.condition2Param1Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param1Spin.setObjectName(u"condition2Param1Spin")
-        sizePolicy3.setHeightForWidth(self.condition2Param1Spin.sizePolicy().hasHeightForWidth())
-        self.condition2Param1Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition2Param1Spin.sizePolicy().hasHeightForWidth())
+        self.condition2Param1Spin.setSizePolicy(sizePolicy1)
         self.condition2Param1Spin.setMinimumSize(QSize(30, 0))
         self.condition2Param1Spin.setMinimum(-2147483648)
         self.condition2Param1Spin.setMaximum(2147483647)
@@ -554,8 +449,8 @@ class Ui_MainWindow(object):
 
         self.condition2Param2Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param2Spin.setObjectName(u"condition2Param2Spin")
-        sizePolicy3.setHeightForWidth(self.condition2Param2Spin.sizePolicy().hasHeightForWidth())
-        self.condition2Param2Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition2Param2Spin.sizePolicy().hasHeightForWidth())
+        self.condition2Param2Spin.setSizePolicy(sizePolicy1)
         self.condition2Param2Spin.setMinimumSize(QSize(30, 0))
         self.condition2Param2Spin.setMinimum(-2147483648)
         self.condition2Param2Spin.setMaximum(2147483647)
@@ -564,8 +459,8 @@ class Ui_MainWindow(object):
 
         self.condition2Param3Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param3Spin.setObjectName(u"condition2Param3Spin")
-        sizePolicy3.setHeightForWidth(self.condition2Param3Spin.sizePolicy().hasHeightForWidth())
-        self.condition2Param3Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition2Param3Spin.sizePolicy().hasHeightForWidth())
+        self.condition2Param3Spin.setSizePolicy(sizePolicy1)
         self.condition2Param3Spin.setMinimumSize(QSize(30, 0))
         self.condition2Param3Spin.setMinimum(-2147483648)
         self.condition2Param3Spin.setMaximum(2147483647)
@@ -574,8 +469,8 @@ class Ui_MainWindow(object):
 
         self.condition2Param4Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param4Spin.setObjectName(u"condition2Param4Spin")
-        sizePolicy3.setHeightForWidth(self.condition2Param4Spin.sizePolicy().hasHeightForWidth())
-        self.condition2Param4Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition2Param4Spin.sizePolicy().hasHeightForWidth())
+        self.condition2Param4Spin.setSizePolicy(sizePolicy1)
         self.condition2Param4Spin.setMinimumSize(QSize(30, 0))
         self.condition2Param4Spin.setMinimum(-2147483648)
         self.condition2Param4Spin.setMaximum(2147483647)
@@ -584,8 +479,8 @@ class Ui_MainWindow(object):
 
         self.condition2Param5Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param5Spin.setObjectName(u"condition2Param5Spin")
-        sizePolicy3.setHeightForWidth(self.condition2Param5Spin.sizePolicy().hasHeightForWidth())
-        self.condition2Param5Spin.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.condition2Param5Spin.sizePolicy().hasHeightForWidth())
+        self.condition2Param5Spin.setSizePolicy(sizePolicy1)
         self.condition2Param5Spin.setMinimumSize(QSize(30, 0))
         self.condition2Param5Spin.setMinimum(-2147483648)
         self.condition2Param5Spin.setMaximum(2147483647)
@@ -594,8 +489,8 @@ class Ui_MainWindow(object):
 
         self.condition2Param6Edit = QLineEdit(self.scrollAreaWidgetContents)
         self.condition2Param6Edit.setObjectName(u"condition2Param6Edit")
-        sizePolicy5.setHeightForWidth(self.condition2Param6Edit.sizePolicy().hasHeightForWidth())
-        self.condition2Param6Edit.setSizePolicy(sizePolicy5)
+        sizePolicy3.setHeightForWidth(self.condition2Param6Edit.sizePolicy().hasHeightForWidth())
+        self.condition2Param6Edit.setSizePolicy(sizePolicy3)
 
         self.horizontalLayout_condition2Params.addWidget(self.condition2Param6Edit)
 
@@ -617,11 +512,11 @@ class Ui_MainWindow(object):
 
         self.animsList = QListWidget(self.scrollAreaWidgetContents)
         self.animsList.setObjectName(u"animsList")
-        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Expanding)
-        sizePolicy6.setHorizontalStretch(0)
-        sizePolicy6.setVerticalStretch(0)
-        sizePolicy6.setHeightForWidth(self.animsList.sizePolicy().hasHeightForWidth())
-        self.animsList.setSizePolicy(sizePolicy6)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Expanding)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.animsList.sizePolicy().hasHeightForWidth())
+        self.animsList.setSizePolicy(sizePolicy4)
 
         self.verticalLayout_anims.addWidget(self.animsList)
 
@@ -678,8 +573,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setContentsMargins(0, 0, -1, -1)
         self.soundLabel = QLabel(self.scrollAreaWidgetContents)
         self.soundLabel.setObjectName(u"soundLabel")
-        sizePolicy3.setHeightForWidth(self.soundLabel.sizePolicy().hasHeightForWidth())
-        self.soundLabel.setSizePolicy(sizePolicy3)
+        sizePolicy1.setHeightForWidth(self.soundLabel.sizePolicy().hasHeightForWidth())
+        self.soundLabel.setSizePolicy(sizePolicy1)
 
         self.verticalLayout_2.addWidget(self.soundLabel, 0, Qt.AlignHCenter)
 
@@ -890,7 +785,7 @@ class Ui_MainWindow(object):
         MainWindow.addDockWidget(Qt.RightDockWidgetArea, self.rightDockWidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1286, 21))
+        self.menubar.setGeometry(QRect(0, 0, 944, 21))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuTools = QMenu(self.menubar)
@@ -900,59 +795,67 @@ class Ui_MainWindow(object):
         self.topDockWidget.setObjectName(u"topDockWidget")
         self.topDockWidget.setBaseSize(QSize(845, 151))
         self.topDockWidget.setFocusPolicy(Qt.StrongFocus)
+        self.topDockWidget.setAllowedAreas(Qt.BottomDockWidgetArea|Qt.TopDockWidgetArea)
         self.topDockWidgetContents = QWidget()
         self.topDockWidgetContents.setObjectName(u"topDockWidgetContents")
-        self.horizontalLayout_13 = QHBoxLayout(self.topDockWidgetContents)
-        self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
-        self.horizontalLayout_13.setSizeConstraint(QLayout.SetMinimumSize)
-        self.horizontalLayout_13.setContentsMargins(9, 0, 0, 0)
-        self.widget = QWidget(self.topDockWidgetContents)
-        self.widget.setObjectName(u"widget")
-        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-        sizePolicy7.setHorizontalStretch(0)
-        sizePolicy7.setVerticalStretch(0)
-        sizePolicy7.setHeightForWidth(self.widget.sizePolicy().hasHeightForWidth())
-        self.widget.setSizePolicy(sizePolicy7)
-        self.widget.setLayoutDirection(Qt.RightToLeft)
-        self.gridLayout_4 = QGridLayout(self.widget)
-        self.gridLayout_4.setObjectName(u"gridLayout_4")
-        self.gridLayout_4.setSizeConstraint(QLayout.SetMinimumSize)
-        self.gridLayout_4.setContentsMargins(0, 0, 10, 0)
-        self.unequipHandsCheckbox = QCheckBox(self.widget)
-        self.unequipHandsCheckbox.setObjectName(u"unequipHandsCheckbox")
+        self.gridLayout_5 = QGridLayout(self.topDockWidgetContents)
+        self.gridLayout_5.setObjectName(u"gridLayout_5")
+        self.verticalLayout = QVBoxLayout()
+        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setSizeConstraint(QLayout.SetMinimumSize)
+        self.verticalLayout.setContentsMargins(2, -1, 2, -1)
+        self.cutsceneModelLabel = QLabel(self.topDockWidgetContents)
+        self.cutsceneModelLabel.setObjectName(u"cutsceneModelLabel")
 
-        self.gridLayout_4.addWidget(self.unequipHandsCheckbox, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.verticalLayout.addWidget(self.cutsceneModelLabel, 0, Qt.AlignHCenter)
 
-        self.unequipAllCheckbox = QCheckBox(self.widget)
-        self.unequipAllCheckbox.setObjectName(u"unequipAllCheckbox")
-        sizePolicy7.setHeightForWidth(self.unequipAllCheckbox.sizePolicy().hasHeightForWidth())
-        self.unequipAllCheckbox.setSizePolicy(sizePolicy7)
+        self.stuntList = QListWidget(self.topDockWidgetContents)
+        self.stuntList.setObjectName(u"stuntList")
 
-        self.gridLayout_4.addWidget(self.unequipAllCheckbox, 1, 0, 1, 1, Qt.AlignLeft|Qt.AlignVCenter)
+        self.verticalLayout.addWidget(self.stuntList)
 
-        self.skippableCheckbox = QCheckBox(self.widget)
-        self.skippableCheckbox.setObjectName(u"skippableCheckbox")
-        sizePolicy7.setHeightForWidth(self.skippableCheckbox.sizePolicy().hasHeightForWidth())
-        self.skippableCheckbox.setSizePolicy(sizePolicy7)
+        self.horizontalLayout_5 = QHBoxLayout()
+        self.horizontalLayout_5.setSpacing(0)
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.horizontalSpacer_10 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.gridLayout_4.addWidget(self.skippableCheckbox, 2, 0, 1, 1, Qt.AlignLeft|Qt.AlignVCenter)
+        self.horizontalLayout_5.addItem(self.horizontalSpacer_10)
 
-        self.animatedCutCheckbox = QCheckBox(self.widget)
-        self.animatedCutCheckbox.setObjectName(u"animatedCutCheckbox")
-        sizePolicy7.setHeightForWidth(self.animatedCutCheckbox.sizePolicy().hasHeightForWidth())
-        self.animatedCutCheckbox.setSizePolicy(sizePolicy7)
+        self.addStuntButton = QPushButton(self.topDockWidgetContents)
+        self.addStuntButton.setObjectName(u"addStuntButton")
+        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        sizePolicy5.setHorizontalStretch(0)
+        sizePolicy5.setVerticalStretch(0)
+        sizePolicy5.setHeightForWidth(self.addStuntButton.sizePolicy().hasHeightForWidth())
+        self.addStuntButton.setSizePolicy(sizePolicy5)
+        self.addStuntButton.setBaseSize(QSize(20, 0))
 
-        self.gridLayout_4.addWidget(self.animatedCutCheckbox, 3, 0, 1, 1, Qt.AlignLeft|Qt.AlignVCenter)
+        self.horizontalLayout_5.addWidget(self.addStuntButton)
 
-        self.oldHitCheckbox = QCheckBox(self.widget)
-        self.oldHitCheckbox.setObjectName(u"oldHitCheckbox")
-        sizePolicy7.setHeightForWidth(self.oldHitCheckbox.sizePolicy().hasHeightForWidth())
-        self.oldHitCheckbox.setSizePolicy(sizePolicy7)
+        self.editStuntButton = QPushButton(self.topDockWidgetContents)
+        self.editStuntButton.setObjectName(u"editStuntButton")
+        sizePolicy5.setHeightForWidth(self.editStuntButton.sizePolicy().hasHeightForWidth())
+        self.editStuntButton.setSizePolicy(sizePolicy5)
 
-        self.gridLayout_4.addWidget(self.oldHitCheckbox, 4, 0, 1, 1, Qt.AlignLeft|Qt.AlignVCenter)
+        self.horizontalLayout_5.addWidget(self.editStuntButton)
+
+        self.removeStuntButton = QPushButton(self.topDockWidgetContents)
+        self.removeStuntButton.setObjectName(u"removeStuntButton")
+        sizePolicy5.setHeightForWidth(self.removeStuntButton.sizePolicy().hasHeightForWidth())
+        self.removeStuntButton.setSizePolicy(sizePolicy5)
+
+        self.horizontalLayout_5.addWidget(self.removeStuntButton)
+
+        self.horizontalSpacer_11 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout_5.addItem(self.horizontalSpacer_11)
 
 
-        self.horizontalLayout_13.addWidget(self.widget)
+        self.verticalLayout.addLayout(self.horizontalLayout_5)
+
+
+        self.gridLayout_5.addLayout(self.verticalLayout, 0, 3, 1, 1)
 
         self.gridLayout_3 = QGridLayout()
         self.gridLayout_3.setObjectName(u"gridLayout_3")
@@ -971,11 +874,11 @@ class Ui_MainWindow(object):
         self.conversationSelect.addItem("")
         self.conversationSelect.addItem("")
         self.conversationSelect.setObjectName(u"conversationSelect")
-        sizePolicy8 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy8.setHorizontalStretch(0)
-        sizePolicy8.setVerticalStretch(0)
-        sizePolicy8.setHeightForWidth(self.conversationSelect.sizePolicy().hasHeightForWidth())
-        self.conversationSelect.setSizePolicy(sizePolicy8)
+        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy6.setHorizontalStretch(0)
+        sizePolicy6.setVerticalStretch(0)
+        sizePolicy6.setHeightForWidth(self.conversationSelect.sizePolicy().hasHeightForWidth())
+        self.conversationSelect.setSizePolicy(sizePolicy6)
 
         self.gridLayout_3.addWidget(self.conversationSelect, 0, 1, 1, 1)
 
@@ -988,8 +891,8 @@ class Ui_MainWindow(object):
         self.computerSelect.addItem("")
         self.computerSelect.addItem("")
         self.computerSelect.setObjectName(u"computerSelect")
-        sizePolicy8.setHeightForWidth(self.computerSelect.sizePolicy().hasHeightForWidth())
-        self.computerSelect.setSizePolicy(sizePolicy8)
+        sizePolicy6.setHeightForWidth(self.computerSelect.sizePolicy().hasHeightForWidth())
+        self.computerSelect.setSizePolicy(sizePolicy6)
 
         self.gridLayout_3.addWidget(self.computerSelect, 1, 1, 1, 1)
 
@@ -1000,8 +903,8 @@ class Ui_MainWindow(object):
 
         self.replyDelaySpin = GFFFieldSpinBox(self.topDockWidgetContents)
         self.replyDelaySpin.setObjectName(u"replyDelaySpin")
-        sizePolicy8.setHeightForWidth(self.replyDelaySpin.sizePolicy().hasHeightForWidth())
-        self.replyDelaySpin.setSizePolicy(sizePolicy8)
+        sizePolicy6.setHeightForWidth(self.replyDelaySpin.sizePolicy().hasHeightForWidth())
+        self.replyDelaySpin.setSizePolicy(sizePolicy6)
         self.replyDelaySpin.setMinimum(-2147483648)
         self.replyDelaySpin.setMaximum(2147483647)
 
@@ -1014,8 +917,8 @@ class Ui_MainWindow(object):
 
         self.entryDelaySpin = GFFFieldSpinBox(self.topDockWidgetContents)
         self.entryDelaySpin.setObjectName(u"entryDelaySpin")
-        sizePolicy8.setHeightForWidth(self.entryDelaySpin.sizePolicy().hasHeightForWidth())
-        self.entryDelaySpin.setSizePolicy(sizePolicy8)
+        sizePolicy6.setHeightForWidth(self.entryDelaySpin.sizePolicy().hasHeightForWidth())
+        self.entryDelaySpin.setSizePolicy(sizePolicy6)
         self.entryDelaySpin.setMinimum(-2147483648)
         self.entryDelaySpin.setMaximum(2147483647)
 
@@ -1028,11 +931,11 @@ class Ui_MainWindow(object):
 
         self.voIdEdit = QLineEdit(self.topDockWidgetContents)
         self.voIdEdit.setObjectName(u"voIdEdit")
-        sizePolicy9 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
-        sizePolicy9.setHorizontalStretch(0)
-        sizePolicy9.setVerticalStretch(0)
-        sizePolicy9.setHeightForWidth(self.voIdEdit.sizePolicy().hasHeightForWidth())
-        self.voIdEdit.setSizePolicy(sizePolicy9)
+        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+        sizePolicy7.setHorizontalStretch(0)
+        sizePolicy7.setVerticalStretch(0)
+        sizePolicy7.setHeightForWidth(self.voIdEdit.sizePolicy().hasHeightForWidth())
+        self.voIdEdit.setSizePolicy(sizePolicy7)
 
         self.gridLayout_3.addWidget(self.voIdEdit, 4, 1, 1, 1)
 
@@ -1041,7 +944,7 @@ class Ui_MainWindow(object):
         self.gridLayout_3.addItem(self.verticalSpacer_2, 5, 1, 1, 1)
 
 
-        self.horizontalLayout_13.addLayout(self.gridLayout_3)
+        self.gridLayout_5.addLayout(self.gridLayout_3, 0, 1, 1, 1)
 
         self.gridLayout_2 = QGridLayout()
         self.gridLayout_2.setObjectName(u"gridLayout_2")
@@ -1073,32 +976,32 @@ class Ui_MainWindow(object):
 
         self.cameraModelLabel = QLabel(self.topDockWidgetContents)
         self.cameraModelLabel.setObjectName(u"cameraModelLabel")
-        sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
-        sizePolicy10.setHorizontalStretch(0)
-        sizePolicy10.setVerticalStretch(0)
-        sizePolicy10.setHeightForWidth(self.cameraModelLabel.sizePolicy().hasHeightForWidth())
-        self.cameraModelLabel.setSizePolicy(sizePolicy10)
+        sizePolicy8 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        sizePolicy8.setHorizontalStretch(0)
+        sizePolicy8.setVerticalStretch(0)
+        sizePolicy8.setHeightForWidth(self.cameraModelLabel.sizePolicy().hasHeightForWidth())
+        self.cameraModelLabel.setSizePolicy(sizePolicy8)
 
         self.gridLayout_2.addWidget(self.cameraModelLabel, 2, 0, 1, 1, Qt.AlignRight)
 
         self.convoEndsScriptLabel = QLabel(self.topDockWidgetContents)
         self.convoEndsScriptLabel.setObjectName(u"convoEndsScriptLabel")
-        sizePolicy10.setHeightForWidth(self.convoEndsScriptLabel.sizePolicy().hasHeightForWidth())
-        self.convoEndsScriptLabel.setSizePolicy(sizePolicy10)
+        sizePolicy8.setHeightForWidth(self.convoEndsScriptLabel.sizePolicy().hasHeightForWidth())
+        self.convoEndsScriptLabel.setSizePolicy(sizePolicy8)
 
         self.gridLayout_2.addWidget(self.convoEndsScriptLabel, 1, 0, 1, 1, Qt.AlignRight)
 
         self.convoAbortsScriptLabel = QLabel(self.topDockWidgetContents)
         self.convoAbortsScriptLabel.setObjectName(u"convoAbortsScriptLabel")
-        sizePolicy10.setHeightForWidth(self.convoAbortsScriptLabel.sizePolicy().hasHeightForWidth())
-        self.convoAbortsScriptLabel.setSizePolicy(sizePolicy10)
+        sizePolicy8.setHeightForWidth(self.convoAbortsScriptLabel.sizePolicy().hasHeightForWidth())
+        self.convoAbortsScriptLabel.setSizePolicy(sizePolicy8)
 
         self.gridLayout_2.addWidget(self.convoAbortsScriptLabel, 0, 0, 1, 1, Qt.AlignRight)
 
         self.ambientTrackLabel = QLabel(self.topDockWidgetContents)
         self.ambientTrackLabel.setObjectName(u"ambientTrackLabel")
-        sizePolicy10.setHeightForWidth(self.ambientTrackLabel.sizePolicy().hasHeightForWidth())
-        self.ambientTrackLabel.setSizePolicy(sizePolicy10)
+        sizePolicy8.setHeightForWidth(self.ambientTrackLabel.sizePolicy().hasHeightForWidth())
+        self.ambientTrackLabel.setSizePolicy(sizePolicy8)
 
         self.gridLayout_2.addWidget(self.ambientTrackLabel, 4, 0, 1, 1, Qt.AlignRight)
 
@@ -1107,71 +1010,189 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addItem(self.verticalSpacer, 5, 1, 1, 1)
 
 
-        self.horizontalLayout_13.addLayout(self.gridLayout_2)
+        self.gridLayout_5.addLayout(self.gridLayout_2, 0, 2, 1, 1)
 
-        self.verticalLayout = QVBoxLayout()
-        self.verticalLayout.setSpacing(0)
-        self.verticalLayout.setObjectName(u"verticalLayout")
-        self.verticalLayout.setSizeConstraint(QLayout.SetMinimumSize)
-        self.verticalLayout.setContentsMargins(2, -1, 2, -1)
-        self.cutsceneModelLabel = QLabel(self.topDockWidgetContents)
-        self.cutsceneModelLabel.setObjectName(u"cutsceneModelLabel")
+        self.widget = QWidget(self.topDockWidgetContents)
+        self.widget.setObjectName(u"widget")
+        sizePolicy9 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        sizePolicy9.setHorizontalStretch(0)
+        sizePolicy9.setVerticalStretch(0)
+        sizePolicy9.setHeightForWidth(self.widget.sizePolicy().hasHeightForWidth())
+        self.widget.setSizePolicy(sizePolicy9)
+        self.widget.setLayoutDirection(Qt.RightToLeft)
+        self.gridLayout_4 = QGridLayout(self.widget)
+        self.gridLayout_4.setObjectName(u"gridLayout_4")
+        self.gridLayout_4.setSizeConstraint(QLayout.SetMinimumSize)
+        self.gridLayout_4.setContentsMargins(0, 10, 10, 0)
+        self.animatedCutCheckbox = QCheckBox(self.widget)
+        self.animatedCutCheckbox.setObjectName(u"animatedCutCheckbox")
+        sizePolicy9.setHeightForWidth(self.animatedCutCheckbox.sizePolicy().hasHeightForWidth())
+        self.animatedCutCheckbox.setSizePolicy(sizePolicy9)
 
-        self.verticalLayout.addWidget(self.cutsceneModelLabel, 0, Qt.AlignHCenter)
+        self.gridLayout_4.addWidget(self.animatedCutCheckbox, 3, 0, 1, 1, Qt.AlignLeft|Qt.AlignVCenter)
 
-        self.stuntList = QListWidget(self.topDockWidgetContents)
-        self.stuntList.setObjectName(u"stuntList")
+        self.unequipHandsCheckbox = QCheckBox(self.widget)
+        self.unequipHandsCheckbox.setObjectName(u"unequipHandsCheckbox")
 
-        self.verticalLayout.addWidget(self.stuntList)
+        self.gridLayout_4.addWidget(self.unequipHandsCheckbox, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.horizontalLayout_5 = QHBoxLayout()
-        self.horizontalLayout_5.setSpacing(0)
-        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.horizontalSpacer_10 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.unequipAllCheckbox = QCheckBox(self.widget)
+        self.unequipAllCheckbox.setObjectName(u"unequipAllCheckbox")
+        sizePolicy9.setHeightForWidth(self.unequipAllCheckbox.sizePolicy().hasHeightForWidth())
+        self.unequipAllCheckbox.setSizePolicy(sizePolicy9)
 
-        self.horizontalLayout_5.addItem(self.horizontalSpacer_10)
+        self.gridLayout_4.addWidget(self.unequipAllCheckbox, 1, 0, 1, 1, Qt.AlignLeft|Qt.AlignVCenter)
 
-        self.addStuntButton = QPushButton(self.topDockWidgetContents)
-        self.addStuntButton.setObjectName(u"addStuntButton")
-        sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
-        sizePolicy11.setHorizontalStretch(0)
-        sizePolicy11.setVerticalStretch(0)
-        sizePolicy11.setHeightForWidth(self.addStuntButton.sizePolicy().hasHeightForWidth())
-        self.addStuntButton.setSizePolicy(sizePolicy11)
-        self.addStuntButton.setBaseSize(QSize(20, 0))
+        self.oldHitCheckbox = QCheckBox(self.widget)
+        self.oldHitCheckbox.setObjectName(u"oldHitCheckbox")
+        sizePolicy9.setHeightForWidth(self.oldHitCheckbox.sizePolicy().hasHeightForWidth())
+        self.oldHitCheckbox.setSizePolicy(sizePolicy9)
 
-        self.horizontalLayout_5.addWidget(self.addStuntButton)
+        self.gridLayout_4.addWidget(self.oldHitCheckbox, 4, 0, 1, 1, Qt.AlignLeft|Qt.AlignVCenter)
 
-        self.editStuntButton = QPushButton(self.topDockWidgetContents)
-        self.editStuntButton.setObjectName(u"editStuntButton")
-        sizePolicy11.setHeightForWidth(self.editStuntButton.sizePolicy().hasHeightForWidth())
-        self.editStuntButton.setSizePolicy(sizePolicy11)
+        self.skippableCheckbox = QCheckBox(self.widget)
+        self.skippableCheckbox.setObjectName(u"skippableCheckbox")
+        sizePolicy9.setHeightForWidth(self.skippableCheckbox.sizePolicy().hasHeightForWidth())
+        self.skippableCheckbox.setSizePolicy(sizePolicy9)
 
-        self.horizontalLayout_5.addWidget(self.editStuntButton)
+        self.gridLayout_4.addWidget(self.skippableCheckbox, 2, 0, 1, 1, Qt.AlignLeft|Qt.AlignVCenter)
 
-        self.removeStuntButton = QPushButton(self.topDockWidgetContents)
-        self.removeStuntButton.setObjectName(u"removeStuntButton")
-        sizePolicy11.setHeightForWidth(self.removeStuntButton.sizePolicy().hasHeightForWidth())
-        self.removeStuntButton.setSizePolicy(sizePolicy11)
+        self.verticalSpacer_5 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
-        self.horizontalLayout_5.addWidget(self.removeStuntButton)
-
-        self.horizontalSpacer_11 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.horizontalLayout_5.addItem(self.horizontalSpacer_11)
+        self.gridLayout_4.addItem(self.verticalSpacer_5, 5, 0, 1, 1)
 
 
-        self.verticalLayout.addLayout(self.horizontalLayout_5)
-
-
-        self.horizontalLayout_13.addLayout(self.verticalLayout)
+        self.gridLayout_5.addWidget(self.widget, 0, 0, 1, 1)
 
         self.horizontalSpacer_12 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.horizontalLayout_13.addItem(self.horizontalSpacer_12)
+        self.gridLayout_5.addItem(self.horizontalSpacer_12, 0, 4, 1, 1)
 
         self.topDockWidget.setWidget(self.topDockWidgetContents)
         MainWindow.addDockWidget(Qt.TopDockWidgetArea, self.topDockWidget)
+        self.dockWidget = QDockWidget(MainWindow)
+        self.dockWidget.setObjectName(u"dockWidget")
+        self.dockWidget.setAllowedAreas(Qt.BottomDockWidgetArea|Qt.TopDockWidgetArea)
+        self.dockWidgetContents = QWidget()
+        self.dockWidgetContents.setObjectName(u"dockWidgetContents")
+        self.gridLayout = QGridLayout(self.dockWidgetContents)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.plotIndexLabel = QLabel(self.dockWidgetContents)
+        self.plotIndexLabel.setObjectName(u"plotIndexLabel")
+
+        self.gridLayout.addWidget(self.plotIndexLabel, 3, 2, 1, 1, Qt.AlignRight)
+
+        self.horizontalSpacer_3 = QSpacerItem(788, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout.addItem(self.horizontalSpacer_3, 3, 4, 1, 1)
+
+        self.horizontalSpacer = QSpacerItem(788, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout.addItem(self.horizontalSpacer, 2, 4, 1, 1)
+
+        self.speakerEditLabel = QLabel(self.dockWidgetContents)
+        self.speakerEditLabel.setObjectName(u"speakerEditLabel")
+
+        self.gridLayout.addWidget(self.speakerEditLabel, 2, 0, 1, 1, Qt.AlignRight)
+
+        self.plotIndexCombo = ComboBox2DA(self.dockWidgetContents)
+        self.plotIndexCombo.setObjectName(u"plotIndexCombo")
+
+        self.gridLayout.addWidget(self.plotIndexCombo, 3, 3, 1, 1)
+
+        self.listenerTagLabel = QLabel(self.dockWidgetContents)
+        self.listenerTagLabel.setObjectName(u"listenerTagLabel")
+        sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+        sizePolicy10.setHorizontalStretch(0)
+        sizePolicy10.setVerticalStretch(0)
+        sizePolicy10.setHeightForWidth(self.listenerTagLabel.sizePolicy().hasHeightForWidth())
+        self.listenerTagLabel.setSizePolicy(sizePolicy10)
+
+        self.gridLayout.addWidget(self.listenerTagLabel, 1, 0, 1, 1, Qt.AlignRight)
+
+        self.questLabel = QLabel(self.dockWidgetContents)
+        self.questLabel.setObjectName(u"questLabel")
+
+        self.gridLayout.addWidget(self.questLabel, 1, 2, 1, 1, Qt.AlignRight)
+
+        self.questEntryLabel = QLabel(self.dockWidgetContents)
+        self.questEntryLabel.setObjectName(u"questEntryLabel")
+
+        self.gridLayout.addWidget(self.questEntryLabel, 2, 2, 1, 1, Qt.AlignRight)
+
+        self.horizontalSpacer_2 = QSpacerItem(788, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.gridLayout.addItem(self.horizontalSpacer_2, 1, 4, 1, 1)
+
+        self.plotXpPercentLabel = QLabel(self.dockWidgetContents)
+        self.plotXpPercentLabel.setObjectName(u"plotXpPercentLabel")
+
+        self.gridLayout.addWidget(self.plotXpPercentLabel, 3, 0, 1, 1)
+
+        self.listenerEdit = QLineEdit(self.dockWidgetContents)
+        self.listenerEdit.setObjectName(u"listenerEdit")
+        sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        sizePolicy11.setHorizontalStretch(0)
+        sizePolicy11.setVerticalStretch(0)
+        sizePolicy11.setHeightForWidth(self.listenerEdit.sizePolicy().hasHeightForWidth())
+        self.listenerEdit.setSizePolicy(sizePolicy11)
+        self.listenerEdit.setMinimumSize(QSize(150, 0))
+        self.listenerEdit.setMaximumSize(QSize(250, 16777215))
+
+        self.gridLayout.addWidget(self.listenerEdit, 1, 1, 1, 1)
+
+        self.questEdit = QLineEdit(self.dockWidgetContents)
+        self.questEdit.setObjectName(u"questEdit")
+        sizePolicy11.setHeightForWidth(self.questEdit.sizePolicy().hasHeightForWidth())
+        self.questEdit.setSizePolicy(sizePolicy11)
+        self.questEdit.setMinimumSize(QSize(150, 0))
+        self.questEdit.setMaximumSize(QSize(250, 16777215))
+
+        self.gridLayout.addWidget(self.questEdit, 1, 3, 1, 1)
+
+        self.speakerEdit = QLineEdit(self.dockWidgetContents)
+        self.speakerEdit.setObjectName(u"speakerEdit")
+        sizePolicy11.setHeightForWidth(self.speakerEdit.sizePolicy().hasHeightForWidth())
+        self.speakerEdit.setSizePolicy(sizePolicy11)
+        self.speakerEdit.setMinimumSize(QSize(150, 0))
+        self.speakerEdit.setMaximumSize(QSize(250, 16777215))
+
+        self.gridLayout.addWidget(self.speakerEdit, 2, 1, 1, 1)
+
+        self.questEntrySpin = GFFFieldSpinBox(self.dockWidgetContents)
+        self.questEntrySpin.setObjectName(u"questEntrySpin")
+        self.questEntrySpin.setMinimumSize(QSize(150, 0))
+        self.questEntrySpin.setMaximumSize(QSize(250, 16777215))
+
+        self.gridLayout.addWidget(self.questEntrySpin, 2, 3, 1, 1)
+
+        self.plotXpSpin = QDoubleSpinBox(self.dockWidgetContents)
+        self.plotXpSpin.setObjectName(u"plotXpSpin")
+        sizePolicy11.setHeightForWidth(self.plotXpSpin.sizePolicy().hasHeightForWidth())
+        self.plotXpSpin.setSizePolicy(sizePolicy11)
+        self.plotXpSpin.setMinimumSize(QSize(150, 0))
+        self.plotXpSpin.setMaximumSize(QSize(250, 16777215))
+
+        self.gridLayout.addWidget(self.plotXpSpin, 3, 1, 1, 1)
+
+        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.gridLayout.addItem(self.verticalSpacer_3, 4, 3, 1, 1)
+
+        self.dockWidget.setWidget(self.dockWidgetContents)
+        self.plotIndexLabel.raise_()
+        self.speakerEditLabel.raise_()
+        self.plotIndexCombo.raise_()
+        self.questLabel.raise_()
+        self.questEntryLabel.raise_()
+        self.plotXpPercentLabel.raise_()
+        self.listenerEdit.raise_()
+        self.questEdit.raise_()
+        self.speakerEdit.raise_()
+        self.questEntrySpin.raise_()
+        self.plotXpSpin.raise_()
+        self.listenerTagLabel.raise_()
+        MainWindow.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget)
 
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuTools.menuAction())
@@ -1200,15 +1221,6 @@ class Ui_MainWindow(object):
         self.actionExit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.actionReloadTree.setText(QCoreApplication.translate("MainWindow", u"Reload Tree", None))
         self.actionUnfocus.setText(QCoreApplication.translate("MainWindow", u"Unfocus Tree", None))
-        self.questEntryLabel.setText(QCoreApplication.translate("MainWindow", u"Quest Entry:", None))
-        self.questLabel.setText(QCoreApplication.translate("MainWindow", u"Quest:", None))
-        self.listenerTagLabel.setText(QCoreApplication.translate("MainWindow", u"Listener Tag:", None))
-        self.speakerEditLabel.setText(QCoreApplication.translate("MainWindow", u"Speaker Tag:", None))
-        self.plotXpPercentLabel.setText(QCoreApplication.translate("MainWindow", u"Plot XP Percentage", None))
-#if QT_CONFIG(whatsthis)
-        self.plotIndexLabel.setWhatsThis(QCoreApplication.translate("MainWindow", u"GFF Field \"PlotIndex\" Int32", None))
-#endif // QT_CONFIG(whatsthis)
-        self.plotIndexLabel.setText(QCoreApplication.translate("MainWindow", u"Plot Index:", None))
         self.rightDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"Node Fields", None))
         self.commentsEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Comments", None))
         self.script1Label.setText(QCoreApplication.translate("MainWindow", u"Script #1:", None))
@@ -1263,11 +1275,13 @@ class Ui_MainWindow(object):
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuTools.setTitle(QCoreApplication.translate("MainWindow", u"Tools", None))
         self.topDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"File Globals", None))
-        self.unequipHandsCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip Hands", None))
-        self.unequipAllCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip All", None))
-        self.skippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Skippable", None))
-        self.animatedCutCheckbox.setText(QCoreApplication.translate("MainWindow", u"Animated Cut", None))
-        self.oldHitCheckbox.setText(QCoreApplication.translate("MainWindow", u"Old Hit Check", None))
+        self.cutsceneModelLabel.setText(QCoreApplication.translate("MainWindow", u"Cutscene Model", None))
+#if QT_CONFIG(tooltip)
+        self.stuntList.setToolTip(QCoreApplication.translate("MainWindow", u"<html><head/><body><p>Dialogue Stunts list</p></body></html>", None))
+#endif // QT_CONFIG(tooltip)
+        self.addStuntButton.setText(QCoreApplication.translate("MainWindow", u"Add", None))
+        self.editStuntButton.setText(QCoreApplication.translate("MainWindow", u"Edit", None))
+        self.removeStuntButton.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
         self.convoTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Type:", None))
         self.conversationSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Human", None))
         self.conversationSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Computer", None))
@@ -1286,13 +1300,20 @@ class Ui_MainWindow(object):
         self.convoEndsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Ends:", None))
         self.convoAbortsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Aborts:", None))
         self.ambientTrackLabel.setText(QCoreApplication.translate("MainWindow", u"Ambient Track:", None))
-        self.cutsceneModelLabel.setText(QCoreApplication.translate("MainWindow", u"Cutscene Model", None))
-#if QT_CONFIG(tooltip)
-        self.stuntList.setToolTip(QCoreApplication.translate("MainWindow", u"<html><head/><body><p>Dialogue Stunts list</p></body></html>", None))
-#endif // QT_CONFIG(tooltip)
-        self.addStuntButton.setText(QCoreApplication.translate("MainWindow", u"Add", None))
-        self.editStuntButton.setText(QCoreApplication.translate("MainWindow", u"Edit", None))
-        self.removeStuntButton.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
+        self.animatedCutCheckbox.setText(QCoreApplication.translate("MainWindow", u"Animated Cut", None))
+        self.unequipHandsCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip Hands", None))
+        self.unequipAllCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip All", None))
+        self.oldHitCheckbox.setText(QCoreApplication.translate("MainWindow", u"Old Hit Check", None))
+        self.skippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Skippable", None))
+#if QT_CONFIG(whatsthis)
+        self.plotIndexLabel.setWhatsThis(QCoreApplication.translate("MainWindow", u"GFF Field \"PlotIndex\" Int32", None))
+#endif // QT_CONFIG(whatsthis)
+        self.plotIndexLabel.setText(QCoreApplication.translate("MainWindow", u"Plot Index:", None))
+        self.speakerEditLabel.setText(QCoreApplication.translate("MainWindow", u"Speaker Tag:", None))
+        self.listenerTagLabel.setText(QCoreApplication.translate("MainWindow", u"Listener Tag:", None))
+        self.questLabel.setText(QCoreApplication.translate("MainWindow", u"Quest:", None))
+        self.questEntryLabel.setText(QCoreApplication.translate("MainWindow", u"Quest Entry:", None))
+        self.plotXpPercentLabel.setText(QCoreApplication.translate("MainWindow", u"Plot XP Percentage", None))
     # retranslateUi
 
 

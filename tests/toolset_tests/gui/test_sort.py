@@ -70,10 +70,10 @@ test1 = ("001ebo", "GIT", int(43.24 * 1024))
 test2 = ("001ebo", "PTH", int(19.32 * 1024))
 test3 = ("001ebo", "ARE", int(4.75 * 1024))
 test4 = ("3cfd", "DLG", int(97.3 * 1024))
-assert sorted_data[0] == test1, f"{sorted_data[0]} != {test1}"
-assert sorted_data[1] == test2, f"{sorted_data[1]} != {test2}"
-assert sorted_data[2] == test3, f"{sorted_data[2]} != {test3}"
-assert sorted_data[3] == test4, f"{sorted_data[3]} != {test4}"
+assert sorted_data[0] == test1, f"{sorted_data[0]} == {test1}"
+assert sorted_data[1] == test2, f"{sorted_data[1]} == {test2}"
+assert sorted_data[2] == test3, f"{sorted_data[2]} == {test3}"
+assert sorted_data[3] == test4, f"{sorted_data[3]} == {test4}"
 
 sorter.sort(0, "descending")
 sorted_data = sorter.get_data()
@@ -81,7 +81,7 @@ test5 = ("workbnch_tut", "DLG", int(135.13 * 1024))
 test6 = ("seccon", "DLG", int(45.78 * 1024))
 test7 = ("intro", "DLG", int(49.58 * 1024))
 test8 = ("hyper", "DLG", int(25.38 * 1024))
-assert sorted_data[0] == test5, f"{sorted_data[0]} != {test5}"
-assert sorted_data[1] == test6, f"{sorted_data[1]} != {test6}"
-assert sorted_data[2] == test7, f"{sorted_data[2]} != {test7}"
-assert sorted_data[3] == test8, f"{sorted_data[3]} != {test8}"
+assert sorted_data[0] == test5, f"{sorted_data[0]} == {test5}"
+assert sorted_data[1] == test6, f"{sorted_data[1]} == {test6}"
+assert sorted_data[2] == test7, f"{sorted_data[2]} == {test7}"
+assert sorted_data[3] == test8, f"{sorted_data[3]} == {test8}"

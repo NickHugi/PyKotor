@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import functools
 import multiprocessing
 
 from concurrent.futures import ProcessPoolExecutor
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, Iterable, Iterator, TypeVar
 
-from utility.system.app_process.task_consumer import TaskConsumer, wrap_task
+from utility.system.app_process.task_consumer import TaskConsumer
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import Event as MultiprocessingEvent
@@ -14,7 +15,11 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class TaskManager(Generic[T]):
+class CustomProcessPoolExecutor(Generic[T]):
+    """This is a class created for educational purposes only.
+
+    Use concurrent.futures.ProcessPoolExecutor instead of this implementation.
+    """
     _shared_state: ClassVar[dict[str, Any]] = {}
 
     def __new__(cls, *args, **kwargs):
@@ -29,19 +34,20 @@ class TaskManager(Generic[T]):
         initializer: Callable[[], None] | None = None,
         initargs: tuple[Any, ...] = (),
     ):
-        if not hasattr(self, "singleton_initialized"):
-            self.max_workers: int = max_workers or multiprocessing.cpu_count() * 2
-            self.task_queue: multiprocessing.JoinableQueue[Callable[..., Any]] = multiprocessing.JoinableQueue()
-            self.result_queue: multiprocessing.Queue[T] = multiprocessing.Queue()
-            self.workers: list[tuple[MultiprocessingEvent, TaskConsumer]] = []
-            self._initializer: Callable[[], None] | None = initializer
-            self.executor: ProcessPoolExecutor = ProcessPoolExecutor(
-                max_workers=self.max_workers,
-                initializer=self._initializer,
-                initargs=initargs,
-            )
-            self._create_workers()
-            self.singleton_initialized: bool = True
+        if hasattr(self, "singleton_initialized"):
+            return
+        self.max_workers: int = max_workers or multiprocessing.cpu_count() * 2
+        self.task_queue: multiprocessing.JoinableQueue[Callable[..., Any]] = multiprocessing.JoinableQueue()
+        self.result_queue: multiprocessing.Queue[T] = multiprocessing.Queue()
+        self.workers: list[tuple[MultiprocessingEvent, TaskConsumer]] = []
+        self._initializer: Callable[[], None] | None = initializer
+        self.executor: ProcessPoolExecutor = ProcessPoolExecutor(
+            max_workers=self.max_workers,
+            initializer=self._initializer,
+            initargs=initargs,
+        )
+        self._create_workers()
+        self.singleton_initialized: bool = True
 
     def __del__(self):
         self.shutdown(wait=False)
@@ -81,15 +87,18 @@ class TaskManager(Generic[T]):
         for stop_event, _ in self.workers:
             stop_event.wait(timeout=timeout)
 
+    def map(self, fn: Callable[..., T], *iterables: Iterable[Any]) -> Iterator[T]:
+        return self.executor.map(fn, *iterables)
+
 
 # Singleton instance
-_instance: TaskManager | None = None
+_instance: CustomProcessPoolExecutor | None = None
 
 
-def get_instance(*args, **kwargs) -> TaskManager:
+def get_instance(*args, **kwargs) -> CustomProcessPoolExecutor:
     global _instance  # noqa: PLW0603
     if _instance is None:
-        _instance = TaskManager(*args, **kwargs)
+        _instance = CustomProcessPoolExecutor(*args, **kwargs)
     return _instance
 
 
@@ -103,7 +112,7 @@ if __name__ == "__main__":
 
     results = list(
         executor1.map(
-            wrap_task(print, "Hello World"),
+            functools.partial(print, "Hello World"),
             [(x, i) for i in range(10) for x in range(10)],
         )
     )

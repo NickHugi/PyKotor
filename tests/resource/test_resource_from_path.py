@@ -107,7 +107,7 @@ class TestResourceIdentifier(unittest.TestCase):
 
     def assert_hashing(self, res_ident: ResourceIdentifier):
         lower_ident = ResourceIdentifier(res_ident.resname.swapcase(), res_ident.restype)
-        self.assertEqual(res_ident, lower_ident, f"{res_ident!r} != {lower_ident!r}")
+        self.assertEqual(res_ident, lower_ident, f"{res_ident!r} == {lower_ident!r}")
         test_set: set[ResourceIdentifier] = {res_ident, lower_ident}
         self.assertEqual(len(test_set), 1, repr(test_set))
 

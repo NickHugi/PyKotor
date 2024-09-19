@@ -28,29 +28,29 @@ from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.gl.scene import Camera
+from pykotor.resource.formats.bwm.bwm_data import BWM
+from pykotor.resource.formats.lyt.lyt_data import LYT
 from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITEncounter, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
-from pykotor.resource.formats.lyt.lyt_data import LYT
-from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.tools import module
 from pykotor.tools.misc import is_mod_file
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
 from toolset.gui.editors.git import DeleteCommand, MoveCommand, RotateCommand, _GeometryMode, _InstanceMode, _SpawnMode, openInstanceDialog
+from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
 from toolset.gui.widgets.renderer.module import ModuleRenderer
+from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
+from toolset.gui.widgets.renderer.walkmesh_editor import WalkmeshEditor
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.designer_controls import ModuleDesignerControls2d, ModuleDesignerControls3d, ModuleDesignerControlsFreeCam
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import MODIFIER_KEY_NAMES, getQtButtonString, getQtKeyString
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import safe_repr
-from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
-from toolset.gui.widgets.renderer.walkmesh_editor import WalkmeshEditor
-from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 
 if TYPE_CHECKING:
     import os

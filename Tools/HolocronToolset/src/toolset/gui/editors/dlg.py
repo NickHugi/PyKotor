@@ -885,12 +885,38 @@ class DLGStandardItemModel(QStandardItemModel):
     def mimeTypes(self) -> list[str]:
         return [QT_STANDARD_ITEM_FORMAT]
 
+    def get_identifying_text(self, indexOrItem: QModelIndex | QStandardItem | None) -> str:  # noqa: N803, C901, PLR0911
+        if indexOrItem is None:
+            return "(None)"
+        if isinstance(indexOrItem, QStandardItem):
+            try:
+                indexOrItem = indexOrItem.index()
+            except RuntimeError as e: # wrapped C/C++ object of type x has been deleted
+                return str(e)
+        if not isinstance(indexOrItem, QModelIndex):
+            return f"(Unknown index/item: {indexOrItem})"
+        if not indexOrItem.isValid():
+            return f"(invalid index at row '{indexOrItem.row()}', column '{indexOrItem.column()}')"
+
+        if isinstance(self, QStandardItemModel):
+            item = self.itemFromIndex(indexOrItem)
+            if item is None:
+                return f"(no item associated with index at row '{indexOrItem.row()}', column '{indexOrItem.column()}')"
+            text = item.text().strip()
+        parent_count = 0
+        current_index = indexOrItem.parent()
+        while current_index.isValid():
+            parent_count += 1
+            current_index = current_index.parent()
+
+        return f"Item/Index at Row: {indexOrItem.row()}, Column: {indexOrItem.column()}, Ancestors: {parent_count}\nText for above item: {text}\n"
+
     def mimeData(self, indexes: Iterable[QModelIndex]) -> QMimeData:
         mimeData = QMimeData()
         data = QByteArray()
         stream = QDataStream(data, QIODevice.WriteOnly)
         for index in indexes:
-            print("<SDM> [mimeData scope] index: ", self.treeView.get_identifying_text(index))
+            print("<SDM> [mimeData scope] index: ", self.get_identifying_text(index))
             assert index.isValid()
             item = self.itemFromIndex(index)
             assert item is not None
@@ -1709,15 +1735,15 @@ class DropTarget:
         if pos.y() <= upper_threshold:
             # Adjust for top edge of the index
             indicator_rect = QRect(rect.topLeft(), rect.topRight())
-            # print(f"ABOVE cur index: {view.get_identifying_text(curIndex)}")
+            # print(f"ABOVE cur index: {view.model().get_identifying_text(curIndex)}")
             return cls(curIndex.parent(), max(curIndex.row(), 0), DropPosition.ABOVE, indicator_rect)
         if pos.y() >= lower_threshold:
             # Adjust for bottom edge of the index
             indicator_rect = QRect(rect.bottomLeft(), rect.bottomRight())
-            # print(f"BELOW cur index: {view.get_identifying_text(curIndex)}")
+            # print(f"BELOW cur index: {view.model().get_identifying_text(curIndex)}")
             return cls(curIndex.parent(), curIndex.row() + 1, DropPosition.BELOW, indicator_rect)
 
-        # print(f"ON TOP OF cur index: {view.get_identifying_text(curIndex)}")
+        # print(f"ON TOP OF cur index: {view.model().get_identifying_text(curIndex)}")
         return cls(curIndex, curIndex.row(), DropPosition.ON_TOP_OF, rect)
 
     def is_valid_drop(self, dragged_link: DLGLink, view: DLGTreeView) -> bool:
@@ -4736,7 +4762,7 @@ Should return 1 or 0, representing a boolean.
             QMessageBox(QMessageBox.Icon.Information, "No nodes selected", "Select an item from the tree first.").exec_()
             return
         index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
-        print("<SDM> [onAddAnimClicked scope] QModelIndex: ", self.ui.dialogTree.get_identifying_text(index))
+        print("<SDM> [onAddAnimClicked scope] QModelIndex: ", self.ui.dialogTree.model().get_identifying_text(index))
         item: DLGStandardItem | None = self.model.itemFromIndex(index)
         dialog = EditAnimationDialog(self, self._installation)
         if dialog.exec_():
@@ -4755,7 +4781,7 @@ Should return 1 or 0, representing a boolean.
             QMessageBox(QMessageBox.Icon.Information, "No animations selected", "Select an existing animation from the above list first, or create one.").exec_()
             return
         index: QModelIndex = selectedTreeIndexes[0]
-        print("<SDM> [onRemoveAnimClicked scope] QModelIndex: ", self.ui.dialogTree.get_identifying_text(index))
+        print("<SDM> [onRemoveAnimClicked scope] QModelIndex: ", self.ui.dialogTree.model().get_identifying_text(index))
         item: DLGStandardItem | None = self.model.itemFromIndex(index)
         if item is None:
             print("onRemoveAnimClicked: itemFromIndex returned None")
@@ -4797,7 +4823,7 @@ Should return 1 or 0, representing a boolean.
             return
 
         for index in self.ui.dialogTree.selectedIndexes():
-            print("<SDM> [refreshAnimList scope] QModelIndex: ", self.ui.dialogTree.get_identifying_text(index))
+            print("<SDM> [refreshAnimList scope] QModelIndex: ", self.ui.dialogTree.model().get_identifying_text(index))
             if not index.isValid():
                 continue
             item: DLGStandardItem | None = self.model.itemFromIndex(index)

@@ -29,7 +29,7 @@ class SettingsProperty(property, Generic[T]):
 
         # Asserts are removed in release versions automatically with PYTHONOPTIMIZE (-O) flag.
         reconstructed_default = self.deserialize_value(self.serialized_default)
-        assert default == reconstructed_default, f"{self.return_type} != {reconstructed_default.__class__}, repr type({default}) != type({reconstructed_default})"
+        assert default == reconstructed_default, f"{self.return_type} == {reconstructed_default.__class__}, repr type({default}) != type({reconstructed_default})"
 
         super().__init__(self.getter, self.setter, None, None)
 
@@ -39,7 +39,7 @@ class SettingsProperty(property, Generic[T]):
             serialized_value = instance.settings.value(self.name, self.serialized_default, self.serialized_type)
             constructed_value: T = self.deserialize_value(serialized_value)
             if constructed_value.__class__ != self.default.__class__:
-                RobustLogger().error(f"Corrupted setting '{self.name}': {constructed_value.__class__} != {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
+                RobustLogger().error(f"Corrupted setting '{self.name}': {constructed_value.__class__} == {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
                 return self._handle_corrupted_setting(instance)
         except Exception as e:
             RobustLogger().exception(f"Exception in settings getter while deserializing setting '{self.name}', got {serialized_value} ({serialized_value}) of type {serialized_value.__class__.__name__}. Original error: {e.__class__.__name__}: {e}")
@@ -71,7 +71,7 @@ class SettingsProperty(property, Generic[T]):
         serialized_value: KT = instance.settings.value(self.name, self.serialized_default, self.serialized_default.__class__)
         constructed_value: T = self.deserialize_value(serialized_value)
         if constructed_value.__class__ != self.default.__class__:
-            raise RuntimeError(f"{constructed_value.__class__} != {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
+            raise RuntimeError(f"{constructed_value.__class__} == {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
 
     def serialize_value(self, value: T) -> KT:  # noqa: PLR0911
         """Recursively serializes values, including Qt.Key and nested structures, for serialization."""

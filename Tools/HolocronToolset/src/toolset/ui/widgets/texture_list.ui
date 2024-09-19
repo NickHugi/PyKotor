@@ -15,7 +15,43 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QComboBox" name="sectionCombo"/>
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="4,1,1">
+     <item>
+      <widget class="QComboBox" name="sectionCombo"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="refreshButton">
+       <property name="minimumSize">
+        <size>
+         <width>70</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="toolTip">
+        <string>Refresh this list.</string>
+       </property>
+       <property name="text">
+        <string>Refresh</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="reloadButton">
+       <property name="minimumSize">
+        <size>
+         <width>70</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="toolTip">
+        <string>Reload the active module/folder.</string>
+       </property>
+       <property name="text">
+        <string>Reload</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="Line" name="textureLine">

@@ -5,7 +5,6 @@ import errno
 import os
 import platform
 import shutil
-import struct
 import sys
 
 from contextlib import suppress
@@ -508,25 +507,18 @@ class ToolWindow(QMainWindow):
         if not isinstance(objRet, QAction):
             return
         action = objRet
-        print("<SDM> [openRecentFile scope] action: ", action)
 
         if not action:
-            print("No action")
             return
         if not isinstance(action, QAction):
-            print(f"Not a QAction, {action}")
             return
         file = action.data()
-        print("<SDM> [openRecentFile scope] file: ", file)
 
         if not file:
-            print(f"Action {action} has no file data.")
             return
         if not isinstance(file, Path):
-            print(f"Action {action} does not contain a valid file path '{file}'.")
             return
         resource = FileResource.from_path(file)
-        print("<SDM> [openRecentFile scope] resource: ", resource)
 
         openResourceEditor(file, resource.resname(), resource.restype(), resource.data(), self.active, self)
 
@@ -584,9 +576,6 @@ class ToolWindow(QMainWindow):
             style = "Fusion"
             palette = self.create_palette(QColor(53, 53, 53), QColor(35, 35, 35), QColor(240, 240, 240),
                                           QColor(25, 25, 25), self.adjust_color(QColor("orange"), saturation=80, hue_shift=-10), QColor(255, 69, 0))
-            #app.setStyle("Fusion")
-            #self._applyCustomDarkPalette()
-            #return
         elif self.settings.selectedTheme == "QDarkStyle":
             try:
                 import qdarkstyle  # pyright: ignore[reportMissingTypeStubs]
@@ -615,7 +604,7 @@ class ToolWindow(QMainWindow):
             style = self.original_style
             sheet = self._get_file_stylesheet(":/themes/other/MacOS.qss", app)
             # dont use, looks worse
-            #paletfte = self.create_palette("#ECECEC", "#D2D8DD", "#272727", "#FBFDFD", "#467DD1", "#FFFFFF")
+            #palette = self.create_palette("#ECECEC", "#D2D8DD", "#272727", "#FBFDFD", "#467DD1", "#FFFFFF")
         elif self.settings.selectedTheme == "ManjaroMix":
             sheet = self._get_file_stylesheet(":/themes/other/ManjaroMix.qss", app)
             palette = self.create_palette("#222b2e", "#151a1e", "#FFFFFF", "#214037", "#4fa08b", "#027f7f")
@@ -734,87 +723,6 @@ class ToolWindow(QMainWindow):
                 palette.setColor(state_key, role, adjusted_color)
 
         return palette
-
-    def _applyCustomDarkPalette(self):
-        dark_palette = QPalette()
-
-        # White
-        dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(240, 240, 240))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, QColor(240, 240, 240))
-
-        # Lighter gray
-        dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(230, 230, 230))
-
-        # Light gray
-        dark_palette.setColor(QPalette.ColorRole.Text, QColor(220, 220, 220))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Text, QColor(220, 220, 220))
-
-        # gray
-        dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))
-
-        # slightly darker gray
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipText, QColor(169, 169, 169))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(169, 169, 169))
-
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(128, 128, 128))  # Gray for disabled text
-
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(105, 105, 105))  # Dim gray for disabled button text
-
-        # Dark slate gray
-        dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, QColor(53, 53, 53))
-
-        # Darker slate gray
-        dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))
-
-        # Darkest Slate Gray
-        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-
-        # Very Dark slate gray
-        dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Base, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, QColor(35, 35, 35))
-
-        dark_palette.setColor(QPalette.ColorRole.Link, QColor(100, 149, 237))  # Cornflower blue for links
-        dark_palette.setColor(QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for visited links
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for disabled visited links
-
-        # Dodger blue
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Link, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-
-        dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 69, 0))  # Orange-red for bright text
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, QColor(255, 0, 0))  # Red for disabled bright text
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
-
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Text, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
-
-
-        QApplication.setPalette(dark_palette)
 
     # region Signal callbacks
     def onCoreRefresh(self):
@@ -1304,7 +1212,6 @@ class ToolWindow(QMainWindow):
 
     # region Events
     def closeEvent(self, e: QCloseEvent | None):
-        self.ui.texturesWidget.doTerminations()
         instance = QCoreApplication.instance()
         print("<SDM> [closeEvent scope] instance: ", instance)
 
@@ -1370,29 +1277,6 @@ class ToolWindow(QMainWindow):
                 self.log.info(f"Not processing dragged-in item '{filepath}'. Invalid resource")
         e.accept()
 
-    def _handleWindowsZipExplorerDrop(self, e: QtGui.QDropEvent):
-        fd_data = e.mimeData().data('application/x-qt-windows-mime;value="FileGroupDescriptorW"').data()
-        num_descriptors = struct.unpack("I", fd_data[:4])[0]
-        print(f"Number of file descriptors: {num_descriptors}")
-        offset = 4
-        base_part_format = "I 16s 2l 2l I 2Q 2Q 2Q 2I"
-        base_part_size = struct.calcsize(base_part_format)
-        filename_offset = 72
-        base_descriptor_data = fd_data[offset:offset + base_part_size]
-        raw_filename = base_descriptor_data[filename_offset:filename_offset + len(base_descriptor_data)]
-        try:
-            filename = raw_filename.decode("utf-16-le", errors="replace")
-        except UnicodeDecodeError as decode_error:
-            print(f"UnicodeDecodeError: {decode_error}")
-            return
-        QMessageBox(
-            QMessageBox.Icon.Critical,
-            "Windows ZIP drops not supported",
-            f"Please extract {filename} somewhere before attempting to open it into the toolset.",
-        ).exec_()
-        # TODO(th3w1zard1): get the path to the actual data from Shell IDList Array? Apparently it doesn't store in FileContents as initially predicted.
-        # shell_idlist_data = e.mimeData().data('application/x-qt-windows-mime;value="Shell IDList Array"').data()
-
     def dropEvent(self, e: QtGui.QDropEvent | None):
         if e is None:
             return
@@ -1410,7 +1294,6 @@ class ToolWindow(QMainWindow):
                 continue
             openResourceEditor(filepath, resname, restype, data, self.active, self,
                             gff_specialized=GlobalSettings().gff_specializedEditors)
-        #self._handleWindowsZipExplorerDrop(e)
 
 
     # endregion
@@ -1564,7 +1447,7 @@ class ToolWindow(QMainWindow):
         window = HelpWindow(None)
         print("<SDM> [openInstructionsWindow scope] window: ", window)
 
-        window.setWindowIcon(selfIcon())
+        window.setWindowIcon(self.windowIcon())
         addWindow(window)
         window.activateWindow()
 
@@ -1651,7 +1534,7 @@ class ToolWindow(QMainWindow):
 
                 up_to_date_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
                 up_to_date_msg_box.button(QMessageBox.Yes).setText("Choose Update")
-                up_to_date_msg_box.setWindowIcon(selfIcon())
+                up_to_date_msg_box.setWindowIcon(self.windowIcon())
                 result = up_to_date_msg_box.exec_()
                 print("<SDM> [display_version_message scope] result: ", result)
 
@@ -1677,7 +1560,7 @@ class ToolWindow(QMainWindow):
             new_version_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
             new_version_msg_box.button(QMessageBox.Yes).setText("Details")
             new_version_msg_box.button(QMessageBox.Abort).setText("Ignore")
-            new_version_msg_box.setWindowIcon(selfIcon())
+            new_version_msg_box.setWindowIcon(self.windowIcon())
             response = new_version_msg_box.exec_()
             print("<SDM> [display_version_message scope] response: ", response)
             if response == QMessageBox.Ok:

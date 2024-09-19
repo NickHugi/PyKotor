@@ -4,14 +4,11 @@ import platform
 import shutil
 import subprocess
 import sys
-import os
-from datetime import datetime
 
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import suppress
-from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List
+from typing import TYPE_CHECKING, Any, Callable
 
 import qtpy
 
@@ -24,8 +21,6 @@ from qtpy.QtCore import (
     QFileInfo,
     QItemSelectionModel,
     QMimeData,
-    QModelIndex,
-    QSize,
     QUrl,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
@@ -34,6 +29,7 @@ from qtpy.QtGui import QCursor, QDesktopServices, QGuiApplication, QIcon, QKeySe
 from qtpy.QtWidgets import (
     QApplication,
     QCompleter,
+    QFileIconProvider,
     QFileSystemModel,
     QInputDialog,
     QLabel,
@@ -45,102 +41,27 @@ from qtpy.QtWidgets import (
     QProgressBar,
     QShortcut,
     QSplitter,
-    QStackedWidget,
     QTableView,
-    QTreeView,
-    QUndoCommand,
     QUndoStack,
     QVBoxLayout,
     QWidget,
-    QFileIconProvider,
 )
 
-from utility.ui_libraries.qt.debug.print_qobject import print_qt_class_calls
 from utility.ui_libraries.qt.filesystem.address_bar import PyQAddressBar
-from utility.ui_libraries.qt.filesystem.icon_util import get_image_from_resource
-from utility.ui_libraries.qt.filesystem.undo_commands import CopyCommand, DeleteCommand, MoveCommand, RenameCommand
-from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
-from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
-from utility.ui_libraries.qt.widgets.itemviews.tileview import QTileView, TileItemDelegate
-from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 from utility.ui_libraries.qt.filesystem.file_explorer_context_menu import FileExplorerContextMenu
+from utility.ui_libraries.qt.filesystem.undo_commands import CopyCommand, DeleteCommand, MoveCommand, RenameCommand
+from utility.ui_libraries.qt.widgets.itemviews.dynamic_view import DynamicView, ViewMode
+from utility.ui_libraries.qt.widgets.itemviews.tileview import RobustTileView
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
+    import os
+
     from concurrent.futures import Future
 
-    from qtpy.QtCore import QObject, QPoint, QRect
-    from qtpy.QtGui import QDragEnterEvent, QDropEvent, QMouseEvent, QResizeEvent
+    from qtpy.QtCore import QModelIndex, QObject, QPoint
+    from qtpy.QtGui import QDragEnterEvent, QDropEvent, QResizeEvent
     from qtpy.QtWidgets import QWidget
-
-
-class ViewMode(Enum):
-    EXTRA_LARGE_ICONS = auto()
-    LARGE_ICONS = auto()
-    MEDIUM_ICONS = auto()
-    SMALL_ICONS = auto()
-    DETAILS = auto()
-    LIST = auto()
-    TILES = auto()
-    CONTENT = auto()
-
-
-@print_qt_class_calls(exclude_funcs=["paint", "sizeHint", "eventFilter"])
-class FirstColumnInteractableTableView(RobustTableView):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-    def setSelection(self, rect: QRect, command: QItemSelectionModel.SelectionFlags):
-        index = self.indexAt(rect.topLeft())
-        if index.isValid() and index.column() == 0:
-            # Only allow selection if the click is in the first column
-            super().setSelection(rect, command)
-        else:
-            # Clear selection if click is outside the first column
-            self.clearSelection()
-
-    def mousePressEvent(self, event: QMouseEvent):
-        index = self.indexAt(event.pos())
-        if index.isValid() and index.column() == 0:
-            super().mousePressEvent(event)
-        else:
-            # Clear selection and reset the selection anchor
-            self.clearSelection()
-
-    def mouseReleaseEvent(self, event: QMouseEvent):
-        index = self.indexAt(event.pos())
-        if index.isValid() and index.column() == 0:
-            super().mouseReleaseEvent(event)
-        else:
-            event.ignore()
-
-    def clearSelection(self):
-        self.selectionModel().clear()
-        self.selectionModel().reset()
-        self.selectionModel().setCurrentIndex(QModelIndex(), QItemSelectionModel.Clear)
-        self.selectionModel().select(QModelIndex(), QItemSelectionModel.Clear | QItemSelectionModel.Rows)
-
-
-class BaseUndoCommand(QUndoCommand):
-    def __init__(self, description: str):
-        super().__init__(description)
-
-    def redo(self):
-        try:
-            self._redo()
-        except Exception as e:
-            RobustLogger().exception(f"Error during redo of {self.text()}: {e!s}")
-
-    def undo(self):
-        try:
-            self._undo()
-        except Exception as e:
-            RobustLogger().exception(f"Error during undo of {self.text()}: {e!s}")
-
-    def _redo(self):
-        raise NotImplementedError("Subclasses must implement _redo")
-
-    def _undo(self):
-        raise NotImplementedError("Subclasses must implement _undo")
 
 
 class FileSystemExplorerWidget(QMainWindow):
@@ -174,20 +95,13 @@ class FileSystemExplorerWidget(QMainWindow):
         self.proxy_model: QSortFilterProxyModel = QSortFilterProxyModel()
         self.fs_model: QFileSystemModel = QFileSystemModel()
         self.fs_model.setRootPath(str(initial_path.root))
-        self.tree_view: RobustTreeView = RobustTreeView()
+        self.side_panel_tree: RobustTreeView = RobustTreeView()
         self.main_layout: QVBoxLayout = QVBoxLayout(self)
         self.splitter: QSplitter = QSplitter(Qt.Orientation.Horizontal)
         self.completer: QCompleter = QCompleter(self)
 
-        self.stacked_widget: QStackedWidget = QStackedWidget()
-        self.list_view: RobustListView = RobustListView()
-        self.table_view: FirstColumnInteractableTableView = FirstColumnInteractableTableView()
-        self.tiles_view: QTileView = QTileView()
+        self.stacked_widget: DynamicView = DynamicView()
         self.preview_view: QLabel = QLabel()
-        self.list_view.viewport().installEventFilter(self)
-        self.table_view.viewport().installEventFilter(self)
-        self.tiles_view.viewport().installEventFilter(self)
-        self.current_view: ViewMode = ViewMode.DETAILS
 
         self.base_icon_size: int = 16
         self.icon_size: int = self.base_icon_size
@@ -205,10 +119,6 @@ class FileSystemExplorerWidget(QMainWindow):
         self.ui.navigation_pane.setModel(self.fs_model)  # pyright: ignore[reportArgumentType]
         self.ui.file_list_view.setModel(self.fs_model)  # pyright: ignore[reportArgumentType]
 
-        # Hide all columns in navigation pane except the first one
-        for i in range(1, self.fs_model.columnCount()):
-            self.ui.navigation_pane.hideColumn(i)
-
         self.setup_connections()
         self.setup_shortcuts()
         self.setup_icons()
@@ -218,13 +128,9 @@ class FileSystemExplorerWidget(QMainWindow):
 
         self.main_layout.addWidget(self.address_bar, stretch=0)
         self.main_layout.addWidget(self.splitter, stretch=1)
-        self.splitter.addWidget(self.tree_view)
+        self.splitter.addWidget(self.side_panel_tree)
         self.splitter.addWidget(self.stacked_widget)
         self.splitter.setStretchFactor(1, 0x7FFFFFFF)  # Stretch the second widget (main view) to fill the remaining space
-        self.stacked_widget.addWidget(self.table_view)
-        self.stacked_widget.addWidget(self.list_view)
-        self.stacked_widget.addWidget(self.tiles_view)
-        self.stacked_widget.setCurrentWidget(self.table_view)
 
         self.address_bar.path_changed.connect(self.on_address_bar_path_changed)
         self.fs_model.directoryLoaded.connect(self.on_directory_loaded)
@@ -234,7 +140,7 @@ class FileSystemExplorerWidget(QMainWindow):
         # Setup progress bar
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setVisible(False)
-        self.ui.status_bar.addPermanentWidget(self.progress_bar)
+        self.ui.status_bar.addPermanentWidget(self.progress_bar)  # pyright: ignore[reportArgumentType]
 
         # Setup process pool executor
         self.executor = ProcessPoolExecutor()
@@ -252,32 +158,26 @@ class FileSystemExplorerWidget(QMainWindow):
 
         # Setup file watcher
         self.fs_model.setReadOnly(False)
-        self.fs_model.setOption(QFileSystemModel.DontWatchForChanges, False)
+        self.fs_model.setOption(QFileSystemModel.DontWatchForChanges, False)  # noqa: FBT003
 
     def setup_com_interfaces(self):
         with suppress(ImportError):
-            self.setup_com_interfaces_comtypes()
+            import comtypes.client as cc  # pyright: ignore[reportMissingTypeStubs]
+
+            self.shell = cc.CreateObject("Shell.Application")
             return
         with suppress(ImportError):
-            self.setup_com_interfaces_pywin32()
+            import win32com.client
+
+            self.shell = win32com.client.Dispatch("Shell.Application")
             return
         RobustLogger().warning("Neither comtypes nor pywin32 is available. COM interfaces will not be used.")
 
-    def setup_com_interfaces_comtypes(self):
-        import comtypes.client as cc  # pyright: ignore[reportMissingTypeStubs]
-
-        self.shell = cc.CreateObject("Shell.Application")
-
-    def setup_com_interfaces_pywin32(self):
-        import win32com.client
-
-        self.shell = win32com.client.Dispatch("Shell.Application")
-
     def setup_icons(self):
-        self.ui.back_button.setIcon(QIcon.fromTheme("go-previous"))
-        self.ui.forward_button.setIcon(QIcon.fromTheme("go-next"))
-        self.ui.up_button.setIcon(QIcon.fromTheme("go-up"))
-        self.ui.go_button.setIcon(QIcon.fromTheme("go-jump"))
+        self.ui.back_button.setIcon(QIcon.fromTheme("go-previous"))  # pyright: ignore[reportArgumentType]
+        self.ui.forward_button.setIcon(QIcon.fromTheme("go-next"))  # pyright: ignore[reportArgumentType]
+        self.ui.up_button.setIcon(QIcon.fromTheme("go-up"))  # pyright: ignore[reportArgumentType]
+        self.ui.go_button.setIcon(QIcon.fromTheme("go-jump"))  # pyright: ignore[reportArgumentType]
 
     def setup_connections(self):
         self.ui.navigation_pane.clicked.connect(self.on_navigation_pane_clicked)
@@ -285,12 +185,12 @@ class FileSystemExplorerWidget(QMainWindow):
         self.ui.file_list_view.doubleClicked.connect(self.on_file_list_view_double_clicked)
         self.ui.address_bar.returnPressed.connect(self.on_address_bar_return)
         self.ui.go_button.clicked.connect(self.on_go_button_clicked)
-        self.ui.file_list_view.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.file_list_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
         self.ui.file_list_view.customContextMenuRequested.connect(self.show_context_menu)
         self.ui.back_button.clicked.connect(self.go_back)
         self.ui.forward_button.clicked.connect(self.go_forward)
         self.ui.up_button.clicked.connect(self.go_up)
-        self.ui.search_bar.textChanged.connect(self.on_search_text_changed)
+        self.ui.search_bar.editingFinished.connect(self.on_search_text_changed)
 
         # Connect menu actions
         self.ui.action_new_window.triggered.connect(self.new_window)
@@ -308,9 +208,9 @@ class FileSystemExplorerWidget(QMainWindow):
         self.ui.action_select_none.triggered.connect(self.select_none)
 
         self.ui.action_refresh.triggered.connect(self.refresh)
-        self.ui.action_list.triggered.connect(lambda: self.change_view_mode(ViewMode.LIST))
-        self.ui.action_details.triggered.connect(lambda: self.change_view_mode(ViewMode.DETAILS))
-        self.ui.action_tiles.triggered.connect(lambda: self.change_view_mode(ViewMode.TILES))
+        self.ui.action_list.triggered.connect(lambda: self.stacked_widget.change_view_mode(ViewMode.LIST))
+        self.ui.action_details.triggered.connect(lambda: self.stacked_widget.change_view_mode(ViewMode.DETAILS))
+        self.ui.action_tiles.triggered.connect(lambda: self.stacked_widget.change_view_mode(ViewMode.TILES))
         self.ui.action_show_hidden_items.triggered.connect(self.toggle_hidden_items)
 
     def setup_shortcuts(self):
@@ -355,8 +255,8 @@ class FileSystemExplorerWidget(QMainWindow):
         path_obj = Path(path)
         if path_obj.is_dir():
             self.current_path = path_obj
-            self.ui.file_list_view.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(path_obj))))
-            self.ui.navigation_pane.setCurrentIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(path_obj))))
+            self.ui.file_list_view.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(path_obj))))  # pyright: ignore[reportArgumentType]
+            self.ui.navigation_pane.setCurrentIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(path_obj))))  # pyright: ignore[reportArgumentType]
             self.ui.address_bar.setText(str(path_obj))
             self.directory_changed.emit(str(path_obj))
             self.add_to_history(path_obj)
@@ -365,10 +265,10 @@ class FileSystemExplorerWidget(QMainWindow):
             # Handle invalid path
             self.ui.address_bar.setText(str(self.current_path))
 
-    def add_to_history(self, path):
+    def add_to_history(self, path: os.PathLike | str):
         if self.navigation_index < len(self.navigation_history) - 1:
             self.navigation_history = self.navigation_history[: self.navigation_index + 1]
-        self.navigation_history.append(path)
+        self.navigation_history.append(Path(path))
         self.navigation_index = len(self.navigation_history) - 1
 
     def go_back(self):
@@ -389,7 +289,9 @@ class FileSystemExplorerWidget(QMainWindow):
     def on_search_text_changed(self, text):
         self.proxy_model.setFilterRegExp(text)
         self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
-        self.ui.file_list_view.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(self.current_path))))
+        proxy_index = self.fs_model.index(str(self.current_path))
+        srcIndex = self.proxy_model.mapFromSource(proxy_index)
+        self.ui.file_list_view.setRootIndex(srcIndex)  # pyright: ignore[reportArgumentType]
 
     def focus_address_bar(self):
         self.ui.address_bar.setFocus()
@@ -425,29 +327,42 @@ class FileSystemExplorerWidget(QMainWindow):
         selected_items = len(self.ui.file_list_view.selectedIndexes())
         view_model = self.ui.file_list_view.model()
         assert view_model is not None, "View model is None"
-        total_items = view_model.rowCount(self.ui.file_list_view.rootIndex())
+        total_items = view_model.rowCount(self.ui.file_list_view.rootIndex())  # pyright: ignore[reportArgumentType]
         if selected_items > 0:
             status_text = f"{selected_items} item{'s' if selected_items > 1 else ''} selected"
         else:
             status_text = f"{total_items} item{'s' if total_items > 1 else ''}"
-        self.ui.status_bar.addWidget(QLabel(status_text))
+        self.ui.status_bar.addWidget(QLabel(status_text))  # pyright: ignore[reportArgumentType]
 
-        total_size = sum(self.fs_model.size(self.proxy_model.mapToSource(view_model.index(i, 0, self.ui.file_list_view.rootIndex()))) for i in range(total_items))
+        root_index = self.ui.file_list_view.rootIndex()
+        fs_model = self.fs_model
+        proxy_model = self.proxy_model
+
+        def get_source_index(i: int) -> QModelIndex:
+            proxy_index = view_model.index(i, 0, root_index)  # pyright: ignore[reportArgumentType]
+            return proxy_model.mapToSource(proxy_index)  # pyright: ignore[reportArgumentType]
+
+        total_size = sum(fs_model.size(get_source_index(i)) for i in range(total_items))
         self.ui.status_size.setText(self.format_size(total_size))
 
-    def format_size(self, size):
+    def format_size(self, size: int) -> str:
+        readable_size: float = size
         for unit in ["B", "KB", "MB", "GB", "TB"]:
-            if size < 1024.0:
-                return f"{size:.1f} {unit}"
-            size /= 1024.0
-        return f"{size:.1f} PB"
+            if readable_size < 1024.0:  # noqa: PLR2004
+                return f"{readable_size:.1f} {unit}"
+            readable_size /= 1024.0
+        return f"{readable_size:.1f} PB"
 
     def new_window(self):
         new_window = FileSystemExplorerWidget()
         new_window.show()
 
     def open_windows_terminal(self):
-        subprocess.Popen(f'start cmd /K "cd /d {self.current_path}"', shell=True)
+        import shlex
+
+        command = f'start cmd /K "cd /d {self.current_path}"'
+        args = shlex.split(command)
+        subprocess.Popen(args)
 
     def show_properties(self):
         selected_indexes = self.ui.file_list_view.selectedIndexes()
@@ -465,10 +380,10 @@ class FileSystemExplorerWidget(QMainWindow):
     def cut(self):
         self.copy(cut=True)
 
-    def copy(self, cut: bool = False):
+    def copy(self, cut: bool = False):  # noqa: FBT001, FBT002
         selected_indexes = self.ui.file_list_view.selectedIndexes()
         if selected_indexes:
-            source_paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]
+            source_paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]  # pyright: ignore[reportArgumentType]
             mime_data = QMimeData()
             urls = [QUrl.fromLocalFile(str(path)) for path in source_paths]
             mime_data.setUrls(urls)
@@ -499,7 +414,7 @@ class FileSystemExplorerWidget(QMainWindow):
     def delete(self):
         selected_indexes = self.ui.file_list_view.selectedIndexes()
         if selected_indexes:
-            paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]
+            paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]  # pyright: ignore[reportArgumentType]
             reply = QMessageBox.question(
                 self,
                 "Confirm Delete",
@@ -515,7 +430,7 @@ class FileSystemExplorerWidget(QMainWindow):
     def rename(self):
         selected_indexes = self.ui.file_list_view.selectedIndexes()
         if selected_indexes:
-            file_path = Path(self.fs_model.filePath(selected_indexes[0]))
+            file_path = Path(self.fs_model.filePath(selected_indexes[0]))  # pyright: ignore[reportArgumentType]
             new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", QLineEdit.Normal, file_path.name)
             if ok and new_name:
                 new_path = file_path.with_name(new_name)
@@ -537,9 +452,9 @@ class FileSystemExplorerWidget(QMainWindow):
         if callback is not None:
             future.add_done_callback(callback)
 
-    def update_progress(self, value):
+    def update_progress(self, value: int):
         self.progress_bar.setValue(value)
-        if value >= 100:
+        if value >= 100:  # noqa: PLR2004
             self.progress_bar.setVisible(False)
         elif not self.progress_bar.isVisible():
             self.progress_bar.setVisible(True)
@@ -566,7 +481,7 @@ class FileSystemExplorerWidget(QMainWindow):
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         if isinstance(event, QWheelEvent) and event.type() == QEvent.Type.Wheel and bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier):
             delta = event.angleDelta().y() / 120  # This gives us -1 or 1 for most mouse wheels
-            self.change_icon_size(delta * 0.25)
+            self.stacked_widget.change_icon_size(delta * 0.25)
             return True
         return super().eventFilter(obj, event)
 
@@ -613,84 +528,31 @@ class FileSystemExplorerWidget(QMainWindow):
             self.update_address_bar_contents(loaded_path)
 
     def setup_views(self):
-        for view in (self.list_view, self.table_view, self.tiles_view):
-            view.setModel(self.fs_model)
-            view.setRootIndex(self.fs_model.index(str(self.current_path)))
-            view.doubleClicked.connect(self.on_item_double_clicked)
-            view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-            view.customContextMenuRequested.connect(self.show_context_menu)
-            view.viewport().installEventFilter(self)
-
-        qsize_for_icon = QSize(self.icon_size, self.icon_size)
-        self.list_view.setIconSize(qsize_for_icon)
-        self.table_view.setIconSize(qsize_for_icon)
-        self.tiles_view.setIconSize(qsize_for_icon)
-
-        self.list_view.setViewMode(QListView.ViewMode.ListMode)
-        self.list_view.setResizeMode(QListView.ResizeMode.Adjust)
-        self.list_view.setWrapping(False)
-        self.list_view.setUniformItemSizes(True)
-
-        self.table_view.horizontalHeader().setVisible(False)
-        self.table_view.verticalHeader().setVisible(False)
-        self.table_view.setShowGrid(False)
-        self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
-        self.table_view.setSelectionMode(QTableView.SelectionMode.ExtendedSelection)
-        self.table_view.setColumnWidth(0, 200)  # Set a reasonable width for the first column
-        self.table_view.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)  # Disable editing
+        self.stacked_widget.setup_views()
 
         # Set the root index of the tree view to the root of the file system model
-        self.tree_view.setRootIndex(self.fs_model.index(""))
-        self.tree_view.expandToDepth(0)  # Expand the root level to show all drives
+        self.side_panel_tree.setRootIndex(self.fs_model.index(""))
+        self.side_panel_tree.expandToDepth(0)  # Expand the root level to show all drives
 
         min_tree_width = 200
-        self.tree_view.setMinimumWidth(min_tree_width)
-        self.tree_view.setModel(self.fs_model)
-        self.tree_view.setRootIndex(self.fs_model.index(QDir.rootPath()))
-        self.tree_view.clicked.connect(self.on_tree_view_clicked)
-
+        self.side_panel_tree.setMinimumWidth(min_tree_width)
+        self.side_panel_tree.setModel(self.fs_model)
+        self.side_panel_tree.setRootIndex(self.fs_model.index(QDir.rootPath()))
+        self.side_panel_tree.clicked.connect(self.on_view_clicked)
         # Modify the QTreeView to show only the Name column
-        self.tree_view.setModel(self.fs_model)
         for i in range(1, self.fs_model.columnCount()):
-            self.tree_view.hideColumn(i)
-
-    def update_icon_size(self):
-        self.icon_size = int(self.base_icon_size * self.icon_size_multiplier)
-
-    def update_view(self):
-        self.update_icon_size()
-        icon_size = QSize(self.icon_size, self.icon_size)
-
-        if self.current_view == ViewMode.DETAILS:
-            self.table_view.setIconSize(icon_size)
-            self.table_view.horizontalHeader().setVisible(True)
-            self.table_view.verticalHeader().setVisible(False)
-            self.table_view.setShowGrid(False)
-            self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
-            self.table_view.resizeColumnsToContents()
-            self.table_view.horizontalHeader().setStretchLastSection(True)
-        elif self.current_view == ViewMode.LIST:
-            self.list_view.setViewMode(QListView.ViewMode.ListMode)
-            self.list_view.setIconSize(icon_size)
-            self.list_view.setResizeMode(QListView.ResizeMode.Adjust)
-            self.list_view.setWrapping(False)
-            self.list_view.setUniformItemSizes(True)
-            self.list_view.setModelColumn(0)
-        elif self.current_view == ViewMode.TILES:
-            self.tiles_view.setIconSize(icon_size)
-        else:
-            raise ValueError(f"Invalid view mode: {self.current_view}")
+            self.side_panel_tree.hideColumn(i)
 
     def change_path(self, path: Path):
         self.current_path = path
         index = self.fs_model.index(str(path))
-        self.list_view.setRootIndex(index)
-        self.table_view.setRootIndex(index)
-        self.tiles_view.setRootIndex(index)
-        self.tree_view.setCurrentIndex(index)
+        self.stacked_widget.list_view.setRootIndex(index)
+        self.stacked_widget.table_view.setRootIndex(index)
+        self.stacked_widget.tiles_view.setRootIndex(index)
+        self.side_panel_tree.setCurrentIndex(index)
         self.update_address_bar(path)
 
-    def on_tree_view_clicked(self, index: QModelIndex):
+    def on_view_clicked(self, index: QModelIndex):
         path = Path(self.fs_model.filePath(index))
         self.change_path(path)
 
@@ -699,75 +561,13 @@ class FileSystemExplorerWidget(QMainWindow):
         if path.is_dir():
             self.change_path(path)
 
-    def toggle_view(self):
-        if self.current_view == ViewMode.DETAILS:
-            self.current_view = ViewMode.LIST
-            self.stacked_widget.setCurrentWidget(self.list_view)
-        elif self.current_view == ViewMode.LIST:
-            self.current_view = ViewMode.TILES
-            self.stacked_widget.setCurrentWidget(self.tiles_view)
-        else:
-            self.current_view = ViewMode.DETAILS
-            self.stacked_widget.setCurrentWidget(self.table_view)
-        self.update_view()
-
-    def change_view_mode(self, mode: ViewMode):
-        if mode == ViewMode.EXTRA_LARGE_ICONS:
-            self.change_icon_size(3.0)  # Adjust delta to achieve desired size
-        elif mode == ViewMode.LARGE_ICONS:
-            self.change_icon_size(2.0)  # Adjust delta to achieve desired size
-        elif mode == ViewMode.MEDIUM_ICONS:
-            self.change_icon_size(1.0)  # Adjust delta to achieve desired size
-        elif mode == ViewMode.SMALL_ICONS:
-            self.change_icon_size(0.5)  # Adjust delta to achieve desired size
-        elif mode == ViewMode.LIST:
-            self.ui.file_list_view.setViewMode(QListView.ListMode)  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setIconSize(QSize(16, 16))  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setGridSize(QSize())  # pyright: ignore[reportArgumentType]
-        elif mode == ViewMode.DETAILS:
-            assert isinstance(self.ui.file_list_view, QTreeView)
-            # Switch to QTreeView for details view
-            self.ui.file_list_view.setViewMode(QListView.ListMode)  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setIconSize(QSize(16, 16))  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setGridSize(QSize())  # pyright: ignore[reportArgumentType]
-        elif mode == ViewMode.TILES:
-            self.ui.file_list_view.setViewMode(QListView.IconMode)  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setIconSize(QSize(32, 32))  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setGridSize(QSize(120, 80))  # pyright: ignore[reportArgumentType]
-        elif mode == ViewMode.CONTENT:
-            self.preview_view.setVisible(True)
-            # self.preview_view.setPixmap(...)  # TODO: Implement
-        if isinstance(self.ui.file_list_view, (QTableView, QTreeView)):
-            for i in range(self.fs_model.columnCount()):
-                self.ui.file_list_view.setColumnHidden(i, mode != ViewMode.DETAILS)
-
-    def change_icon_size(self, delta: float):
-        new_multiplier = max(
-            self.minimum_multiplier,
-            min(self.maximum_multiplier, self.icon_size_multiplier + delta),
-        )
-        if new_multiplier != self.icon_size_multiplier:
-            self.icon_size_multiplier = new_multiplier
-
-            if self.icon_size_multiplier <= self.details_max_multiplier:
-                self.current_view = ViewMode.DETAILS
-                self.stacked_widget.setCurrentWidget(self.table_view)
-            elif self.list_min_multiplier <= self.icon_size_multiplier <= self.list_max_multiplier:
-                self.current_view = ViewMode.LIST
-                self.stacked_widget.setCurrentWidget(self.list_view)
-            else:
-                self.current_view = ViewMode.TILES
-                self.stacked_widget.setCurrentWidget(self.tiles_view)
-
-            self.update_view()
-
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
-        self.update_view()
+        self.stacked_widget.update_view()
 
     def show_context_menu(self, pos: QPoint):
         current_view = self.stacked_widget.currentWidget()
-        assert isinstance(current_view, (QListView, QTableView, QTileView)), f"Current view is not a QListView, instead was a {type(current_view)}"
+        assert isinstance(current_view, (QListView, QTableView, RobustTileView)), f"Current view is not a QListView, instead was a {type(current_view)}"
         index = current_view.indexAt(pos)
         if index.isValid():
             self.show_item_context_menu(pos, index)

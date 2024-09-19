@@ -151,7 +151,7 @@ def adjust_pointer_depth(  # noqa: C901, ANN201
     deref_addr = addressof(deref_obj)
 
     print(f"levels: {pointer_depth}, deref: {hex(deref_addr)}, orig: {hex(orig_addr)}")
-    assert orig_addr == deref_addr, f"Original address DOES NOT match dereferenced address! ({hex(orig_addr)} != {hex(deref_addr)})"
+    assert orig_addr == deref_addr, f"Original address DOES NOT match dereferenced address! ({hex(orig_addr)} == {hex(deref_addr)})"
     return retptr
 
 

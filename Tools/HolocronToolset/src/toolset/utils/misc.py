@@ -251,7 +251,7 @@ if __name__ == "__main__":  # quick test
     for key in all_keys:
         key_string = getQtKeyString(key)
         key_from_string = getQtKey(key_string)
-        assert key is key_from_string, f"Key str mismatch: {key} != {key_from_string}"
+        assert key is key_from_string, f"Key str mismatch: {key} == {key_from_string}"
         key_int = STRING_KEY_TO_INT[key_string]
         key_from_int = QtKey(key_int)
         assert key_from_string == key_from_int, f"Key int mismatch: {key_from_string} ({id(key_from_string)}) != {key_from_int} ({id(key_from_int)})"
@@ -259,9 +259,9 @@ if __name__ == "__main__":  # quick test
     for button in all_buttons:
         button_string = getQtButtonString(button)
         button_from_string = getQtMouseButton(button_string)
-        assert button == button_from_string, f"Button str mismatch: {button} != {button_from_string}"
+        assert button == button_from_string, f"Button str mismatch: {button} == {button_from_string}"
         button_int = BUTTON_TO_INT[button_from_string]
         button_from_int = INT_TO_BUTTON[button_int]
-        assert button_from_string == button_from_int, f"Button int mismatch: {button_from_string} != {button_from_int}"
+        assert button_from_string == button_from_int, f"Button int mismatch: {button_from_string} == {button_from_int}"
 
     print("All keys/buttons matched successfully!")

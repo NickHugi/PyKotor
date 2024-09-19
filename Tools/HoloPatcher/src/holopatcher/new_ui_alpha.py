@@ -77,9 +77,9 @@ from pykotor.tslpatcher.namespaces import PatcherNamespace  # noqa: E402
 from pykotor.tslpatcher.patcher import ModInstaller  # noqa: E402
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader  # noqa: E402
 from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
+from utility.common.misc_string.util import striprtf  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.misc import ProcessorArchitecture, is_debug_mode  # noqa: E402
-from utility.string_util import striprtf  # noqa: E402
 from utility.system.agnostics import askdirectory, askokcancel, askopenfilename, askyesno, showerror  # noqa: E402
 from utility.system.app_process.shutdown import terminate_main_process  # noqa: E402
 

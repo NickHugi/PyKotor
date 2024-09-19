@@ -30,9 +30,9 @@ from toolset.utils.misc import BUTTON_TO_INT
 if TYPE_CHECKING:
     from pykotor.resource.generics.git import GITInstance
     from toolset.gui.editors.git import _SpawnMode
-    from ui.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
     from toolset.gui.windows.module_designer import ModuleDesigner
+    from ui.module import ModuleRenderer
 
 
 class ModuleDesignerControls3d:
@@ -40,8 +40,8 @@ class ModuleDesignerControls3d:
         self.editor: ModuleDesigner = editor
         self.renderer: ModuleRenderer = renderer
         self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
-        if self.renderer._scene is not None:
-            self.renderer._scene.show_cursor = True
+        if self.renderer._scene is not None:  # noqa: SLF001
+            self.renderer._scene.show_cursor = True  # noqa: SLF001
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
@@ -152,9 +152,9 @@ class ModuleDesignerControls3d:
     def _duplicateSelectedInstance(self):  # TODO(th3w1zard1): Seems the code throughout is designed for multi-selections, yet nothing uses it. Probably disabled due to a bug or planned for later.
         instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
         if isinstance(instance, GITCamera):
-            instance.camera_id = self.editor._module.git().resource()().next_camera_id()
+            instance.camera_id = self.editor._module.git().resource().next_camera_id()
         self.editor.log.info(f"Duplicating {instance!r}")
-        self.editor.undoStack.push(DuplicateCommand(self.editor._module.git().resource()(), [instance], self.editor))  # noqa: SLF001
+        self.editor.undoStack.push(DuplicateCommand(self.editor._module.git().resource(), [instance], self.editor))  # noqa: SLF001
         vect3 = self.renderer.scene.cursor.position()
         instance.position = Vector3(vect3.x, vect3.y, vect3.z)
         #self.editor.git().add(instance)  # Handled by the undoStack above.

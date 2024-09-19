@@ -71,9 +71,9 @@ from pykotor.tslpatcher.logger import LogType, PatchLogger  # noqa: E402
 from pykotor.tslpatcher.patcher import ModInstaller  # noqa: E402
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader  # noqa: E402
 from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
+from utility.common.misc_string.util import striprtf  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.misc import ProcessorArchitecture  # noqa: E402
-from utility.string_util import striprtf  # noqa: E402
 from utility.system.app_process.shutdown import terminate_main_process  # noqa: E402
 from utility.system.os_helper import win_get_system32_dir  # noqa: E402
 from utility.system.path import Path  # noqa: E402

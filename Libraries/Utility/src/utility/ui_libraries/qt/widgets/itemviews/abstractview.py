@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QModelIndex, QPoint, QTimer, Qt
+from qtpy.QtCore import QPoint, QSortFilterProxyModel, QTimer, Qt
 from qtpy.QtGui import QColor, QCursor, QPalette
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -13,11 +14,13 @@ from qtpy.QtWidgets import (
     QAction,
     QApplication,
     QFrame,
+    QLabel,
     QMenu,
     QPushButton,
     QStyle,
     QStyleOptionViewItem,
     QStyledItemDelegate,
+    QToolBar,
     QWhatsThis,
 )
 
@@ -25,7 +28,7 @@ from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustBaseWidget
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QAbstractItemModel
+    from qtpy.QtCore import QAbstractItemModel, QModelIndex
     from qtpy.QtGui import QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import (
         QAbstractItemDelegate,
@@ -35,30 +38,100 @@ if TYPE_CHECKING:
 
 
 class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKING else object):
-    def __init__(self, parent: QWidget | None = None, *, settings_name: str | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        *,
+        settings_name: str | None = None,
+    ):
         super().__init__(parent, settings_name=settings_name)
-        self.layout_changed_debounce_timer: QTimer = QTimer(self)
-        self.setup_backup_menu_when_header_hidden()
+        self._layout_changed_debounce_timer: QTimer = QTimer(self)
+        self._setup_backup_menu_when_header_hidden()
+        self._initialized = False
 
-    def setup_backup_menu_when_header_hidden(self):
-        self.corner_button = QPushButton("☰", self)
-        self.corner_button.setFixedSize(20, 20)
-        self.corner_button.clicked.connect(lambda _some_bool_qt_is_sending: self.show_header_context_menu())
-        self.corner_button.setToolTip("Show context menu")
-        if self.verticalScrollBar().isVisible():
-            self.corner_button.move(self.width() - self.corner_button.width() - self.verticalScrollBar().width(), 0)
+    def toggle_toolbar(self):
+        if self._robustToolBar is None:
+            self.create_toolbar()
         else:
-            self.corner_button.move(self.width() - self.corner_button.width(), 0)
-        self.corner_button.show()
+            self._robustToolBar.setVisible(not self._robustToolBar.isVisible())
 
-    def show_header_context_menu(self, pos: QPoint | None = None, parent: QWidget | None = None):
-        print(f"{self.__class__.__name__}.show_header_context_menu")
+    def create_toolbar(self):
+        menu = self.build_context_menu()
+        self._robustToolBar = QToolBar(self)
+        self._robustToolBar.setOrientation(Qt.Orientation.Vertical)
+        self._robustToolBar.setMovable(True)
+        self._robustToolBar.setFloatable(False)
+
+        def add_actions_from_menu(menu: QMenu):
+            for action in menu.actions():
+                if action.menu():
+                    self._robustToolBar.addSeparator()
+                    self._robustToolBar.addWidget(QLabel(action.text()))
+                    add_actions_from_menu(action.menu())
+                else:
+                    self._robustToolBar.addAction(action)
+
+        add_actions_from_menu(menu)
+
+        self._robustToolBar.move(
+            self.width() - self._robustToolBar.sizeHint().width(),
+            self._robustCornerButton.height(),
+        )
+        self._robustToolBar.show()
+
+    def setModel(self, model: QAbstractItemModel):
+        super().setModel(model)
+        self._initialized = False
+        self.build_context_menu()  # doesn't actually build the menu, but initializes the settings with this new instance.
+        self._initialized = True
+
+    def _setup_backup_menu_when_header_hidden(self):
+        self._robustCornerButton = QPushButton("☰", self)
+        self._robustCornerButton.setObjectName("robustCornerButton")
+        self._robustCornerButton.setFixedSize(20, 20)
+        self._robustCornerButton.clicked.connect(lambda _some_bool_qt_is_sending: self.show_header_context_menu())
+        self._robustCornerButton.setToolTip("Show context menu")
+        if self.verticalScrollBar().isVisible():
+            self._robustCornerButton.move(self.width() - self._robustCornerButton.width() - self.verticalScrollBar().width(), 0)
+        else:
+            self._robustCornerButton.move(self.width() - self._robustCornerButton.width(), 0)
+        self._robustCornerButton.show()
+
+    def show_header_context_menu(
+        self,
+        pos: QPoint | None = None,
+        parent: QWidget | None = None,
+        *,
+        exec_menu: bool = True,
+    ):
+        self.toggle_toolbar()
         menu = self.build_context_menu(parent)
-        if parent is not None:
-            pos = parent.mapToGlobal(QPoint(0, parent.height()))
-        elif pos is None:
-            pos = QCursor.pos()
-        menu.exec_(pos)
+        if not self._initialized:
+            return
+        if pos is None:
+            pos = (
+                QCursor.pos()
+                if parent is None
+                else parent.mapToGlobal(QPoint(parent.width(), parent.height()))
+            )
+        if not exec_menu:
+            return
+        menu.exec(pos)
+
+    def selected_source_indexes(self) -> list[QModelIndex]:
+        """Same as QAbstractItemView.selectedIndexes, but returns the source indexes instead of the proxy model indexes."""
+        indexes: list[QModelIndex] = []
+        current_model = self.model()
+        for index in self.selectedIndexes():
+            sourceIndex = (
+                current_model.mapToSource(index)  # pyright: ignore[reportArgumentType]
+                if isinstance(current_model, QSortFilterProxyModel) else index
+            )
+            if not sourceIndex.isValid():
+                RobustLogger().warning("Invalid source index for row %d", index.row())
+                continue
+            indexes.append(sourceIndex)
+        return indexes
 
     def itemDelegate(self) -> QStyledItemDelegate:
         return super().itemDelegate()  # pyright: ignore[reportReturnType]
@@ -70,11 +143,20 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
         self.debounce_layout_changed()
+        if getattr(self, "_robustCornerButton", None) is None:
+            self._setup_backup_menu_when_header_hidden()
+            self._robustCornerButton.show()
         if self.verticalScrollBar().isVisible():
-            self.corner_button.move(self.width() - self.corner_button.width() - self.verticalScrollBar().width(), 0)
+            self._robustCornerButton.move(self.width() - self._robustCornerButton.width() - self.verticalScrollBar().width(), 0)
         else:
-            self.corner_button.move(self.width() - self.corner_button.width(), 0)
-        self.corner_button.show()
+            self._robustCornerButton.move(self.width() - self._robustCornerButton.width(), 0)
+        self._robustCornerButton.show()
+        if getattr(self, "_robustToolBar", None) is None:
+            self.create_toolbar()
+        self._robustToolBar.move(
+            self.width() - self._robustToolBar.sizeHint().width(),
+            self._robustCornerButton.height(),
+        )
 
     def wheelEvent(
         self,
@@ -125,6 +207,85 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         super()._handle_color_action(get_func, title, settings_key)
         self.debounce_layout_changed()
         self.viewport().update()
+
+    def set_text_size(self, size: int):
+        delegate = self.itemDelegate()
+        if isinstance(delegate, HTMLDelegate):
+            text_size = max(1, size)
+            model: QAbstractItemModel | None = self.model()
+            assert model is not None
+            delegate.set_text_size(text_size)
+            self.update_columns_after_text_size_change()
+        else:
+            font = self.font()
+            font.setPointSize(max(1, size))
+            self.setFont(font)
+            self.updateGeometry()
+        self.debounce_layout_changed()
+
+    def get_text_size(self) -> int:
+        delegate = self.itemDelegate()
+        return delegate.text_size if isinstance(delegate, HTMLDelegate) else self.font().pointSize()
+
+    def update_columns_after_text_size_change(self):
+        """This method should be implemented by subclasses if needed."""
+
+    def emit_layout_changed(self):
+        model = self.model()
+        if model is not None:
+            model.layoutChanged.emit()
+
+    def debounce_layout_changed(self, timeout: int = 100, *, pre_change_emit: bool = False):
+        self.viewport().update()
+        # self.update()
+        if self._layout_changed_debounce_timer.isActive():
+            self._layout_changed_debounce_timer.stop()
+        elif pre_change_emit:
+            self.model().layoutAboutToBeChanged.emit()
+        self._layout_changed_debounce_timer.start(timeout)
+
+    def set_scroll_step_size(self, value: int):
+        """Set the number of items to scroll per wheel event."""
+        print(f"scrollStepSize set to {value}")
+        self.set_setting("scrollStepSize", value)
+
+    def scroll_multiple_steps(self, direction: Literal["up", "down"]):
+        """Scroll multiple steps based on the user-defined setting.
+
+        Determines what a 'step' is by checking `self.verticalScrollMode()`
+        and multiplies it by the user-defined number of items to scroll.
+        """
+        vertScrollBar = self.verticalScrollBar()
+        assert vertScrollBar is not None
+        step_size = self.get_setting("scrollStepSize", 1)
+
+        if self.verticalScrollMode() == QAbstractItemView.ScrollMode.ScrollPerItem:
+            if qtpy.QT5:
+                action = vertScrollBar.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderSingleStepAdd
+            else:
+                action = vertScrollBar.SliderAction.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderAction.SliderSingleStepAdd
+            for _ in range(step_size):
+                vertScrollBar.triggerAction(action)
+        else:
+            scrollStep = -self.get_text_size() if direction == "up" else self.get_text_size()
+            vertScrollBar.setValue(vertScrollBar.value() + scrollStep * step_size)
+
+    def styleOptionForIndex(self, index: QModelIndex) -> QStyleOptionViewItem:
+        option = QStyleOptionViewItem()
+        if index.isValid():
+            option.initFrom(self)
+            if self.selectionModel().isSelected(index):
+                option.state |= QStyle.StateFlag.State_Selected
+            if index == self.currentIndex() and self.hasFocus():
+                option.state |= QStyle.StateFlag.State_HasFocus
+            if not self.isEnabled():
+                option.state = cast(QStyle.StateFlag, option.state & ~QStyle.StateFlag.State_Enabled)
+            checkStateData = index.data(Qt.ItemDataRole.CheckStateRole)
+            option.checkState = Qt.CheckState.Unchecked if checkStateData is None else checkStateData
+            option.displayAlignment = Qt.AlignLeft | Qt.AlignVCenter
+            option.index = index
+            option.text = index.data(Qt.ItemDataRole.DisplayRole)
+        return option
 
     def build_header_context_menu(self, parent: QWidget | None = None) -> QMenu:
         """Subclass should override this to add header-specific actions."""
@@ -466,103 +627,3 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         context_menu.addAction(whats_this_action)
 
         return context_menu
-
-    def set_text_size(self, size: int):
-        delegate = self.itemDelegate()
-        if isinstance(delegate, HTMLDelegate):
-            text_size = max(1, size)
-            model: QAbstractItemModel | None = self.model()
-            assert model is not None
-            delegate.set_text_size(text_size)
-            self.update_columns_after_text_size_change()
-        else:
-            font = self.font()
-            font.setPointSize(max(1, size))
-            self.setFont(font)
-            self.updateGeometry()
-        self.debounce_layout_changed()
-
-    def get_text_size(self) -> int:
-        delegate = self.itemDelegate()
-        return delegate.text_size if isinstance(delegate, HTMLDelegate) else self.font().pointSize()
-
-    def update_columns_after_text_size_change(self):
-        """This method should be implemented by subclasses if needed."""
-
-    def emit_layout_changed(self):
-        model = self.model()
-        if model is not None:
-            model.layoutChanged.emit()
-
-    def debounce_layout_changed(self, timeout: int = 100, *, pre_change_emit: bool = False):
-        self.viewport().update()
-        # self.update()
-        if self.layout_changed_debounce_timer.isActive():
-            self.layout_changed_debounce_timer.stop()
-        elif pre_change_emit:
-            self.model().layoutAboutToBeChanged.emit()
-        self.layout_changed_debounce_timer.start(timeout)
-
-    def set_scroll_step_size(self, value: int):
-        """Set the number of items to scroll per wheel event."""
-        print(f"scrollStepSize set to {value}")
-        self.set_setting("scrollStepSize", value)
-
-    def scroll_multiple_steps(self, direction: Literal["up", "down"]):
-        """Scroll multiple steps based on the user-defined setting.
-
-        Determines what a 'step' is by checking `self.verticalScrollMode()`
-        and multiplies it by the user-defined number of items to scroll.
-        """
-        vertScrollBar = self.verticalScrollBar()
-        assert vertScrollBar is not None
-        step_size = self.get_setting("scrollStepSize", 1)
-
-        if self.verticalScrollMode() == QAbstractItemView.ScrollMode.ScrollPerItem:
-            if qtpy.QT5:
-                action = vertScrollBar.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderSingleStepAdd
-            else:
-                action = vertScrollBar.SliderAction.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderAction.SliderSingleStepAdd
-            for _ in range(step_size):
-                vertScrollBar.triggerAction(action)
-        else:
-            scrollStep = -self.get_text_size() if direction == "up" else self.get_text_size()
-            vertScrollBar.setValue(vertScrollBar.value() + scrollStep * step_size)
-
-    def styleOptionForIndex(self, index: QModelIndex) -> QStyleOptionViewItem:
-        option = QStyleOptionViewItem()
-        if index.isValid():
-            option.initFrom(self)
-            if self.selectionModel().isSelected(index):
-                option.state |= QStyle.StateFlag.State_Selected
-            if index == self.currentIndex() and self.hasFocus():
-                option.state |= QStyle.StateFlag.State_HasFocus
-            if not self.isEnabled():
-                option.state = cast(QStyle.StateFlag, option.state & ~QStyle.StateFlag.State_Enabled)
-            checkStateData = index.data(Qt.ItemDataRole.CheckStateRole)
-            option.checkState = Qt.CheckState.Unchecked if checkStateData is None else checkStateData
-            option.displayAlignment = Qt.AlignLeft | Qt.AlignVCenter
-            option.index = index
-            option.text = index.data(Qt.ItemDataRole.DisplayRole)
-        return option
-
-    def get_identifying_text(self, index_or_item: QModelIndex | None) -> str:  # noqa: N803
-        if index_or_item is None:
-            return "(None)"
-        if not isinstance(index_or_item, QModelIndex):
-            return f"(Unknown index/item: {index_or_item})"
-        if not index_or_item.isValid():
-            return f"(invalid index at row '{index_or_item.row()}', column '{index_or_item.column()}')"
-
-        text = index_or_item.data(Qt.ItemDataRole.DisplayRole)
-        if isinstance(text, str):
-            text = text.strip()
-        else:
-            text = str(text)
-        parent_count = 0
-        current_index = index_or_item.parent()
-        while current_index.isValid():
-            parent_count += 1
-            current_index = current_index.parent()
-
-        return f"Item/Index at Row: {index_or_item.row()}, Column: {index_or_item.column()}, Ancestors: {parent_count}\nText for above item: {text}\n"

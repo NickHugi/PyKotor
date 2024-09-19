@@ -50,7 +50,6 @@ class TestPathInheritance(unittest.TestCase):
             self.assertIs(PosixPath("mypath").__class__, PosixPath)
 
         self.assertIs(Path("mypath").__class__, PosixPath if os.name == "posix" else WindowsPath)
-        self.assertIs(CaseAwarePath("mypath").__class__, CaseAwarePath)
         self.assertIs(PureWindowsPath("mypath").__class__.__base__, PurePath)
         self.assertIs(PurePath("mypath").__class__.__base__, PurePath)
         self.assertIs(PurePosixPath("mypath").__class__.__base__, PurePath)

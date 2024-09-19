@@ -1,1013 +1,1362 @@
 from __future__ import annotations
 
-import asyncio
 import os
+import pathlib
 import shutil
-import time
-import traceback
+import sys
+import typing
 
-from concurrent.futures import ProcessPoolExecutor
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from contextlib import suppress
+from ctypes import pointer
+from typing import TYPE_CHECKING, Any, ClassVar, Iterable, overload
 
-from loggerplus import RobustLogger
-from qasync import QEventLoop, asyncSlot  # pyright: ignore[reportMissingTypeStubs]
-from qtpy.QtCore import (
-    QAbstractItemModel,
-    QDateTime,
-    QDir,
-    QFileDevice,
-    QFileInfo,
-    QFileSystemWatcher,
-    QMimeData,
-    QModelIndex,
-    QMutex,
-    QThread,
-    QUrl,
-    Qt,
-    Signal,  # pyright: ignore[reportPrivateImportUsage]
-)
-from qtpy.QtGui import QIcon
-from qtpy.QtWidgets import QApplication, QMessageBox, QStyle, QTreeView
+import qtpy  # noqa: E402
 
-from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyFileInfoGatherer
-from utility.ui_libraries.qt.filesystem.pyfilesystemmodelsorter import PyFileSystemModelSorter, SortingError
-from utility.ui_libraries.qt.filesystem.pyfilesystemnode import PyFileSystemNode
+from loggerplus import RobustLogger  # noqa: E402
+from qtpy.QtCore import QAbstractItemModel, QBasicTimer, QDir, QFileDevice, QFileInfo, QMimeData, QModelIndex, QMutex, QMutexLocker, QTimer, QUrl, QVariant, Qt
+from qtpy.QtGui import QIcon  # noqa: E402
+from qtpy.QtWidgets import QApplication, QFileIconProvider, QFileSystemModel, QMainWindow, QVBoxLayout, QWidget
+
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView  # noqa: E402
+
+
+def update_sys_path(path: pathlib.Path):
+    working_dir = str(path)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+
+
+file_absolute_path = pathlib.Path(__file__).resolve()
+
+pykotor_path = file_absolute_path.parents[8] / "Libraries" / "PyKotor" / "src" / "pykotor"
+if pykotor_path.exists():
+    update_sys_path(pykotor_path.parent)
+pykotor_gl_path = file_absolute_path.parents[8] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+if pykotor_gl_path.exists():
+    update_sys_path(pykotor_gl_path.parent)
+utility_path = file_absolute_path.parents[5]
+if utility_path.exists():
+    update_sys_path(utility_path)
+toolset_path = file_absolute_path.parents[8] / "Tools/HolocronToolset/src/toolset"
+if toolset_path.exists():
+    update_sys_path(toolset_path.parent)
+    os.chdir(toolset_path)
+
+from utility.system.path import Path  # noqa: E402
+from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyFileInfoGatherer  # noqa: E402
+from utility.ui_libraries.qt.filesystem.pyfilesystemnode import PyFileSystemNode  # noqa: E402
 
 if TYPE_CHECKING:
-    import multiprocessing
+    from ctypes import _Pointer, c_bool
 
-    from qtpy.QtCore import QObject
-    from qtpy.QtWidgets import QFileIconProvider
+    from qtpy.QtCore import QDateTime, QObject, QTimerEvent, Signal  # pyright: ignore[reportPrivateImportUsage]  # noqa: E402  # noqa: E402  # noqa: E402
+    from qtpy.QtWidgets import QScrollBar
+    from typing_extensions import Literal
 
 
-class PyQFileSystemModel(QAbstractItemModel):
-    directoryLoaded = Signal(str)
-    rootPathChanged = Signal(str)
-    fileRenamed = Signal(str, str, str)
-    fileSystemChanged = Signal()
-    sortingChanged = Signal()
-    sortingError = Signal(str)
-    asyncOperationError = Signal(str)
-    cacheUpdated = Signal()
-    customDataChanged = Signal(QModelIndex, QModelIndex, int)
+if qtpy.API_NAME in ("PyQt6", "PySide6"):
+    QDesktopWidget = None
+    from qtpy.QtGui import QUndoCommand, QUndoStack  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
+elif qtpy.API_NAME in ("PyQt5", "PySide2"):
+    from qtpy.QtWidgets import QDesktopWidget, QUndoCommand, QUndoStack  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
+else:
+    raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
 
-    fileCreated: Signal = Signal(str)
-    fileDeleted: Signal = Signal(str)
-    fileModified: Signal = Signal(str)
-    fileAccessed: Signal = Signal(str)  # TODO: figure out how to check if a file is accessed
-    fileContentsModified: Signal = Signal(str)  # TODO: figure out how to check if a file is written to
-    directoryCreated: Signal = Signal(str)
-    directoryDeleted: Signal = Signal(str)
-    directoryModified: Signal = Signal(str)
-    permissionChanged: Signal = Signal(str)  # TODO: figure out how to check if a file's permissions have changed
-    symbolicLinkChanged: Signal = Signal(str)
-    accessDenied: Signal = Signal(str)  # Emitted when access to a file OR folder is denied
-    fileAttributeChanged: Signal = Signal(str)  # TODO: figure out how to check if a file's attributes have changed
 
+if os.name == "nt_disabled":
+    from ctypes import POINTER, byref, windll
+    from ctypes.wintypes import LPCWSTR
+
+    from utility.system.win32.com.com_types import GUID
+    from utility.system.win32.com.interfaces import SIGDN, IShellItem
+    from utility.system.win32.hresult import HRESULT
+
+    try:
+        import comtypes  # pyright: ignore[reportMissingTypeStubs]
+
+        from comtypes.automation import BSTR, IUnknown  # pyright: ignore[reportMissingTypeStubs]
+    except ImportError:
+        RobustLogger().error("Could not setup the comtypes library, volume functionality will be disabled.")
+    else:
+
+        def volumeName(path: str) -> str:
+            comtypes.CoInitialize()
+            # Create the IShellItem instance for the given path
+            SHCreateItemFromParsingName = windll.shell32.SHCreateItemFromParsingName
+            print("<SDM> [volumeName scope] SHCreateItemFromParsingName: ", SHCreateItemFromParsingName)
+
+            SHCreateItemFromParsingName.argtypes = [LPCWSTR, POINTER(IUnknown), POINTER(GUID), POINTER(POINTER(IShellItem))]
+            print("<SDM> [volumeName scope] SHCreateItemFromParsingName.argtypes: ", SHCreateItemFromParsingName.argtypes)
+
+            SHCreateItemFromParsingName.restype = HRESULT
+            print("<SDM> [volumeName scope] SHCreateItemFromParsingName.restype: ", SHCreateItemFromParsingName.restype)
+
+            pShellItem = POINTER(IShellItem)()
+            print("<SDM> [volumeName scope] pShellItem: ", pShellItem)
+
+            hr = SHCreateItemFromParsingName(path, POINTER(IUnknown)(), byref(IShellItem._iid_), byref(pShellItem))
+            print("<SDM> [volumeName scope] hr: ", hr)
+
+            HRESULT.raise_for_status(hr, "SHCreateItemFromParsingName failed.")
+
+            name = BSTR()
+            print("<SDM> [volumeName scope] name: ", name)
+
+            hr = pShellItem.GetDisplayName(SIGDN.SIGDN_NORMALDISPLAY, comtypes.byref(name))
+            print("<SDM> [volumeName scope] hr: ", hr)
+
+            if hr != 0:
+                raise OSError(f"GetDisplayName failed! HRESULT: {hr}")
+
+            result = name.value
+            print("<SDM> [volumeName scope] result: ", result)
+
+            return result
+else:
+
+    def volumeName(path: str) -> str:
+        return path
+
+
+def filewatcherenabled(default: bool = True) -> bool:  # noqa: FBT001, FBT002
+    watchFiles = os.environ.get("QT_FILESYSTEMMODEL_WATCH_FILES", "").strip()
+    if watchFiles:
+        with suppress(ValueError):
+            return bool(int(watchFiles))
+    return default
+
+
+class PyFileSystemModel(QAbstractItemModel):
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
-        self._root: PyFileSystemNode = PyFileSystemNode()
-        self._fileInfoGatherer: PyFileInfoGatherer = PyFileInfoGatherer(self)
-        self._fileSystemWatcher: QFileSystemWatcher = QFileSystemWatcher(self)
-        self._filters: QDir.Filters = QDir.AllEntries | QDir.NoDotAndDotDot | QDir.AllDirs
+        self._rootDir: QDir = QDir()
+        self._fileInfoGatherer: PyFileInfoGatherer = PyFileInfoGatherer(self)  # Use QFileInfoGatherer
+        self.__fileInfoGathererLock: QMutex = QMutex()
+        self._delayedSortTimer: QTimer = QTimer()
+        self._delayedSortTimer.setSingleShot(True)
+        self._bypassFilters: dict[PyFileSystemNode, Any] = {}
         self._nameFilters: list[str] = []
-        self._executor: ProcessPoolExecutor = ProcessPoolExecutor()
-
-        self._fileInfoGatherer.newListOfFiles.connect(self._addNewListOfFiles)
-        self._fileInfoGatherer.updates.connect(self._handleUpdates)
-        self._fileInfoGatherer.directoryLoaded.connect(self._handleDirectoryLoaded)
-        self._fileSystemWatcher.directoryChanged.connect(self._handleDirectoryChanged)
-        self._fileSystemWatcher.fileChanged.connect(self._handleFileChanged)
-        self._mutex: QMutex = QMutex()
-
-        self._resolveSymlinks: bool = False
+        self._resolvedSymLinks: dict[Any, Any] = {}  # Dictionary for resolved symlinks
+        self._root: PyFileSystemNode = PyFileSystemNode("")
+        self._toFetch: list[dict[Literal["node", "dir", "file"], Any]] = []
+        self._filesToFetch: list[str] = []
+        self._fetchingTimer: QBasicTimer = QBasicTimer()
+        self._filters: QDir.Filters | int = QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot | QDir.Filter.AllDirs
+        self._sortColumn: int = 0
+        self._sortOrder: Qt.SortOrder = Qt.SortOrder.AscendingOrder
+        self._forceSort: bool = True
         self._readOnly: bool = True
-        self._rootPath: str = ""
-        self._sorter: PyFileSystemModelSorter = PyFileSystemModelSorter(0)
-        self._sortOrder: Qt.SortOrder = Qt.AscendingOrder
-        self._nameFilterDisables: bool = True
-        self._cache: dict[str, Any] = {}
-        self._cache_expiration: int = 60  # seconds
-        self._customRoles: dict[int, Any] = {}
-        self._customFilters: list[str] = []
-        self._dragEnabled: bool = True
-        self._error_retry_count: dict[str, int] = {}
-        self._max_retries: int = 3
-        self._watcher_cleanup_interval: int = 300  # seconds
-        self._max_watcher_paths: int = 1000
-        self._file_watcher_cache: dict[str, Any] = {}
+        self._setRootPath: bool = False
+        self._nameFilterDisables = os.name == "posix"  # False on windows, True on mac and unix
+        # This flag is an optimization for QFileDialog. It enables a sort which is
+        # not recursive, meaning we sort only what we see.
+        self._disableRecursiveSort: bool = False
 
-    @property
-    def _loop(self) -> QEventLoop:
-        return QEventLoop(QApplication.instance())
+        # Connections
+        self._fileInfoGatherer.updates.connect(self._q_fileSystemChanged)
+        self._fileInfoGatherer.newListOfFiles.connect(self._q_directoryChanged)
+        self._fileInfoGatherer.nameResolved.connect(self._q_resolvedName)
+        # self._fileInfoGatherer.directoryLoaded.connect(self._q_directoryChanged)
+        self._delayedSortTimer.timeout.connect(self._q_performDelayedSort)
 
-    @property
-    def _sortColumn(self) -> int:
-        return self._sorter.sortColumn
+        def shutdownFileGatherer(abort_atom: _Pointer[c_bool]):
+            with QMutexLocker(self.__fileInfoGathererLock):
+                abort_atom.contents.value = True
 
-    @_sortColumn.setter
-    def _sortColumn(self, value: int):
-        self._sorter.sortColumn = value
+        app = QApplication.instance()
+        assert app is not None
+        with QMutexLocker(self.__fileInfoGathererLock):
+            app.aboutToQuit.connect(lambda atom=pointer(self._fileInfoGatherer.abort): shutdownFileGatherer(atom))  # noqa: B008
 
-    @property
-    def _watcher_thread(self) -> QThread:
-        return self._fileSystemWatcher.thread()
+    def _watchPaths(self, paths: list[str]):
+        self._fileInfoGatherer.watchPaths(paths)
 
-    def __del__(self):
-        self._executor.shutdown(wait=False)
+    def createIndex(self, row: int, column: int, obj: Any = ...) -> QModelIndex:
+        print(f"createIndex(row={row}, col={column}, obj(type)={obj.__class__.__name__})")
+        if isinstance(obj, PyFileSystemNode):
+            objFileInfo = obj.fileInfo()
+            print(f"createItem: item being created for path: {None if objFileInfo is None else objFileInfo.path()}, filename={obj.fileName}")
+        newIndex = super().createIndex(row, column, obj)
+        test: bool = newIndex.isValid()
+        assert test, f"createIndex's newIndex.isValid(): {test}"
+        return newIndex
 
-    def nodeFromIndex(self, index: QModelIndex) -> PyFileSystemNode:
-        return index.internalPointer() if index.isValid() else self._root
+    def _q_directoryChanged(self, directory: str, files: list[str] | None = None):
+        parentNode = self.node(directory, fetch=False)
+        RobustLogger().warning(
+            f"<SDM> [_q_directoryChanged scope] parentNode: {parentNode} row: {parentNode.row()} path: {parentNode.fileInfo() and parentNode.fileInfo().path()}"
+        )
 
-    def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:  # noqa: B008
-        if not self.hasIndex(row, column, parent):
-            return QModelIndex()
+        if len(parentNode.children) == 0:
+            return
 
-        parentNode = self.nodeFromIndex(parent)
-        childItem = list(parentNode.children.values())[row]
-        if childItem:
-            return self.createIndex(row, column, childItem)
-        return QModelIndex()
+        if files is None:
+            toRemove = [child.fileName for child in parentNode.children.values()]
+            print("<SDM> [_q_directoryChanged scope] toRemove: ", toRemove, "length:", len(toRemove))
 
-    def parent(self, index: QModelIndex) -> QModelIndex:
-        if not index.isValid():
-            return QModelIndex()
+        else:
+            newFilesList = sorted(files)
+            print("<SDM> [_q_directoryChanged scope] newFilesList: ", newFilesList, "entry count: ", len(newFilesList))
 
-        childItem = self.nodeFromIndex(index)
-        parentItem = childItem.parent
+            toRemove = []
+            for child in parentNode.children.values():
+                fileName = child.fileName
+                print("<SDM> [_q_directoryChanged scope] fileName: ", fileName)
 
-        if parentItem == self._root or parentItem is None:
-            return QModelIndex()
+                index = self._binary_search(newFilesList, fileName)
+                print("<SDM> [_q_directoryChanged scope] binary search index: ", index)
 
-        return self.createIndex(parentItem.row(), 0, parentItem)
+                if index == len(newFilesList) or newFilesList[index] != fileName:
+                    print("<SDM> [_q_directoryChanged scope] remove index: ", index, "fileName: ", fileName)
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: B008
-        if parent.column() > 0:
-            return 0
+                    toRemove.append(fileName)
 
-        parentItem = self.nodeFromIndex(parent)
-        return len(parentItem.children)
+        for fileName in toRemove:
+            self.removeNode(parentNode, fileName)
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: B008
-        return 4  # Name, Size, Type, Date Modified
+    def _binary_search(self, sorted_list: list[str], item: str) -> int:
+        """Helper function to perform binary search on a sorted list."""
+        low, high = 0, len(sorted_list)
+        while low < high:
+            mid = (low + high) // 2
+            print("<SDM> [_binary_search scope] mid: ", mid)
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:
-        if not index.isValid() or index.column() >= self.columnCount():
-            return None
+            if sorted_list[mid] < item:
+                low = mid + 1
+                print("<SDM> [_binary_search scope] low: ", low)
 
-        item = self.nodeFromIndex(index)
-
-        if role == Qt.DisplayRole:
-            if index.column() == 0:
-                return item.fileName
-            if index.column() == 1:
-                return self._sizeString(item.size())
-            if index.column() == 2:
-                return item.type()
-            if index.column() == 3:
-                return item.lastModified().toString()
-        elif role == Qt.DecorationRole and index.column() == 0:
-            fileInfo = item.fileInfo()
-            assert fileInfo is not None, "fileInfo is None"
-            return self.iconProvider().icon(fileInfo)
-
-        return None
-
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> Any:
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            if section == 0:
-                return "Name"
-            if section == 1:
-                return "Size"
-            if section == 2:
-                return "Type"
-            if section == 3:
-                return "Date Modified"
-        return None
-
-    def setRootPath(self, path: str) -> QModelIndex:
-        if path == self._rootPath:
-            return self.index(0, 0, QModelIndex())
-
-        self._rootPath = path
-        self._root = PyFileSystemNode(path)
-        self.beginResetModel()
-        self._fileInfoGatherer.fetchExtendedInformation(path, [])
-        self.endResetModel()
-
-        if self._fileSystemWatcher.directories():
-            for directory in self._fileSystemWatcher.directories():
-                self._fileSystemWatcher.removePath(directory)
-        self._fileSystemWatcher.moveToThread(self._watcher_thread)
-        self._watcher_thread.start()
-        self._watchPath(path)
-        self.rootPathChanged.emit(path)
-        return self.index(0, 0, QModelIndex())
-
-    def rootPath(self) -> str:
-        return self._rootPath
-
-    def setIconProvider(self, provider: QFileIconProvider):
-        self._fileInfoGatherer.setIconProvider(provider)
-
-    def iconProvider(self) -> QFileIconProvider:
-        return self._fileInfoGatherer.iconProvider()
-
-    def _handleDirectoryChanged(self, path: str):
-        f = self._executor.submit(self._refreshDirectory, path)
-        f.add_done_callback(lambda f=f: self.fileSystemChanged.emit(f.result()))
-
-    def _handleFileChanged(self, path: str):
-        f = self._executor.submit(self._refreshFile, path)
-        f.add_done_callback(lambda f=f: self.fileSystemChanged.emit(f.result()))
-
-    async def _refreshDirectory(self, path: str):
-        try:
-            node = self._nodeForPath(path)
-            if node is None:
-                return
-
-            old_list = set(node.children.keys())
-            new_list = set(await self._loop.run_in_executor(None, os.listdir, path))
-
-            for name in old_list - new_list:
-                await self._loop.run_in_executor(None, self._removeNode, node.children[name])
-
-            for name in new_list - old_list:
-                await self._loop.run_in_executor(None, self._addNode, node, name)
-
-            for name in old_list & new_list:
-                await self._loop.run_in_executor(None, self._updateNode, node.children[name])
-
-            self.layoutChanged.emit()
-        except Exception as e:
-            RobustLogger().error(f"Error refreshing directory {path}: {e}")
-            self._showErrorMessage(f"Error refreshing directory: {e}")
-
-    def _refreshFile(self, path: str):
-        try:
-            parent_path = os.path.dirname(path)  # noqa: PTH120
-            file_name = os.path.basename(path)  # noqa: PTH119
-            parent_node = self._nodeForPath(parent_path)
-            if parent_node and file_name in parent_node.children:
-                self._updateNode(parent_node.children[file_name])
             else:
-                self._loop.run_in_executor(None, self._refreshDirectory, parent_path)
-            self.layoutChanged.emit()
-        except Exception as e:
-            RobustLogger().error(f"Error refreshing file {path}: {e}")
-            self._showErrorMessage(f"Error refreshing file: {e}")
+                high = mid
+                print("<SDM> [_binary_search scope] high: ", high)
 
-    def _nodeForPath(self, path: str) -> PyFileSystemNode | None:
-        parts = path.split(os.path.sep)
-        node = self._root
-        for part in parts:
-            if part in node.children:
-                node = node.children[part]
+        return low
+
+    def _q_fileSystemChanged(self, path: str, updates: list[tuple[str, QFileInfo]]):  # noqa: C901, PLR0912
+        parentNode = self.node(self.index(path))
+        if not parentNode:
+            return
+        print(
+            "<SDM> [_q_fileSystemChanged scope] parentNode: ",
+            parentNode,
+            "row:",
+            parentNode.row(),
+            "col:",
+            parentNode.row(),
+            "path:",
+            parentNode.fileInfo() and parentNode.fileInfo().path(),
+        )
+
+        rowsToUpdate: list[str] = []
+        newFiles: list[str] = []
+
+        for fileName, file_info in updates:
+            if fileName not in parentNode.children:
+                # Add new node if it doesn't exist
+                self.addNode(parentNode, fileName, file_info)
+                newFiles.append(fileName)
             else:
-                return None
+                node = parentNode.children[fileName]
+                print("<SDM> [_q_fileSystemChanged node.fileName ", node.fileName)
+
+                if node.fileName == fileName:
+                    node.populate(file_info)
+                    if self.filtersAcceptNode(node):
+                        if node.isVisible:
+                            rowsToUpdate.append(fileName)
+                        else:
+                            newFiles.append(fileName)
+                    elif node.isVisible:
+                        visibleLocation = parentNode.visibleChildren.index(fileName)
+                        print("<SDM> [_q_fileSystemChanged scope] visibleLocation: ", visibleLocation)
+
+                        self.removeVisibleFile(parentNode, visibleLocation)
+
+        if rowsToUpdate:
+            for fileName in rowsToUpdate:
+                row = parentNode.visibleChildren.index(fileName)
+                topLeft = self.index(row, 0, self.index(path))
+                bottomRight = self.index(row, self.columnCount() - 1, self.index(path))
+
+                self.dataChanged.emit(topLeft, bottomRight)
+
+        if newFiles:
+            self.addVisibleFiles(parentNode, newFiles)
+
+        if newFiles or (self._sortColumn != 0 and rowsToUpdate):
+            self._forceSort = True
+            self._q_performDelayedSort()
+
+    if os.name == "nt":
+
+        def _unwatchPathsAt(self, index: QModelIndex) -> list[str]:
+            indexNode = self.node(index)
+            print("<SDM> [_unwatchPathsAt scope] indexNode: ", indexNode, "row:", indexNode.row(), indexNode.fileName)
+
+            if indexNode is None:
+                return []
+
+            caseSensitivity = Qt.CaseSensitivity.CaseSensitive if indexNode.caseSensitive() else Qt.CaseSensitivity.CaseInsensitive
+            fInfo = indexNode.fileInfo()
+
+            path = None if fInfo is None else fInfo.filePath()
+            print("<SDM> [_unwatchPathsAt scope] path: ", path)
+            if path is None:
+                return []
+
+            result: list[str] = []
+
+            def filter_paths(watchedPath: str) -> bool:  # noqa: N803
+                pathSize = len(path)
+                print("<SDM> [filter_paths scope] pathSize: ", pathSize)
+
+                if len(watchedPath) == pathSize:
+                    print("<SDM> [filter_paths scope] path: ", path)
+                    return (path == watchedPath) if caseSensitivity == Qt.CaseSensitive else (path.lower() == watchedPath.lower())
+
+                if len(watchedPath) > pathSize:
+                    print("<SDM> [filter_paths scope] watchedPath[pathSize]: ", watchedPath[pathSize])
+                    return watchedPath[pathSize] == "/" and (
+                        watchedPath.startswith(path) if caseSensitivity == Qt.CaseSensitive else watchedPath.lower().startswith(path.lower())
+                    )
+
+                return False
+
+            # Get watched files and directories
+            watchedFiles: list[str] = self._fileInfoGatherer.watchedFiles()
+            watchedDirectories: list[str] = self._fileInfoGatherer.watchedDirectories()
+
+            # Apply filter to watched files and directories
+            result.extend(filter(filter_paths, watchedFiles))
+            result.extend(filter(filter_paths, watchedDirectories))
+
+            # Unwatch the filtered paths
+            self._fileInfoGatherer.unwatchPaths(result)
+
+            return result
+
+    def addVisibleFiles(self, parentNode: PyFileSystemNode, newFiles: list[str]):  # noqa: N803
+        parentIndex = self.index(parentNode)
+        indexHidden = self.isHiddenByFilter(parentNode, parentIndex)
+
+        if not indexHidden:
+            self.beginInsertRows(parentIndex, len(parentNode.visibleChildren), len(parentNode.visibleChildren) + len(newFiles) - 1)
+
+        if parentNode.dirtyChildrenIndex == -1:
+            parentNode.dirtyChildrenIndex = len(parentNode.visibleChildren)
+
+        for newFile in newFiles:
+            parentNode.visibleChildren.append(newFile)
+            parentNode.children[newFile].isVisible = True
+
+        if not indexHidden:
+            self.endInsertRows()
+
+    def removeVisibleFile(self, parentNode: PyFileSystemNode, vLocation: int):  # noqa: N803
+        if vLocation == -1:
+            return
+        parent = self.index(parentNode)
+        indexHidden = self.isHiddenByFilter(parentNode, parent)
+        if not indexHidden:
+            self.beginRemoveRows(
+                parent,
+                self.translateVisibleLocation(parentNode, vLocation),
+                self.translateVisibleLocation(parentNode, vLocation),
+            )
+        parentNode.children[parentNode.visibleChildren[vLocation]].isVisible = False
+        parentNode.visibleChildren.pop(vLocation)
+        if not indexHidden:
+            self.endRemoveRows()
+
+    def _q_resolvedName(self, fileName, resolvedName):  # noqa: N803
+        print(f"<SDM> [_q_resolvedName(fileName={fileName}, resolvedName={resolvedName})", self._resolvedSymLinks[fileName])
+        with QMutexLocker(self.__fileInfoGathererLock):
+            print("<SDM> [_q_resolvedName scope] before self._resolvedSymLinks[fileName]: ", self._resolvedSymLinks[fileName])
+            self._resolvedSymLinks[fileName] = resolvedName
+            print("<SDM> [_q_resolvedName scope] after self._resolvedSymLinks[fileName]: ", self._resolvedSymLinks[fileName])
+
+        node = self.node(self.index(fileName))
+        print("<SDM> [_q_resolvedName node.fileName ", node.fileName)
+
+        if node and node.isSymLink():
+            node.fileName = resolvedName
+            print(f"<SDM> [_q_resolvedName scope] node.fileName<{node.fileName}: ")
+
+            if node.parent:
+                try:
+                    row = node.parent.visibleChildren.index(fileName)
+                    print(f"<SDM> [_q_resolvedName scope] row<{row}>: ", node.parent.visibleChildren[row])
+
+                    node.parent.visibleChildren[row] = resolvedName
+                    print(
+                        f"<SDM> [_q_resolvedName scope] node<{node.fileName}>.parent<{node.parent.fileName}.visibleChildren<{node.parent.visibleChildren.__len__()}>[row<{row}>]: ",
+                        node.parent.visibleChildren[row],
+                    )
+
+                    self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
+                except ValueError:  # noqa: S110
+                    RobustLogger().exception(f"Internal issue trying to access '{fileName}' and resolved '{resolvedName}'")
+
+    def _q_performDelayedSort(self):
+        self.sort(self._sortColumn, self._sortOrder)
+
+    def myComputer(self) -> str:
+        """While this was attempting to be respectful to the C++, this function is overly stupid.
+
+        In qt5, this just returns either "My Computer" or "Computer". It does not handle linux/mac.
+
+        therefore, this function will always return str(Path(Path().anchor).resolve()) i.e. the root.
+        """
+        return str(Path(Path().anchor).resolve())
+
+    @overload
+    def node(self, path: str | QFileInfo, fetch: bool = True) -> PyFileSystemNode: ...  # noqa: FBT002, FBT001
+    @overload
+    def node(self, index: QModelIndex) -> PyFileSystemNode: ...
+    def node(self, *args, **kwargs) -> PyFileSystemNode:  # noqa: C901  # sourcery skip: low-code-quality
+        path: str | None = kwargs.get("path", args[0] if args and isinstance(args[0], str) else None)
+        fetch: bool | None = kwargs.get("fetch", args[1] if len(args) > 1 and isinstance(args[1], (int, bool)) else True)
+        index: QModelIndex | None = kwargs.get("index", args[0] if args and isinstance(args[0], QModelIndex) else None)
+        fileInfo: QFileInfo | None = kwargs.get("fileInfo", args[0] if args and isinstance(args[0], QFileInfo) else None)
+
+        if isinstance(fileInfo, QFileInfo):
+            print("<SDM> [node scope] fileInfo: ", fileInfo.path())
+            return self.node(self.index(fileInfo.filePath()))
+        if isinstance(path, str):
+            print("<SDM> [node scope] path: ", path)
+            print("<SDM> [node scope] fetch: ", fetch)
+            return self._handle_node_path_arg(path, fetch)
+        if isinstance(index, QModelIndex):
+            print("<SDM> [node scope] index.isValid()", index.isValid(), "index.row()", index.row())
+            return index.internalPointer() if index.isValid() else self._root
+        raise TypeError("Invalid arguments for node function")
+
+    def _handle_node_path_arg(self, path: os.PathLike | str, fetch: bool) -> PyFileSystemNode:  # noqa: FBT001, C901, PLR0911, PLR0912, PLR0915
+        # sourcery skip: low-code-quality
+        pathObj = Path.pathify(path)
+        if not pathObj.parent.name or pathObj.anchor.startswith(":"):
+            print("<SDM> [_handle_node_arg_str scope] path: ", path)
+
+            return self._root
+
+        index = QModelIndex()  # root
+        print("<SDM> [_handle_node_arg_str scope] index: ", index)
+        print("<SDM> [_handle_node_arg_str scope] index: ", index, "index.row():", index.row(), "index.column():", index.column(), "index.isValid():", index.isValid())
+
+        resolvedPath = Path(os.path.normpath(path)).resolve()
+        print("<SDM> [_handle_node_arg_str scope] resolvedPath: ", resolvedPath)
+
+        if os.name == "nt":
+            host = resolvedPath.anchor
+            print("<SDM> [_handle_node_arg_str scope] host: ", host)
+
+            if host.startswith("\\\\"):  # UNC path
+                rootNode = self._root
+                if host not in self._root.children:
+                    return self._handle_unc_path(resolvedPath, rootNode, host)
+                r = rootNode.visibleLocation(host)
+                r = self.translateVisibleLocation(rootNode, r)
+                index = self.index(r, 0, QModelIndex())
+
+        parent = self.node(index)
+        print("<SDM> [_handle_node_arg_str scope] parent: ", parent, "child count:", parent.children.__len__())
+
+        for thisFile in (resolvedPath, *resolvedPath.parents):
+            alreadyExisted = str(thisFile).strip() in parent.children
+            print("<SDM> [_handle_node_arg_str scope] alreadyExisted: ", alreadyExisted)
+
+            # If the element already exists, ensure it matches case sensitivity requirements
+            if alreadyExisted:
+                childNode = parent.children[str(thisFile)]
+                print("<SDM> [_handle_node_arg_str scope] child_node: ", childNode.fileInfo().path())  # pyright: ignore[reportOptionalMemberAccess]
+
+                if (
+                    parent.children and parent.caseSensitive() and childNode.fileInfo().path() != thisFile  # pyright: ignore[reportOptionalMemberAccess]
+                ) or (
+                    not parent.caseSensitive() and childNode.fileInfo().path().lower() != thisFile.name.lower()  # pyright: ignore[reportOptionalMemberAccess]
+                ):
+                    alreadyExisted = False
+
+            # Create a new node if the path element does not exist
+            if not alreadyExisted:
+                info = QFileInfo(str(thisFile.parent))
+                if not info.exists():
+                    return self._root  # Return root if the path is invalid
+                node = self.addNode(parent, str(thisFile), info)
+                print("<SDM> [_handle_node_arg_str node.fileName ", node.fileName)
+
+                if fetch:
+                    node.populate(self._fileInfoGatherer.getInfo(info))
+            else:
+                node = parent.children[str(thisFile)]
+                print("<SDM> [_handle_node_arg_str node.fileName ", node.fileName)
+
+            if not node.isVisible:
+                if alreadyExisted and node.hasInformation() and not fetch:
+                    return self._root
+
+                self.addVisibleFiles(parent, [str(thisFile)])
+                if node not in self._bypassFilters:
+                    self._bypassFilters[node] = 1
+
+                dirPath = str(thisFile.parent)
+                if not node.hasInformation() and fetch:
+                    self._toFetch.append({"dir": dirPath, "file": thisFile, "node": node})
+                    self._fetchingTimer.start(0, self)  # pyright: ignore[reportOptionalMemberAccess]
+            parent = node
+        return parent
+
+    def _handle_unc_path(self, resolvedPath: Path, rootNode: PyFileSystemNode, host: str) -> PyFileSystemNode:  # noqa: N803
+        if len(resolvedPath.parts) == 1 and not resolvedPath.name.endswith("/"):
+            return rootNode
+        info = QFileInfo(host)
+        print("<SDM> [_handle_unc_path scope] info.path(): ", info.path())
+
+        if not info.exists():
+            return rootNode
+        node = self.addNode(rootNode, host, info)
+        print("<SDM> [_handle_unc_path node.fileName ", node.fileName)
+
+        self.addVisibleFiles(rootNode, [host])
         return node
 
-    def _removeNode(self, node: PyFileSystemNode):
-        parent = node.parent
-        if parent:
-            row = list(parent.children.values()).index(node)
-            self.beginRemoveRows(self.createIndex(parent.row(), 0, parent), row, row)
-            del parent.children[node.fileName]
-            self.endRemoveRows()
+    def isHiddenByFilter(self, indexNode: PyFileSystemNode, index: QModelIndex) -> bool:  # noqa: N803
+        """Return true if index which is owned by node is hidden by the filter."""
+        return indexNode != self._root and not index.isValid()
+
+    def gatherFileInfo(self, path: str, files: list[str] | None = None):
+        self._fileInfoGatherer.fetchExtendedInformation(path, files or [])
+
+    def _fetchingTimerEvent(self):
+        self._fetchingTimer.stop()
+        for fetch in self._toFetch:
+            node: PyFileSystemNode = fetch["node"]
+            print("<SDM> [_fetchPendingItems scope] PyFileSystemNode: ", node.fileName, "row:", node.row(), "children:", node.children.__len__())
+
+            if not node.hasInformation():
+                self.gatherFileInfo(fetch["dir"], [fetch["file"]])
+        self._toFetch.clear()
+
+    def translateVisibleLocation(self, node: PyFileSystemNode, location: int) -> int:
+        print("<SDM> [translateVisibleLocation scope] location: ", location)
+        return -1 if location == -1 or not node.isVisible else location
+
+    def sort(self, column, order=Qt.SortOrder.AscendingOrder):
+        print("<SDM> [sort scope] order: ", order, "column: ", column)
+
+        if self._sortOrder == order and self._sortColumn == column and not self._forceSort:
+            return
+
+        self.layoutAboutToBeChanged.emit()
+
+        self.sortChildren(column, QModelIndex())
+        self._sortColumn = column
+        self._sortOrder = order
+        self._forceSort = False
+
         self.layoutChanged.emit()
 
-    def _addNode(self, parent: PyFileSystemNode, name: str):
-        if name not in parent.children:
-            new_node = PyFileSystemNode(name, parent)
-            row = len(parent.children)
-            self.beginInsertRows(self.createIndex(parent.row(), 0, parent), row, row)
-            parent.children[name] = new_node
-            self.endInsertRows()
-        self.layoutChanged.emit()
+    def rmdir(self, index: QModelIndex) -> bool:
+        path = self.filePath(index)
+        print("<SDM> [rmdir scope] path: ", path, "index.row()", index.row())
 
-    def _updateNode(self, node: PyFileSystemNode):
-        info = QFileInfo(self.filePath(self.createIndex(node.row(), 0, node)))
-        node.populate(info)
-        index = self.createIndex(node.row(), 0, node)
-        self.dataChanged.emit(index, index.sibling(index.row(), self.columnCount() - 1))
-        self.layoutChanged.emit()
-
-    def setFilter(self, filters: QDir.Filters):
-        if self._filters != filters:
-            self._filters = filters
-            self._refresh()
-
-    def filter(self) -> QDir.Filters:
-        return self._filters
-
-    def setNameFilters(self, filters: list[str]):
-        self._nameFilters = filters
-        self._refresh()
-
-    def nameFilters(self) -> list[str]:
-        return self._nameFilters
-
-    def setNameFilterDisables(self, enable: bool):  # noqa: FBT001
-        if self._nameFilterDisables != enable:
-            self._nameFilterDisables = enable
-            self._refresh()
-
-    def isNameFilterDisables(self) -> bool:
-        return self._nameFilterDisables
-
-    def _refresh(self):
-        self.beginResetModel()
-        self._executor.submit(self._fileInfoGatherer.fetchExtendedInformation, self._rootPath, [])
-        self.endResetModel()
-
-    def canFetchMore(self, parent: QModelIndex) -> bool:
-        if not parent.isValid():
+        try:
+            shutil.rmtree(path, ignore_errors=False)  # noqa: PTH106
+        except OSError as e:
+            RobustLogger().exception(f"Failed to rmdir: {e.__class__.__name__}: {e}")
             return False
-        node = self._getNode(parent)
-        return not node.populatedChildren
-
-    def fetchMore(self, parent: QModelIndex):
-        if not parent.isValid():
-            return
-        node = self._getNode(parent)
-        if node.populatedChildren:
-            return
-        path = self.filePath(parent)
-        self._fileInfoGatherer.fetchExtendedInformation(path, [])
-        node.populatedChildren = True
-
-    def hasChildren(self, parent: QModelIndex = QModelIndex()) -> bool:  # noqa: B008
-        if not parent.isValid():
+        else:
+            self._fileInfoGatherer.removePath(path)
             return True
-        node = self._getNode(parent)
-        return node.isDir()
 
-    def _getNode(self, index: QModelIndex) -> PyFileSystemNode:
-        if not index.isValid():
-            return self._root
-        return index.internalPointer()
+    def addNode(self, parentNode: PyFileSystemNode, fileName: str, info: QFileInfo) -> PyFileSystemNode:  # noqa: N803
+        node = PyFileSystemNode(fileName, parentNode)
+        print("<SDM> [addNode node.fileName ", node.fileName, "parentNode.fileName:", parentNode.fileName if parentNode is not None else None)
 
-    def filePath(self, index: QModelIndex) -> str:
+        node.populate(info)
+        if os.name == "nt" and not parentNode.fileName:
+            node.volumeName = volumeName(fileName)
+            RobustLogger().warning(f"<SDM> [addNode scope] node.volumeName: '{node.volumeName}'")
+
+        # assert fileName not in parentNode.children
+        parentNode.children[fileName] = node
+        print(f"<SDM> [addNode scope] parentNode<{parentNode.fileName}>.children<{parentNode.children.__len__()}[fileName<{fileName}>]: ", parentNode.children[fileName])
+
+        return node
+
+    def removeNode(self, parentNode: PyFileSystemNode, name: str):  # noqa: N803
+        indexHidden = not self.filtersAcceptNode(parentNode)
+        v_location = parentNode.visibleLocation(name)
+        print("<SDM> [removeNode scope] indexHidden: ", indexHidden, "name:", name, "parentNode.fileName", parentNode.fileName, "v_location", v_location)
+        if v_location >= 0 and not indexHidden:
+            parentIndex = self.index(parentNode)
+            print("<SDM> [removeNode scope] parentIndex: ", parentIndex)
+
+            self.beginRemoveRows(parentIndex, self.translateVisibleLocation(parentNode, v_location), self.translateVisibleLocation(parentNode, v_location))
+
+        node = parentNode.children.pop(name, None)
+        print("<SDM> [removeNode node.fileName ", None if node is None else node.fileName)
+
+        if node:
+            del node
+
+        if v_location >= 0:
+            parentNode.visibleChildren.remove(name)
+
+        if v_location >= 0 and not indexHidden:
+            self.endRemoveRows()
+
+    def sortChildren(self, column: int, parent: QModelIndex):
+        index_node = self.node(parent)
+        print("<SDM> [sortChildren scope] index_node: ", index_node)
+
+        if not index_node.children:
+            return
+
+        values: list[tuple[PyFileSystemNode, int]] = [(child, i) for i, child in enumerate(index_node.children.values()) if self.filtersAcceptNode(child)]
+        print("<SDM> [sortChildren scope] values: ", values)
+
+        values.sort(key=lambda item: self._natural_compare(item[0], column))
+
+        index_node.visibleChildren = [item[0].fileName for item in values]
+        print("<SDM> [sortChildren scope] index_node.visibleChildren: ", index_node.visibleChildren)
+
+        for node, _ in values:
+            node.isVisible = True
+
+    def filtersAcceptNode(self, node: PyFileSystemNode) -> bool:
+        if node.parent == self._root:
+            print("<SDM> [filtersAcceptNode scope] node.parent: ", node.parent)
+
+            return True
+
+        if not node.hasInformation():  # noqa: SLF001
+            return False
+
+        filters = self._filters
+        print("<SDM> [filtersAcceptNode scope] filters: ", filters)
+
+        if bool(filters & QDir.Filter.Hidden) and not node.isVisible:
+            return False
+
+        if not node.isDir() and not bool(filters & QDir.Filter.Files):
+            return False
+
+        if node.isDir() and not bool(filters & bool(QDir.Filter.AllDirs | QDir.Filter.Dirs)):
+            return False
+
+        return not (bool(filters & QDir.Filter.NoDotAndDotDot) and (node.fileName in (".", "..")))
+
+    def _natural_compare(self, node: PyFileSystemNode, column: int) -> Any:
+        if column == 0:
+            return node.fileName.lower()
+        if column == 1:
+            return node.size()
+        if column == 2:
+            return node.type()
+        if column == 3:
+            return node.lastModified().toPyDateTime()
+        raise ValueError(f"No column with value of '{column}'")
+
+    def icon(self, index: QModelIndex) -> QIcon:
+        node = self.node(index)
+        print("<SDM> [icon node.fileName ", node.fileName)
+
+        return node.icon()
+
+    def name(self, index: QModelIndex) -> str:
         if not index.isValid():
             return ""
-        node = self._getNode(index)
-        path = []
-        while node is not self._root:
-            if node is None:
-                raise ValueError("Node is None")
-            path.append(node.fileName)
-            node = node.parent
-        return os.path.join(self.rootPath(), *reversed(path))  # noqa: PTH118
+        node = self.node(index)
+        print("<SDM> [name node.fileName ", node.fileName)
 
-    def fileName(self, index: QModelIndex) -> str:
-        if not index.isValid():
-            return ""
-        return self._getNode(index).fileName
+        with QMutexLocker(self.__fileInfoGathererLock):
+            if self._fileInfoGatherer.m_resolveSymlinks and node.isSymLink():
+                fullPath = self.filePath(index)
+                print("<SDM> [pyfsmodel.name scope(mutex)] fullPath: ", fullPath, "index.row()", index.row())
 
-    def size(self, index: QModelIndex) -> int:
-        if not index.isValid():
-            return 0
-        return self._getNode(index).size()
+                return self._resolvedSymLinks.get(fullPath, node.fileName)
+            return node.fileName
 
-    def type(self, index: QModelIndex) -> str:
-        if not index.isValid():
-            return ""
-        return self._getNode(index).type()
+    def displayName(self, index: QModelIndex) -> str:
+        node = self.node(index)
+        print("<SDM> [displayName node.fileName ", node.fileName)
 
-    def permissions(self, index: QModelIndex) -> QFileDevice.Permissions | int:
-        if not index.isValid() or not self.isDir(index):
-            return QFileDevice.Permissions()
-        return self._getNode(index).permissions()
+        return node.fileName
 
-    def lastModified(self, index: QModelIndex) -> QDateTime:
-        if not index.isValid():
-            return QDateTime()
-        return self._getNode(index).lastModified()
+    def options(self) -> int | QFileSystemModel.Option | QFileSystemModel.Options:
+        result = 0
+        if not self.resolveSymlinks():
+            result |= QFileSystemModel.DontResolveSymlinks
 
-    def setResolveSymlinks(self, enable: bool):
-        if self._resolveSymlinks != enable:
-            self._resolveSymlinks = enable
-            self._fileInfoGatherer.setResolveSymlinks(enable)
+        # TODO:
+        #if not self._fileInfoGatherer.isWatching():
+        #    result |= QFileSystemModel.DontWatchForChanges
 
-    def setReadOnly(self, enable: bool):
-        self._readOnly = enable
+        provider = self.iconProvider()
+        print("<SDM> [options scope] provider: ", provider)
 
-    def isReadOnly(self) -> bool:
-        return self._readOnly
+        if provider and bool(provider.options() & QFileIconProvider.DontUseCustomDirectoryIcons):
+            result |= QFileSystemModel.DontUseCustomDirectoryIcons
+
+        return result
+
+    def setOptions(self, options: QFileSystemModel.Options):
+        changed = options ^ self.options()
+        print("<SDM> [setOptions scope] changed: ", changed)
+
+        if bool(changed & QFileSystemModel.DontResolveSymlinks):
+            self.setResolveSymlinks(not bool(options & QFileSystemModel.DontResolveSymlinks))
+
+        # TODO:
+        #if bool(changed & QFileSystemModel.DontWatchForChanges):
+        #    self._fileInfoGatherer.setWatching(not bool(options & QFileSystemModel.DontWatchForChanges))
+
+        if bool(changed & QFileSystemModel.DontUseCustomDirectoryIcons):
+            provider = self.iconProvider()
+            if provider:
+                providerOptions = provider.options()
+                if bool(options & QFileSystemModel.DontUseCustomDirectoryIcons):
+                    providerOptions |= QFileIconProvider.DontUseCustomDirectoryIcons
+                else:
+                    providerOptions &= ~QFileIconProvider.DontUseCustomDirectoryIcons
+                provider.setOptions(providerOptions)
+            else:
+                RobustLogger().warning("Setting PyFileSystemModel::DontUseCustomDirectoryIcons has no effect when no provider is used")
+
+    def testOption(self, option: QFileSystemModel.Option) -> bool:
+        print("<SDM> [testOption scope] option: ", option)
+        return bool(self.options() & option) == option
+
+    def setOption(self, option: QFileSystemModel.Option, on: bool = True):  # noqa: FBT001, FBT002
+        self.setOptions(self.options() | option if on else self.options() & ~option)  # pyright: ignore[reportArgumentType]
+
+    def sibling(self, row: int, column: int, idx: QModelIndex) -> QModelIndex:
+        return self.index(row, column, self.parent(idx))
+
+    def timerEvent(self, event: QTimerEvent):
+        if event.timerId() == self._fetchingTimer.timerId():
+            self._fetchingTimerEvent()
 
     def remove(self, index: QModelIndex) -> bool:
-        if not index.isValid():
-            return False
-        node = self._getNode(index)
         path = self.filePath(index)
+        print("<SDM> [remove scope] path:", path, "index.row():", index.row())
+
+        self._fileInfoGatherer.removePath(path)
         try:
-            if node.isDir():
-                shutil.rmtree(path)
+            if os.path.isdir(path):  # noqa: PTH112, PTH110
+                shutil.rmtree(path, ignore_errors=False)
             else:
-                Path(path).unlink(missing_ok=True)
-            self._removeNode(node)
-        except OSError as e:
-            RobustLogger().error(f"Error removing file/directory: {e}")
-            self._showErrorMessage(f"Error removing file/directory: {e}")
+                Path(path).unlink(missing_ok=False)  # noqa: PTH107
+        except OSError:
+            RobustLogger().exception(f"Failed to rmdir '{path}'")
             return False
         else:
             return True
 
     def mkdir(self, parent: QModelIndex, name: str) -> QModelIndex:
-        if not parent.isValid():
-            return QModelIndex()
-        parent_node = self._getNode(parent)
-        path = os.path.join(self.filePath(parent), name)  # noqa: PTH118
+        dirPath = os.path.join(self.filePath(parent), name)  # noqa: PTH118
+        print("<SDM> [mkdir scope] dirPath: ", dirPath)
+
         try:
-            Path(path).mkdir(parents=True, exist_ok=True)
-            new_node = PyFileSystemNode(name, parent_node)
-            row = len(parent_node.children)
-            self.beginInsertRows(parent, row, row)
-            parent_node.children[name] = new_node
-            self.endInsertRows()
-            return self.createIndex(row, 0, new_node)
-        except OSError as e:
-            RobustLogger().error(f"Error creating directory: {e}")
-            self._showErrorMessage(f"Error creating directory: {e}")
+            os.mkdir(dirPath)  # noqa: PTH102
+        except OSError:
+            RobustLogger().exception(f"Failed to mkdir at '{dirPath}'")
             return QModelIndex()
+        else:  # sourcery skip: extract-method
+            parentNode = self.node(parent)
+            print("<SDM> [mkdir scope] parentNode: ", parentNode, "parentNode.row():", parentNode.row(), "parentNode.fileName:", parentNode.fileName)
+
+            _newNode = self.addNode(parentNode, name, QFileInfo(dirPath))
+            assert name in parentNode.children
+            node = parentNode.children[name]
+            print("<SDM> [mkdir scope] node: ", node, "row:", node.row(), "name:", name, "node.fileName", node.fileName)
+
+            node.populate(self._fileInfoGatherer.getInfo(QFileInfo(os.path.abspath(os.path.join(dirPath, name)))))  # noqa: PTH118, PTH100
+            self.addVisibleFiles(parentNode, [name])
+            return self.index(node)
+
+    def permissions(self, index: QModelIndex) -> QFileDevice.Permissions | int:
+        r1 = QFileInfo(self.filePath(index)).permissions()
+        print("<SDM> [permissions scope] r1: ", r1)
+
+        return QFileDevice.Permissions() if r1 is None else r1
+
+    def lastModified(self, index: QModelIndex) -> QDateTime:
+        node = self.node(index)
+        return node.lastModified()
+
+    def type(self, index: QModelIndex) -> str:
+        node = self.node(index)
+        return node.type()
+
+    def size(self, index: QModelIndex) -> int:
+        node = self.node(index)
+        return node.size()
+
+    def isDir(self, index: QModelIndex) -> bool:
+        node = self.node(index)
+        return node.isDir()
+
+    @overload
+    def index(self, row: int, column: int, parent: QModelIndex = ...) -> QModelIndex: ...
+    @overload
+    def index(self, path: str, column: int = 0) -> QModelIndex: ...
+    @overload
+    def index(self, node: PyFileSystemNode, *args, **kwargs) -> QModelIndex: ...
+    def index(self, *args: Any, **kwargs: Any) -> QModelIndex:  # noqa: PLR0911
+        row: int | None = kwargs.get("row", args[0] if args and isinstance(args[0], int) else None)
+        column: int = kwargs.get("column", args[1] if len(args) > 1 and isinstance(args[1], (QModelIndex, int)) else 0)
+        parent: QModelIndex | None = kwargs.get("parent", args[2] if len(args) > 2 and isinstance(args[2], QModelIndex) else None)  # noqa: PLR2004
+
+        path: str | None = kwargs.get("path", args[0] if args and isinstance(args[0], str) else None)
+
+        node: PyFileSystemNode | None = kwargs.get("node", args[0] if args and isinstance(args[0], PyFileSystemNode) else None)
+
+        if node is not None:
+            return self._handle_from_node_arg(node, column)
+        if path is not None:
+            return self._handle_from_path_arg(path, column)
+        if column < 0 or row is not None and row < 0:
+            return QModelIndex()
+
+        assert row is not None
+        print("<SDM> [index scope] row: ", row)
+        parentNode = self.node(QModelIndex() if parent is None else parent)
+        print("<SDM> [index scope] parentNode.fileName: ", parentNode.fileName, "parent row:", parentNode.row())
+
+        childName: str = parentNode.visibleChildren[row]
+        print("<SDM> [index scope] childName: ", childName)
+
+        childNode: PyFileSystemNode | None = parentNode.children.get(childName)
+        print("<SDM> [index scope] childNode.fileName: ", childNode.fileName)
+
+        if childNode is None:
+            return QModelIndex()
+        return self.createIndex(row, column, childNode)
+
+    def _handle_from_path_arg(self, path: str, column: int) -> QModelIndex:
+        print("<SDM> [_handle_from_path_arg scope] path: ", path)
+        pathNodeResult = self.node(path)
+        print(
+            "<SDM> [_handle_from_path_arg scope] pathNodeResult: ",
+            pathNodeResult.fileInfo() and pathNodeResult.fileInfo().path(),
+            "row",
+            pathNodeResult.row(),
+            "children count:",
+            pathNodeResult.children.__len__(),
+        )  # noqa: E501
+
+        idx = self.index(pathNodeResult)
+        print("<SDM> [_handle_from_path_arg scope] pathNodeResult idx: ", idx.isValid() and typing.cast(PyFileSystemNode, idx.internalPointer()).fileInfo().path())
+
+        if not idx.isValid():
+            return QModelIndex()
+        if idx.column() != column:
+            idx = idx.sibling(idx.row(), column)
+        print("<SDM> [_handle_from_path_arg scope] final idx: ", idx.isValid() and typing.cast(PyFileSystemNode, idx.internalPointer()).fileInfo().path())
+
+        return idx
+
+    def _handle_from_node_arg(self, node: PyFileSystemNode, column: int) -> QModelIndex:
+        print("<SDM> [_handle_from_node_arg node.fileName ", node.fileName)
+        parentNode: PyFileSystemNode | None = None if node is None else node.parent
+        if node is self._root or parentNode is None or not node.isVisible:
+            return QModelIndex()
+
+        assert node is not None
+        visualRow = self.translateVisibleLocation(parentNode, parentNode.visibleLocation(node.fileName))
+        print("<SDM> [_handle_from_node_arg scope] visualRow: ", visualRow)
+
+        return self.createIndex(visualRow, column, node)
+
+    def parent(self, index: QModelIndex) -> QModelIndex:
+        if not index.isValid():
+            return QModelIndex()
+
+        node = self.node(index)
+        print("<SDM> [parent node.fileName ", node.fileName, "node.row():", node.row())
+
+        parentNode = node.parent
+        print("<SDM> [parent scope] parentNode.fileName: ", None if parentNode is None else parentNode.fileName)
+
+        if parentNode is None:
+            return QModelIndex()
+        if parentNode is self._root:
+            return self._rootIndex
+
+        grandparentNode = parentNode.parent
+        print("<SDM> [parent scope] grandparentNode.fileName: ", None if grandparentNode is None else grandparentNode.fileName)
+
+        if grandparentNode is None:
+            return QModelIndex()
+        row = grandparentNode.visibleChildren.index(parentNode.fileName)
+        print("<SDM> [parent scope] row: ", row)
+
+        return self.createIndex(row, 0, parentNode)
+
+    def hasChildren(self, parent: QModelIndex = QModelIndex()) -> bool:  # noqa: B008
+        if not parent.isValid():
+            return False
+        parentItem = parent.internalPointer()
+        if not isinstance(parentItem, PyFileSystemNode):
+            return False
+        resultHasChildren = bool(parentItem.children)
+        return resultHasChildren
+
+    def canFetchMore(self, parent: QModelIndex) -> bool:
+        node = self.node(parent)
+        result = not node.populatedChildren
+        parentItem: PyFileSystemNode = parent.internalPointer()
+        print(
+            f"canFetchMore: {result}, node: {node.fileName}, parent.isValid(): {parent.isValid()}, parentItem.fileName: {None if parentItem is None else parentItem.fileName}, childrenCount={None if parentItem is None else len(parentItem.children)}"
+        )  # noqa: E501
+        return result  # noqa: SLF001
+
+    def fetchMore(self, parent: QModelIndex) -> None:
+        if not parent.isValid() or self._filesToFetch:
+            return
+        path = self.filePath(parent)
+        self._filesToFetch.append(path)
+        QTimer.singleShot(0, self._fetchPendingFiles)
+
+    def _fetchPendingFiles(self):
+        if not self._filesToFetch:
+            return
+        path = self._filesToFetch.pop(0)
+        self.gatherFileInfo(path, [])
+
+    def indexFromItem(self, item: PyFileSystemNode) -> QModelIndex:
+        if not isinstance(item, PyFileSystemNode):
+            return None
+
+        self._rootIndex = self.createIndex(0, 0, self._root)
+        if not self._rootIndex.isValid() or self._rootIndex.internalPointer() == item:
+            return self._rootIndex
+
+        parent_node = item.parent
+        if parent_node is None:
+            return QModelIndex()
+
+        itemRow = item.row()
+        print(
+            f"indexFromItem: Create index for item {item.fileName} parent_node.info.path() {None if parent_node.info is None else parent_node.info.path()} item.row(): {itemRow}"
+        )
+        return self.createIndex(itemRow, 0, parent_node)
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: B008
+        node = self.node(parent)
+        if node is None:
+            return 0
+        nodeIndex = self.indexFromItem(node)
+        if nodeIndex is None or not nodeIndex.isValid() or not node.isVisible:
+            return 0
+        print("rowCount node is valid! node: ", node.fileName, " node.fileInfo().path(): ", node.fileInfo() and node.fileInfo().path())
+        if node == self._root:
+            childrenCount = len(self._root.children)
+            print(f"rowCount root item children count: {childrenCount}")
+            return childrenCount
+        rowCountResult = 0 if parent.row() <= 0 else len(node.visibleChildren)
+        print("<SDM> [rowCount scope] parent.isValid() ", parent.isValid(), "parent.row():", parent.row(), "rowCount for model:", rowCountResult)
+        return rowCountResult
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: B008
+        return self.NumColumns
+
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole | int = Qt.ItemDataRole.DisplayRole) -> Any:  # noqa: C901, PLR0911, PLR0912
+        # print("<SDM> [data scope] int: ", int)
+
+        if not index.isValid() or index.model() != self:
+            return QVariant()
+
+        node = self.node(index)
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
+            print("<SDM> [data scope] node: ", node, "role", role)
+            if index.column() == 0:
+                return node.fileName
+            if index.column() == 1:
+                return node.size()
+            if index.column() == 2:  # noqa: PLR2004
+                return node.type()
+            if index.column() == 3:  # noqa: PLR2004
+                return node.lastModified()
+            RobustLogger().warning(f"data: invalid display value column {index.column()}")
+        elif role == Qt.ItemDataRole.DecorationRole:
+            icon = node.icon()
+            if icon.isNull():
+                if node.isDir():
+                    icon = self.iconProvider().icon(QFileIconProvider.IconType.Folder)
+                else:
+                    icon = self.iconProvider().icon(QFileIconProvider.IconType.File)
+            return icon
+        elif role == Qt.ItemDataRole.TextAlignmentRole:
+            if index.column() == 1:
+                return Qt.AlignmentFlag.AlignRight
+        elif role == self.FilePathRole:
+            return self.filePath(index)
+        elif role == self.FileNameRole:
+            return node.fileName
+
+        return QVariant()
+
+    def setData(self, index: QModelIndex, value: Any, role: Qt.ItemDataRole | int = Qt.ItemDataRole.EditRole) -> bool:
+        print(
+            f"<SDM> [setData scope] index.row(): {index.row()}, index.internalPointer().fileName: {index and index.internalPointer() and index.internalPointer().fileName}, role: ",
+            role,
+        )
+
+        if not index.isValid() or role != Qt.ItemDataRole.EditRole:
+            return False
+
+        new_name = value
+        print("<SDM> [setData scope] new_name: ", new_name)
+
+        old_name = self.data(index)
+        print("<SDM> [setData scope] old_name: ", old_name)
+
+        if new_name == old_name:
+            return True
+
+        path = self.filePath(index.parent())
+        print("<SDM> [setData scope] path: ", path)
+
+        old_path = os.path.join(path, old_name)  # noqa: PTH118
+        print("<SDM> [setData scope] old_path: ", old_path)
+
+        new_path = os.path.join(path, new_name)  # noqa: PTH118
+        print("<SDM> [setData scope] new_path: ", new_path)
+
+        if not os.rename(old_path, new_path):  # noqa: PTH104
+            return False
+
+        node = self.node(index)
+        print("<SDM> [setData node.fileName ", node.fileName)
+
+        parent_node = node.parent
+        print("<SDM> [setData scope] parent_node.fileName ", None if parent_node is None else parent_node.fileName)
+
+        if parent_node is not None:
+            self.removeNode(parent_node, old_name)
+            self.addNode(parent_node, new_name, QFileInfo(new_path))
+        return True
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        flags = super().flags(index)
+        print("<SDM> [flags scope] flags: ", flags)
+
+        if not index.isValid():
+            return flags
+
+        node = self.node(index)
+        print("<SDM> [flags node.fileName ", node.fileName)
+
+        if not self._readOnly and index.column() == 0 and bool(node.permissions() & QFileDevice.Permission.WriteUser):
+            flags |= Qt.ItemFlag.ItemIsEditable
+            if node.isDir():
+                flags |= Qt.ItemFlag.ItemIsDropEnabled
+        return flags
 
     def mimeTypes(self) -> list[str]:
         return ["text/uri-list"]
 
-    def mimeData(self, indexes: list[QModelIndex]) -> QMimeData:
-        urls = [QUrl.fromLocalFile(self.filePath(index)) for index in indexes if index.column() == 0]
-        mimeData = QMimeData()
-        mimeData.setUrls(urls)
-        return mimeData
+    def mimeData(self, indexes: Iterable[QModelIndex]) -> QMimeData:
+        urls: list[QUrl] = [QUrl.fromLocalFile(self.filePath(index)) for index in indexes if index.column() == 0]
+        mime_data = QMimeData()
+        mime_data.setUrls(urls)
+        return mime_data
 
-    def setData(self, index: QModelIndex, value: Any, role: int = Qt.EditRole) -> bool:
-        if not index.isValid() or role != Qt.EditRole:
+    def dropMimeData(self, data: QMimeData | None, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+        if not parent.isValid() or self._readOnly:
             return False
 
-        node = self.nodeFromIndex(index)
-        oldName = node.fileName
-        newName = value
+        success: bool = True
+        dest_dir = self.filePath(parent)
+        print("<SDM> [dropMimeData scope] dest_dir: ", dest_dir)
 
-        if oldName == newName:
-            return True
-
-        parentPath = self.filePath(index.parent())
-        oldPath = os.path.join(parentPath, oldName)
-        newPath = os.path.join(parentPath, newName)
-
-        try:
-            os.rename(oldPath, newPath)
-        except OSError as e:
-            RobustLogger().error(f"Error renaming file: {e}")
-            self._showErrorMessage(f"Error renaming file: {e}")
+        if data is None:
             return False
+        urls = data.urls()
+        print("<SDM> [dropMimeData scope] urls: ", urls, "entry count:", len(urls))
 
-        node.fileName = newName
-        self.dataChanged.emit(index, index)
-        self.fileRenamed.emit(parentPath, oldName, newName)
-        return True
+        for url in urls:
+            path = url.toLocalFile()
+            print("<SDM> [dropMimeData scope] path: ", path)
 
-    def setCustomSorting(self, sortFunction: Callable[[PyFileSystemNode, PyFileSystemNode], int]):
-        self._customSorting = sortFunction
-        self._loop.call_soon_threadsafe(self.sort, self._sortColumn, self._sortOrder)
+            file_name = os.path.basename(path)  # noqa: PTH119
+            print("<SDM> [dropMimeData scope] file_name: ", file_name)
 
-    async def sort(self, column: int, order: Qt.SortOrder = Qt.AscendingOrder):
-        self.layoutAboutToBeChanged.emit()
-        self._sortColumn = column
-        self._sortOrder = order
-        try:
-            if self._customSorting:
-                mapping_type = dict
-                self._root.children = mapping_type(sorted(self._root.children.items(), key=lambda x: self._customSorting(x[1], x[1])))
+            dest_path = os.path.join(dest_dir, file_name)  # noqa: PTH118
+            print("<SDM> [dropMimeData scope] dest_path: ", dest_path)
+
+            if action == Qt.DropAction.CopyAction:
+                success &= shutil.copy(path, dest_path)
+            elif action == Qt.DropAction.LinkAction:
+                success &= os.symlink(path, dest_path) or False
+            elif action == Qt.DropAction.MoveAction:
+                success &= shutil.move(path, dest_path)
             else:
-                await self._loop.run_in_executor(self._executor, self._sorter.sort, self._root, column, order)
-        except SortingError as e:
-            RobustLogger().error(f"Sorting error: {e}")
-            self.sortingError.emit(str(e))
-        except Exception as e:
-            RobustLogger().error(f"Unexpected error during sorting: {e}")
-        self.layoutChanged.emit()
-        self.sortingChanged.emit()
+                return False
 
-    def _sizeString(self, size: int) -> str:
-        if size < 1024:
-            return f"{size} B"
-        elif size < 1024 * 1024:
-            return f"{size / 1024:.1f} KB"
-        elif size < 1024 * 1024 * 1024:
-            return f"{size / (1024 * 1024):.1f} MB"
-        else:
-            return f"{size / (1024 * 1024 * 1024):.1f} GB"
+        return success
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags | Qt.ItemFlag:
-        if not index.isValid():
-            return Qt.NoItemFlags
+    def supportedDropActions(self) -> int | Qt.DropActions:
+        return Qt.DropAction.CopyAction | Qt.DropAction.MoveAction | Qt.DropAction.LinkAction
 
-        flags = Qt.ItemIsEnabled | Qt.ItemIsSelectable
+    def filePath(self, index: QModelIndex) -> str:
+        path: list[str] = []
+        print("<SDM> [filePath scope] path: ", path)
 
-        if index.column() == 0:
-            flags |= Qt.ItemIsEditable | Qt.ItemIsDragEnabled
+        while index.isValid():
+            node = self.node(index)
+            print("<SDM> [filePath scope] node.fileName", node.fileName, "node.fileInfo.path()", node.fileInfo() and node.fileInfo().path())
 
-        return flags
+            path.insert(0, node.fileName)
+            index = index.parent()
+            print("<SDM> [filePath scope] index.row(): ", None if index is None else index.row(), "internalPointer:", index.internalPointer())
 
-    def _addNewListOfFiles(self, path: str, files: list[str]):
-        node = self._nodeForPath(path)
-        if node is None:
-            return
+        return str(pathlib.Path(*path))
 
-        new_files = set(files) - set(node.children.keys())
-        for file_name in new_files:
-            self._addNode(node, file_name)
-        self.layoutChanged.emit()
+    def fileInfo(self, index: QModelIndex) -> QFileInfo:
+        return QFileInfo(self.filePath(index))
 
-    @asyncSlot()
-    async def _handleUpdates(self, path: str, updates: list[tuple[str, QFileInfo]]):
-        node = self._nodeForPath(path)
-        if node is None:
-            return
+    def fileIcon(self, index: QModelIndex) -> QIcon:
+        return self.node(index).icon()
 
-        for file_path, file_info in updates:
-            file_name = os.path.basename(file_path)
-            if file_name in node.children:
-                self._updateNode(node.children[file_name])
-            else:
-                self._addNode(node, file_name)
-        self.layoutChanged.emit()
+    def fileName(self, index: QModelIndex) -> str:
+        return self.node(index).fileName
 
-    @asyncSlot()
-    async def _handleDirectoryLoaded(self, path: str):
-        self._refreshCache()
-        self.directoryLoaded.emit(path)
-
-    @asyncSlot()
-    async def _watchPath(self, path: str):
-        if path not in self._file_watcher_cache:
-            self._fileSystemWatcher.directoryChanged.connect(lambda p=path: self._handleDirectoryChanged(p))
-            self._fileSystemWatcher.fileChanged.connect(lambda p=path: self._handleFileChanged(p))
-            self._fileSystemWatcher.addPath(path)
-            self._file_watcher_cache[path] = self._fileSystemWatcher
-
-        # Optimize watchers if necessary
-        if len(self._file_watcher_cache) > self._max_watcher_paths:
-            self._optimizeWatchers()
-
-    @asyncSlot()
-    async def _cleanupWatchers(self):
-        current_time = QDateTime.currentDateTime()
-        for path, watcher in list(self._file_watcher_cache.items()):
-            if current_time.secsTo(watcher.lastUsed()) > self._watcher_cleanup_interval:
-                watcher.removePath(path)
-                del self._file_watcher_cache[path]
-
-    @asyncSlot()
-    async def _optimizeWatchers(self):
-        current_time = QDateTime.currentDateTime()
-        sorted_watchers = sorted(
-            self._file_watcher_cache.items(),
-            key=lambda x: (len(x[1].files()) + len(x[1].directories()), x[1].lastUsed.secsTo(QDateTime.currentDateTime()))
-        )
-        for path, watcher in sorted_watchers[: len(sorted_watchers) // 2]:
-            watcher.removePath(path)
-            watcher.deleteLater()
-            del self._file_watcher_cache[path]
-    @asyncSlot()
-    async def setSorting(self, column: int, order: Qt.SortOrder):
-        if self._sortColumn != column or self._sortOrder != order:
-            self._sortColumn = column
-            self._sortOrder = order
-            self._loop.run_in_executor(self._executor, self.sort, column, order)
-
-    @asyncSlot()
-    async def isDir(self, index: QModelIndex) -> bool:
-        if not index.isValid():
-            return False
-        return self._getNode(index).isDir()
-
-    @asyncSlot()
-    async def fileIcon(self, index: QModelIndex) -> QIcon:
-        if not index.isValid():
+    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole | int = Qt.ItemDataRole.DisplayRole) -> Any:  # noqa: PLR0911
+        if role == Qt.ItemDataRole.DecorationRole and section == 0:
             return QIcon()
-        return self._style.standardIcon(QStyle.SP_FileIcon if self._getNode(index).isFile() else QStyle.SP_DirIcon)
+        if role == Qt.ItemDataRole.TextAlignmentRole:
+            return Qt.AlignmentFlag.AlignLeft
 
+        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
+            if section == 0:
+                return "Name"
+            if section == 1:
+                return "Size"
+            if section == 2:  # noqa: PLR2004
+                return "Type"
+            if section == 3:  # noqa: PLR2004
+                return "Date Modified"
 
-    @asyncSlot()
-    async def fileInfo(self, index: QModelIndex) -> QFileInfo:
-        if not index.isValid():
-            return QFileInfo()
-        path = self.filePath(index)
-        info = QFileInfo(path)
-        return info
+        return super().headerData(section, orientation, role)
 
-    @asyncSlot()
-    async def _showErrorMessage(self, message: str):
-        RobustLogger().error(message)
-        app = QApplication.instance()
-        if app and QThread.currentThread() == app.thread():
-            QMessageBox.warning(None, "Error", message)
+    def setRootPath(self, newPath: str) -> QModelIndex:  # sourcery skip: class-extract-method  # noqa: N803
+        resolvedPath = Path(os.path.normpath(newPath).strip()).resolve()
+        print("<SDM> [setRootPath scope] resolvedPath: ", resolvedPath)
+
+        if not resolvedPath.safe_exists():
+            print("setRootPath, not resolvedPath.safe_exists()")
+            return QModelIndex()
+
+        self._setRootPath = True
+        if self._rootDir.path() == resolvedPath:  # Root path was chosen.
+            print("setRootPath, self._rootDir.path() == resolvedPath")
+            return self.index(self.rootPath())
+
+        if self._root.fileName.strip() == ".":  # Remove the watcher on the previous path
+            self._fileInfoGatherer.removePath(self.rootPath())
+            self.node(self.rootPath()).populatedChildren = False
+
+        # We have a new valid root path
+        self._rootDir: QDir = QDir(str(resolvedPath))
+        print("<SDM> [setRootPath scope] self._rootDir: ", self._rootDir.path())
+        print("<SDM> [setRootPath scope] resolvedPath: ", resolvedPath)
+
+        newRootIndex: QModelIndex = QModelIndex()
+        print("<SDM> [setRootPath scope] newRootIndex: ", newRootIndex.isValid())
+
+        if resolvedPath.parent.name:
+            print("setRootPath, bool(resolvedPath.parent.name)")
+            newRootIndex = self.createIndex(0, 0, self._root)
+            print("<SDM> [setRootPath scope] newRootIndex: ", newRootIndex)
+
         else:
-            self.asyncOperationError.emit(message)
+            print("setRootPath, not bool(resolvedPath.parent.name)")
+            self._rootDir.setPath("")
 
-    @asyncSlot()
-    async def dragMoveEvent(self, event):
-        event.accept()
+        assert newRootIndex.isValid()
+        self.fetchMore(newRootIndex)
+        self.rootPathChanged.emit(str(resolvedPath))
+        self._forceSort = True
+        self._q_performDelayedSort()
 
-    @asyncSlot()
-    async def setRootPathAsync(self, path: str) -> QModelIndex:
-        if path == self._rootPath:
-            return self.index(0, 0, QModelIndex())
+        return newRootIndex
 
-        self._rootPath = path
-        self._root = PyFileSystemNode(path)
-        self.beginResetModel()
-        await self._fileInfoGatherer.fetchExtendedInformation(path, [])
-        self.endResetModel()
+    def rootPath(self) -> str:
+        return self._rootDir.path()
 
-        if self._fileSystemWatcher.directories():
-            self._fileSystemWatcher.removePaths(self._fileSystemWatcher.directories())
-        self._fileSystemWatcher.moveToThread(self._watcher_thread)
-        self._watcher_thread.start()
-        await self._watchPath(path)
-        self.rootPathChanged.emit(path)
-        return self.index(0, 0, QModelIndex())
+    def rootDirectory(self) -> QDir:
+        dir_ = QDir(self._rootDir)
+        print("<SDM> [rootDirectory scope] dir_ = QDir(self._rootDir): ", dir_.path())
 
-    def _applyNameFilters(self, files: list[str]) -> list[str]:
-        if not self._nameFilters and not self._fileTypeFilters:
-            return self._applyCustomFilters(files)
+        dir_.setNameFilters(self.nameFilters())
+        dir_.setFilter(self.filter())  # pyright: ignore[reportArgumentType]
+        return dir_
 
-        import fnmatch
-
-        filtered_files = []
-        for file in files:
-            if self._nameFilters and any(fnmatch.fnmatch(file, pattern) for pattern in self._nameFilters):
-                filtered_files.append(file)
-            elif self._nameFilterDisables:
-                filtered_files.append(file)
-            elif self._fileTypeFilters and any(file.endswith(ext) for ext in self._fileTypeFilters):
-                filtered_files.append(file)
-
-        return self._applyCustomFilters(filtered_files)
-
-    def _clearCache(self, emit_signal: bool = False):
-        self._cache.clear()
-        self.data.cache_clear()
-        if emit_signal:
-            self.cacheUpdated.emit()
-        self.layoutChanged.emit()
-
-    def _cacheFileInfo(self, path: str, info: QFileInfo):
-        self._cache[path] = (info, QDateTime.currentDateTime())
-
-    def _getCachedFileInfo(self, path: str) -> QFileInfo | None:
-        cached_data = self._cache.get(path)
-        return cached_data[0] if cached_data and cached_data[1].secsTo(QDateTime.currentDateTime()) < self._cache_expiration else None
-
-    def _getFileInfoCached(self, path: str) -> QFileInfo:
-        cached_info = self._getCachedFileInfo(path)
-        if cached_info:
-            return cached_info
-        info = self._getFileInfo(path)
-        self._cacheFileInfo(path, info)
-        return info
-
-    def clearCache(self):
-        self._clearCache(emit_signal=True)
-
-    def addCustomRole(self, role: int, callback: Callable[[PyFileSystemNode], Any]):
-        self._customRoles[role] = callback
-
-    def removeCustomRole(self, role: int):
-        if role in self._customRoles:
-            del self._customRoles[role]
-
-    def setCustomData(self, index: QModelIndex, role: int, value: Any):
-        if not index.isValid() or role not in self._customRoles:
-            return False
-        node = self.nodeFromIndex(index)
-        self._customRoles[role](node, value)
-        self.customDataChanged.emit(index, index, role)
-        return True
-
-    def startDrag(self, supportedActions: Qt.DropActions):
-        if self._dragEnabled:
-            drag = QDrag(self)
-            mimeData = self.mimeData(self.selectedIndexes())
-            drag.setMimeData(mimeData)
-            defaultDropAction = Qt.MoveAction if supportedActions & Qt.MoveAction else Qt.CopyAction
-            drag.exec_(supportedActions, defaultDropAction)
-
-    def canDropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
-        if not data.hasUrls():
-            return False
-        if column > 0:
-            return False
-        return True
-
-    def _processDrop(self, data: QMimeData, action: Qt.DropAction, parent: QModelIndex) -> bool:
-        parentPath = self.filePath(parent) if parent.isValid() else self.rootPath()
-        for url in data.urls():
-            srcPath = url.toLocalFile()
-            destPath = os.path.join(parentPath, os.path.basename(srcPath))
-            try:
-                if action == Qt.CopyAction:
-                    self._copyFileAsync(srcPath, destPath)
-                elif action == Qt.MoveAction:
-                    self._moveFileAsync(srcPath, destPath)
-                else:
-                    return False
-            except Exception as e:
-                self._showErrorMessage(f"Error during drag and drop operation: {e}")
-                return False
-        return True
-
-    async def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
-        if not self.canDropMimeData(data, action, row, column, parent):
-            return False
-
-        if action == Qt.IgnoreAction:
-            return True
-
-        parent_path = self.filePath(parent) if parent.isValid() else self.rootPath()
-
-        async def process_url(url):
-            srcPath = url.toLocalFile()
-            destPath = os.path.join(parent_path, os.path.basename(srcPath))
-            try:
-                if action == Qt.CopyAction:
-                    await self._copyFileAsync(srcPath, destPath)
-                elif action == Qt.MoveAction:
-                    await self._moveFileAsync(srcPath, destPath)
-            except Exception as e:
-                self._showErrorMessage(f"Error during drag and drop operation: {e}")
-
-        await asyncio.gather(*[process_url(url) for url in data.urls()])
-        return True
-
-    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
-        return asyncio.run(self.dropMimeDataAsync(data, action, row, column, parent))
-
-    def addCustomFilter(self, filter_func: Callable[[str], bool]):
-        self._customFilters.append(filter_func)
-
-    def removeCustomFilter(self, filter_func: Callable[[str], bool]):
-        if filter_func in self._customFilters:
-            self._customFilters.remove(filter_func)
-
-    def _applyCustomFilters(self, files: list[str]) -> list[str]:
-        for custom_filter in self._customFilters:
-            files = [file for file in files if custom_filter(file)]
-        return files
-
-    def setFilePermissions(self, index: QModelIndex, permissions: QDir.Permissions) -> bool:
-        if not index.isValid():
-            return False
-
-        file_path = self.filePath(index)
-        try:
-            os.chmod(file_path, permissions)
-            node = self._getNode(index)
-            node.setPermissions(permissions)
-            self.dataChanged.emit(index, index)
-            self.fileAttributeChanged.emit(file_path)
-            return True
-        except OSError as e:
-            RobustLogger().error(f"Error setting file permissions: {e}")
-            self._showErrorMessage(f"Error setting file permissions: {e}")
-            return False
-
-    def setFileAttributes(self, index: QModelIndex, attributes: int) -> bool:
-        if not index.isValid() or os.name != "nt":
-            return False
-
-        file_path = self.filePath(index)
-        try:
-            import win32api
-
-            win32api.SetFileAttributes(file_path, attributes)
-            node = self._getNode(index)
-            node.setAttributes(attributes)
-            self.dataChanged.emit(index, index)
-            self.fileAttributeChanged.emit(file_path)
-            return True
-        except Exception as e:
-            RobustLogger().error(f"Error setting file attributes: {e}")
-            self._showErrorMessage(f"Error setting file attributes: {e}")
-            return False
-
-    def supportedDragActions(self) -> Qt.DropActions:
-        return Qt.CopyAction | Qt.MoveAction
-
-    def supportedDropActions(self) -> Qt.DropActions:
-        return Qt.CopyAction | Qt.MoveAction
-
-    def canDropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
-        if not data.hasUrls():
-            return False
-        if column > 0:
-            return False
-        return True
-
-    async def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
-        if not self.canDropMimeData(data, action, row, column, parent):
-            return False
-
-        if action == Qt.IgnoreAction:
-            return True
-
-        parent_path = self.filePath(parent) if parent.isValid() else self.rootPath()
-
-        async def process_url(url):
-            srcPath = url.toLocalFile()
-            destPath = os.path.join(parent_path, os.path.basename(srcPath))
-            try:
-                if action == Qt.CopyAction:
-                    await self._copyFileAsync(srcPath, destPath)
-                elif action == Qt.MoveAction:
-                    await self._moveFileAsync(srcPath, destPath)
-            except Exception as e:
-                self._showErrorMessage(f"Error during drag and drop operation: {e}")
-
-        await asyncio.gather(*[process_url(url) for url in data.urls()])
-        return True
-
-    def _copyFile(self, src: str, dest: str):
-        try:
-            if os.path.isdir(src):
-                shutil.copytree(src, dest)
-            else:
-                shutil.copy2(src, dest)
-            self._refresh()
-        except OSError as e:
-            RobustLogger().error(f"Error copying file: {e}")
-            self._showErrorMessage(f"Error copying file: {e}")
-
-    def _moveFile(self, src: str, dest: str):
-        try:
-            shutil.move(src, dest)
-            self._refresh()
-        except OSError as e:
-            self._showErrorMessage(f"Error moving file: {e}")
-
-    async def _copyFileAsync(self, src: str, dest: str):
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, shutil.copy2, src, dest)
-        self._refreshDirectory(os.path.dirname(dest))
-
-    async def _moveFileAsync(self, src: str, dest: str):
-        await self._loop.run_in_executor(None, shutil.move, src, dest)
-        await self._loop.run_in_executor(None, self._refreshDirectory, os.path.dirname(src))  # noqa: PTH120
-        await self._loop.run_in_executor(None, self._refreshDirectory, os.path.dirname(dest))  # noqa: PTH120
-
-    @asyncSlot()
-    async def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
-
-        parent_path = self.filePath(parent) if parent.isValid() else self.rootPath()
-
-        async def process_url(url):
-            srcPath = url.toLocalFile()
-            destPath = os.path.join(parent_path, os.path.basename(srcPath))  # noqa: PTH118, PTH119
-            try:
-                if action == Qt.CopyAction:
-                    await self._copyFileAsync(srcPath, destPath)
-                elif action == Qt.MoveAction:
-                    await self._moveFileAsync(srcPath, destPath)
-            except Exception as e:
-                self._showErrorMessage(f"Error during drag and drop operation: {e}")
-                return False
-
-        await asyncio.gather(*[process_url(url) for url in data.urls()])
-        return True
-
-    def _applyFilters(self, files: list[str]) -> list[str]:
-        filtered_files = self._applyNameFilters(files)
-        filtered_files = self._applyCustomFilters(filtered_files)
-        return filtered_files
-
-    @asyncSlot()
-    async def refreshPath(self, path: str):
-        try:
-            node = self._nodeForPath(path)
-            if node:
-                await self._refreshDirectory(path)
-            else:
-                RobustLogger().warning(f"Attempted to refresh non-existent path: {path}")
-        except Exception as e:
-            RobustLogger().error(f"Error refreshing path {path}: {e}")
-            RobustLogger().debug(traceback.format_exc())
-            self._showErrorMessage(f"Error refreshing path: {e}")
-
-    def _loadFileAttributes(self, index: QModelIndex):
-        if not index.isValid():
+    def setIconProvider(self, provider: QFileIconProvider):
+        if self._fileInfoGatherer.m_iconProvider == provider:
             return
+        self._fileInfoGatherer.m_iconProvider = provider
+        self._q_performDelayedSort()
 
-        node = self._getNode(index)
-        file_path = self.filePath(index)
+    def iconProvider(self) -> QFileIconProvider:
+        return self._fileInfoGatherer.m_iconProvider
 
-        try:
-            file_info = self._getFileInfoCached(file_path)
-            node.setAttributes(file_info.attributes())
-            node.setPermissions(file_info.permissions())
+    def setFilter(self, filters: QDir.Filters | QDir.Filter):  # sourcery skip: class-extract-method
+        print("<SDM> [setFilter scope] self._filters: ", int(self._filters), "filters:", filters)
+        if self._filters == filters:
+            return
+        self._filters = filters
+        self._forceSort = True
+        self._q_performDelayedSort()
 
-            self.dataChanged.emit(index, index)
-            self.fileAttributeChanged.emit(file_path)
-        except Exception as e:
-            RobustLogger().error(f"Error loading file attributes for {file_path}: {e}")
-            self._showErrorMessage(f"Error loading file attributes: {e}")
+    def filter(self) -> QDir.Filters | QDir.Filter | int:
+        return self._filters
 
-    def _resetErrorRetryCount(self, path: str):
-        if path in self._error_retry_count:
-            del self._error_retry_count[path]
+    def setResolveSymlinks(self, enable: bool):  # noqa: FBT001
+        if self._resolveSymlinks == enable:
+            print(f"<SDM> [setResolveSymlinks scope] self._resolveSymlinks=={enable}: ", self._resolveSymlinks)
 
-    def _retryOperation(self, operation: Callable, *args, max_retries: int = 3, **kwargs):
-        for attempt in range(max_retries):
-            try:
-                return operation(*args, **kwargs)
-            except Exception as e:  # noqa: PERF203
-                if attempt == max_retries - 1:
-                    RobustLogger().error(f"Operation failed after {max_retries} attempts: {e}")
-                    self._showErrorMessage(f"Operation failed: {e}")
-                    return None
-                time.sleep(min(2**attempt, 30))  # Exponential backoff with a maximum of 30 seconds
-        return None
+            return
+        self._resolveSymlinks = enable
+        print(f"<SDM> [setResolveSymlinks scope] self._resolveSymlinks!={enable}: ", self._resolveSymlinks)
 
-    def setCacheExpiration(self, seconds: int):
-        self._cache_expiration = seconds
+        self._fileInfoGatherer.setResolveSymlinks(enable)
+        self._forceSort = True
+        self._q_performDelayedSort()
 
-    def getCacheExpiration(self) -> int:
-        return self._cache_expiration
+    def resolveSymlinks(self) -> bool:
+        return self._resolveSymlinks
 
-    def _refreshCache(self):
-        current_time = QDateTime.currentDateTime()
-        expired_keys = [k for k, v in self._cache.items() if v[1].secsTo(current_time) >= self._cache_expiration]
-        for key in expired_keys:
-            del self._cache[key]
-        self._clearCache(emit_signal=True)
+    def setReadOnly(self, enable: bool):  # noqa: FBT001
+        self._readOnly = enable
+        print("<SDM> [setReadOnly scope] self._readOnly: ", self._readOnly)
 
-    def setWatcherCleanupInterval(self, seconds: int):
-        self._watcher_cleanup_interval = seconds
+    def isReadOnly(self) -> bool:
+        return self._readOnly
 
-    def getWatcherCleanupInterval(self) -> int:
-        return self._watcher_cleanup_interval
+    def setNameFilterDisables(self, enable: bool):  # noqa: FBT001
+        if self._nameFilterDisables == enable:
+            return
+        self._nameFilterDisables = enable
+        print("<SDM> [setNameFilterDisables scope] self._nameFilterDisables: ", self._nameFilterDisables)
 
-    def _worker(self, task_queue: multiprocessing.JoinableQueue, result_queue: multiprocessing.Queue):
-        while True:
-            task = task_queue.get()
-            if task is None:
-                break
-            task_name, args = task
-            try:
-                if task_name == "fetch_extended_information":
-                    self._fileInfoGatherer.fetchExtendedInformation(*args)
-                elif task_name == "refresh_directory":
-                    self._refreshDirectory(*args)
-                elif task_name == "refresh_file":
-                    self._refreshFile(*args)
-                elif task_name == "process_drop":
-                    result = self._processDrop(*args)
-                    result_queue.put(("process_drop", result))
-            except Exception as e:
-                RobustLogger().error(f"Error in worker process: {e}")
-                result_queue.put(("error", str(e)))
+        self._forceSort: bool = True
+        self._q_performDelayedSort()
+
+    def nameFilterDisables(self) -> bool:
+        return self._nameFilterDisables
+
+    def setNameFilters(self, filters: list[str]):
+        if self._nameFilters == filters:
+            return
+        print(f"self._nameFilters<{self._nameFilters}> = {self.__class__.__name__}.setNameFilters(filters={filters})")
+        self._nameFilters = filters
+        print(f"setNameFilters(filters={self._nameFilters}) changed to f")
+        self._forceSort = True
+        self._q_performDelayedSort()
+
+    def nameFilters(self) -> list[str]:
+        return self._nameFilters
+
+    directoryLoaded: ClassVar[Signal] = QFileSystemModel.directoryLoaded
+    rootPathChanged: ClassVar[Signal] = QFileSystemModel.rootPathChanged
+    fileRenamed: ClassVar[Signal] = QFileSystemModel.fileRenamed
+
+    Option: type[QFileSystemModel.Option] = QFileSystemModel.Option
+    Options: type[QFileSystemModel.Options] = QFileSystemModel.Options
+    Roles: type[QFileSystemModel.Roles] = QFileSystemModel.Roles
+
+    DontWatchForChanges: QFileSystemModel.Option = QFileSystemModel.DontWatchForChanges
+    DontResolveSymlinks: QFileSystemModel.Option = QFileSystemModel.DontResolveSymlinks
+    DontUseCustomDirectoryIcons: QFileSystemModel.Option = QFileSystemModel.Option.DontUseCustomDirectoryIcons
+
+    FileIconRole: QFileSystemModel.Roles | Qt.ItemDataRole | Literal[1] = Qt.ItemDataRole.DecorationRole
+    FilePathRole: QFileSystemModel.Roles | Qt.ItemDataRole | Literal[257] = Qt.ItemDataRole.UserRole + 1  # pyright: ignore[reportAssignmentType]
+    FileNameRole: QFileSystemModel.Roles | Qt.ItemDataRole | Literal[258] = Qt.ItemDataRole.UserRole + 2  # pyright: ignore[reportAssignmentType]
+    FilePermissions: QFileSystemModel.Roles | Qt.ItemDataRole | Literal[259] = Qt.ItemDataRole.UserRole + 3  # pyright: ignore[reportAssignmentType]
+
+    NumColumns: int = 4
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, rootPath: Path):  # noqa: N803
+        super().__init__()
+
+        self.setWindowTitle("QTreeView with HTMLDelegate")
+
+        self.fsTreeView: RobustTreeView = RobustTreeView(self, use_columns=True)
+        self.fsModel: PyFileSystemModel = PyFileSystemModel(self)
+        self.fsTreeView.setModel(self.fsModel)
+        self.fsModel.setRootPath(str(rootPath))
+
+        central_widget = QWidget()
+        layout = QVBoxLayout(central_widget)
+        layout.addWidget(self.fsTreeView)
+        self.setCentralWidget(central_widget)
+        self.setMinimumSize(824, 568)
+        self.resize_and_center()
+
+    def resize_and_center(self):
+        """Resize and center the window on the screen."""
+        self.adjust_view_size()
+        screen = QApplication.primaryScreen().geometry()  # pyright: ignore[reportOptionalMemberAccess]
+        print("<SDM> [resize_and_center scope] screen: ", screen)
+
+        new_x = (screen.width() - self.width()) // 2
+        print("<SDM> [resize_and_center scope] new_x: ", new_x)
+
+        new_y = (screen.height() - self.height()) // 2
+        print("<SDM> [resize_and_center scope] new_y: ", new_y)
+
+        new_x = max(0, min(new_x, screen.width() - self.width()))
+        print("<SDM> [resize_and_center scope] new_x: ", new_x)
+
+        new_y = max(0, min(new_y, screen.height() - self.height()))
+        print("<SDM> [resize_and_center scope] new_y: ", new_y)
+
+        self.move(new_x, new_y)
+
+    def adjust_view_size(self):
+        """Adjust the view size based on content."""
+        sb: QScrollBar | None = self.fsTreeView.verticalScrollBar()
+        print("<SDM> [adjust_view_size scope] sb: ", sb)
+
+        assert sb is not None
+        width = sb.width() + 4  # Add some padding
+        print("<SDM> [adjust_view_size scope] width: ", width)
+
+        for i in range(self.fsModel.columnCount()):
+            width += self.fsTreeView.columnWidth(i)
+        print("all column's widths:", width)
+        if QDesktopWidget is None:
+            app = typing.cast(QApplication, QApplication.instance())
+            screen = app.primaryScreen()
+            print("<SDM> [adjust_view_size scope] screen: ", screen)
+
+            assert screen is not None
+            screen_width = screen.geometry().width()
+        else:
+            screen_width = QDesktopWidget().availableGeometry().width()
+        print("<SDM> [adjust_view_size scope] screen_width: ", screen_width)
+
+        print("Screen width:", screen_width)
+        self.resize(min(width, screen_width), self.height())
 
 
 if __name__ == "__main__":
-    import sys
-
-    import qasync
-
+    print("<SDM> [main block scope] __name__: ", __name__)
     app = QApplication(sys.argv)
-    model = PyQFileSystemModel()
-    root_path = QDir.homePath()
-    model.setRootPath(root_path)
+    print("<SDM> [adjust_view_size scope] app: ", app)
 
-    view = QTreeView()
-    view.setModel(model)
-    view.setRootIndex(model.index(root_path))
-    view.show()
+    base_path = Path(r"C:\Program Files (x86)\Steam\steamapps\common\swkotor").resolve()
+    print("<SDM> [adjust_view_size scope] base_path: ", base_path)
 
-    loop = qasync.QEventLoop(app)
-    asyncio.set_event_loop(loop)
+    main_window = MainWindow(base_path)
+    print("<SDM> [adjust_view_size scope] main_window: ", main_window)
 
-    with loop:
-        loop.run_forever()
-    async def _copyFile(self, src: str, dest: str):
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, shutil.copy2, src, dest)
-        self._refreshDirectory(os.path.dirname(dest))
+    main_window.show()
 
-    async def _moveFile(self, src: str, dest: str):
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, shutil.move, src, dest)
-        self._refreshDirectory(os.path.dirname(src))
-        self._refreshDirectory(os.path.dirname(dest))
-    def _retryOperation(self, operation: Callable, *args, max_retries: int = 3, **kwargs):
-        for attempt in range(max_retries):
-            try:
-                return operation(*args, **kwargs)
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    RobustLogger().error(f"Operation failed after {max_retries} attempts: {e}")
-                    self._showErrorMessage(f"Operation failed: {e}")
-                    return None
-                time.sleep(min(2**attempt, 30))  # Exponential backoff with a maximum of 30 seconds
+    sys.exit(app.exec_() if hasattr(app, "exec_") else app.exec())  # pyright: ignore[reportAttributeAccessIssue]

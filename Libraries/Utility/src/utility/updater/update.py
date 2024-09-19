@@ -468,7 +468,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
     def _unix_overwrite(self):
         # Unix: Overwrites the running applications binary
-        if platform.system() == "Darwin" and self._current_app_dir.endswith("MacOS"):
+        if platform.system() == "Darwin" and self._current_app_dir.name.endswith("MacOS"):
             self.log.debug("Looks like we're dealing with a Mac GUI")
             temp_dir = get_mac_dot_app_dir(self._current_app_dir)
             self._current_app_dir = temp_dir

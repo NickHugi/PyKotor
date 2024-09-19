@@ -61,7 +61,6 @@ if toolset_path.exists():
     update_sys_path(toolset_path.parent)
     os.chdir(toolset_path)
 
-from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation  # noqa: E402
 
 
 class PyFileInfoGatherer(QThread):
@@ -275,13 +274,7 @@ class PyFileInfoGatherer(QThread):
             self.unwatchPaths([fileInfo.absoluteFilePath()])
         else:
             path = fileInfo.absoluteFilePath()
-            if (
-                path
-                and fileInfo.exists()
-                and fileInfo.isFile()
-                and fileInfo.isReadable()
-                and path not in self.watchedFiles()
-            ):
+            if path and fileInfo.exists() and fileInfo.isFile() and fileInfo.isReadable() and path not in self.watchedFiles():
                 self.watchPaths([path])
 
         if os.name == "nt" and self.m_resolveSymlinks and info.isSymLink(ignoreNtfsSymLinks=True):

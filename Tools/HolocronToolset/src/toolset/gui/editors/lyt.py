@@ -95,7 +95,7 @@ class LYTEditor(Editor):
         self.ui.generateWalkmeshButton.clicked.connect(self.generateWalkmesh)
         self.ui.zoomSlider.valueChanged.connect(self.updateZoom)
         self.ui.importTextureButton.clicked.connect(self.importTexture)  # FIXME: importTextureButton attribute not found
-        self.ui.importModelButton.clicked.connect(self.importModel)  # FIXME: importModelButton attribute not found 
+        self.ui.importModelButton.clicked.connect(self.importModel)  # FIXME: importModelButton attribute not found
 
     def _setupGraphicsView(self):
         self.ui.graphicsView.setRenderHint(QPainter.Antialiasing)

@@ -26,7 +26,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.resource.formats.ncs.compiler.classes import FunctionDefinition
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeWidget
+from utility.ui_libraries.qt.widgets.itemviews.treewidget import RobustTreeWidget
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint

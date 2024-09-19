@@ -40,7 +40,7 @@ from enum import IntEnum, IntFlag
 from pathlib import PureWindowsPath
 from typing import TYPE_CHECKING, Any, ClassVar, Sequence, TypeVar
 
-from semver import Version
+from packaging.version import Version
 
 from utility.system.path import WindowsPath
 from utility.system.win32.com.com_types import GUID

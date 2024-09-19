@@ -5,10 +5,14 @@ from __future__ import annotations
 import itertools as tpc_itertools
 
 from enum import IntEnum
-from typing import NamedTuple, Tuple, cast
+from typing import TYPE_CHECKING, NamedTuple, Tuple, cast
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from PIL import Image
+    from qtpy.QtGui import QIcon, QImage
 
 
 class TPCGetResult(NamedTuple):
@@ -16,6 +20,23 @@ class TPCGetResult(NamedTuple):
     height: int
     texture_format: TPCTextureFormat
     data: bytes
+
+    def to_qicon(self) -> QIcon:
+        from qtpy.QtGui import QIcon, QImage, QPixmap, QTransform
+        width, height, tpc_format, img_bytes = self
+        image = QImage(img_bytes, width, height, tpc_format.to_qimage_format())
+        pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+        return QIcon(pixmap)
+
+    def to_qimage(self, img_format: QImage.Format) -> QImage:
+        from qtpy.QtGui import QImage
+        width, height, _, img_bytes = self
+        return QImage(img_bytes, width, height, img_format)
+
+    def to_pil_image(self) -> Image.Image:
+        from PIL import Image
+        width, height, tpc_format, img_bytes = self
+        return Image.frombytes(tpc_format.to_pil_mode(), (width, height), img_bytes)
 
 
 class TPCConvertResult(NamedTuple):
@@ -776,3 +797,22 @@ class TPCTextureFormat(IntEnum):
         elif self in {TPCTextureFormat.RGB, TPCTextureFormat.RGBA}:
             bytes_per_pixel = 4 if self == TPCTextureFormat.RGBA else 3
         return bytes_per_pixel
+
+    def to_qimage_format(self) -> QImage.Format:
+        from qtpy.QtGui import QImage
+        if self == TPCTextureFormat.Greyscale:
+            return QImage.Format.Format_Grayscale8
+        if self == TPCTextureFormat.RGB:
+            return QImage.Format.Format_RGB888
+        if self == TPCTextureFormat.RGBA:
+            return QImage.Format.Format_RGBA8888
+        return QImage.Format.Format_Invalid
+
+    def to_pil_mode(self) -> str:
+        if self == TPCTextureFormat.Greyscale:
+            return "L"
+        if self == TPCTextureFormat.RGB:
+            return "RGB"
+        if self == TPCTextureFormat.RGBA:
+            return "RGBA"
+        return "Invalid"
