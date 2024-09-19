@@ -2,9 +2,10 @@
 
 [CmdletBinding(PositionalBinding=$false)]
 param(
-  [switch]$noprompt,
-  [string]$venv_name = ".venv",
-  [string]$upx_dir
+    [switch]$noprompt,
+    [string]$venv_name = ".venv",
+    [string]$force_python_version,
+    [string]$upx_dir
 )
 $this_noprompt = $noprompt
 
@@ -79,6 +80,7 @@ $pyInstallerArgs = @{
     'distpath'=($repoRootPath + $pathSep + "dist")
     'upx-dir' = $upx_dir
     'icon'="resources/icons/sith.$iconExtension"
+    'path'=''
 }
 
 $toolSrcDir = (Resolve-Path -LiteralPath "$($repoRootPath)$($pathSep)Tools$($pathSep)$($pyInstallerArgs.name)$($pathSep)src").Path
@@ -119,7 +121,7 @@ if (Test-Path -LiteralPath $finalExecutablePath -ErrorAction SilentlyContinue) {
     }
 }
 Write-Host "Final executable path: $finalExecutablePath"
-if ($clean -and (Test-Path $pyInstallerArgs.workpath -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath $pyInstallerArgs.workpath -Recurse -Force }
+if ($pyInstallerArgs.clean -and (Test-Path $pyInstallerArgs.workpath -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath $pyInstallerArgs.workpath -Recurse -Force }
 
 
 # setup QT_API env var (for pyinstaller)

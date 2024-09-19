@@ -1,11 +1,18 @@
 #!/usr/bin/env pwsh
-
 [CmdletBinding(PositionalBinding=$false)]
 param(
-  [switch]$noprompt,
-  [string]$venv_name = ".venv",
-  [string]$force_python_version
+    [switch]$noprompt,
+    [string]$venv_name = ".venv",
+    [string]$force_python_version
 )
+$ErrorActionPreference = "Stop"
+$script:ErrorVerbosity = 3
+$PSNativeCommandUseErrorActionPreference = $true
+trap {
+    if ($null -eq $_) { Handle-Error -ErrorRecord $Error[0] } else { Handle-Error -ErrorRecord $_ }
+}
+
+
 $global:force_python_version = $force_python_version
 
 $latestPipVersion = "24.0"
@@ -23,29 +30,125 @@ Write-Host "The path to the root directory is: $repoRootPath"
 
 function Handle-Error {
     param (
-        [Parameter(Mandatory=$true)]
-        [System.Management.Automation.ErrorRecord]$ErrorRecord
+        [Parameter(Mandatory = $true)][System.Management.Automation.ErrorRecord]$ErrorRecord,
+        [int]$Verbosity = $script:ErrorVerbosity
     )
+    if ($Verbosity -eq 5) { return }
 
-    Write-Host -ForegroundColor Red "Detailed Error Report:"
-    Write-Host -ForegroundColor Red "Message: $($ErrorRecord.Exception.Message)"
-            
-    # Attempt to provide a more detailed location of the error
-    if ($ErrorRecord.InvocationInfo -and $ErrorRecord.InvocationInfo.MyCommand) {
-        Write-Host -ForegroundColor Red "Command Name: $($ErrorRecord.InvocationInfo.MyCommand.Name)"
-        Write-Host -ForegroundColor Red "Script Name: $($ErrorRecord.InvocationInfo.ScriptName)"
-        Write-Host -ForegroundColor Red "Line Number: $($ErrorRecord.InvocationInfo.ScriptLineNumber)"
-        Write-Host -ForegroundColor Red "Line: $($ErrorRecord.InvocationInfo.Line)"
-    } else {
-        Write-Host -ForegroundColor Red "No invocation information available."
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss,fff"
+    $excType = $ErrorRecord.Exception.GetType().FullName
+    $excMessage = $ErrorRecord.Exception.Message
+    $helpLink = $ErrorRecord.Exception.HelpLink
+
+    if ($Verbosity -ge 1) {
+        Write-Host -ForegroundColor Red "$timestamp - $excType"
+        Write-Host -ForegroundColor Red $excMessage
+        if ($ErrorRecord.InvocationInfo) {
+            Write-Host -ForegroundColor Red "Line $($ErrorRecord.InvocationInfo.ScriptLineNumber): $($ErrorRecord.InvocationInfo.Line.Trim())"
+        }
     }
 
-    # Extract and display the script stack trace if available
-    if ($ErrorRecord.ScriptStackTrace) {
-        Write-Host -ForegroundColor Red "Script Stack Trace:"
-        Write-Host -ForegroundColor Red $ErrorRecord.ScriptStackTrace
-    } else {
-        Write-Host -ForegroundColor Red "No script stack trace available."
+    if ($Verbosity -ge 2) {
+        Write-Host -ForegroundColor Red "Traceback (most recent call last):"
+        if ($null -ne (Get-Member -InputObject $ErrorRecord -Name ScriptStackTrace -ErrorAction SilentlyContinue)) {
+            #PS 3.0 has a stack trace on the ErrorRecord; if we have it, use it & skip the manual stack trace below
+            Write-Host -ForegroundColor Red $ErrorRecord.ScriptStackTrace
+            return
+        }
+        else {
+            $callStack = Get-PSCallStack
+            for ($i = 0; $i -lt $callStack.Count; $i++) {
+                $frame = $callStack[$i]
+                Write-Host -ForegroundColor Red "  File `"$($frame.ScriptName)`", line $($frame.ScriptLineNumber), in $($frame.FunctionName)"
+            }
+        }
+    }
+
+    if ($Verbosity -ge 3) {
+        if ($i -eq 0 -and $null -ne $ErrorRecord.InvocationInfo) {
+            $invInfo = $ErrorRecord.InvocationInfo
+            #Write-Host -ForegroundColor Red "    ScriptLineNumber = $($invInfo.ScriptLineNumber)"
+            Write-Host -ForegroundColor Red "    OffsetInLine = $($invInfo.OffsetInLine)"
+            Write-Host -ForegroundColor Red "    HistoryId = $($invInfo.HistoryId)"
+            Write-Host -ForegroundColor Red "    ScriptName = `"$($invInfo.ScriptName)`""
+            #Write-Host -ForegroundColor Red "    Line = `"$($invInfo.Line)`""
+            Write-Host -ForegroundColor Red "    PositionMessage = `"$($invInfo.PositionMessage)`""
+            Write-Host -ForegroundColor Red "    PSScriptRoot = `"$($invInfo.PSScriptRoot)`""
+            Write-Host -ForegroundColor Red "    PSCommandPath = `"$($invInfo.PSCommandPath)`""
+            Write-Host -ForegroundColor Red "    InvocationName = `"$($invInfo.InvocationName)`""
+            Write-Host -ForegroundColor Red "    PipelineLength = $($invInfo.PipelineLength)"
+            Write-Host -ForegroundColor Red "    PipelinePosition = $($invInfo.PipelinePosition)"
+            Write-Host -ForegroundColor Red "    ExpectingInput = $($invInfo.ExpectingInput)"
+            Write-Host -ForegroundColor Red "    CommandOrigin = $($invInfo.CommandOrigin)"
+            Write-Host -ForegroundColor Red "    DisplayScriptPosition = $($invInfo.DisplayScriptPosition)"
+        }
+    }
+    if ($Verbosity -ge 4) {
+        $callStack = Get-PSCallStack
+        for ($i = $callStack.Count - 1; $i -ge 0; $i--) {
+            $frame = $callStack[$i]
+            $variables = if ($i -eq 0) { Get-Variable } else { try { Get-Variable -Scope $i } catch { @() } }
+            foreach ($var in $variables) {
+                if ($var.Name -notmatch '^(PSCommandPath|PSScriptRoot|args|input|_|StackTrace|Error)$') {
+                    Write-Host -ForegroundColor Red "    $($var.Name) = $(Format-VariableOutput $var.Value -maxLength 50)"
+                }
+            }
+        }
+    }
+    if ($Verbosity -ge 5) {
+        Write-Host -ForegroundColor Red $ErrorRecord.Exception.Message
+        if ($null -ne $ErrorRecord.Exception.Source) { Write-Host -ForegroundColor Red "Source: $($ErrorRecord.Exception.Source)" }
+        if ($null -ne $ErrorRecord.Exception.HResult) { Write-Host -ForegroundColor Red "HRESULT: $($ErrorRecord.Exception.HResult)" }
+        if ($null -ne $ErrorRecord.Exception.TargetSite) { Write-Host -ForegroundColor Red "TargetSite: $($ErrorRecord.Exception.TargetSite)" }
+        if ($null -ne $ErrorRecord.CategoryInfo) {
+            if ($null -ne $ErrorRecord.CategoryInfo.Category -and "NotSpecified" -ne $ErrorRecord.CategoryInfo.Category) { Write-Host -ForegroundColor Red "Category: $($ErrorRecord.CategoryInfo.Category)" }
+            if (-not [string]::IsNullOrWhiteSpace($ErrorRecord.CategoryInfo.Activity)) { Write-Host -ForegroundColor Red "Activity: $($ErrorRecord.CategoryInfo.Activity)" }
+            if (-not [string]::IsNullOrWhiteSpace($ErrorRecord.CategoryInfo.TargetName)) { Write-Host -ForegroundColor Red "TargetName: $($ErrorRecord.CategoryInfo.TargetName)" }
+            if (-not [string]::IsNullOrWhiteSpace($ErrorRecord.CategoryInfo.TargetType)) { Write-Host -ForegroundColor Red "TargetType: $($ErrorRecord.CategoryInfo.TargetType)" }
+        }
+    }
+
+    if ($Verbosity -ge 1) {
+        if ($helpLink) { Write-Host -ForegroundColor Red "Help: $helpLink" }
+        if ($ErrorRecord.InvocationInfo) {
+            Write-Host -ForegroundColor Red "$($ErrorRecord.InvocationInfo.PositionMessage)"
+            if ($null -ne $ErrorRecord.CategoryInfo.Reason) { Write-Host -ForegroundColor Red "Reason: $($ErrorRecord.CategoryInfo.Reason)" }
+            if ($null -ne $ErrorRecord.Exception.HelpLink) { Write-Host -ForegroundColor Red "Help docs available: $($ErrorRecord.Exception.HelpLink)" }
+        }
+        Write-Host -ForegroundColor Red "$excType"
+        Write-Host -ForegroundColor Red "$excMessage"
+    }
+    Write-Host -ForegroundColor Red "----------------------------------------------------------------"
+}
+function Format-VariableOutput {
+    param ($value, [int]$maxLength = 100, [int]$maxDepth = 3, [int]$currentDepth = 0)
+    if ($currentDepth -ge $maxDepth) { return "<max depth reached>" }
+    if ($null -eq $value) { return "None" }
+    elseif ($value -is [string]) { return "`"$($value.Substring(0, [Math]::Min($value.Length, $maxLength)))$(if ($value.Length -gt $maxLength) {"..."})`"" }
+    elseif ($value -is [int] -or $value -is [double]) { return $value.ToString() }
+    elseif ($value -is [bool]) { return $value.ToString().ToLower() }
+    elseif ($value -is [array] -or $value -is [System.Collections.IList]) {
+        $elements = $value | Select-Object -First 10 | ForEach-Object { Format-VariableOutput $_ -maxLength $maxLength -maxDepth $maxDepth -currentDepth ($currentDepth + 1) }
+        $var_output = "[" + ($elements -join ", ") + $(if ($value.Count -gt 10) { ", ..." }) + "]"
+        return $(if ($var_output.Length -gt $maxLength) { $var_output.Substring(0, $maxLength) + "..." } else { $var_output })
+    }
+    elseif ($value -is [hashtable] -or $value -is [System.Collections.IDictionary]) {
+        $elements = $value.GetEnumerator() | Select-Object -First 10 | ForEach-Object { 
+            "$((Format-VariableOutput $_.Key -maxLength $maxLength -maxDepth $maxDepth -currentDepth ($currentDepth + 1))) = $((Format-VariableOutput $_.Value -maxLength $maxLength -maxDepth $maxDepth -currentDepth ($currentDepth + 1)))"
+        }
+        $var_output = "{" + ($elements -join ", ") + $(if ($value.Count -gt 10) { ", ..." }) + "}"
+        return $(if ($var_output.Length -gt $maxLength) { $var_output.Substring(0, $maxLength) + "..." } else { $var_output })
+    }
+    elseif ($value -is [System.Management.Automation.PSCustomObject]) {
+        $properties = $value.PSObject.Properties | Select-Object -First 10 | ForEach-Object {
+            "    $($_.Name) = $((Format-VariableOutput $_.Value -maxLength $maxLength -maxDepth $maxDepth -currentDepth ($currentDepth + 1)))"
+        }
+        $var_output = "PSCustomObject(`n" + ($properties -join ",`n") + $(if ($value.PSObject.Properties.Count -gt 10) { ",`n    ..." }) + "`n)"
+        return $(if ($var_output.Length -gt $maxLength) { $var_output.Substring(0, $maxLength) + "..." } else { $var_output })
+    }
+    else {
+        $var_output = $value.ToString()
+        return $(if ($var_output.Length -gt $maxLength) { $var_output.Substring(0, $maxLength) + "..." } else { $var_output })
     }
 }
 
@@ -1128,324 +1231,6 @@ if ( $findVenvExecutable -eq $true) {
         exit
     }
 }
-
-
-# Sometimes a system may be missing activation scripts...
-$activateBashScriptContents = @"
-# This file must be used with "source bin/activate" *from bash*
-# You cannot run it directly
-
-deactivate () {
-# reset old environment variables
-if [ -n "`${_OLD_VIRTUAL_PATH:-}" ] ; then
-PATH="`${_OLD_VIRTUAL_PATH:-}"
-export PATH
-unset _OLD_VIRTUAL_PATH
-fi
-if [ -n "`${_OLD_VIRTUAL_PYTHONHOME:-}" ] ; then
-PYTHONHOME="`${_OLD_VIRTUAL_PYTHONHOME:-}"
-export PYTHONHOME
-unset _OLD_VIRTUAL_PYTHONHOME
-fi
-
-# Call hash to forget past commands. Without forgetting
-# past commands the `$PATH changes we made may not be respected
-hash -r 2> /dev/null
-
-if [ -n "`${_OLD_VIRTUAL_PS1:-}" ] ; then
-PS1="`${_OLD_VIRTUAL_PS1:-}"
-export PS1
-unset _OLD_VIRTUAL_PS1
-fi
-
-unset VIRTUAL_ENV
-unset VIRTUAL_ENV_PROMPT
-if [ ! "`${1:-}" = "nondestructive" ] ; then
-# Self destruct!
-unset -f deactivate
-fi
-}
-
-# unset irrelevant variables
-deactivate nondestructive
-
-# on Windows, a path can contain colons and backslashes and has to be converted:
-if [ "`$OSTYPE" = "cygwin" ] || [ "`$OSTYPE" = "msys" ] ; then
-# transform D:\path\to\venv to /d/path/to/venv on MSYS
-# and to /cygdrive/d/path/to/venv on Cygwin
-export VIRTUAL_ENV=`$(cygpath "$venvScriptBinPath")
-else
-# use the path as-is
-export VIRTUAL_ENV="$venvScriptBinPath"
-fi
-
-_OLD_VIRTUAL_PATH="`$PATH"
-PATH="`$VIRTUAL_ENV/bin:`$PATH"
-export PATH
-
-# unset PYTHONHOME if set
-# this will fail if PYTHONHOME is set to the empty string (which is bad anyway)
-# could use `if (set -u; : `$PYTHONHOME) ;` in bash
-if [ -n "`${PYTHONHOME:-}" ] ; then
-_OLD_VIRTUAL_PYTHONHOME="`${PYTHONHOME:-}"
-unset PYTHONHOME
-fi
-
-if [ -z "`${VIRTUAL_ENV_DISABLE_PROMPT:-}" ] ; then
-_OLD_VIRTUAL_PS1="`${PS1:-}"
-PS1="($venv_name) `${PS1:-}"
-export PS1
-VIRTUAL_ENV_PROMPT="($venv_name) "
-export VIRTUAL_ENV_PROMPT
-fi
-
-# Call hash to forget past commands. Without forgetting
-# past commands the `$PATH changes we made may not be respected
-hash -r 2> /dev/null"@
-
-$activatePwshScriptContents = @"
-<#
-.Synopsis
-Activate a Python virtual environment for the current PowerShell session.
-
-.Description
-Pushes the python executable for a virtual environment to the front of the
-`$Env:PATH environment variable and sets the prompt to signify that you are
-in a Python virtual environment. Makes use of the command line switches as
-well as the `pyvenv.cfg` file values present in the virtual environment.
-
-.Parameter VenvDir
-Path to the directory that contains the virtual environment to activate. The
-default value for this is the parent of the directory that the Activate.ps1
-script is located within.
-
-.Parameter Prompt
-The prompt prefix to display when this virtual environment is activated. By
-default, this prompt is the name of the virtual environment folder (VenvDir)
-surrounded by parentheses and followed by a single space (ie. '(.venv) ').
-
-.Example
-Activate.ps1
-Activates the Python virtual environment that contains the Activate.ps1 script.
-
-.Example
-Activate.ps1 -Verbose
-Activates the Python virtual environment that contains the Activate.ps1 script,
-and shows extra information about the activation as it executes.
-
-.Example
-Activate.ps1 -VenvDir C:\Users\MyUser\Common\.venv
-Activates the Python virtual environment located in the specified location.
-
-.Example
-Activate.ps1 -Prompt "MyPython"
-Activates the Python virtual environment that contains the Activate.ps1 script,
-and prefixes the current prompt with the specified string (surrounded in
-parentheses) while the virtual environment is active.
-
-.Notes
-On Windows, it may be required to enable this Activate.ps1 script by setting the
-execution policy for the user. You can do this by issuing the following PowerShell
-command:
-
-PS C:\> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-For more information on Execution Policies: 
-https://go.microsoft.com/fwlink/?LinkID=135170
-
-#>
-Param(
-[Parameter(Mandatory = $false)]
-[String]
-`$VenvDir,
-[Parameter(Mandatory = $false)]
-[String]
-`$Prompt
-)
-
-<# Function declarations --------------------------------------------------- #>
-
-<#
-.Synopsis
-Remove all shell session elements added by the Activate script, including the
-addition of the virtual environment's Python executable from the beginning of
-the PATH variable.
-
-.Parameter NonDestructive
-If present, do not remove this function from the global namespace for the
-session.
-
-#>
-function global:deactivate ([switch]`$NonDestructive) {
-# Revert to original values
-
-# The prior prompt:
-if (Test-Path -Path Function:_OLD_VIRTUAL_PROMPT) {
-Copy-Item -Path Function:_OLD_VIRTUAL_PROMPT -Destination Function:prompt
-Remove-Item -Path Function:_OLD_VIRTUAL_PROMPT
-}
-
-# The prior PYTHONHOME:
-if (Test-Path -Path Env:_OLD_VIRTUAL_PYTHONHOME) {
-Copy-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME -Destination Env:PYTHONHOME
-Remove-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME
-}
-
-# The prior PATH:
-if (Test-Path -Path Env:_OLD_VIRTUAL_PATH) {
-Copy-Item -Path Env:_OLD_VIRTUAL_PATH -Destination Env:PATH
-Remove-Item -Path Env:_OLD_VIRTUAL_PATH
-}
-
-# Just remove the VIRTUAL_ENV altogether:
-if (Test-Path -Path Env:VIRTUAL_ENV) {
-Remove-Item -Path env:VIRTUAL_ENV
-}
-
-# Just remove the _PYTHON_VENV_PROMPT_PREFIX altogether:
-if (Get-Variable -Name "_PYTHON_VENV_PROMPT_PREFIX" -ErrorAction SilentlyContinue) {
-Remove-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Scope Global -Force
-}
-
-# Leave deactivate function in the global namespace if requested:
-if (-not `$NonDestructive) {
-Remove-Item -Path function:deactivate
-}
-}
-
-<#
-.Description
-Get-PyVenvConfig parses the values from the pyvenv.cfg file located in the
-given folder, and returns them in a map.
-
-For each line in the pyvenv.cfg file, if that line can be parsed into exactly
-two strings separated by `=` (with any amount of whitespace surrounding the =)
-then it is considered a `key = value` line. The left hand string is the key,
-the right hand is the value.
-
-If the value starts with a `'` or a `"` then the first and last character is
-stripped from the value before being captured.
-
-.Parameter ConfigDir
-Path to the directory that contains the `pyvenv.cfg` file.
-#>
-function Get-PyVenvConfig(
-[String]
-`$ConfigDir
-) {
-Write-Verbose "Given ConfigDir=`$ConfigDir, obtain values in pyvenv.cfg"
-
-# Ensure the file exists, and issue a warning if it doesn't (but still allow the function to continue).
-`$pyvenvConfigPath = Join-Path -Resolve -Path `$ConfigDir -ChildPath 'pyvenv.cfg' -ErrorAction Continue
-
-# An empty map will be returned if no config file is found.
-`$pyvenvConfig = @{ }
-
-if (`$pyvenvConfigPath) {
-
-Write-Verbose "File exists, parse `key = value` lines"
-`$pyvenvConfigContent = Get-Content -Path `$pyvenvConfigPath
-
-`$pyvenvConfigContent | ForEach-Object {
-`$keyval = `$PSItem -split "\s*=\s*", 2
-if (`$keyval[0] -and `$keyval[1]) {
-    `$val = `$keyval[1]
-
-    # Remove extraneous quotations around a string value.
-    if ("'""".Contains(`$val.Substring(0, 1))) {
-        `$val = `$val.Substring(1, `$val.Length - 2)
-    }
-
-    `$pyvenvConfig[`$keyval[0]] = `$val
-    Write-Verbose "Adding Key: '`$(`$keyval[0])'='`$val'"
-}
-}
-}
-return `$pyvenvConfig
-}
-
-
-<# Begin Activate script --------------------------------------------------- #>
-
-# Determine the containing directory of this script
-`$VenvExecPath = Split-Path -Parent `$MyInvocation.MyCommand.Definition
-`$VenvExecDir = Get-Item -Path `$VenvExecPath
-
-Write-Verbose "Activation script is located in path: '`$VenvExecPath'"
-Write-Verbose "VenvExecDir Fullname: '`$(`$VenvExecDir.FullName)"
-Write-Verbose "VenvExecDir Name: '`$(`$VenvExecDir.Name)"
-
-# Set values required in priority: CmdLine, ConfigFile, Default
-# First, get the location of the virtual environment, it might not be
-# VenvExecDir if specified on the command line.
-if (`$VenvDir) {
-Write-Verbose "VenvDir given as parameter, using '`$VenvDir' to determine values"
-}
-else {
-Write-Verbose "VenvDir not given as a parameter, using parent directory name as VenvDir."
-`$VenvDir = `$VenvExecDir.Parent.FullName.TrimEnd("\\/")
-Write-Verbose "VenvDir=`$VenvDir"
-}
-
-# Next, read the `pyvenv.cfg` file to determine any required value such
-# as `prompt`.
-`$pyvenvCfg = Get-PyVenvConfig -ConfigDir `$VenvDir
-
-# Next, set the prompt from the command line, or the config file, or
-# just use the name of the virtual environment folder.
-if (`$Prompt) {
-Write-Verbose "Prompt specified as argument, using '`$Prompt'"
-}
-else {
-Write-Verbose "Prompt not specified as argument to script, checking pyvenv.cfg value"
-if (`$pyvenvCfg -and `$pyvenvCfg['prompt']) {
-Write-Verbose "  Setting based on value in pyvenv.cfg='`$(`$pyvenvCfg['prompt'])'"
-`$Prompt = `$pyvenvCfg['prompt'];
-}
-else {
-Write-Verbose "  Setting prompt based on parent's directory's name. (Is the directory name passed to venv module when creating the virutal environment)"
-Write-Verbose "  Got leaf-name of `$VenvDir='`$(Split-Path -Path `$venvDir -Leaf)'"
-`$Prompt = Split-Path -Path `$venvDir -Leaf
-}
-}
-
-Write-Verbose "Prompt = '`$Prompt'"
-Write-Verbose "VenvDir='`$VenvDir'"
-
-# Deactivate any currently active virtual environment, but leave the
-# deactivate function in place.
-deactivate -nondestructive
-
-# Now set the environment variable VIRTUAL_ENV, used by many tools to determine
-# that there is an activated venv.
-`$env:VIRTUAL_ENV = `$VenvDir
-
-if (-not `$Env:VIRTUAL_ENV_DISABLE_PROMPT) {
-
-Write-Verbose "Setting prompt to '`$Prompt'"
-
-# Set the prompt to include the env name
-# Make sure _OLD_VIRTUAL_PROMPT is global
-function global:_OLD_VIRTUAL_PROMPT { "" }
-Copy-Item -Path function:prompt -Destination function:_OLD_VIRTUAL_PROMPT
-New-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Description "Python virtual environment prompt prefix" -Scope Global -Option ReadOnly -Visibility Public -Value `$Prompt
-
-function global:prompt {
-Write-Host -NoNewline -ForegroundColor Green "(`$_PYTHON_VENV_PROMPT_PREFIX) "
-_OLD_VIRTUAL_PROMPT
-}
-}
-
-# Clear PYTHONHOME
-if (Test-Path -Path Env:PYTHONHOME) {
-Copy-Item -Path Env:PYTHONHOME -Destination Env:_OLD_VIRTUAL_PYTHONHOME
-Remove-Item -Path Env:PYTHONHOME
-}
-
-# Add the venv to the PATH
-Copy-Item -Path Env:PATH -Destination Env:_OLD_VIRTUAL_PATH
-`$Env:PATH = "`$VenvExecDir`$([System.IO.Path]::PathSeparator)`$Env:PATH"
-"@
 
 function Activate-Script {
     param (
