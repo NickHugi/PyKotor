@@ -19,3 +19,16 @@ pytest-html
 types-Pillow
 types-Send2Trash
 send2trash
+-e .
+-e ./Libraries/PyKotor
+-e ./Libraries/PyKotorFont
+-e ./Libraries/PyKotorGL
+-e ./Libraries/Utility
+-e ./Tools/HolocronToolset
+-e ./Tools/HoloPatcher
+-e ./Tools/KotorDiff
+-e ./Tools/BatchPatcher
+
+# Add any additional development dependencies here, e.g.:
+black
+flake8

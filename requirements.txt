@@ -1,1 +1,9 @@
-PySide2
+-e ./Libraries/PyKotor
+-e ./Libraries/PyKotorFont
+-e ./Libraries/PyKotorGL
+-e ./Libraries/Utility
+-e ./Tools/HolocronToolset
+-e ./Tools/HoloPatcher
+-e ./Tools/KotorDiff
+-e ./Tools/BatchPatcher
+-e .

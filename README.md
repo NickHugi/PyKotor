@@ -4,48 +4,67 @@ PyKotor
 A comprehensive Python library that can read and modify most file formats used by the game [Knights of the Old Republic](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic_(video_game)) and its [sequel](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords).
 
 ## Installation
-(The PyPI egg is currently in maintenance. Please check back later) Install from [PyPI](https://pypi.org/project/PyKotor/).
-```commandline
-pip install pykotor
-```
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/NickHugi/PyKotor
+   cd PyKotor
+   ```
+
+2. Install Poetry (if not already installed):
+   ```
+   pip install poetry
+   ```
+
+3. Install the project and its dependencies:
+   ```
+   poetry install
+   ```
+
+4. Activate the virtual environment:
+   ```
+   poetry shell
+   ```
+
+This will install PyKotor and all its subpackages in editable mode.
 
 ## Requirements
-PyKotor supports any Python version between 3.8 and 3.12. See requirements-dev.txt and pyproject.toml for additional pip dependencies.
-PyKotor is supported on most (if not all) operating systems. Yes, this includes Mac and any other case-sensitive filesystem.
+PyKotor supports Python versions 3.8 and above. All dependencies are managed by Poetry.
+PyKotor is supported on most (if not all) operating systems, including Mac and other case-sensitive filesystems.
 
-## Cloning the repo
-If you would like to work with the source files directly from GitHub, run the following commands to get yourself set:
+## Running the tools
 
-**Note**: Linux/Mac users should initialize a powershell shell with the command `pwsh`, before executing the below commands:
+After installation and activating the virtual environment, you can run any of the provided tools, such as HoloPatcher, KotorDiff, or the Toolset, like this:
 
-```commandline
-git clone https://github.com/NickHugi/PyKotor
-cd PyKotor
-./install_python_venv.ps1
 ```
-For more information on running our Powershell scripts, please see [POWERSHELL.md](https://github.com/NickHugi/PyKotor/blob/master/POWERSHELL.md)
-
-If powershell is not an option for you, you can install Python manually from https://www.python.org/, and set your environment variable PYTHONPATH manually by looking inside the '.env' file in the root of this repo.
-
-
-Once 'install_python_venv.ps1' finishes, you can run any of the provided tools, such as HoloPatcher, KotorDiff, or the Toolset, like this:
-```commandline
-pip install -r Tools/HoloPatcher/requirements.txt --prefer-binary
+python Tools/HolocronToolset/src/toolset/__main__.py
 python Tools/HoloPatcher/src/holopatcher/__main__.py
-pip install -r Tools/HolocronToolset/requirements.txt --prefer-binary
+python Tools/KotorDiff/src/kotordiff/__main__.py
+```
+
+## Development
+
+To install development dependencies, use:
+
+```
+poetry install --with dev
+```
+
+This will install all the development tools like mypy, ruff, pylint, etc.
+
+## Running the tools
+
+After installation, you can run any of the provided tools, such as HoloPatcher, KotorDiff, or the Toolset, like this:
+
+```
+python Tools/HoloPatcher/src/holopatcher/__main__.py
 python Tools/HolocronToolset/src/toolset/__main__.py
 python Tools/KotorDiff/src/kotordiff/__main__.py
 ```
 
-see [HoloPatcher's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HoloPatcher#readme) for more information
+See [HoloPatcher's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HoloPatcher#readme) for more information
 
-see [HolocronToolset's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HolocronToolset#readme) for more information
-
-Optionally, install requirements-dev.txt to get all pip packages in one shot:
-```commandline
-pip install -r requirements-dev.txt --prefer-binary
-```
-We use `--prefer-binary` as building pip packages from source can occasionally fail on some operating systems/python environments.
+See [HolocronToolset's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HolocronToolset#readme) for more information
 
 ## Compiling/Building Available Tools:
 After cloning the repo, open any of the powershell scripts in the `compile` folder such as `compile_holopatcher.ps1` and `compile_toolset.ps1` with PowerShell. Run the `deps_holopatcher.ps1` or `deps_toolset.ps1` first to get the dependencies setup. Doing so will start an automated process that results in a EXE being built/compiled to the PyKotor/dist folder. Specifically, those scripts will:
