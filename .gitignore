@@ -70,3 +70,11 @@ Tools/HoloPatcher/src/holopatcher/package-lock.json
 Tools/HoloPatcher/src/holopatcher/package.json
 .history
 .history*
+/.aider.tags.cache.v3
+.aider.chat.history.md
+.aider.input.history
+.aiderignore
+/.qtcreator
+Libraries/Utility/.aider.model.settings.json
+/Libraries/Utility/src/utility/ui_libraries/qt/filesystem/common/deprecated
+/Libraries/Utility/src/utility/ui_libraries/qt/filesystem/common/untested
