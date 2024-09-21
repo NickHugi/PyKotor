@@ -41,7 +41,9 @@ if TYPE_CHECKING:
 # This is a nice workaround for getting type hints working, at least. It's assumed
 # that the subclasses will inherit the real qt views before they call the function anyway.
 class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
-    def __init__(self, parent: QWidget | None = None, *, settings_name: str | None = None):
+    def __init__(self, parent: QWidget | None = None, *, settings_name: str | None = None, no_qt_init: bool = False):
+        if not no_qt_init:
+            super().__init__(parent)
         self._settings_name: str = settings_name and settings_name.strip() or getattr(self, "objectName", lambda: self.__class__.__name__)()
 
         self._settings_cache: dict[str, QSettings] = {}

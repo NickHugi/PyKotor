@@ -11,7 +11,7 @@ import pytest
 from qtpy.QtCore import QDir, QFileInfo
 from qtpy.QtWidgets import QApplication, QFileIconProvider
 
-from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyFileInfoGatherer
+from utility.ui_libraries.qt.filesystem.common.pyfileinfogatherer import PyFileInfoGatherer
 
 
 @pytest.fixture(scope="session", autouse=True)

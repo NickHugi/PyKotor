@@ -26,8 +26,9 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         use_columns: bool = False,
         settings_name: str | None = None,
     ):
-        super().__init__(parent, settings_name=settings_name)
         self.branch_connectors_enabled: bool = False
+        self.header_visible: bool = False
+        super().__init__(parent, settings_name=settings_name)
         self.layout_changed_debounce_timer: QTimer = QTimer(self)
         self.original_stylesheet: str = self.styleSheet()
         self.header_visible: bool = self.get_setting("horizontalScrollBarVisible", False)  # noqa: FBT003
@@ -97,10 +98,10 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
 
         # Resize modes submenu
         resize_mode_menu = header_menu.addMenu("Resize Mode")
-        model = self.model()
-        assert model is not None, "Model is None in build_header_context_menu"
-        for i in range(self.header().count()):
-            section_name = model.headerData(i, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
+        model: QAbstractItemModel | None = self.model()
+        if model is not None:
+            for i in range(self.header().count()):
+                section_name = model.headerData(i, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
             self._add_exclusive_menu_action(
                 resize_mode_menu,
                 f"[{i}] {section_name}",

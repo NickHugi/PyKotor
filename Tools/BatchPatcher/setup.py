@@ -1,4 +1,6 @@
-from setuptools import setup, find_packages
+from __future__ import annotations
+
+from setuptools import find_packages, setup
 
 setup(
     name="batch-patcher",
@@ -12,7 +14,7 @@ setup(
         # Add any other dependencies here
     ],
 )
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="batch-patcher",

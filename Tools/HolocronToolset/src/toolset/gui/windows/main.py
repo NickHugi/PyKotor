@@ -88,7 +88,7 @@ from utility.error_handling import universal_simplify_exception
 from utility.misc import ProcessorArchitecture, is_debug_mode
 from utility.system.path import Path, PurePath
 from utility.tricks import debug_reload_pymodules
-from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyFileInfoGatherer
+from utility.ui_libraries.qt.filesystem.common.pyfileinfogatherer import PyFileInfoGatherer
 from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 from utility.updater.update import AppUpdate
 

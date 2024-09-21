@@ -373,9 +373,9 @@ if __name__ == "__main__":
     # Remove
     os.remove("f")
     assert os == ["a", "b", "c", "d", "e"]
-    try:
+    try:  # noqa: SIM105
         os.remove("f")
-    except ValueError:
+    except ValueError:  # noqa: S110
         pass  # Expected since "f" is already removed
 
     # Pop
@@ -392,9 +392,9 @@ if __name__ == "__main__":
     os.extend(["a", "b", "c", "d"])
     os[1] = "e"
     assert os == ["a", "e", "c", "d"]
-    try:
+    try:  # noqa: SIM105
         os[1] = "a"  # Duplicate error
-    except ValueError:
+    except ValueError:  # noqa: S110
         pass  # Expected since "a" is already in the set
 
     # __delitem__
@@ -421,7 +421,7 @@ if __name__ == "__main__":
     assert os == ["e", "d", "c", "b", "a"]
 
     # Add and iAdd
-    os2 = os + ["f", "g"]
+    os2 = [*os, "f", "g"]
     assert os2 == ["e", "d", "c", "b", "a", "f", "g"]
     os += ["h", "i"]
     assert os == ["e", "d", "c", "b", "a", "h", "i"]

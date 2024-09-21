@@ -22,7 +22,7 @@ class RobustHeaderView(RobustAbstractItemView, QHeaderView):
     @overload
     def __init__(
         self,
-        parent: Qt.Orientation | None = None,
+        parent: QWidget | None = None,
     ):
         ...
     def __init__(
@@ -32,7 +32,7 @@ class RobustHeaderView(RobustAbstractItemView, QHeaderView):
     ):
         orientation, parent = self._handle_args_kwargs(args, kwargs)
         QHeaderView.__init__(self, orientation, parent)
-        RobustAbstractItemView.__init__(self, parent)
+        RobustAbstractItemView.__init__(self, parent, no_qt_init=True)
 
     def _handle_args_kwargs(
         self,

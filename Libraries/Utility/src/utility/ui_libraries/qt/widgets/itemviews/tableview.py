@@ -22,7 +22,7 @@ class RobustTableView(RobustAbstractItemView, QTableView):
         *,
         settings_name: str | None = None,
     ):
-        self.first_column_interactable: bool = True
+        self.only_first_column_selectable: bool = True
         QTableView.__init__(self, parent)
         RobustAbstractItemView.__init__(self, parent, settings_name=settings_name)
         self.original_stylesheet: str = self.styleSheet()
@@ -34,10 +34,10 @@ class RobustTableView(RobustAbstractItemView, QTableView):
         self.verticalHeader().customContextMenuRequested.connect(lambda pos: self.show_header_context_menu(pos, self.verticalHeader()))
 
     def setFirstColumnInteractable(self, value: bool):  # noqa: FBT001
-        self.first_column_interactable = value
+        self.only_first_column_selectable = value
 
     def firstColumnInteractable(self) -> bool:
-        return self.first_column_interactable
+        return self.only_first_column_selectable
 
     def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
         print(f"{self.__class__.__name__}.build_context_menu")
@@ -135,14 +135,14 @@ class RobustTableView(RobustAbstractItemView, QTableView):
 
     def setSelection(self, rect: QRect, command: QItemSelectionModel.SelectionFlags):
         index = self.indexAt(rect.topLeft())
-        if self.first_column_interactable and index.isValid() and index.column() == 0:
+        if self.only_first_column_selectable and index.isValid() and index.column() == 0:
             super().setSelection(rect, command)
         else:
             self.clearSelection()
 
     def mousePressEvent(self, event: QMouseEvent):
         index = self.indexAt(event.pos())
-        if self.first_column_interactable and index.isValid() and index.column() == 0:
+        if self.only_first_column_selectable and index.isValid() and index.column() == 0:
             super().mousePressEvent(event)
         else:
             # Clear selection and reset the selection anchor
@@ -151,7 +151,7 @@ class RobustTableView(RobustAbstractItemView, QTableView):
     def mouseReleaseEvent(self, event: QMouseEvent):
         index = self.indexAt(event.pos())
         if (
-            self.first_column_interactable
+            self.only_first_column_selectable
             and index.isValid()
             and index.column() == 0
         ):
@@ -160,8 +160,12 @@ class RobustTableView(RobustAbstractItemView, QTableView):
             event.ignore()
 
     def clearSelection(self):
-        if not self.first_column_interactable:
+        if not self.only_first_column_selectable:
             return
+        itemSelectionModel = self.selectionModel()
+        if itemSelectionModel is None:
+            itemSelectionModel = QItemSelectionModel(self.model())
+            self.setSelectionModel(itemSelectionModel)
         self.selectionModel().clear()
         self.selectionModel().reset()
         self.selectionModel().setCurrentIndex(QModelIndex(), QItemSelectionModel.Clear)

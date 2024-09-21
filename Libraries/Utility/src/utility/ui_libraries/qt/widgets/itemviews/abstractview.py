@@ -14,13 +14,11 @@ from qtpy.QtWidgets import (
     QAction,
     QApplication,
     QFrame,
-    QLabel,
     QMenu,
     QPushButton,
     QStyle,
     QStyleOptionViewItem,
     QStyledItemDelegate,
-    QToolBar,
     QWhatsThis,
 )
 
@@ -32,9 +30,26 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import (
         QAbstractItemDelegate,
+        QVBoxLayout,
         QWidget,
     )
     from typing_extensions import Literal
+
+
+def add_widgets(menu: QMenu, parent_layout: QVBoxLayout, parent: QWidget | None = None):
+    parent = None if parent is None else parent
+    for action in menu.actions():
+        if action.menu():
+            button = QPushButton(action.text(), parent)
+            button.setCheckable(True)
+            def toggle_submenu(_checked, submenu: QMenu):
+                submenu.exec_(QCursor.pos())
+            button.clicked.connect(lambda _checked, submenu, action=action: action.menu().exec_(QCursor.pos()))
+            parent_layout.addWidget(button)
+        else:
+            button = QPushButton(action.text(), parent)
+            button.clicked.connect(action.trigger)
+            parent_layout.addWidget(button)
 
 
 class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKING else object):
@@ -43,41 +58,12 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         parent: QWidget | None = None,
         *,
         settings_name: str | None = None,
+        no_qt_init: bool = False,
     ):
-        super().__init__(parent, settings_name=settings_name)
+        super().__init__(parent, settings_name=settings_name, no_qt_init=no_qt_init)
         self._layout_changed_debounce_timer: QTimer = QTimer(self)
         self._setup_backup_menu_when_header_hidden()
         self._initialized = False
-
-    def toggle_toolbar(self):
-        if self._robustToolBar is None:
-            self.create_toolbar()
-        else:
-            self._robustToolBar.setVisible(not self._robustToolBar.isVisible())
-
-    def create_toolbar(self):
-        menu = self.build_context_menu()
-        self._robustToolBar = QToolBar(self)
-        self._robustToolBar.setOrientation(Qt.Orientation.Vertical)
-        self._robustToolBar.setMovable(True)
-        self._robustToolBar.setFloatable(False)
-
-        def add_actions_from_menu(menu: QMenu):
-            for action in menu.actions():
-                if action.menu():
-                    self._robustToolBar.addSeparator()
-                    self._robustToolBar.addWidget(QLabel(action.text()))
-                    add_actions_from_menu(action.menu())
-                else:
-                    self._robustToolBar.addAction(action)
-
-        add_actions_from_menu(menu)
-
-        self._robustToolBar.move(
-            self.width() - self._robustToolBar.sizeHint().width(),
-            self._robustCornerButton.height(),
-        )
-        self._robustToolBar.show()
 
     def setModel(self, model: QAbstractItemModel):
         super().setModel(model)
@@ -86,16 +72,20 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self._initialized = True
 
     def _setup_backup_menu_when_header_hidden(self):
-        self._robustCornerButton = QPushButton("☰", self)
-        self._robustCornerButton.setObjectName("robustCornerButton")
-        self._robustCornerButton.setFixedSize(20, 20)
-        self._robustCornerButton.clicked.connect(lambda _some_bool_qt_is_sending: self.show_header_context_menu())
-        self._robustCornerButton.setToolTip("Show context menu")
+        if not hasattr(self, "_robustDrawer"):
+            self._robustDrawer: QPushButton = QPushButton("☰", self)
+            self._robustDrawer.setObjectName("_robustDrawer")
+            self._robustDrawer.setFixedSize(20, 20)
+            self._robustDrawer.clicked.connect(lambda _some_bool_qt_is_sending: self.show_header_context_menu())
+            self._robustDrawer.setToolTip("Show context menu")
+        self._robustDrawer.show()
         if self.verticalScrollBar().isVisible():
-            self._robustCornerButton.move(self.width() - self._robustCornerButton.width() - self.verticalScrollBar().width(), 0)
+            self._robustDrawer.move(
+                self.width() - self._robustDrawer.width() - self.verticalScrollBar().width(),
+                0,
+            )
         else:
-            self._robustCornerButton.move(self.width() - self._robustCornerButton.width(), 0)
-        self._robustCornerButton.show()
+            self._robustDrawer.move(self.width() - self._robustDrawer.width(), 0)
 
     def show_header_context_menu(
         self,
@@ -104,7 +94,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         *,
         exec_menu: bool = True,
     ):
-        self.toggle_toolbar()
+        self._setup_backup_menu_when_header_hidden()
         menu = self.build_context_menu(parent)
         if not self._initialized:
             return
@@ -143,20 +133,15 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
         self.debounce_layout_changed()
-        if getattr(self, "_robustCornerButton", None) is None:
+        if getattr(self, "_robustDrawer", None) is None:
             self._setup_backup_menu_when_header_hidden()
-            self._robustCornerButton.show()
+        if not hasattr(self, "_robustDrawer"):
+            return
         if self.verticalScrollBar().isVisible():
-            self._robustCornerButton.move(self.width() - self._robustCornerButton.width() - self.verticalScrollBar().width(), 0)
+            self._robustDrawer.move(self.width() - self._robustDrawer.width() - self.verticalScrollBar().width(), 0)
         else:
-            self._robustCornerButton.move(self.width() - self._robustCornerButton.width(), 0)
-        self._robustCornerButton.show()
-        if getattr(self, "_robustToolBar", None) is None:
-            self.create_toolbar()
-        self._robustToolBar.move(
-            self.width() - self._robustToolBar.sizeHint().width(),
-            self._robustCornerButton.height(),
-        )
+            self._robustDrawer.move(self.width() - self._robustDrawer.width(), 0)
+        self._robustDrawer.show()
 
     def wheelEvent(
         self,

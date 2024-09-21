@@ -1,6 +1,8 @@
-import os
+from __future__ import annotations
+
 import subprocess
 import sys
+
 
 def run_command(command):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)

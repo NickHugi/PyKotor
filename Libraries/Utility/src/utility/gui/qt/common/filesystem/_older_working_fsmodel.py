@@ -24,10 +24,9 @@ elif qtpy.API_NAME in ("PyQt5", "PySide2"):
     from qtpy.QtWidgets import QUndoCommand  # noqa: F401
 else:
     raise RuntimeError(f"Unexpected qtpy version: {qtpy.API_NAME}")
-from qtpy.QtWidgets import QAbstractItemView, QApplication, QFileIconProvider, QHeaderView, QMainWindow, QMenu, QStyle, QUndoStack, QVBoxLayout, QWidget
-
 from pykotor.extract.capsule import LazyCapsule
 from pykotor.tools.misc import is_capsule_file, is_rim_file
+from qtpy.QtWidgets import QAbstractItemView, QApplication, QFileIconProvider, QHeaderView, QMainWindow, QMenu, QStyle, QUndoStack, QVBoxLayout, QWidget
 
 
 def update_sys_path(path: pathlib.Path):
@@ -53,18 +52,17 @@ if toolset_path.exists():
     os.chdir(toolset_path)
 
 
+from pykotor.extract.file import FileResource  # noqa: E402
 from qtpy.QtGui import QIcon  # noqa: E402
 from qtpy.QtWidgets import QTreeView  # noqa: E402
-
-from pykotor.extract.file import FileResource  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.utils.window import openResourceEditor  # noqa: E402
+
 from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject, QPoint
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QResizeEvent
-
     from toolset.gui.windows.main import ToolWindow
 
 

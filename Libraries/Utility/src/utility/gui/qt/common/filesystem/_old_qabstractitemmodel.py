@@ -20,10 +20,10 @@ elif qtpy.API_NAME in ("PyQt5", "PySide2"):
     from qtpy.QtWidgets import QUndoCommand
 else:
     raise RuntimeError(f"Unexpected qtpy version: {qtpy.API_NAME}")
-from qtpy.QtWidgets import QApplication, QHeaderView, QMainWindow, QMenu, QStyle, QUndoStack, QVBoxLayout, QWidget
-
 from pykotor.extract.capsule import LazyCapsule
 from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
+from qtpy.QtWidgets import QApplication, QHeaderView, QMainWindow, QMenu, QStyle, QUndoStack, QVBoxLayout, QWidget
+
 from utility.system.os_helper import get_size_on_disk
 
 
@@ -53,6 +53,7 @@ if toolset_path.exists():
 from pykotor.extract.file import FileResource  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.utils.window import openResourceEditor  # noqa: E402
+
 from utility.system.path import Path  # noqa: E402
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView  # noqa: E402
