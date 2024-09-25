@@ -28,6 +28,7 @@ class QFileDialogComboBox(QComboBox):
         self.m_history: list[str] = []
         self.urlModel = QUrlModel(self)
         self.setModel(self.urlModel)
+        self.setEditable(False) 
 
     def _d_ptr(self) -> QFileDialogPrivate:
         from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.qfiledialog import QFileDialog as PublicQFileDialog

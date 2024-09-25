@@ -767,7 +767,6 @@ class QFileDialogPrivate:
         If this function is removed, the tree and list views might become desynchronized,
         leading to inconsistent directory views and potential user confusion.
         """
-        assert index.isValid() and index.model() == self.model, f"{type(self).__name__}.setRootIndex: Invalid index or model mismatch."
         idx = self.mapFromSource(index)
         assert self.qFileDialogUi is not None, f"{type(self).__name__}.setRootIndex: UI is None"
         self.qFileDialogUi.treeView.setRootIndex(idx)
@@ -1457,7 +1456,7 @@ class QFileDialogPrivate:
         This allows users to view or hide system and hidden files as needed.
         """
         q = self._public
-        dirFilters = q.filter()
+        dirFilters = sip_enum_to_int(q.filter())
         dirFilters ^= sip_enum_to_int(QDir.Filter.Hidden)
         q.setFilter(dirFilters)
 

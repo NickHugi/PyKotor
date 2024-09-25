@@ -90,7 +90,7 @@ class QUrlModel(QStandardItemModel):
 
     def setUrl(self, index: QModelIndex, url: QUrl, dirIndex: QModelIndex):
         self.setData(index, url, self.UrlRole)
-        if url.path().strip():
+        if not url.path().strip():
             self.setData(index, self.fileSystemModel.myComputer())
             self.setData(index, self.fileSystemModel.myComputer(Qt.ItemDataRole.DecorationRole), Qt.ItemDataRole.DecorationRole)
         else:

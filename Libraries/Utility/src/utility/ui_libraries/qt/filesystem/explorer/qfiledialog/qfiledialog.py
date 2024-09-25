@@ -20,12 +20,11 @@ from qtpy.QtCore import (
     QObject,
     QPoint,
     QRegularExpression,
-    QSortFilterProxyModel,
     QUrl,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
-from qtpy.QtWidgets import QAction, QApplication, QDialog, QDialogButtonBox, QFileDialog as RealQFileDialog, QFileIconProvider, QFileSystemModel, QListView, QMessageBox
+from qtpy.QtWidgets import QAction, QApplication, QDialog, QDialogButtonBox, QFileDialog as RealQFileDialog, QFileIconProvider, QFileSystemModel, QMessageBox
 
 from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qfiledialog import QFileDialogOptionsPrivate, QFileDialogPrivate, qt_make_filter_list
 from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qplatformdialoghelper import QPlatformFileDialogHelper
@@ -196,7 +195,8 @@ class QFileDialogOptions(QObject):
         return d.filter
     def setFilter(self, filter: QDir.Filter | QDir.Filters) -> None:  # noqa: A002
         d: QFileDialogOptionsPrivate = self._private
-        d.filter |= filter
+        cur_filter = sip_enum_to_int(d.filter)
+        d.filter = QDir.Filter(cur_filter | sip_enum_to_int(filter))
 
     def sidebarUrls(self) -> list[QUrl]:
         d: QFileDialogOptionsPrivate = self._private
@@ -1202,12 +1202,12 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
             list_view_mode = sip_enum_to_int(RealQFileDialog.ViewMode.List)
             is_list_mode = bool(mode_int == list_view_mode)
             d.qFileDialogUi.listModeButton.setDown(is_list_mode)
-            d.qFileDialogUi.listView.setVisible(is_list_mode)
+            #d.qFileDialogUi.listView.setVisible(is_list_mode)
 
             tree_view_mode = sip_enum_to_int(RealQFileDialog.ViewMode.Detail)
             is_tree_mode = bool(mode_int == tree_view_mode)
             d.qFileDialogUi.detailModeButton.setDown(is_tree_mode)
-            d.qFileDialogUi.treeView.setVisible(is_tree_mode)
+            #d.qFileDialogUi.treeView.setVisible(is_tree_mode)
 
     @classmethod
     def getOpenFileContent(cls, nameFilter: str, fileOpenCompleted: Callable[[str, bytes], None]) -> None:  # noqa: N803
