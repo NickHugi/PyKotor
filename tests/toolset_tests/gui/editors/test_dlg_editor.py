@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-import unittest
-from unittest.mock import Mock
-from qtpy.QtCore import Qt, QModelIndex, QMimeData, QByteArray, QDataStream, QIODevice
-from qtpy.QtWidgets import QApplication, QWidget
-from pykotor.resource.formats.gff.gff_auto import read_gff
-from pykotor.common.stream import BinaryReader
-from pykotor.resource.generics.dlg import DLG, DLGNode, DLGLink, DLGEntry, DLGReply
-from pykotor.resource.type import ResourceType
-from toolset.gui.editors.dlg import DLGEditor, DLGStandardItemModel, DLGStandardItem, DLGTreeView
-from toolset.gui.editor import Editor
-from pykotor.common.language import LocalizedString
 import json
+import unittest
 
 from loggerplus import RobustLogger
+from qtpy.QtCore import QDataStream, QIODevice, QModelIndex
+from qtpy.QtWidgets import QApplication
+from toolset.gui.editors.dlg import (
+    DLGEditor,
+    DLGStandardItem,
+    DLGStandardItemModel,
+    DLGTreeView,
+)
+
+from pykotor.common.language import LocalizedString
+from pykotor.resource.generics.dlg import DLG, DLGEntry, DLGLink, DLGNode, DLGReply
 
 app = QApplication([])
 
@@ -80,10 +81,10 @@ class TestDLGStandardItemModel(unittest.TestCase):
             items.extend(self.model.linkToItems.get(link, []))
 
         for item in items:
-            self.assertIn(item, self.model.linkToItems[item.link])
-            self.assertIn(item, self.model.nodeToItems[item.link.node])
-            self.assertIn(item.link, self.model.linkToItems)
-            self.assertIn(item.link.node, self.model.nodeToItems)
+            assert item in self.model.linkToItems[item.link]
+            assert item in self.model.nodeToItems[item.link.node]
+            assert item.link in self.model.linkToItems
+            assert item.link.node in self.model.nodeToItems
 
     def test_hashing(self):
         dlg = self.create_complex_tree()
@@ -93,24 +94,24 @@ class TestDLGStandardItemModel(unittest.TestCase):
             items.extend(self.model.linkToItems.get(link, []))
 
         for item in items:
-            self.assertEqual(hash(item), id(item))
+            assert hash(item) == id(item)
 
     def test_link_list_index_sync(self):
         dlg: DLG = self.create_complex_tree()
 
         def verify_list_index(node: DLGNode):
             for i, link in enumerate(node.links):
-                self.assertEqual(link.list_index, i, f"Link list_index {link.list_index} == {i} before loading to the model")
+                assert link.list_index == i, f"Link list_index {link.list_index} == {i} before loading to the model"
                 verify_list_index(link.node)
 
         for i, link in enumerate(dlg.starters):
-            self.assertEqual(link.list_index, i, f"Starter link list_index {link.list_index} == {i} before loading to the model")
+            assert link.list_index == i, f"Starter link list_index {link.list_index} == {i} before loading to the model"
             verify_list_index(link.node)
 
         self.editor._loadDLG(dlg)
 
         for i, link in enumerate(dlg.starters):
-            self.assertEqual(link.list_index, i, f"Starter link list_index {link.list_index} == {i} after loading to the model")
+            assert link.list_index == i, f"Starter link list_index {link.list_index} == {i} after loading to the model"
             verify_list_index(link.node)
 
         items: list[DLGStandardItem] = []
@@ -118,7 +119,7 @@ class TestDLGStandardItemModel(unittest.TestCase):
             items.extend(self.model.linkToItems.get(link, []))
 
         for index, item in enumerate(items):
-            self.assertEqual(item.link.list_index, index, f"{item.link.list_index} == {index}")
+            assert item.link.list_index == index, f"{item.link.list_index} == {index}"
 
 
     def test_shift_item(self):  # sourcery skip: class-extract-method
@@ -129,8 +130,8 @@ class TestDLGStandardItemModel(unittest.TestCase):
             items.extend(self.model.linkToItems.get(link, []))
 
         self.model.shiftItem(items[0], 1)
-        self.assertEqual(items[0].row(), 1)
-        self.assertEqual(items[1].row(), 0)
+        assert items[0].row() == 1
+        assert items[1].row() == 0
 
     def test_move_item_to_index(self):
         dlg = self.create_complex_tree()
@@ -140,8 +141,8 @@ class TestDLGStandardItemModel(unittest.TestCase):
             items.extend(self.model.linkToItems.get(link, []))
 
         self.model.moveItemToIndex(items[0], 1, None)
-        self.assertEqual(items[0].row(), 1)
-        self.assertEqual(items[1].row(), 0)
+        assert items[0].row() == 1
+        assert items[1].row() == 0
 
     def test_paste_item(self):
         dlg = self.create_complex_tree()
@@ -154,7 +155,7 @@ class TestDLGStandardItemModel(unittest.TestCase):
         self.model.pasteItem(items[0], node)
 
         pastedItem = items[0].child(0)
-        self.assertEqual(pastedItem.link.node, node)
+        assert pastedItem.link.node == node
 
     def test_serialize_mime_data(self):
         dlg = self.create_complex_tree()
@@ -185,8 +186,8 @@ class TestDLGStandardItemModel(unittest.TestCase):
 
         mime_data = self.model.mimeData([item.index() for item in all_items])
 
-        self.assertTrue(mime_data.hasFormat("application/x-qabstractitemmodeldatalist"))
-        self.assertTrue(mime_data.hasFormat("application/x-pykotor-dlgbranch"))
+        assert mime_data.hasFormat("application/x-qabstractitemmodeldatalist")
+        assert mime_data.hasFormat("application/x-pykotor-dlgbranch")
 
         data = mime_data.data("application/x-pykotor-dlgbranch")
         stream = QDataStream(data, QIODevice.ReadOnly)
@@ -207,7 +208,7 @@ class TestDLGStandardItemModel(unittest.TestCase):
         except IndexError:
             RobustLogger().exception("IndexError: items[4].link.node")
             raise
-        self.assertEqual(test1, test2)
+        assert test1 == test2
 
 
 if __name__ == "__main__":

@@ -37,12 +37,11 @@ from ctypes import (
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum, IntFlag
-from pathlib import PureWindowsPath
+from pathlib import PureWindowsPath, WindowsPath
 from typing import TYPE_CHECKING, Any, ClassVar, Sequence, TypeVar
 
 from packaging.version import Version
 
-from utility.system.path import WindowsPath
 from utility.system.win32.com.com_types import GUID
 from utility.system.win32.hresult import HRESULT
 from utility.system.win32.winapi.device_iocontrol import FSCTL

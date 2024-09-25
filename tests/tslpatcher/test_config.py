@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import pathlib
 import sys
-from typing import cast
 import unittest
-
 from tempfile import NamedTemporaryFile
+from typing import cast
 from unittest.mock import MagicMock, Mock, patch
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -24,9 +23,10 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from pathlib import Path
+
 from pykotor.extract.capsule import Capsule
 from pykotor.tslpatcher.patcher import ModInstaller
-from utility.system.path import Path
 
 
 class TestLookupResourceFunction(unittest.TestCase):
@@ -57,7 +57,7 @@ class TestLookupResourceFunction(unittest.TestCase):
             result = self.config.lookup_resource(self.patch, self.output_container_path)  # type: ignore[arg-type, reportGeneralTypeIssues]
 
             # Assert
-            self.assertEqual(result, "BinaryReader read_all result")
+            assert result == "BinaryReader read_all result"
 
     def test_lookup_resource_capsule_exists_true(self):
         self.patch.replace_file = False
@@ -73,7 +73,7 @@ class TestLookupResourceFunction(unittest.TestCase):
                 True,
                 capsule,
             )
-            self.assertEqual(result, None)
+            assert result == None
 
     @unittest.skip("broken test")
     def test_lookup_resource_no_capsule_exists_true(self):
@@ -90,7 +90,7 @@ class TestLookupResourceFunction(unittest.TestCase):
                 True,
                 None,
             )
-            self.assertEqual(result, "BinaryReader read_all result")
+            assert result == "BinaryReader read_all result"
 
     @unittest.skip("broken test")
     def test_lookup_resource_no_capsule_exists_false(self):
@@ -107,7 +107,7 @@ class TestLookupResourceFunction(unittest.TestCase):
                 False,
                 None,
             )
-            self.assertEqual(result, "BinaryReader read_all result")
+            assert result == "BinaryReader read_all result"
 
     @unittest.skip("broken test")
     def test_lookup_resource_capsule_exists_false(self):
@@ -124,7 +124,7 @@ class TestLookupResourceFunction(unittest.TestCase):
                 False,
                 capsule,
             )
-            self.assertEqual(result, "BinaryReader read_all result")
+            assert result == "BinaryReader read_all result"
 
     def test_lookup_resource_replace_file_true_no_file(self):
         # Arrange
@@ -134,7 +134,7 @@ class TestLookupResourceFunction(unittest.TestCase):
             mock_load_file.side_effect = FileNotFoundError
 
             # Act & Assert
-            self.assertIsNone(self.config.lookup_resource(self.patch, self.output_container_path))  # type: ignore[arg-type, reportGeneralTypeIssues]
+            assert self.config.lookup_resource(self.patch, self.output_container_path) is None  # type: ignore[arg-type, reportGeneralTypeIssues]
 
     def test_lookup_resource_capsule_exists_true_no_file(self):
         # Arrange
@@ -192,7 +192,7 @@ class TestShouldPatchFunction(unittest.TestCase):
         patch = MagicMock(name="patch", destination=".", replace_file=True, saveas="file1", sourcefile="file1", action="Patch ")
         result = self.patcher.should_patch(patch, exists=True)
         self.patcher.log.add_note.assert_called_once_with("Patching 'file1' and replacing existing file in the 'swkotor' folder")  # type: ignore[attr-defined, reportGeneralTypeIssues]
-        self.assertTrue(result)
+        assert result
 
     def test_replace_file_exists_saveas_destination_dot(self):
         patch = MagicMock(name="patch", destination=".", replace_file=True, saveas="file2", sourcefile="file1", action="Patch ")
@@ -200,13 +200,13 @@ class TestShouldPatchFunction(unittest.TestCase):
         self.patcher.log.add_note.assert_called_once_with(  # type: ignore[attr-defined, reportGeneralTypeIssues]
             "Patching 'file1' and replacing existing file 'file2' in the 'swkotor' folder"
         )
-        self.assertTrue(result)
+        assert result
 
     def test_replace_file_exists_destination_override(self):
         patch = MagicMock(name="patch", destination="Override", replace_file=True, saveas="file1", sourcefile="file1", action="Patch ")
         result = self.patcher.should_patch(patch, exists=True)
         self.patcher.log.add_note.assert_called_once_with("Patching 'file1' and replacing existing file in the 'Override' folder")  # type: ignore[attr-defined, reportGeneralTypeIssues]
-        self.assertTrue(result)
+        assert result
 
     def test_replace_file_exists_saveas_destination_override(self):
         patch = MagicMock(name="patch", destination="Override", replace_file=True, saveas="file2", sourcefile="file1", action="Compile")
@@ -214,19 +214,19 @@ class TestShouldPatchFunction(unittest.TestCase):
         self.patcher.log.add_note.assert_called_once_with(  # type: ignore[attr-defined, reportGeneralTypeIssues]
             "Compiling 'file1' and replacing existing file 'file2' in the 'Override' folder"
         )
-        self.assertTrue(result)
+        assert result
 
     def test_replace_file_not_exists_saveas_destination_override(self):
         patch = MagicMock(name="patch", destination="Override", replace_file=True, saveas="file2", sourcefile="file1", action="Copy ")
         result = self.patcher.should_patch(patch, exists=False)
         self.patcher.log.add_note.assert_called_once_with("Copying 'file1' and saving as 'file2' in the 'Override' folder")  # type: ignore[attr-defined, reportGeneralTypeIssues]
-        self.assertTrue(result)
+        assert result
 
     def test_replace_file_not_exists_destination_override(self):
         patch = MagicMock(name="patch", destination="Override", replace_file=True, saveas="file1", sourcefile="file1", action="Copy ")
         result = self.patcher.should_patch(patch, exists=False)
         self.patcher.log.add_note.assert_called_once_with("Copying 'file1' and saving to the 'Override' folder")  # type: ignore[attr-defined, reportGeneralTypeIssues]
-        self.assertTrue(result)
+        assert result
 
     def test_replace_file_exists_destination_capsule(self):
         patch = MagicMock(name="patch", destination="capsule.mod", replace_file=True, saveas="file1", sourcefile="file1", action="Patch ")
@@ -234,7 +234,7 @@ class TestShouldPatchFunction(unittest.TestCase):
         self.patcher.log.add_note.assert_called_once_with(  # type: ignore[attr-defined, reportGeneralTypeIssues]
             "Patching 'file1' and replacing existing file in the 'capsule.mod' archive"
         )
-        self.assertTrue(result)
+        assert result
 
     def test_replace_file_exists_saveas_destination_capsule(self):
         patch = MagicMock(name="patch", destination="capsule.mod", replace_file=True, saveas="file2", sourcefile="file1", action="Patch ")
@@ -242,19 +242,19 @@ class TestShouldPatchFunction(unittest.TestCase):
         self.patcher.log.add_note.assert_called_once_with(  # type: ignore[attr-defined, reportGeneralTypeIssues]
             "Patching 'file1' and replacing existing file 'file2' in the 'capsule.mod' archive"
         )
-        self.assertTrue(result)
+        assert result
 
     def test_replace_file_not_exists_saveas_destination_capsule(self):
         patch = MagicMock(name="patch", destination="capsule.mod", replace_file=True, saveas="file2", sourcefile="file1", action="Copy ")
         result = self.patcher.should_patch(patch, exists=False, capsule=MagicMock(patch="some path"))
         self.patcher.log.add_note.assert_called_once_with("Copying 'file1' and saving as 'file2' in the 'capsule.mod' archive")  # type: ignore[attr-defined, reportGeneralTypeIssues]
-        self.assertTrue(result)
+        assert result
 
     def test_replace_file_not_exists_destination_capsule(self):
         patch = MagicMock(name="patch", destination="capsule.mod", replace_file=True, saveas="file1", sourcefile="file1", action="Copy ")
         result = self.patcher.should_patch(patch, exists=False, capsule=MagicMock(patch="some path"))
         self.patcher.log.add_note.assert_called_once_with("Copying 'file1' and adding to the 'capsule.mod' archive")  # type: ignore[attr-defined, reportGeneralTypeIssues]
-        self.assertTrue(result)
+        assert result
 
     def test_not_replace_file_exists_skip_false(self):
         patch = MagicMock(
@@ -266,7 +266,7 @@ class TestShouldPatchFunction(unittest.TestCase):
             skip_if_not_replace=False,
         )
         result = self.patcher.should_patch(patch, exists=True)
-        self.assertTrue(result)
+        assert result
 
     def test_skip_if_not_replace_not_replace_file_exists(self):
         patch = MagicMock(
@@ -278,14 +278,14 @@ class TestShouldPatchFunction(unittest.TestCase):
             skip_if_not_replace=True,
         )
         result = self.patcher.should_patch(patch, exists=True)
-        self.assertFalse(result)
+        assert not result
 
     def test_capsule_not_exist(self):
         patch = MagicMock(destination="capsule", action="Patching", sourcefile="file1")
         capsule = MagicMock()
         cast(Capsule, capsule).filepath().safe_isfile.return_value = False
         result = self.patcher.should_patch(patch, capsule=capsule)
-        self.assertFalse(result)
+        assert not result
 
     def test_default_behavior(self):
         patch = MagicMock(
@@ -297,7 +297,7 @@ class TestShouldPatchFunction(unittest.TestCase):
             replace_file=False,
         )
         result = self.patcher.should_patch(patch, exists=False)
-        self.assertTrue(result)
+        assert result
 
 
 if __name__ == "__main__":

@@ -20,7 +20,13 @@ from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from qtpy.QtGui import (
+        QFocusEvent,
+        QKeyEvent,
+        QMouseEvent,
+        QResizeEvent,
+        QWheelEvent,
+    )
     from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.installation import Installation

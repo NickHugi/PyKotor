@@ -4,6 +4,7 @@ import subprocess
 
 from datetime import date
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.misc import Game
@@ -13,7 +14,6 @@ from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.misc import generate_hash
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

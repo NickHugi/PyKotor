@@ -3,9 +3,8 @@ from __future__ import annotations
 import os
 import pathlib
 import sys
-from typing import TextIO, Type, TYPE_CHECKING
 import unittest
-
+from typing import TYPE_CHECKING, TextIO
 from unittest import TestCase
 
 from utility.error_handling import format_exception_with_variables
@@ -52,8 +51,9 @@ from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     import types
-    from toolset.data.installation import HTInstallation
+
     from PySide2.QtWidgets import QApplication
+    from toolset.data.installation import HTInstallation
 
 
 class CustomTextTestRunner(unittest.TextTestRunner):
@@ -64,7 +64,7 @@ class CustomTextTestRunner(unittest.TextTestRunner):
         verbosity: int = 1,
         failfast: bool = False,
         buffer: bool = False,
-        resultclass: Type[unittest.TestResult] | None = None,
+        resultclass: type[unittest.TestResult] | None = None,
         **kwargs,
     ) -> None:
         super().__init__(stream, descriptions, verbosity, failfast, buffer, resultclass, **kwargs)
@@ -163,7 +163,7 @@ class GFFEditorTest(TestCase):
         new = read_gff(data)
 
         diff = old.compare(new, self.log_func)
-        self.assertTrue(diff, os.linesep.join(self.log_messages))
+        assert diff, os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
@@ -180,7 +180,7 @@ class GFFEditorTest(TestCase):
             new = read_gff(data)
 
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+            assert diff, os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -197,7 +197,7 @@ class GFFEditorTest(TestCase):
             new = read_gff(data)
 
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+            assert diff, os.linesep.join(self.log_messages)
 
     def test_placeholder(self): ...
 

@@ -6,7 +6,9 @@ import qtpy
 
 from qtpy.QtCore import QSettings
 
-from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView as _RobustTreeView
+from utility.ui_libraries.qt.widgets.itemviews.treeview import (
+    RobustTreeView as _RobustTreeView,
+)
 
 # For backwards compatibility.
 RobustTreeView = _RobustTreeView

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
+from pathlib import PurePath
 from typing import TYPE_CHECKING
-
-from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     import os

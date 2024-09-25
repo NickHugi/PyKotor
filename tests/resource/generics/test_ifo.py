@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -56,7 +55,7 @@ class TestIFO(TestCase):
         for ifo_resource in (resource for resource in self.installation if resource.restype() is ResourceType.IFO):
             gff: GFF = read_gff(ifo_resource.data())
             reconstructed_gff: GFF = dismantle_ifo(construct_ifo(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -67,12 +66,12 @@ class TestIFO(TestCase):
         for ifo_resource in (resource for resource in self.installation if resource.restype() is ResourceType.IFO):
             gff: GFF = read_gff(ifo_resource.data())
             reconstructed_gff: GFF = dismantle_ifo(construct_ifo(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_gff_reconstruct(self):
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_ifo(construct_ifo(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -86,42 +85,42 @@ class TestIFO(TestCase):
         self.validate_io(ifo)
 
     def validate_io(self, ifo: IFO):
-        self.assertEqual(b"R:\xe5\x9e\xe3sq\x1d\x0f\xf0i\x9c\xb9a\x9f\xa7", ifo.mod_id)
-        self.assertEqual(2, ifo.creator_id)
-        self.assertEqual(3, ifo.version)
-        self.assertEqual("262", ifo.vo_id)
-        self.assertEqual(0, ifo.expansion_id)
-        self.assertEqual(83947, ifo.mod_name.stringref)
-        self.assertEqual("262TEL", ifo.tag)
-        self.assertEqual("", ifo.hak)
-        self.assertEqual(-1, ifo.description.stringref)
-        self.assertEqual("262tel", ifo.resref)
-        self.assertEqual(2.5811009407043457, ifo.entry_position.x)
-        self.assertEqual(41.46979522705078, ifo.entry_position.y)
-        self.assertEqual(21.372770309448242, ifo.entry_position.z)
-        self.assertEqual(6, ifo.dawn_hour)
-        self.assertEqual(18, ifo.dusk_hour)
-        self.assertEqual(2, ifo.time_scale)
-        self.assertEqual(6, ifo.start_month)
-        self.assertEqual(1, ifo.start_day)
-        self.assertEqual(13, ifo.start_hour)
-        self.assertEqual(1372, ifo.start_year)
-        self.assertEqual(10, ifo.xp_scale)
-        self.assertEqual("heartbeat", ifo.on_heartbeat)
-        self.assertEqual("load", ifo.on_load)
-        self.assertEqual("start", ifo.on_start)
-        self.assertEqual("enter", ifo.on_enter)
-        self.assertEqual("leave", ifo.on_leave)
-        self.assertEqual("activate", ifo.on_activate_item)
-        self.assertEqual("acquire", ifo.on_acquire_item)
-        self.assertEqual("user", ifo.on_user_defined)
-        self.assertEqual("unacquire", ifo.on_unacquire_item)
-        self.assertEqual("death", ifo.on_player_death)
-        self.assertEqual("dying", ifo.on_player_dying)
-        self.assertEqual("levelup", ifo.on_player_levelup)
-        self.assertEqual("spawn", ifo.on_player_respawn)
-        self.assertEqual("", ifo.on_player_rest)
-        self.assertEqual("", ifo.start_movie)
+        assert ifo.mod_id == b"R:\xe5\x9e\xe3sq\x1d\x0f\xf0i\x9c\xb9a\x9f\xa7"
+        assert ifo.creator_id == 2
+        assert ifo.version == 3
+        assert ifo.vo_id == "262"
+        assert ifo.expansion_id == 0
+        assert ifo.mod_name.stringref == 83947
+        assert ifo.tag == "262TEL"
+        assert ifo.hak == ""
+        assert ifo.description.stringref == -1
+        assert ifo.resref == "262tel"
+        assert ifo.entry_position.x == 2.5811009407043457
+        assert ifo.entry_position.y == 41.46979522705078
+        assert ifo.entry_position.z == 21.372770309448242
+        assert ifo.dawn_hour == 6
+        assert ifo.dusk_hour == 18
+        assert ifo.time_scale == 2
+        assert ifo.start_month == 6
+        assert ifo.start_day == 1
+        assert ifo.start_hour == 13
+        assert ifo.start_year == 1372
+        assert ifo.xp_scale == 10
+        assert ifo.on_heartbeat == "heartbeat"
+        assert ifo.on_load == "load"
+        assert ifo.on_start == "start"
+        assert ifo.on_enter == "enter"
+        assert ifo.on_leave == "leave"
+        assert ifo.on_activate_item == "activate"
+        assert ifo.on_acquire_item == "acquire"
+        assert ifo.on_user_defined == "user"
+        assert ifo.on_unacquire_item == "unacquire"
+        assert ifo.on_player_death == "death"
+        assert ifo.on_player_dying == "dying"
+        assert ifo.on_player_levelup == "levelup"
+        assert ifo.on_player_respawn == "spawn"
+        assert ifo.on_player_rest == ""
+        assert ifo.start_movie == ""
         self.assertAlmostEqual(-1.571, ifo.entry_direction, 3)
 
 

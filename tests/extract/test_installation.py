@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -34,7 +33,7 @@ K1_PATH: str | None = os.environ.get("K1_PATH")
 
 
 @unittest.skipIf(
-    not K1_PATH or not CaseAwarePath(K1_PATH).joinpath("chitin.key").safe_isfile(),
+    not K1_PATH or not CaseAwarePath(K1_PATH).joinpath("chitin.key").is_file(),
     "K1_PATH environment variable is not set or not found on disk.",
 )
 class TestInstallation(TestCase):
@@ -47,32 +46,32 @@ class TestInstallation(TestCase):
     def test_resource(self):
         installation: Installation = self.installation  # type: ignore[attr-defined]
 
-        self.assertIsNone(installation.resource("c_bantha", ResourceType.UTC, []))
-        self.assertIsNotNone(installation.resource("c_bantha", ResourceType.UTC))
+        assert installation.resource("c_bantha", ResourceType.UTC, []) is None
+        assert installation.resource("c_bantha", ResourceType.UTC) is not None
 
-        self.assertIsNotNone(installation.resource("c_bantha", ResourceType.UTC, [SearchLocation.CHITIN]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.UTC, [SearchLocation.CHITIN]))
-        self.assertIsNotNone(installation.resource("m13aa", ResourceType.ARE, [SearchLocation.MODULES]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.ARE, [SearchLocation.MODULES]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.NSS, [SearchLocation.OVERRIDE]))
-        self.assertIsNotNone(installation.resource("NM03ABCITI06004_", ResourceType.WAV, [SearchLocation.VOICE]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.WAV, [SearchLocation.VOICE]))
-        self.assertIsNotNone(installation.resource("P_hk47_POIS", ResourceType.WAV, [SearchLocation.SOUND]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.WAV, [SearchLocation.SOUND]))
-        self.assertIsNotNone(installation.resource("mus_theme_carth", ResourceType.WAV, [SearchLocation.MUSIC]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.WAV, [SearchLocation.MUSIC]))
-        self.assertIsNotNone(installation.resource("n_gendro_coms1", ResourceType.LIP, [SearchLocation.LIPS]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.LIP, [SearchLocation.LIPS]))
-        self.assertIsNotNone(installation.resource("darkjedi", ResourceType.SSF, [SearchLocation.RIMS]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.SSF, [SearchLocation.RIMS]))
-        self.assertIsNotNone(installation.resource("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]))
-        self.assertIsNotNone(installation.resource("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]))
-        self.assertIsNotNone(installation.resource("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]))
-        self.assertIsNotNone(installation.resource("PO_PCarth", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
-        self.assertIsNone(installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
+        assert installation.resource("c_bantha", ResourceType.UTC, [SearchLocation.CHITIN]) is not None
+        assert installation.resource("xxx", ResourceType.UTC, [SearchLocation.CHITIN]) is None
+        assert installation.resource("m13aa", ResourceType.ARE, [SearchLocation.MODULES]) is not None
+        assert installation.resource("xxx", ResourceType.ARE, [SearchLocation.MODULES]) is None
+        assert installation.resource("xxx", ResourceType.NSS, [SearchLocation.OVERRIDE]) is None
+        assert installation.resource("NM03ABCITI06004_", ResourceType.WAV, [SearchLocation.VOICE]) is not None
+        assert installation.resource("xxx", ResourceType.WAV, [SearchLocation.VOICE]) is None
+        assert installation.resource("P_hk47_POIS", ResourceType.WAV, [SearchLocation.SOUND]) is not None
+        assert installation.resource("xxx", ResourceType.WAV, [SearchLocation.SOUND]) is None
+        assert installation.resource("mus_theme_carth", ResourceType.WAV, [SearchLocation.MUSIC]) is not None
+        assert installation.resource("xxx", ResourceType.WAV, [SearchLocation.MUSIC]) is None
+        assert installation.resource("n_gendro_coms1", ResourceType.LIP, [SearchLocation.LIPS]) is not None
+        assert installation.resource("xxx", ResourceType.LIP, [SearchLocation.LIPS]) is None
+        assert installation.resource("darkjedi", ResourceType.SSF, [SearchLocation.RIMS]) is not None
+        assert installation.resource("xxx", ResourceType.SSF, [SearchLocation.RIMS]) is None
+        assert installation.resource("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]) is not None
+        assert installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]) is None
+        assert installation.resource("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]) is not None
+        assert installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]) is None
+        assert installation.resource("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]) is not None
+        assert installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]) is None
+        assert installation.resource("PO_PCarth", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]) is not None
+        assert installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]) is None
 
         resource = installation.resource(
             "m13aa",
@@ -80,8 +79,8 @@ class TestInstallation(TestCase):
             [SearchLocation.CUSTOM_MODULES],
             capsules=[Capsule(installation.module_path() / "danm13.rim")],
         )
-        self.assertIsNotNone(resource)
-        self.assertIsNotNone(resource.data)  # type: ignore
+        assert resource is not None
+        assert resource.data is not None  # type: ignore
 
     def test_resources(self):
         installation: Installation = self.installation  # type: ignore[attr-defined]
@@ -163,34 +162,34 @@ class TestInstallation(TestCase):
     def test_location(self):
         installation: Installation = self.installation  # type: ignore[attr-defined]
 
-        self.assertFalse(installation.location("m13aa", ResourceType.ARE, []))
-        self.assertTrue(installation.location("m13aa", ResourceType.ARE))
+        assert not installation.location("m13aa", ResourceType.ARE, [])
+        assert installation.location("m13aa", ResourceType.ARE)
 
-        self.assertTrue(installation.location("m13aa", ResourceType.ARE, [SearchLocation.MODULES]))
+        assert installation.location("m13aa", ResourceType.ARE, [SearchLocation.MODULES])
 
-        self.assertTrue(installation.location("c_bantha", ResourceType.UTC, [SearchLocation.CHITIN]))
-        self.assertFalse(installation.location("xxx", ResourceType.UTC, [SearchLocation.CHITIN]))
-        self.assertTrue(installation.location("m13aa", ResourceType.ARE, [SearchLocation.MODULES]))
-        self.assertFalse(installation.location("xxx", ResourceType.ARE, [SearchLocation.MODULES]))
-        self.assertFalse(installation.location("xxx", ResourceType.NSS, [SearchLocation.OVERRIDE]))
-        self.assertTrue(installation.location("NM03ABCITI06004_", ResourceType.WAV, [SearchLocation.VOICE]))
-        self.assertFalse(installation.location("xxx", ResourceType.WAV, [SearchLocation.VOICE]))
-        self.assertTrue(installation.location("P_hk47_POIS", ResourceType.WAV, [SearchLocation.SOUND]))
-        self.assertFalse(installation.location("xxx", ResourceType.WAV, [SearchLocation.SOUND]))
-        self.assertTrue(installation.location("mus_theme_carth", ResourceType.WAV, [SearchLocation.MUSIC]))
-        self.assertFalse(installation.location("xxx", ResourceType.WAV, [SearchLocation.MUSIC]))
-        self.assertTrue(installation.location("n_gendro_coms1", ResourceType.LIP, [SearchLocation.LIPS]))
-        self.assertFalse(installation.location("xxx", ResourceType.LIP, [SearchLocation.LIPS]))
-        self.assertTrue(installation.location("darkjedi", ResourceType.SSF, [SearchLocation.RIMS]))
-        self.assertFalse(installation.location("xxx", ResourceType.SSF, [SearchLocation.RIMS]))
-        self.assertTrue(installation.location("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]))
-        self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]))
-        self.assertTrue(installation.location("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]))
-        self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]))
-        self.assertTrue(installation.location("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]))
-        self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]))
-        self.assertTrue(installation.location("PO_PCarth", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
-        self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
+        assert installation.location("c_bantha", ResourceType.UTC, [SearchLocation.CHITIN])
+        assert not installation.location("xxx", ResourceType.UTC, [SearchLocation.CHITIN])
+        assert installation.location("m13aa", ResourceType.ARE, [SearchLocation.MODULES])
+        assert not installation.location("xxx", ResourceType.ARE, [SearchLocation.MODULES])
+        assert not installation.location("xxx", ResourceType.NSS, [SearchLocation.OVERRIDE])
+        assert installation.location("NM03ABCITI06004_", ResourceType.WAV, [SearchLocation.VOICE])
+        assert not installation.location("xxx", ResourceType.WAV, [SearchLocation.VOICE])
+        assert installation.location("P_hk47_POIS", ResourceType.WAV, [SearchLocation.SOUND])
+        assert not installation.location("xxx", ResourceType.WAV, [SearchLocation.SOUND])
+        assert installation.location("mus_theme_carth", ResourceType.WAV, [SearchLocation.MUSIC])
+        assert not installation.location("xxx", ResourceType.WAV, [SearchLocation.MUSIC])
+        assert installation.location("n_gendro_coms1", ResourceType.LIP, [SearchLocation.LIPS])
+        assert not installation.location("xxx", ResourceType.LIP, [SearchLocation.LIPS])
+        assert installation.location("darkjedi", ResourceType.SSF, [SearchLocation.RIMS])
+        assert not installation.location("xxx", ResourceType.SSF, [SearchLocation.RIMS])
+        assert installation.location("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPA])
+        assert not installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPA])
+        assert installation.location("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPB])
+        assert not installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPB])
+        assert installation.location("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPC])
+        assert not installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPC])
+        assert installation.location("PO_PCarth", ResourceType.TPC, [SearchLocation.TEXTURES_GUI])
+        assert not installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI])
 
     def test_locations(self):
         installation: Installation = self.installation  # type: ignore[attr-defined]
@@ -271,106 +270,103 @@ class TestInstallation(TestCase):
         folders = [installation.override_path()]
 
     def _assert_from_path_tests(self, arg0, arg1, arg2):
-        self.assertTrue(arg0[ResourceIdentifier.from_path(arg1)])
-        self.assertFalse(arg0[ResourceIdentifier.from_path(arg2)])
-        self.assertEqual(2, len(arg0))
+        assert arg0[ResourceIdentifier.from_path(arg1)]
+        assert not arg0[ResourceIdentifier.from_path(arg2)]
+        assert len(arg0) == 2
 
     def test_texture(self):
         installation: Installation = self.installation  # type: ignore[attr-defined]
 
-        self.assertIsNotNone(installation.texture("m03ae_03a_lm4", [SearchLocation.CHITIN]))
-        self.assertIsNone(installation.texture("x", [SearchLocation.CHITIN]))
+        assert installation.texture("m03ae_03a_lm4", [SearchLocation.CHITIN]) is not None
+        assert installation.texture("x", [SearchLocation.CHITIN]) is None
 
-        self.assertIsNotNone(installation.texture("LEH_FLOOR01", [SearchLocation.TEXTURES_TPA]))
-        self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_TPA]))
+        assert installation.texture("LEH_FLOOR01", [SearchLocation.TEXTURES_TPA]) is not None
+        assert installation.texture("x", [SearchLocation.TEXTURES_TPA]) is None
 
-        self.assertIsNotNone(installation.texture("LEH_Floor01", [SearchLocation.TEXTURES_TPB]))
-        self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_TPB]))
+        assert installation.texture("LEH_Floor01", [SearchLocation.TEXTURES_TPB]) is not None
+        assert installation.texture("x", [SearchLocation.TEXTURES_TPB]) is None
 
-        self.assertIsNotNone(installation.texture("leh_floor01", [SearchLocation.TEXTURES_TPC]))
-        self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_TPC]))
+        assert installation.texture("leh_floor01", [SearchLocation.TEXTURES_TPC]) is not None
+        assert installation.texture("x", [SearchLocation.TEXTURES_TPC]) is None
 
-        self.assertIsNotNone(installation.texture("bluearrow", [SearchLocation.TEXTURES_GUI]))
-        self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_GUI]))
+        assert installation.texture("bluearrow", [SearchLocation.TEXTURES_GUI]) is not None
+        assert installation.texture("x", [SearchLocation.TEXTURES_GUI]) is None
 
     def test_textures(self):
         installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_textures = ["m03ae_03a_lm4", "x"]
         chitin_results = installation.textures(chitin_textures, [SearchLocation.CHITIN])
-        self.assertIsNotNone(chitin_results["m03ae_03a_lm4"])
-        self.assertIsNone(chitin_results["x"])
-        self.assertEqual(2, len(chitin_results))
+        assert chitin_results["m03ae_03a_lm4"] is not None
+        assert chitin_results["x"] is None
+        assert len(chitin_results) == 2
 
         tpa_textures = ["LEH_Floor01", "x"]
         tpa_results = installation.textures(tpa_textures, [SearchLocation.TEXTURES_TPA])
-        self.assertIsNotNone(tpa_results["leh_floor01"])
-        self.assertIsNone(tpa_results["x"])
-        self.assertEqual(2, len(tpa_results))
+        assert tpa_results["leh_floor01"] is not None
+        assert tpa_results["x"] is None
+        assert len(tpa_results) == 2
 
         tpb_textures = ["LEH_Floor01", "x"]
         tpb_results = installation.textures(tpb_textures, [SearchLocation.TEXTURES_TPB])
-        self.assertIsNotNone(tpb_results["leh_floor01"])
-        self.assertIsNone(tpb_results["x"])
-        self.assertEqual(2, len(tpb_results))
+        assert tpb_results["leh_floor01"] is not None
+        assert tpb_results["x"] is None
+        assert len(tpb_results) == 2
 
         tpc_textures = ["LEH_Floor01", "x"]
         tpc_results = installation.textures(tpc_textures, [SearchLocation.TEXTURES_TPC])
-        self.assertIsNotNone(tpc_results["leh_floor01"])
-        self.assertIsNone(tpc_results["x"])
-        self.assertEqual(2, len(tpc_results))
+        assert tpc_results["leh_floor01"] is not None
+        assert tpc_results["x"] is None
+        assert len(tpc_results) == 2
 
         gui_textures = ["bluearrow", "x"]
         gui_results = installation.textures(gui_textures, [SearchLocation.TEXTURES_GUI])
-        self.assertIsNotNone(gui_results["bluearrow"])
-        self.assertIsNone(gui_results["x"])
-        self.assertEqual(2, len(gui_results))
+        assert gui_results["bluearrow"] is not None
+        assert gui_results["x"] is None
+        assert len(gui_results) == 2
 
     def test_sounds(self):
         installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_sounds = ["as_an_dantext_01", "x"]
         chitin_results = installation.sounds(chitin_sounds, [SearchLocation.CHITIN])
-        self.assertIsNotNone(chitin_results["as_an_dantext_01"])
-        self.assertIsNone(chitin_results["x"])
+        assert chitin_results["as_an_dantext_01"] is not None
+        assert chitin_results["x"] is None
 
         rim_sounds = ["FS_metal1", "x"]
         rim_results = installation.sounds(rim_sounds, [SearchLocation.RIMS])
-        self.assertIsNotNone(rim_results["FS_metal1"])
-        self.assertIsNone(rim_results["x"])
+        assert rim_results["FS_metal1"] is not None
+        assert rim_results["x"] is None
 
         sound_sounds = ["al_an_flybuzz_01", "x"]
         sound_results = installation.sounds(sound_sounds, [SearchLocation.SOUND])
-        self.assertIsNotNone(sound_results["al_an_flybuzz_01"])
-        self.assertIsNone(sound_results["x"])
+        assert sound_results["al_an_flybuzz_01"] is not None
+        assert sound_results["x"] is None
 
         music_sounds = ["al_en_cityext", "x"]
         music_results = installation.sounds(music_sounds, [SearchLocation.MUSIC])
-        self.assertIsNotNone(music_results["al_en_cityext"])
-        self.assertIsNone(music_results["x"])
+        assert music_results["al_en_cityext"] is not None
+        assert music_results["x"] is None
 
         voice_sounds = ["n_gengamm_scrm", "x"]
         voice_results = installation.sounds(voice_sounds, [SearchLocation.VOICE])
-        self.assertIsNotNone(voice_results["n_gengamm_scrm"])
-        self.assertIsNone(voice_results["x"])
+        assert voice_results["n_gengamm_scrm"] is not None
+        assert voice_results["x"] is None
 
     def test_string(self):
-        """This test will fail on non-english versions of the game"""
+        """This test will fail on non-english versions of the game."""
         installation: Installation = self.installation  # type: ignore[attr-defined]
 
         locstring1 = LocalizedString.from_invalid()
         locstring2 = LocalizedString.from_english("Some text.")
         locstring3 = LocalizedString(2)
 
-        self.assertEqual("default text", installation.string(locstring1, "default text"))
-        self.assertEqual("Some text.", installation.string(locstring2, "default text"))
-        self.assertEqual(
-            "ERROR: FATAL COMPILER ERROR",
-            installation.string(locstring3, "default text"),
-        )
+        assert installation.string(locstring1, "default text") == "default text"
+        assert installation.string(locstring2, "default text") == "Some text."
+        assert installation.string(locstring3, "default text") == "ERROR: FATAL COMPILER ERROR"
 
     def test_strings(self):
-        """This test will fail on non-english versions of the game"""
+        """This test will fail on non-english versions of the game."""
         installation: Installation = self.installation  # type: ignore[attr-defined]
 
         locstring1 = LocalizedString.from_invalid()
@@ -378,9 +374,9 @@ class TestInstallation(TestCase):
         locstring3 = LocalizedString(2)
 
         results = installation.strings([locstring1, locstring2, locstring3], "default text")
-        self.assertEqual("default text", results[locstring1])
-        self.assertEqual("Some text.", results[locstring2])
-        self.assertEqual("ERROR: FATAL COMPILER ERROR", results[locstring3])  # This test will fail on non-english versions of the game
+        assert results[locstring1] == "default text"
+        assert results[locstring2] == "Some text."
+        assert results[locstring3] == "ERROR: FATAL COMPILER ERROR"  # This test will fail on non-english versions of the game
 
 
 if __name__ == "__main__":

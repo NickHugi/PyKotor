@@ -7,9 +7,9 @@ import sys
 import time
 import uuid
 
-from loggerplus import RobustLogger
+from pathlib import Path
 
-from utility.system.path import Path
+from loggerplus import RobustLogger
 
 
 def get_size_on_disk(
@@ -82,10 +82,10 @@ def is_frozen() -> bool:
 def requires_admin(path: os.PathLike | str) -> bool:    # pragma: no cover
     """Check if a dir or a file requires admin permissions for read/write."""
     path_obj = Path.pathify(path)
-    isdir_check = path_obj.safe_isdir()
+    isdir_check = path_obj.is_dir()
     if isdir_check is True:
         return dir_requires_admin(path)
-    isfile_check = path_obj.safe_isfile()
+    isfile_check = path_obj.is_file()
     if isfile_check:
         return file_requires_admin(path)
     return isdir_check is None or isfile_check is None

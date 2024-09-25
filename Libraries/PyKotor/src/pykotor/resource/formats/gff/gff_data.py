@@ -5,6 +5,7 @@ import math
 
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
+from pathlib import PureWindowsPath
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from loggerplus import RobustLogger
@@ -15,7 +16,6 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 from utility.common.misc_string.util import format_text
 from utility.error_handling import safe_repr
-from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     import os

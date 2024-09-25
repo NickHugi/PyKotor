@@ -54,7 +54,7 @@ class TestJRL(unittest.TestCase):
         for jrl_resource in (resource for resource in self.installation if resource.restype() is ResourceType.JRL):
             gff: GFF = read_gff(jrl_resource.data())
             reconstructed_gff: GFF = dismantle_jrl(construct_jrl(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -65,12 +65,12 @@ class TestJRL(unittest.TestCase):
         for jrl_resource in (resource for resource in self.installation if resource.restype() is ResourceType.JRL):
             gff: GFF = read_gff(jrl_resource.data())
             reconstructed_gff: GFF = dismantle_jrl(construct_jrl(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_gff_reconstruct(self):
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_jrl(construct_jrl(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -85,26 +85,23 @@ class TestJRL(unittest.TestCase):
 
     def validate_io(self, jrl: JRL):
         quest = jrl.quests[0]
-        self.assertEqual(
-            "Plot to be considered worthy to hear the Sand People history.",
-            quest.comment,
-        )
-        self.assertEqual(33089, quest.name.stringref)
-        self.assertEqual(4, quest.planet_id)
-        self.assertEqual(72, quest.plot_index)
-        self.assertEqual(1, quest.priority)
-        self.assertEqual("Tat20aa_worthy", quest.tag)
+        assert quest.comment == "Plot to be considered worthy to hear the Sand People history."
+        assert quest.name.stringref == 33089
+        assert quest.planet_id == 4
+        assert quest.plot_index == 72
+        assert quest.priority == 1
+        assert quest.tag == "Tat20aa_worthy"
 
         entry1: JRLEntry = quest.entries[0]
-        self.assertFalse(entry1.end)
+        assert not entry1.end
         self._assert_group(10, entry1, 33090, 5.0, 1)
         entry2: JRLEntry = quest.entries[1]
-        self.assertTrue(entry2.end)
+        assert entry2.end
         self._assert_group(20, entry2, 33091, 6.0, 1)
 
     def _assert_group(self, expected_entry_id: int, jrl: JRLEntry, expected_stringref: int, expected_xp, decimal_places: int):
-        self.assertEqual(expected_entry_id, jrl.entry_id)
-        self.assertEqual(expected_stringref, jrl.text.stringref)
+        assert expected_entry_id == jrl.entry_id
+        assert expected_stringref == jrl.text.stringref
         self.assertAlmostEqual(expected_xp, jrl.xp_percentage, decimal_places)
 
 

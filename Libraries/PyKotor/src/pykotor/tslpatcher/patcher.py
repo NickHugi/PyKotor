@@ -6,6 +6,7 @@ import sys
 
 from copy import deepcopy
 from datetime import datetime, timezone
+from pathlib import PurePath
 from typing import TYPE_CHECKING, Callable
 
 from loggerplus import RobustLogger
@@ -25,7 +26,6 @@ from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.nss import ModificationsNSS, MutableString
 from pykotor.tslpatcher.mods.template import OverrideType
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     from threading import Event
@@ -72,11 +72,11 @@ class ModInstaller:
         self.tslpatchdata_path: CaseAwarePath | None = None
         self.log: PatchLogger = logger or PatchLogger()
         self.game: Game | None = Installation.determine_game(self.game_path)
-        if not self.changes_ini_path.safe_isfile():  # Handle legacy syntax
+        if not self.changes_ini_path.is_file():  # Handle legacy syntax
             self.changes_ini_path = self.mod_path / self.changes_ini_path.name
-            if not self.changes_ini_path.safe_isfile():
+            if not self.changes_ini_path.is_file():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
-            if not self.changes_ini_path.safe_isfile():
+            if not self.changes_ini_path.is_file():
                 import errno
                 msg = "Could not find the changes ini file on disk."
                 raise FileNotFoundError(errno.ENOENT, msg, str(self.changes_ini_path))
@@ -108,7 +108,7 @@ class ModInstaller:
             for i, files in enumerate(self._config.required_files):
                 for file in files:
                     requiredfile_path: CaseAwarePath = self.game_path / "Override" / file
-                    if not requiredfile_path.safe_isfile():
+                    if not requiredfile_path.is_file():
                         raise ImportError(self._config.required_messages[i].strip() or "cannot install - missing a required mod")
         return self._config
 
@@ -184,7 +184,7 @@ class ModInstaller:
             tslrcm_omitted_rims = ("702KOR", "401DXN")
             if module_root.upper() not in tslrcm_omitted_rims and is_rim_file(output_container_path):
                 self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}!\nPatching RIMs is highly incompatible, not recommended, and widely considered bad practice. Please request the mod developer to fix this.")
-            if not output_container_path.safe_isfile():
+            if not output_container_path.is_file():
                 if is_mod_file(output_container_path):
                     self.log.add_note(
                         f"IMPORTANT! The module at path '{output_container_path}' did not exist, building one in the 'Modules' folder immediately from the following files:"  # noqa: ISC003
@@ -262,7 +262,7 @@ class ModInstaller:
         #    return
         erfrim_path = self.game_path / patch.destination / patch.saveas
         mod_path = erfrim_path.with_name(f"{Installation.get_module_root(erfrim_path.name)}.mod")
-        if erfrim_path != mod_path and mod_path.safe_isfile():
+        if erfrim_path != mod_path and mod_path.is_file():
             self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}', but is overshadowed by the existing '{mod_path.name}'!")
 
     def handle_override_type(self, patch: PatcherModifications):
@@ -285,12 +285,12 @@ class ModInstaller:
 
         override_dir: CaseAwarePath = self.game_path / "Override"
         override_resource_path: CaseAwarePath = override_dir / patch.saveas
-        if override_resource_path.safe_isfile():
+        if override_resource_path.is_file():
             if override_type == OverrideType.RENAME:
                 renamed_file_path: CaseAwarePath = override_dir / f"old_{patch.saveas}"
                 i = 2
                 filestem: str = renamed_file_path.stem
-                while renamed_file_path.safe_isfile():
+                while renamed_file_path.is_file():
                     renamed_file_path = renamed_file_path.parent / f"{filestem} ({i}){renamed_file_path.suffix}"
                     i += 1
                 try:
@@ -351,7 +351,7 @@ class ModInstaller:
             self.log.add_note(f"'{patch.saveas}' already exists in the '{local_folder}' {container_type}. Skipping file...")
             return False
 
-        if capsule is not None and not capsule.filepath().safe_isfile():
+        if capsule is not None and not capsule.filepath().is_file():
             self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")  # noqa: E501
             return False
 
@@ -444,7 +444,7 @@ class ModInstaller:
             if progress_update_func is not None:
                 progress_update_func()
 
-        if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_isdir():
+        if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.is_dir():
             self.log.add_note(f"Cleaning temporary script folder at '{temp_script_folder}' (hint: use 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")  # noqa: E501
             shutil.rmtree(temp_script_folder, ignore_errors=True)
 
@@ -465,7 +465,7 @@ class ModInstaller:
         # Move nwscript.nss to Override if there are any nss patches to do
         # This is required for any non-tslpatcher versions of nwnnsscomp.exe
         # See Libraries\PyKotor\src\pykotor\resource\formats\ncs\compilers.py for more information.
-        if (self.mod_path / "nwscript.nss").safe_isfile():
+        if (self.mod_path / "nwscript.nss").is_file():
             file_install = InstallFile("nwscript.nss", replace_existing=True)
             if file_install not in config.install_list:
                 config.install_list.append(file_install)
@@ -474,11 +474,11 @@ class ModInstaller:
         # where we can change all the stringref/2damemory tokens without overwriting the original files.
         # First delete the temp folder if it already exists.
         temp_script_folder: CaseAwarePath = self.mod_path / "temp_nss_working_dir"
-        if temp_script_folder.safe_isdir():
+        if temp_script_folder.is_dir():
             shutil.rmtree(temp_script_folder, ignore_errors=True)
         temp_script_folder.mkdir(exist_ok=True, parents=True)
         for file in self.mod_path.safe_iterdir():
-            if file.suffix.lower() != ".nss" or not file.safe_isfile():
+            if file.suffix.lower() != ".nss" or not file.is_file():
                 continue
             shutil.copy(file, temp_script_folder)
 
@@ -486,7 +486,7 @@ class ModInstaller:
         scripts_list: list[CaseAwarePath] = [*set(temp_script_folder.iterdir())]
         log.add_verbose(f"Preprocessing #StrRef# and #2DAMEMORY# tokens for all {len(scripts_list)} scripts, before running [CompileList]")
         for script in temp_script_folder.iterdir():
-            if script.suffix.lower() != ".nss" or not file.safe_isfile():
+            if script.suffix.lower() != ".nss" or not file.is_file():
                 continue
             log.add_verbose(f"Parsing tokens in '{script.name}'...")
             with script.open(mode="rb") as f:

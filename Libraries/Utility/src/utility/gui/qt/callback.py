@@ -3,9 +3,9 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any
 
-from PyQt5.QtGui import QIcon
 from loggerplus import RobustLogger
 from qtpy import QtCore, QtWidgets
+from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QMessageBox
 
 from utility.gui.base import UserCommunication

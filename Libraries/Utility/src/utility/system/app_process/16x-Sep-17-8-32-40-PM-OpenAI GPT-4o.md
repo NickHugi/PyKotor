@@ -26,7 +26,7 @@ One of the most straightforward ways to handle child processes in Qt is via the 
 Here’s a conceptual example using PyQt to demonstrate how you might use `QProcess` in C++:
 
 ```python
-from PyQt5.QtCore import QProcess, QObject, pyqtSlot
+from qtpy.QtCore import QProcess, QObject, pyqtSlot
 
 class ExternalProcessHandler(QObject):
     def __init__(self):
@@ -67,7 +67,7 @@ For more advanced scenarios, you might want to consider using Inter-Process Comm
 Again, here is a conceptual example demonstrating local sockets in PyQt:
 
 ```python
-from PyQt5.QtCore import QLocalSocket, QLocalServer, QObject, pyqtSlot, QByteArray
+from qtpy.QtCore import QLocalSocket, QLocalServer, QObject, pyqtSlot, QByteArray
 
 class LocalServerHandler(QObject):
     def __init__(self):

@@ -4,7 +4,9 @@ from typing import TYPE_CHECKING
 
 from qtpy.QtWidgets import QColumnView
 
-from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
+from utility.ui_libraries.qt.widgets.itemviews.abstractview import (
+    RobustAbstractItemView,
+)
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QMenu, QWidget

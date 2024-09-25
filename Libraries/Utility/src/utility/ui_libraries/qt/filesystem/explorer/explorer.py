@@ -18,6 +18,7 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar, cast, overload
 
+from PyQt6.QtWidgets import QComboBox, QDockWidget, QStyle, QToolTip
 from qasync import QEventLoop  # pyright: ignore[reportPrivateImportUsage]
 from qtpy.QtCore import (
     QDir,
@@ -32,14 +33,16 @@ from qtpy.QtCore import (
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
-from qtpy.QtGui import QCursor, QDesktopServices, QDrag, QKeySequence
+from qtpy.QtGui import QCursor, QDesktopServices, QDrag, QIcon, QKeySequence
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFileIconProvider,
     QFileSystemModel,
+    QHBoxLayout,
     QInputDialog,
     QLabel,
     QLineEdit,
@@ -48,9 +51,11 @@ from qtpy.QtWidgets import (
     QMessageBox,
     QProgressDialog,
     QPushButton,
-    QStyle,
+    QSizePolicy,
+    QSplitter,
     QTextEdit,
-    QToolTip,
+    QToolButton,
+    QTreeView,
     QVBoxLayout,
     QWidget,
 )
@@ -58,13 +63,13 @@ from qtpy.QtWidgets import (
 from utility.misc import generate_hash
 from utility.system.app_process.task_consumer import TaskConsumer
 from utility.ui_libraries.qt.filesystem.explorer.explorer_ui import UI_PyFileExplorer
-from utility.ui_libraries.qt.filesystem.explorer.qfiledialogpy.private.qfiledialog import QFileDialog
-from utility.ui_libraries.qt.filesystem.explorer.qfiledialogpy.tests.test_qtpyfiledialog import TestQFileDialog
+from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qfiledialog import QFileDialog  # noqa: F811
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import Event as multiprocessing_Event
 
-    from qtpy.QtCore import QAbstractItemModel, QAbstractProxyModel, QByteArray, QEvent, QItemSelection, QModelIndex, QPoint
+    from qtpy.QtCore import QAbstractProxyModel, QByteArray, QEvent, QItemSelection, QModelIndex, QPoint
     from qtpy.QtGui import QDragEnterEvent, QDropEvent, QKeyEvent
     from qtpy.QtWidgets import QAbstractItemDelegate, QWidget
 
@@ -111,7 +116,7 @@ class Callback(Generic[F]):
         return result
 
 
-class TestQFileDialog(QFileDialog, TestQFileDialog, UI_PyFileExplorer):
+class PyFileExplorer(QDialog):
     fileSelected: Signal = Signal(str)
     filesSelected: Signal = Signal(list)
 
@@ -154,7 +159,7 @@ class TestQFileDialog(QFileDialog, TestQFileDialog, UI_PyFileExplorer):
         options: QFileDialog.Options | None = None,
     ):
         super().__init__(parent)
-        self.resize(800, 600)
+        self.resize(1000, 600)
         self.setSizeGripEnabled(True)
 
         self._options: QFileDialog.Option | QFileDialog.Options = QFileDialog.Options() if options is None else options
@@ -188,7 +193,8 @@ class TestQFileDialog(QFileDialog, TestQFileDialog, UI_PyFileExplorer):
         self._consumers: list[TaskConsumer] = []
         self._executor = ProcessPoolExecutor(max_workers=min(4, (os.cpu_count() or 1)))
 
-        self.setupUi(caption)
+        self.ui = UI_PyFileExplorer
+        self.ui.setupUi(self)
         self.setup_menu()
         self.setup_connections()
         self.setup_sidebar()
@@ -395,8 +401,117 @@ class TestQFileDialog(QFileDialog, TestQFileDialog, UI_PyFileExplorer):
         ] + [QUrl.fromLocalFile(path) for path in QStandardPaths.standardLocations(QStandardPaths.StandardLocation.MusicLocation)]
         self.update_sidebar()
 
-    def setupUi(self, caption: str):
-        super().setupUi(caption)  # Ensure the default ui is setup in the base class(es)
+    def setup_ui(self, caption: str):
+        self.setWindowTitle(caption or "Select File")
+        main_layout = QVBoxLayout(self)
+
+        # Look In section
+        look_in_layout = QHBoxLayout()
+        self.lookInLabel: QLabel = QLabel("Look in:", self)
+        self.addressBar: QLineEdit = QLineEdit(self)
+        self.backButton = QToolButton(self)
+        self.backButton.setIcon(self.style().standardIcon(self.style().SP_ArrowBack))
+        self.forwardButton: QToolButton = QToolButton(self)
+        self.forwardButton.setIcon(self.style().standardIcon(self.style().SP_ArrowForward))
+        self.toParentButton: QToolButton = QToolButton(self)
+        self.toParentButton.setIcon(self.style().standardIcon(self.style().SP_ArrowUp))
+        self.newFolderButton: QToolButton = QToolButton(self)
+        self.newFolderButton.setIcon(self.style().standardIcon(self.style().SP_FileDialogNewFolder))
+        self.listModeButton: QToolButton = QToolButton(self)
+        self.listModeButton.setIcon(self.style().standardIcon(self.style().SP_FileDialogListView))
+        self.detailModeButton: QToolButton = QToolButton(self)
+        self.detailModeButton.setIcon(QIcon.fromTheme("view-list-details"))
+
+        look_in_layout.addWidget(self.lookInLabel)
+        look_in_layout.addWidget(self.addressBar)
+        look_in_layout.addWidget(self.backButton)
+        look_in_layout.addWidget(self.forwardButton)
+        look_in_layout.addWidget(self.toParentButton)
+        look_in_layout.addWidget(self.newFolderButton)
+        look_in_layout.addWidget(self.listModeButton)
+        look_in_layout.addWidget(self.detailModeButton)
+
+        self.toggleDualPaneButton: QToolButton = QToolButton(self)
+        self.toggleDualPaneButton.setIcon(QIcon.fromTheme("view-split-left-right"))
+        self.toggleDualPaneButton.setCheckable(True)
+        self.toggleDualPaneButton.setChecked(True)
+        self.toggleDualPaneButton.clicked.connect(self.toggle_dual_pane)
+        look_in_layout.addWidget(self.toggleDualPaneButton)
+
+        main_layout.addLayout(look_in_layout)
+
+        # Main content area
+        content_splitter = QSplitter(Qt.Horizontal)
+
+        # Sidebar
+        self.sidebarDock = QDockWidget("Folders", self)
+        self.side_panel_tree: RobustTreeView = RobustTreeView()
+        self.side_panel_tree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.side_panel_tree.setModel(self.fsModel)
+        self.side_panel_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.side_panel_tree.customContextMenuRequested.connect(self.show_context_menu)
+        self.sidebarDock.setWidget(self.side_panel_tree)
+        content_splitter.addWidget(self.sidebarDock)
+
+        # Dual-pane view
+        self.dual_pane_splitter = QSplitter(Qt.Horizontal)
+
+        # Left pane
+        self.left_pane = self.create_file_view()
+        self.dual_pane_splitter.addWidget(self.left_pane)
+
+        # Right pane
+        self.right_pane = self.create_file_view()
+        self.dual_pane_splitter.addWidget(self.right_pane)
+
+        content_splitter.addWidget(self.dual_pane_splitter)
+        content_splitter.setSizes([200, 800])
+
+        main_layout.addWidget(content_splitter)
+
+        # Setup file system model
+        self.fsModel: QFileSystemModel = QFileSystemModel(self)
+        self.fsModel.setRootPath(QDir.rootPath())
+        self.side_panel_tree.setModel(self.fsModel)
+        self.left_pane.setModel(self.fsModel)
+        self.right_pane.setModel(self.fsModel)
+        self.side_panel_tree.clicked.connect(self.on_sidebar_item_clicked)
+
+        # File name section
+        file_name_layout = QHBoxLayout()
+        self.fileNameLabel: QLabel = QLabel("File name:", self)
+        self.fileNameEdit: QLineEdit = QLineEdit(self)
+        self.fileNameEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        file_name_layout.addWidget(self.fileNameLabel)
+        file_name_layout.addWidget(self.fileNameEdit)
+
+        main_layout.addLayout(file_name_layout)
+
+        # File type section
+        file_type_layout = QHBoxLayout()
+        self.fileTypeLabel: QLabel = QLabel("Files of type:", self)
+        self.fileTypeCombo: QComboBox = QComboBox(self)
+        self.fileTypeCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.fileTypeCombo.setEditable(True)
+        file_type_layout.addWidget(self.fileTypeLabel)
+        file_type_layout.addWidget(self.fileTypeCombo)
+
+        main_layout.addLayout(file_type_layout)
+
+        # Buttons
+        self.buttonBox: QDialogButtonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText("Open" if self._acceptMode == QFileDialog.AcceptMode.AcceptOpen else "Save")
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText("Cancel")
+        main_layout.addWidget(self.buttonBox)
+
+        self.setLayout(main_layout)
+
+    def create_file_view(self) -> QTreeView:
+        view = QTreeView()
+        view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        view.customContextMenuRequested.connect(self.show_context_menu)
+        return view
 
     def close_tab(self, index: int):
         self.tabWidget.removeTab(index)
@@ -446,31 +561,31 @@ class TestQFileDialog(QFileDialog, TestQFileDialog, UI_PyFileExplorer):
         self.toggleHiddenButton.clicked.connect(self.toggle_hidden_files)
         self.addressBar.returnPressed.connect(self.navigate_to_address)
         self.fileNameEdit.returnPressed.connect(self.on_file_name_return)
-        self.listView().doubleClicked.connect(self.on_item_double_clicked)
-        self.tableView().doubleClicked.connect(self.on_item_double_clicked)
-        self.tilesView().doubleClicked.connect(self.on_item_double_clicked)
+        self.left_pane.doubleClicked.connect(self.on_item_double_clicked)
+        self.right_pane.doubleClicked.connect(self.on_item_double_clicked)
         self.fileTypeCombo.currentTextChanged.connect(self.on_filter_changed)
-        self.listView().setDragEnabled(True)
-        self.tableView().setDragEnabled(True)
-        self.tilesView().setDragEnabled(True)
-        self._fs_model.directoryLoaded.connect(self.on_directory_loaded)
-        for view in [self.listView(), self.tableView(), self.tilesView()]:
-            assert isinstance(view, QAbstractItemView), "Invalid view type: " + type(view).__name__
-            view.selectionModel().selectionChanged.connect(self.on_selection_changed)
+        self.left_pane.setDragEnabled(True)
+        self.right_pane.setDragEnabled(True)
+        self.fsModel.directoryLoaded.connect(self.on_directory_loaded)
+        self.left_pane.selectionModel().selectionChanged.connect(self.on_selection_changed)
+        self.right_pane.selectionModel().selectionChanged.connect(self.on_selection_changed)
         self.fileNameEdit.editingFinished.connect(self.on_file_name_changed)
-        self.listView().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.tableView().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.tilesView().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.listView().customContextMenuRequested.connect(self.show_context_menu)
-        self.tableView().customContextMenuRequested.connect(self.show_context_menu)
-        self.tilesView().customContextMenuRequested.connect(self.show_context_menu)
-        self.listView().setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
-        self.tableView().setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
-        self.tilesView().setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        self.left_pane.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.right_pane.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.left_pane.customContextMenuRequested.connect(self.show_context_menu)
+        self.right_pane.customContextMenuRequested.connect(self.show_context_menu)
+        self.left_pane.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        self.right_pane.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
 
         # Load session
         self.load_session()
         self.update_navigation_buttons()
+
+    def toggle_dual_pane(self):
+        if self.toggleDualPaneButton.isChecked():
+            self.right_pane.show()
+        else:
+            self.right_pane.hide()
 
     def go_back(self):
         if self._history_index > 0:
@@ -528,11 +643,12 @@ class TestQFileDialog(QFileDialog, TestQFileDialog, UI_PyFileExplorer):
             self.accept()
 
     def on_item_double_clicked(self, index: QModelIndex):
-        model: QAbstractItemModel | None = cast(QAbstractItemView, self.sender()).model()
+        sender = self.sender()
+        model = sender.model()
         assert isinstance(model, QFileSystemModel), "Invalid model type: " + type(model).__name__
         path = model.filePath(index)
         if os.path.isdir(path):  # noqa: PTH112
-            self.setDirectory(path)
+            self.setDirectory(path, pane=sender)
         else:
             QToolTip.showText(QCursor.pos(), self.get_file_info(index))
             self.selectFile(path)
@@ -675,7 +791,7 @@ class TestQFileDialog(QFileDialog, TestQFileDialog, UI_PyFileExplorer):
             self.secure_delete(file_path)
 
     def __reduce__(self):
-        return (TestQFileDialog, ())
+        return (QFileDialog, ())
 
     def calculate_checksum(self, file_path: str):
         task = Task(
@@ -970,28 +1086,32 @@ class TestQFileDialog(QFileDialog, TestQFileDialog, UI_PyFileExplorer):
     def directory(self) -> QDir:
         return QDir(self._currentPath)
 
-    def setDirectory(self, directory: str | QDir, *, add_to_history: bool = True):
+    def setDirectory(self, directory: str | QDir, *, add_to_history: bool = True, pane: QTreeView | None = None):
         abs_directory = (
             directory.absolutePath() if isinstance(directory, QDir) else os.path.abspath(directory)  # noqa: PTH100
         )
         if not abs_directory or not os.path.isdir(abs_directory):  # noqa: PTH112
             self.logger.warning(f"Invalid directory: {abs_directory}")
             return
-        self._currentPath = abs_directory
 
-        self._fs_model.setRootPath(abs_directory)
-        root_index = self._fs_model.index(abs_directory)
-        for view in [self.listView(), self.tableView(), self.tilesView()]:
-            assert isinstance(view, QAbstractItemView)
-            view.setRootIndex(root_index)
-        self.addressBar.setText(abs_directory)
-        self.currentChanged.emit(self._currentPath)
-        if add_to_history:
-            # Add to history and update the index
-            if self._history_index < len(self._history) - 1:
-                self._history = self._history[: self._history_index + 1]
-            self._history.append(abs_directory)
-            self._history_index += 1
+        self.fsModel.setRootPath(abs_directory)
+        root_index = self.fsModel.index(abs_directory)
+
+        if pane is None or pane == self.left_pane:
+            self.left_pane.setRootIndex(root_index)
+            self._currentPath = abs_directory
+            self.addressBar.setText(abs_directory)
+            self.currentChanged.emit(self._currentPath)
+            if add_to_history:
+                # Add to history and update the index
+                if self._history_index < len(self._history) - 1:
+                    self._history = self._history[: self._history_index + 1]
+                self._history.append(abs_directory)
+                self._history_index += 1
+
+        if pane is None or pane == self.right_pane:
+            self.right_pane.setRootIndex(root_index)
+
         self.update_navigation_buttons()
         self.save_session()
         self.directoryEntered.emit(abs_directory)
@@ -999,6 +1119,12 @@ class TestQFileDialog(QFileDialog, TestQFileDialog, UI_PyFileExplorer):
         self.update_sidebar()
         self.lazy_load_directory(root_index)
         self.logger.debug(f"Set directory to: {abs_directory}")
+
+    def set_left_pane_directory(self, directory: str | QDir):
+        self.setDirectory(directory, pane=self.left_pane)
+
+    def set_right_pane_directory(self, directory: str | QDir):
+        self.setDirectory(directory, pane=self.right_pane)
 
     def setNameFilters(self, filters: list[str]):
         self._nameFilters = filters
@@ -1224,8 +1350,24 @@ if __name__ == "__main__":
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
 
-    explorer = TestQFileDialog()
+    explorer = PyFileExplorer()
     explorer.show()
 
     with loop:
         loop.run_forever()
+    def sync_panes(self):
+        active_pane = self.focusWidget()
+        if active_pane == self.left_pane:
+            self.set_right_pane_directory(self.fsModel.filePath(self.left_pane.rootIndex()))
+        elif active_pane == self.right_pane:
+            self.set_left_pane_directory(self.fsModel.filePath(self.right_pane.rootIndex()))
+
+    def setup_connections(self):
+        # ... (existing connections)
+        self.toggleDualPaneButton.clicked.connect(self.toggle_dual_pane)
+
+        # Add a new button for syncing panes
+        self.syncPanesButton = QToolButton(self)
+        self.syncPanesButton.setIcon(QIcon.fromTheme("view-refresh"))
+        self.syncPanesButton.clicked.connect(self.sync_panes)
+        self.layout().itemAt(0).layout().addWidget(self.syncPanesButton)

@@ -7,13 +7,39 @@ from copy import deepcopy
 from queue import Empty
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
-from qtpy.QtCore import QEvent, QLine, QMutexLocker, QPoint, QRect, QThread, Qt, Signal  # pyright: ignore[reportPrivateImportUsage]
+from qtpy.QtCore import (  # pyright: ignore[reportPrivateImportUsage]
+    QEvent,
+    QLine,
+    QMutexLocker,
+    QPoint,
+    QRect,
+    QThread,
+    Qt,
+    Signal,
+)
 from qtpy.QtGui import QBrush, QColor, QPainter, QPen
-from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QMessageBox, QPushButton, QSlider, QVBoxLayout, QWidget
+from qtpy.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSlider,
+    QVBoxLayout,
+    QWidget,
+)
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace
-from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from pykotor.resource.formats.lyt import (
+    LYT,
+    LYTDoorHook,
+    LYTObstacle,
+    LYTRoom,
+    LYTTrack,
+)
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 
 if TYPE_CHECKING:
@@ -32,8 +58,18 @@ from PyQt5.uic import loadUi
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace
-from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
-from toolset.gui.widgets.renderer.lyt_commands import AddRoomCommand, MoveRoomCommand, RotateRoomCommand
+from pykotor.resource.formats.lyt import (
+    LYT,
+    LYTDoorHook,
+    LYTObstacle,
+    LYTRoom,
+    LYTTrack,
+)
+from toolset.gui.widgets.renderer.lyt_commands import (
+    AddRoomCommand,
+    MoveRoomCommand,
+    RotateRoomCommand,
+)
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 
 

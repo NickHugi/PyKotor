@@ -41,13 +41,21 @@ class ModuleDesignerWidget(SettingsWidget):
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.settings import module_designer  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.widgets.settings import (
+                module_designer,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.settings import module_designer  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.widgets.settings import (
+                module_designer,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.settings import module_designer  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.widgets.settings import (
+                module_designer,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.settings import module_designer  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.widgets.settings import (
+                module_designer,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

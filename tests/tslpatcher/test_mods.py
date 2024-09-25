@@ -3,7 +3,6 @@ from __future__ import annotations
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -24,6 +23,8 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING, cast
 
+from pathlib import PureWindowsPath
+
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
@@ -35,7 +36,12 @@ from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.memory import NoTokenUsage, PatcherMemory, TokenUsage2DA, TokenUsageTLK
+from pykotor.tslpatcher.memory import (
+    NoTokenUsage,
+    PatcherMemory,
+    TokenUsage2DA,
+    TokenUsageTLK,
+)
 from pykotor.tslpatcher.mods.gff import (
     AddFieldGFF,
     AddStructToListGFF,
@@ -64,7 +70,6 @@ from pykotor.tslpatcher.mods.twoda import (
     Target,
     TargetType,
 )
-from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.gff import (
@@ -96,12 +101,12 @@ class TestManipulateTLK(TestCase):
 
         config.apply(dialog_tlk, memory, PatchLogger(), Game.K1)
 
-        self.assertEqual(4, len(dialog_tlk))
-        self.assertEqual("Append2", dialog_tlk.get(2).text)
-        self.assertEqual("Append1", dialog_tlk.get(3).text)
+        assert len(dialog_tlk) == 4
+        assert dialog_tlk.get(2).text == "Append2"
+        assert dialog_tlk.get(3).text == "Append1"
 
-        self.assertEqual(2, memory.memory_str[0])
-        self.assertEqual(3, memory.memory_str[1])
+        assert memory.memory_str[0] == 2
+        assert memory.memory_str[1] == 3
 
         # [Dialog] [Append] [Token] [Text]
         # 0        -        -       Old1
@@ -134,12 +139,12 @@ class TestManipulateTLK(TestCase):
 
         config.apply(dialog_tlk, memory, PatchLogger(), Game.K1)
 
-        self.assertEqual(4, len(dialog_tlk))
-        self.assertEqual("Replace2", dialog_tlk.get(1).text)
-        self.assertEqual("Replace3", dialog_tlk.get(2).text)
+        assert len(dialog_tlk) == 4
+        assert dialog_tlk.get(1).text == "Replace2"
+        assert dialog_tlk.get(2).text == "Replace3"
 
-        self.assertEqual(1, memory.memory_str[1])
-        self.assertEqual(2, memory.memory_str[2])
+        assert memory.memory_str[1] == 1
+        assert memory.memory_str[2] == 2
 
         # [Dialog] [Append] [Token] [Text]
         # 0        -        -       Old1
@@ -161,9 +166,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValueConstant("X")}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "X"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "e"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f"], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["a", "X"]
+        assert twoda.get_column("Col2") == ["b", "e"]
+        assert twoda.get_column("Col3") == ["c", "f"]
 
     def test_change_existing_rowlabel(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -176,9 +181,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_LABEL, "1"), {"Col1": RowValueConstant("X")}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "X"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "e"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f"], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["a", "X"]
+        assert twoda.get_column("Col2") == ["b", "e"]
+        assert twoda.get_column("Col3") == ["c", "f"]
 
     def test_change_existing_labelindex(self):
         twoda = TwoDA(["label", "Col2", "Col3"])
@@ -197,9 +202,9 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "d"], twoda.get_column("label"))
-        self.assertEqual(["b", "X"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f"], twoda.get_column("Col3"))
+        assert twoda.get_column("label") == ["a", "d"]
+        assert twoda.get_column("Col2") == ["b", "X"]
+        assert twoda.get_column("Col3") == ["c", "f"]
 
     def test_change_assign_tlkmemory(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -215,9 +220,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValueTLKMemory(1)}))
         twoda = read_2da(config.patch_resource(bytes_2da(twoda), memory, logger, Game.K1))
 
-        self.assertEqual(["0", "1"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "e"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f"], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["0", "1"]
+        assert twoda.get_column("Col2") == ["b", "e"]
+        assert twoda.get_column("Col3") == ["c", "f"]
 
     def test_change_assign_2damemory(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -233,9 +238,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValue2DAMemory(1)}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["mem0", "mem1"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "e"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f"], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["mem0", "mem1"]
+        assert twoda.get_column("Col2") == ["b", "e"]
+        assert twoda.get_column("Col3") == ["c", "f"]
 
     def test_change_assign_high(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -249,9 +254,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col2": RowValueHigh("Col2")}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["3", "2"], twoda.get_column("Col1"))
-        self.assertEqual(["5", "4"], twoda.get_column("Col2"))
-        self.assertEqual(["5", "6"], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["3", "2"]
+        assert twoda.get_column("Col2") == ["5", "4"]
+        assert twoda.get_column("Col3") == ["5", "6"]
 
     def test_set_2damemory_rowindex(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -271,10 +276,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "d"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "e"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f"], twoda.get_column("Col3"))
-        self.assertEqual("1", memory.memory_2da[5])
+        assert twoda.get_column("Col1") == ["a", "d"]
+        assert twoda.get_column("Col2") == ["b", "e"]
+        assert twoda.get_column("Col3") == ["c", "f"]
+        assert memory.memory_2da[5] == "1"
 
     def test_set_2damemory_rowlabel(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -294,10 +299,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "d"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "e"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f"], twoda.get_column("Col3"))
-        self.assertEqual("r1", memory.memory_2da[5])
+        assert twoda.get_column("Col1") == ["a", "d"]
+        assert twoda.get_column("Col2") == ["b", "e"]
+        assert twoda.get_column("Col3") == ["c", "f"]
+        assert memory.memory_2da[5] == "r1"
 
     def test_set_2damemory_columnlabel(self):
         twoda = TwoDA(["label", "Col2", "Col3"])
@@ -317,10 +322,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "d"], twoda.get_column("label"))
-        self.assertEqual(["b", "e"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f"], twoda.get_column("Col3"))
-        self.assertEqual("d", memory.memory_2da[5])
+        assert twoda.get_column("label") == ["a", "d"]
+        assert twoda.get_column("Col2") == ["b", "e"]
+        assert twoda.get_column("Col3") == ["c", "f"]
+        assert memory.memory_2da[5] == "d"
 
     # endregion
 
@@ -337,10 +342,10 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddRow2DA("", None, None, {}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(3, twoda.get_height())
-        self.assertEqual("0", twoda.get_label(0))
-        self.assertEqual("1", twoda.get_label(1))
-        self.assertEqual("2", twoda.get_label(2))
+        assert twoda.get_height() == 3
+        assert twoda.get_label(0) == "0"
+        assert twoda.get_label(1) == "1"
+        assert twoda.get_label(2) == "2"
 
     def test_add_rowlabel_use_constant(self):
         twoda = TwoDA(["Col1"])
@@ -352,8 +357,8 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddRow2DA("", None, "r1", {}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(1, twoda.get_height())
-        self.assertEqual("r1", twoda.get_label(0))
+        assert twoda.get_height() == 1
+        assert twoda.get_label(0) == "r1"
 
     def test_add_rowlabel_existing(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -373,8 +378,8 @@ class TestManipulate2DA(TestCase):
         )
         twoda = read_2da(config.patch_resource(bytes_2da(twoda), memory, logger, Game.K1))
 
-        self.assertEqual(1, twoda.get_height())
-        self.assertEqual("0", twoda.get_label(0))
+        assert twoda.get_height() == 1
+        assert twoda.get_label(0) == "0"
 
     def test_add_exclusive_notexists(self):
         """Exclusive column is specified and the value in the new row is unique. Add a new row."""
@@ -399,11 +404,11 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(3, twoda.get_height())
-        self.assertEqual("2", twoda.get_label(2))
-        self.assertEqual(["a", "d", "g"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "e", "h"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f", "i"], twoda.get_column("Col3"))
+        assert twoda.get_height() == 3
+        assert twoda.get_label(2) == "2"
+        assert twoda.get_column("Col1") == ["a", "d", "g"]
+        assert twoda.get_column("Col2") == ["b", "e", "h"]
+        assert twoda.get_column("Col3") == ["c", "f", "i"]
 
     def test_add_exclusive_exists(self):
         """Exclusive column is specified but the value in the new row is already used. Edit the existing row."""
@@ -429,10 +434,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(3, twoda.get_height())
-        self.assertEqual(["a", "d", "g"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "e", "X"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f", "Y"], twoda.get_column("Col3"))
+        assert twoda.get_height() == 3
+        assert twoda.get_column("Col1") == ["a", "d", "g"]
+        assert twoda.get_column("Col2") == ["b", "e", "X"]
+        assert twoda.get_column("Col3") == ["c", "f", "Y"]
 
     def test_add_exclusive_badcolumn(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -480,10 +485,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(4, twoda.get_height())
-        self.assertEqual(["a", "d", "g", "j"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "e", "h", "k"], twoda.get_column("Col2"))
-        self.assertEqual(["c", "f", "i", "l"], twoda.get_column("Col3"))
+        assert twoda.get_height() == 4
+        assert twoda.get_column("Col1") == ["a", "d", "g", "j"]
+        assert twoda.get_column("Col2") == ["b", "e", "h", "k"]
+        assert twoda.get_column("Col3") == ["c", "f", "i", "l"]
 
     def test_add_assign_high(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -496,7 +501,7 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddRow2DA("", "", "2", {"Col1": RowValueHigh("Col1")}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["1", "2", "3"], twoda.get_column("Col1"))
+        assert twoda.get_column("Col1") == ["1", "2", "3"]
 
     def test_add_assign_tlkmemory(self):
         twoda = TwoDA(["Col1"])
@@ -511,7 +516,7 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddRow2DA("", None, "1", {"Col1": RowValueTLKMemory(1)}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["5", "6"], twoda.get_column("Col1"))
+        assert twoda.get_column("Col1") == ["5", "6"]
 
     def test_add_assign_2damemory(self):
         twoda = TwoDA(["Col1"])
@@ -526,7 +531,7 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddRow2DA("", None, "1", {"Col1": RowValue2DAMemory(1)}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["5", "6"], twoda.get_column("Col1"))
+        assert twoda.get_column("Col1") == ["5", "6"]
 
     def test_add_2damemory_rowindex(self):
         twoda = TwoDA(["Col1"])
@@ -555,10 +560,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(2, twoda.get_height())
-        self.assertEqual(["X", "Y"], twoda.get_column("Col1"))
-        self.assertEqual("0", memory.memory_2da[5])
-        self.assertEqual("1", memory.memory_2da[6])
+        assert twoda.get_height() == 2
+        assert twoda.get_column("Col1") == ["X", "Y"]
+        assert memory.memory_2da[5] == "0"
+        assert memory.memory_2da[6] == "1"
 
     # endregion
 
@@ -583,9 +588,9 @@ class TestManipulate2DA(TestCase):
         )
         twoda: TwoDA = read_2da(cast(bytes, config.patch_resource(bytes_2da(twoda), memory, logger, Game.K1)))
 
-        self.assertEqual(3, twoda.get_height())
-        self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d", "X"], twoda.get_column("Col2"))
+        assert twoda.get_height() == 3
+        assert twoda.get_column("Col1") == ["a", "c", "a"]
+        assert twoda.get_column("Col2") == ["b", "d", "X"]
 
     def test_copy_existing_rowlabel(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -607,9 +612,9 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(3, twoda.get_height())
-        self.assertEqual(["a", "c", "c"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d", "X"], twoda.get_column("Col2"))
+        assert twoda.get_height() == 3
+        assert twoda.get_column("Col1") == ["a", "c", "c"]
+        assert twoda.get_column("Col2") == ["b", "d", "X"]
 
     def test_copy_exclusive_notexists(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -630,10 +635,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(2, twoda.get_height())
-        self.assertEqual("1", twoda.get_label(1))
-        self.assertEqual(["a", "c"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d"], twoda.get_column("Col2"))
+        assert twoda.get_height() == 2
+        assert twoda.get_label(1) == "1"
+        assert twoda.get_column("Col1") == ["a", "c"]
+        assert twoda.get_column("Col2") == ["b", "d"]
 
     def test_copy_exclusive_exists(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -654,10 +659,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(1, twoda.get_height())
-        self.assertEqual("0", twoda.get_label(0))
-        self.assertEqual(["a"], twoda.get_column("Col1"))
-        self.assertEqual(["X"], twoda.get_column("Col2"))
+        assert twoda.get_height() == 1
+        assert twoda.get_label(0) == "0"
+        assert twoda.get_column("Col1") == ["a"]
+        assert twoda.get_column("Col2") == ["X"]
 
     def test_copy_exclusive_none(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -687,11 +692,11 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(3, twoda.get_height())
-        self.assertEqual("1", twoda.get_label(1))
-        self.assertEqual("r2", twoda.get_label(2))
-        self.assertEqual(["a", "c", "e"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d", "f"], twoda.get_column("Col2"))
+        assert twoda.get_height() == 3
+        assert twoda.get_label(1) == "1"
+        assert twoda.get_label(2) == "r2"
+        assert twoda.get_column("Col1") == ["a", "c", "e"]
+        assert twoda.get_column("Col2") == ["b", "d", "f"]
 
     def test_copy_set_newrowlabel(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -705,9 +710,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, "r2", {}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual("r2", twoda.get_label(2))
-        self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d", "b"], twoda.get_column("Col2"))
+        assert twoda.get_label(2) == "r2"
+        assert twoda.get_column("Col1") == ["a", "c", "a"]
+        assert twoda.get_column("Col2") == ["b", "d", "b"]
 
     def test_copy_assign_high(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -729,9 +734,9 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(3, twoda.get_height())
-        self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
-        self.assertEqual(["1", "2", "3"], twoda.get_column("Col2"))
+        assert twoda.get_height() == 3
+        assert twoda.get_column("Col1") == ["a", "c", "a"]
+        assert twoda.get_column("Col2") == ["1", "2", "3"]
 
     def test_copy_assign_tlkmemory(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -754,8 +759,8 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
-        self.assertEqual(["1", "2", "5"], twoda.get_column("Col2"))
+        assert twoda.get_column("Col1") == ["a", "c", "a"]
+        assert twoda.get_column("Col2") == ["1", "2", "5"]
 
     def test_copy_assign_2damemory(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -778,8 +783,8 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
-        self.assertEqual(["1", "2", "5"], twoda.get_column("Col2"))
+        assert twoda.get_column("Col1") == ["a", "c", "a"]
+        assert twoda.get_column("Col2") == ["1", "2", "5"]
 
     def test_copy_2damemory_rowindex(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -802,9 +807,9 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d", "b"], twoda.get_column("Col2"))
-        self.assertEqual("2", memory.memory_2da[5])
+        assert twoda.get_column("Col1") == ["a", "c", "a"]
+        assert twoda.get_column("Col2") == ["b", "d", "b"]
+        assert memory.memory_2da[5] == "2"
 
     # endregion
 
@@ -821,9 +826,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddColumn2DA("", "Col3", "", {}, {}, {}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d"], twoda.get_column("Col2"))
-        self.assertEqual(["", ""], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["a", "c"]
+        assert twoda.get_column("Col2") == ["b", "d"]
+        assert twoda.get_column("Col3") == ["", ""]
 
     def test_addcolumn_default(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -837,9 +842,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddColumn2DA("", "Col3", "X", {}, {}, {}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d"], twoda.get_column("Col2"))
-        self.assertEqual(["X", "X"], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["a", "c"]
+        assert twoda.get_column("Col2") == ["b", "d"]
+        assert twoda.get_column("Col3") == ["X", "X"]
 
     def test_addcolumn_rowindex_constant(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -853,9 +858,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddColumn2DA("", "Col3", "", {0: RowValueConstant("X")}, {}, {}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d"], twoda.get_column("Col2"))
-        self.assertEqual(["X", ""], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["a", "c"]
+        assert twoda.get_column("Col2") == ["b", "d"]
+        assert twoda.get_column("Col3") == ["X", ""]
 
     def test_addcolumn_rowlabel_2damemory(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -870,9 +875,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddColumn2DA("", "Col3", "", {}, {"1": RowValue2DAMemory(5)}, {}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d"], twoda.get_column("Col2"))
-        self.assertEqual(["", "ABC"], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["a", "c"]
+        assert twoda.get_column("Col2") == ["b", "d"]
+        assert twoda.get_column("Col3") == ["", "ABC"]
 
     def test_addcolumn_rowlabel_tlkmemory(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -887,9 +892,9 @@ class TestManipulate2DA(TestCase):
         config.modifiers.append(AddColumn2DA("", "Col3", "", {}, {"1": RowValueTLKMemory(5)}, {}))
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d"], twoda.get_column("Col2"))
-        self.assertEqual(["", "123"], twoda.get_column("Col3"))
+        assert twoda.get_column("Col1") == ["a", "c"]
+        assert twoda.get_column("Col2") == ["b", "d"]
+        assert twoda.get_column("Col3") == ["", "123"]
 
     def test_addcolumn_2damemory_index(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -912,10 +917,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d"], twoda.get_column("Col2"))
-        self.assertEqual(["X", "Y"], twoda.get_column("Col3"))
-        self.assertEqual("X", memory.memory_2da[0])
+        assert twoda.get_column("Col1") == ["a", "c"]
+        assert twoda.get_column("Col2") == ["b", "d"]
+        assert twoda.get_column("Col3") == ["X", "Y"]
+        assert memory.memory_2da[0] == "X"
 
     def test_addcolumn_2damemory_line(self):
         twoda = TwoDA(["Col1", "Col2"])
@@ -938,10 +943,10 @@ class TestManipulate2DA(TestCase):
         )
         config.apply(twoda, memory, logger, Game.K1)
 
-        self.assertEqual(["a", "c"], twoda.get_column("Col1"))
-        self.assertEqual(["b", "d"], twoda.get_column("Col2"))
-        self.assertEqual(["X", "Y"], twoda.get_column("Col3"))
-        self.assertEqual("Y", memory.memory_2da[0])
+        assert twoda.get_column("Col1") == ["a", "c"]
+        assert twoda.get_column("Col2") == ["b", "d"]
+        assert twoda.get_column("Col3") == ["X", "Y"]
+        assert memory.memory_2da[0] == "Y"
 
     # endregion
 
@@ -956,7 +961,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2, gff.root.get_uint8("Field1"))
+        assert gff.root.get_uint8("Field1") == 2
 
     def test_modify_field_int8(self):
         gff = GFF()
@@ -967,7 +972,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2, gff.root.get_int8("Field1"))
+        assert gff.root.get_int8("Field1") == 2
 
     def test_modify_field_uint16(self):
         gff = GFF()
@@ -978,7 +983,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2, gff.root.get_uint16("Field1"))
+        assert gff.root.get_uint16("Field1") == 2
 
     def test_modify_field_int16(self):
         gff = GFF()
@@ -989,7 +994,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2, gff.root.get_int16("Field1"))
+        assert gff.root.get_int16("Field1") == 2
 
     def test_modify_field_uint32(self):
         gff = GFF()
@@ -1000,7 +1005,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2, gff.root.get_uint32("Field1"))
+        assert gff.root.get_uint32("Field1") == 2
 
     def test_modify_field_int32(self):
         gff = GFF()
@@ -1011,7 +1016,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2, gff.root.get_int32("Field1"))
+        assert gff.root.get_int32("Field1") == 2
 
     def test_modify_field_uint64(self):
         gff = GFF()
@@ -1022,7 +1027,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2, gff.root.get_uint64("Field1"))
+        assert gff.root.get_uint64("Field1") == 2
 
     def test_modify_field_int64(self):
         gff = GFF()
@@ -1033,7 +1038,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2, gff.root.get_int64("Field1"))
+        assert gff.root.get_int64("Field1") == 2
 
     def test_modify_field_single(self):
         gff = GFF()
@@ -1044,7 +1049,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2.345))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2.3450000286102295, gff.root.get_single("Field1"))
+        assert gff.root.get_single("Field1") == 2.3450000286102295
 
     def test_modify_field_double(self):
         gff = GFF()
@@ -1055,7 +1060,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2.345678))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(2.345678, gff.root.get_double("Field1"))
+        assert gff.root.get_double("Field1") == 2.345678
 
     def test_modify_field_string(self):
         gff = GFF()
@@ -1066,7 +1071,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant("def"))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual("def", gff.root.get_string("Field1"))
+        assert gff.root.get_string("Field1") == "def"
 
     def test_modify_field_locstring(self):
         gff = GFF()
@@ -1086,7 +1091,7 @@ class TestManipulateGFF(TestCase):
         )
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(1, gff.root.get_locstring("Field1").stringref)
+        assert gff.root.get_locstring("Field1").stringref == 1
 
     def test_modify_field_vector3(self):
         gff = GFF()
@@ -1097,7 +1102,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(Vector3(1, 2, 3)))])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(Vector3(1, 2, 3), gff.root.get_vector3("Field1"))
+        assert Vector3(1, 2, 3) == gff.root.get_vector3("Field1")
 
     def test_modify_field_vector4(self):
         gff = GFF()
@@ -1112,7 +1117,7 @@ class TestManipulateGFF(TestCase):
         )
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(Vector4(1, 2, 3, 4), gff.root.get_vector4("Field1"))
+        assert Vector4(1, 2, 3, 4) == gff.root.get_vector4("Field1")
 
     def test_modify_nested(self):
         gff = GFF()
@@ -1128,7 +1133,7 @@ class TestManipulateGFF(TestCase):
         patched_gff_list = gff.root.get_list("List")
         patched_gff_struct = patched_gff_list.at(0)
 
-        self.assertEqual("abc", patched_gff_struct.get_string("String"))
+        assert patched_gff_struct.get_string("String") == "abc"
 
     def test_modify_2damemory(self):
         gff = GFF()
@@ -1143,8 +1148,8 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(ModifyFieldGFF("Integer", FieldValue2DAMemory(5)))
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual("123", gff.root.get_string("String"))
-        self.assertEqual(123, gff.root.get_uint8("Integer"))
+        assert gff.root.get_string("String") == "123"
+        assert gff.root.get_uint8("Integer") == 123
 
     def test_modify_tlkmemory(self):
         gff = GFF()
@@ -1159,8 +1164,8 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(ModifyFieldGFF("Integer", FieldValueTLKMemory(5)))
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual("123", gff.root.get_string("String"))
-        self.assertEqual(123, gff.root.get_uint8("Integer"))
+        assert gff.root.get_string("String") == "123"
+        assert gff.root.get_uint8("Integer") == 123
 
     def test_add_newnested(self):
         gff = GFF()
@@ -1178,9 +1183,9 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [add_field1])
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertIsNotNone(gff.root.get_list("List"))
-        self.assertIsNotNone(gff.root.get_list("List").at(0))
-        self.assertIsNotNone(gff.root.get_list("List").at(0).get_uint8("SomeInteger"))  # type: ignore
+        assert gff.root.get_list("List") is not None
+        assert gff.root.get_list("List").at(0) is not None
+        assert gff.root.get_list("List").at(0).get_uint8("SomeInteger") is not None  # type: ignore
 
     def test_add_nested(self):
         gff = GFF()
@@ -1204,7 +1209,7 @@ class TestManipulateGFF(TestCase):
         patched_gff_list = gff.root.get_list("List")
         patched_gff_struct = patched_gff_list.at(0)
 
-        self.assertEqual("abc", patched_gff_struct.get_string("String"))
+        assert patched_gff_struct.get_string("String") == "abc"
 
     def test_add_use_2damemory(self):
         gff = GFF()
@@ -1217,8 +1222,8 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValue2DAMemory(5), PureWindowsPath("")))
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual("123", gff.root.get_string("String"))
-        self.assertEqual(123, gff.root.get_uint8("Integer"))
+        assert gff.root.get_string("String") == "123"
+        assert gff.root.get_uint8("Integer") == 123
 
     def test_add_use_tlkmemory(self):
         gff = GFF()
@@ -1231,11 +1236,11 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValueTLKMemory(5), PureWindowsPath("")))
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual("123", gff.root.get_string("String"))
-        self.assertEqual(123, gff.root.get_uint8("Integer"))
+        assert gff.root.get_string("String") == "123"
+        assert gff.root.get_uint8("Integer") == 123
 
     def test_add_field_locstring(self):
-        """Adds a localized string field to a GFF using a 2DA memory reference
+        """Adds a localized string field to a GFF using a 2DA memory reference.
 
         Processing Logic:
         ----------------
@@ -1264,7 +1269,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, modifiers)
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
-        self.assertEqual(123, gff.root.get_locstring("Field1").stringref)
+        assert gff.root.get_locstring("Field1").stringref == 123
 
     def test_addlist_listindex(self):
         gff = GFF()
@@ -1280,9 +1285,9 @@ class TestManipulateGFF(TestCase):
         gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
         patched_gff_list = gff.root.get_list("List")
 
-        self.assertEqual(5, patched_gff_list.at(0).struct_id)  # type: ignore
-        self.assertEqual(3, patched_gff_list.at(1).struct_id)  # type: ignore
-        self.assertEqual(1, patched_gff_list.at(2).struct_id)  # type: ignore
+        assert patched_gff_list.at(0).struct_id == 5  # type: ignore
+        assert patched_gff_list.at(1).struct_id == 3  # type: ignore
+        assert patched_gff_list.at(2).struct_id == 1  # type: ignore
 
     def test_addlist_store_2damemory(self):
         gff = GFF()
@@ -1295,7 +1300,7 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(AddStructToListGFF("test2", FieldValueConstant(GFFStruct()), "List", index_to_token=12))
         gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
 
-        self.assertEqual("1", memory.memory_2da[12])
+        assert memory.memory_2da[12] == "1"
 
 
 class TestManipulateSSF(TestCase):
@@ -1308,7 +1313,7 @@ class TestManipulateSSF(TestCase):
         config.modifiers.append(ModifySSF(SSFSound.BATTLE_CRY_1, NoTokenUsage(5)))
         ssf = read_ssf(config.patch_resource(bytes_ssf(ssf), memory, PatchLogger(), Game.K1))
 
-        self.assertEqual(5, ssf.get(SSFSound.BATTLE_CRY_1))
+        assert ssf.get(SSFSound.BATTLE_CRY_1) == 5
 
     def test_assign_2datoken(self):
         ssf = SSF()
@@ -1320,7 +1325,7 @@ class TestManipulateSSF(TestCase):
         config.modifiers.append(ModifySSF(SSFSound.BATTLE_CRY_2, TokenUsage2DA(5)))
         ssf = read_ssf(config.patch_resource(bytes_ssf(ssf), memory, PatchLogger(), Game.K1))
 
-        self.assertEqual(123, ssf.get(SSFSound.BATTLE_CRY_2))
+        assert ssf.get(SSFSound.BATTLE_CRY_2) == 123
 
     def test_assign_tlktoken(self):
         ssf = SSF()
@@ -1332,7 +1337,7 @@ class TestManipulateSSF(TestCase):
         config.modifiers.append(ModifySSF(SSFSound.BATTLE_CRY_3, TokenUsageTLK(5)))
         ssf = read_ssf(config.patch_resource(bytes_ssf(ssf), memory, PatchLogger(), Game.K1))
 
-        self.assertEqual(321, ssf.get(SSFSound.BATTLE_CRY_3))
+        assert ssf.get(SSFSound.BATTLE_CRY_3) == 321
 
 
 if __name__ == "__main__":

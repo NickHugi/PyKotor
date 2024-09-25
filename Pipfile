@@ -1,19 +1,28 @@
 [[source]]
 url = "https://pypi.org/simple"
-verify_ssl = true
 name = "pypi"
 
 [packages]
-pykotor = {editable = true, path = "./Libraries/PyKotor"}
-pykotor-font = {editable = true, path = "./Libraries/PyKotorFont"}
-pykotor-gl = {editable = true, path = "./Libraries/PyKotorGL"}
-utility = {editable = true, path = "./Libraries/Utility"}
-holocron-toolset = {editable = true, path = "./Tools/HolocronToolset"}
-holo-patcher = {editable = true, path = "./Tools/HoloPatcher"}
-kotor-diff = {editable = true, path = "./Tools/KotorDiff"}
-batch-patcher = {editable = true, path = "./Tools/BatchPatcher"}
+loggerplus = "*"
 
 [dev-packages]
+mypy = "*"
+ruff = "*"
+pylint = "*"
+snakeviz = "*"
+autoflake = "*"
+pytest = "*"
+pytest-xdist = "*"
+pytest-html = "*"
+types-Pillow = "*"
+types-Send2Trash = "*"
+send2trash = "*"
+black = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.8"
+
+[project]
+name = "pykotor-workspace"
+version = "1.0.0"

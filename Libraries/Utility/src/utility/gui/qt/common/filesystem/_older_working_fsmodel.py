@@ -35,21 +35,29 @@ def update_sys_path(path: pathlib.Path):
         sys.path.append(working_dir)
 
 
-file_absolute_path = pathlib.Path(__file__).resolve()
 
-pykotor_path = file_absolute_path.parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
-if pykotor_path.exists():
-    update_sys_path(pykotor_path.parent)
-pykotor_gl_path = file_absolute_path.parents[6] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
-if pykotor_gl_path.exists():
-    update_sys_path(pykotor_gl_path.parent)
-utility_path = file_absolute_path.parents[6] / "Libraries" / "Utility" / "src"
-if utility_path.exists():
-    update_sys_path(utility_path)
-toolset_path = file_absolute_path.parents[3] / "toolset"
-if toolset_path.exists():
-    update_sys_path(toolset_path.parent)
-    os.chdir(toolset_path)
+if __name__ == "__main__":
+    def update_sys_path(path: pathlib.Path):
+        working_dir = str(path)
+        if working_dir not in sys.path:
+            sys.path.append(working_dir)
+
+
+    file_absolute_path = pathlib.Path(__file__).resolve()
+
+    pykotor_path = file_absolute_path.parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    if pykotor_path.exists():
+        update_sys_path(pykotor_path.parent)
+    pykotor_gl_path = file_absolute_path.parents[6] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+    if pykotor_gl_path.exists():
+        update_sys_path(pykotor_gl_path.parent)
+    utility_path = file_absolute_path.parents[6] / "Libraries" / "Utility" / "src"
+    if utility_path.exists():
+        update_sys_path(utility_path)
+    toolset_path = file_absolute_path.parents[3] / "toolset"
+    if toolset_path.exists():
+        update_sys_path(toolset_path.parent)
+        os.chdir(toolset_path)
 
 
 from pykotor.extract.file import FileResource  # noqa: E402
@@ -57,8 +65,6 @@ from qtpy.QtGui import QIcon  # noqa: E402
 from qtpy.QtWidgets import QTreeView  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.utils.window import openResourceEditor  # noqa: E402
-
-from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject, QPoint

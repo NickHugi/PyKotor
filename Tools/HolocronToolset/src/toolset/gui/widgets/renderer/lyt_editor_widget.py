@@ -12,8 +12,27 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 import qtpy
 
 from loggerplus import RobustLogger
-from qtpy.QtCore import QByteArray, QEvent, QMimeData, QModelIndex, QPoint, QSettings, QSize, QTimer, Qt, Signal
-from qtpy.QtGui import QDrag, QHelpEvent, QIcon, QKeySequence, QPainter, QPalette, QPixmap
+from qtpy.QtCore import (
+    QByteArray,
+    QEvent,
+    QMimeData,
+    QModelIndex,
+    QPoint,
+    QSettings,
+    QSize,
+    QTimer,
+    Qt,
+    Signal,
+)
+from qtpy.QtGui import (
+    QDrag,
+    QHelpEvent,
+    QIcon,
+    QKeySequence,
+    QPainter,
+    QPalette,
+    QPixmap,
+)
 from qtpy.QtWidgets import (
     QAction,
     QActionGroup,
@@ -41,8 +60,16 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
-from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
-from toolset.gui.widgets.renderer.custom_toolbar import CustomizableToolBar  # FIXME: CustomizableToolBar not found
+from pykotor.resource.formats.lyt.lyt_data import (
+    LYT,
+    LYTDoorHook,
+    LYTObstacle,
+    LYTRoom,
+    LYTTrack,
+)
+from toolset.gui.widgets.renderer.custom_toolbar import (
+    CustomizableToolBar,  # FIXME: CustomizableToolBar not found
+)
 from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
@@ -809,7 +836,9 @@ class LYTEditorWidget(QWidget):
             self.showHelpOverlay()
 
     def showHelpOverlay(self):
-        from toolset.gui.widgets.help_overlay import HelpOverlay  # FIXME: help_overlay  file not found
+        from toolset.gui.widgets.help_overlay import (
+            HelpOverlay,  # FIXME: help_overlay  file not found
+        )
 
         self.help_overlay = HelpOverlay(self)  # FIXME: HelpOverlay attribute not found
         self.help_overlay.addSection("Keyboard Shortcuts", self.getKeyboardShortcutsHelp())

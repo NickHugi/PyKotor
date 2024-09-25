@@ -40,10 +40,10 @@ class TestRIM(unittest.TestCase):
         self.validate_io(rim)
 
     def validate_io(self, rim: RIM):
-        self.assertEqual(len(rim), 3)
-        self.assertEqual(rim.get("1", ResourceType.TXT), b"abc")
-        self.assertEqual(rim.get("2", ResourceType.TXT), b"def")
-        self.assertEqual(rim.get("3", ResourceType.TXT), b"ghi")
+        assert len(rim) == 3
+        assert rim.get("1", ResourceType.TXT) == b"abc"
+        assert rim.get("2", ResourceType.TXT) == b"def"
+        assert rim.get("3", ResourceType.TXT) == b"ghi"
 
     def test_read_raises(self):
         if os.name == "nt":

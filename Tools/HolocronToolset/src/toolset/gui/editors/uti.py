@@ -9,7 +9,15 @@ from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QPixmap
-from qtpy.QtWidgets import QAction, QApplication, QDialog, QListWidgetItem, QMenu, QShortcut, QTreeWidgetItem
+from qtpy.QtWidgets import (
+    QAction,
+    QApplication,
+    QDialog,
+    QListWidgetItem,
+    QMenu,
+    QShortcut,
+    QTreeWidgetItem,
+)
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
@@ -18,7 +26,10 @@ from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
+from toolset.gui.dialogs.load_from_location_result import (
+    FileSelectionWindow,
+    ResourceItems,
+)
 from toolset.gui.editor import Editor
 from toolset.utils.window import addWindow
 
@@ -52,13 +63,21 @@ class UTIEditor(Editor):
         self._uti = UTI()
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.editors.uti import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.editors.uti import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.editors.uti import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.editors.uti import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
@@ -645,13 +664,21 @@ class PropertyEditor(QDialog):
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.property import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.dialogs.property import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.property import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.dialogs.property import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.property import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.dialogs.property import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.property import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.dialogs.property import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 import qtpy
@@ -9,7 +10,6 @@ from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QFileDialog, QListWidgetItem
 
 from pykotor.common.module import Module
-from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
@@ -40,13 +40,21 @@ class SelectModuleDialog(QDialog):
         self.module: str = ""
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.select_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.dialogs.select_module import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.select_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.dialogs.select_module import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.select_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.dialogs.select_module import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.select_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.dialogs.select_module import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

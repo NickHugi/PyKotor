@@ -25,9 +25,10 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from unittest import TestCase
 
+from pathlib import Path
+
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
-from utility.system.path import Path
 
 BINARY_TEST_FILE = Path("tests/files/test.erf").resolve()
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
@@ -45,10 +46,10 @@ class TestERF(TestCase):
         self.validate_io(erf)
 
     def validate_io(self, erf: ERF):
-        self.assertEqual(len(erf), 3)
-        self.assertEqual(erf.get("1", ResourceType.TXT), b"abc")
-        self.assertEqual(erf.get("2", ResourceType.TXT), b"def")
-        self.assertEqual(erf.get("3", ResourceType.TXT), b"ghi")
+        assert len(erf) == 3
+        assert erf.get("1", ResourceType.TXT) == b"abc"
+        assert erf.get("2", ResourceType.TXT) == b"def"
+        assert erf.get("3", ResourceType.TXT) == b"ghi"
 
     # sourcery skip: no-conditionals-in-tests
     def test_read_raises(self):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, TypeVar
 
 from qtpy import API_NAME, QtCore
@@ -10,7 +11,6 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.rim import read_rim
 from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
-from utility.system.path import Path
 
 if TYPE_CHECKING:
 

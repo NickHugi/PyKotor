@@ -39,13 +39,21 @@ class ApplicationSettingsWidget(SettingsWidget):
         super().__init__(parent)
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.settings.application import Ui_ApplicationSettingsWidget  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.widgets.settings.application import (
+                Ui_ApplicationSettingsWidget,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.settings.application import Ui_ApplicationSettingsWidget  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.widgets.settings.application import (
+                Ui_ApplicationSettingsWidget,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.settings.application import Ui_ApplicationSettingsWidget  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.widgets.settings.application import (
+                Ui_ApplicationSettingsWidget,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.settings.application import Ui_ApplicationSettingsWidget  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.widgets.settings.application import (
+                Ui_ApplicationSettingsWidget,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

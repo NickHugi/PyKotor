@@ -25,6 +25,8 @@ if getattr(sys, "frozen", False) is False:
     if utility_path.exists():
         update_sys_path(utility_path.parent)
 
+from pathlib import Path, PureWindowsPath
+
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
@@ -32,14 +34,14 @@ from pykotor.tools.path import CaseAwarePath
 from utility.error_handling import universal_simplify_exception
 from utility.misc import generate_hash
 from utility.system.agnostics import askdirectory, askopenfilename
-from utility.system.path import Path, PureWindowsPath
 
 if os.name == "nt":
     from utility.system.win32.com.windialogs import open_file_and_folder_dialog
 
 if TYPE_CHECKING:
+    from pathlib import PurePath
+
     from pykotor.extract.file import FileResource
-    from utility.system.path import PurePath
 
 CURRENT_VERSION = "1.0.0b1"
 OUTPUT_LOG: Path | None = None
@@ -69,11 +71,11 @@ def log_output(*args, **kwargs):
     if not OUTPUT_LOG:
         chosen_log_file_path: str = "log_install_differ.log"
         OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-        if not OUTPUT_LOG.parent.safe_isdir():
+        if not OUTPUT_LOG.parent.is_dir():
             while True:
                 chosen_log_file_path: str = PARSER_ARGS.output_log or input("Filepath of the desired output logfile: ").strip() or "log_install_differ.log"
                 OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-                if OUTPUT_LOG.parent.safe_isdir():
+                if OUTPUT_LOG.parent.is_dir():
                     break
                 print("Invalid path:", OUTPUT_LOG)
                 PARSER.print_help()
@@ -262,10 +264,10 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
     c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
     is_same_result: bool | None = True
 
-    if not c_file1.safe_isfile():
+    if not c_file1.is_file():
         log_output(f"Missing file:\t{c_file1_rel}")
         return False
-    if not c_file2.safe_isfile():
+    if not c_file2.is_file():
         log_output(f"Missing file:\t{c_file2_rel}")
         return False
 
@@ -315,8 +317,8 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
     log_output_with_separator(f"Finding differences in the '{c_dir1.name}' folders...", above=True)
 
     # Store relative paths instead of just filenames
-    files_path1: set[str] = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.safe_rglob("*") if f.safe_isfile()}
-    files_path2: set[str] = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.safe_rglob("*") if f.safe_isfile()}
+    files_path1: set[str] = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.safe_rglob("*") if f.is_file()}
+    files_path2: set[str] = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.safe_rglob("*") if f.is_file()}
 
     # Merge both sets to iterate over unique relative paths
     all_files: set[str] = files_path1.union(files_path2)
@@ -358,12 +360,12 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
     streamwaves_path1: CaseAwarePath = (
         rinstall_path1.joinpath("streamwaves")
-        if rinstall_path1.joinpath("streamwaves").safe_isdir()
+        if rinstall_path1.joinpath("streamwaves").is_dir()
         else rinstall_path1.joinpath("streamvoice")
     )
     streamwaves_path2: CaseAwarePath = (
         rinstall_path2.joinpath("streamwaves")
-        if rinstall_path2.joinpath("streamwaves").safe_isdir()
+        if rinstall_path2.joinpath("streamwaves").is_dir()
         else rinstall_path2.joinpath("streamvoice")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
@@ -372,7 +374,7 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool | None:
     c_path: CaseAwarePath = CaseAwarePath.pathify(path)
-    return c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_isfile()
+    return c_path.is_dir() and c_path.joinpath("chitin.key").is_file()
 
 
 def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
@@ -384,9 +386,9 @@ def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
         return None
     if is_kotor_install_dir(path1) and is_kotor_install_dir(path2):
         return diff_installs(path1, path2)
-    if path1.safe_isdir() and path2.safe_isdir():
+    if path1.is_dir() and path2.is_dir():
         return diff_directories(path1, path2)
-    if path1.safe_isfile() and path2.safe_isfile():
+    if path1.is_file() and path2.is_file():
         return diff_files(path1, path2)
     msg = f"--path1='{path1.name}' and --path2='{path2.name}' must be the same type"
     raise ValueError(msg)

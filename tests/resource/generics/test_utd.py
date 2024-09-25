@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -57,7 +56,7 @@ class TestUTD(TestCase):
         for utd_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTD):
             gff: GFF = read_gff(utd_resource.data())
             reconstructed_gff: GFF = dismantle_utd(construct_utd(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -68,13 +67,13 @@ class TestUTD(TestCase):
         for utd_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTD):
             gff: GFF = read_gff(utd_resource.data())
             reconstructed_gff: GFF = dismantle_utd(construct_utd(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     @unittest.skip("This test is known to fail - fixme")  # FIXME:
     def test_gff_reconstruct(self):
         gff = read_gff(K1_SAME_TEST_FILE)
         reconstructed_gff = dismantle_utd(construct_utd(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -88,61 +87,61 @@ class TestUTD(TestCase):
         self.validate_io(utd)
 
     def validate_io(self, utd: UTD):
-        self.assertEqual("TelosDoor13", utd.tag)
-        self.assertEqual(123731, utd.name.stringref)
-        self.assertEqual(-1, utd.description.stringref)
-        self.assertEqual("door_tel014", utd.resref)
-        self.assertEqual(1, utd.auto_remove_key)
-        self.assertEqual(0, utd.lock_dc)
-        self.assertEqual("convoresref", utd.conversation)
-        self.assertEqual(1, utd.interruptable)
-        self.assertEqual(1, utd.faction_id)
-        self.assertEqual(1, utd.plot)
-        self.assertEqual(1, utd.not_blastable)
-        self.assertEqual(1, utd.min1_hp)
-        self.assertEqual(1, utd.key_required)
-        self.assertEqual(1, utd.lockable)
-        self.assertEqual(1, utd.locked)
-        self.assertEqual(28, utd.unlock_dc)
-        self.assertEqual(1, utd.unlock_diff_mod)
-        self.assertEqual(1, utd.unlock_diff_mod)
-        self.assertEqual(0, utd.portrait_id)
-        self.assertEqual(1, utd.trap_detectable)
-        self.assertEqual(0, utd.trap_detect_dc)
-        self.assertEqual(1, utd.trap_disarmable)
-        self.assertEqual(28, utd.trap_disarm_dc)
-        self.assertEqual(0, utd.trap_flag)
-        self.assertEqual(1, utd.trap_one_shot)
-        self.assertEqual(2, utd.trap_type)
-        self.assertEqual("keyname", utd.key_name)
-        self.assertEqual(1, utd.animation_state)
-        self.assertEqual(1, utd.unused_appearance)
-        self.assertEqual(1, utd.min1_hp)
-        self.assertEqual(60, utd.current_hp)
-        self.assertEqual(5, utd.hardness)
-        self.assertEqual(28, utd.fortitude)
-        self.assertEqual("door_tel014", utd.resref)
-        self.assertEqual(0, utd.willpower)
-        self.assertEqual("onclosed", utd.on_closed)
-        self.assertEqual("ondamaged", utd.on_damaged)
-        self.assertEqual("ondeath", utd.on_death)
-        self.assertEqual("ondisarm", utd.on_disarm)
-        self.assertEqual("onheartbeat", utd.on_heartbeat)
-        self.assertEqual("onlock", utd.on_lock)
-        self.assertEqual("onmeleeattacked", utd.on_melee)
-        self.assertEqual("onopen", utd.on_open)
-        self.assertEqual("onspellcastat", utd.on_power)
-        self.assertEqual("ontraptriggered", utd.on_trap_triggered)
-        self.assertEqual("onunlock", utd.on_unlock)
-        self.assertEqual("onuserdefined", utd.on_user_defined)
-        self.assertEqual(0, utd.loadscreen_id)
-        self.assertEqual(110, utd.appearance_id)
-        self.assertEqual(1, utd.static)
-        self.assertEqual(1, utd.open_state)
-        self.assertEqual("onclick", utd.on_click)
-        self.assertEqual("onfailtoopen", utd.on_open_failed)
-        self.assertEqual(1, utd.palette_id)
-        self.assertEqual("abcdefg", utd.comment)
+        assert utd.tag == "TelosDoor13"
+        assert utd.name.stringref == 123731
+        assert utd.description.stringref == -1
+        assert utd.resref == "door_tel014"
+        assert utd.auto_remove_key == 1
+        assert utd.lock_dc == 0
+        assert utd.conversation == "convoresref"
+        assert utd.interruptable == 1
+        assert utd.faction_id == 1
+        assert utd.plot == 1
+        assert utd.not_blastable == 1
+        assert utd.min1_hp == 1
+        assert utd.key_required == 1
+        assert utd.lockable == 1
+        assert utd.locked == 1
+        assert utd.unlock_dc == 28
+        assert utd.unlock_diff_mod == 1
+        assert utd.unlock_diff_mod == 1
+        assert utd.portrait_id == 0
+        assert utd.trap_detectable == 1
+        assert utd.trap_detect_dc == 0
+        assert utd.trap_disarmable == 1
+        assert utd.trap_disarm_dc == 28
+        assert utd.trap_flag == 0
+        assert utd.trap_one_shot == 1
+        assert utd.trap_type == 2
+        assert utd.key_name == "keyname"
+        assert utd.animation_state == 1
+        assert utd.unused_appearance == 1
+        assert utd.min1_hp == 1
+        assert utd.current_hp == 60
+        assert utd.hardness == 5
+        assert utd.fortitude == 28
+        assert utd.resref == "door_tel014"
+        assert utd.willpower == 0
+        assert utd.on_closed == "onclosed"
+        assert utd.on_damaged == "ondamaged"
+        assert utd.on_death == "ondeath"
+        assert utd.on_disarm == "ondisarm"
+        assert utd.on_heartbeat == "onheartbeat"
+        assert utd.on_lock == "onlock"
+        assert utd.on_melee == "onmeleeattacked"
+        assert utd.on_open == "onopen"
+        assert utd.on_power == "onspellcastat"
+        assert utd.on_trap_triggered == "ontraptriggered"
+        assert utd.on_unlock == "onunlock"
+        assert utd.on_user_defined == "onuserdefined"
+        assert utd.loadscreen_id == 0
+        assert utd.appearance_id == 110
+        assert utd.static == 1
+        assert utd.open_state == 1
+        assert utd.on_click == "onclick"
+        assert utd.on_open_failed == "onfailtoopen"
+        assert utd.palette_id == 1
+        assert utd.comment == "abcdefg"
 
 
 if __name__ == "__main__":

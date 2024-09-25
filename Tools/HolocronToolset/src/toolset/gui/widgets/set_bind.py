@@ -7,7 +7,12 @@ import qtpy
 from loggerplus import RobustLogger
 from qtpy.QtWidgets import QWidget
 
-from toolset.utils.misc import MODIFIER_KEY_NAMES, QtMouse, getQtKeyStringLocalized, getQtMouseButton
+from toolset.utils.misc import (
+    MODIFIER_KEY_NAMES,
+    QtMouse,
+    getQtKeyStringLocalized,
+    getQtMouseButton,
+)
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QKeyEvent
@@ -36,13 +41,21 @@ class SetBindWidget(QWidget):
         self.recordBind: bool = False
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.widgets.set_bind import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.widgets.set_bind import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.widgets.set_bind import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.widgets.set_bind import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

@@ -13,7 +13,10 @@ from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
+from utility.error_handling import (
+    assert_with_variable_trace,
+    universal_simplify_exception,
+)
 
 if TYPE_CHECKING:
     import os
@@ -49,13 +52,21 @@ class TwoDAEditor(Editor):
         self.resize(400, 250)
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.editors.twoda import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.editors.twoda import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.editors.twoda import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.editors.twoda import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

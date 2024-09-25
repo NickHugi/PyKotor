@@ -70,13 +70,21 @@ class ResourceList(MainWindowList):
         """
         super().__init__(parent)
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.widgets.resource_list import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.widgets.resource_list import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.widgets.resource_list import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.widgets.resource_list import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
@@ -403,13 +411,21 @@ class TextureList(MainWindowList):
         super().__init__(parent)
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.widgets.texture_list import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.widgets.texture_list import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.widgets.texture_list import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.widgets.texture_list import (
+                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

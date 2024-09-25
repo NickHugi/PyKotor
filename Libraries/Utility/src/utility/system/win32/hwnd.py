@@ -13,8 +13,6 @@ from ctypes.wintypes import HBRUSH, HICON, HINSTANCE, HWND, LPARAM, LPCWSTR, UIN
 from enum import IntEnum
 from typing import TYPE_CHECKING, Sequence
 
-import win32gui
-
 if TYPE_CHECKING:
     from ctypes import (
         _CData,
@@ -139,6 +137,7 @@ class SimplePyHWND:
 
     def register_class(self):
         """Register the window class."""
+        import win32gui
         wc = win32gui.WNDCLASS()
         wc.lpfnWndProc = WNDPROC(wnd_proc)  # pyright: ignore[reportAttributeAccessIssue]
         wc.lpszClassName = self.CLASS_NAME  # pyright: ignore[reportAttributeAccessIssue]

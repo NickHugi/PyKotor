@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import sys
 import unittest
-
 from pathlib import Path
 from unittest import TestCase
 
@@ -24,7 +23,12 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.tslpatcher.memory import PatcherMemory
-from pykotor.tslpatcher.mods.gff import FieldValue2DAMemory, FieldValueConstant, FieldValueTLKMemory, LocalizedStringDelta
+from pykotor.tslpatcher.mods.gff import (
+    FieldValue2DAMemory,
+    FieldValueConstant,
+    FieldValueTLKMemory,
+    LocalizedStringDelta,
+)
 
 
 class TestLocalizedStringDelta(TestCase):
@@ -38,7 +42,7 @@ class TestLocalizedStringDelta(TestCase):
 
         delta.apply(locstring, memory)
 
-        self.assertEqual(123, locstring.stringref)
+        assert locstring.stringref == 123
 
     def test_apply_stringref_tlkmemory(self):
         locstring = LocalizedString(0)
@@ -50,7 +54,7 @@ class TestLocalizedStringDelta(TestCase):
 
         delta.apply(locstring, memory)
 
-        self.assertEqual(123, locstring.stringref)
+        assert locstring.stringref == 123
 
     def test_apply_stringref_int(self):
         locstring = LocalizedString(0)
@@ -61,7 +65,7 @@ class TestLocalizedStringDelta(TestCase):
 
         delta.apply(locstring, memory)
 
-        self.assertEqual(123, locstring.stringref)
+        assert locstring.stringref == 123
 
     def test_apply_stringref_none(self):
         locstring = LocalizedString(123)
@@ -72,7 +76,7 @@ class TestLocalizedStringDelta(TestCase):
 
         delta.apply(locstring, memory)
 
-        self.assertEqual(123, locstring.stringref)
+        assert locstring.stringref == 123
 
     def test_apply_substring(self):
         locstring = LocalizedString(0)
@@ -87,10 +91,10 @@ class TestLocalizedStringDelta(TestCase):
 
         delta.apply(locstring, memory)
 
-        self.assertEqual(3, len(locstring))
-        self.assertEqual("1", locstring.get(Language.ENGLISH, Gender.MALE))
-        self.assertEqual("2", locstring.get(Language.GERMAN, Gender.MALE))
-        self.assertEqual("b", locstring.get(Language.FRENCH, Gender.MALE))
+        assert len(locstring) == 3
+        assert locstring.get(Language.ENGLISH, Gender.MALE) == "1"
+        assert locstring.get(Language.GERMAN, Gender.MALE) == "2"
+        assert locstring.get(Language.FRENCH, Gender.MALE) == "b"
 
 
 if __name__ == "__main__":

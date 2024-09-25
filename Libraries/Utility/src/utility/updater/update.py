@@ -12,13 +12,19 @@ import uuid
 import zipfile
 
 from contextlib import suppress
+from pathlib import ChDir, Path, PurePath
 from typing import TYPE_CHECKING, Any, Callable
 
 from loggerplus import RobustLogger
 
 from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any, win_hide_file
-from utility.system.path import ChDir, Path, PurePath
+from utility.system.os_helper import (
+    get_app_dir,
+    get_mac_dot_app_dir,
+    is_frozen,
+    remove_any,
+    win_hide_file,
+)
 from utility.updater.downloader import FileDownloader, download_mega_file_url
 from utility.updater.restarter import RestartStrategy, Restarter, UpdateStrategy
 
@@ -244,13 +250,13 @@ class LibUpdate:
         with ChDir(self.update_folder):
             for archive_name in self.get_archive_names():
                 archive_path = Path.cwd().joinpath(archive_name).absolute()
-                if archive_path.safe_isfile():
+                if archive_path.is_file():
                     self.log.info("Found archive %s", archive_name)
                     break
                 self.log.warning("Archive not found, attempting to find it via similar extensions")
                 for ext in (".gz", ".tar", ".zip", ".bz2"):
                     test_path = archive_path.with_suffix(ext)
-                    if test_path.safe_isfile():
+                    if test_path.is_file():
                         self.log.info("Found archive %s", test_path.name)
                         self._recursive_extract(test_path)
                         return
@@ -259,7 +265,7 @@ class LibUpdate:
     @classmethod
     def _recursive_extract(cls, archive_path: Path):
         log = RobustLogger()
-        if not archive_path.safe_isfile():
+        if not archive_path.is_file():
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(archive_path))
         if not os.access(str(archive_path), os.R_OK):
             raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(archive_path))
@@ -302,7 +308,7 @@ class LibUpdate:
                         log.warning("Expected '%s' to exist after extraction, but it does not.", sanitized_path)
                     if not recursive_extract:
                         continue
-                    if sanitized_path.suffix.lower() in {".gz", ".bz2", ".tar", ".zip"} and sanitized_path.safe_isfile():
+                    if sanitized_path.suffix.lower() in {".gz", ".bz2", ".tar", ".zip"} and sanitized_path.is_file():
                         cls._recursive_extract(sanitized_path)
         except Exception as err:  # pragma: no cover
             log = RobustLogger()
@@ -329,7 +335,7 @@ class LibUpdate:
                         log.info("Successfully extracted '%s'", extracted_path)
                     else:
                         log.warning("Expected '%s' to exist after extraction, but it does not.", extracted_path)
-                    if extracted_path.suffix.lower() in {".gz", ".bz2", ".tar", ".zip"} and extracted_path.safe_isfile():
+                    if extracted_path.suffix.lower() in {".gz", ".bz2", ".tar", ".zip"} and extracted_path.is_file():
                         cls._recursive_extract(extracted_path)
         except Exception as err:  # pragma: no cover
             log.debug(err, exc_info=True)
@@ -340,7 +346,7 @@ class LibUpdate:
         # TODO(th3w1zard1): Compare file hashes to ensure security
         with ChDir(self.update_folder):
             for archive_name in self.get_archive_names():
-                if Path(archive_name).safe_isfile():
+                if Path(archive_name).is_file():
                     return True
         return False
 
@@ -379,7 +385,7 @@ class LibUpdate:
                         if result:
                             self.log.debug("Download Complete")
                             archive_path = fd.filepath.parent / fd.downloaded_filename  # TODO(th3w1zard1): loop through archive names...
-                            if not archive_path.safe_isfile():
+                            if not archive_path.is_file():
                                 self.log.error("Download complete but %s not found on disk at expected %s filepath?", fd.downloaded_filename, archive_path)
                                 continue
                             if fd.downloaded_filename not in self.get_archive_names():
@@ -389,15 +395,15 @@ class LibUpdate:
                                 self.get_archive_names = getarchivename
                         else:  # pragma: no cover
                             self.log.debug("Failed To Download Latest Version")
-                    if archive_path.safe_isfile():
+                    if archive_path.is_file():
                         break  # One of the mirrors worked successfully.
                 except Exception:  # noqa: PERF203
                     self.log.exception("Exception while downloading %s", url)
-        #if not archive_path.safe_isfile():
+        #if not archive_path.is_file():
             #exc = FileNotFoundError()
             #exc.filename = str(archive_path)
             #exc.strerror = "file downloader finished, but archive filepath doesn't exist."
-        return bool(result and archive_path.safe_isfile())
+        return bool(result and archive_path.is_file())
 
     def cleanup(self):
         shutil.rmtree(self.update_temp_path, ignore_errors=True)
@@ -482,8 +488,8 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
         # Remove current app to prevent errors when moving update to new location
         # if update_app is a directory, then we are updating a directory
-        if app_update_path.safe_isdir():
-            if current_app_path.safe_isdir():
+        if app_update_path.is_dir():
+            if current_app_path.is_dir():
                 shutil.rmtree(str(current_app_path))
             else:
                 current_app_path.unlink()
@@ -540,24 +546,24 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         """
         exe_name = self.filename
         cur_app_filepath = self._current_app_dir / exe_name
-        if cur_app_filepath.safe_isdir():
+        if cur_app_filepath.is_dir():
             raise ValueError(f"Current app path '{cur_app_filepath}' cannot be a directory!")
 
         old_app_path = self._current_app_dir / f"{exe_name}.old"
         temp_app_filepath = self.update_temp_path.joinpath(exe_name)
 
         # Ensure it's a file.
-        if not temp_app_filepath.safe_isfile():
+        if not temp_app_filepath.is_file():
             # Detect if archive expanded some folder with the same name as the archive.
             # This assumes all dots in the archive filename are extensions of the file archive.
             temp_app_filepath = temp_app_filepath.parent
             for archive_name in self.get_archive_names():
                 archive_stem = archive_name[:archive_name.find(".")]
                 check_path = temp_app_filepath.joinpath(archive_stem, exe_name)
-                if check_path.safe_isfile():
+                if check_path.is_file():
                     temp_app_filepath = check_path
                     break
-            if temp_app_filepath.safe_isdir():
+            if temp_app_filepath.is_dir():
                 self.log.warning("The rename strategy is only supported for one file bundled executables. Falling back to overwrite strategy.")
                 self._win_overwrite(restart=True)
             elif not temp_app_filepath.safe_exists():
@@ -566,9 +572,9 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
         # Remove the old app from previous updates
         try:
-            if old_app_path.safe_isfile():
+            if old_app_path.is_file():
                 old_app_path.unlink(missing_ok=True)
-            elif old_app_path.safe_isdir():
+            elif old_app_path.is_dir():
                 shutil.rmtree(str(old_app_path), ignore_errors=True)
             elif old_app_path.safe_exists():
                 raise ValueError(f"Old app path at '{old_app_path}' was neither a file or directory, perhaps we don't have permission to check? No changes have been made.")
@@ -589,8 +595,8 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             self.log.exception("Failed to move updated app into position, rolling back")
             self._win_rollback_on_exception(cur_app_filepath, old_app_path)
 
-        assert temp_app_filepath.safe_isfile()
-        if is_frozen() or old_app_path.safe_isfile():  # exe may not exist if running from .py source
+        assert temp_app_filepath.is_file()
+        if is_frozen() or old_app_path.is_file():  # exe may not exist if running from .py source
             try:
                 win_hide_file(old_app_path)
             except OSError:
@@ -653,9 +659,9 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
         # Detect if archive expanded some folder with the same name as the archive.
         # This assumes all dots in the archive filename are extensions of the file archive.
-        if check_path1.safe_isdir():
+        if check_path1.is_dir():
             updated_app_path = check_path1
-        elif check_path2.safe_isdir():
+        elif check_path2.is_dir():
             updated_app_path = check_path2
         else:
             updated_app_path = Path(self.update_folder, self.get_expected_filename())

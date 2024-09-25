@@ -7,13 +7,32 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import QSortFilterProxyModel
 from qtpy.QtGui import QBrush, QColor, QFont, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QApplication, QFileDialog, QLabel, QListWidgetItem, QMenu, QMessageBox, QPushButton, QShortcut, QSizePolicy, QVBoxLayout
+from qtpy.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QLabel,
+    QListWidgetItem,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QShortcut,
+    QSizePolicy,
+    QVBoxLayout,
+)
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.talktable import TalkTable
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff, write_gff
+from pykotor.resource.formats.gff import (
+    GFF,
+    GFFContent,
+    GFFFieldType,
+    GFFList,
+    GFFStruct,
+    read_gff,
+    write_gff,
+)
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
@@ -43,13 +62,21 @@ class GFFEditor(Editor):
         self._gff_content: GFFContent | None = None
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.editors.gff import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.editors.gff import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.editors.gff import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.editors.gff import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

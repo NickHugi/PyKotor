@@ -30,7 +30,14 @@ from utility.ui_libraries.qt.widgets.itemviews.treewidget import RobustTreeWidge
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
-    from qtpy.QtGui import QFocusEvent, QKeyEvent, QPaintEvent, QResizeEvent, QTextBlock, QTextDocument
+    from qtpy.QtGui import (
+        QFocusEvent,
+        QKeyEvent,
+        QPaintEvent,
+        QResizeEvent,
+        QTextBlock,
+        QTextDocument,
+    )
     from qtpy.QtWidgets import QTreeWidgetItem
     from typing_extensions import Literal
 

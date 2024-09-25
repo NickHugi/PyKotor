@@ -68,7 +68,14 @@ if __name__ == "__main__":
 
 from loggerplus import RobustLogger
 
-from utility.updater.github import CompleteRepoData, TreeInfoData, extract_owner_repo, get_api_url, get_forks_url, get_main_url
+from utility.updater.github import (
+    CompleteRepoData,
+    TreeInfoData,
+    extract_owner_repo,
+    get_api_url,
+    get_forks_url,
+    get_main_url,
+)
 
 logger = RobustLogger
 

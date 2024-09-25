@@ -7,7 +7,7 @@ param(
 )
 $ErrorActionPreference = "Stop"
 $script:ErrorVerbosity = 3
-$PSNativeCommandUseErrorActionPreference = $true
+$PSNativeCommandUseErrorActionPreference = $false
 trap {
     if ($null -eq $_) { Handle-Error -ErrorRecord $Error[0] } else { Handle-Error -ErrorRecord $_ }
 }

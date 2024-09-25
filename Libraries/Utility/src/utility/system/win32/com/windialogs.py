@@ -7,6 +7,7 @@ import random
 
 from ctypes import POINTER, WINFUNCTYPE, byref, c_ulong, c_void_p, c_wchar_p, cast as cast_with_ctypes, windll
 from ctypes.wintypes import HMODULE, HWND, LPCWSTR
+from pathlib import WindowsPath
 from typing import TYPE_CHECKING, Sequence
 
 import comtypes  # pyright: ignore[reportMissingTypeStubs]
@@ -14,7 +15,6 @@ import comtypes.client  # pyright: ignore[reportMissingTypeStubs]
 
 from loggerplus import RobustLogger
 
-from utility.system.path import WindowsPath
 from utility.system.win32.com.com_helpers import HandleCOMCall
 from utility.system.win32.com.com_types import GUID
 from utility.system.win32.com.interfaces import (
@@ -234,7 +234,7 @@ def configure_file_dialog(  # noqa: PLR0913, PLR0912, C901, PLR0915
     try:
         if default_folder:
             defaultFolder_path = WindowsPath(default_folder).resolve()
-            if not defaultFolder_path.safe_isdir():
+            if not defaultFolder_path.is_dir():
                 raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(defaultFolder_path))
             shell_item = createShellItem(comFuncs, str(defaultFolder_path))
             with HandleCOMCall(f"SetFolder({defaultFolder_path})") as check:

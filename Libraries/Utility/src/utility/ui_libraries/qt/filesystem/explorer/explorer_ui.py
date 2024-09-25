@@ -1,22 +1,26 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QStackedWidget, QStyle, QToolButton, QWhatsThis
 
+from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qfiledialogcombobox import QFileDialogComboBox  # noqa: TID252
+from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qfiledialoglineedit import QFileDialogLineEdit  # noqa: TID252
+from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qfiledialoglistview import QFileDialogListView  # noqa: TID252
+from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qfiledialogtreeview import QFileDialogTreeView  # noqa: TID252
+from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qsidebar import QSidebar  # noqa: TID252
+from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.ui_qfiledialog import Ui_QFileDialog  # noqa: TID252
 from utility.ui_libraries.qt.widgets.itemviews.headerview import RobustHeaderView
 from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 from utility.ui_libraries.qt.widgets.itemviews.tileview import RobustTileView
 
-from .qfiledialogpy._ui_qfiledialog import Ui_QFileDialog  # noqa: TID252
-from .qfiledialogpy.private.qfiledialog_p import QFileDialogComboBox, QFileDialogLineEdit, QFileDialogListView, QFileDialogTreeView  # noqa: TID252
-from .qfiledialogpy.private.qsidebar_p import QSidebar  # noqa: TID252
-
 if TYPE_CHECKING:
-    from utility.ui_libraries.qt.filesystem.explorer.qfiledialogpy.private.qfiledialog import QFileDialog
-    from utility.ui_libraries.qt.filesystem.explorer.qfiledialogpy.tests.test_qtpyfiledialog import TestQFileDialog  # noqa: TID252
+    from typing_extensions import Self
+
+    from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qfiledialog import QFileDialog
+    from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.tests.oldtst_qtpyfiledialog import TestQFileDialog  # noqa: TID252
 
 
 

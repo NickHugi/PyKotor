@@ -14,8 +14,9 @@ dist-win/
 nuitka_dist/
 __pycache__/
 ignore/
+.history
 .history/
-.vscode/
+.history/**
 tests/tmp/
 tests/tslpatcher/tmp/
 logs/

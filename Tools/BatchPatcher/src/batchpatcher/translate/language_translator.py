@@ -5,12 +5,12 @@ import re
 import traceback
 
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import requests
 
 from pykotor.common.language import Language
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -25,7 +25,9 @@ try:
 except ImportError:
     deepl_tr = None
 try:
-    from translate import Translator as TranslateTranslator  # type: ignore[import-not-found]
+    from translate import (
+        Translator as TranslateTranslator,  # type: ignore[import-not-found]
+    )
 except ImportError:
     TranslateTranslator = None
 argos_import_success = True
@@ -43,7 +45,9 @@ try:
 except ImportError:
     ChatGptTranslator = None
 try:
-    from googletrans import Translator as GoogleTranslator  # type: ignore[import-not-found]
+    from googletrans import (
+        Translator as GoogleTranslator,  # type: ignore[import-not-found]
+    )
 except ImportError:
     GoogleTranslator = None
 try:
@@ -55,7 +59,10 @@ try:
 except ImportError:
     ApertiumLite = None
 try:
-    from transformers import T5ForConditionalGeneration, T5Tokenizer  # type: ignore[import-not-found]
+    from transformers import (  # type: ignore[import-not-found]
+        T5ForConditionalGeneration,
+        T5Tokenizer,
+    )
 except ImportError:
     T5ForConditionalGeneration = None
     T5Tokenizer = None
@@ -194,7 +201,7 @@ class TranslationOption(Enum):
             if msg:
                 return msg
             database_path = Path(attr)
-            if database_path.suffix.lower() != ".db" or not database_path.safe_isfile():
+            if database_path.suffix.lower() != ".db" or not database_path.is_file():
                 return "Database not found or incorrect type, needs to be a valid path to the .db file."
         elif self is self.LIBRE_TRANSLATOR:
             msg, attr = check("api_key")

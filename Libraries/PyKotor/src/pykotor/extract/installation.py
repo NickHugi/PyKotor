@@ -10,6 +10,7 @@ from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
 from functools import lru_cache
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence, overload
 
 from loggerplus import RobustLogger
@@ -30,7 +31,6 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import deobfuscate_audio
 from utility.common.more_collections import CaseInsensitiveDict
-from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -203,7 +203,7 @@ class Installation:
         self.load_override()
         if self.game().is_k1():
             patch_erf_path = self.path().joinpath("patch.erf")
-            if patch_erf_path.safe_isfile():
+            if patch_erf_path.is_file():
                 self._log.info(f"Game is K1 and 'patch.erf' found at {patch_erf_path.relative_to(self._path.parent)}")
                 self._patch_erf.extend(Capsule(patch_erf_path))
         self._report_main_progress(f"Finished loading the installation from {self._path}")
@@ -270,7 +270,7 @@ class Installation:
             dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
         """
         r_path = Path.pathify(path)
-        if not r_path.safe_isdir():
+        if not r_path.is_dir():
             self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
             return {}
 
@@ -319,7 +319,7 @@ class Installation:
             list[FileResource]: The list where resources at the path have been stored.
         """
         r_path = Path.pathify(path)
-        if not r_path.safe_isdir():
+        if not r_path.is_dir():
             self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
             return []
 
@@ -354,7 +354,7 @@ class Installation:
     def load_chitin(self):
         """Reloads the list of resources in the Chitin linked to the Installation."""
         chitin_path: CaseAwarePath = self._path / "chitin.key"
-        chitin_exists: bool | None = chitin_path.safe_isfile()
+        chitin_exists: bool | None = chitin_path.is_file()
         if chitin_exists:
             self._log.info("Loading BIFs from chitin.key at '%s'...", self._path)
             self._chitin = list(Chitin(key_path=chitin_path))
@@ -406,7 +406,7 @@ class Installation:
             self._log.debug(f"Found an active save location at '{save_location}'")
             self.saves[save_location] = {}
             for this_save_path in save_location.iterdir():
-                if not this_save_path.safe_isdir():
+                if not this_save_path.is_dir():
                     continue
                 self._log.debug(f"Discovered a save bundle '{this_save_path.name}'")
                 self.saves[save_location][this_save_path] = []
@@ -443,7 +443,7 @@ class Installation:
                 is_k1 = True
                 RobustLogger().exception("Failed to get the game of your installation!")
             if is_k1:
-                target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
+                target_dirs = [f for f in override_path.safe_rglob("*") if f.is_dir()]
             target_dirs.append(override_path)
             self._override = {}
 
@@ -513,7 +513,7 @@ class Installation:
         """
         files: list[FileResource] = []
         try:
-            if not folder_path.safe_isdir():
+            if not folder_path.is_dir():
                 return files
             stack: list[str] = [str(folder_path)]
             install_path_str = str(self.path())
@@ -649,16 +649,16 @@ class Installation:
         save_paths: list[Path] = [self._find_resource_folderpath("saves", optional=True)]
         if self.game().is_k2():
             cloudsave_dir = self._find_resource_folderpath("cloudsaves", optional=True)
-            if cloudsave_dir.safe_isdir():
+            if cloudsave_dir.is_dir():
                 for folder in cloudsave_dir.iterdir():
-                    if not folder.safe_isdir():
+                    if not folder.is_dir():
                         continue
                     save_paths.append(folder)
         system = platform.system()
 
         if system == "Windows":
             roamingappdata_env: str = os.getenv("APPDATA", "")
-            if not roamingappdata_env.strip() or not Path(roamingappdata_env).safe_isdir():
+            if not roamingappdata_env.strip() or not Path(roamingappdata_env).is_dir():
                 roamingappdata_path = Path.home().joinpath("AppData", "Roaming")
             else:
                 roamingappdata_path = Path(roamingappdata_env)
@@ -667,7 +667,7 @@ class Installation:
             save_paths.append(roamingappdata_path.joinpath("LucasArts", game_folder1, "saves"))
 
             localappdata_env: str = os.getenv("LOCALAPPDATA", "")
-            if not localappdata_env.strip() or not Path(localappdata_env).safe_isdir():
+            if not localappdata_env.strip() or not Path(localappdata_env).is_dir():
                 localappdata_path = Path.home().joinpath("AppData", "Local")
             else:
                 localappdata_path = Path(localappdata_env)
@@ -694,12 +694,12 @@ class Installation:
         elif system == "Linux":  # TODO
             xdg_data_home = os.getenv("XDG_DATA_HOME", "")
             remaining_path_parts = PurePath("aspyr-media", "kotor2", "saves")
-            if xdg_data_home.strip() and CaseAwarePath(xdg_data_home).safe_isdir():
+            if xdg_data_home.strip() and CaseAwarePath(xdg_data_home).is_dir():
                 save_paths.append(CaseAwarePath(xdg_data_home, remaining_path_parts))
             save_paths.append(CaseAwarePath.home().joinpath(".local", "share", remaining_path_parts))
 
         # Filter and return existing paths
-        return [path for path in save_paths if path.safe_isdir()]
+        return [path for path in save_paths if path.is_dir()]
 
     def _find_resource_folderpath(
         self,
@@ -730,7 +730,7 @@ class Installation:
                 folder_names = (folder_names,)
             for folder_name in folder_names:
                 resource_path: CaseAwarePath = self._path / folder_name
-                if resource_path.safe_isdir():
+                if resource_path.is_dir():
                     return resource_path
         except Exception as e:  # noqa: BLE001
             msg = f"An error occurred while finding the '{' or '.join(folder_names)}' folder in '{self._path}'."
@@ -765,7 +765,7 @@ class Installation:
         tlk_path = self._path / "dialog.tlk"
         yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
         female_tlk_path = self._path / "dialogf.tlk"
-        if female_tlk_path.safe_isfile():
+        if female_tlk_path.is_file():
             yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
 
     def chitin_resources(self) -> list[FileResource]:
@@ -1418,7 +1418,7 @@ class Installation:
         def check_folders(resource_folders: list[Path]):
             for folder in resource_folders:
                 for file in folder.safe_rglob("*"):
-                    if not file.safe_isfile():
+                    if not file.is_file():
                         continue
                     identifier = ResourceIdentifier.from_path(file)
                     if identifier not in real_queries:
@@ -1608,7 +1608,7 @@ class Installation:
                     if (
                         file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in texture_types
-                        and file.safe_isfile()
+                        and file.is_file()
                     )
                 )
             for texture_file in queried_texture_files:
@@ -1800,7 +1800,7 @@ class Installation:
                             file.suffix[1:].casefold() in gff_extensions
                             or (file.name.lower() in relevant_2da_filenames and file.suffix.casefold() == ".2da")
                         )
-                        and file.safe_isfile()
+                        and file.is_file()
                     )
                 )
             for gff_file in relevant_files:
@@ -1949,7 +1949,7 @@ class Installation:
                     if (
                         file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in sound_formats
-                        and file.safe_isfile()
+                        and file.is_file()
                     )
                 )
             for sound_file in queried_sound_files:
@@ -2020,7 +2020,7 @@ class Installation:
         stringrefs: list[int] = [locstring.stringref for locstring in queries]
 
         batch: dict[int, StringResult] = self.talktable().batch(stringrefs)
-        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().safe_isfile() else {}
+        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().is_file() else {}
 
         results: dict[LocalizedString, str] = {}
         for locstring in queries:

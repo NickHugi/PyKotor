@@ -22,6 +22,8 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 
+from pathlib import Path
+
 from pykotor.common.geometry import Vector3
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 from pykotor.resource.formats.ncs import NCS, NCSInstructionType
@@ -29,7 +31,6 @@ from pykotor.resource.formats.ncs.compiler.classes import CompileError
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
-from utility.system.path import Path
 
 K1_PATH: str | None = os.environ.get("K1_PATH")
 K2_PATH: str | None = os.environ.get("K2_PATH")
@@ -68,10 +69,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
+        assert len(interpreter.action_snapshots) == 1
 
-        self.assertEqual("GetExitingObject", interpreter.action_snapshots[0].function_name)
-        self.assertEqual([], interpreter.action_snapshots[0].arg_values)
+        assert interpreter.action_snapshots[0].function_name == "GetExitingObject"
+        assert interpreter.action_snapshots[0].arg_values == []
 
     def test_enginecall_return_value(self):
         ncs = self.compile(
@@ -87,7 +88,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.set_mock("GetAreaUnescapable", lambda: 10)
         interpreter.run()
 
-        self.assertEqual(10, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 10
 
     def test_enginecall_with_params(self):
         ncs = self.compile(
@@ -104,10 +105,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
+        assert len(interpreter.action_snapshots) == 1
 
-        self.assertEqual("GetObjectByTag", interpreter.action_snapshots[0].function_name)
-        self.assertEqual(["something", 15], interpreter.action_snapshots[0].arg_values)
+        assert interpreter.action_snapshots[0].function_name == "GetObjectByTag"
+        assert interpreter.action_snapshots[0].arg_values == ["something", 15]
 
     def test_enginecall_with_default_params(self):
         ncs = self.compile(
@@ -198,7 +199,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(15, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 15
 
     def test_addop_float_float(self):
         ncs = self.compile(
@@ -213,7 +214,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(15.0, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 15.0
 
     def test_addop_string_string(self):
         ncs = self.compile(
@@ -228,7 +229,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual("abcdef", interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == "abcdef"
 
     def test_subop_int_int(self):
         ncs = self.compile(
@@ -243,7 +244,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(5, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 5
 
     def test_subop_float_float(self):
         ncs = self.compile(
@@ -258,7 +259,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(5.0, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 5.0
 
     def test_mulop_int_int(self):
         ncs = self.compile(
@@ -273,7 +274,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(50, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 50
 
     def test_mulop_float_float(self):
         ncs = self.compile(
@@ -288,7 +289,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(50.0, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 50.0
 
     def test_divop_int_int(self):
         ncs = self.compile(
@@ -303,7 +304,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 2
 
     def test_divop_float_float(self):
         ncs = self.compile(
@@ -318,7 +319,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2.0, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 2.0
 
     def test_modop_int_int(self):
         ncs = self.compile(
@@ -333,7 +334,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 1
 
     def test_negop_int(self):
         ncs = self.compile(
@@ -349,8 +350,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(-10, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == -10
 
     def test_negop_float(self):
         ncs = self.compile(
@@ -365,7 +366,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(-10.0, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == -10.0
 
     def test_bidmas(self):
         ncs = self.compile(
@@ -381,8 +382,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(17, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 17
 
     def test_op_with_variables(self):
         ncs = self.compile(
@@ -400,8 +401,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(500, interpreter.stack_snapshots[-4].stack[-1].value)
-        self.assertEqual(500, interpreter.stack_snapshots[-4].stack[-2].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 500
+        assert interpreter.stack_snapshots[-4].stack[-2].value == 500
 
     # test_addop_vector_vector
     # test_addop_int_float
@@ -434,7 +435,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 0
 
     def test_logical_and_op(self):
         ncs = self.compile(
@@ -451,9 +452,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-3].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-3].value == 0
+        assert interpreter.stack_snapshots[-4].stack[-2].value == 0
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 1
 
     def test_logical_or_op(self):
         ncs = self.compile(
@@ -470,9 +471,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-3].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-3].value == 0
+        assert interpreter.stack_snapshots[-4].stack[-2].value == 1
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 1
 
     def test_logical_equals(self):
         ncs = self.compile(
@@ -488,8 +489,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-2].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-2].value == 1
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 0
 
     def test_logical_notequals_op(self):
         ncs = self.compile(
@@ -505,8 +506,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-2].value == 0
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 1
 
     # endregion
 
@@ -530,9 +531,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 1
+        assert interpreter.action_snapshots[-2].arg_values[0] == 0
+        assert interpreter.action_snapshots[-1].arg_values[0] == 0
 
     def test_compare_greaterthanorequal_op(self):
         ncs = self.compile(
@@ -553,9 +554,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 1
+        assert interpreter.action_snapshots[-2].arg_values[0] == 1
+        assert interpreter.action_snapshots[-1].arg_values[0] == 0
 
     def test_compare_lessthan_op(self):
         ncs = self.compile(
@@ -576,9 +577,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 0
+        assert interpreter.action_snapshots[-2].arg_values[0] == 0
+        assert interpreter.action_snapshots[-1].arg_values[0] == 1
 
     def test_compare_lessthanorequal_op(self):
         ncs = self.compile(
@@ -599,9 +600,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 0
+        assert interpreter.action_snapshots[-2].arg_values[0] == 1
+        assert interpreter.action_snapshots[-1].arg_values[0] == 1
 
     # endregion
 
@@ -619,7 +620,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(7, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 7
 
     def test_bitwise_xor_op(self):
         ncs = self.compile(
@@ -634,7 +635,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(5, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 5
 
     def test_bitwise_not_int(self):
         ncs = self.compile(
@@ -649,7 +650,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(-2, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == -2
 
     def test_bitwise_and_op(self):
         ncs = self.compile(
@@ -664,7 +665,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 2
 
     def test_bitwise_shiftleft_op(self):
         ncs = self.compile(
@@ -679,7 +680,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(28, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 28
 
     def test_bitwise_shiftright_op(self):
         ncs = self.compile(
@@ -694,7 +695,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
+        assert interpreter.stack_snapshots[-4].stack[-1].value == 1
 
     # endregion
 
@@ -715,8 +716,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(4, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 4
 
     def test_assignment_complex(self):
         ncs = self.compile(
@@ -734,8 +735,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(10, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 10
 
     def test_assignment_string_constant(self):
         ncs = self.compile(
@@ -752,8 +753,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual("A", interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == "A"
 
     def test_assignment_string_enginecall(self):
         ncs = self.compile(
@@ -771,7 +772,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.set_mock("GetGlobalString", lambda identifier: identifier)
         interpreter.run()
 
-        self.assertEqual("A", interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == "A"
 
     def test_addition_assignment_int_int(self):
         ncs = self.compile(
@@ -790,8 +791,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
         snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintInteger", snap.function_name)
-        self.assertEqual(3, snap.arg_values[0])
+        assert snap.function_name == "PrintInteger"
+        assert snap.arg_values[0] == 3
 
     def test_addition_assignment_int_float(self):
         ncs = self.compile(
@@ -810,8 +811,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
         snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintInteger", snap.function_name)
-        self.assertEqual(3, snap.arg_values[0])
+        assert snap.function_name == "PrintInteger"
+        assert snap.arg_values[0] == 3
 
     def test_addition_assignment_float_float(self):
         ncs = self.compile(
@@ -829,7 +830,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3.0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 3.0
 
     def test_addition_assignment_float_int(self):
         ncs = self.compile(
@@ -848,8 +849,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
         snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintFloat", snap.function_name)
-        self.assertEqual(3.0, snap.arg_values[0])
+        assert snap.function_name == "PrintFloat"
+        assert snap.arg_values[0] == 3.0
 
     def test_addition_assignment_string_string(self):
         ncs = self.compile(
@@ -868,8 +869,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
         snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintString", snap.function_name)
-        self.assertEqual("ab", snap.arg_values[0])
+        assert snap.function_name == "PrintString"
+        assert snap.arg_values[0] == "ab"
 
     def test_subtraction_assignment_int_int(self):
         ncs = self.compile(
@@ -888,8 +889,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
         snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintInteger", snap.function_name)
-        self.assertEqual([6], snap.arg_values)
+        assert snap.function_name == "PrintInteger"
+        assert snap.arg_values == [6]
 
     def test_subtraction_assignment_int_float(self):
         ncs = self.compile(
@@ -908,8 +909,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
         snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintInteger", snap.function_name)
-        self.assertEqual(8.0, snap.arg_values[0])
+        assert snap.function_name == "PrintInteger"
+        assert snap.arg_values[0] == 8.0
 
     def test_subtraction_assignment_float_float(self):
         ncs = self.compile(
@@ -928,8 +929,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
         snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintFloat", snap.function_name)
-        self.assertEqual(8.0, snap.arg_values[0])
+        assert snap.function_name == "PrintFloat"
+        assert snap.arg_values[0] == 8.0
 
     def test_subtraction_assignment_float_int(self):
         ncs = self.compile(
@@ -947,7 +948,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(8.0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 8.0
 
     def test_multiplication_assignment(self):
         ncs = self.compile(
@@ -966,8 +967,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
         snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintInteger", snap.function_name)
-        self.assertEqual([40], snap.arg_values)
+        assert snap.function_name == "PrintInteger"
+        assert snap.arg_values == [40]
 
     def test_division_assignment(self):
         ncs = self.compile(
@@ -986,8 +987,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
         snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintInteger", snap.function_name)
-        self.assertEqual([3], snap.arg_values)
+        assert snap.function_name == "PrintInteger"
+        assert snap.arg_values == [3]
 
     # endregion
 
@@ -1013,9 +1014,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(2, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(3, interpreter.action_snapshots[1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[0].arg_values[0] == 2
+        assert interpreter.action_snapshots[1].arg_values[0] == 3
 
     def test_switch_jump_over(self):
         ncs = self.compile(
@@ -1038,7 +1039,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, len(interpreter.action_snapshots))
+        assert len(interpreter.action_snapshots) == 0
 
     def test_switch_with_breaks(self):
         ncs = self.compile(
@@ -1067,8 +1068,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 3
 
     def test_switch_with_default(self):
         ncs = self.compile(
@@ -1097,8 +1098,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(4, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 4
 
     def test_switch_scoped_blocks(self):
         ncs = self.compile(
@@ -1128,8 +1129,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(20, interpreter.action_snapshots[-1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[-1].arg_values[0] == 20
 
     # endregion
 
@@ -1170,8 +1171,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-2].arg_values[0] == 1
+        assert interpreter.action_snapshots[-1].arg_values[0] == 2
 
     # region If/Else Conditions
     def test_if(self):
@@ -1195,8 +1196,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 1
 
     def test_if_multiple_conditions(self):
         ncs = self.compile(
@@ -1231,9 +1232,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[0].arg_values[0] == 1
+        assert interpreter.action_snapshots[1].arg_values[0] == 2
 
     def test_if_else_if(self):
         ncs = self.compile(
@@ -1258,10 +1259,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, len(interpreter.action_snapshots))
-        self.assertEqual(2, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(4, interpreter.action_snapshots[1].arg_values[0])
-        self.assertEqual(7, interpreter.action_snapshots[2].arg_values[0])
+        assert len(interpreter.action_snapshots) == 3
+        assert interpreter.action_snapshots[0].arg_values[0] == 2
+        assert interpreter.action_snapshots[1].arg_values[0] == 4
+        assert interpreter.action_snapshots[2].arg_values[0] == 7
 
     def test_if_else_if_else(self):
         ncs = self.compile(
@@ -1290,11 +1291,11 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(4, len(interpreter.action_snapshots))
-        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(5, interpreter.action_snapshots[1].arg_values[0])
-        self.assertEqual(7, interpreter.action_snapshots[2].arg_values[0])
-        self.assertEqual(10, interpreter.action_snapshots[3].arg_values[0])
+        assert len(interpreter.action_snapshots) == 4
+        assert interpreter.action_snapshots[0].arg_values[0] == 3
+        assert interpreter.action_snapshots[1].arg_values[0] == 5
+        assert interpreter.action_snapshots[2].arg_values[0] == 7
+        assert interpreter.action_snapshots[3].arg_values[0] == 10
 
     def test_single_statement_if(self):
         ncs = self.compile(
@@ -1309,7 +1310,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(222, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 222
 
     def test_single_statement_else_if_else(self):
         ncs = self.compile(
@@ -1326,7 +1327,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(33, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 33
 
     # endregion
 
@@ -1349,10 +1350,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, len(interpreter.action_snapshots))
-        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
+        assert len(interpreter.action_snapshots) == 3
+        assert interpreter.action_snapshots[0].arg_values[0] == 3
+        assert interpreter.action_snapshots[1].arg_values[0] == 2
+        assert interpreter.action_snapshots[2].arg_values[0] == 1
 
     def test_while_loop_with_break(self):
         ncs = self.compile(
@@ -1373,8 +1374,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 3
 
     def test_while_loop_with_continue(self):
         ncs = self.compile(
@@ -1396,10 +1397,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, len(interpreter.action_snapshots))
-        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
+        assert len(interpreter.action_snapshots) == 3
+        assert interpreter.action_snapshots[0].arg_values[0] == 3
+        assert interpreter.action_snapshots[1].arg_values[0] == 2
+        assert interpreter.action_snapshots[2].arg_values[0] == 1
 
     def test_while_loop_scope(self):
         ncs = self.compile(
@@ -1425,9 +1426,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(22, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(0, interpreter.action_snapshots[1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[0].arg_values[0] == 22
+        assert interpreter.action_snapshots[1].arg_values[0] == 0
 
     # endregion
 
@@ -1450,10 +1451,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, len(interpreter.action_snapshots))
-        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
+        assert len(interpreter.action_snapshots) == 3
+        assert interpreter.action_snapshots[0].arg_values[0] == 3
+        assert interpreter.action_snapshots[1].arg_values[0] == 2
+        assert interpreter.action_snapshots[2].arg_values[0] == 1
 
     def test_do_while_loop_with_break(self):
         ncs = self.compile(
@@ -1474,8 +1475,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 3
 
     def test_do_while_loop_with_continue(self):
         ncs = self.compile(
@@ -1497,10 +1498,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, len(interpreter.action_snapshots))
-        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
+        assert len(interpreter.action_snapshots) == 3
+        assert interpreter.action_snapshots[0].arg_values[0] == 3
+        assert interpreter.action_snapshots[1].arg_values[0] == 2
+        assert interpreter.action_snapshots[2].arg_values[0] == 1
 
     def test_do_while_loop_scope(self):
         ncs = self.compile(
@@ -1524,9 +1525,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(11, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(0, interpreter.action_snapshots[1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[0].arg_values[0] == 11
+        assert interpreter.action_snapshots[1].arg_values[0] == 0
 
     # endregion
 
@@ -1548,10 +1549,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, len(interpreter.action_snapshots))
-        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
-        self.assertEqual(3, interpreter.action_snapshots[2].arg_values[0])
+        assert len(interpreter.action_snapshots) == 3
+        assert interpreter.action_snapshots[0].arg_values[0] == 1
+        assert interpreter.action_snapshots[1].arg_values[0] == 2
+        assert interpreter.action_snapshots[2].arg_values[0] == 3
 
     def test_for_loop_with_break(self):
         ncs = self.compile(
@@ -1571,8 +1572,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 1
 
     def test_for_loop_with_continue(self):
         ncs = self.compile(
@@ -1593,10 +1594,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, len(interpreter.action_snapshots))
-        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
-        self.assertEqual(3, interpreter.action_snapshots[2].arg_values[0])
+        assert len(interpreter.action_snapshots) == 3
+        assert interpreter.action_snapshots[0].arg_values[0] == 1
+        assert interpreter.action_snapshots[1].arg_values[0] == 2
+        assert interpreter.action_snapshots[2].arg_values[0] == 3
 
     def test_for_loop_scope(self):
         ncs = self.compile(
@@ -1619,8 +1620,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[-1].arg_values[0] == 0
 
     # endregion
 
@@ -1639,9 +1640,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(3, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 1
+        assert interpreter.action_snapshots[-2].arg_values[0] == 2
+        assert interpreter.action_snapshots[-1].arg_values[0] == 3
 
     def test_multi_declarations(self):
         ncs = self.compile(
@@ -1660,9 +1661,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 0
+        assert interpreter.action_snapshots[-2].arg_values[0] == 1
+        assert interpreter.action_snapshots[-1].arg_values[0] == 2
 
     def test_local_declarations(self):
         ncs = self.compile(
@@ -1706,7 +1707,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertTrue(any(inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP))
+        assert any(inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP)
 
     def test_global_initializations(self):
         ncs = self.compile(
@@ -1728,10 +1729,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(interpreter.action_snapshots[-3].arg_values[0], 0)
-        self.assertEqual(interpreter.action_snapshots[-2].arg_values[0], 0.0)
-        self.assertEqual(interpreter.action_snapshots[-1].arg_values[0], "")
-        self.assertTrue(any(inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP))
+        assert interpreter.action_snapshots[-3].arg_values[0] == 0
+        assert interpreter.action_snapshots[-2].arg_values[0] == 0.0
+        assert interpreter.action_snapshots[-1].arg_values[0] == ""
+        assert any(inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP)
 
     def test_global_initialization_with_unary(self):
         ncs = self.compile(
@@ -1748,7 +1749,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(interpreter.action_snapshots[-1].arg_values[0], -1)
+        assert interpreter.action_snapshots[-1].arg_values[0] == -1
 
     def test_comment(self):
         ncs = self.compile(
@@ -1804,8 +1805,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 1
 
     def test_return_parenthesis(self):
         ncs = self.compile(
@@ -1826,7 +1827,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(321, interpreter.action_snapshots[0].arg_values[0])
+        assert interpreter.action_snapshots[0].arg_values[0] == 321
 
     def test_return_parenthesis_constant(self):
         ncs = self.compile(
@@ -1847,7 +1848,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+        assert interpreter.action_snapshots[0].arg_values[0] == 1
 
     def test_int_parenthesis_declaration(self):
         ncs = self.compile(
@@ -1863,7 +1864,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(123, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 123
 
     def test_include_builtin(self):
         otherscript = """
@@ -1938,8 +1939,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(13, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 13
 
     def test_missing_include(self):
         source = """
@@ -1976,9 +1977,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(4, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(8, interpreter.action_snapshots[-1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[-2].arg_values[0] == 4
+        assert interpreter.action_snapshots[-1].arg_values[0] == 8
 
     def test_global_int_subtraction_assignment(self):
         ncs = self.compile(
@@ -2003,9 +2004,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(-99, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(1099, interpreter.action_snapshots[-1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[-2].arg_values[0] == -99
+        assert interpreter.action_snapshots[-1].arg_values[0] == 1099
 
     def test_global_int_multiplication_assignment(self):
         ncs = self.compile(
@@ -2030,9 +2031,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(100, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(100000, interpreter.action_snapshots[-1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[-2].arg_values[0] == 100
+        assert interpreter.action_snapshots[-1].arg_values[0] == 100000
 
     def test_global_int_division_assignment(self):
         ncs = self.compile(
@@ -2057,9 +2058,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(100, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(100, interpreter.action_snapshots[-1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[-2].arg_values[0] == 100
+        assert interpreter.action_snapshots[-1].arg_values[0] == 100
 
     def test_imported_global_variable(self):
         otherscript = """
@@ -2082,8 +2083,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(55, interpreter.action_snapshots[1].arg_values[1])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[1].arg_values[1] == 55
 
     def test_declaration_int(self):
         ncs = self.compile(
@@ -2099,7 +2100,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 0
 
     def test_declaration_float(self):
         ncs = self.compile(
@@ -2115,7 +2116,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0.0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 0.0
 
     def test_declaration_string(self):
         ncs = self.compile(
@@ -2131,7 +2132,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual("", interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == ""
 
     def test_vector(self):
         ncs = self.compile(
@@ -2150,7 +2151,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.set_mock("VectorMagnitude", lambda vec: vec.magnitude())
         interpreter.run()
 
-        self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 6.0
 
     def test_vector_notation(self):
         ncs = self.compile(
@@ -2168,9 +2169,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1.0, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(2.0, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(3.0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 1.0
+        assert interpreter.action_snapshots[-2].arg_values[0] == 2.0
+        assert interpreter.action_snapshots[-1].arg_values[0] == 3.0
 
     def test_vector_get_components(self):
         ncs = self.compile(
@@ -2189,9 +2190,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.set_mock("Vector", Vector3)
         interpreter.run()
 
-        self.assertEqual(2.0, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(4.0, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 2.0
+        assert interpreter.action_snapshots[-2].arg_values[0] == 4.0
+        assert interpreter.action_snapshots[-1].arg_values[0] == 6.0
 
     def test_vector_set_components(self):
         ncs = self.compile(
@@ -2213,9 +2214,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.set_mock("Vector", Vector3)
         interpreter.run()
 
-        self.assertEqual(2.0, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(4.0, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 2.0
+        assert interpreter.action_snapshots[-2].arg_values[0] == 4.0
+        assert interpreter.action_snapshots[-1].arg_values[0] == 6.0
 
     def test_struct_get_members(self):
         ncs = self.compile(
@@ -2240,9 +2241,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual("", interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(0.0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 0
+        assert interpreter.action_snapshots[-2].arg_values[0] == ""
+        assert interpreter.action_snapshots[-1].arg_values[0] == 0.0
 
     def test_struct_get_invalid_member(self):
         source = """
@@ -2288,8 +2289,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(123, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual("abc", interpreter.action_snapshots[-2].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 123
+        assert interpreter.action_snapshots[-2].arg_values[0] == "abc"
         self.assertAlmostEqual(3.14, interpreter.action_snapshots[-1].arg_values[0].value)
 
     def test_prefix_increment_sp_int(self):
@@ -2309,8 +2310,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-2].arg_values[0] == 2
+        assert interpreter.action_snapshots[-1].arg_values[0] == 2
 
     def test_prefix_increment_bp_int(self):
         ncs = self.compile(
@@ -2330,8 +2331,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-2].arg_values[0] == 2
+        assert interpreter.action_snapshots[-1].arg_values[0] == 2
 
     def test_postfix_increment_sp_int(self):
         ncs = self.compile(
@@ -2350,8 +2351,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-2].arg_values[0] == 2
+        assert interpreter.action_snapshots[-1].arg_values[0] == 1
 
     def test_postfix_increment_bp_int(self):
         ncs = self.compile(
@@ -2371,8 +2372,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-2].arg_values[0] == 2
+        assert interpreter.action_snapshots[-1].arg_values[0] == 1
 
     def test_prefix_decrement_sp_int(self):
         ncs = self.compile(
@@ -2391,8 +2392,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-2].arg_values[0] == 0
+        assert interpreter.action_snapshots[-1].arg_values[0] == 0
 
     def test_prefix_decrement_bp_int(self):
         ncs = self.compile(
@@ -2412,8 +2413,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-2].arg_values[0] == 0
+        assert interpreter.action_snapshots[-1].arg_values[0] == 0
 
     def test_postfix_decrement_sp_int(self):
         ncs = self.compile(
@@ -2432,8 +2433,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-2].arg_values[0] == 0
+        assert interpreter.action_snapshots[-1].arg_values[0] == 1
 
     def test_postfix_decrement_bp_int(self):
         ncs = self.compile(
@@ -2453,8 +2454,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-2].arg_values[0] == 0
+        assert interpreter.action_snapshots[-1].arg_values[0] == 1
 
     def test_assignmentless_expression(self):
         ncs = self.compile(
@@ -2475,7 +2476,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(123, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-1].arg_values[0] == 123
 
     # region Script Subroutines
     def test_prototype_no_args(self):
@@ -2498,8 +2499,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(56, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 56
 
     def test_prototype_with_arg(self):
         ncs = self.compile(
@@ -2521,8 +2522,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(57, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 57
 
     def test_prototype_with_three_args(self):
         ncs = self.compile(
@@ -2545,9 +2546,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(3, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-3].arg_values[0] == 1
+        assert interpreter.action_snapshots[-2].arg_values[0] == 2
+        assert interpreter.action_snapshots[-1].arg_values[0] == 3
 
     def test_prototype_with_many_args(self):
         ncs = self.compile(
@@ -2573,10 +2574,10 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.action_snapshots[-4].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(3, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(4, interpreter.action_snapshots[-1].arg_values[0])
+        assert interpreter.action_snapshots[-4].arg_values[0] == 1
+        assert interpreter.action_snapshots[-3].arg_values[0] == 2
+        assert interpreter.action_snapshots[-2].arg_values[0] == 3
+        assert interpreter.action_snapshots[-1].arg_values[0] == 4
 
     def test_prototype_with_default_arg(self):
         ncs = self.compile(
@@ -2598,8 +2599,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(57, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 57
 
     def test_prototype_with_default_constant_arg(self):
         ncs = self.compile(
@@ -2621,8 +2622,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(32, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 32
 
     def test_prototype_missing_arg(self):
         source = """
@@ -2769,8 +2770,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(123, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 123
 
     def test_call_void_with_one_arg(self):
         ncs = self.compile(
@@ -2790,8 +2791,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(123, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 123
 
     def test_call_void_with_two_args(self):
         ncs = self.compile(
@@ -2812,9 +2813,9 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
+        assert len(interpreter.action_snapshots) == 2
+        assert interpreter.action_snapshots[0].arg_values[0] == 1
+        assert interpreter.action_snapshots[1].arg_values[0] == 2
 
     def test_call_int_with_no_args(self):
         ncs = self.compile(
@@ -2835,8 +2836,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(5, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 5
 
     def test_call_int_with_no_args_and_forward_declared(self):
         ncs = self.compile(
@@ -2859,8 +2860,8 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(5, interpreter.action_snapshots[0].arg_values[0])
+        assert len(interpreter.action_snapshots) == 1
+        assert interpreter.action_snapshots[0].arg_values[0] == 5
 
     def test_call_param_mismatch(self):
         source = """
@@ -2915,7 +2916,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual([8, 0], interpreter.action_snapshots[-1].arg_values)
+        assert interpreter.action_snapshots[-1].arg_values == [8, 0]
 
     def test_switch_scope_b(self):
         ncs = self.compile(

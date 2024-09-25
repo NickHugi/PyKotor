@@ -9,7 +9,14 @@ import qtpy
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
-from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QMessageBox, QWidget
+from qtpy.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QMessageBox,
+    QWidget,
+)
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
@@ -132,13 +139,21 @@ class PTHEditor(Editor):
         self.statusOut: CustomStdout = CustomStdout(self)
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.editors.pth import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.editors.pth import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.editors.pth import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.editors.pth import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

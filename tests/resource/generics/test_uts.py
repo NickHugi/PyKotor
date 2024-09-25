@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 from pykotor.resource.type import ResourceType
@@ -59,7 +58,7 @@ class TestUTS(TestCase):
         for are_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTS):
             gff: GFF = read_gff(are_resource.data())
             reconstructed_gff: GFF = dismantle_uts(construct_uts(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -70,17 +69,17 @@ class TestUTS(TestCase):
         for are_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTS):
             gff: GFF = read_gff(are_resource.data())
             reconstructed_gff: GFF = dismantle_uts(construct_uts(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_gff_reconstruct(self):
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_uts(construct_uts(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_k1_gff_reconstruct(self):
         gff = read_gff(TEST_K1_FILE)
         reconstructed_gff = dismantle_uts(construct_uts(gff), Game.K1)
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -94,30 +93,30 @@ class TestUTS(TestCase):
         self.validate_io(uts)
 
     def validate_io(self, uts: UTS):
-        self.assertEqual("3Csounds", uts.tag)
-        self.assertEqual(128551, uts.name.stringref)
-        self.assertEqual("3csounds", uts.resref)
-        self.assertEqual(1, uts.active)
-        self.assertEqual(1, uts.continuous)
-        self.assertEqual(1, uts.looping)
-        self.assertEqual(1, uts.positional)
-        self.assertEqual(1, uts.random_position)
-        self.assertEqual(1, uts.random_position)
-        self.assertEqual(1.5, uts.elevation)
-        self.assertEqual(8.0, uts.max_distance)
-        self.assertEqual(5.0, uts.min_distance)
-        self.assertEqual(0.10000000149011612, uts.random_range_x)
-        self.assertEqual(0.20000000298023224, uts.random_range_y)
-        self.assertEqual(4000, uts.interval)
-        self.assertEqual(100, uts.interval_variation)
-        self.assertEqual(0.10000000149011612, uts.pitch_variation)
-        self.assertEqual(22, uts.priority)
-        self.assertEqual(0, uts.hours)
-        self.assertEqual(3, uts.times)
-        self.assertEqual(120, uts.volume)
-        self.assertEqual(7, uts.volume_variation)
-        self.assertEqual(6, uts.palette_id)
-        self.assertEqual("comment", uts.comment)
+        assert uts.tag == "3Csounds"
+        assert uts.name.stringref == 128551
+        assert uts.resref == "3csounds"
+        assert uts.active == 1
+        assert uts.continuous == 1
+        assert uts.looping == 1
+        assert uts.positional == 1
+        assert uts.random_position == 1
+        assert uts.random_position == 1
+        assert uts.elevation == 1.5
+        assert uts.max_distance == 8.0
+        assert uts.min_distance == 5.0
+        assert uts.random_range_x == 0.10000000149011612
+        assert uts.random_range_y == 0.20000000298023224
+        assert uts.interval == 4000
+        assert uts.interval_variation == 100
+        assert uts.pitch_variation == 0.10000000149011612
+        assert uts.priority == 22
+        assert uts.hours == 0
+        assert uts.times == 3
+        assert uts.volume == 120
+        assert uts.volume_variation == 7
+        assert uts.palette_id == 6
+        assert uts.comment == "comment"
 
-        self.assertEqual(4, len(uts.sounds))
-        self.assertEqual("c_drdastro_atk2", uts.sounds[3])
+        assert len(uts.sounds) == 4
+        assert uts.sounds[3] == "c_drdastro_atk2"

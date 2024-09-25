@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import qtpy
@@ -26,7 +27,6 @@ from pykotor.tools import door, placeable
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
@@ -66,13 +66,21 @@ class InsertInstanceDialog(QDialog):
         self.filepath: Path | None = None
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.insert_instance import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.dialogs.insert_instance import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.insert_instance import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.dialogs.insert_instance import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.insert_instance import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.dialogs.insert_instance import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.insert_instance import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.dialogs.insert_instance import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass, field
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Iterator
 
 from loggerplus import RobustLogger
@@ -11,7 +12,6 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 from utility.misc import generate_hash
-from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -172,7 +172,7 @@ class FileResource:
 
             capsule = LazyCapsule(self._filepath)
             res: FileResource | None = capsule.info(self._resname, self._restype)
-            if res is None and self._identifier == self._filepath.name and self._filepath.safe_isfile():  # The capsule is the resource itself:
+            if res is None and self._identifier == self._filepath.name and self._filepath.is_file():  # The capsule is the resource itself:
                 self._offset = 0
                 self._size = self._filepath.stat().st_size
                 return
@@ -204,7 +204,7 @@ class FileResource:
             if self.inside_capsule:
                 from pykotor.extract.capsule import LazyCapsule  # Prevent circular imports
                 return bool(LazyCapsule(self._filepath).info(self._resname, self._restype))
-            return self.inside_bif or bool(self._filepath.safe_isfile())
+            return self.inside_bif or bool(self._filepath.is_file())
         except Exception:  # noqa: BLE001
             RobustLogger().exception("Failed to check existence of FileResource.")
             return False
@@ -256,7 +256,7 @@ class FileResource:
     ) -> str:
         """Returns a lowercase hex string sha1 hash. If FileResource doesn't exist this returns an empty str."""
         if reload or not self._file_hash:
-            if not self._filepath.safe_isfile():
+            if not self._filepath.is_file():
                 return ""  # FileResource or the capsule doesn't exist on disk.
             self._file_hash = generate_hash(self.data())
         return self._file_hash

@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 from pykotor.resource.type import ResourceType
@@ -58,7 +57,7 @@ class TestUTT(TestCase):
         for resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTT):
             gff: GFF = read_gff(resource.data())
             reconstructed_gff: GFF = dismantle_utt(construct_utt(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -69,12 +68,12 @@ class TestUTT(TestCase):
         for resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTT):
             gff: GFF = read_gff(resource.data())
             reconstructed_gff: GFF = dismantle_utt(construct_utt(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_gff_reconstruct(self):
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_utt(construct_utt(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -88,30 +87,30 @@ class TestUTT(TestCase):
         self.validate_io(utt)
 
     def validate_io(self, utt: UTT):
-        self.assertEqual("GenericTrigger001", utt.tag)
-        self.assertEqual("generictrigge001", utt.resref)
-        self.assertEqual(42968, utt.name.stringref)
-        self.assertEqual(1, utt.auto_remove_key)
-        self.assertEqual(1, utt.faction_id)
-        self.assertEqual(1, utt.cursor_id)
-        self.assertEqual(3.0, utt.highlight_height)
-        self.assertEqual("somekey", utt.key_name)
-        self.assertEqual(0, utt.loadscreen_id)
-        self.assertEqual(0, utt.portrait_id)
-        self.assertEqual(1, utt.type_id)
-        self.assertEqual(1, utt.trap_detectable)
-        self.assertEqual(10, utt.trap_detect_dc)
-        self.assertEqual(1, utt.trap_disarmable)
-        self.assertEqual(10, utt.trap_disarm_dc)
-        self.assertEqual(1, utt.is_trap)
-        self.assertEqual(1, utt.trap_once)
-        self.assertEqual(1, utt.trap_type)
-        self.assertEqual("ondisarm", utt.on_disarm)
-        self.assertEqual("ontraptriggered", utt.on_trap_triggered)
-        self.assertEqual("onclick", utt.on_click)
-        self.assertEqual("onheartbeat", utt.on_heartbeat)
-        self.assertEqual("onenter", utt.on_enter)
-        self.assertEqual("onexit", utt.on_exit)
-        self.assertEqual("onuserdefined", utt.on_user_defined)
-        self.assertEqual(6, utt.palette_id)
-        self.assertEqual("comment", utt.comment)
+        assert utt.tag == "GenericTrigger001"
+        assert utt.resref == "generictrigge001"
+        assert utt.name.stringref == 42968
+        assert utt.auto_remove_key == 1
+        assert utt.faction_id == 1
+        assert utt.cursor_id == 1
+        assert utt.highlight_height == 3.0
+        assert utt.key_name == "somekey"
+        assert utt.loadscreen_id == 0
+        assert utt.portrait_id == 0
+        assert utt.type_id == 1
+        assert utt.trap_detectable == 1
+        assert utt.trap_detect_dc == 10
+        assert utt.trap_disarmable == 1
+        assert utt.trap_disarm_dc == 10
+        assert utt.is_trap == 1
+        assert utt.trap_once == 1
+        assert utt.trap_type == 1
+        assert utt.on_disarm == "ondisarm"
+        assert utt.on_trap_triggered == "ontraptriggered"
+        assert utt.on_click == "onclick"
+        assert utt.on_heartbeat == "onheartbeat"
+        assert utt.on_enter == "onenter"
+        assert utt.on_exit == "onexit"
+        assert utt.on_user_defined == "onuserdefined"
+        assert utt.palette_id == 6
+        assert utt.comment == "comment"

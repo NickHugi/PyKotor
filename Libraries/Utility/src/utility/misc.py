@@ -8,9 +8,8 @@ import sys
 
 from contextlib import suppress
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, OrderedDict, SupportsFloat, SupportsInt, TypeVar
-
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element

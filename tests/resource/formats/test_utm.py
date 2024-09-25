@@ -42,21 +42,21 @@ class TestUTM(unittest.TestCase):
         self.validate_io(utm)
 
     def validate_io(self, utm: UTM):
-        self.assertEqual("dan_droid", utm.resref)
-        self.assertEqual(33399, utm.name.stringref)
-        self.assertEqual("dan_droid", utm.tag)
-        self.assertEqual(100, utm.mark_up)
-        self.assertEqual(25, utm.mark_down)
-        self.assertEqual("onopenstore", utm.on_open)
-        self.assertEqual("comment", utm.comment)
-        self.assertEqual(5, utm.id)
-        self.assertTrue(utm.can_buy)
-        self.assertTrue(utm.can_sell)
+        assert utm.resref == "dan_droid"
+        assert utm.name.stringref == 33399
+        assert utm.tag == "dan_droid"
+        assert utm.mark_up == 100
+        assert utm.mark_down == 25
+        assert utm.on_open == "onopenstore"
+        assert utm.comment == "comment"
+        assert utm.id == 5
+        assert utm.can_buy
+        assert utm.can_sell
 
-        self.assertEqual(2, len(utm.inventory))
-        self.assertFalse(utm.inventory[0].infinite)
-        self.assertTrue(utm.inventory[1].infinite)
-        self.assertEqual("g_i_drdltplat002", utm.inventory[1].resref)
+        assert len(utm.inventory) == 2
+        assert not utm.inventory[0].infinite
+        assert utm.inventory[1].infinite
+        assert utm.inventory[1].resref == "g_i_drdltplat002"
 
 
 if __name__ == "__main__":

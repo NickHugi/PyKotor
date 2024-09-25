@@ -26,24 +26,24 @@ from pykotor.extract.installation import Installation
 class TestReplaceModuleExtensions(unittest.TestCase):
     def testreplace_module_extensions(self):
         # Happy path tests
-        self.assertEqual(Installation.get_module_root("module.mod"), "module")
-        self.assertEqual(Installation.get_module_root("module.erf"), "module")
-        self.assertEqual(Installation.get_module_root("module.rim"), "module")
-        self.assertEqual(Installation.get_module_root("module_s.mod"), "module")
-        self.assertEqual(Installation.get_module_root("module_s.erf"), "module")
-        self.assertEqual(Installation.get_module_root("module_s.rim"), "module")
-        self.assertEqual(Installation.get_module_root("module_dlg.mod"), "module")
-        self.assertEqual(Installation.get_module_root("module_dlg.erf"), "module")
-        self.assertEqual(Installation.get_module_root("module_dlg.rim"), "module")
+        assert Installation.get_module_root("module.mod") == "module"
+        assert Installation.get_module_root("module.erf") == "module"
+        assert Installation.get_module_root("module.rim") == "module"
+        assert Installation.get_module_root("module_s.mod") == "module"
+        assert Installation.get_module_root("module_s.erf") == "module"
+        assert Installation.get_module_root("module_s.rim") == "module"
+        assert Installation.get_module_root("module_dlg.mod") == "module"
+        assert Installation.get_module_root("module_dlg.erf") == "module"
+        assert Installation.get_module_root("module_dlg.rim") == "module"
 
         # Edge cases
-        self.assertEqual(Installation.get_module_root(""), "")
-        self.assertEqual(Installation.get_module_root("module"), "module")
-        self.assertEqual(Installation.get_module_root("module_s"), "module")
-        self.assertEqual(Installation.get_module_root("module_dlg"), "module")
-        self.assertEqual(Installation.get_module_root("module_s_s"), "module_s")
-        self.assertEqual(Installation.get_module_root("module_dlg_dlg"), "module_dlg")
-        self.assertEqual(Installation.get_module_root("module.mod.mod"), "module.mod")
+        assert Installation.get_module_root("") == ""
+        assert Installation.get_module_root("module") == "module"
+        assert Installation.get_module_root("module_s") == "module"
+        assert Installation.get_module_root("module_dlg") == "module"
+        assert Installation.get_module_root("module_s_s") == "module_s"
+        assert Installation.get_module_root("module_dlg_dlg") == "module_dlg"
+        assert Installation.get_module_root("module.mod.mod") == "module.mod"
 
         # Error cases
         self.assertRaises(TypeError, Installation.get_module_root, None)

@@ -3,7 +3,6 @@ from __future__ import annotations
 import pathlib
 import sys
 import unittest
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -41,36 +40,36 @@ class TestDecodeBytes(unittest.TestCase):
     def test_basic(self):  # sourcery skip: class-extract-method
         byte_str = b"hello world"
         result = decode_bytes_with_fallbacks(byte_str)
-        self.assertEqual(result, "hello world")
+        assert result == "hello world"
 
     def test_non_ascii(self):
         byte_str = b"h\xc3\xa9llo w\xc3\xb6rld"
         result = decode_bytes_with_fallbacks(byte_str)
-        self.assertEqual(result, "héllo wörld")
+        assert result == "héllo wörld"
 
     def test_unknown_encoding(self):
         byte_str = b"\x80\x81\x82"
         with self.assertRaises(UnicodeDecodeError):
             byte_str.decode()
         result = byte_str.decode(errors="replace")
-        self.assertEqual(result, "���")
+        assert result == "���"
         result = decode_bytes_with_fallbacks(byte_str, errors="replace")
-        self.assertEqual(result, "Øab")
+        assert result == "Øab"
 
     def test_bom(self):
         byte_str = b"\xef\xbb\xbfhello world"
         result = byte_str.decode("utf-8-sig")
-        self.assertEqual(result, "hello world")
+        assert result == "hello world"
         result = decode_bytes_with_fallbacks(byte_str)
-        self.assertEqual(result, "hello world")
+        assert result == "hello world"
 
     def test_errors_replace(self):
         byte_str = b"h\xc3\xa9llo"
         # self.assertEqual(byte_str.decode(errors="replace"), "h?llo")
-        self.assertEqual(byte_str.decode(errors="replace"), "héllo")
+        assert byte_str.decode(errors="replace") == "héllo"
 
         result = decode_bytes_with_fallbacks(byte_str, errors="replace")
-        self.assertEqual(result, "héllo")
+        assert result == "héllo"
 
     def test_known_encoding(self):
         byte_content = b"Hello, World!"
@@ -81,7 +80,7 @@ class TestDecodeBytes(unittest.TestCase):
         expected_result = "Hello, World!"
 
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
 
     def test_language_provided(self):
         byte_content = b"Bonjour le monde!"
@@ -92,7 +91,7 @@ class TestDecodeBytes(unittest.TestCase):
         expected_result = "Bonjour le monde!"
 
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
 
     def test_language_detect(self):
         byte_content = b"Bonjour le monde!"
@@ -103,7 +102,7 @@ class TestDecodeBytes(unittest.TestCase):
         expected_result = "Bonjour le monde!"
 
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
 
     def test_invalid_bytes_for_encoding(self):
         byte_content = b"\xff\xfe\x00"
@@ -113,10 +112,10 @@ class TestDecodeBytes(unittest.TestCase):
         only_8bit_encodings = False
         expected_result = "\ufffd\ufffd"
         result = byte_content.decode(encoding, errors)
-        self.assertEqual(result, "��\x00")
+        assert result == "��\x00"
 
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertTrue(result in {"��\x00", "ÿþ\x00"})
+        assert result in {"��\x00", "ÿþ\x00"}
 
     def test_fallback_to_detected_encoding(self):
         byte_content = b"\xc2\xa1Hola!"
@@ -129,9 +128,9 @@ class TestDecodeBytes(unittest.TestCase):
         exp2 = "Â¡Hola!"
 
         result = byte_content.decode(errors=errors)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, exp2 if charset_normalizer is None else exp)
+        assert result == (exp2 if charset_normalizer is None else exp)
 
     def test_8bit_encoding_only(self):
         byte_content = b"\xe4\xf6\xfc"
@@ -144,9 +143,9 @@ class TestDecodeBytes(unittest.TestCase):
         exp2 = "дць"
 
         result = byte_content.decode(errors="replace")
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, exp2 if charset_normalizer is None else exp)
+        assert result == (exp2 if charset_normalizer is None else exp)
 
     def test_with_BOM_included(self):
         byte_content = b"\xef\xbb\xbfTest"
@@ -157,7 +156,7 @@ class TestDecodeBytes(unittest.TestCase):
         expected_result = "Test"
 
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
 
     def test_undetectable_encoding_replace_errors(self):
         byte_content = b"\x80\x81\x82"
@@ -169,9 +168,9 @@ class TestDecodeBytes(unittest.TestCase):
         exp = "Øab"
 
         result = byte_content.decode(errors=errors)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, exp)
+        assert result == exp
 
     def test_strict_error_handling_decoding_failure(self):
         byte_content = b"\x80\x81\x82"
@@ -184,7 +183,7 @@ class TestDecodeBytes(unittest.TestCase):
             decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
             byte_content.decode(errors=errors)
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
 
     def test_no_valid_encoding_found_strict_errors(self):
         byte_content = b"\x80\x81\x82"
@@ -196,4 +195,4 @@ class TestDecodeBytes(unittest.TestCase):
         with self.assertRaises(UnicodeDecodeError):
             byte_content.decode(errors=errors)
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result

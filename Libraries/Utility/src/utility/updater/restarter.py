@@ -6,13 +6,13 @@ import sys
 import time
 
 from enum import Enum
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Callable
 
 from loggerplus import RobustLogger
 
 from utility.system.os_helper import is_frozen, requires_admin
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -121,7 +121,7 @@ class Restarter:
 
     def _win_overwrite(self):  # sourcery skip: class-extract-method
         self.log.info("Calling _win_overwrite for updated app '%s'", self.updated_app)
-        is_folder = self.updated_app.safe_isdir()
+        is_folder = self.updated_app.is_dir()
         if is_folder:
             needs_admin = requires_admin(self.updated_app) or requires_admin(self.current_app)
         else:
@@ -220,7 +220,7 @@ move /Y "{self.updated_app}" "{self.current_app}"
     @classmethod
     def _win_kill_self(cls):
         taskkill_path = cls.win_get_system32_dir() / "taskkill.exe"
-        if taskkill_path.safe_isfile():
+        if taskkill_path.is_file():
             subprocess.run([str(taskkill_path), "/F", "/PID", str(os.getpid())], check=True)  # noqa: S603
         else:
             log = RobustLogger()

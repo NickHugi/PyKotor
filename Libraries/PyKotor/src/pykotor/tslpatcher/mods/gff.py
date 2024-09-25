@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from itertools import zip_longest
+from pathlib import PureWindowsPath
 from typing import TYPE_CHECKING, Any
 
 from loggerplus import RobustLogger
@@ -12,7 +13,6 @@ from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct, bytes
 from pykotor.resource.formats.gff.gff_data import _GFFField
 from pykotor.resource.formats.gff.io_gff import GFFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     import os

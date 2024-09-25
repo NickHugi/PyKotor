@@ -7,8 +7,7 @@ import pathlib
 import sys
 
 from copy import deepcopy
-
-from utility.system.path import Path
+from pathlib import Path
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -21,7 +20,12 @@ if getattr(sys, "frozen", False) is False:
 from typing import TYPE_CHECKING, Callable, cast
 
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
-from utility.system.agnostics import askdirectory, askopenfilenames, askretrycancel, showinfo
+from utility.system.agnostics import (
+    askdirectory,
+    askopenfilenames,
+    askretrycancel,
+    showinfo,
+)
 
 if os.name == "nt":
     from utility.system.win32.com.windialogs import open_file_and_folder_dialog
@@ -243,11 +247,11 @@ def main():
 
     processed_files_count = 0
     for input_path in input_paths:
-        if input_path.safe_isfile():
+        if input_path.is_file():
             process_file(input_path, PARSER_ARGS.output, resolutions_to_process)
             processed_files_count += 1
 
-        elif input_path.safe_isdir():
+        elif input_path.is_dir():
             files_to_process = list(input_path.safe_rglob("*.gui"))
             if not files_to_process:
                 print(f"Error: no .gui files to process in input path '{input_path}'", file=sys.stderr)

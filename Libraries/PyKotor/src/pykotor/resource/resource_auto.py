@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from contextlib import suppress
+from pathlib import PurePath
 from typing import TYPE_CHECKING, Union
 
 from pykotor.extract.file import ResourceIdentifier
@@ -50,7 +51,6 @@ from pykotor.resource.generics.utt import UTT, dismantle_utt
 from pykotor.resource.generics.utw import UTW, dismantle_utw
 from pykotor.resource.type import ResourceType
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES

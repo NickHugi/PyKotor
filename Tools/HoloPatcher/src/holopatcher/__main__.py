@@ -58,14 +58,23 @@ if not is_frozen():
         update_sys_path(pathlib.Path(__file__).parents[1])
 
 
+from pathlib import Path  # noqa: E402
+
 from loggerplus import RobustLogger  # noqa: E402
 
-from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer  # noqa: E402
+from holopatcher.config import (  # noqa: E402
+    CURRENT_VERSION,
+    getRemoteHolopatcherUpdateInfo,
+    remoteVersionNewer,
+)
 from pykotor.common.misc import Game  # noqa: E402
 from pykotor.common.stream import BinaryReader  # noqa: E402
 from pykotor.extract.file import ResourceIdentifier  # noqa: E402
 from pykotor.tools.encoding import decode_bytes_with_fallbacks  # noqa: E402
-from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default  # noqa: E402
+from pykotor.tools.path import (  # noqa: E402
+    CaseAwarePath,
+    find_kotor_paths_from_default,
+)
 from pykotor.tslpatcher.config import LogLevel  # noqa: E402
 from pykotor.tslpatcher.logger import LogType, PatchLogger  # noqa: E402
 from pykotor.tslpatcher.patcher import ModInstaller  # noqa: E402
@@ -76,7 +85,6 @@ from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.misc import ProcessorArchitecture  # noqa: E402
 from utility.system.app_process.shutdown import terminate_main_process  # noqa: E402
 from utility.system.os_helper import win_get_system32_dir  # noqa: E402
-from utility.system.path import Path  # noqa: E402
 from utility.tkinter.tooltip import ToolTip  # noqa: E402
 from utility.tkinter.updater import TkProgressDialog  # noqa: E402
 
@@ -628,7 +636,7 @@ class App:
         if not self.preinstall_validate_chosen():
             return
         backup_parent_folder = Path(self.mod_path, "backup")
-        if not backup_parent_folder.safe_isdir():
+        if not backup_parent_folder.is_dir():
             messagebox.showerror(
                 "Backup folder empty/missing.",
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
@@ -857,15 +865,15 @@ class App:
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             info_rte_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath()).with_suffix(".rte")
-            if not info_rtf_path.safe_isfile() and not info_rte_path.safe_isfile():
+            if not info_rtf_path.is_file() and not info_rte_path.is_file():
                 messagebox.showwarning("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk.")
                 return
 
-            if info_rte_path.safe_isfile():
+            if info_rte_path.is_file():
                 data: bytes = BinaryReader.load_file(info_rte_path)
                 rtf_text: str = decode_bytes_with_fallbacks(data, errors="replace")
                 self.load_rte_content(rtf_text)
-            elif info_rtf_path.safe_isfile():
+            elif info_rtf_path.is_file():
                 data = BinaryReader.load_file(info_rtf_path)
                 rtf_text = decode_bytes_with_fallbacks(data, errors="replace")
                 self.set_stripped_rtf_text(rtf_text)
@@ -945,16 +953,16 @@ class App:
 
             tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
             # handle when a user selects 'tslpatchdata' instead of mod root
-            if not tslpatchdata_path.safe_isdir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
+            if not tslpatchdata_path.is_dir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
                 tslpatchdata_path = tslpatchdata_path.parent
 
             self.mod_path = str(tslpatchdata_path.parent)
             namespace_path: CaseAwarePath = tslpatchdata_path / "namespaces.ini"
             changes_path: CaseAwarePath = tslpatchdata_path / "changes.ini"
 
-            if namespace_path.safe_isfile():
+            if namespace_path.is_file():
                 self.load_namespace(NamespaceReader.from_filepath(namespace_path))
-            elif changes_path.safe_isfile():
+            elif changes_path.is_file():
                 config_reader: ConfigReader = ConfigReader.from_filepath(changes_path)
                 namespaces: list[PatcherNamespace] = [config_reader.config.as_namespace(changes_path)]
                 self.load_namespace(namespaces, config_reader)
@@ -969,7 +977,7 @@ class App:
         else:
             if default_directory_path_str:
                 self.browse_button.place_forget()
-            if not namespace_path.safe_isfile():
+            if not namespace_path.is_file():
                 self.namespaces_combobox.place_forget()
 
     def open_kotor(
@@ -1159,7 +1167,7 @@ class App:
                 "Wait for the previous task to finish.",
             )
             return False
-        if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
+        if not self.mod_path or not CaseAwarePath(self.mod_path).is_dir():
             messagebox.showinfo(
                 "No mod chosen",
                 "Select your mod directory first.",
@@ -1173,7 +1181,7 @@ class App:
             )
             return False
         case_game_path = CaseAwarePath(game_path)
-        if not case_game_path.safe_isdir():
+        if not case_game_path.is_dir():
             messagebox.showinfo(
                 "Invalid KOTOR directory chosen",
                 "Select a valid path to your KOTOR install.",

@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 try:
@@ -88,18 +87,18 @@ class TLKEditorTest(TestCase):
         new = read_tlk(data)
 
         diff = old.compare(new, self.log_func)
-        self.assertTrue(diff)
+        assert diff
         self.assertDeepEqual(old, new)
 
     def assertDeepEqual(self, obj1, obj2, context=""):
         if isinstance(obj1, dict) and isinstance(obj2, dict):
-            self.assertEqual(set(obj1.keys()), set(obj2.keys()), context)
+            assert set(obj1.keys()) == set(obj2.keys()), context
             for key in obj1:
                 new_context = f"{context}.{key}" if context else str(key)
                 self.assertDeepEqual(obj1[key], obj2[key], new_context)
 
         elif isinstance(obj1, (list, tuple)) and isinstance(obj2, (list, tuple)):
-            self.assertEqual(len(obj1), len(obj2), context)
+            assert len(obj1) == len(obj2), context
             for index, (item1, item2) in enumerate(zip(obj1, obj2)):
                 new_context = f"{context}[{index}]" if context else f"[{index}]"
                 self.assertDeepEqual(item1, item2, new_context)
@@ -108,7 +107,7 @@ class TLKEditorTest(TestCase):
             self.assertDeepEqual(obj1.__dict__, obj2.__dict__, context)
 
         else:
-            self.assertEqual(obj1, obj2, context)
+            assert obj1 == obj2, context
 
 
 if __name__ == "__main__":

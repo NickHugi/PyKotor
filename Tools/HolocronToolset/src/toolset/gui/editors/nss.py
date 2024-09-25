@@ -7,7 +7,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from qtpy.QtCore import QDir, QEvent, QSettings, QSize, Qt
-from qtpy.QtWidgets import QApplication, QFileSystemModel, QInputDialog, QMenu, QPlainTextEdit, QSplitterHandle
+from qtpy.QtWidgets import (
+    QApplication,
+    QFileSystemModel,
+    QInputDialog,
+    QMenu,
+    QPlainTextEdit,
+    QSplitterHandle,
+)
 
 #from toolset.gui.dialogs.web_ide_selector import WebIDEManager
 from toolset.gui.editor import Editor

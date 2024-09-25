@@ -4,6 +4,7 @@ import tempfile
 import time
 
 from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import qtpy
@@ -18,7 +19,6 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
 from utility.system.os_helper import remove_any
-from utility.system.path import Path
 
 if TYPE_CHECKING:
 
@@ -35,13 +35,21 @@ class AudioPlayer(QMainWindow):
         super().__init__(parent)
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.windows.audio_player import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.windows.audio_player import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.windows.audio_player import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.windows.audio_player import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
@@ -75,7 +83,7 @@ class AudioPlayer(QMainWindow):
         self.player.stop()
         data = sound.deobfuscate_audio(data)
         # Clear any existing temporary file
-        if self.tempFile and Path(self.tempFile.name).safe_isfile():
+        if self.tempFile and Path(self.tempFile.name).is_file():
             self.tempFile.delete = True
             remove_any(self.tempFile.name)
         self.tempFile = None

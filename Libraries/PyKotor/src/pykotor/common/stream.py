@@ -8,6 +8,7 @@ import os
 import struct
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from loggerplus import RobustLogger
@@ -15,7 +16,6 @@ from loggerplus import RobustLogger
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from types import TracebackType

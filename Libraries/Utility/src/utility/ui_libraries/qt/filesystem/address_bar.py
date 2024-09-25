@@ -12,15 +12,14 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QFocusEvent, QIcon, QMouseEvent
     from qtpy.QtWidgets import QWidget
 
-
 @print_qt_class_calls()
 class PathButton(QToolButton):
-    path_selected = Signal(Path)
+    pathSelected = Signal(Path)
 
     def __init__(self, path: Path, parent: QWidget | None = None, *, is_last: bool = False):
         super().__init__(parent)
         self.path = path
-        self.menu = QMenu(self)
+        self.menu: QMenu = QMenu(self)
         self.is_last = is_last
         self.setText(path.name or str(path))
         self.clicked.connect(self._on_clicked)
@@ -30,9 +29,9 @@ class PathButton(QToolButton):
             self.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
             self.setMenu(QMenu(self))
 
-    def _on_clicked(self, checked: bool = False):  # noqa: FBT001, FBT002
-        if not self.menu() or self.menu().isEmpty():
-            self.path_selected.emit(self.path)
+    def _on_clicked(self, checked: bool = False):
+        if not self.menu or self.menu.isEmpty():
+            self.pathSelected.emit(self.path)
 
     def set_icon(self, icon: QIcon):
         self.setIcon(icon)
@@ -41,40 +40,38 @@ class PathButton(QToolButton):
         self.menu.clear()
         for name, path, icon in contents:
             action = QAction(icon, name, self.menu)
-            action.triggered.connect(lambda _, p=path: self.path_selected.emit(p))
+            action.triggered.connect(lambda _, p=path: self.pathSelected.emit(p))
             self.menu.addAction(action)
         self.setMenu(self.menu)
         if not self.is_last:
             self.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
 
-
 @print_qt_class_calls()
 class PyQAddressBar(QToolBar):
-    path_changed: Signal = Signal(Path)
-    editing_finished: Signal = Signal()
+    pathChanged: Signal = Signal(Path)
+    editingFinished: Signal = Signal()
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.current_path: Path = Path.home()
         self.buttons: list[PathButton] = []
         self.edit_mode: bool = False
-        self.history: list[Path] = [self.current_path]  # Initialize with current path
-        self.history_index: int = 0  # Set initial index to 0
+        self.history: list[Path] = [self.current_path]
+        self.history_index: int = 0
 
         self.setMovable(False)
         self.setFloatable(False)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
 
-        # Add navigation buttons
-        self.back_button: QAction = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack), "Back")
-        self.back_button.triggered.connect(self.go_back)
+        self.backButton: QAction = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack), "Back")
+        self.backButton.triggered.connect(self.go_back)
 
-        self.forward_button: QAction = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowForward), "Forward")
-        self.forward_button.triggered.connect(self.go_forward)
+        self.forwardButton: QAction = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowForward), "Forward")
+        self.forwardButton.triggered.connect(self.go_forward)
 
-        self.up_button: QAction = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowUp), "Up")
-        self.up_button.triggered.connect(self.go_up)
+        self.upButton: QAction = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowUp), "Up")
+        self.upButton.triggered.connect(self.go_up)
 
         self.addSeparator()
 
@@ -92,13 +89,6 @@ class PyQAddressBar(QToolBar):
         self.setToolTip("AddressBar")
         self.setCursor(Qt.CursorShape.IBeamCursor)
 
-    def create_path_button(self, path: Path, *, is_last: bool = False) -> PathButton:
-        button = PathButton(path, self, is_last=is_last)
-        button.path_selected.connect(self._on_path_selected)
-        self.buttons.append(button)
-        self.addWidget(button)
-        return button
-
     def update_path(self, path: Path):
         new_path = path.resolve()
         if new_path != self.current_path:
@@ -114,27 +104,30 @@ class PyQAddressBar(QToolBar):
         for i, current_path in enumerate(paths):
             is_last = i == len(paths) - 1
             button = self.create_path_button(current_path, is_last=is_last)
-            if not is_last and i > 0:
+            if not is_last:
                 self.addSeparator()
 
-        self.toggle_edit_mode(False)  # noqa: FBT003
+        self.toggle_edit_mode(edit_mode=False)
         self.update_navigation_buttons()
         self.updateGeometry()
         self.update()
 
     def _update_history(self, new_path: Path):
-        if self.history_index == -1 or self.history[self.history_index] != new_path:
+        if (
+            self.history_index == -1
+            or self.history[self.history_index] != new_path
+        ):
             self.history = self.history[: self.history_index + 1]
             self.history.append(new_path)
             self.history_index = len(self.history) - 1
         self.update_navigation_buttons()
 
     def update_navigation_buttons(self):
-        self.back_button.setEnabled(self.history_index > 0)
-        self.forward_button.setEnabled(self.history_index < len(self.history) - 1)
-        self.up_button.setEnabled(self.current_path != self.current_path.root)
+        self.backButton.setEnabled(self.history_index > 0)
+        self.forwardButton.setEnabled(self.history_index < len(self.history) - 1)
+        self.upButton.setEnabled(self.current_path != self.current_path.root)
 
-    def toggle_edit_mode(self, edit_mode: bool):  # noqa: FBT001
+    def toggle_edit_mode(self, *, edit_mode: bool):
         self.edit_mode = edit_mode
         if edit_mode:
             for button in self.buttons:
@@ -149,23 +142,23 @@ class PyQAddressBar(QToolBar):
                 button.show()
         self.update()
 
-    def go_back(self, checked: bool = False):  # noqa: FBT001, FBT002
+    def go_back(self, checked: bool = False):
         if self.history_index > 0:
             self.history_index -= 1
             self.update_path(self.history[self.history_index])
-            self.path_changed.emit(self.current_path)
+            self.pathChanged.emit(self.current_path)
 
-    def go_forward(self, checked: bool = False):  # noqa: FBT001, FBT002
+    def go_forward(self, checked: bool = False):
         if self.history_index < len(self.history) - 1:
             self.history_index += 1
             self.update_path(self.history[self.history_index])
-            self.path_changed.emit(self.current_path)
+            self.pathChanged.emit(self.current_path)
 
-    def go_up(self, checked: bool = False):  # noqa: FBT001, FBT002
+    def go_up(self, checked: bool = False):
         parent = self.current_path.parent
         if parent != self.current_path:
             self.update_path(parent)
-            self.path_changed.emit(parent)
+            self.pathChanged.emit(parent)
 
     def _on_editing_finished(self):
         if self.edit_mode:
@@ -175,29 +168,34 @@ class PyQAddressBar(QToolBar):
                 if new_path.exists():
                     if new_path != self.current_path:
                         self.update_path(new_path)
-                        self.path_changed.emit(new_path)
+                        self.pathChanged.emit(new_path)
                 else:
-                    # If the path doesn't exist, check if it's a valid relative path
                     relative_path = self.current_path / new_path_str
                     if relative_path.exists():
                         self.update_path(relative_path)
-                        self.path_changed.emit(relative_path)
+                        self.pathChanged.emit(relative_path)
                     else:
-                        # If neither absolute nor relative path exists, revert to the current path
                         self.line_edit.setText(str(self.current_path))
             except Exception:
-                # Invalid path, revert to the current path
                 self.line_edit.setText(str(self.current_path))
-        self.toggle_edit_mode(False)  # noqa: FBT003
+        self.toggle_edit_mode(edit_mode=False)
+
+    def create_path_button(self, path: Path, *, is_last: bool = False) -> PathButton:
+        button = PathButton(path, self, is_last=is_last)
+        button.pathSelected.connect(self._on_path_selected)
+        self.buttons.append(button)
+        self.addWidget(button)
+        return button
 
     def _on_path_selected(self, path: Path):
         if path != self.current_path:
             self.update_path(path)
-            self.path_changed.emit(path)
+            self.pathChanged.emit(path)
+            self.set_directory_contents(path, self._get_directory_contents(path))
 
     def focusOutEvent(self, event: QFocusEvent):
         if self.edit_mode:
-            self.toggle_edit_mode(False)  # noqa: FBT003
+            self.toggle_edit_mode(edit_mode=False)
         super().focusOutEvent(event)
 
     def mousePressEvent(self, event: QMouseEvent):
@@ -206,7 +204,7 @@ class PyQAddressBar(QToolBar):
                 if button.geometry().contains(event.pos()):
                     button.click()
                     return
-            self.toggle_edit_mode(True)  # noqa: FBT003
+            self.toggle_edit_mode(True)
         super().mousePressEvent(event)
 
     def set_path_icon(self, path: Path, icon: QIcon):
@@ -215,8 +213,45 @@ class PyQAddressBar(QToolBar):
                 button.setIcon(icon)
                 break
 
+    def _get_directory_contents(self, path: Path) -> list[tuple[str, Path, QIcon]]:
+        return [(p.name, p, QIcon.fromTheme("folder" if p.is_dir() else "text-plain")) for p in path.iterdir()]
+
     def set_directory_contents(self, path: Path, contents: list[tuple[str, Path, QIcon]]):
         for button in self.buttons:
             if button.path == path:
                 button.set_menu_items(contents)
                 break
+
+if __name__ == "__main__":
+    import sys
+
+    from qtpy.QtGui import QIcon
+    from qtpy.QtWidgets import QApplication, QMainWindow
+
+    class MainWindow(QMainWindow):
+        def __init__(self):
+            super().__init__()
+            self.setWindowTitle("Address Bar Test")
+            self.setGeometry(100, 100, 800, 100)
+            self.address_bar = PyQAddressBar(self)
+            self.setCentralWidget(self.address_bar)
+            self.address_bar.pathChanged.connect(self.on_path_changed)
+            self.initialize_address_bar()
+
+        def initialize_address_bar(self):
+            initial_path = Path.home().joinpath("Documents")
+            self.address_bar.update_path(initial_path)
+            contents = [
+                ("File1.txt", initial_path / "File1.txt", QIcon.fromTheme("text-plain")),
+                ("File2.txt", initial_path / "File2.txt", self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack)),
+                ("Folder1", initial_path / "Folder1", QIcon.fromTheme("folder")),
+            ]
+            self.address_bar.set_directory_contents(initial_path, contents)
+
+        def on_path_changed(self, path: Path):
+            print(f"Path changed to: {path}")
+
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())

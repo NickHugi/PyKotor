@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import qtpy
@@ -8,7 +9,15 @@ from loggerplus import RobustLogger
 from qtpy import QtCore, QtGui
 from qtpy.QtCore import QMimeData, Qt
 from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QFileDialog, QInputDialog, QLineEdit, QMenu, QMessageBox, QShortcut
+from qtpy.QtWidgets import (
+    QAction,
+    QFileDialog,
+    QInputDialog,
+    QLineEdit,
+    QMenu,
+    QMessageBox,
+    QShortcut,
+)
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
@@ -23,7 +32,6 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
 from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 
 if TYPE_CHECKING:
@@ -86,13 +94,21 @@ class ERFEditor(Editor):
         self.resize(400, 250)
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.editors.erf import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.editors.erf import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.editors.erf import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.editors.erf import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
@@ -314,7 +330,7 @@ class ERFEditor(Editor):
 
         data: tuple[bytes, bytes] = self.build()
         self._revert = data[0]
-        if is_capsule_file(self._filepath.parent) and not self._filepath.safe_isfile():
+        if is_capsule_file(self._filepath.parent) and not self._filepath.is_file():
             try:
                 self._saveNestedCapsule(*data)
             except ValueError as e:
@@ -722,12 +738,12 @@ class ERFEditorTable(RobustTableView):
         """
         tempDir = Path(GlobalSettings().extractPath)
 
-        if not tempDir.safe_isdir():
-            if tempDir.safe_isfile() or tempDir.exists():
+        if not tempDir.is_dir():
+            if tempDir.is_file() or tempDir.exists():
                 RobustLogger().error(f"tempDir '{tempDir}' exists but was not a valid filesystem folder.")
             else:
                 tempDir.mkdir(parents=True, exist_ok=True)
-            if not tempDir.safe_isdir():
+            if not tempDir.is_dir():
                 RobustLogger().error(f"Temp directory not valid: {tempDir}")
             return
 

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import math
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PIL import Image, ImageDraw, ImageFont
 
 from pykotor.resource.formats.txi import TXIFontInformation
 from pykotor.tools.encoding import get_charset_from_singlebyte_encoding
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

@@ -1,20 +1,22 @@
 from __future__ import annotations
 
+import os
 import sys
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import Flag
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 from qtpy.QtCore import QObject, Signal
 from qtpy.QtGui import QColor, QFont
-from qtpy.QtWidgets import QFileDialog as QFileDialog, QMessageBox, QStyle
+from qtpy.QtWidgets import QFileDialog, QMessageBox, QStyle
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import Qt
+    from qtpy.QtCore import QUrl, Qt
+    from typing_extensions import Self
 
 
-class QPlatformDialogHelper(QObject, ABC):
+class QPlatformDialogHelper(QObject):
     accept: Signal = Signal()
     reject: Signal = Signal()
 
@@ -36,7 +38,6 @@ class QPlatformDialogHelper(QObject, ABC):
             raise NotImplementedError(f"No dialog helper implemented for {sys.platform}")
         return super().__new__(new_cls)
 
-
     @abstractmethod
     def exec(self) -> DialogCode:
         ...
@@ -48,6 +49,19 @@ class QPlatformDialogHelper(QObject, ABC):
     @abstractmethod
     def hide(self):
         ...
+
+    def selectMimeTypeFilter(self, filter: str) -> None:
+        """TODO: Platform specific implementation."""
+    def selectedMimeTypeFilter(self) -> str:
+        """TODO: Platform specific implementation."""
+
+    def isSupportedUrl(self, url: QUrl) -> bool:
+        return url.isLocalFile()
+
+    def setOptions(self, options: QFileDialog.Options) -> None:
+        self._private.options = options
+    def testOption(self, option: QFileDialog.Option) -> bool:
+        return self._private.options & option
 
     def defaultStyleHint(self) -> StyleHint:
         return self.StyleHint(0)
@@ -68,12 +82,30 @@ class QPlatformColorDialogHelper(QPlatformDialogHelper):
         ...
 
 
-class QPlatformFileDialogHelper(QPlatformDialogHelper):
-    FileMode = QFileDialog.FileMode
-    AcceptMode = QFileDialog.AcceptMode
-    Option = QFileDialog.Option
+class QPlatformFileDialogHelper(QPlatformDialogHelper if TYPE_CHECKING else QObject):
+    """Abstract base class for platform-specific file dialog helpers.
+    This class defines the interface for creating and managing file dialogs across different platforms.
 
-    Options = int
+    This is a massive TODO as it would be an enormous amount of work to implement this for all platforms.
+    Therefore, this class is currently a stub and will be implemented in the future.
+    """
+    filterRegExp = r"^(.+)\s*\((.*)\)$"
+
+    def __init__(self, options: int):
+        super().__init__()
+        self._options: int = options
+        self._directory: str = ""
+        self._selectedFiles: list[str] = []
+        self._selectedNameFilter: str = ""
+        self._selectedMimeTypeFilter: str = ""
+
+    @staticmethod
+    def cleanFilterList(filter: str) -> list[str]:
+        return [filter.strip()]
+
+    FileMode = QFileDialog.FileMode.AnyFile
+    AcceptMode = QFileDialog.AcceptMode.AcceptOpen
+    Option = QFileDialog.Options(0)
 
     fileSelected = Signal(str)
     filesSelected = Signal(list)
@@ -81,49 +113,35 @@ class QPlatformFileDialogHelper(QPlatformDialogHelper):
     directoryEntered = Signal(str)
     filterSelected = Signal(str)
 
-    @abstractmethod
-    def setDirectory(self, directory: str):
-        ...
+    def isSupportedUrl(self, url: QUrl) -> bool:
+        return os.path.exists(url.toLocalFile())  # noqa: PTH110
 
-    @abstractmethod
+    def setDirectory(self, directory: str) -> None:
+        self._directory = directory
+
     def directory(self) -> str:
-        ...
+        return self._directory
 
-    @abstractmethod
-    def selectFile(self, filename: str):
-        ...
+    def selectFile(self, filename: QUrl) -> None:
+        self._selectedFiles = [filename.toString()]
 
-    @abstractmethod
     def selectedFiles(self) -> list[str]:
-        ...
+        return self._selectedFiles
 
-    @abstractmethod
-    def setFilter(self):
-        ...
+    def setFilter(self) -> None:
+        pass
 
-    @abstractmethod
-    def selectNameFilter(self, filter: str):  # noqa: A002
-        ...
+    def selectMimeTypeFilter(self, filter: str) -> None:  # noqa: A002
+        self._selectedMimeTypeFilter = filter
 
-    @abstractmethod
-    def selectedNameFilter(self) -> str:
-        ...
-
-    @abstractmethod
-    def selectMimeTypeFilter(self, filter: str):  # noqa: A002
-        ...
-
-    @abstractmethod
     def selectedMimeTypeFilter(self) -> str:
-        ...
+        return self._selectedMimeTypeFilter
 
-    @abstractmethod
-    def defaultNameFilterString(self) -> str:
-        ...
+    def selectNameFilter(self, filter: str) -> None:  # noqa: A002
+        self._selectedNameFilter = filter
 
-    @abstractmethod
-    def isSupportedUrl(self, url: str) -> bool:
-        ...
+    def selectedNameFilter(self) -> str:
+        return self._selectedNameFilter
 
 
 class QPlatformFontDialogHelper(QPlatformDialogHelper):
@@ -143,8 +161,8 @@ class QPlatformMessageDialogHelper(QPlatformDialogHelper):
     This class defines the interface for creating and managing message dialogs across different platforms.
     """
 
-    StandardButton = QMessageBox.StandardButton
-    StandardButtons = int
+    StandardButton: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok
+    StandardButtons = QMessageBox.StandardButton(0)
 
     class ButtonRole(Flag):
         """Enum defining the roles of buttons in a message dialog.

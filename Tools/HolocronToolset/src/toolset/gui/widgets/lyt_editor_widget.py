@@ -13,7 +13,18 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 import qtpy
 
 from loggerplus import RobustLogger
-from qtpy.QtCore import QByteArray, QEvent, QMimeData, QModelIndex, QPoint, QSettings, QSize, QTimer, Qt, Signal
+from qtpy.QtCore import (
+    QByteArray,
+    QEvent,
+    QMimeData,
+    QModelIndex,
+    QPoint,
+    QSettings,
+    QSize,
+    QTimer,
+    Qt,
+    Signal,
+)
 from qtpy.QtGui import QDrag, QIcon, QKeySequence, QPainter, QPalette
 from qtpy.QtWidgets import (
     QAction,

@@ -4,10 +4,10 @@ import os
 import unittest
 
 from PIL import Image
+from pathlib import Path
 
 from pykotor.common.language import Language
 from pykotor.font.draw import write_bitmap_font, write_bitmap_fonts
-from utility.system.path import Path
 
 os.chdir("./Libraries/PyKotorFont")
 FONT_PATH_FILE = Path("tests/files/roboto/Roboto-Black.ttf")

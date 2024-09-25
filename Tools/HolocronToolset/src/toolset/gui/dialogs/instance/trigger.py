@@ -24,13 +24,21 @@ class TriggerDialog(QDialog):
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.instance.trigger import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.dialogs.instance.trigger import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.instance.trigger import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.dialogs.instance.trigger import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.instance.trigger import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.dialogs.instance.trigger import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.instance.trigger import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.dialogs.instance.trigger import (
+                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Collection, NoReturn
 
 from ply import yacc
@@ -55,7 +56,6 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     WhileLoopBlock,
 )
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from ply.lex import LexToken

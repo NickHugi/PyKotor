@@ -10,9 +10,16 @@ import qtpy  # noqa: E402
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
     QDesktopWidget = None
-    from qtpy.QtGui import QUndoCommand, QUndoStack  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
+    from qtpy.QtGui import (  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
+        QUndoCommand,
+        QUndoStack,
+    )
 elif qtpy.API_NAME in ("PyQt5", "PySide2"):
-    from qtpy.QtWidgets import QDesktopWidget, QUndoCommand, QUndoStack  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
+    from qtpy.QtWidgets import (  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
+        QDesktopWidget,
+        QUndoCommand,
+        QUndoStack,
+    )
 else:
     raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
 
@@ -30,23 +37,31 @@ def update_sys_path(path: pathlib.Path):
         sys.path.append(working_dir)
 
 
-file_absolute_path = pathlib.Path(__file__).resolve()
 
-pykotor_path = file_absolute_path.parents[8] / "Libraries" / "PyKotor" / "src" / "pykotor"
-if pykotor_path.exists():
-    update_sys_path(pykotor_path.parent)
-pykotor_gl_path = file_absolute_path.parents[8] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
-if pykotor_gl_path.exists():
-    update_sys_path(pykotor_gl_path.parent)
-utility_path = file_absolute_path.parents[5]
-if utility_path.exists():
-    update_sys_path(utility_path)
-toolset_path = file_absolute_path.parents[8] / "Tools/HolocronToolset/src/toolset"
-if toolset_path.exists():
-    update_sys_path(toolset_path.parent)
-    os.chdir(toolset_path)
+if __name__ == "__main__":
+    def update_sys_path(path: pathlib.Path):
+        working_dir = str(path)
+        if working_dir not in sys.path:
+            sys.path.append(working_dir)
 
-from utility.ui_libraries.qt.filesystem.common.pyfileinfogatherer import PyQExtendedInformation  # noqa: E402
+
+    file_absolute_path = pathlib.Path(__file__).resolve()
+
+    pykotor_path = file_absolute_path.parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    if pykotor_path.exists():
+        update_sys_path(pykotor_path.parent)
+    pykotor_gl_path = file_absolute_path.parents[6] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+    if pykotor_gl_path.exists():
+        update_sys_path(pykotor_gl_path.parent)
+    utility_path = file_absolute_path.parents[6] / "Libraries" / "Utility" / "src"
+    if utility_path.exists():
+        update_sys_path(utility_path)
+    toolset_path = file_absolute_path.parents[3] / "toolset"
+    if toolset_path.exists():
+        update_sys_path(toolset_path.parent)
+        os.chdir(toolset_path)
+
+from utility.ui_libraries.qt.filesystem.common.pyextendedinformation import PyQExtendedInformation  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qtpy.QtCore import Qt
@@ -9,7 +10,6 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -59,7 +59,7 @@ def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool = True):
 def addRecentFile(file: Path):
     """Update the list of recent files."""
     settings = GlobalSettings()
-    recentFiles: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.safe_isfile()]
+    recentFiles: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.is_file()]
     recentFiles.insert(0, str(file))
     if len(recentFiles) > 15:  # noqa: PLR2004
         recentFiles.pop()

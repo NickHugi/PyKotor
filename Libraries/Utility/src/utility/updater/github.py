@@ -12,9 +12,17 @@ import typing
 from abc import ABC
 from contextlib import suppress
 from dataclasses import MISSING, dataclass, fields
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, Union, get_args, get_origin, overload
-
-from utility.system.path import Path, PurePath
+from pathlib import Path, PurePath
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    overload,
+)
 
 if TYPE_CHECKING:
 

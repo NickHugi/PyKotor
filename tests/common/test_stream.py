@@ -3,7 +3,6 @@ from __future__ import annotations
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -40,22 +39,22 @@ class TestBinaryReader(TestCase):
         self.reader4 = BinaryReader.from_bytes(self.data4)
 
     def test_read(self):
-        self.assertEqual(1, self.reader1.read_uint8())
-        self.assertEqual(2, self.reader1.read_uint16())
-        self.assertEqual(3, self.reader1.read_uint32())
-        self.assertEqual(4, self.reader1.read_uint64())
+        assert self.reader1.read_uint8() == 1
+        assert self.reader1.read_uint16() == 2
+        assert self.reader1.read_uint32() == 3
+        assert self.reader1.read_uint64() == 4
 
-        self.assertEqual(3, self.reader1b.read_uint32())
-        self.assertEqual(4, self.reader1b.read_uint64())
+        assert self.reader1b.read_uint32() == 3
+        assert self.reader1b.read_uint64() == 4
 
         reader2 = BinaryReader.from_bytes(self.data2)
-        self.assertEqual("helloworld", reader2.read_string(10))
+        assert reader2.read_string(10) == "helloworld"
 
         reader3 = BinaryReader.from_bytes(self.data3)
-        self.assertEqual(-1, reader3.read_int8())
-        self.assertEqual(-2, reader3.read_int16())
-        self.assertEqual(-3, reader3.read_int32())
-        self.assertEqual(-4, reader3.read_int64())
+        assert reader3.read_int8() == -1
+        assert reader3.read_int16() == -2
+        assert reader3.read_int32() == -3
+        assert reader3.read_int64() == -4
 
         reader4 = BinaryReader.from_bytes(self.data4)
         self.assertAlmostEqual(-123.456, reader4.read_single(), 3)
@@ -63,85 +62,85 @@ class TestBinaryReader(TestCase):
 
     def test_size(self):
         self.reader1.read_bytes(4)
-        self.assertEqual(15, self.reader1.size())
+        assert self.reader1.size() == 15
 
         self.reader1b.read_bytes(4)
-        self.assertEqual(12, self.reader1b.size())
+        assert self.reader1b.size() == 12
 
         self.reader1c.read_bytes(1)
-        self.assertEqual(4, self.reader1c.size())
+        assert self.reader1c.size() == 4
 
     def test_true_size(self):
         self.reader1.read_bytes(4)
-        self.assertEqual(15, self.reader1.true_size())
+        assert self.reader1.true_size() == 15
 
         self.reader1b.read_bytes(4)
-        self.assertEqual(15, self.reader1b.true_size())
+        assert self.reader1b.true_size() == 15
 
         self.reader1c.read_bytes(4)
-        self.assertEqual(15, self.reader1c.true_size())
+        assert self.reader1c.true_size() == 15
 
     def test_position(self):
         self.reader1.read_bytes(3)
         self.reader1.read_bytes(3)
-        self.assertEqual(6, self.reader1.position())
+        assert self.reader1.position() == 6
 
         self.reader1b.read_bytes(1)
         self.reader1b.read_bytes(2)
-        self.assertEqual(3, self.reader1b.position())
+        assert self.reader1b.position() == 3
 
         self.reader1c.read_bytes(1)
         self.reader1c.read_bytes(2)
-        self.assertEqual(3, self.reader1c.position())
+        assert self.reader1c.position() == 3
 
     def test_seek(self):
         self.reader1.read_bytes(4)
         self.reader1.seek(7)
-        self.assertEqual(7, self.reader1.position())
-        self.assertEqual(4, self.reader1.read_uint64())
+        assert self.reader1.position() == 7
+        assert self.reader1.read_uint64() == 4
 
         self.reader1b.read_bytes(3)
         self.reader1b.seek(4)
-        self.assertEqual(4, self.reader1b.position())
-        self.assertEqual(4, self.reader1b.read_uint32())
+        assert self.reader1b.position() == 4
+        assert self.reader1b.read_uint32() == 4
 
         self.reader1c.read_bytes(3)
         self.reader1c.seek(2)
-        self.assertEqual(2, self.reader1c.position())
-        self.assertEqual(0, self.reader1c.read_uint16())
+        assert self.reader1c.position() == 2
+        assert self.reader1c.read_uint16() == 0
 
     def test_skip(self):  # sourcery skip: class-extract-method
         self.reader1.read_uint32()
         self.reader1.skip(2)
         self.reader1.skip(1)
-        self.assertEqual(4, self.reader1.read_uint64())
+        assert self.reader1.read_uint64() == 4
 
         self.reader1b.skip(4)
-        self.assertEqual(4, self.reader1b.read_uint64())
+        assert self.reader1b.read_uint64() == 4
 
         self.reader1c.skip(2)
-        self.assertEqual(0, self.reader1c.read_uint16())
+        assert self.reader1c.read_uint16() == 0
 
     def test_remaining(self):
         self.reader1.read_uint32()
         self.reader1.skip(2)
         self.reader1.skip(1)
-        self.assertEqual(8, self.reader1.remaining())
+        assert self.reader1.remaining() == 8
 
         self.reader1b.read_uint32()
-        self.assertEqual(8, self.reader1b.remaining())
+        assert self.reader1b.remaining() == 8
 
         self.reader1c.read_uint16()
-        self.assertEqual(2, self.reader1c.remaining())
+        assert self.reader1c.remaining() == 2
 
     def test_peek(self):
         self.reader1.skip(3)
-        self.assertEqual(b"\x03", self.reader1.peek(1))
+        assert self.reader1.peek(1) == b"\x03"
 
         self.reader1b.skip(4)
-        self.assertEqual(b"\x04", self.reader1b.peek(1))
+        assert self.reader1b.peek(1) == b"\x04"
 
-        self.assertEqual(b"\x03", self.reader1c.peek(1))
+        assert self.reader1c.peek(1) == b"\x03"
 
 
 if __name__ == "__main__":

@@ -12,12 +12,13 @@ from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from ply import yacc
 
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
-    from utility.system.path import Path
 
 
 def read_ncs(

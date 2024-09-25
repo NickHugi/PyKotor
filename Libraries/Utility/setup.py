@@ -9,7 +9,7 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=[
-        # Add any dependencies here
+        "pycryptodome>=3.20.0,<4",
     ],
 )
 from setuptools import find_packages, setup

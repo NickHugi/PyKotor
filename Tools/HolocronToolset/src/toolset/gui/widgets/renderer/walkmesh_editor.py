@@ -28,7 +28,13 @@ from PyQt5.uic import loadUi
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm.bwm_data import BWM
-from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from pykotor.resource.formats.lyt.lyt_data import (
+    LYT,
+    LYTDoorHook,
+    LYTObstacle,
+    LYTRoom,
+    LYTTrack,
+)
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 
 if TYPE_CHECKING:

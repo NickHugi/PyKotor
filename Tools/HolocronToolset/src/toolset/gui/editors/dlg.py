@@ -10,13 +10,39 @@ import weakref
 from collections import deque
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, List, Mapping, Sequence, Union, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Generator,
+    Iterable,
+    List,
+    Mapping,
+    Sequence,
+    Union,
+    cast,
+    overload,
+)
 
 import qtpy
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QByteArray, QDataStream, QIODevice, QItemSelectionModel, QMimeData, QModelIndex, QPoint, QPointF, QPropertyAnimation, QRect, QTimer, Qt
+from qtpy.QtCore import (
+    QByteArray,
+    QDataStream,
+    QIODevice,
+    QItemSelectionModel,
+    QMimeData,
+    QModelIndex,
+    QPoint,
+    QPointF,
+    QPropertyAnimation,
+    QRect,
+    QTimer,
+    Qt,
+)
 from qtpy.QtGui import (
     QBrush,
     QColor,
@@ -66,7 +92,16 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.misc import Game, ResRef
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.generics.dlg import DLG, DLGComputerType, DLGConversationType, DLGEntry, DLGLink, DLGReply, read_dlg, write_dlg
+from pykotor.resource.generics.dlg import (
+    DLG,
+    DLGComputerType,
+    DLGConversationType,
+    DLGEntry,
+    DLGLink,
+    DLGReply,
+    read_dlg,
+    write_dlg,
+)
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
@@ -76,7 +111,10 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.misc import getQtKeyString
 from utility.ui_libraries.qt.corelib.itemmodels.filters import NoScrollEventFilter
-from utility.ui_libraries.qt.widgets.itemviews.html_delegate import _ICONS_DATA_ROLE, HTMLDelegate
+from utility.ui_libraries.qt.widgets.itemviews.html_delegate import (
+    _ICONS_DATA_ROLE,
+    HTMLDelegate,
+)
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
@@ -87,14 +125,26 @@ else:
 if TYPE_CHECKING:
     import os
 
+    from pathlib import PureWindowsPath
+
     from qtpy.QtCore import QItemSelection, QObject
-    from qtpy.QtGui import QCloseEvent, QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QFocusEvent, QKeyEvent, QMouseEvent, QPaintEvent, QShowEvent
+    from qtpy.QtGui import (
+        QCloseEvent,
+        QDragEnterEvent,
+        QDragLeaveEvent,
+        QDragMoveEvent,
+        QDropEvent,
+        QFocusEvent,
+        QKeyEvent,
+        QMouseEvent,
+        QPaintEvent,
+        QShowEvent,
+    )
     from qtpy.QtWidgets import QAbstractItemDelegate
     from typing_extensions import Literal, Self
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.resource.generics.dlg import DLGAnimation, DLGNode, DLGStunt
-    from utility.system.path import PureWindowsPath
 
 
 _LINK_PARENT_NODE_PATH_ROLE = Qt.ItemDataRole.UserRole + 1
@@ -2489,13 +2539,21 @@ class DLGEditor(Editor):
         self._installation: HTInstallation
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
+            from toolset.uic.pyside2.editors.dlg import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
+            from toolset.uic.pyside6.editors.dlg import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
+            from toolset.uic.pyqt5.editors.dlg import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
+            from toolset.uic.pyqt6.editors.dlg import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

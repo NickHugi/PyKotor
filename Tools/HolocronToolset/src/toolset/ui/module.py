@@ -21,12 +21,25 @@ from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     from glm import vec3
-    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from qtpy.QtGui import (
+        QFocusEvent,
+        QKeyEvent,
+        QMouseEvent,
+        QResizeEvent,
+        QWheelEvent,
+    )
     from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
     from pykotor.resource.formats.bwm import BWMFace
-    from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTRoomTemplate, LYTTrack
+    from pykotor.resource.formats.lyt.lyt_data import (
+        LYT,
+        LYTDoorHook,
+        LYTObstacle,
+        LYTRoom,
+        LYTRoomTemplate,
+        LYTTrack,
+    )
     from pykotor.resource.formats.tpc.tpc_data import TPC
     from toolset.data.installation import HTInstallation
 
@@ -74,7 +87,9 @@ class ModuleRenderer(QOpenGLWidget):
         """
         super().__init__(parent)
 
-        from toolset.gui.windows.module_designer import ModuleDesignerSettings  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.gui.windows.module_designer import (
+            ModuleDesignerSettings,  # noqa: PLC0415  # pylint: disable=C0415
+        )
 
         self._scene: Scene | None = None
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()

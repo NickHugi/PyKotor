@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -25,7 +24,13 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language
-from pykotor.resource.formats.gff import GFF, GFFBinaryReader, GFFXMLReader, read_gff, write_gff
+from pykotor.resource.formats.gff import (
+    GFF,
+    GFFBinaryReader,
+    GFFXMLReader,
+    read_gff,
+    write_gff,
+)
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "tests/files/test.gff"
@@ -55,34 +60,34 @@ class TestGFF(TestCase):
         self.validate_io(gff)
 
     def validate_io(self, gff: GFF):
-        self.assertEqual(gff.root.get_uint8("uint8"), 255)
-        self.assertEqual(gff.root.get_int8("int8"), -127)
-        self.assertEqual(gff.root.get_uint16("uint16"), 0xFFFF)
-        self.assertEqual(gff.root.get_int16("int16"), -32768)
-        self.assertEqual(gff.root.get_uint32("uint32"), 0xFFFFFFFF)
-        self.assertEqual(gff.root.get_int32("int32"), -2147483648)
+        assert gff.root.get_uint8("uint8") == 255
+        assert gff.root.get_int8("int8") == -127
+        assert gff.root.get_uint16("uint16") == 65535
+        assert gff.root.get_int16("int16") == -32768
+        assert gff.root.get_uint32("uint32") == 4294967295
+        assert gff.root.get_int32("int32") == -2147483648
         # K-GFF does not seem to handle int64 correctly?
-        self.assertEqual(gff.root.get_uint64("uint64"), 4294967296)
+        assert gff.root.get_uint64("uint64") == 4294967296
 
         self.assertAlmostEqual(gff.root.get_single("single"), 12.34567, 5)
         self.assertAlmostEqual(gff.root.get_double("double"), 12.345678901234, 14)
 
-        self.assertEqual("abcdefghij123456789", gff.root.get_string("string"))
-        self.assertEqual("resref01", gff.root.get_resref("resref"))
-        self.assertEqual(b"binarydata", gff.root.get_binary("binary"))
+        assert gff.root.get_string("string") == "abcdefghij123456789"
+        assert gff.root.get_resref("resref") == "resref01"
+        assert gff.root.get_binary("binary") == b"binarydata"
 
-        self.assertEqual(gff.root.get_vector4("orientation"), Vector4(1, 2, 3, 4))
-        self.assertEqual(gff.root.get_vector3("position"), Vector3(11, 22, 33))
+        assert gff.root.get_vector4("orientation") == Vector4(1, 2, 3, 4)
+        assert gff.root.get_vector3("position") == Vector3(11, 22, 33)
 
         locstring = gff.root.get_locstring("locstring")
-        self.assertEqual(locstring.stringref, -1)
-        self.assertEqual(len(locstring), 2)
-        self.assertEqual(locstring.get(Language.ENGLISH, Gender.MALE), "male_eng")
-        self.assertEqual(locstring.get(Language.GERMAN, Gender.FEMALE), "fem_german")
+        assert locstring.stringref == -1
+        assert len(locstring) == 2
+        assert locstring.get(Language.ENGLISH, Gender.MALE) == "male_eng"
+        assert locstring.get(Language.GERMAN, Gender.FEMALE) == "fem_german"
 
-        self.assertEqual(gff.root.get_struct("child_struct").get_uint8("child_uint8"), 4)
-        self.assertEqual(gff.root.get_list("list").at(0).struct_id, 1)
-        self.assertEqual(gff.root.get_list("list").at(1).struct_id, 2)
+        assert gff.root.get_struct("child_struct").get_uint8("child_uint8") == 4
+        assert gff.root.get_list("list").at(0).struct_id == 1
+        assert gff.root.get_list("list").at(1).struct_id == 2
 
     def test_read_raises(self):
         if os.name == "nt":

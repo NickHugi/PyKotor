@@ -14,6 +14,7 @@ except (ImportError, ModuleNotFoundError):
 
 import zipfile
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 import markdown
@@ -30,7 +31,6 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
 from utility.system.os_helper import is_frozen
-from utility.system.path import Path
 from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
@@ -49,13 +49,21 @@ class HelpWindow(QMainWindow):
         self.version: str | None = None
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.windows import (
+                help as toolset_help,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.windows import (
+                help as toolset_help,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.windows import (
+                help as toolset_help,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.windows import (
+                help as toolset_help,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

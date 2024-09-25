@@ -4,8 +4,8 @@ import os
 import pathlib
 import subprocess
 import sys
-from tempfile import TemporaryDirectory
 import unittest
+from tempfile import TemporaryDirectory
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
@@ -23,8 +23,9 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.tools.path import CaseAwarePath
-from utility.system.path import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
+import contextlib
+
+from pathlib import Path
 
 
 class TestPathExtras(unittest.TestCase):
@@ -50,10 +51,8 @@ class TestPathExtras(unittest.TestCase):
             subprocess.run(run_script_cmd, check=False)
 
             # Optionally, delete the batch script after execution
-            try:
+            with contextlib.suppress(Exception):
                 os.remove(script_path)
-            except Exception:
-                ...
 
     def remove_permissions(self, path_str: str):
         is_file = os.path.isfile(path_str)
@@ -90,11 +89,11 @@ class TestPathExtras(unittest.TestCase):
             # self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows
             # self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
 
-            self.assertEqual(test_filepath.has_access(mode=0o1), True)  # this is a bug with os.access
-            self.assertEqual(test_filepath.has_access(mode=0o7), False)
+            assert test_filepath.has_access(mode=1) == True  # this is a bug with os.access
+            assert test_filepath.has_access(mode=7) == False
 
-            self.assertEqual(test_filepath.gain_access(mode=0o6), True)
-            self.assertEqual(test_filepath.has_access(mode=0o6), True)
+            assert test_filepath.gain_access(mode=6) == True
+            assert test_filepath.has_access(mode=6) == True
 
             # self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
             # self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows

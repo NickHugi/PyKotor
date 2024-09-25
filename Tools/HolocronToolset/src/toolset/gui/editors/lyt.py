@@ -6,11 +6,28 @@ import qtpy
 
 from qtpy.QtCore import QSize, Qt
 from qtpy.QtGui import QBrush, QColor, QPainter, QPen, QTransform
-from qtpy.QtWidgets import QFileDialog, QGraphicsEllipseItem, QGraphicsItem, QGraphicsLineItem, QGraphicsRectItem, QGraphicsScene, QListView, QMessageBox
+from qtpy.QtWidgets import (
+    QFileDialog,
+    QGraphicsEllipseItem,
+    QGraphicsItem,
+    QGraphicsLineItem,
+    QGraphicsRectItem,
+    QGraphicsScene,
+    QListView,
+    QMessageBox,
+)
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
-from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack, bytes_lyt, read_lyt
+from pykotor.resource.formats.lyt import (
+    LYT,
+    LYTDoorHook,
+    LYTObstacle,
+    LYTRoom,
+    LYTTrack,
+    bytes_lyt,
+    read_lyt,
+)
 from pykotor.resource.type import ResourceType
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor

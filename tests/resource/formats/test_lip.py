@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -23,7 +22,15 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.resource.formats.lip import LIP, LIPBinaryReader, LIPShape, LIPXMLReader, detect_lip, read_lip, write_lip
+from pykotor.resource.formats.lip import (
+    LIP,
+    LIPBinaryReader,
+    LIPShape,
+    LIPXMLReader,
+    detect_lip,
+    read_lip,
+    write_lip,
+)
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "tests/files/test.lip"
@@ -35,7 +42,7 @@ CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.lip.xml"
 
 class TestLIP(TestCase):
     def test_binary_io(self):
-        self.assertEqual(detect_lip(BINARY_TEST_FILE), ResourceType.LIP)
+        assert detect_lip(BINARY_TEST_FILE) == ResourceType.LIP
 
         lip = LIPBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(lip)
@@ -46,7 +53,7 @@ class TestLIP(TestCase):
         self.validate_io(lip)
 
     def test_xml_io(self):
-        self.assertEqual(detect_lip(XML_TEST_FILE), ResourceType.LIP_XML)
+        assert detect_lip(XML_TEST_FILE) == ResourceType.LIP_XML
 
         lip = LIPXMLReader(XML_TEST_FILE).load()
         self.validate_io(lip)
@@ -58,9 +65,9 @@ class TestLIP(TestCase):
 
     def validate_io(self, lip: LIP):
         self.assertAlmostEqual(lip.length, 1.50, 3)
-        self.assertEqual(LIPShape.EE, lip.get(0).shape)
-        self.assertEqual(LIPShape.OOH, lip.get(1).shape)
-        self.assertEqual(LIPShape.TH, lip.get(2).shape)
+        assert lip.get(0).shape == LIPShape.EE
+        assert lip.get(1).shape == LIPShape.OOH
+        assert lip.get(2).shape == LIPShape.TH
         self.assertAlmostEqual(0.0, lip.get(0).time, 4)
         self.assertAlmostEqual(0.7777, lip.get(1).time, 4)
         self.assertAlmostEqual(1.25, lip.get(2).time, 4)

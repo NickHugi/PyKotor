@@ -6,17 +6,50 @@ import os
 import platform
 import shutil
 import sys
-
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 import qtpy
-
 from loggerplus import RobustLogger
+from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import (
+    FileResource,
+    LocationResult,
+    ResourceIdentifier,
+    ResourceResult,
+)
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
+from pykotor.resource.formats.erf.erf_data import ERF, ERFType
+from pykotor.resource.formats.mdl import read_mdl, write_mdl
+from pykotor.resource.formats.rim.rim_auto import read_rim, write_rim
+from pykotor.resource.formats.rim.rim_data import RIM
+from pykotor.resource.formats.tpc import read_tpc, write_tpc
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
+from pykotor.resource.type import ResourceType
+from pykotor.tools import model, module
+from pykotor.tools.misc import (
+    is_any_erf_type_file,
+    is_bif_file,
+    is_capsule_file,
+    is_erf_file,
+    is_mod_file,
+    is_rim_file,
+)
+from pykotor.tools.path import CaseAwarePath
 from qtpy import QtCore
-from qtpy.QtCore import QCoreApplication, QEvent, QFile, QMutex, QTextStream, QThread, Qt
+from qtpy.QtCore import (
+    QCoreApplication,
+    QEvent,
+    QFile,
+    QMutex,
+    Qt,
+    QTextStream,
+    QThread,
+)
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -34,22 +67,18 @@ from qtpy.QtWidgets import (
     QTreeView,
     QVBoxLayout,
 )
+from utility.error_handling import universal_simplify_exception
+from utility.misc import ProcessorArchitecture, is_debug_mode
+from utility.tricks import debug_reload_pymodules
+from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyFileInfoGatherer
+from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
+from utility.updater.update import AppUpdate
 
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
-from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
-from pykotor.resource.formats.erf.erf_data import ERF, ERFType
-from pykotor.resource.formats.mdl import read_mdl, write_mdl
-from pykotor.resource.formats.rim.rim_auto import read_rim, write_rim
-from pykotor.resource.formats.rim.rim_data import RIM
-from pykotor.resource.formats.tpc import read_tpc, write_tpc
-from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
-from pykotor.resource.type import ResourceType
-from pykotor.tools import model, module
-from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
-from pykotor.tools.path import CaseAwarePath
-from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
+from toolset.config import (
+    CURRENT_VERSION,
+    getRemoteToolsetUpdateInfo,
+    remoteVersionNewer,
+)
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncLoader, ProgressDialog
@@ -81,8 +110,10 @@ from toolset.gui.widgets.settings.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
+from toolset.ui import stylesheet_resources  # noqa: F401
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
+<<<<<<< Updated upstream
 from ui import stylesheet_resources  # noqa: F401
 from utility.error_handling import universal_simplify_exception
 from utility.misc import ProcessorArchitecture, is_debug_mode
@@ -91,31 +122,41 @@ from utility.tricks import debug_reload_pymodules
 from utility.ui_libraries.qt.filesystem.common.pyfileinfogatherer import PyFileInfoGatherer
 from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 from utility.updater.update import AppUpdate
+=======
+>>>>>>> Stashed changes
 
 if qtpy.API_NAME == "PySide2":
-    from toolset.rcc import resources_rc_pyside2  # noqa: PLC0415, F401  # pylint: disable=C0415
+    from toolset.rcc import (
+        resources_rc_pyside2,  # noqa: PLC0415, F401  # pylint: disable=C0415
+    )
 elif qtpy.API_NAME == "PySide6":
-    from toolset.rcc import resources_rc_pyside6  # noqa: PLC0415, F401  # pylint: disable=C0415
+    from toolset.rcc import (
+        resources_rc_pyside6,  # noqa: PLC0415, F401  # pylint: disable=C0415
+    )
 elif qtpy.API_NAME == "PyQt5":
-    from toolset.rcc import resources_rc_pyqt5  # noqa: PLC0415, F401  # pylint: disable=C0415
+    from toolset.rcc import (
+        resources_rc_pyqt5,  # noqa: PLC0415, F401  # pylint: disable=C0415
+    )
 elif qtpy.API_NAME == "PyQt6":
-    from toolset.rcc import resources_rc_pyqt6  # noqa: PLC0415, F401  # pylint: disable=C0415
+    from toolset.rcc import (
+        resources_rc_pyqt6,  # noqa: PLC0415, F401  # pylint: disable=C0415
+    )
 else:
     raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
 if TYPE_CHECKING:
 
+    from pykotor.resource.formats.mdl.mdl_data import MDL
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.type import SOURCE_TYPES
     from qtpy import QtGui
     from qtpy.QtCore import QObject
     from qtpy.QtGui import QCloseEvent, QKeyEvent, QMouseEvent
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
-
-    from pykotor.resource.formats.mdl.mdl_data import MDL
-    from pykotor.resource.formats.tpc import TPC
-    from pykotor.resource.type import SOURCE_TYPES
-    from toolset.gui.widgets.main_widgets import TextureList
     from utility.common.more_collections import CaseInsensitiveDict
+
+    from toolset.gui.widgets.main_widgets import TextureList
 
 def run_module_designer(
     active_path: str,
@@ -225,7 +266,7 @@ class ToolWindow(QMainWindow):
             return
 
         modified_path = os.path.normpath(path)
-        if os.path.isdir(modified_path):
+        if os.path.isdir(modified_path):  # noqa: PTH112
             return
 
         now = datetime.now(tz=timezone.utc).astimezone()
@@ -267,13 +308,21 @@ class ToolWindow(QMainWindow):
 
     def _initUi(self):
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.windows.main import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.windows.main import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.windows.main import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.windows.main import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
         self.ui = Ui_MainWindow()
@@ -876,7 +925,7 @@ class ToolWindow(QMainWindow):
 
         if not file_or_folder_path.is_relative_to(self.active.override_path()):
             raise ValueError(f"'{file_or_folder_path}' is not relative to the override folder, cannot reload")
-        if file_or_folder_path.safe_isfile():
+        if file_or_folder_path.is_file():
             rel_folderpath = file_or_folder_path.parent.relative_to(self.active.override_path())
             print("<SDM> [onOverrideReload scope] rel_folderpath: ", rel_folderpath)
 
@@ -939,7 +988,7 @@ class ToolWindow(QMainWindow):
 
 
         # If the user has not set a path for the particular game yet, ask them too.
-        if not path or not path.strip() or not CaseAwarePath(path).safe_isdir():
+        if not path or not path.strip() or not CaseAwarePath(path).is_dir():
             if path and path.strip():
                 QMessageBox(QMessageBox.Icon.Warning, f"Installation '{path}' not found", "Select another path now.").exec_()
             path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}", "Knights of the Old Republic II" if tsl else "swkotor")
@@ -1165,7 +1214,7 @@ class ToolWindow(QMainWindow):
         erf_filepath = self.active.module_path() / filename
         print("<SDM> [onOpenResources scope] erf_filepath: ", erf_filepath)
 
-        if not erf_filepath.safe_isfile():
+        if not erf_filepath.is_file():
             self.log.info(f"Not loading '{erf_filepath}'. File does not exist")
             return
         res_ident = ResourceIdentifier.from_path(erf_filepath)
@@ -1396,7 +1445,7 @@ class ToolWindow(QMainWindow):
             return
         filepath = self.active.path() / "dialog.tlk"
         print("<SDM> [openActiveTalktable scope] filepath: ", filepath)
-        if not filepath.safe_isfile():
+        if not filepath.is_file():
             QMessageBox(QMessageBox.Icon.Information, "dialog.tlk not found", f"Could not open the TalkTable editor, dialog.tlk not found at the expected location<br><br>{filepath}.").exec_()
             return
         data = BinaryReader.load_file(filepath)
@@ -1714,7 +1763,7 @@ class ToolWindow(QMainWindow):
         erf_filepath = self.active.module_path() / filename
         print("<SDM> [openERFEditor scope] erf_filepath: ", erf_filepath)
 
-        if not erf_filepath.safe_isfile():
+        if not erf_filepath.is_file():
             self.log.warning(f"Not loading '{erf_filepath}'. File does not exist")
             return
         res_ident = ResourceIdentifier.from_path(erf_filepath)
@@ -2487,7 +2536,7 @@ class ToolWindow(QMainWindow):
                             shutil.copy(str(previous_save_path), str(subfolder))
                             if self.ui.tpcTxiCheckbox.isChecked():
                                 txi_path = previous_save_path.with_suffix(".txi")
-                                if txi_path.safe_isfile():
+                                if txi_path.is_file():
                                     shutil.copy(str(txi_path), str(subfolder))
                             continue
                         file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC

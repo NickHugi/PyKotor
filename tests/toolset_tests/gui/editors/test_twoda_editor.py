@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 try:
@@ -88,7 +87,7 @@ class TwoDAEditorTest(TestCase):
         new = read_2da(data)
 
         diff = old.compare(new, self.log_func)
-        self.assertTrue(diff)
+        assert diff
         self.assertDeepEqual(old, new)
 
     @unittest.skipIf(
@@ -105,7 +104,7 @@ class TwoDAEditorTest(TestCase):
             new = read_2da(data)
 
             diff = old.compare(new, self.log_func)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+            assert diff, os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -121,17 +120,17 @@ class TwoDAEditorTest(TestCase):
             new = read_2da(data)
 
             diff = old.compare(new, self.log_func)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+            assert diff, os.linesep.join(self.log_messages)
 
     def assertDeepEqual(self, obj1, obj2, context=""):
         if isinstance(obj1, dict) and isinstance(obj2, dict):
-            self.assertEqual(set(obj1.keys()), set(obj2.keys()), context)
+            assert set(obj1.keys()) == set(obj2.keys()), context
             for key in obj1:
                 new_context = f"{context}.{key}" if context else str(key)
                 self.assertDeepEqual(obj1[key], obj2[key], new_context)
 
         elif isinstance(obj1, (list, tuple)) and isinstance(obj2, (list, tuple)):
-            self.assertEqual(len(obj1), len(obj2), context)
+            assert len(obj1) == len(obj2), context
             for index, (item1, item2) in enumerate(zip(obj1, obj2)):
                 new_context = f"{context}[{index}]" if context else f"[{index}]"
                 self.assertDeepEqual(item1, item2, new_context)
@@ -140,7 +139,7 @@ class TwoDAEditorTest(TestCase):
             self.assertDeepEqual(obj1.__dict__, obj2.__dict__, context)
 
         else:
-            self.assertEqual(obj1, obj2, context)
+            assert obj1 == obj2, context
 
     def test_placeholder(self): ...
 

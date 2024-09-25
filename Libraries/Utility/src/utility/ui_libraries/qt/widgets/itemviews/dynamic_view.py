@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Sequence, cast
+from typing import TYPE_CHECKING, Literal, cast
 
-from qtpy.QtCore import QEvent, QSize, Qt
+from qtpy.QtCore import QEvent, Qt
 from qtpy.QtGui import QWheelEvent
-from qtpy.QtWidgets import QStackedWidget
+from qtpy.QtWidgets import QFileDialog, QStackedWidget
 
-from utility.ui_libraries.qt.widgets.itemviews.abstractview import QAbstractItemView
-from utility.ui_libraries.qt.widgets.itemviews.columnview import QColumnView  # noqa: F401
-from utility.ui_libraries.qt.widgets.itemviews.headerview import QHeaderView  # noqa: F401
-from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
+from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
+from utility.ui_libraries.qt.widgets.itemviews.columnview import RobustColumnView  # noqa: F401
+from utility.ui_libraries.qt.widgets.itemviews.headerview import RobustHeaderView  # noqa: F401
 from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 from utility.ui_libraries.qt.widgets.itemviews.tileview import RobustTileView
@@ -17,94 +16,73 @@ from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject
-    from qtpy.QtWidgets import QAbstractItemDelegate, QWidget
+    from qtpy.QtWidgets import QWidget
 
 
-class DynamicStackWidget(QStackedWidget):
+class DynamicView(QStackedWidget):
     def __init__(
         self,
         parent: QWidget | None = None,
         base_icon_size: int = 16,
-        min_icon_size: int = 8,
-        all_views: list[QAbstractItemView] | None = None,
-        initial_view: QAbstractItemView | None = None,
+        icon_size_mult: float = 1.1,
+        details_max_mult: float = 1.5,
+        list_max_mult: float = 4.0,
+        view_transition_mult: float = 25 / 24,
+        maximum_mult: float = 16.0,
+        all_views: list[RobustAbstractItemView] | None = None,
+        initial_view_mode: QFileDialog.ViewMode | None = None,
+        initial_view: RobustAbstractItemView | None = None,
     ):
         super().__init__(parent)
         self.base_icon_size: int = base_icon_size
-        self.icon_size: int = base_icon_size
-        self.min_icon_size: int = 8
-        self.all_views: Sequence[QAbstractItemView] = all_views or [
+        self.icon_size: int = self.base_icon_size
+        self.icon_size_mult: float = icon_size_mult
+        self.details_max_mult: float = details_max_mult
+        self.list_max_mult: float = list_max_mult
+        self.view_transition_mult: float = view_transition_mult
+        self.list_min_mult: float = self.details_max_mult * self.view_transition_mult
+        self.maximum_mult: float = maximum_mult
+
+        self.current_view_mode: QFileDialog.ViewMode | None = initial_view_mode or QFileDialog.ViewMode
+        self.all_views: list[RobustAbstractItemView] = all_views or [
             RobustListView(self),
             RobustTreeView(self),
-            RobustTileView(self),
+            RobustColumnView(self),
             RobustTableView(self),
+            RobustTileView(self),
+            RobustHeaderView(self),
         ]
-
         for view in self.all_views:
-            self._setup_view(view)
+            view.setParent(self)
+            view.hide()
+            view.installEventFilter(self)
+            view.viewport().installEventFilter(self)
+            self.addWidget(view)
+        initial_view = initial_view or self.all_views[0]
+        self.setCurrentWidget(initial_view)
 
-        self.setCurrentWidget(initial_view or self.all_views[0])
+    def current_view(self) -> RobustAbstractItemView | QWidget:
+        return cast(RobustAbstractItemView, self.currentWidget())
 
-    def _setup_view(self, view: QAbstractItemView):
-        view.setParent(self)
-        view.installEventFilter(self)
-        view.viewport().installEventFilter(self)
-        self.addWidget(view)
+    def list_view(self) -> RobustListView | None:
+        return next((view for view in self.all_views if isinstance(view, RobustListView)), None)
+
+    def table_view(self) -> RobustTableView | None:
+        return next((view for view in self.all_views if isinstance(view, RobustTableView)), None)
+
+    def header_view(self) -> RobustHeaderView | None:
+        return next((view for view in self.all_views if isinstance(view, RobustHeaderView)), None)
+
+    def tiles_view(self) -> RobustTileView | None:
+        return next((view for view in self.all_views if isinstance(view, RobustTileView)), None)
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if isinstance(event, QWheelEvent) and event.type() == QEvent.Type.Wheel and bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+        if isinstance(event, QEvent) and event.type() == QEvent.Wheel and isinstance(event, QWheelEvent) and bool(event.modifiers() & Qt.ControlModifier):
             delta: Literal[1, -1] = 1 if event.angleDelta().y() > 0 else -1
-            self.change_icon_and_view(delta)
+            self.current_view().set_text_size(self.current_view().get_text_size() + delta)
             return True
+
         return super().eventFilter(obj, event)
-
-    def change_icon_and_view(self, delta: Literal[1, -1]):
-        new_icon_size = self.icon_size + delta * 2
-        new_icon_size = max(6, min(new_icon_size, 128))
-
-        current_index = self.all_views.index(self.currentWidget())
-        new_index = current_index
-
-        if delta > 0 and new_icon_size > 48 and current_index < len(self.all_views) - 1:
-            print(self.all_views[current_index].__class__.__name__, "->", self.all_views[current_index + 1].__class__.__name__, new_icon_size)
-            new_index = current_index + 1
-            new_icon_size = 6
-
-
-        if delta < 0 and new_icon_size < 24 and current_index > 0:
-            print(self.all_views[current_index].__class__.__name__, "->", self.all_views[current_index - 1].__class__.__name__, new_icon_size)
-            new_index = current_index - 1
-            new_icon_size = 48
-
-        if new_index != current_index:
-            print(self.all_views[new_index].__class__.__name__, new_icon_size)
-            self.setCurrentWidget(self.all_views[new_index])
-
-        self.icon_size = new_icon_size
-
-        self.update_icon_size(self.currentWidget())
-
-    def treeView(self) -> RobustTreeView:
-        return cast(RobustTreeView, self.all_views[1])
-
-    def listView(self) -> RobustListView:
-        return cast(RobustListView, self.all_views[0])
-
-    def tileView(self) -> RobustTileView:
-        return cast(RobustTileView, self.all_views[2])
-
-    def tableView(self) -> RobustTableView:
-        return cast(RobustTableView, self.all_views[3])
-
-    def update_icon_size(self, view: QAbstractItemView):
-        delegate: QAbstractItemDelegate | None = view.itemDelegate()
-        if isinstance(delegate, HTMLDelegate):
-            delegate.set_text_size(self.icon_size)
-            return
-        view.setIconSize(QSize(self.icon_size, self.icon_size))
-
-
-
 
 
 if __name__ == "__main__":
@@ -113,9 +91,10 @@ if __name__ == "__main__":
 
     app = QApplication([])
     window = QMainWindow()
-    view = DynamicStackWidget(window)
+    view = DynamicView(window)
 
     model = QStandardItemModel()
+
     icons: list[QStyle.StandardPixmap] = [
         QStyle.StandardPixmap.SP_FileIcon,
         QStyle.StandardPixmap.SP_DirIcon,

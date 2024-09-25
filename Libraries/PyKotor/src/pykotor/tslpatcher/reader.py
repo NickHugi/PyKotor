@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 
 from configparser import ConfigParser, ParsingError
+from pathlib import Path, PurePath, PureWindowsPath
 from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
@@ -52,7 +53,6 @@ from pykotor.tslpatcher.mods.twoda import (
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 from utility.common.more_collections import CaseInsensitiveDict
 from utility.misc import is_float, is_int
-from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     import os
@@ -609,7 +609,7 @@ class ConfigReader:
         default_source_folder = compilelist_section_dict.pop("!DefaultSourceFolder", ".")
 
         nwnnsscomp_exepath = self.mod_path / default_source_folder / "nwnnsscomp.exe"
-        if not nwnnsscomp_exepath.safe_isfile():
+        if not nwnnsscomp_exepath.is_file():
             nwnnsscomp_exepath = None if self.tslpatchdata_path is None else self.tslpatchdata_path / "nwnnsscomp.exe"  # TSLPatcher default
 
         for identifier, file in compilelist_section_dict.items():

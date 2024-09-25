@@ -21,7 +21,16 @@ from datetime import datetime, timezone
 from enum import IntEnum
 from multiprocessing import Queue
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Awaitable, Coroutine, Generator, NoReturn, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Coroutine,
+    Generator,
+    NoReturn,
+    TypeVar,
+    cast,
+)
 
 import pypandoc  # pyright: ignore[reportMissingTypeStubs]
 import toga
@@ -31,7 +40,11 @@ from toga.command import Command
 from toga.handlers import AsyncResult
 from toga.sources import ListSource
 from toga.style import Pack
-from travertino.constants import CENTER, COLUMN, ROW  # pyright: ignore[reportMissingTypeStubs]
+from travertino.constants import (  # pyright: ignore[reportMissingTypeStubs]
+    CENTER,
+    COLUMN,
+    ROW,
+)
 from travertino.declaration import BaseStyle  # pyright: ignore[reportMissingTypeStubs]
 
 
@@ -63,14 +76,23 @@ if not is_frozen():
 
 
 
+from pathlib import Path  # noqa: E402
+
 from loggerplus import RobustLogger  # noqa: E402
 
-from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer  # noqa: E402
+from holopatcher.config import (  # noqa: E402
+    CURRENT_VERSION,
+    getRemoteHolopatcherUpdateInfo,
+    remoteVersionNewer,
+)
 from pykotor.common.misc import Game  # noqa: E402
 from pykotor.common.stream import BinaryReader  # noqa: E402
 from pykotor.extract.file import ResourceIdentifier  # noqa: E402
 from pykotor.tools.encoding import decode_bytes_with_fallbacks  # noqa: E402
-from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default  # noqa: E402
+from pykotor.tools.path import (  # noqa: E402
+    CaseAwarePath,
+    find_kotor_paths_from_default,
+)
 from pykotor.tslpatcher.config import LogLevel  # noqa: E402
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger  # noqa: E402
 from pykotor.tslpatcher.namespaces import PatcherNamespace  # noqa: E402
@@ -80,12 +102,17 @@ from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
 from utility.common.misc_string.util import striprtf  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.misc import ProcessorArchitecture, is_debug_mode  # noqa: E402
-from utility.system.agnostics import askdirectory, askokcancel, askopenfilename, askyesno, showerror  # noqa: E402
+from utility.system.agnostics import (  # noqa: E402
+    askdirectory,
+    askokcancel,
+    askopenfilename,
+    askyesno,
+    showerror,
+)
 from utility.system.app_process.shutdown import terminate_main_process  # noqa: E402
 
 #from utility.system.os_helper import get_app_dir
 from utility.system.os_helper import win_get_system32_dir  # noqa: E402
-from utility.system.path import Path  # noqa: E402
 from utility.tkinter.updater import TkProgressDialog  # noqa: E402
 
 if TYPE_CHECKING:
@@ -838,7 +865,7 @@ class HoloPatcher(toga.App):
             return
 
         backup_parent_folder = Path(self.mod_path, "backup")
-        if not backup_parent_folder.safe_isdir():
+        if not backup_parent_folder.is_dir():
             self.run_later(self.display_error_dialog(
                 "Backup Folder Empty/Missing.",
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
@@ -914,7 +941,7 @@ class HoloPatcher(toga.App):
     ):
         if not directory:
             results: str | None = self.open_folder_dialog("Select the folder to recursively lowercase.")
-            if not results or not Path(results[0]).safe_isdir():
+            if not results or not Path(results[0]).is_dir():
                 return  # User cancelled the dialog
             directory = Path(results[0])
         try:
@@ -1006,15 +1033,15 @@ class HoloPatcher(toga.App):
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             info_rte_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath()).with_suffix(".rte")
-            if not info_rtf_path.safe_isfile() and not info_rte_path.safe_isfile():
+            if not info_rtf_path.is_file() and not info_rte_path.is_file():
                 self.run_later(self.display_error_dialog("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk."))
                 return
 
-            if info_rte_path.safe_isfile():
+            if info_rte_path.is_file():
                 data: bytes = BinaryReader.load_file(info_rte_path)
                 rtf_text: str = decode_bytes_with_fallbacks(data, errors="replace")
                 self.load_rte_content(rtf_text)
-            elif info_rtf_path.safe_isfile():
+            elif info_rtf_path.is_file():
                 data = BinaryReader.load_file(info_rtf_path)
                 rtf_text = decode_bytes_with_fallbacks(data, errors="replace")
                 self.load_rtf_content(rtf_text)
@@ -1078,18 +1105,18 @@ class HoloPatcher(toga.App):
                     return
             # handle when a user selects 'tslpatchdata' instead of mod root
             tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
-            if not tslpatchdata_path.safe_isdir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
+            if not tslpatchdata_path.is_dir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
                 tslpatchdata_path = tslpatchdata_path.parent
 
             self.mod_path = str(tslpatchdata_path.parent)
             namespace_path: CaseAwarePath = tslpatchdata_path / "namespaces.ini"
             changes_path: CaseAwarePath = tslpatchdata_path / "changes.ini"
 
-            if namespace_path.safe_isfile():
+            if namespace_path.is_file():
                 print("FOUND namespace_path:", namespace_path)
                 self.load_namespace(NamespaceReader.from_filepath(namespace_path))
 
-            elif changes_path.safe_isfile():
+            elif changes_path.is_file():
                 print("FOUND changes_path:", changes_path, "namespace_path not found:", namespace_path)
                 config_reader: ConfigReader = ConfigReader.from_filepath(changes_path)
                 namespaces: list[PatcherNamespace] = [config_reader.config.as_namespace(changes_path)]
@@ -1109,7 +1136,7 @@ class HoloPatcher(toga.App):
         else:  # Mod dir is valid at this point.
             if startup:
                 self.browse_button.style.visibility = "hidden"
-                if not namespace_path.safe_isfile():
+                if not namespace_path.is_file():
                     self.namespaces_combobox.style.visibility = "hidden"
                     self.expand_namespace_description_button.style.visibility = "hidden"
 
@@ -1301,7 +1328,7 @@ class HoloPatcher(toga.App):
                 )
             )
             return False
-        if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
+        if not self.mod_path or not CaseAwarePath(self.mod_path).is_dir():
             self.run_later(
                 self.display_error_dialog(
                     "No mod chosen",
@@ -1319,7 +1346,7 @@ class HoloPatcher(toga.App):
             )
             return False
         case_game_path = CaseAwarePath(game_path)
-        if not case_game_path.safe_isdir():
+        if not case_game_path.is_dir():
             self.run_later(
                 self.display_error_dialog(
                     "Invalid KOTOR directory chosen",

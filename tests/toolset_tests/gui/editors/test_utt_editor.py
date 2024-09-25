@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 try:
@@ -90,7 +89,7 @@ class UTTEditorTest(TestCase):
         new = read_gff(data)
 
         diff = old.compare(new, self.log_func, ignore_default_changes=True)
-        self.assertTrue(diff, os.linesep.join(self.log_messages))
+        assert diff, os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
@@ -106,7 +105,7 @@ class UTTEditorTest(TestCase):
             new = read_gff(data)
 
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+            assert diff, os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -122,7 +121,7 @@ class UTTEditorTest(TestCase):
             new = read_gff(data)
 
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+            assert diff, os.linesep.join(self.log_messages)
 
     def test_editor_init(self):
         self.UTTEditor(None, self.K2_INSTALLATION)

@@ -9,10 +9,9 @@ import tkinter as tk
 
 from contextlib import suppress
 from functools import partial
+from pathlib import Path
 from tkinter import colorchooser, filedialog, font
 from typing import Any
-
-from utility.system.path import Path
 
 if os.name == "nt":
     ctypes.windll.shcore.SetProcessDpiAwareness(True)  # noqa: FBT003

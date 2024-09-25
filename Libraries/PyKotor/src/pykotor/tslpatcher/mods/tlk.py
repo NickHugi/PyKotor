@@ -9,6 +9,8 @@ from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from typing_extensions import Literal
 
     from pykotor.common.misc import Game
@@ -16,7 +18,6 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from utility.system.path import Path
 
 
 class ModificationsTLK(PatcherModifications):

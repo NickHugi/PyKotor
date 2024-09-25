@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import cProfile
-
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from pathlib import Path
 
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff.gff_auto import read_gff, write_gff
@@ -23,10 +23,10 @@ from pykotor.resource.generics.uts import read_uts, write_uts
 from pykotor.resource.generics.utt import read_utt, write_utt
 from pykotor.resource.generics.utw import read_utw, write_utw
 from pykotor.resource.type import ResourceType
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
+
     from pykotor.extract.file import FileResource
 
 

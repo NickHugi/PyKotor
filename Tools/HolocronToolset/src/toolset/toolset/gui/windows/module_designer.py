@@ -11,7 +11,19 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QCursor, QIcon, QPixmap
-from qtpy.QtWidgets import QAction, QApplication, QHBoxLayout, QLabel, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QStatusBar, QTreeWidgetItem, QVBoxLayout
+from qtpy.QtWidgets import (
+    QAction,
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QListWidgetItem,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QStatusBar,
+    QTreeWidgetItem,
+    QVBoxLayout,
+)
 
 from pykotor.gl.scene import Camera
 from pykotor.tools.misc import is_mod_file
@@ -68,12 +80,20 @@ from toolset.gui.editors.git import (  # This is a one directional import to avo
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
-from toolset.utils.misc import BUTTON_TO_INT, MODIFIER_KEY_NAMES, QtMouse, getQtButtonString, getQtKeyString
+from toolset.utils.misc import (
+    BUTTON_TO_INT,
+    MODIFIER_KEY_NAMES,
+    QtMouse,
+    getQtButtonString,
+    getQtKeyString,
+)
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import safe_repr
 
 if TYPE_CHECKING:
     import os
+
+    from pathlib import Path
 
     from glm import vec3
     from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
@@ -89,7 +109,6 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
     from toolset.utils.misc import QtKey
-    from utility.system.path import Path
 
 
 class ModuleDesigner(QMainWindow):
@@ -150,13 +169,21 @@ class ModuleDesigner(QMainWindow):
         self.mousePosHistory: list[Vector2] = [Vector2(0, 0), Vector2(0, 0)]
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.windows.module_designer import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.windows.module_designer import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.windows.module_designer import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.windows.module_designer import (
+                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
+            )
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 

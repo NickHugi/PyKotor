@@ -16,11 +16,11 @@ utility_path = file_absolute_path.parents[4] / "Libraries" / "Utility" / "src"
 if utility_path.exists():
     update_sys_path(utility_path)
 
-from utility.system.path import Path  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 # Working dir should always be 'toolset' when running this script.
 TOOLSET_DIR = Path(file_absolute_path.parents[1], "toolset")
-if not TOOLSET_DIR.safe_isdir():
+if not TOOLSET_DIR.is_dir():
     while len(TOOLSET_DIR.parts) > 1 and TOOLSET_DIR.name.lower() != "toolset":
         TOOLSET_DIR = TOOLSET_DIR.parent
     if TOOLSET_DIR.name.lower() != "toolset":
@@ -42,19 +42,19 @@ def compile_ui(qt_version: str, *, ignore_timestamp: bool = False):
         "pyqt6": "pyuic6"
     }[qt_version]
     for ui_file in Path(UI_SOURCE_DIR).safe_rglob("*.ui"):
-        if ui_file.safe_isdir():
+        if ui_file.is_dir():
             print(f"Skipping {ui_file}, not a file.")
             continue
         relpath = ui_file.relative_to(UI_SOURCE_DIR)
         subdir_ui_target = Path(UI_TARGET_DIR, qt_version, relpath).safe_relative_to(TOOLSET_DIR)
         ui_target: Path = subdir_ui_target.with_suffix(".py")
 
-        if not ui_target.safe_isfile():
+        if not ui_target.is_file():
             print("mkdir", ui_target.parent)
             ui_target.parent.mkdir(exist_ok=True, parents=True)
             temp_path = ui_target.parent
             new_init_file = temp_path.joinpath("__init__.py")
-            while not new_init_file.safe_isfile() and temp_path.resolve() != UI_TARGET_DIR.resolve():
+            while not new_init_file.is_file() and temp_path.resolve() != UI_TARGET_DIR.resolve():
                 print(f"touch {new_init_file}")
                 new_init_file.touch()
                 temp_path = temp_path.parent
@@ -87,13 +87,13 @@ def compile_qrc(qt_version: str, *, ignore_timestamp: bool = False):
     qrc_source: Path = QRC_SOURCE_PATH.resolve()
     qrc_target = Path(QRC_TARGET_PATH, f"resources_rc_{qt_version}.py").resolve()
 
-    if not qrc_target.parent.safe_isdir():
+    if not qrc_target.parent.is_dir():
         print("mkdir", qrc_target.parent)
         qrc_target.parent.mkdir(exist_ok=True, parents=True)
 
     # If the target file does not yet exist, use timestamp=0 as this will force the timestamp check to pass
     source_timestamp: float = qrc_source.stat().st_mtime
-    target_timestamp: float = qrc_target.stat().st_mtime if qrc_target.safe_isfile() else 0.0
+    target_timestamp: float = qrc_target.stat().st_mtime if qrc_target.is_file() else 0.0
 
     if source_timestamp > target_timestamp or ignore_timestamp:
         rc_compiler = {

@@ -4,6 +4,7 @@ import os
 import shutil
 
 from datetime import datetime
+from pathlib import Path
 from tkinter import messagebox
 from typing import TYPE_CHECKING
 
@@ -15,7 +16,6 @@ from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.extract.installation import Installation

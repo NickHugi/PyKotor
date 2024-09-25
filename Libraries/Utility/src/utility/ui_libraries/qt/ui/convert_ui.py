@@ -7,8 +7,9 @@ from pathlib import Path
 
 # Change the current working directory to the directory of this script
 HERE = Path(__file__).parent.parent.absolute()
-print("chdir", HERE)
-os.chdir(HERE)
+if __name__ == "__main__":
+    print("chdir", HERE)
+    os.chdir(HERE)
 
 UI_SOURCE_DIR = HERE / "ui"
 UI_TARGET_DIR = HERE / "uic"

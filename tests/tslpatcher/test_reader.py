@@ -6,7 +6,6 @@ import shutil
 import sys
 import tempfile
 import unittest
-
 from configparser import ConfigParser
 from typing import TYPE_CHECKING, cast
 
@@ -25,6 +24,8 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
+
+from pathlib import Path
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language
@@ -58,7 +59,6 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from pykotor.tslpatcher.reader import ConfigReader
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.ssf import ModifySSF
@@ -158,7 +158,7 @@ class TestConfigReader(unittest.TestCase):
         for modifier in self.config.patches_tlk.modifiers:
             modifier.load()
 
-        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        assert len(self.config.patches_tlk.modifiers) == 3
         modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
         self.maxDiff = None
         self.assertDictEqual(
@@ -189,7 +189,7 @@ class TestConfigReader(unittest.TestCase):
         for modifier in self.config.patches_tlk.modifiers:
             modifier.load()
 
-        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        assert len(self.config.patches_tlk.modifiers) == 3
         modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
@@ -240,7 +240,7 @@ class TestConfigReader(unittest.TestCase):
         modifiers2: list[ModifyTLK] = self.config.patches_tlk.modifiers.copy()
         for modifier in modifiers2:
             modifier.load()
-        self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
+        assert len(self.config.patches_tlk.modifiers) == 26
         modifiers_dict2: dict[int, dict[str, str | ResRef | bool]] = {
             mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement}
             for mod in modifiers2
@@ -352,7 +352,7 @@ class TestConfigReader(unittest.TestCase):
         for modifier in self.config.patches_tlk.modifiers:
             modifier.load()
 
-        self.assertEqual(len(self.config.patches_tlk.modifiers), 5)
+        assert len(self.config.patches_tlk.modifiers) == 5
         modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
@@ -385,11 +385,11 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual("change_row_0", mod_0.identifier)
+        assert mod_0.identifier == "change_row_0"
 
         # noinspection PyTypeChecker
         mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual("change_row_1", mod_0.identifier)
+        assert mod_0.identifier == "change_row_1"
 
     def test_2da_changerow_targets(self):
         """Test that target values (line to modify) are loading correctly."""
@@ -413,18 +413,18 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual(TargetType.ROW_INDEX, mod_2da_0.target.target_type)
-        self.assertEqual(1, mod_2da_0.target.value)
+        assert mod_2da_0.target.target_type == TargetType.ROW_INDEX
+        assert mod_2da_0.target.value == 1
 
         # noinspection PyTypeChecker
         mod_2da_1: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual(TargetType.ROW_LABEL, mod_2da_1.target.target_type)
-        self.assertEqual("2", mod_2da_1.target.value)
+        assert mod_2da_1.target.target_type == TargetType.ROW_LABEL
+        assert mod_2da_1.target.value == "2"
 
         # noinspection PyTypeChecker
         mod_2da_2: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual(TargetType.LABEL_COLUMN, mod_2da_2.target.target_type)
-        self.assertEqual("3", mod_2da_2.target.value)
+        assert mod_2da_2.target.target_type == TargetType.LABEL_COLUMN
+        assert mod_2da_2.target.value == "3"
 
     def test_2da_changerow_store2da(self):
         """Test that 2DAMEMORY values are set to be stored correctly."""
@@ -448,16 +448,16 @@ class TestConfigReader(unittest.TestCase):
 
         # noinspection PyTypeChecker
         store_2da_0a: RowValueRowIndex = mod_2da_0.store_2da[0]  # type: ignore
-        self.assertIsInstance(store_2da_0a, RowValueRowIndex)
+        assert isinstance(store_2da_0a, RowValueRowIndex)
 
         # noinspection PyTypeChecker
         store_2da_0b: RowValueRowLabel = mod_2da_0.store_2da[1]  # type: ignore
-        self.assertIsInstance(store_2da_0b, RowValueRowLabel)
+        assert isinstance(store_2da_0b, RowValueRowLabel)
 
         # noinspection PyTypeChecker
         store_2da_0c: RowValueRowCell = mod_2da_0.store_2da[2]  # type: ignore
-        self.assertIsInstance(store_2da_0c, RowValueRowCell)
-        self.assertEqual("label", store_2da_0c.column)
+        assert isinstance(store_2da_0c, RowValueRowCell)
+        assert store_2da_0c.column == "label"
 
     def test_2da_changerow_cells(self):
         """Test that cells are set to be modified correctly."""
@@ -481,18 +481,18 @@ class TestConfigReader(unittest.TestCase):
 
         # noinspection PyTypeChecker
         cell_0_label: RowValueConstant = mod_2da_0.cells["label"]  # type: ignore
-        self.assertIsInstance(cell_0_label, RowValueConstant)
-        self.assertEqual("Test123", cell_0_label.string)
+        assert isinstance(cell_0_label, RowValueConstant)
+        assert cell_0_label.string == "Test123"
 
         # noinspection PyTypeChecker
         cell_0_dialog: RowValueTLKMemory = mod_2da_0.cells["dialog"]  # type: ignore
-        self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
-        self.assertEqual(4, cell_0_dialog.token_id)
+        assert isinstance(cell_0_dialog, RowValueTLKMemory)
+        assert cell_0_dialog.token_id == 4
 
         # noinspection PyTypeChecker
         cell_0_appearance: RowValue2DAMemory = mod_2da_0.cells["appearance"]  # type: ignore
-        self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
-        self.assertEqual(5, cell_0_appearance.token_id)
+        assert isinstance(cell_0_appearance, RowValue2DAMemory)
+        assert cell_0_appearance.token_id == 5
 
     # endregion
 
@@ -514,11 +514,11 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual("add_row_0", mod_0.identifier)
+        assert mod_0.identifier == "add_row_0"
 
         # noinspection PyTypeChecker
         mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual("add_row_1", mod_1.identifier)
+        assert mod_1.identifier == "add_row_1"
 
     def test_2da_addrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
@@ -538,15 +538,15 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertIsInstance(mod_0, AddRow2DA)
-        self.assertEqual("add_row_0", mod_0.identifier)
-        self.assertEqual("label", mod_0.exclusive_column)
+        assert isinstance(mod_0, AddRow2DA)
+        assert mod_0.identifier == "add_row_0"
+        assert mod_0.exclusive_column == "label"
 
         # noinspection PyTypeChecker
         mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertIsInstance(mod_1, AddRow2DA)
-        self.assertEqual("add_row_1", mod_1.identifier)
-        self.assertIsNone(mod_1.exclusive_column)
+        assert isinstance(mod_1, AddRow2DA)
+        assert mod_1.identifier == "add_row_1"
+        assert mod_1.exclusive_column is None
 
     def test_2da_addrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
@@ -566,15 +566,15 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertIsInstance(mod_0, AddRow2DA)
-        self.assertEqual("add_row_0", mod_0.identifier)
-        self.assertEqual("123", mod_0.row_label)
+        assert isinstance(mod_0, AddRow2DA)
+        assert mod_0.identifier == "add_row_0"
+        assert mod_0.row_label == "123"
 
         # noinspection PyTypeChecker
         mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertIsInstance(mod_1, AddRow2DA)
-        self.assertEqual("add_row_1", mod_1.identifier)
-        self.assertIsNone(mod_1.row_label)
+        assert isinstance(mod_1, AddRow2DA)
+        assert mod_1.identifier == "add_row_1"
+        assert mod_1.row_label is None
 
     def test_2da_addrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
@@ -597,16 +597,16 @@ class TestConfigReader(unittest.TestCase):
 
         # noinspection PyTypeChecker
         store_0a: RowValueRowIndex = mod_0.store_2da[0]  # type: ignore
-        self.assertIsInstance(store_0a, RowValueRowIndex)
+        assert isinstance(store_0a, RowValueRowIndex)
 
         # noinspection PyTypeChecker
         store_0b: RowValueRowLabel = mod_0.store_2da[1]  # type: ignore
-        self.assertIsInstance(store_0b, RowValueRowLabel)
+        assert isinstance(store_0b, RowValueRowLabel)
 
         # noinspection PyTypeChecker
         store_0c: RowValueRowCell = mod_0.store_2da[2]  # type: ignore
-        self.assertIsInstance(store_0c, RowValueRowCell)
-        self.assertEqual("label", store_0c.column)
+        assert isinstance(store_0c, RowValueRowCell)
+        assert store_0c.column == "label"
 
     def test_2da_addrow_cells(self):
         """Test that cells will be assigned properly correctly."""
@@ -629,18 +629,18 @@ class TestConfigReader(unittest.TestCase):
 
         # noinspection PyTypeChecker
         cell_0_label: RowValueConstant = mod_0.cells["label"]  # type: ignore
-        self.assertIsInstance(cell_0_label, RowValueConstant)
-        self.assertEqual("Test123", cell_0_label.string)
+        assert isinstance(cell_0_label, RowValueConstant)
+        assert cell_0_label.string == "Test123"
 
         # noinspection PyTypeChecker
         cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]  # type: ignore
-        self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
-        self.assertEqual(4, cell_0_dialog.token_id)
+        assert isinstance(cell_0_dialog, RowValueTLKMemory)
+        assert cell_0_dialog.token_id == 4
 
         # noinspection PyTypeChecker
         cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]  # type: ignore
-        self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
-        self.assertEqual(5, cell_0_appearance.token_id)
+        assert isinstance(cell_0_appearance, RowValue2DAMemory)
+        assert cell_0_appearance.token_id == 5
 
     # endregion Add Row
 
@@ -664,11 +664,11 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual("copy_row_0", mod_0.identifier)
+        assert mod_0.identifier == "copy_row_0"
 
         # noinspection PyTypeChecker
         mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual("copy_row_1", mod_1.identifier)
+        assert mod_1.identifier == "copy_row_1"
 
     def test_2da_copyrow_high(self):
         """Test that high() is working correctly in copyrow's."""
@@ -714,34 +714,34 @@ class TestConfigReader(unittest.TestCase):
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # Asserting all properties of mod_0
-        self.assertEqual(TargetType.ROW_INDEX, mod_0.target.target_type)
-        self.assertEqual(23, mod_0.target.value)
-        self.assertEqual("spells_forcestrike", mod_0.identifier)
-        self.assertEqual("label", mod_0.exclusive_column)
-        self.assertEqual("ST_FORCE_POWER_STRIKE", mod_0.cells["label"].string)
-        self.assertEqual("55", mod_0.cells["forcepoints"].string)
-        self.assertEqual("21", mod_0.cells["jedimaster"].string)
-        self.assertEqual("21", mod_0.cells["sithlord"].string)
-        self.assertEqual("-1", mod_0.cells["guardian"].string)
-        self.assertEqual("-1", mod_0.cells["consular"].string)
-        self.assertEqual("-1", mod_0.cells["sentinel"].string)
-        self.assertEqual("-1", mod_0.cells["weapmstr"].string)
-        self.assertEqual("-1", mod_0.cells["watchman"].string)
-        self.assertEqual("-1", mod_0.cells["marauder"].string)
-        self.assertEqual("-1", mod_0.cells["assassin"].string)
-        self.assertEqual("21", mod_0.cells["inate"].string)
-        self.assertEqual("12", mod_0.cells["maxcr"].string)
-        self.assertEqual(f"{0x4101:#x}", mod_0.cells["category"].string)
-        self.assertEqual("ip_st_strike", mod_0.cells["iconresref"].string)
-        self.assertEqual("st_forcestrike", mod_0.cells["impactscript"].string)
-        self.assertEqual("up", mod_0.cells["conjanim"].string)
-        self.assertEqual("up", mod_0.cells["castanim"].string)
-        self.assertEqual("forcehostile", mod_0.cells["forcehostile"].column)
-        self.assertIsInstance(mod_0.cells["forcehostile"], RowValueHigh)
-        self.assertEqual("", mod_0.cells["dark_recom"].string)
-        self.assertEqual("", mod_0.cells["light_recom"].string)
-        self.assertEqual("0", mod_0.cells["forcepriority"].string)
-        self.assertEqual("3", mod_0.cells["pips"].string)
+        assert mod_0.target.target_type == TargetType.ROW_INDEX
+        assert mod_0.target.value == 23
+        assert mod_0.identifier == "spells_forcestrike"
+        assert mod_0.exclusive_column == "label"
+        assert mod_0.cells["label"].string == "ST_FORCE_POWER_STRIKE"
+        assert mod_0.cells["forcepoints"].string == "55"
+        assert mod_0.cells["jedimaster"].string == "21"
+        assert mod_0.cells["sithlord"].string == "21"
+        assert mod_0.cells["guardian"].string == "-1"
+        assert mod_0.cells["consular"].string == "-1"
+        assert mod_0.cells["sentinel"].string == "-1"
+        assert mod_0.cells["weapmstr"].string == "-1"
+        assert mod_0.cells["watchman"].string == "-1"
+        assert mod_0.cells["marauder"].string == "-1"
+        assert mod_0.cells["assassin"].string == "-1"
+        assert mod_0.cells["inate"].string == "21"
+        assert mod_0.cells["maxcr"].string == "12"
+        assert f"{16641:#x}" == mod_0.cells["category"].string
+        assert mod_0.cells["iconresref"].string == "ip_st_strike"
+        assert mod_0.cells["impactscript"].string == "st_forcestrike"
+        assert mod_0.cells["conjanim"].string == "up"
+        assert mod_0.cells["castanim"].string == "up"
+        assert mod_0.cells["forcehostile"].column == "forcehostile"
+        assert isinstance(mod_0.cells["forcehostile"], RowValueHigh)
+        assert mod_0.cells["dark_recom"].string == ""
+        assert mod_0.cells["light_recom"].string == ""
+        assert mod_0.cells["forcepriority"].string == "0"
+        assert mod_0.cells["pips"].string == "3"
 
     def test_2da_copyrow_target(self):
         """Test that target values (line to modify) are loading correctly."""
@@ -765,18 +765,18 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual(TargetType.ROW_INDEX, mod_0.target.target_type)
-        self.assertEqual(1, mod_0.target.value)
+        assert mod_0.target.target_type == TargetType.ROW_INDEX
+        assert mod_0.target.value == 1
 
         # noinspection PyTypeChecker
         mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual(TargetType.ROW_LABEL, mod_1.target.target_type)
-        self.assertEqual("2", mod_1.target.value)
+        assert mod_1.target.target_type == TargetType.ROW_LABEL
+        assert mod_1.target.value == "2"
 
         # noinspection PyTypeChecker
         mod_2: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual(TargetType.LABEL_COLUMN, mod_2.target.target_type)
-        self.assertEqual("3", mod_2.target.value)
+        assert mod_2.target.target_type == TargetType.LABEL_COLUMN
+        assert mod_2.target.value == "3"
 
     def test_2da_copyrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
@@ -798,15 +798,15 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertIsInstance(mod_0, CopyRow2DA)
-        self.assertEqual("copy_row_0", mod_0.identifier)
-        self.assertEqual("label", mod_0.exclusive_column)
+        assert isinstance(mod_0, CopyRow2DA)
+        assert mod_0.identifier == "copy_row_0"
+        assert mod_0.exclusive_column == "label"
 
         # noinspection PyTypeChecker
         mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertIsInstance(mod_1, CopyRow2DA)
-        self.assertEqual("copy_row_1", mod_1.identifier)
-        self.assertIsNone(mod_1.exclusive_column)
+        assert isinstance(mod_1, CopyRow2DA)
+        assert mod_1.identifier == "copy_row_1"
+        assert mod_1.exclusive_column is None
 
     def test_2da_copyrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
@@ -828,15 +828,15 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertIsInstance(mod_0, CopyRow2DA)
-        self.assertEqual("copy_row_0", mod_0.identifier)
-        self.assertEqual("123", mod_0.row_label)
+        assert isinstance(mod_0, CopyRow2DA)
+        assert mod_0.identifier == "copy_row_0"
+        assert mod_0.row_label == "123"
 
         # noinspection PyTypeChecker
         mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertIsInstance(mod_1, CopyRow2DA)
-        self.assertEqual("copy_row_1", mod_1.identifier)
-        self.assertIsNone(mod_1.row_label)
+        assert isinstance(mod_1, CopyRow2DA)
+        assert mod_1.identifier == "copy_row_1"
+        assert mod_1.row_label is None
 
     def test_2da_copyrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
@@ -860,16 +860,16 @@ class TestConfigReader(unittest.TestCase):
 
         # noinspection PyTypeChecker
         store_0a: RowValueRowIndex = mod_0.store_2da[0]  # type: ignore
-        self.assertIsInstance(store_0a, RowValueRowIndex)
+        assert isinstance(store_0a, RowValueRowIndex)
 
         # noinspection PyTypeChecker
         store_0b: RowValueRowLabel = mod_0.store_2da[1]  # type: ignore
-        self.assertIsInstance(store_0b, RowValueRowLabel)
+        assert isinstance(store_0b, RowValueRowLabel)
 
         # noinspection PyTypeChecker
         store_0c: RowValueRowCell = mod_0.store_2da[2]  # type: ignore
-        self.assertIsInstance(store_0c, RowValueRowCell)
-        self.assertEqual("label", store_0c.column)
+        assert isinstance(store_0c, RowValueRowCell)
+        assert store_0c.column == "label"
 
     def test_2da_copyrow_cells(self):
         """Test that cells will be assigned properly."""
@@ -893,18 +893,18 @@ class TestConfigReader(unittest.TestCase):
 
         # noinspection PyTypeChecker
         cell_0_label: RowValueConstant = mod_0.cells["label"]  # type: ignore
-        self.assertIsInstance(cell_0_label, RowValueConstant)
-        self.assertEqual("Test123", cell_0_label.string)
+        assert isinstance(cell_0_label, RowValueConstant)
+        assert cell_0_label.string == "Test123"
 
         # noinspection PyTypeChecker
         cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]  # type: ignore
-        self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
-        self.assertEqual(4, cell_0_dialog.token_id)
+        assert isinstance(cell_0_dialog, RowValueTLKMemory)
+        assert cell_0_dialog.token_id == 4
 
         # noinspection PyTypeChecker
         cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]  # type: ignore
-        self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
-        self.assertEqual(5, cell_0_appearance.token_id)
+        assert isinstance(cell_0_appearance, RowValue2DAMemory)
+        assert cell_0_appearance.token_id == 5
 
     # endregion
 
@@ -933,13 +933,13 @@ class TestConfigReader(unittest.TestCase):
         )
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual("label", mod_0.header)
-        self.assertEqual("", mod_0.default)
+        assert mod_0.header == "label"
+        assert mod_0.default == ""
 
         # noinspection PyTypeChecker
         mod_1: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
-        self.assertEqual("someint", mod_1.header)
-        self.assertEqual("0", mod_1.default)
+        assert mod_1.header == "someint"
+        assert mod_1.default == "0"
 
     def test_2da_addcolumn_indexinsert(self):
         """Test that cells will be inserted to the new column at the given index correctly."""
@@ -963,16 +963,16 @@ class TestConfigReader(unittest.TestCase):
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         value = mod_0.index_insert[0]
-        self.assertIsInstance(value, RowValueConstant)
-        self.assertEqual("abc", value.string)  # type: ignore
+        assert isinstance(value, RowValueConstant)
+        assert value.string == "abc"  # type: ignore
 
         value = mod_0.index_insert[1]
-        self.assertIsInstance(value, RowValue2DAMemory)
-        self.assertEqual(4, value.token_id)  # type: ignore
+        assert isinstance(value, RowValue2DAMemory)
+        assert value.token_id == 4  # type: ignore
 
         value = mod_0.index_insert[2]
-        self.assertIsInstance(value, RowValueTLKMemory)
-        self.assertEqual(5, value.token_id)  # type: ignore
+        assert isinstance(value, RowValueTLKMemory)
+        assert value.token_id == 5  # type: ignore
 
     def test_2da_addcolumn_labelinsert(self):
         """Test that cells will be inserted to the new column at the given label correctly."""
@@ -996,16 +996,16 @@ class TestConfigReader(unittest.TestCase):
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         value = mod_0.label_insert["0"]
-        self.assertIsInstance(value, RowValueConstant)
-        self.assertEqual("abc", value.string)  # type: ignore
+        assert isinstance(value, RowValueConstant)
+        assert value.string == "abc"  # type: ignore
 
         value = mod_0.label_insert["1"]
-        self.assertIsInstance(value, RowValue2DAMemory)
-        self.assertEqual(4, value.token_id)  # type: ignore
+        assert isinstance(value, RowValue2DAMemory)
+        assert value.token_id == 4  # type: ignore
 
         value = mod_0.label_insert["2"]
-        self.assertIsInstance(value, RowValueTLKMemory)
-        self.assertEqual(5, value.token_id)  # type: ignore
+        assert isinstance(value, RowValueTLKMemory)
+        assert value.token_id == 5  # type: ignore
 
     def test_2da_addcolumn_2damemory(self):
         """Test that 2DAMEMORY will be stored correctly."""
@@ -1027,7 +1027,7 @@ class TestConfigReader(unittest.TestCase):
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         value = mod_0.store_2da[2]
-        self.assertEqual("I2", value)
+        assert value == "I2"
 
     # endregion
 
@@ -1044,8 +1044,8 @@ class TestConfigReader(unittest.TestCase):
             [test2.ssf]
             """
         )
-        self.assertFalse(config.patches_ssf[0].replace_file)
-        self.assertTrue(config.patches_ssf[1].replace_file)
+        assert not config.patches_ssf[0].replace_file
+        assert config.patches_ssf[1].replace_file
 
     def test_ssf_stored_constant(self):
         """Test that the set sound as constant stringref is registered correctly."""
@@ -1060,12 +1060,12 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0.stringref, NoTokenUsage)
-        self.assertEqual("123", mod_0.stringref.stored)  # type: ignore
+        assert isinstance(mod_0.stringref, NoTokenUsage)
+        assert mod_0.stringref.stored == "123"  # type: ignore
 
         mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1.stringref, NoTokenUsage)
-        self.assertEqual("456", mod_1.stringref.stored)  # type: ignore
+        assert isinstance(mod_1.stringref, NoTokenUsage)
+        assert mod_1.stringref.stored == "456"  # type: ignore
 
     def test_ssf_stored_2da(self):
         """Test that the set sound as 2DAMEMORY value is registered correctly."""
@@ -1080,12 +1080,12 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0.stringref, TokenUsage2DA)
-        self.assertEqual(5, mod_0.stringref.token_id)  # type: ignore
+        assert isinstance(mod_0.stringref, TokenUsage2DA)
+        assert mod_0.stringref.token_id == 5  # type: ignore
 
         mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1.stringref, TokenUsage2DA)
-        self.assertEqual(6, mod_1.stringref.token_id)  # type: ignore
+        assert isinstance(mod_1.stringref, TokenUsage2DA)
+        assert mod_1.stringref.token_id == 6  # type: ignore
 
     def test_ssf_stored_tlk(self):
         """Test that the set sound as StrRef is registered correctly."""
@@ -1100,12 +1100,12 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0.stringref, TokenUsageTLK)
-        self.assertEqual(5, mod_0.stringref.token_id)
+        assert isinstance(mod_0.stringref, TokenUsageTLK)
+        assert mod_0.stringref.token_id == 5
 
         mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1.stringref, TokenUsageTLK)
-        self.assertEqual(6, mod_1.stringref.token_id)
+        assert isinstance(mod_1.stringref, TokenUsageTLK)
+        assert mod_1.stringref.token_id == 6
 
     def test_ssf_set(self):
         """Test that each sound is mapped and will register correctly."""
@@ -1174,34 +1174,34 @@ class TestConfigReader(unittest.TestCase):
         mod_rejoinparty = config.patches_ssf[0].modifiers.pop(0)
         mod_poisoned = config.patches_ssf[0].modifiers.pop(0)
 
-        self.assertEqual(SSFSound.BATTLE_CRY_1, mod_battlecry1.sound)
-        self.assertEqual(SSFSound.BATTLE_CRY_2, mod_battlecry2.sound)
-        self.assertEqual(SSFSound.BATTLE_CRY_3, mod_battlecry3.sound)
-        self.assertEqual(SSFSound.BATTLE_CRY_4, mod_battlecry4.sound)
-        self.assertEqual(SSFSound.BATTLE_CRY_5, mod_battlecry5.sound)
-        self.assertEqual(SSFSound.BATTLE_CRY_6, mod_battlecry6.sound)
-        self.assertEqual(SSFSound.SELECT_1, mod_selected1.sound)
-        self.assertEqual(SSFSound.SELECT_2, mod_selected2.sound)
-        self.assertEqual(SSFSound.SELECT_3, mod_selected3.sound)
-        self.assertEqual(SSFSound.ATTACK_GRUNT_1, mod_attack1.sound)
-        self.assertEqual(SSFSound.ATTACK_GRUNT_2, mod_attack2.sound)
-        self.assertEqual(SSFSound.ATTACK_GRUNT_3, mod_attack3.sound)
-        self.assertEqual(SSFSound.PAIN_GRUNT_1, mod_pain1.sound)
-        self.assertEqual(SSFSound.PAIN_GRUNT_2, mod_pain2.sound)
-        self.assertEqual(SSFSound.LOW_HEALTH, mod_lowhealth.sound)
-        self.assertEqual(SSFSound.DEAD, mod_death.sound)
-        self.assertEqual(SSFSound.CRITICAL_HIT, mod_criticalhit.sound)
-        self.assertEqual(SSFSound.TARGET_IMMUNE, mod_targetimmune.sound)
-        self.assertEqual(SSFSound.LAY_MINE, mod_placemine.sound)
-        self.assertEqual(SSFSound.DISARM_MINE, mod_disarmmine.sound)
-        self.assertEqual(SSFSound.BEGIN_STEALTH, mod_stealthon.sound)
-        self.assertEqual(SSFSound.BEGIN_SEARCH, mod_search.sound)
-        self.assertEqual(SSFSound.BEGIN_UNLOCK, mod_picklockstart.sound)
-        self.assertEqual(SSFSound.UNLOCK_FAILED, mod_picklockfail.sound)
-        self.assertEqual(SSFSound.UNLOCK_SUCCESS, mod_picklockdone.sound)
-        self.assertEqual(SSFSound.SEPARATED_FROM_PARTY, mod_leaveparty.sound)
-        self.assertEqual(SSFSound.REJOINED_PARTY, mod_rejoinparty.sound)
-        self.assertEqual(SSFSound.POISONED, mod_poisoned.sound)
+        assert mod_battlecry1.sound == SSFSound.BATTLE_CRY_1
+        assert mod_battlecry2.sound == SSFSound.BATTLE_CRY_2
+        assert mod_battlecry3.sound == SSFSound.BATTLE_CRY_3
+        assert mod_battlecry4.sound == SSFSound.BATTLE_CRY_4
+        assert mod_battlecry5.sound == SSFSound.BATTLE_CRY_5
+        assert mod_battlecry6.sound == SSFSound.BATTLE_CRY_6
+        assert mod_selected1.sound == SSFSound.SELECT_1
+        assert mod_selected2.sound == SSFSound.SELECT_2
+        assert mod_selected3.sound == SSFSound.SELECT_3
+        assert mod_attack1.sound == SSFSound.ATTACK_GRUNT_1
+        assert mod_attack2.sound == SSFSound.ATTACK_GRUNT_2
+        assert mod_attack3.sound == SSFSound.ATTACK_GRUNT_3
+        assert mod_pain1.sound == SSFSound.PAIN_GRUNT_1
+        assert mod_pain2.sound == SSFSound.PAIN_GRUNT_2
+        assert mod_lowhealth.sound == SSFSound.LOW_HEALTH
+        assert mod_death.sound == SSFSound.DEAD
+        assert mod_criticalhit.sound == SSFSound.CRITICAL_HIT
+        assert mod_targetimmune.sound == SSFSound.TARGET_IMMUNE
+        assert mod_placemine.sound == SSFSound.LAY_MINE
+        assert mod_disarmmine.sound == SSFSound.DISARM_MINE
+        assert mod_stealthon.sound == SSFSound.BEGIN_STEALTH
+        assert mod_search.sound == SSFSound.BEGIN_SEARCH
+        assert mod_picklockstart.sound == SSFSound.BEGIN_UNLOCK
+        assert mod_picklockfail.sound == SSFSound.UNLOCK_FAILED
+        assert mod_picklockdone.sound == SSFSound.UNLOCK_SUCCESS
+        assert mod_leaveparty.sound == SSFSound.SEPARATED_FROM_PARTY
+        assert mod_rejoinparty.sound == SSFSound.REJOINED_PARTY
+        assert mod_poisoned.sound == SSFSound.POISONED
 
     # endregion
 
@@ -1218,8 +1218,8 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertEqual("ClassList\\0\\Class", str(mod_0.path))
+        assert isinstance(mod_0, ModifyFieldGFF)
+        assert str(mod_0.path) == "ClassList\\0\\Class"
 
     def test_gff_modify_type_int(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1233,10 +1233,10 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeInt", str(mod_0.path))
-        self.assertEqual(123, mod_0.value.stored)
+        assert isinstance(mod_0, ModifyFieldGFF)
+        assert isinstance(mod_0.value, FieldValueConstant)
+        assert str(mod_0.path) == "SomeInt"
+        assert mod_0.value.stored == 123
 
     def test_gff_modify_type_string(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1250,10 +1250,10 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeString", str(mod_0.path))
-        self.assertEqual("abc", mod_0.value.stored)
+        assert isinstance(mod_0, ModifyFieldGFF)
+        assert isinstance(mod_0.value, FieldValueConstant)
+        assert str(mod_0.path) == "SomeString"
+        assert mod_0.value.stored == "abc"
 
     def test_gff_modify_type_vector3(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1267,10 +1267,10 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeVector", str(mod_0.path))
-        self.assertEqual(Vector3(1, 2, 3), mod_0.value.stored)
+        assert isinstance(mod_0, ModifyFieldGFF)
+        assert isinstance(mod_0.value, FieldValueConstant)
+        assert str(mod_0.path) == "SomeVector"
+        assert Vector3(1, 2, 3) == mod_0.value.stored
 
     def test_gff_modify_type_vector4(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1284,10 +1284,10 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeVector", str(mod_0.path))
-        self.assertEqual(Vector4(1, 2, 3, 4), mod_0.value.stored)
+        assert isinstance(mod_0, ModifyFieldGFF)
+        assert isinstance(mod_0.value, FieldValueConstant)
+        assert str(mod_0.path) == "SomeVector"
+        assert Vector4(1, 2, 3, 4) == mod_0.value.stored
 
     def test_gff_modify_type_locstring(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1303,26 +1303,26 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = self._assert_types_and_path(config)
-        self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
-        self.assertEqual(5, mod_0.value.stored.stringref.stored)
-        self.assertEqual(0, len(mod_0.value.stored))
+        assert isinstance(mod_0.value.stored.stringref, FieldValueConstant)
+        assert mod_0.value.stored.stringref.stored == 5
+        assert len(mod_0.value.stored) == 0
 
         mod_1 = self._assert_types_and_path(config)
-        self.assertIsNone(mod_1.value.stored.stringref)
-        self.assertEqual("hello", mod_1.value.stored.get(Language.ENGLISH, Gender.MALE))
-        self.assertEqual(1, len(mod_1.value.stored))
+        assert mod_1.value.stored.stringref is None
+        assert mod_1.value.stored.get(Language.ENGLISH, Gender.MALE) == "hello"
+        assert len(mod_1.value.stored) == 1
 
         mod_2 = self._assert_types_and_path(config)
-        self.assertEqual("world", mod_2.value.stored.get(Language.FRENCH, Gender.FEMALE))
-        self.assertIsNone(mod_2.value.stored.stringref)
-        self.assertEqual(1, len(mod_2.value.stored))
+        assert mod_2.value.stored.get(Language.FRENCH, Gender.FEMALE) == "world"
+        assert mod_2.value.stored.stringref is None
+        assert len(mod_2.value.stored) == 1
 
     def _assert_types_and_path(self, config):
         result = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(result, ModifyFieldGFF)
-        self.assertIsInstance(result.value, FieldValueConstant)
-        self.assertIsInstance(result.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", str(result.path))
+        assert isinstance(result, ModifyFieldGFF)
+        assert isinstance(result.value, FieldValueConstant)
+        assert isinstance(result.value.stored, LocalizedStringDelta)
+        assert str(result.path) == "LocString"
         return result
 
     def test_gff_modify_2damemory(self):
@@ -1338,17 +1338,17 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", str(mod_0.path))
-        self.assertIsInstance(mod_0.value.stored.stringref, FieldValueTLKMemory)
-        self.assertEqual(5, mod_0.value.stored.stringref.token_id)
+        assert isinstance(mod_0, ModifyFieldGFF)
+        assert isinstance(mod_0.value, FieldValueConstant)
+        assert isinstance(mod_0.value.stored, LocalizedStringDelta)
+        assert str(mod_0.path) == "LocString"
+        assert isinstance(mod_0.value.stored.stringref, FieldValueTLKMemory)
+        assert mod_0.value.stored.stringref.token_id == 5
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1, ModifyFieldGFF)
-        self.assertIsInstance(mod_1.value, FieldValueTLKMemory)
-        self.assertEqual(2, mod_1.value.token_id)
+        assert isinstance(mod_1, ModifyFieldGFF)
+        assert isinstance(mod_1.value, FieldValueTLKMemory)
+        assert mod_1.value.token_id == 2
 
     def test_gff_modify_tlkmemory(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1362,9 +1362,9 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValue2DAMemory)
-        self.assertEqual(12, mod_0.value.token_id)
+        assert isinstance(mod_0, ModifyFieldGFF)
+        assert isinstance(mod_0.value, FieldValue2DAMemory)
+        assert mod_0.value.token_id == 12
 
     # endregion
 
@@ -1452,11 +1452,11 @@ class TestConfigReader(unittest.TestCase):
     def _assert_batch(self, this_mod: ModifyGFF | AddFieldGFF, stored):
         this_mod = cast(AddFieldGFF, this_mod)
         this_mod.value = cast(FieldValueConstant, this_mod.value)
-        self.assertIsInstance(this_mod, AddFieldGFF)
-        self.assertIsInstance(this_mod.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(this_mod.path))
-        self.assertEqual("SomeField", this_mod.label)
-        self.assertEqual(stored, this_mod.value.stored)
+        assert isinstance(this_mod, AddFieldGFF)
+        assert isinstance(this_mod.value, FieldValueConstant)
+        assert str(this_mod.path) == "SomeList"
+        assert this_mod.label == "SomeField"
+        assert stored == this_mod.value.stored
 
     def test_gff_add_floats(self):
         """Test that the add field modifiers are registered correctly."""
@@ -1595,30 +1595,30 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
         assert isinstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
+        assert isinstance(mod_0, AddFieldGFF)
         assert isinstance(mod_0.value, FieldValueConstant)
-        self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
+        assert isinstance(mod_0.value, FieldValueConstant)
         assert isinstance(mod_0.value.stored, LocalizedStringDelta)
-        self.assertEqual("SomeList", str(mod_0.path))
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
+        assert isinstance(mod_0.value.stored, LocalizedStringDelta)
+        assert str(mod_0.path) == "SomeList"
+        assert mod_0.label == "SomeField"
         assert isinstance(mod_0.value.stored.stringref, FieldValueConstant)
-        self.assertEqual(123, mod_0.value.stored.stringref.stored)
-        self.assertEqual("abc", mod_0.value.stored.get(Language.ENGLISH, Gender.MALE))
-        self.assertEqual("lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE))
+        assert isinstance(mod_0.value.stored.stringref, FieldValueConstant)
+        assert mod_0.value.stored.stringref.stored == 123
+        assert mod_0.value.stored.get(Language.ENGLISH, Gender.MALE) == "abc"
+        assert mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE) == "lmnop"
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1, AddFieldGFF)
         assert isinstance(mod_1, AddFieldGFF)
-        self.assertIsInstance(mod_1.value, FieldValueConstant)
+        assert isinstance(mod_1, AddFieldGFF)
         assert isinstance(mod_1.value, FieldValueConstant)
-        self.assertIsInstance(mod_1.value.stored, LocalizedStringDelta)
+        assert isinstance(mod_1.value, FieldValueConstant)
         assert isinstance(mod_1.value.stored, LocalizedStringDelta)
-        self.assertIsInstance(mod_1.value.stored.stringref, FieldValueTLKMemory)
+        assert isinstance(mod_1.value.stored, LocalizedStringDelta)
         assert isinstance(mod_1.value.stored.stringref, FieldValueTLKMemory)
-        self.assertEqual(8, mod_1.value.stored.stringref.token_id)
+        assert isinstance(mod_1.value.stored.stringref, FieldValueTLKMemory)
+        assert mod_1.value.stored.stringref.token_id == 8
 
     def test_gff_add_inside_struct(self):
         """Test that the add field modifiers are registered correctly."""
@@ -1645,22 +1645,22 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
         assert isinstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
+        assert isinstance(mod_0, AddFieldGFF)
         assert isinstance(mod_0.value, FieldValueConstant)
-        self.assertEqual(mod_0.path.name, ">>##INDEXINLIST##<<")
-        self.assertEqual("SomeStruct", mod_0.label)
-        self.assertEqual(321, mod_0.value.stored.struct_id)
+        assert isinstance(mod_0.value, FieldValueConstant)
+        assert mod_0.path.name == ">>##INDEXINLIST##<<"
+        assert mod_0.label == "SomeStruct"
+        assert mod_0.value.stored.struct_id == 321
 
         mod_1 = mod_0.modifiers.pop(0)
-        self.assertIsInstance(mod_1, AddFieldGFF)
         assert isinstance(mod_1, AddFieldGFF)
-        self.assertIsInstance(mod_1.value, FieldValueConstant)
+        assert isinstance(mod_1, AddFieldGFF)
         assert isinstance(mod_1.value, FieldValueConstant)
-        self.assertEqual(mod_1.path.name, "SomeStruct")
-        self.assertEqual("InsideStruct", mod_1.label)
-        self.assertEqual(123, mod_1.value.stored)
+        assert isinstance(mod_1.value, FieldValueConstant)
+        assert mod_1.path.name == "SomeStruct"
+        assert mod_1.label == "InsideStruct"
+        assert mod_1.value.stored == 123
 
     def test_gff_add_inside_list(self):
         """Test that the add field modifiers are registered correctly."""
@@ -1686,22 +1686,22 @@ class TestConfigReader(unittest.TestCase):
             """
         )
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
         assert isinstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
+        assert isinstance(mod_0, AddFieldGFF)
         assert isinstance(mod_0.value, FieldValueConstant)
-        self.assertFalse(mod_0.path.name)
-        self.assertEqual("SomeList", mod_0.label)
+        assert isinstance(mod_0.value, FieldValueConstant)
+        assert not mod_0.path.name
+        assert mod_0.label == "SomeList"
 
         mod_1 = mod_0.modifiers.pop(0)
-        self.assertIsInstance(mod_1, AddStructToListGFF)
         assert isinstance(mod_1, AddStructToListGFF)
-        self.assertIsInstance(mod_1.value, FieldValueConstant)
+        assert isinstance(mod_1, AddStructToListGFF)
         assert isinstance(mod_1.value, FieldValueConstant)
-        self.assertIsInstance(mod_1.value.value(None, GFFFieldType.Struct), GFFStruct)  # type: ignore[arg-type, reportGeneralTypeIssues]
+        assert isinstance(mod_1.value, FieldValueConstant)
+        assert isinstance(mod_1.value.value(None, GFFFieldType.Struct), GFFStruct)  # type: ignore[arg-type, reportGeneralTypeIssues]
         assert isinstance(mod_1.value.stored, GFFStruct)
-        self.assertEqual(111, mod_1.value.stored.struct_id)
-        self.assertEqual(5, mod_1.index_to_token)
+        assert mod_1.value.stored.struct_id == 111
+        assert mod_1.index_to_token == 5
 
     def _setupIniAndConfig(self, ini_text: str) -> PatcherConfig:
         ini = ConfigParser(delimiters="=", allow_no_value=True, strict=False, interpolation=None)

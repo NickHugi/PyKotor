@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 from pykotor.resource.type import ResourceType
@@ -57,7 +56,7 @@ class TestUTE(TestCase):
         for ute_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTE):
             gff: GFF = read_gff(ute_resource.data())
             reconstructed_gff: GFF = dismantle_ute(construct_ute(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -68,7 +67,7 @@ class TestUTE(TestCase):
         for ute_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTE):
             gff: GFF = read_gff(ute_resource.data())
             reconstructed_gff: GFF = dismantle_ute(construct_ute(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_k2_reconstruct(self):
         gff = read_gff(TEST_FILE)
@@ -80,9 +79,9 @@ class TestUTE(TestCase):
 GFFStruct: number of fields have changed at 'GFFRoot\CreatureList\0': '4' --> '5'
 Extra 'Int32' field found at 'GFFRoot\CreatureList\0\GuaranteedCount': '0'
 """.replace("\r\n", "\n")
-            self.assertEqual(output.strip().replace("\r\n", "\n"), expected_output.strip(), "Comparison output does not match expected output")
+            assert output.strip().replace("\r\n", "\n") == expected_output.strip(), "Comparison output does not match expected output"
         else:
-            self.assertTrue(result)
+            assert result
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -96,34 +95,34 @@ Extra 'Int32' field found at 'GFFRoot\CreatureList\0\GuaranteedCount': '0'
         self.validate_io(ute)
 
     def validate_io(self, ute: UTE):
-        self.assertEqual("G_KATAARNGROUP01", ute.tag)
-        self.assertEqual(31918, ute.name.stringref)
-        self.assertEqual("g_kataarngroup01", ute.resref)
-        self.assertEqual(1, ute.active)
-        self.assertEqual(1, ute.unused_difficulty)
-        self.assertEqual(2, ute.difficulty_id)
-        self.assertEqual(1, ute.faction_id)
-        self.assertEqual(6, ute.max_creatures)
-        self.assertEqual(1, ute.player_only)
-        self.assertEqual(3, ute.rec_creatures)
-        self.assertEqual(1, ute.reset)
-        self.assertEqual(60, ute.reset_time)
-        self.assertEqual(1, ute.respawns)
-        self.assertEqual(1, ute.single_shot)
-        self.assertEqual("onentered", ute.on_entered)
-        self.assertEqual("onexit", ute.on_exit)
-        self.assertEqual("onexhausted", ute.on_exhausted)
-        self.assertEqual("onheartbeat", ute.on_heartbeat)
-        self.assertEqual("onuserdefined", ute.on_user_defined)
-        self.assertEqual(7, ute.palette_id)
-        self.assertEqual("Kashyyyk", ute.comment)
+        assert ute.tag == "G_KATAARNGROUP01"
+        assert ute.name.stringref == 31918
+        assert ute.resref == "g_kataarngroup01"
+        assert ute.active == 1
+        assert ute.unused_difficulty == 1
+        assert ute.difficulty_id == 2
+        assert ute.faction_id == 1
+        assert ute.max_creatures == 6
+        assert ute.player_only == 1
+        assert ute.rec_creatures == 3
+        assert ute.reset == 1
+        assert ute.reset_time == 60
+        assert ute.respawns == 1
+        assert ute.single_shot == 1
+        assert ute.on_entered == "onentered"
+        assert ute.on_exit == "onexit"
+        assert ute.on_exhausted == "onexhausted"
+        assert ute.on_heartbeat == "onheartbeat"
+        assert ute.on_user_defined == "onuserdefined"
+        assert ute.palette_id == 7
+        assert ute.comment == "Kashyyyk"
 
-        self.assertEqual(2, len(ute.creatures))
-        self.assertEqual(74, ute.creatures[1].appearance_id)
-        self.assertEqual(8.0, ute.creatures[1].challenge_rating)
-        self.assertEqual("g_kataarn02", ute.creatures[1].resref)
-        self.assertEqual(1, ute.creatures[1].guaranteed_count)
-        self.assertTrue(ute.creatures[1].single_spawn)
+        assert len(ute.creatures) == 2
+        assert ute.creatures[1].appearance_id == 74
+        assert ute.creatures[1].challenge_rating == 8.0
+        assert ute.creatures[1].resref == "g_kataarn02"
+        assert ute.creatures[1].guaranteed_count == 1
+        assert ute.creatures[1].single_spawn
 
 
 if __name__ == "__main__":

@@ -55,7 +55,7 @@ class TestPTH(unittest.TestCase):
         for pth_resource in (resource for resource in self.installation if resource.restype() is ResourceType.PTH):
             gff: GFF = read_gff(pth_resource.data())
             reconstructed_gff: GFF = dismantle_pth(construct_pth(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -66,12 +66,12 @@ class TestPTH(unittest.TestCase):
         for pth_resource in (resource for resource in self.installation if resource.restype() is ResourceType.PTH):
             gff: GFF = read_gff(pth_resource.data())
             reconstructed_gff: GFF = dismantle_pth(construct_pth(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_gff_reconstruct(self):
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_pth(construct_pth(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -85,26 +85,26 @@ class TestPTH(unittest.TestCase):
         self.validate_io(pth)
 
     def validate_io(self, pth: PTH):
-        self.assertEqual(pth.get(0), Vector2(0.0, 0.0))
-        self.assertEqual(pth.get(1), Vector2(0.0, 1.0))
-        self.assertEqual(pth.get(2), Vector2(1.0, 1.0))
-        self.assertEqual(pth.get(3), Vector2(0.0, 2.0))
+        assert pth.get(0) == Vector2(0.0, 0.0)
+        assert pth.get(1) == Vector2(0.0, 1.0)
+        assert pth.get(2) == Vector2(1.0, 1.0)
+        assert pth.get(3) == Vector2(0.0, 2.0)
 
-        self.assertEqual(2, len(pth.outgoing(0)))
-        self.assertTrue(pth.is_connected(0, 1))
-        self.assertTrue(pth.is_connected(0, 2))
+        assert len(pth.outgoing(0)) == 2
+        assert pth.is_connected(0, 1)
+        assert pth.is_connected(0, 2)
 
-        self.assertEqual(3, len(pth.outgoing(1)))
-        self.assertTrue(pth.is_connected(1, 0))
-        self.assertTrue(pth.is_connected(1, 2))
-        self.assertTrue(pth.is_connected(1, 3))
+        assert len(pth.outgoing(1)) == 3
+        assert pth.is_connected(1, 0)
+        assert pth.is_connected(1, 2)
+        assert pth.is_connected(1, 3)
 
-        self.assertEqual(2, len(pth.outgoing(2)))
-        self.assertTrue(pth.is_connected(2, 0))
-        self.assertTrue(pth.is_connected(2, 1))
+        assert len(pth.outgoing(2)) == 2
+        assert pth.is_connected(2, 0)
+        assert pth.is_connected(2, 1)
 
-        self.assertEqual(1, len(pth.outgoing(3)))
-        self.assertTrue(pth.is_connected(3, 1))
+        assert len(pth.outgoing(3)) == 1
+        assert pth.is_connected(3, 1)
 
 
 if __name__ == "__main__":

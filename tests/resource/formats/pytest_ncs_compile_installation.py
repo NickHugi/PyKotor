@@ -5,7 +5,6 @@ import logging
 import os
 import pathlib
 import sys
-
 from io import StringIO
 from logging.handlers import RotatingFileHandler
 from typing import TYPE_CHECKING
@@ -30,23 +29,33 @@ if UTILITY_PATH.joinpath("utility").is_dir():
     add_sys_path(UTILITY_PATH)
 
 
+from _pytest.reports import TestReport
+from utility.error_handling import (  # noqa: E402
+    format_exception_with_variables,
+    universal_simplify_exception,
+)
+from pathlib import Path  # noqa: E402
+
 from pykotor.common.misc import Game  # noqa: E402
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS  # noqa: E402
 from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY  # noqa: E402
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats.ncs.compiler.classes import CompileError, EntryPointError  # noqa: E402
+from pykotor.resource.formats.ncs.compiler.classes import (  # noqa: E402
+    CompileError,
+    EntryPointError,
+)
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer  # noqa: E402
 from pykotor.resource.formats.ncs.compiler.parser import NssParser  # noqa: E402
-from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler, InbuiltNCSCompiler  # noqa: E402
+from pykotor.resource.formats.ncs.compilers import (  # noqa: E402
+    ExternalNCSCompiler,
+    InbuiltNCSCompiler,
+)
 from pykotor.resource.formats.ncs.io_ncs import NCSBinaryWriter
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs  # noqa: E402
 from pykotor.resource.formats.ncs.ncs_data import NCS  # noqa: E402
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception  # noqa: E402
-from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
-    from _pytest.reports import TestReport
     from ply import yacc
 
     from pykotor.extract.file import FileResource

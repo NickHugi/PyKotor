@@ -47,18 +47,18 @@ CORRUPT_JSON_TEST_FILE = "tests/files/test_corrupted.tlk.json"
 class TestTLK(unittest.TestCase):
     def test_resize(self):
         tlk: TLK = TLKBinaryReader(BINARY_TEST_FILE).load()
-        self.assertEqual(len(tlk), 3)
+        assert len(tlk) == 3
         tlk.resize(4)
-        self.assertEqual(len(tlk), 4)
-        self.assertEqual(TLKEntry("qrstuvwxyz", ResRef("")), tlk[2])
-        self.assertEqual(TLKEntry("", ResRef("")), tlk[3])
+        assert len(tlk) == 4
+        assert TLKEntry("qrstuvwxyz", ResRef("")) == tlk[2]
+        assert TLKEntry("", ResRef("")) == tlk[3]
         tlk.resize(1)
-        self.assertEqual(len(tlk), 1)
-        self.assertEqual(TLKEntry("abcdef", ResRef("resref01")), tlk.get(0))
-        self.assertIsNone(tlk.get(1))
+        assert len(tlk) == 1
+        assert TLKEntry("abcdef", ResRef("resref01")) == tlk.get(0)
+        assert tlk.get(1) is None
 
     def test_binary_io(self):
-        self.assertEqual(detect_tlk(BINARY_TEST_FILE), ResourceType.TLK)
+        assert detect_tlk(BINARY_TEST_FILE) == ResourceType.TLK
 
         tlk: TLK = TLKBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(tlk)
@@ -69,7 +69,7 @@ class TestTLK(unittest.TestCase):
         self.validate_io(tlk)
 
     def test_xml_io(self):
-        self.assertEqual(detect_tlk(XML_TEST_FILE), ResourceType.TLK_XML)
+        assert detect_tlk(XML_TEST_FILE) == ResourceType.TLK_XML
 
         tlk: TLK = TLKXMLReader(XML_TEST_FILE).load()
         self.validate_io(tlk)
@@ -80,7 +80,7 @@ class TestTLK(unittest.TestCase):
         self.validate_io(tlk)
 
     def test_json_io(self):
-        self.assertEqual(detect_tlk(JSON_TEST_FILE), ResourceType.TLK_JSON)
+        assert detect_tlk(JSON_TEST_FILE) == ResourceType.TLK_JSON
 
         tlk: TLK = TLKJSONReader(JSON_TEST_FILE).load()
         self.validate_io(tlk)
@@ -91,11 +91,11 @@ class TestTLK(unittest.TestCase):
         self.validate_io(tlk)
 
     def validate_io(self, tlk: TLK):
-        self.assertIs(tlk.language, Language.ENGLISH)
+        assert tlk.language is Language.ENGLISH
 
-        self.assertEqual(TLKEntry("abcdef", ResRef("resref01")), tlk[0])
-        self.assertEqual(TLKEntry("ghijklmnop", ResRef("resref02")), tlk[1])
-        self.assertEqual(TLKEntry("qrstuvwxyz", ResRef("")), tlk[2])
+        assert TLKEntry("abcdef", ResRef("resref01")) == tlk[0]
+        assert TLKEntry("ghijklmnop", ResRef("resref02")) == tlk[1]
+        assert TLKEntry("qrstuvwxyz", ResRef("")) == tlk[2]
 
     def test_read_raises(self):
         if os.name == "nt":

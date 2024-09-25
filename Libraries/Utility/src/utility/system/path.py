@@ -706,7 +706,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             log_func("Verifying the operations were successful...")
             success = self.has_access(mode, recurse=False)
         try:
-            if recurse and self.safe_isdir():
+            if recurse and self.is_dir():
                 for child in self.iterdir():
                     result: bool = child.gain_access(mode, recurse=recurse, resolve_symlinks=resolve_symlinks, log_func=log_func)
                     if not result:
@@ -793,7 +793,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
 
             # Delete the batch script after execution
             with suppress(Exception):
-                if script_path.safe_isfile():
+                if script_path.is_file():
                     script_path.unlink(missing_ok=True)
 
         # Inspired by the C# code provided by KOTORModSync at https://github.com/th3w1zard1/KOTORModSync
@@ -809,7 +809,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             self_path_str = str(self.absolute())
             if elevate:
                 self_path_str = f'"{self_path_str}"'
-            isdir_check: bool | None = self.safe_isdir()
+            isdir_check: bool | None = self.is_dir()
             commands: list[str] = []
 
             print(f"Step 1: Resetting permissions and re-enabling inheritance for {self_path_str}...")

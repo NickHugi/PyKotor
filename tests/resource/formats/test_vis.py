@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -42,21 +41,21 @@ class TestVIS(TestCase):
         self.validate_io(vis)
 
     def validate_io(self, vis: VIS):
-        self.assertTrue(vis.get_visible("room_01", "room_02"))
-        self.assertTrue(vis.get_visible("room_01", "room_03"))
-        self.assertTrue(vis.get_visible("room_01", "room_04"))
+        assert vis.get_visible("room_01", "room_02")
+        assert vis.get_visible("room_01", "room_03")
+        assert vis.get_visible("room_01", "room_04")
 
-        self.assertTrue(vis.get_visible("room_02", "room_01"))
-        self.assertFalse(vis.get_visible("room_02", "room_03"))
-        self.assertFalse(vis.get_visible("room_02", "room_04"))
+        assert vis.get_visible("room_02", "room_01")
+        assert not vis.get_visible("room_02", "room_03")
+        assert not vis.get_visible("room_02", "room_04")
 
-        self.assertTrue(vis.get_visible("room_03", "room_01"))
-        self.assertTrue(vis.get_visible("room_03", "room_04"))
-        self.assertFalse(vis.get_visible("room_03", "room_02"))
+        assert vis.get_visible("room_03", "room_01")
+        assert vis.get_visible("room_03", "room_04")
+        assert not vis.get_visible("room_03", "room_02")
 
-        self.assertTrue(vis.get_visible("room_04", "room_01"))
-        self.assertTrue(vis.get_visible("room_04", "room_03"))
-        self.assertFalse(vis.get_visible("room_04", "room_02"))
+        assert vis.get_visible("room_04", "room_01")
+        assert vis.get_visible("room_04", "room_03")
+        assert not vis.get_visible("room_04", "room_02")
 
     def test_read_raises(self):
         # sourcery skip: no-conditionals-in-tests

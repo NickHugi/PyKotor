@@ -9,6 +9,7 @@ import shutil
 import tempfile
 import time
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 import certifi
@@ -19,8 +20,14 @@ from Crypto.Cipher import AES
 from Crypto.Util import Counter
 from loggerplus import RobustLogger
 
-from utility.system.path import Path
-from utility.updater.crypto import a32_to_str, base64_to_a32, base64_url_decode, decrypt_mega_attr, get_chunks, str_to_a32
+from utility.updater.crypto import (
+    a32_to_str,
+    base64_to_a32,
+    base64_url_decode,
+    decrypt_mega_attr,
+    get_chunks,
+    str_to_a32,
+)
 
 if TYPE_CHECKING:
     import os
@@ -442,7 +449,7 @@ def _download_file(
     if dest_path.name == file_name:
         dest_path = dest_path.parent
     dest_filepath = dest_path / file_name
-    if not dest_filepath.parent.safe_isdir():
+    if not dest_filepath.parent.is_dir():
         dest_filepath.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(temp_output_file.name, dest_filepath)
 

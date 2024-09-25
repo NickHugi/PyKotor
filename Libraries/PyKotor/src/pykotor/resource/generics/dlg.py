@@ -4,6 +4,7 @@ import uuid
 
 from collections import deque
 from enum import IntEnum
+from pathlib import PureWindowsPath
 from typing import TYPE_CHECKING, Any, Dict, Generator, Generic, Sequence, TypeVar, cast
 
 from loggerplus import RobustLogger
@@ -14,7 +15,6 @@ from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
 from pykotor.resource.type import ResourceType
-from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from typing_extensions import Literal, Self

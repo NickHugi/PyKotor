@@ -4,6 +4,7 @@ import tempfile
 
 from abc import abstractmethod
 from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import qtpy
@@ -41,31 +42,48 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
-from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
+from pykotor.tools.misc import (
+    is_any_erf_type_file,
+    is_bif_file,
+    is_capsule_file,
+    is_rim_file,
+)
 from pykotor.tools.path import CaseAwarePath
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from ui import stylesheet_resources  # noqa: PLC0415, F401, I001  # pylint: disable=C0415
-from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import (
+    assert_with_variable_trace,
+    format_exception_with_variables,
+    universal_simplify_exception,
+)
 from utility.system.os_helper import remove_any
-from utility.system.path import Path
 
 if qtpy.API_NAME == "PySide2":
-    from toolset.rcc import resources_rc_pyside2  # noqa: PLC0415, F401  # pylint: disable=C0415
+    from toolset.rcc import (
+        resources_rc_pyside2,  # noqa: PLC0415, F401  # pylint: disable=C0415
+    )
 elif qtpy.API_NAME == "PySide6":
-    from toolset.rcc import resources_rc_pyside6  # noqa: PLC0415, F401  # pylint: disable=C0415
+    from toolset.rcc import (
+        resources_rc_pyside6,  # noqa: PLC0415, F401  # pylint: disable=C0415
+    )
 elif qtpy.API_NAME == "PyQt5":
-    from toolset.rcc import resources_rc_pyqt5  # noqa: PLC0415, F401  # pylint: disable=C0415
+    from toolset.rcc import (
+        resources_rc_pyqt5,  # noqa: PLC0415, F401  # pylint: disable=C0415
+    )
 elif qtpy.API_NAME == "PyQt6":
-    from toolset.rcc import resources_rc_pyqt6  # noqa: PLC0415, F401  # pylint: disable=C0415
+    from toolset.rcc import (
+        resources_rc_pyqt6,  # noqa: PLC0415, F401  # pylint: disable=C0415
+    )
 else:
     raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
 if TYPE_CHECKING:
     import os
+
+    from pathlib import PurePath
 
     from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer
     from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer
@@ -74,7 +92,6 @@ if TYPE_CHECKING:
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
-    from utility.system.path import PurePath
 
 
 class MediaPlayerWidget(QWidget):
@@ -654,7 +671,7 @@ class Editor(QMainWindow):
         while (  # Iterate all parents until we find a physical folder on disk.
             ResourceType.from_extension(c_parent_filepath.suffix).name
             in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV, ResourceType.RIM)
-        ) and not c_parent_filepath.safe_isdir():
+        ) and not c_parent_filepath.is_dir():
             nested_paths.append(c_parent_filepath)
             c_filepath = c_parent_filepath
             c_parent_filepath = c_filepath.parent

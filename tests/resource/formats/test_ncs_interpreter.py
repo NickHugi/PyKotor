@@ -3,7 +3,6 @@ from __future__ import annotations
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -46,10 +45,10 @@ class TestStack(TestCase):
 
         stack.move(-12)
         snapshop = stack.state()
-        self.assertEqual(3, len(snapshop))
-        self.assertEqual(3.0, snapshop.pop())
-        self.assertEqual(2.0, snapshop.pop())
-        self.assertEqual(1.0, snapshop.pop())
+        assert len(snapshop) == 3
+        assert snapshop.pop() == 3.0
+        assert snapshop.pop() == 2.0
+        assert snapshop.pop() == 1.0
 
     def test_move_zero(self):
         stack = Stack()
@@ -62,13 +61,13 @@ class TestStack(TestCase):
 
         stack.move(0)
         snapshop = stack.state()
-        self.assertEqual(6, len(snapshop))
-        self.assertEqual(6.0, snapshop.pop())
-        self.assertEqual(5.0, snapshop.pop())
-        self.assertEqual(4.0, snapshop.pop())
-        self.assertEqual(3.0, snapshop.pop())
-        self.assertEqual(2.0, snapshop.pop())
-        self.assertEqual(1.0, snapshop.pop())
+        assert len(snapshop) == 6
+        assert snapshop.pop() == 6.0
+        assert snapshop.pop() == 5.0
+        assert snapshop.pop() == 4.0
+        assert snapshop.pop() == 3.0
+        assert snapshop.pop() == 2.0
+        assert snapshop.pop() == 1.0
 
     def test_copy_down_single(self):
         stack = Stack()
@@ -81,7 +80,7 @@ class TestStack(TestCase):
 
         stack.copy_down(-12, 4)
 
-        self.assertEqual(6, stack.peek(-12))
+        assert stack.peek(-12) == 6
 
     def test_copy_down_many(self):
         stack = Stack()
@@ -95,9 +94,9 @@ class TestStack(TestCase):
         stack.copy_down(-24, 12)
         print(stack.state())
 
-        self.assertEqual(4, stack.peek(-24))
-        self.assertEqual(5, stack.peek(-20))
-        self.assertEqual(6, stack.peek(-16))
+        assert stack.peek(-24) == 4
+        assert stack.peek(-20) == 5
+        assert stack.peek(-16) == 6
 
 
 if __name__ == "__main__":

@@ -194,7 +194,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self.viewport().update()
 
     def set_text_size(self, size: int):
-        delegate = self.itemDelegate()
+        delegate: QStyledItemDelegate = self.itemDelegate()
         if isinstance(delegate, HTMLDelegate):
             text_size = max(1, size)
             model: QAbstractItemModel | None = self.model()
@@ -209,7 +209,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self.debounce_layout_changed()
 
     def get_text_size(self) -> int:
-        delegate = self.itemDelegate()
+        delegate: QStyledItemDelegate = self.itemDelegate()
         return delegate.text_size if isinstance(delegate, HTMLDelegate) else self.font().pointSize()
 
     def update_columns_after_text_size_change(self):
@@ -583,7 +583,10 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             "Viewport Margins",
             self.viewportMargins,
             lambda m: self.setViewportMargins(
-                cast(QtCore.QMargins, m).left(), cast(QtCore.QMargins, m).top(), cast(QtCore.QMargins, m).right(), cast(QtCore.QMargins, m).bottom()
+                cast(QtCore.QMargins, m).left(),
+                cast(QtCore.QMargins, m).top(),
+                cast(QtCore.QMargins, m).right(),
+                cast(QtCore.QMargins, m).bottom(),
             ),
             settings_key="viewportMargins",
             param_type=QtCore.QMargins,

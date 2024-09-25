@@ -11,9 +11,16 @@ import qtpy  # noqa: E402
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
     QDesktopWidget = None
-    from qtpy.QtGui import QUndoCommand, QUndoStack  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
+    from qtpy.QtGui import (  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
+        QUndoCommand,
+        QUndoStack,
+    )
 elif qtpy.API_NAME in ("PyQt5", "PySide2"):
-    from qtpy.QtWidgets import QDesktopWidget, QUndoCommand, QUndoStack  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
+    from qtpy.QtWidgets import (  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
+        QDesktopWidget,
+        QUndoCommand,
+        QUndoStack,
+    )
 else:
     raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
 
@@ -59,7 +66,8 @@ if utility_path.exists():
 toolset_path = file_absolute_path.parents[8] / "Tools/HolocronToolset/src/toolset"
 if toolset_path.exists():
     update_sys_path(toolset_path.parent)
-    os.chdir(toolset_path)
+    if __name__ == "__main__":
+        os.chdir(toolset_path)
 
 
 

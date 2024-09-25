@@ -5,14 +5,12 @@ import os
 import pathlib
 import shutil
 import sys
-
 from contextlib import suppress
 from io import StringIO
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import pytest
-
 from utility.error_handling import format_exception_with_variables
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
@@ -31,10 +29,11 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from pathlib import Path  # noqa: E402
+
 from pykotor.common.misc import Game  # noqa: E402
 from pykotor.extract.installation import Installation  # noqa: E402
 from pykotor.resource.type import ResourceType  # noqa: E402
-from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from typing_extensions import Literal
@@ -112,9 +111,9 @@ def _setup_and_profile_installation() -> dict[Game, Installation]:
         profiler = cProfile.Profile()
         profiler.enable()
 
-    if K1_PATH and Path(K1_PATH).joinpath("chitin.key").safe_isfile():
+    if K1_PATH and Path(K1_PATH).joinpath("chitin.key").is_file():
         ALL_INSTALLATIONS[Game.K1] = Installation(K1_PATH)
-    if K2_PATH and Path(K2_PATH).joinpath("chitin.key").safe_isfile():
+    if K2_PATH and Path(K2_PATH).joinpath("chitin.key").is_file():
         ALL_INSTALLATIONS[Game.K2] = Installation(K2_PATH)
 
     if profiler:

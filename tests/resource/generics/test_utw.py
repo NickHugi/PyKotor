@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 from pykotor.resource.type import ResourceType
@@ -57,7 +56,7 @@ class TestUTW(TestCase):
         for resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTW):
             gff: GFF = read_gff(resource.data())
             reconstructed_gff: GFF = dismantle_utw(construct_utw(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -68,12 +67,12 @@ class TestUTW(TestCase):
         for resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTW):
             gff: GFF = read_gff(resource.data())
             reconstructed_gff: GFF = dismantle_utw(construct_utw(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_gff_reconstruct(self):
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_utw(construct_utw(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -87,17 +86,17 @@ class TestUTW(TestCase):
         self.validate_io(utw)
 
     def validate_io(self, utw: UTW):
-        self.assertEqual(1, utw.appearance_id)
-        self.assertEqual("", utw.linked_to)
-        self.assertEqual("sw_mapnote011", utw.resref)
-        self.assertEqual("MN_106PER2", utw.tag)
-        self.assertEqual(76857, utw.name.stringref)
-        self.assertEqual(-1, utw.description.stringref)
-        self.assertTrue(utw.has_map_note)
-        self.assertEqual(76858, utw.map_note.stringref)
-        self.assertEqual(1, utw.map_note_enabled)
-        self.assertEqual(5, utw.palette_id)
-        self.assertEqual("comment", utw.comment)
+        assert utw.appearance_id == 1
+        assert utw.linked_to == ""
+        assert utw.resref == "sw_mapnote011"
+        assert utw.tag == "MN_106PER2"
+        assert utw.name.stringref == 76857
+        assert utw.description.stringref == -1
+        assert utw.has_map_note
+        assert utw.map_note.stringref == 76858
+        assert utw.map_note_enabled == 1
+        assert utw.palette_id == 5
+        assert utw.comment == "comment"
 
 
 if __name__ == "__main__":

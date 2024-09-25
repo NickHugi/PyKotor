@@ -160,7 +160,10 @@ def last_resort_cleanup():
     """
     from loggerplus import RobustLogger
 
-    from utility.system.app_process.shutdown import gracefully_shutdown_threads, start_shutdown_process
+    from utility.system.app_process.shutdown import (
+        gracefully_shutdown_threads,
+        start_shutdown_process,
+    )
 
     RobustLogger().info("Fully shutting down Holocron Toolset...")
     gracefully_shutdown_threads()

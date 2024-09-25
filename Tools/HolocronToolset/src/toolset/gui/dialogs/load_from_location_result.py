@@ -69,6 +69,8 @@ if __name__ == "__main__":
             update_sys_path(toolset_path.parent)
             os.chdir(toolset_path)
 
+from pathlib import Path
+
 from loggerplus import RobustLogger
 
 from pykotor.common.misc import Game
@@ -85,7 +87,6 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.misc import is_float, is_int
 from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -678,7 +679,7 @@ class ResourceItems(FileItems):
 
             atexit.register(cleanup_tempdir)
             tempdir_path = Path(tempdir)
-            assert tempdir_path.safe_isdir()
+            assert tempdir_path.is_dir()
             temp_file = tempdir_path / resource.filename()
             with BinaryWriterFile.to_file(temp_file) as writer:
                 writer.write_bytes(resource.data())
@@ -1056,7 +1057,7 @@ class FileSelectionWindow(QMainWindow):
                     self.add_file_item(i, resource.filepath(), res_stat_result, resource)
                     if resource.offset():
                         # Replace some of the above stat results with ones specific for this resource.
-                        data = resource.data() if resource.filepath().safe_isfile() else None
+                        data = resource.data() if resource.filepath().is_file() else None
                         if data is None:
                             continue
                         with TemporaryDirectory("_tmpext", "toolset_") as tempdir:

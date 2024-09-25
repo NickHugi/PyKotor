@@ -6,6 +6,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Collection, Generic, TypeVar, TypedDict, cast
 
 from loggerplus import RobustLogger
@@ -41,7 +42,6 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
 from pykotor.tools.path import CaseAwarePath
-from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -278,7 +278,7 @@ class Module:  # noqa: PLR0904
         }
         if self.dot_mod:
             mod_filepath = installation.module_path().joinpath(self._root + KModuleType.MOD.value)
-            if mod_filepath.safe_isfile():
+            if mod_filepath.is_file():
                 self._capsules[KModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
             else:
                 self.dot_mod = False
@@ -317,7 +317,7 @@ class Module:  # noqa: PLR0904
         module_path: Path | CaseAwarePath = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
         if filename.lower().endswith(".mod"):
             mod_filepath = module_path.joinpath(root + KModuleType.MOD.value)
-            if mod_filepath.safe_isfile():
+            if mod_filepath.is_file():
                 capsules[KModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
             elif not strict:
                 capsules[KModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + KModuleType.MAIN.value))

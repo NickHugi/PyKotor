@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ctypes
 import errno
+import os
 
 from contextlib import ExitStack
 from ctypes import byref, windll
@@ -14,7 +15,6 @@ import comtypes.client  # pyright: ignore[reportMissingTypeStubs]
 from utility.system.win32.hwnd import SimplePyHWND
 
 if TYPE_CHECKING:
-    import os
 
     from typing import Any, Callable, Sequence
 
@@ -143,7 +143,7 @@ def windows_context_menu_file(
     file_path: os.PathLike | str,
     hwnd: int | None = None,
 ) -> None:
-    parsed_filepath: WindowsPath = WindowsPath(file_path).resolve()
+    parsed_filepath: WindowsPath = WindowsPath(os.path.normpath(file_path)).absolute()
     shell = create_dispatch_shell()
     folder_object = shell.NameSpace(str(parsed_filepath.parent))
     folder_item = folder_object.ParseName(parsed_filepath.name)
@@ -154,7 +154,12 @@ def windows_context_menu_multiple(
     paths: Sequence[os.PathLike | str],
     hwnd: int | None = None,
 ):
-    parsed_paths: list[WindowsPath] = [WindowsPath(path).resolve() for path in paths]
+    parsed_paths: list[WindowsPath] = []
+    for path in paths:
+        parsed_path = WindowsPath(os.path.normpath(path)).absolute()
+        if not parsed_path.exists():
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(path))
+        parsed_paths.append(parsed_path)
     folder_items = []
     shell = create_dispatch_shell()
     for path in parsed_paths:
@@ -168,7 +173,9 @@ def windows_context_menu_folder(
     folder_path: os.PathLike | str,
     hwnd: int | None = None,
 ) -> None:
-    parsed_folderpath: WindowsPath = WindowsPath(folder_path).resolve()
+    parsed_folderpath: WindowsPath = WindowsPath(os.path.normpath(folder_path)).absolute()
+    if not parsed_folderpath.exists():
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(folder_path))
     shell = create_dispatch_shell()
     desktop_object = shell.NameSpace(0)
     folder_item = desktop_object.ParseName(str(parsed_folderpath))
@@ -183,10 +190,11 @@ def windows_context_menu(path: os.PathLike | str | Iterable[os.PathLike | str], 
         if len(paths) > 1:
             windows_context_menu_multiple(paths, hwnd)
             return
-        parsed_path: WindowsPath = WindowsPath(paths[0])
+        parsed_path: WindowsPath = WindowsPath(os.path.normpath(paths[0])).absolute()
     else:
-        parsed_path = WindowsPath(path)
-
+        parsed_path = WindowsPath(os.path.normpath(path)).absolute()
+    if not parsed_path.exists():
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(path))
     if safe_isfile(parsed_path):
         windows_context_menu_file(parsed_path, hwnd)
     elif safe_isdir(parsed_path):

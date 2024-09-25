@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -25,10 +24,11 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING
 
+from pathlib import Path
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCSBinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.ncs import NCS
@@ -51,9 +51,9 @@ class TestNCS(TestCase):
         self.validate_io(ncs)
 
     def validate_io(self, ncs: NCS):
-        self.assertEqual(8, len(ncs.instructions))
+        assert len(ncs.instructions) == 8
 
-        self.assertEqual(BinaryReader.load_file(BINARY_TEST_FILE), bytes_ncs(ncs))
+        assert BinaryReader.load_file(BINARY_TEST_FILE) == bytes_ncs(ncs)
 
 
 if __name__ == "__main__":

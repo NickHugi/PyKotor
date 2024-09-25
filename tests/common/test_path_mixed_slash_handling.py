@@ -8,9 +8,15 @@ import pathlib
 import platform
 import sys
 import unittest
-
 from ctypes.wintypes import DWORD
-from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
+from pathlib import (
+    Path,
+    PosixPath,
+    PurePath,
+    PurePosixPath,
+    PureWindowsPath,
+    WindowsPath,
+)
 from unittest import mock
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -29,15 +35,26 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.tools.path import CaseAwarePath
-from utility.system.path import (
+from pathlib import (
     Path as CustomPath,
+)
+from pathlib import (
     PosixPath as CustomPosixPath,
+)
+from pathlib import (
     PurePath as CustomPurePath,
+)
+from pathlib import (
     PurePosixPath as CustomPurePosixPath,
+)
+from pathlib import (
     PureWindowsPath as CustomPureWindowsPath,
+)
+from pathlib import (
     WindowsPath as CustomWindowsPath,
 )
+
+from pykotor.tools.path import CaseAwarePath
 
 
 def check_path_win_api(path) -> tuple[bool, bool, bool]:
@@ -58,51 +75,51 @@ class TestPathlibMixedSlashes(unittest.TestCase):
     @unittest.skipIf(os.name != "nt", "Test can only be run on Windows.")
     def test_low_granular_path_usage(self):
         override_path_str = r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\Override"
-        override_path = CustomPureWindowsPath(override_path_str) 
+        override_path = CustomPureWindowsPath(override_path_str)
         testpath_str1 = r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\Override\000react.dlg"
         testpath_1 = CustomPureWindowsPath(testpath_str1)
-        self.assertEqual(str(testpath_1), testpath_str1)
-        self.assertEqual(testpath_1.parts[0], override_path.parts[0])
-        self.assertTrue(testpath_1.is_relative_to(override_path))
+        assert str(testpath_1) == testpath_str1
+        assert testpath_1.parts[0] == override_path.parts[0]
+        assert testpath_1.is_relative_to(override_path)
         testpath_2 = override_path.joinpath(testpath_str1)
-        self.assertEqual(testpath_1.parts[0], testpath_2.parts[0])
-        self.assertEqual(testpath_2, testpath_1)
-        self.assertTrue(testpath_2.is_relative_to(override_path))
+        assert testpath_1.parts[0] == testpath_2.parts[0]
+        assert testpath_2 == testpath_1
+        assert testpath_2.is_relative_to(override_path)
 
     @unittest.skipIf(os.name != "posix", "Test only supported on POSIX systems.")
     def test_posix_exists_alternatives(self):
         test_classes: tuple[type, ...] = (CustomPath, CaseAwarePath)
         test_path = "/dev/vcsa6"
-        self.assertFalse(os.access("C:\\nonexistent\\path", os.F_OK))
+        assert not os.access("C:\\nonexistent\\path", os.F_OK)
         test_access: bool = os.access(test_path, os.F_OK)
-        self.assertEqual(test_access, True)
+        assert test_access == True
 
         test_os_exists: bool = os.path.exists(test_path)
-        self.assertEqual(test_os_exists, True)
+        assert test_os_exists == True
         test_os_isfile: bool = os.path.isfile(test_path)
-        self.assertEqual(test_os_isfile, False)  # This is the bug
+        assert test_os_isfile == False  # This is the bug
         test_os_isdir: bool = os.path.isdir(test_path)
-        self.assertEqual(test_os_isfile, False)  # This is the bug
+        assert test_os_isfile == False  # This is the bug
 
-        self.assertEqual(True, Path(test_path).exists())
-        self.assertEqual(False, Path(test_path).is_file())  # This is the bug
-        self.assertEqual(False, Path(test_path).is_dir())  # This is the bug
+        assert Path(test_path).exists() == True
+        assert Path(test_path).is_file() == False  # This is the bug
+        assert Path(test_path).is_dir() == False  # This is the bug
         for PathType in test_classes:
             test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
-            self.assertEqual(test_pathtype_exists, True, repr(PathType))
-            self.assertEqual(True, PathType(test_path).exists(), repr(PathType))
-            test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
-            self.assertEqual(test_pathtype_isfile, False, repr(PathType))
-            self.assertEqual(False, PathType(test_path).is_file(), repr(PathType))  # This is the bug
-            test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
-            self.assertEqual(test_pathtype_isdir, False, repr(PathType))
-            self.assertEqual(False, PathType(test_path).is_dir(), repr(PathType))  # This is the bug
+            assert test_pathtype_exists == True, repr(PathType)
+            assert PathType(test_path).exists() == True, repr(PathType)
+            test_pathtype_isfile: bool | None = PathType(test_path).is_file()
+            assert test_pathtype_isfile == False, repr(PathType)
+            assert PathType(test_path).is_file() == False, repr(PathType)  # This is the bug
+            test_pathtype_isdir: bool | None = PathType(test_path).is_dir()
+            assert test_pathtype_isdir == False, repr(PathType)
+            assert PathType(test_path).is_dir() == False, repr(PathType)  # This is the bug
 
     def find_exists_problems(self):
         test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)
         test_path = "/" if platform.system() != "Windows" else "C:\\"
         for PathType in test_classes:
-            self.assertTrue(self.list_files_recursive_scandir(test_path, set(), PathType))
+            assert self.list_files_recursive_scandir(test_path, set(), PathType)
 
     def list_files_recursive_scandir(self, path: str, seen: set, PathType: type[pathlib.Path | CustomPath | CaseAwarePath]):
         if "/mnt/c" in path.lower():
@@ -161,427 +178,427 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         path1, path2 = CustomPosixPath("test\\\\path\\to\\nothing\\"), CustomPosixPath("tesT\\PATH\\to\\\\noTHinG")
         with mock.patch("os.name", "posix"):
             test_set = {path1, path2}
-            self.assertNotEqual(path1, path2)
-            self.assertNotEqual(hash(path1), hash(path2))
-            self.assertNotEqual(test_set, {CustomPosixPath("TEST\\path\\\\to\\nothing")})
+            assert path1 != path2
+            assert hash(path1) != hash(path2)
+            assert test_set != {CustomPosixPath("TEST\\path\\\\to\\nothing")}
 
     def test_posix_case_hashing_custom_pure_posix_path(self):
         path1, path2 = CustomPurePosixPath("test\\\\path\\to\\nothing\\"), CustomPurePosixPath("tesT\\PATH\\to\\\\noTHinG")
         with mock.patch("os.name", "posix"):
             test_set = {path1, path2}
-            self.assertNotEqual(path1, path2)
-            self.assertNotEqual(hash(path1), hash(path2))
-            self.assertNotEqual(test_set, {CustomPurePosixPath("TEST\\path\\\\to\\nothing")})
+            assert path1 != path2
+            assert hash(path1) != hash(path2)
+            assert test_set != {CustomPurePosixPath("TEST\\path\\\\to\\nothing")}
 
     def test_posix_case_hashing_custom_path(self):
         path1, path2 = CustomPath("test\\\\path\\to\\nothing\\"), CustomPath("tesT\\PATH\\to\\\\noTHinG")
-        with mock.patch.object(path1._flavour, 'sep', '/'):
-            with mock.patch.object(path2._flavour, 'sep', '/'):
+        with mock.patch.object(path1._flavour, "sep", "/"):
+            with mock.patch.object(path2._flavour, "sep", "/"):
                 test_set = {path1, path2}
-                self.assertNotEqual(path1, path2)
-                self.assertNotEqual(hash(path1), hash(path2))
-                self.assertNotEqual(test_set, {CustomPath("TEST/path/to/nothing/")})
+                assert path1 != path2
+                assert hash(path1) != hash(path2)
+                assert test_set != {CustomPath("TEST/path/to/nothing/")}
 
     def test_windows_case_hashing_custom_path(self):
         path1, path2 = CustomPath("test\\\\path\\to\\nothing\\"), CustomPath("tesT\\PATH\\to\\\\noTHinG")
-        with mock.patch.object(path1._flavour, 'sep', '\\'):
-            with mock.patch.object(path2._flavour, 'sep', '\\'):
+        with mock.patch.object(path1._flavour, "sep", "\\"):
+            with mock.patch.object(path2._flavour, "sep", "\\"):
                 test_set = {path1, path2}
-                self.assertEqual(path1, path2)
-                self.assertEqual(hash(path1), hash(path2))
+                assert path1 == path2
+                assert hash(path1) == hash(path2)
                 self.assertEqual(test_set, {CustomPath("TEST/path/to/nothing/")}) if os.name == "nt" else self.assertNotEqual(test_set, {CustomPath("TEST/path/to/nothing/")})
 
     @unittest.skipIf(os.name == "nt", "Test only supported on POSIX systems.")
     def test_pathlib_path_edge_cases_posix_posix_path(self):
-        self.assertEqual(str(PosixPath("C:/")), "C:")
-        self.assertEqual(str(PosixPath("C:/Users/test/")), "C:/Users/test")
-        self.assertEqual(str(PosixPath("C:/Users/test\\")), "C:/Users/test\\")
-        self.assertEqual(str(PosixPath("C://Users///test")), "C:/Users/test")
-        self.assertEqual(str(PosixPath("C:/Users/TEST/")), "C:/Users/TEST")
-        self.assertEqual(str(PosixPath("\\\\server\\folder")), "\\\\server\\folder")
-        self.assertEqual(str(PosixPath("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
-        self.assertEqual(str(PosixPath("\\\\\\server\\\\folder")), "\\\\\\server\\\\folder")
-        self.assertEqual(str(PosixPath("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
-        self.assertEqual(str(PosixPath("\\\\wsl.localhost\\path\\to\\file with space ")), "\\\\wsl.localhost\\path\\to\\file with space ")
-        self.assertEqual(str(PosixPath("C:/Users/test folder/")), "C:/Users/test folder")
-        self.assertEqual(str(PosixPath("C:/Users/üser/")), "C:/Users/üser")
-        self.assertEqual(str(PosixPath("C:/Users/test\\nfolder/")), "C:/Users/test\\nfolder")
-        self.assertEqual(str(PosixPath("C:/Users").joinpath("test/")), "C:/Users/test")
-        self.assertEqual(str(PosixPath("C:/Users") / "test/"), "C:/Users/test")
-        self.assertEqual(str(PosixPath("C:/Users") / "test/"), "C:/Users/test")
-        self.assertEqual(str(PosixPath("")), ".")
-        self.assertEqual(str(PosixPath("//")), "//")
-        self.assertEqual(str(PosixPath("C:")), "C:")
-        self.assertEqual(str(PosixPath("///")), "/")
-        self.assertEqual(str(PosixPath("C:/./Users/../test/")), "C:/Users/../test")
-        self.assertEqual(str(PosixPath("~/folder/")), "~/folder")
+        assert str(PosixPath("C:/")) == "C:"
+        assert str(PosixPath("C:/Users/test/")) == "C:/Users/test"
+        assert str(PosixPath("C:/Users/test\\")) == "C:/Users/test\\"
+        assert str(PosixPath("C://Users///test")) == "C:/Users/test"
+        assert str(PosixPath("C:/Users/TEST/")) == "C:/Users/TEST"
+        assert str(PosixPath("\\\\server\\folder")) == "\\\\server\\folder"
+        assert str(PosixPath("\\\\\\\\server\\folder/")) == "\\\\\\\\server\\folder"
+        assert str(PosixPath("\\\\\\server\\\\folder")) == "\\\\\\server\\\\folder"
+        assert str(PosixPath("\\\\wsl.localhost\\path\\to\\file")) == "\\\\wsl.localhost\\path\\to\\file"
+        assert str(PosixPath("\\\\wsl.localhost\\path\\to\\file with space ")) == "\\\\wsl.localhost\\path\\to\\file with space "
+        assert str(PosixPath("C:/Users/test folder/")) == "C:/Users/test folder"
+        assert str(PosixPath("C:/Users/üser/")) == "C:/Users/üser"
+        assert str(PosixPath("C:/Users/test\\nfolder/")) == "C:/Users/test\\nfolder"
+        assert str(PosixPath("C:/Users").joinpath("test/")) == "C:/Users/test"
+        assert str(PosixPath("C:/Users") / "test/") == "C:/Users/test"
+        assert str(PosixPath("C:/Users") / "test/") == "C:/Users/test"
+        assert str(PosixPath("")) == "."
+        assert str(PosixPath("//")) == "//"
+        assert str(PosixPath("C:")) == "C:"
+        assert str(PosixPath("///")) == "/"
+        assert str(PosixPath("C:/./Users/../test/")) == "C:/Users/../test"
+        assert str(PosixPath("~/folder/")) == "~/folder"
 
     def test_pathlib_path_edge_cases_posix_pure_posix_path(self):
-        self.assertEqual(str(PurePosixPath("C:/")), "C:")
-        self.assertEqual(str(PurePosixPath("C:/Users/test/")), "C:/Users/test")
-        self.assertEqual(str(PurePosixPath("C:/Users/test\\")), "C:/Users/test\\")
-        self.assertEqual(str(PurePosixPath("C://Users///test")), "C:/Users/test")
-        self.assertEqual(str(PurePosixPath("C:/Users/TEST/")), "C:/Users/TEST")
-        self.assertEqual(str(PurePosixPath("\\\\server\\folder")), "\\\\server\\folder")
-        self.assertEqual(str(PurePosixPath("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
-        self.assertEqual(str(PurePosixPath("\\\\\\server\\\\folder")), "\\\\\\server\\\\folder")
-        self.assertEqual(str(PurePosixPath("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
-        self.assertEqual(str(PurePosixPath("\\\\wsl.localhost\\path\\to\\file with space ")), "\\\\wsl.localhost\\path\\to\\file with space ")
-        self.assertEqual(str(PurePosixPath("C:/Users/test folder/")), "C:/Users/test folder")
-        self.assertEqual(str(PurePosixPath("C:/Users/üser/")), "C:/Users/üser")
-        self.assertEqual(str(PurePosixPath("C:/Users/test\\nfolder/")), "C:/Users/test\\nfolder")
-        self.assertEqual(str(PurePosixPath("C:/Users").joinpath("test/")), "C:/Users/test")
-        self.assertEqual(str(PurePosixPath("C:/Users") / "test/"), "C:/Users/test")
-        self.assertEqual(str(PurePosixPath("C:/Users") / "test/"), "C:/Users/test")
-        self.assertEqual(str(PurePosixPath("")), ".")
-        self.assertEqual(str(PurePosixPath("//")), "//")
-        self.assertEqual(str(PurePosixPath("C:")), "C:")
-        self.assertEqual(str(PurePosixPath("///")), "/")
-        self.assertEqual(str(PurePosixPath("C:/./Users/../test/")), "C:/Users/../test")
-        self.assertEqual(str(PurePosixPath("~/folder/")), "~/folder")
+        assert str(PurePosixPath("C:/")) == "C:"
+        assert str(PurePosixPath("C:/Users/test/")) == "C:/Users/test"
+        assert str(PurePosixPath("C:/Users/test\\")) == "C:/Users/test\\"
+        assert str(PurePosixPath("C://Users///test")) == "C:/Users/test"
+        assert str(PurePosixPath("C:/Users/TEST/")) == "C:/Users/TEST"
+        assert str(PurePosixPath("\\\\server\\folder")) == "\\\\server\\folder"
+        assert str(PurePosixPath("\\\\\\\\server\\folder/")) == "\\\\\\\\server\\folder"
+        assert str(PurePosixPath("\\\\\\server\\\\folder")) == "\\\\\\server\\\\folder"
+        assert str(PurePosixPath("\\\\wsl.localhost\\path\\to\\file")) == "\\\\wsl.localhost\\path\\to\\file"
+        assert str(PurePosixPath("\\\\wsl.localhost\\path\\to\\file with space ")) == "\\\\wsl.localhost\\path\\to\\file with space "
+        assert str(PurePosixPath("C:/Users/test folder/")) == "C:/Users/test folder"
+        assert str(PurePosixPath("C:/Users/üser/")) == "C:/Users/üser"
+        assert str(PurePosixPath("C:/Users/test\\nfolder/")) == "C:/Users/test\\nfolder"
+        assert str(PurePosixPath("C:/Users").joinpath("test/")) == "C:/Users/test"
+        assert str(PurePosixPath("C:/Users") / "test/") == "C:/Users/test"
+        assert str(PurePosixPath("C:/Users") / "test/") == "C:/Users/test"
+        assert str(PurePosixPath("")) == "."
+        assert str(PurePosixPath("//")) == "//"
+        assert str(PurePosixPath("C:")) == "C:"
+        assert str(PurePosixPath("///")) == "/"
+        assert str(PurePosixPath("C:/./Users/../test/")) == "C:/Users/../test"
+        assert str(PurePosixPath("~/folder/")) == "~/folder"
 
     @unittest.skipIf(os.name != "nt", "Test only supported on NT systems.")
     def test_pathlib_path_edge_cases_windows_windows_path(self):
-        self.assertEqual(str(WindowsPath("C:/")), "C:\\")
-        self.assertEqual(str(WindowsPath("C:\\")), "C:\\")
-        self.assertEqual(str(WindowsPath("C:/Users/test/")), "C:\\Users\\test")
-        self.assertEqual(str(WindowsPath("C:/Users/test\\")), "C:\\Users\\test")
-        self.assertEqual(str(WindowsPath("C://Users///test")), "C:\\Users\\test")
-        self.assertEqual(str(WindowsPath("C:/Users/TEST/")), "C:\\Users\\TEST")
-        self.assertEqual(str(WindowsPath("\\\\server\\folder")), "\\\\server\\folder\\")
+        assert str(WindowsPath("C:/")) == "C:\\"
+        assert str(WindowsPath("C:\\")) == "C:\\"
+        assert str(WindowsPath("C:/Users/test/")) == "C:\\Users\\test"
+        assert str(WindowsPath("C:/Users/test\\")) == "C:\\Users\\test"
+        assert str(WindowsPath("C://Users///test")) == "C:\\Users\\test"
+        assert str(WindowsPath("C:/Users/TEST/")) == "C:\\Users\\TEST"
+        assert str(WindowsPath("\\\\server\\folder")) == "\\\\server\\folder\\"
         if sys.version_info < (3, 12):
-            self.assertEqual(str(WindowsPath("\\\\\\\\server\\folder/")), "\\server\\folder")
-            self.assertEqual(str(WindowsPath("\\\\\\server\\\\folder")), "\\server\\folder")
+            assert str(WindowsPath("\\\\\\\\server\\folder/")) == "\\server\\folder"
+            assert str(WindowsPath("\\\\\\server\\\\folder")) == "\\server\\folder"
         else:
-            self.assertEqual(str(WindowsPath("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
-            self.assertEqual(str(WindowsPath("\\\\\\server\\\\folder")), "\\\\\\server\\folder")
-        self.assertEqual(str(WindowsPath("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
-        self.assertEqual(str(WindowsPath("\\\\wsl.localhost\\path\\to\\file with space ")), "\\\\wsl.localhost\\path\\to\\file with space ")
-        self.assertEqual(str(WindowsPath("C:/Users/test folder/")), "C:\\Users\\test folder")
-        self.assertEqual(str(WindowsPath("C:/Users/üser/")), "C:\\Users\\üser")
-        self.assertEqual(str(WindowsPath("C:/Users/test\\nfolder/")), "C:\\Users\\test\\nfolder")
-        self.assertEqual(str(WindowsPath("C:/Users").joinpath("test/")), "C:\\Users\\test")
-        self.assertEqual(str(WindowsPath("C:/Users") / "test/"), "C:\\Users\\test")
-        self.assertEqual(str(WindowsPath("C:/Users") / "test/"), "C:\\Users\\test")
-        self.assertEqual(str(WindowsPath("")), ".")
+            assert str(WindowsPath("\\\\\\\\server\\folder/")) == "\\\\\\\\server\\folder"
+            assert str(WindowsPath("\\\\\\server\\\\folder")) == "\\\\\\server\\folder"
+        assert str(WindowsPath("\\\\wsl.localhost\\path\\to\\file")) == "\\\\wsl.localhost\\path\\to\\file"
+        assert str(WindowsPath("\\\\wsl.localhost\\path\\to\\file with space ")) == "\\\\wsl.localhost\\path\\to\\file with space "
+        assert str(WindowsPath("C:/Users/test folder/")) == "C:\\Users\\test folder"
+        assert str(WindowsPath("C:/Users/üser/")) == "C:\\Users\\üser"
+        assert str(WindowsPath("C:/Users/test\\nfolder/")) == "C:\\Users\\test\\nfolder"
+        assert str(WindowsPath("C:/Users").joinpath("test/")) == "C:\\Users\\test"
+        assert str(WindowsPath("C:/Users") / "test/") == "C:\\Users\\test"
+        assert str(WindowsPath("C:/Users") / "test/") == "C:\\Users\\test"
+        assert str(WindowsPath("")) == "."
         if sys.version_info < (3, 12):
-            self.assertEqual(str(WindowsPath("//")), "\\")
-            self.assertEqual(str(WindowsPath("///")), "\\")
+            assert str(WindowsPath("//")) == "\\"
+            assert str(WindowsPath("///")) == "\\"
         else:
-            self.assertEqual(str(WindowsPath("//")), "\\\\")
-            self.assertEqual(str(WindowsPath("///")), "\\\\\\")
-        self.assertEqual(str(WindowsPath("C:")), "C:")
-        self.assertEqual(str(WindowsPath("C:/./Users/../test/")), "C:\\Users\\..\\test")
-        self.assertEqual(str(WindowsPath("~/folder/")), "~\\folder")
+            assert str(WindowsPath("//")) == "\\\\"
+            assert str(WindowsPath("///")) == "\\\\\\"
+        assert str(WindowsPath("C:")) == "C:"
+        assert str(WindowsPath("C:/./Users/../test/")) == "C:\\Users\\..\\test"
+        assert str(WindowsPath("~/folder/")) == "~\\folder"
 
     def test_pathlib_path_edge_cases_windows_pure_windows_path(self):
-        self.assertEqual(str(PureWindowsPath("C:/")), "C:\\")
-        self.assertEqual(str(PureWindowsPath("C:\\")), "C:\\")
-        self.assertEqual(str(PureWindowsPath("C:/Users/test/")), "C:\\Users\\test")
-        self.assertEqual(str(PureWindowsPath("C:/Users/test\\")), "C:\\Users\\test")
-        self.assertEqual(str(PureWindowsPath("C://Users///test")), "C:\\Users\\test")
-        self.assertEqual(str(PureWindowsPath("C:/Users/TEST/")), "C:\\Users\\TEST")
-        self.assertEqual(str(PureWindowsPath("\\\\server\\folder")), "\\\\server\\folder\\")
+        assert str(PureWindowsPath("C:/")) == "C:\\"
+        assert str(PureWindowsPath("C:\\")) == "C:\\"
+        assert str(PureWindowsPath("C:/Users/test/")) == "C:\\Users\\test"
+        assert str(PureWindowsPath("C:/Users/test\\")) == "C:\\Users\\test"
+        assert str(PureWindowsPath("C://Users///test")) == "C:\\Users\\test"
+        assert str(PureWindowsPath("C:/Users/TEST/")) == "C:\\Users\\TEST"
+        assert str(PureWindowsPath("\\\\server\\folder")) == "\\\\server\\folder\\"
         if sys.version_info < (3, 12):
-            self.assertEqual(str(PureWindowsPath("\\\\\\\\server\\folder/")), "\\server\\folder")
-            self.assertEqual(str(PureWindowsPath("\\\\\\server\\\\folder")), "\\server\\folder")
+            assert str(PureWindowsPath("\\\\\\\\server\\folder/")) == "\\server\\folder"
+            assert str(PureWindowsPath("\\\\\\server\\\\folder")) == "\\server\\folder"
         else:
-            self.assertEqual(str(PureWindowsPath("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
-            self.assertEqual(str(PureWindowsPath("\\\\\\server\\\\folder")), "\\\\\\server\\folder")
-        self.assertEqual(str(PureWindowsPath("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
-        self.assertEqual(str(PureWindowsPath("\\\\wsl.localhost\\path\\to\\file with space ")), "\\\\wsl.localhost\\path\\to\\file with space ")
-        self.assertEqual(str(PureWindowsPath("C:/Users/test folder/")), "C:\\Users\\test folder")
-        self.assertEqual(str(PureWindowsPath("C:/Users/üser/")), "C:\\Users\\üser")
-        self.assertEqual(str(PureWindowsPath("C:/Users/test\\nfolder/")), "C:\\Users\\test\\nfolder")
-        self.assertEqual(str(PureWindowsPath("C:/Users").joinpath("test/")), "C:\\Users\\test")
-        self.assertEqual(str(PureWindowsPath("C:/Users") / "test/"), "C:\\Users\\test")
-        self.assertEqual(str(PureWindowsPath("C:/Users") / "test/"), "C:\\Users\\test")
-        self.assertEqual(str(PureWindowsPath("")), ".")
+            assert str(PureWindowsPath("\\\\\\\\server\\folder/")) == "\\\\\\\\server\\folder"
+            assert str(PureWindowsPath("\\\\\\server\\\\folder")) == "\\\\\\server\\folder"
+        assert str(PureWindowsPath("\\\\wsl.localhost\\path\\to\\file")) == "\\\\wsl.localhost\\path\\to\\file"
+        assert str(PureWindowsPath("\\\\wsl.localhost\\path\\to\\file with space ")) == "\\\\wsl.localhost\\path\\to\\file with space "
+        assert str(PureWindowsPath("C:/Users/test folder/")) == "C:\\Users\\test folder"
+        assert str(PureWindowsPath("C:/Users/üser/")) == "C:\\Users\\üser"
+        assert str(PureWindowsPath("C:/Users/test\\nfolder/")) == "C:\\Users\\test\\nfolder"
+        assert str(PureWindowsPath("C:/Users").joinpath("test/")) == "C:\\Users\\test"
+        assert str(PureWindowsPath("C:/Users") / "test/") == "C:\\Users\\test"
+        assert str(PureWindowsPath("C:/Users") / "test/") == "C:\\Users\\test"
+        assert str(PureWindowsPath("")) == "."
         if sys.version_info < (3, 12):
-            self.assertEqual(str(PureWindowsPath("//")), "\\")
-            self.assertEqual(str(PureWindowsPath("///")), "\\")
+            assert str(PureWindowsPath("//")) == "\\"
+            assert str(PureWindowsPath("///")) == "\\"
         else:
-            self.assertEqual(str(PureWindowsPath("//")), "\\\\")
-            self.assertEqual(str(PureWindowsPath("///")), "\\\\\\")
-        self.assertEqual(str(PureWindowsPath("C:")), "C:")
-        self.assertEqual(str(PureWindowsPath("C:/./Users/../test/")), "C:\\Users\\..\\test")
-        self.assertEqual(str(PureWindowsPath("~/folder/")), "~\\folder")
+            assert str(PureWindowsPath("//")) == "\\\\"
+            assert str(PureWindowsPath("///")) == "\\\\\\"
+        assert str(PureWindowsPath("C:")) == "C:"
+        assert str(PureWindowsPath("C:/./Users/../test/")) == "C:\\Users\\..\\test"
+        assert str(PureWindowsPath("~/folder/")) == "~\\folder"
 
     def test_pathlib_path_edge_cases_os_specific_path(self):
-        self.assertEqual(str(Path("C:\\")), "C:\\")
+        assert str(Path("C:\\")) == "C:\\"
         if os.name == "nt":
-            self.assertEqual(str(Path("C:/")), "C:\\")
+            assert str(Path("C:/")) == "C:\\"
         else:
-            self.assertEqual(str(Path("C:/")), "C:")
-        self.assertEqual(str(Path("C:")), "C:")
-        self.assertEqual(str(Path("C:/Users/test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(Path("C://Users///test")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(Path("C:/Users/TEST/")), "C:/Users/TEST".replace("/", os.sep))
+            assert str(Path("C:/")) == "C:"
+        assert str(Path("C:")) == "C:"
+        assert str(Path("C:/Users/test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(Path("C://Users///test")) == "C:/Users/test".replace("/", os.sep)
+        assert str(Path("C:/Users/TEST/")) == "C:/Users/TEST".replace("/", os.sep)
         if os.name == "posix":
-            self.assertEqual(str(Path("C:/Users/test\\")), "C:/Users/test\\")
-            self.assertEqual(str(Path("C:/")), "C:")
+            assert str(Path("C:/Users/test\\")) == "C:/Users/test\\"
+            assert str(Path("C:/")) == "C:"
         elif os.name == "nt":
-            self.assertEqual(str(Path("C:/Users/test")), "C:\\Users\\test")
-            self.assertEqual(str(Path("C:/")), "C:\\")
+            assert str(Path("C:/Users/test")) == "C:\\Users\\test"
+            assert str(Path("C:/")) == "C:\\"
 
-        self.assertEqual(str(Path("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
-        self.assertEqual(str(Path("\\\\wsl.localhost\\path\\to\\file with space ")), "\\\\wsl.localhost\\path\\to\\file with space ")
+        assert str(Path("\\\\wsl.localhost\\path\\to\\file")) == "\\\\wsl.localhost\\path\\to\\file"
+        assert str(Path("\\\\wsl.localhost\\path\\to\\file with space ")) == "\\\\wsl.localhost\\path\\to\\file with space "
         if os.name == "posix":
-            self.assertEqual(str(Path("\\\\server\\folder")), "\\\\server\\folder")
-            self.assertEqual(str(Path("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
-            self.assertEqual(str(Path("\\\\\\server\\\\folder")), "\\\\\\server\\\\folder")
+            assert str(Path("\\\\server\\folder")) == "\\\\server\\folder"
+            assert str(Path("\\\\\\\\server\\folder/")) == "\\\\\\\\server\\folder"
+            assert str(Path("\\\\\\server\\\\folder")) == "\\\\\\server\\\\folder"
         elif os.name == "nt":
-            self.assertEqual(str(Path("\\\\server\\folder")), "\\\\server\\folder\\")
+            assert str(Path("\\\\server\\folder")) == "\\\\server\\folder\\"
             if sys.version_info < (3, 12):
-                self.assertEqual(str(Path("\\\\\\\\server\\folder/")), "\\server\\folder")
-                self.assertEqual(str(Path("\\\\\\server\\\\folder")), "\\server\\folder")
+                assert str(Path("\\\\\\\\server\\folder/")) == "\\server\\folder"
+                assert str(Path("\\\\\\server\\\\folder")) == "\\server\\folder"
             else:
-                self.assertEqual(str(Path("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
-                self.assertEqual(str(Path("\\\\\\server\\\\folder")), "\\\\\\server\\folder")
+                assert str(Path("\\\\\\\\server\\folder/")) == "\\\\\\\\server\\folder"
+                assert str(Path("\\\\\\server\\\\folder")) == "\\\\\\server\\folder"
 
-        self.assertEqual(str(Path("C:/Users/test folder/")), "C:/Users/test folder".replace("/", os.sep))
-        self.assertEqual(str(Path("C:/Users/üser/")), "C:/Users/üser".replace("/", os.sep))
-        self.assertEqual(str(Path("C:/Users/test\\nfolder/")), "C:/Users/test\\nfolder".replace("/", os.sep))
+        assert str(Path("C:/Users/test folder/")) == "C:/Users/test folder".replace("/", os.sep)
+        assert str(Path("C:/Users/üser/")) == "C:/Users/üser".replace("/", os.sep)
+        assert str(Path("C:/Users/test\\nfolder/")) == "C:/Users/test\\nfolder".replace("/", os.sep)
 
-        self.assertEqual(str(Path("C:/Users").joinpath("test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(Path("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(Path("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
+        assert str(Path("C:/Users").joinpath("test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(Path("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
+        assert str(Path("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
 
-        self.assertEqual(str(Path("")), ".")
+        assert str(Path("")) == "."
         if os.name == "posix":
-            self.assertEqual(str(Path("//")), "//".replace("/", os.sep))
+            assert str(Path("//")) == "//".replace("/", os.sep)
         elif sys.version_info < (3, 12):
-            self.assertEqual(str(Path("//")), "\\")
+            assert str(Path("//")) == "\\"
         else:
-            self.assertEqual(str(Path("//")), "\\\\")
-        self.assertEqual(str(Path("C:")), "C:")
+            assert str(Path("//")) == "\\\\"
+        assert str(Path("C:")) == "C:"
         if sys.version_info < (3, 12) or os.name != "nt":
-            self.assertEqual(str(Path("///")), "/".replace("/", os.sep))
+            assert str(Path("///")) == "/".replace("/", os.sep)
         else:
-            self.assertEqual(str(Path("///")), "///".replace("/", os.sep))
-        self.assertEqual(str(Path("C:/./Users/../test/")), "C:/Users/../test".replace("/", os.sep))
-        self.assertEqual(str(Path("~/folder/")), "~/folder".replace("/", os.sep))
+            assert str(Path("///")) == "///".replace("/", os.sep)
+        assert str(Path("C:/./Users/../test/")) == "C:/Users/../test".replace("/", os.sep)
+        assert str(Path("~/folder/")) == "~/folder".replace("/", os.sep)
 
     def test_pathlib_path_edge_cases_os_specific_pure_path(self):
-        self.assertEqual(str(PurePath("C:\\")), "C:\\")
-        self.assertEqual(str(PurePath("C:/Users/test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(PurePath("C://Users///test")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(PurePath("C:/Users/TEST/")), "C:/Users/TEST".replace("/", os.sep))
+        assert str(PurePath("C:\\")) == "C:\\"
+        assert str(PurePath("C:/Users/test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(PurePath("C://Users///test")) == "C:/Users/test".replace("/", os.sep)
+        assert str(PurePath("C:/Users/TEST/")) == "C:/Users/TEST".replace("/", os.sep)
         if os.name == "posix":
-            self.assertEqual(str(PurePath("C:/Users/test\\")), "C:/Users/test\\")
-            self.assertEqual(str(PurePath("C:/")), "C:")
+            assert str(PurePath("C:/Users/test\\")) == "C:/Users/test\\"
+            assert str(PurePath("C:/")) == "C:"
         elif os.name == "nt":
-            self.assertEqual(str(PurePath("C:/Users/test")), "C:\\Users\\test")
-            self.assertEqual(str(PurePath("C:/")), "C:\\")
+            assert str(PurePath("C:/Users/test")) == "C:\\Users\\test"
+            assert str(PurePath("C:/")) == "C:\\"
 
-        self.assertEqual(str(PurePath("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
-        self.assertEqual(str(PurePath("\\\\wsl.localhost\\path\\to\\file with space ")), "\\\\wsl.localhost\\path\\to\\file with space ")
+        assert str(PurePath("\\\\wsl.localhost\\path\\to\\file")) == "\\\\wsl.localhost\\path\\to\\file"
+        assert str(PurePath("\\\\wsl.localhost\\path\\to\\file with space ")) == "\\\\wsl.localhost\\path\\to\\file with space "
         if os.name == "posix":
-            self.assertEqual(str(PurePath("\\\\server\\folder")), "\\\\server\\folder")
-            self.assertEqual(str(PurePath("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
-            self.assertEqual(str(PurePath("\\\\\\server\\\\folder")), "\\\\\\server\\\\folder")
+            assert str(PurePath("\\\\server\\folder")) == "\\\\server\\folder"
+            assert str(PurePath("\\\\\\\\server\\folder/")) == "\\\\\\\\server\\folder"
+            assert str(PurePath("\\\\\\server\\\\folder")) == "\\\\\\server\\\\folder"
         elif os.name == "nt":
-            self.assertEqual(str(PurePath("\\\\server\\folder")), "\\\\server\\folder\\")
+            assert str(PurePath("\\\\server\\folder")) == "\\\\server\\folder\\"
             if sys.version_info < (3, 12):
-                self.assertEqual(str(PurePath("\\\\\\\\server\\folder/")), "\\server\\folder")
-                self.assertEqual(str(PurePath("\\\\\\server\\\\folder")), "\\server\\folder")
+                assert str(PurePath("\\\\\\\\server\\folder/")) == "\\server\\folder"
+                assert str(PurePath("\\\\\\server\\\\folder")) == "\\server\\folder"
             else:
-                self.assertEqual(str(PurePath("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
-                self.assertEqual(str(PurePath("\\\\\\server\\\\folder")), "\\\\\\server\\folder")
+                assert str(PurePath("\\\\\\\\server\\folder/")) == "\\\\\\\\server\\folder"
+                assert str(PurePath("\\\\\\server\\\\folder")) == "\\\\\\server\\folder"
 
-        self.assertEqual(str(PurePath("C:/Users/test folder/")), "C:/Users/test folder".replace("/", os.sep))
-        self.assertEqual(str(PurePath("C:/Users/üser/")), "C:/Users/üser".replace("/", os.sep))
-        self.assertEqual(str(PurePath("C:/Users/test\\nfolder/")), "C:/Users/test\\nfolder".replace("/", os.sep))
+        assert str(PurePath("C:/Users/test folder/")) == "C:/Users/test folder".replace("/", os.sep)
+        assert str(PurePath("C:/Users/üser/")) == "C:/Users/üser".replace("/", os.sep)
+        assert str(PurePath("C:/Users/test\\nfolder/")) == "C:/Users/test\\nfolder".replace("/", os.sep)
 
-        self.assertEqual(str(PurePath("C:/Users").joinpath("test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(PurePath("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(PurePath("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
+        assert str(PurePath("C:/Users").joinpath("test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(PurePath("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
+        assert str(PurePath("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
 
-        self.assertEqual(str(PurePath("")), ".")
+        assert str(PurePath("")) == "."
         if os.name == "posix":
-            self.assertEqual(str(PurePath("//")), "//".replace("/", os.sep))
+            assert str(PurePath("//")) == "//".replace("/", os.sep)
         elif sys.version_info < (3, 12):
-            self.assertEqual(str(PurePath("//")), "\\")
+            assert str(PurePath("//")) == "\\"
         else:
-            self.assertEqual(str(PurePath("//")), "\\\\")
-        self.assertEqual(str(PurePath("C:")), "C:")
+            assert str(PurePath("//")) == "\\\\"
+        assert str(PurePath("C:")) == "C:"
         if sys.version_info < (3, 12) or os.name != "nt":
-            self.assertEqual(str(PurePath("///")), "/".replace("/", os.sep))
+            assert str(PurePath("///")) == "/".replace("/", os.sep)
         else:
-            self.assertEqual(str(PurePath("///")), "///".replace("/", os.sep))
-        self.assertEqual(str(PurePath("C:/./Users/../test/")), "C:/Users/../test".replace("/", os.sep))
-        self.assertEqual(str(PurePath("~/folder/")), "~/folder".replace("/", os.sep))
+            assert str(PurePath("///")) == "///".replace("/", os.sep)
+        assert str(PurePath("C:/./Users/../test/")) == "C:/Users/../test".replace("/", os.sep)
+        assert str(PurePath("~/folder/")) == "~/folder".replace("/", os.sep)
 
     @unittest.skipIf(os.name == "nt", "Test only supported on POSIX systems.")
     def test_custom_path_edge_cases_posix_custom_posix_path(self):
-        self.assertEqual(str(CustomPosixPath("C:/")), "C:")
-        self.assertEqual(str(CustomPosixPath("C:/Users/test/")), "C:/Users/test")
-        self.assertEqual(str(CustomPosixPath("C:/Users/test\\")), "C:/Users/test")
-        self.assertEqual(str(CustomPosixPath("C://Users///test")), "C:/Users/test")
-        self.assertEqual(str(CustomPosixPath("C:/Users/TEST/")), "C:/Users/TEST")
-        self.assertEqual(str(CustomPosixPath("C:/Users/test folder/")), "C:/Users/test folder")
-        self.assertEqual(str(CustomPosixPath("C:/Users/üser/")), "C:/Users/üser")
-        self.assertEqual(str(CustomPosixPath("C:/Users/test\\nfolder/")), "C:/Users/test/nfolder")
-        self.assertEqual(str(CustomPosixPath("C:/Users").joinpath("test/")), "C:/Users/test")
-        self.assertEqual(str(CustomPosixPath("C:/Users") / "test/"), "C:/Users/test")
-        self.assertEqual(str(CustomPosixPath("C:/Users") / "test/"), "C:/Users/test")
-        self.assertEqual(str(CustomPosixPath("")), ".")
-        self.assertEqual(str(CustomPosixPath("//")), "/")
-        self.assertEqual(str(CustomPosixPath("///")), "/")
+        assert str(CustomPosixPath("C:/")) == "C:"
+        assert str(CustomPosixPath("C:/Users/test/")) == "C:/Users/test"
+        assert str(CustomPosixPath("C:/Users/test\\")) == "C:/Users/test"
+        assert str(CustomPosixPath("C://Users///test")) == "C:/Users/test"
+        assert str(CustomPosixPath("C:/Users/TEST/")) == "C:/Users/TEST"
+        assert str(CustomPosixPath("C:/Users/test folder/")) == "C:/Users/test folder"
+        assert str(CustomPosixPath("C:/Users/üser/")) == "C:/Users/üser"
+        assert str(CustomPosixPath("C:/Users/test\\nfolder/")) == "C:/Users/test/nfolder"
+        assert str(CustomPosixPath("C:/Users").joinpath("test/")) == "C:/Users/test"
+        assert str(CustomPosixPath("C:/Users") / "test/") == "C:/Users/test"
+        assert str(CustomPosixPath("C:/Users") / "test/") == "C:/Users/test"
+        assert str(CustomPosixPath("")) == "."
+        assert str(CustomPosixPath("//")) == "/"
+        assert str(CustomPosixPath("///")) == "/"
         if os.name == "nt":
-            self.assertEqual(str(CustomPosixPath("C:/./Users/../test/")), "C:/test")
+            assert str(CustomPosixPath("C:/./Users/../test/")) == "C:/test"
         else:
-            self.assertEqual(str(CustomPosixPath("C:/./Users/../test/")), "C:/Users/../test")
-        self.assertEqual(str(CustomPosixPath("C:")), "C:")
-        self.assertEqual(str(CustomPosixPath("~/folder/")), "~/folder")
+            assert str(CustomPosixPath("C:/./Users/../test/")) == "C:/Users/../test"
+        assert str(CustomPosixPath("C:")) == "C:"
+        assert str(CustomPosixPath("~/folder/")) == "~/folder"
 
     def test_custom_path_edge_cases_posix_custom_pure_posix_path(self):
-        self.assertEqual(str(CustomPurePosixPath("C:/")), "C:")
-        self.assertEqual(str(CustomPurePosixPath("C:/Users/test/")), "C:/Users/test")
-        self.assertEqual(str(CustomPurePosixPath("C:/Users/test\\")), "C:/Users/test")
-        self.assertEqual(str(CustomPurePosixPath("C://Users///test")), "C:/Users/test")
-        self.assertEqual(str(CustomPurePosixPath("C:/Users/TEST/")), "C:/Users/TEST")
-        self.assertEqual(str(CustomPurePosixPath("C:/Users/test folder/")), "C:/Users/test folder")
-        self.assertEqual(str(CustomPurePosixPath("C:/Users/üser/")), "C:/Users/üser")
-        self.assertEqual(str(CustomPurePosixPath("C:/Users/test\\nfolder/")), "C:/Users/test/nfolder")
-        self.assertEqual(str(CustomPurePosixPath("C:/Users").joinpath("test/")), "C:/Users/test")
-        self.assertEqual(str(CustomPurePosixPath("C:/Users") / "test/"), "C:/Users/test")
-        self.assertEqual(str(CustomPurePosixPath("C:/Users") / "test//"), "C:/Users/test")
-        self.assertEqual(str(CustomPurePosixPath("")), ".")
-        self.assertEqual(str(CustomPurePosixPath("//")), "/")
-        self.assertEqual(str(CustomPurePosixPath("///")), "/")
-        self.assertEqual(str(CustomPurePosixPath("C:/./Users/../test/")), "C:/Users/../test")
-        self.assertEqual(os.path.normpath(str(CustomPurePosixPath("C:/./Users/../test/"))), f"C:{os.path.sep}test")
-        self.assertEqual(str(CustomPurePosixPath("C:")), "C:")
-        self.assertEqual(str(CustomPurePosixPath("~/folder/")), "~/folder".replace("\\", "/"))
+        assert str(CustomPurePosixPath("C:/")) == "C:"
+        assert str(CustomPurePosixPath("C:/Users/test/")) == "C:/Users/test"
+        assert str(CustomPurePosixPath("C:/Users/test\\")) == "C:/Users/test"
+        assert str(CustomPurePosixPath("C://Users///test")) == "C:/Users/test"
+        assert str(CustomPurePosixPath("C:/Users/TEST/")) == "C:/Users/TEST"
+        assert str(CustomPurePosixPath("C:/Users/test folder/")) == "C:/Users/test folder"
+        assert str(CustomPurePosixPath("C:/Users/üser/")) == "C:/Users/üser"
+        assert str(CustomPurePosixPath("C:/Users/test\\nfolder/")) == "C:/Users/test/nfolder"
+        assert str(CustomPurePosixPath("C:/Users").joinpath("test/")) == "C:/Users/test"
+        assert str(CustomPurePosixPath("C:/Users") / "test/") == "C:/Users/test"
+        assert str(CustomPurePosixPath("C:/Users") / "test//") == "C:/Users/test"
+        assert str(CustomPurePosixPath("")) == "."
+        assert str(CustomPurePosixPath("//")) == "/"
+        assert str(CustomPurePosixPath("///")) == "/"
+        assert str(CustomPurePosixPath("C:/./Users/../test/")) == "C:/Users/../test"
+        assert os.path.normpath(str(CustomPurePosixPath("C:/./Users/../test/"))) == f"C:{os.path.sep}test"
+        assert str(CustomPurePosixPath("C:")) == "C:"
+        assert str(CustomPurePosixPath("~/folder/")) == "~/folder".replace("\\", "/")
 
     @unittest.skipIf(os.name != "nt", "Test only supported on NT systems.")
     def test_custom_path_edge_cases_windows_custom_windows_path(self):
-        self.assertEqual(str(CustomWindowsPath("C:/")), "C:")
-        self.assertEqual(str(CustomWindowsPath("C:\\")), "C:")
-        self.assertEqual(str(CustomWindowsPath("C:")), "C:")
-        self.assertEqual(str(CustomWindowsPath("C:/Users/test/")), "C:\\Users\\test")
-        self.assertEqual(str(CustomWindowsPath("C:/Users/test\\")), "C:\\Users\\test")
-        self.assertEqual(str(CustomWindowsPath("C://Users///test")), "C:\\Users\\test")
-        self.assertEqual(str(CustomWindowsPath("C:/Users/TEST/")), "C:\\Users\\TEST")
-        self.assertEqual(str(CustomWindowsPath("C:/Users/test folder/")), "C:\\Users\\test folder")
-        self.assertEqual(str(CustomWindowsPath("C:/Users/üser/")), "C:\\Users\\üser")
-        self.assertEqual(str(CustomWindowsPath("C:/Users/test\\nfolder/")), "C:\\Users\\test\\nfolder")
-        self.assertEqual(str(CustomWindowsPath("C:/Users").joinpath("test/")), "C:\\Users\\test")
-        self.assertEqual(str(CustomWindowsPath("C:/Users") / "test/"), "C:\\Users\\test")
-        self.assertEqual(str(CustomWindowsPath("C:/Users") / "test/"), "C:\\Users\\test")
-        self.assertEqual(str(CustomWindowsPath("")), ".")
-        self.assertEqual(str(CustomWindowsPath("//")), ".")
-        self.assertEqual(str(CustomWindowsPath("///")), ".")
-        self.assertEqual(str(CustomWindowsPath("C:")), "C:")
-        self.assertEqual(str(CustomWindowsPath("C:/./Users/../test/")), "C:\\Users\\..\\test")
-        self.assertEqual(str(CustomWindowsPath("C:/./Users/../test/").resolve()), "C:\\test")
-        self.assertEqual(str(CustomWindowsPath("~/folder/")), "~\\folder")
+        assert str(CustomWindowsPath("C:/")) == "C:"
+        assert str(CustomWindowsPath("C:\\")) == "C:"
+        assert str(CustomWindowsPath("C:")) == "C:"
+        assert str(CustomWindowsPath("C:/Users/test/")) == "C:\\Users\\test"
+        assert str(CustomWindowsPath("C:/Users/test\\")) == "C:\\Users\\test"
+        assert str(CustomWindowsPath("C://Users///test")) == "C:\\Users\\test"
+        assert str(CustomWindowsPath("C:/Users/TEST/")) == "C:\\Users\\TEST"
+        assert str(CustomWindowsPath("C:/Users/test folder/")) == "C:\\Users\\test folder"
+        assert str(CustomWindowsPath("C:/Users/üser/")) == "C:\\Users\\üser"
+        assert str(CustomWindowsPath("C:/Users/test\\nfolder/")) == "C:\\Users\\test\\nfolder"
+        assert str(CustomWindowsPath("C:/Users").joinpath("test/")) == "C:\\Users\\test"
+        assert str(CustomWindowsPath("C:/Users") / "test/") == "C:\\Users\\test"
+        assert str(CustomWindowsPath("C:/Users") / "test/") == "C:\\Users\\test"
+        assert str(CustomWindowsPath("")) == "."
+        assert str(CustomWindowsPath("//")) == "."
+        assert str(CustomWindowsPath("///")) == "."
+        assert str(CustomWindowsPath("C:")) == "C:"
+        assert str(CustomWindowsPath("C:/./Users/../test/")) == "C:\\Users\\..\\test"
+        assert str(CustomWindowsPath("C:/./Users/../test/").resolve()) == "C:\\test"
+        assert str(CustomWindowsPath("~/folder/")) == "~\\folder"
 
     def test_custom_path_edge_cases_windows_custom_pure_windows_path(self):
-        self.assertEqual(str(CustomPureWindowsPath("C:/")), "C:")
-        self.assertEqual(str(CustomPureWindowsPath("C:\\")), "C:")
-        self.assertEqual(str(CustomPureWindowsPath("C:")), "C:")
-        self.assertEqual(str(CustomPureWindowsPath("C:/Users/test/")), "C:\\Users\\test")
-        self.assertEqual(str(CustomPureWindowsPath("C:/Users/test\\")), "C:\\Users\\test")
-        self.assertEqual(str(CustomPureWindowsPath("C://Users///test")), "C:\\Users\\test")
-        self.assertEqual(str(CustomPureWindowsPath("C:/Users/TEST/")), "C:\\Users\\TEST")
-        self.assertEqual(str(CustomPureWindowsPath("C:/Users/test folder/")), "C:\\Users\\test folder")
-        self.assertEqual(str(CustomPureWindowsPath("C:/Users/üser/")), "C:\\Users\\üser")
-        self.assertEqual(str(CustomPureWindowsPath("C:/Users/test\\nfolder/")), "C:\\Users\\test\\nfolder")
-        self.assertEqual(str(CustomPureWindowsPath("C:/Users").joinpath("test/")), "C:\\Users\\test")
-        self.assertEqual(str(CustomPureWindowsPath("C:/Users") / "test/"), "C:\\Users\\test")
-        self.assertEqual(str(CustomPureWindowsPath("C:/Users") / "test/"), "C:\\Users\\test")
-        self.assertEqual(str(CustomPureWindowsPath("")), ".")
-        self.assertEqual(str(CustomPureWindowsPath("//")), ".")
-        self.assertEqual(str(CustomPureWindowsPath("///")), ".")
-        self.assertEqual(str(CustomPureWindowsPath("C:")), "C:")
-        self.assertEqual(str(CustomPureWindowsPath("C:/./Users/../test/")), "C:\\Users\\..\\test")
+        assert str(CustomPureWindowsPath("C:/")) == "C:"
+        assert str(CustomPureWindowsPath("C:\\")) == "C:"
+        assert str(CustomPureWindowsPath("C:")) == "C:"
+        assert str(CustomPureWindowsPath("C:/Users/test/")) == "C:\\Users\\test"
+        assert str(CustomPureWindowsPath("C:/Users/test\\")) == "C:\\Users\\test"
+        assert str(CustomPureWindowsPath("C://Users///test")) == "C:\\Users\\test"
+        assert str(CustomPureWindowsPath("C:/Users/TEST/")) == "C:\\Users\\TEST"
+        assert str(CustomPureWindowsPath("C:/Users/test folder/")) == "C:\\Users\\test folder"
+        assert str(CustomPureWindowsPath("C:/Users/üser/")) == "C:\\Users\\üser"
+        assert str(CustomPureWindowsPath("C:/Users/test\\nfolder/")) == "C:\\Users\\test\\nfolder"
+        assert str(CustomPureWindowsPath("C:/Users").joinpath("test/")) == "C:\\Users\\test"
+        assert str(CustomPureWindowsPath("C:/Users") / "test/") == "C:\\Users\\test"
+        assert str(CustomPureWindowsPath("C:/Users") / "test/") == "C:\\Users\\test"
+        assert str(CustomPureWindowsPath("")) == "."
+        assert str(CustomPureWindowsPath("//")) == "."
+        assert str(CustomPureWindowsPath("///")) == "."
+        assert str(CustomPureWindowsPath("C:")) == "C:"
+        assert str(CustomPureWindowsPath("C:/./Users/../test/")) == "C:\\Users\\..\\test"
         if os.name == "nt":
-            self.assertEqual(os.path.normpath(str(CustomPureWindowsPath("C:/./Users/../test/"))), f"C:{os.path.sep}test")
-        self.assertEqual(str(CustomPureWindowsPath("~/folder/")), "~\\folder")
+            assert os.path.normpath(str(CustomPureWindowsPath("C:/./Users/../test/"))) == f"C:{os.path.sep}test"
+        assert str(CustomPureWindowsPath("~/folder/")) == "~\\folder"
 
     def test_custom_path_edge_cases_os_specific_case_aware_path(self):
-        self.assertEqual(str(CaseAwarePath("C:/")), "C:")
-        self.assertEqual(str(CaseAwarePath("C:\\")), "C:")
-        self.assertEqual(str(CaseAwarePath("C:")), "C:")
-        self.assertEqual(str(CaseAwarePath("C:/Users/test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:/Users/test\\")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C://Users///test")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:/Users/TEST/")), "C:/Users/TEST".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:/Users/test folder/")), "C:/Users/test folder".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:/Users/üser/")), "C:/Users/üser".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:/Users/test\\nfolder/")), "C:/Users/test/nfolder".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:/Users").joinpath("test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("")), ".")
-        self.assertEqual(str(CaseAwarePath("C:/./Users/../test/")), "C:/Users/../test".replace("/", os.sep))
+        assert str(CaseAwarePath("C:/")) == "C:"
+        assert str(CaseAwarePath("C:\\")) == "C:"
+        assert str(CaseAwarePath("C:")) == "C:"
+        assert str(CaseAwarePath("C:/Users/test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CaseAwarePath("C:/Users/test\\")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CaseAwarePath("C://Users///test")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CaseAwarePath("C:/Users/TEST/")) == "C:/Users/TEST".replace("/", os.sep)
+        assert str(CaseAwarePath("C:/Users/test folder/")) == "C:/Users/test folder".replace("/", os.sep)
+        assert str(CaseAwarePath("C:/Users/üser/")) == "C:/Users/üser".replace("/", os.sep)
+        assert str(CaseAwarePath("C:/Users/test\\nfolder/")) == "C:/Users/test/nfolder".replace("/", os.sep)
+        assert str(CaseAwarePath("C:/Users").joinpath("test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CaseAwarePath("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
+        assert str(CaseAwarePath("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
+        assert str(CaseAwarePath("")) == "."
+        assert str(CaseAwarePath("C:/./Users/../test/")) == "C:/Users/../test".replace("/", os.sep)
         if os.name == "nt":
-            self.assertEqual(str(CaseAwarePath("C:/./Users/../test/").resolve()), "C:/test".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:\\.\\Users\\..\\test\\")), "C:/Users/../test".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("~/folder/")), "~/folder".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("C:")), "C:".replace("/", os.sep))
+            assert str(CaseAwarePath("C:/./Users/../test/").resolve()) == "C:/test".replace("/", os.sep)
+        assert str(CaseAwarePath("C:\\.\\Users\\..\\test\\")) == "C:/Users/../test".replace("/", os.sep)
+        assert str(CaseAwarePath("~/folder/")) == "~/folder".replace("/", os.sep)
+        assert str(CaseAwarePath("C:")) == "C:".replace("/", os.sep)
         if os.name == "posix":
-            self.assertEqual(str(CaseAwarePath("//")), "/")
-            self.assertEqual(str(CaseAwarePath("///")), "/")
+            assert str(CaseAwarePath("//")) == "/"
+            assert str(CaseAwarePath("///")) == "/"
         elif os.name == "nt":
-            self.assertEqual(str(CaseAwarePath("//")), ".")
-            self.assertEqual(str(CaseAwarePath("///")), ".")
+            assert str(CaseAwarePath("//")) == "."
+            assert str(CaseAwarePath("///")) == "."
 
     def test_custom_path_edge_cases_os_specific_custom_path(self):
-        self.assertEqual(str(CustomPath("C:/")), "C:")
-        self.assertEqual(str(CustomPath("C:\\")), "C:")
-        self.assertEqual(str(CustomPath("C:")), "C:")
-        self.assertEqual(str(CustomPath("C:/Users/test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:/Users/test\\")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C://Users///test")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:/Users/TEST/")), "C:/Users/TEST".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:/Users/test folder/")), "C:/Users/test folder".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:/Users/üser/")), "C:/Users/üser".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:/Users/test\\nfolder/")), "C:/Users/test/nfolder".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:/Users").joinpath("test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("")), ".")
-        self.assertEqual(str(CustomPath("C:/./Users/../test/")), "C:/Users/../test".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:\\.\\Users\\..\\test\\")), "C:/Users/../test".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("~/folder/")), "~/folder".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("C:")), "C:".replace("/", os.sep))
+        assert str(CustomPath("C:/")) == "C:"
+        assert str(CustomPath("C:\\")) == "C:"
+        assert str(CustomPath("C:")) == "C:"
+        assert str(CustomPath("C:/Users/test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPath("C:/Users/test\\")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPath("C://Users///test")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPath("C:/Users/TEST/")) == "C:/Users/TEST".replace("/", os.sep)
+        assert str(CustomPath("C:/Users/test folder/")) == "C:/Users/test folder".replace("/", os.sep)
+        assert str(CustomPath("C:/Users/üser/")) == "C:/Users/üser".replace("/", os.sep)
+        assert str(CustomPath("C:/Users/test\\nfolder/")) == "C:/Users/test/nfolder".replace("/", os.sep)
+        assert str(CustomPath("C:/Users").joinpath("test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPath("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPath("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPath("")) == "."
+        assert str(CustomPath("C:/./Users/../test/")) == "C:/Users/../test".replace("/", os.sep)
+        assert str(CustomPath("C:\\.\\Users\\..\\test\\")) == "C:/Users/../test".replace("/", os.sep)
+        assert str(CustomPath("~/folder/")) == "~/folder".replace("/", os.sep)
+        assert str(CustomPath("C:")) == "C:".replace("/", os.sep)
         if os.name == "posix":
-            self.assertEqual(str(CustomPath("//")), "/")
-            self.assertEqual(str(CustomPath("///")), "/")
+            assert str(CustomPath("//")) == "/"
+            assert str(CustomPath("///")) == "/"
         elif os.name == "nt":
-            self.assertEqual(str(CustomPath("//")), ".")
-            self.assertEqual(str(CustomPath("///")), ".")
+            assert str(CustomPath("//")) == "."
+            assert str(CustomPath("///")) == "."
 
 
     def test_custom_path_edge_cases_os_specific_custom_pure_path(self):
-        self.assertEqual(str(CustomPurePath("C:/")), "C:")
-        self.assertEqual(str(CustomPurePath("C:\\")), "C:")
-        self.assertEqual(str(CustomPurePath("C:")), "C:")
-        self.assertEqual(str(CustomPurePath("C:/Users/test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C:/Users/test\\")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C://Users///test")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C:/Users/TEST/")), "C:/Users/TEST".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C:/Users/test folder/")), "C:/Users/test folder".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C:/Users/üser/")), "C:/Users/üser".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C:/Users/test\\nfolder/")), "C:/Users/test/nfolder".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C:/Users").joinpath("test/")), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("")), ".")
-        self.assertEqual(str(CustomPurePath("C:/./Users/../test/")), "C:\\Users\\..\\test".replace("/", os.sep).replace("\\", os.sep))
-        self.assertEqual(os.path.normpath(str(CustomPurePath("C:/./Users/../test/"))), "C:\\test".replace("/", os.sep).replace("\\", os.sep))
-        self.assertEqual(str(CustomPurePath("C:\\.\\Users\\..\\test\\")), "C:\\Users\\..\\test".replace("/", os.sep).replace("\\", os.sep))
-        self.assertEqual(str(CustomPurePath("~/folder/")), "~/folder".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("C:")), "C:".replace("/", os.sep))
+        assert str(CustomPurePath("C:/")) == "C:"
+        assert str(CustomPurePath("C:\\")) == "C:"
+        assert str(CustomPurePath("C:")) == "C:"
+        assert str(CustomPurePath("C:/Users/test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPurePath("C:/Users/test\\")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPurePath("C://Users///test")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPurePath("C:/Users/TEST/")) == "C:/Users/TEST".replace("/", os.sep)
+        assert str(CustomPurePath("C:/Users/test folder/")) == "C:/Users/test folder".replace("/", os.sep)
+        assert str(CustomPurePath("C:/Users/üser/")) == "C:/Users/üser".replace("/", os.sep)
+        assert str(CustomPurePath("C:/Users/test\\nfolder/")) == "C:/Users/test/nfolder".replace("/", os.sep)
+        assert str(CustomPurePath("C:/Users").joinpath("test/")) == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPurePath("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPurePath("C:/Users") / "test/") == "C:/Users/test".replace("/", os.sep)
+        assert str(CustomPurePath("")) == "."
+        assert str(CustomPurePath("C:/./Users/../test/")) == "C:\\Users\\..\\test".replace("/", os.sep).replace("\\", os.sep)
+        assert os.path.normpath(str(CustomPurePath("C:/./Users/../test/"))) == "C:\\test".replace("/", os.sep).replace("\\", os.sep)
+        assert str(CustomPurePath("C:\\.\\Users\\..\\test\\")) == "C:\\Users\\..\\test".replace("/", os.sep).replace("\\", os.sep)
+        assert str(CustomPurePath("~/folder/")) == "~/folder".replace("/", os.sep)
+        assert str(CustomPurePath("C:")) == "C:".replace("/", os.sep)
         if os.name == "posix":
-            self.assertEqual(str(CustomPurePath("//")), "/")
-            self.assertEqual(str(CustomPurePath("///")), "/")
+            assert str(CustomPurePath("//")) == "/"
+            assert str(CustomPurePath("///")) == "/"
         elif os.name == "nt":
-            self.assertEqual(str(CustomPurePath("//")), ".")
-            self.assertEqual(str(CustomPurePath("///")), ".")
+            assert str(CustomPurePath("//")) == "."
+            assert str(CustomPurePath("///")) == "."
 
 if __name__ == "__main__":
     unittest.main()

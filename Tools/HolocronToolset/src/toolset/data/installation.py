@@ -22,6 +22,8 @@ if TYPE_CHECKING:
 
     import os
 
+    from pathlib import Path, PurePath
+
     from qtpy.QtGui import QPoint, QStandardItemModel
     from qtpy.QtWidgets import QPlainTextEdit
     from typing_extensions import Literal, Self
@@ -31,7 +33,6 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
     from pykotor.tools.path import CaseAwarePath
-    from utility.system.path import Path, PurePath
 
 
 class HTInstallation(Installation):
@@ -150,7 +151,7 @@ class HTInstallation(Installation):
     def _chitin(self, value: list[FileResource]) -> None: ...
     def _load_chitin(self) -> list[FileResource]:
         chitin_path: CaseAwarePath = self._path / "chitin.key"
-        return list(Chitin(key_path=chitin_path)) if chitin_path.safe_isfile() else []
+        return list(Chitin(key_path=chitin_path)) if chitin_path.is_file() else []
 
     @property
     def _female_talktable(self) -> TalkTable: return TalkTable(self._path / "dialogf.tlk")
@@ -177,7 +178,7 @@ class HTInstallation(Installation):
     def _load_override(self) -> dict[str, list[FileResource]]:
         override_path = self.override_path()
         result = {}
-        for folder in [f for f in override_path.safe_rglob("*") if f.safe_isdir()] + [override_path]:
+        for folder in [f for f in override_path.safe_rglob("*") if f.is_dir()] + [override_path]:
             relative_folder: str = folder.relative_to(override_path).as_posix()
             result[relative_folder] = self.load_resources_list(folder, recurse=True)
         return result
@@ -204,9 +205,9 @@ class HTInstallation(Installation):
                         file.stat().st_size,
                         0,
                         file
-                    ) for file in save_path.iterdir() if file.safe_isfile()
-                ] for save_path in save_location.iterdir() if save_path.safe_isdir()
-            } for save_location in self.save_locations() if save_location.safe_isdir()
+                    ) for file in save_path.iterdir() if file.is_file()
+                ] for save_path in save_location.iterdir() if save_path.is_dir()
+            } for save_location in self.save_locations() if save_location.is_dir()
         }
         return self._saves
     @saves.setter

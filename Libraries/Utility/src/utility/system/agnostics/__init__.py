@@ -187,7 +187,7 @@ def check_platform(
 
 
 def is_legacy_platform(platform: PossiblePlatforms) -> bool:
-    if platform in [
+    return platform in [
         _PfEnum.os2.value,
         _PfEnum.unixware.value,
         _PfEnum.xenix.value,
@@ -208,12 +208,11 @@ def is_legacy_platform(platform: PossiblePlatforms) -> bool:
         _PfEnum.vos.value,
         _PfEnum.symbian.value,
         _PfEnum.unknown.value,
-    ]:
-        return True
-    return False
+    ]
+
 
 def is_supported_python_platform(platform: PossiblePlatforms) -> bool:
-    if platform in [
+    return platform in [
         _PfEnum.linux.value,
         _PfEnum.darwin.value,
         _PfEnum.win32.value,
@@ -228,9 +227,7 @@ def is_supported_python_platform(platform: PossiblePlatforms) -> bool:
         _PfEnum.hp_ux.value,
         _PfEnum.vxworks.value,
         _PfEnum.android.value,
-    ]:
-        return True
-    return False
+    ]
 
 
 if sys.platform == "linux":
@@ -239,7 +236,7 @@ if sys.platform == "linux":
 elif sys.platform == "darwin":
     from utility.system.MacOS.file_folder_browser import *  # noqa: F403
     from utility.system.MacOS.messagebox import *  # noqa: F403
-elif os.name == "nt":
+elif sys.platform == "win32":
     from utility.system.win32.file_folder_browser import *  # noqa: F403
     from utility.system.win32.messagebox import *  # noqa: F403
 else:

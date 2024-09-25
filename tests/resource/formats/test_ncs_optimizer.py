@@ -74,10 +74,10 @@ class TestNCSOptimizers(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, len(interpreter.action_snapshots))
-        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
-        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
-        self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
+        assert len(interpreter.action_snapshots) == 3
+        assert interpreter.action_snapshots[0].arg_values[0] == 3
+        assert interpreter.action_snapshots[1].arg_values[0] == 2
+        assert interpreter.action_snapshots[2].arg_values[0] == 1
 
 
 if __name__ == "__main__":

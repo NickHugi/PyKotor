@@ -44,6 +44,8 @@ if getattr(sys, "frozen", False) is False:
         add_sys_path(utility_path.parent)
 
 
+from pathlib import Path, PurePath
+
 from loggerplus import RobustLogger
 
 from batchpatcher.translate.language_translator import TranslationOption, Translator
@@ -57,7 +59,14 @@ from pykotor.extract.installation import Installation
 from pykotor.font.draw import write_bitmap_fonts
 from pykotor.resource.formats.erf.erf_auto import write_erf
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
+from pykotor.resource.formats.gff import (
+    GFF,
+    GFFContent,
+    GFFFieldType,
+    GFFList,
+    GFFStruct,
+    read_gff,
+)
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
@@ -85,7 +94,6 @@ from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -183,7 +191,7 @@ def get_font_paths_windows() -> list[Path]:
             if font_path.suffix.lower() == ".ttf":  # Filtering for .ttf files
                 font_paths.add(font_path)
     for file in fonts_dir.safe_rglob("*"):
-        if file.suffix.lower() == ".ttf" and file.safe_isfile():
+        if file.suffix.lower() == ".ttf" and file.is_file():
             font_paths.add(file)
 
     return list(font_paths)
@@ -763,7 +771,7 @@ def patch_install(install_path: os.PathLike | str):
             filename = str(res_ident)
             filepath = k_install.path().joinpath("Modules", filename)
             if res_ident.restype is ResourceType.RIM:
-                if filepath.with_suffix(".mod").safe_isfile():
+                if filepath.with_suffix(".mod").is_file():
                     log_output(f"Skipping {filepath}, a .mod already exists at this path.")
                     continue
                 new_rim = RIM()
@@ -813,7 +821,7 @@ def patch_install(install_path: os.PathLike | str):
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
     c_path: CaseAwarePath = CaseAwarePath(path)
-    return bool(c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_isfile())
+    return bool(c_path.is_dir() and c_path.joinpath("chitin.key").is_file())
 
 
 def determine_input_path(path: Path) -> None:
@@ -826,10 +834,10 @@ def determine_input_path(path: Path) -> None:
     if is_kotor_install_dir(path):
         return patch_install(path)
 
-    if path.safe_isdir():
+    if path.is_dir():
         return patch_folder(path)
 
-    if path.safe_isfile():
+    if path.is_file():
         return patch_file(path)
     return None
 
@@ -853,7 +861,7 @@ def do_main_patchloop() -> str:
             return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
         if SCRIPT_GLOBALS.create_fonts:
             return messagebox.showwarning("No language chosen", "Select a language first to create fonts.")
-    if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).safe_isfile()):
+    if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).is_file()):
         return messagebox.showwarning(f"Font path not found {SCRIPT_GLOBALS.font_path}", "Please set your font path to a valid TTF font file.")
     if SCRIPT_GLOBALS.translate and not SCRIPT_GLOBALS.translation_applied:
         return messagebox.showwarning(

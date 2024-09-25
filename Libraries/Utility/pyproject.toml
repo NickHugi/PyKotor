@@ -14,7 +14,7 @@ multi_line_output = 3
 [tool.pyright.defineConstant]
 PYQT5 = true
 PYSIDE2 = false
-PYQT6 = false
+PYQT6 = true
 PYSIDE6 = false
 
 [tool.yapf]
@@ -46,7 +46,6 @@ src = [
 ]
 
 [tool.ruff.lint]
-external = ["V"]
 task-tags = ["TODO", "FIXME", "HACK"]
 select = ["ALL"]
 exclude = [".venv", ".venv*", "*.history*"]
@@ -69,8 +68,6 @@ ignore = [
     "ARG002",   # Unused method argument: `method`
     "COM812",   # missing-trailing-comma
     "ERA001",   # Found commented out code.
-#    "FBT001",   # Boolean positional arg in function definition
-#    "FBT002",   # Boolean default value in function definition
     "D100",     # Missing docstring in public module
     "D101",     # Missing docstring in public class
     "D102",     # Missing docstring in public method
@@ -79,12 +76,8 @@ ignore = [
     "D105",     # Missing docstring in magic method
     "D107",     # Missing docstring in __init__
     "D205",     # 1 blank line required between summary line and description
-#    "D213",     # Multi-line docstring summary should start at the second line
-#    "D400",     # First line should end with a period
     "D401",     # First line of docstring should be in imperative mood
     "D413",     # Missing blank line after last section 'xyz'
-#    "D403",     # First word of the first line should be capitalized: {} -> {}
-#    "D404",     # First word of the docstring should not be "This"
     "D417",     # Missing argument description in the docstring for {definition}: {name}
     "G004",     # Logging statement uses f'' string.
     "N802",     # Function name `screenToWorld` should be lowercase
@@ -129,24 +122,20 @@ ignore = [
 #    "Q003",     # avoidable-escaped-quote
 #    "COM812",   # missing-trailing-comma
 #    "COM819",   # prohibited-trailing-comma
-    "ISC001",
+    "ISC001",   # import-star-usage
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "*.pyi" = [
-  "I002", # from __future__ import annotations
+    "I002", # from __future__ import annotations
 ]
 ".history/**" = ["ALL"]
-"tests/*.py" = ["ALL"]
 ".github/*py" = ["INP001"]
 "__init__.py" = ["I001", "F401"]
 "globalsettings.py" = ["I001", "F401"]
-"Tools/HolocronToolset/src/toolset/*.py" = ["FBT003", "N802", "N803", "N806", "A001"]
-"Tools/HolocronToolset/src/toolset/uic/*.py" = ["ALL"]
 "resources_rc.py" = ["ALL"]
 ".mdx" = ["ALL"]
 ".mdl" = ["ALL"]
-"pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
 "tests/results" = ["ALL"]
 
 [tool.ruff.lint.flake8-pytest-style]
@@ -202,7 +191,6 @@ keep-runtime-typing = false
 max-complexity = 25
 
 [tool.bandit]
-exclude_dirs = ["tests"]
 tests = ["B201", "B301"]
 skips = ["B101", "B601"]
 

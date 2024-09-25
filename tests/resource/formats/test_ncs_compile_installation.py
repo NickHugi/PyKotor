@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from io import StringIO
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
@@ -25,6 +24,9 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from utility.error_handling import format_exception_with_variables
+from pathlib import Path
+
 from pykotor.common.misc import Game
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
@@ -33,12 +35,13 @@ from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import CompileError, EntryPointError
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
-from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler, InbuiltNCSCompiler
+from pykotor.resource.formats.ncs.compilers import (
+    ExternalNCSCompiler,
+    InbuiltNCSCompiler,
+)
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.error_handling import format_exception_with_variables
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from ply import yacc

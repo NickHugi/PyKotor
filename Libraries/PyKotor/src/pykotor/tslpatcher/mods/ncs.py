@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from pathlib import PureWindowsPath
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from typing_extensions import Literal

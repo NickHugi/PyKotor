@@ -1,6 +1,5 @@
 {
     "recommendations": [
-        "sourcery.sourcery",
         "arturock.gitstash",
         "ms-python.mypy-type-checker",
         "ms-python.vscode-pylance",
@@ -27,6 +26,23 @@
         "kevinrose.vsc-python-indent",
         "hyesun.py-paste-indent",
         "redhat.vscode-xml",
-        "siddharthverma.python-super-debugger-mode"
+        "siddharthverma.python-super-debugger-mode",
+        "sourcegraph.cody-ai",
+        "ms-vscode-remote.remote-containers",
+        "ms-azuretools.vscode-docker",
+        "yardensachs.copy-python-path",
+        "gnramsay.create-python-module",
+        "christian-kohler.path-intellisense",
+        "github.vscode-pull-request-github",
+        "ryuta46.multi-command",
+        "phohale.pho-pyqt-class-generator",
+        "mgesbert.python-path",
+        "cstrap.python-snippets",
+        "mukundan.python-docs",
+        "patrick91.python-dependencies-vscode",
+        "kamilturek.vscode-pyproject-toml-snippets",
+        "ms-vscode-remote.remote-wsl-recommender",
+        "mefengl.vscode-i-dont-care-about-commit-message",
+        "britesnow.vscode-toggle-quotes"
     ]
 }

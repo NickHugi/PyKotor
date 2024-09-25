@@ -30,35 +30,35 @@ TEST_FILE = "tests/files/test.tlk"
 class TestTalkTable(unittest.TestCase):
     def test_size(self):
         talktable = TalkTable(TEST_FILE)
-        self.assertEqual(3, talktable.size())
+        assert talktable.size() == 3
 
     def test_string(self):
         talktable = TalkTable(TEST_FILE)
-        self.assertEqual("abcdef", talktable.string(0))
-        self.assertEqual("ghijklmnop", talktable.string(1))
-        self.assertEqual("qrstuvwxyz", talktable.string(2))
-        self.assertEqual("", talktable.string(-1))
-        self.assertEqual("", talktable.string(3))
+        assert talktable.string(0) == "abcdef"
+        assert talktable.string(1) == "ghijklmnop"
+        assert talktable.string(2) == "qrstuvwxyz"
+        assert talktable.string(-1) == ""
+        assert talktable.string(3) == ""
 
     def test_voiceover(self):
         talktable = TalkTable(TEST_FILE)
-        self.assertEqual("resref01", str(talktable.sound(0)))
-        self.assertEqual("resref02", str(talktable.sound(1)))
-        self.assertEqual("", str(talktable.sound(2)))
-        self.assertEqual("", str(talktable.sound(-1)))
-        self.assertEqual("", str(talktable.sound(3)))
+        assert str(talktable.sound(0)) == "resref01"
+        assert str(talktable.sound(1)) == "resref02"
+        assert str(talktable.sound(2)) == ""
+        assert str(talktable.sound(-1)) == ""
+        assert str(talktable.sound(3)) == ""
 
     def test_batch(self):
         talktable = TalkTable(TEST_FILE)
         batch = talktable.batch([2, 0, -1, 3])
-        self.assertEqual(("abcdef", "resref01"), batch[0])
-        self.assertEqual(("qrstuvwxyz", ""), batch[2])
-        self.assertEqual(("", ""), batch[-1])
-        self.assertEqual(("", ""), batch[3])
+        assert batch[0] == ("abcdef", "resref01")
+        assert batch[2] == ("qrstuvwxyz", "")
+        assert batch[-1] == ("", "")
+        assert batch[3] == ("", "")
 
     def test_language(self):
         talktable = TalkTable(TEST_FILE)
-        self.assertEqual(talktable.language(), Language.ENGLISH)
+        assert talktable.language() == Language.ENGLISH
 
 
 if __name__ == "__main__":

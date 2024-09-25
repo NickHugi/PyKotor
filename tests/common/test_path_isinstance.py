@@ -22,8 +22,16 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from pathlib import (
+    Path,
+    PosixPath,
+    PurePath,
+    PurePosixPath,
+    PureWindowsPath,
+    WindowsPath,
+)
+
 from pykotor.tools.path import CaseAwarePath
-from utility.system.path import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 
 
 class TestPathInheritance(unittest.TestCase):
@@ -36,149 +44,149 @@ class TestPathInheritance(unittest.TestCase):
 
             with mock.patch("os.name", "nt"):
                 test_set = {path1, path2}
-                self.assertEqual(path1, path2)
-                self.assertEqual(hash(path1), hash(path2))
+                assert path1 == path2
+                assert hash(path1) == hash(path2)
                 self.assertSetEqual(test_set, {PathType("TEST\\path\\to\\\\nothing")})
 
     def test_path_attributes(self):
-        self.assertIs(PureWindowsPath("mypath").__class__, PureWindowsPath)
-        self.assertIs(PurePath("mypath").__class__, PurePosixPath if os.name == "posix" else PureWindowsPath)
-        self.assertIs(PurePosixPath("mypath").__class__, PurePosixPath)
+        assert PureWindowsPath("mypath").__class__ is PureWindowsPath
+        assert PurePath("mypath").__class__ is (PurePosixPath if os.name == "posix" else PureWindowsPath)
+        assert PurePosixPath("mypath").__class__ is PurePosixPath
         if os.name == "nt":
-            self.assertIs(WindowsPath("mypath").__class__, WindowsPath)
+            assert WindowsPath("mypath").__class__ is WindowsPath
         else:
-            self.assertIs(PosixPath("mypath").__class__, PosixPath)
+            assert PosixPath("mypath").__class__ is PosixPath
 
-        self.assertIs(Path("mypath").__class__, PosixPath if os.name == "posix" else WindowsPath)
-        self.assertIs(PureWindowsPath("mypath").__class__.__base__, PurePath)
-        self.assertIs(PurePath("mypath").__class__.__base__, PurePath)
-        self.assertIs(PurePosixPath("mypath").__class__.__base__, PurePath)
+        assert Path("mypath").__class__ is (PosixPath if os.name == "posix" else WindowsPath)
+        assert PureWindowsPath("mypath").__class__.__base__ is PurePath
+        assert PurePath("mypath").__class__.__base__ is PurePath
+        assert PurePosixPath("mypath").__class__.__base__ is PurePath
         if os.name == "nt":
-            self.assertIs(WindowsPath("mypath").__class__.__base__, Path)
+            assert WindowsPath("mypath").__class__.__base__ is Path
         else:
-            self.assertIs(PosixPath("mypath").__class__.__base__, Path)
-        self.assertIs(Path("mypath").__class__.__base__, Path)
-        self.assertIs(CaseAwarePath("mypath").__class__.__base__, WindowsPath if os.name == "nt" else PosixPath)
+            assert PosixPath("mypath").__class__.__base__ is Path
+        assert Path("mypath").__class__.__base__ is Path
+        assert CaseAwarePath("mypath").__class__.__base__ is (WindowsPath if os.name == "nt" else PosixPath)
 
     def test_path_hashing(self):
         test_list = [Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves")]
         if os.name == "posix":
-            self.assertNotIn(Path("/MNT/c/Program FileS (x86)/steam/steamapps/common/swkotor/saves"), test_list)
-        self.assertIn(Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves"), test_list)
+            assert Path("/MNT/c/Program FileS (x86)/steam/steamapps/common/swkotor/saves") not in test_list
+        assert Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves") in test_list
 
     def test_pure_windows_path_isinstance(self):
-        self.assertIsInstance(PureWindowsPath("mypath"), PurePath)
-        self.assertTrue(issubclass(PureWindowsPath, PurePath))
+        assert isinstance(PureWindowsPath("mypath"), PurePath)
+        assert issubclass(PureWindowsPath, PurePath)
 
     @unittest.skipIf(os.name != "posix", "Test must be run on Posix os")
     def test_pure_posix_path_isinstance(self):
-        self.assertIsInstance(PurePosixPath("mypath"), PurePath)
-        self.assertTrue(issubclass(PurePosixPath, PurePath))
+        assert isinstance(PurePosixPath("mypath"), PurePath)
+        assert issubclass(PurePosixPath, PurePath)
 
     def test_path_isinstance(self):
-        self.assertIsInstance(Path("mypath"), PurePath)
-        self.assertTrue(issubclass(Path, PurePath))
+        assert isinstance(Path("mypath"), PurePath)
+        assert issubclass(Path, PurePath)
 
     @unittest.skipIf(os.name != "nt", "Test must be run on Windows os")
     def test_windows_path_isinstance(self):
-        self.assertIsInstance(WindowsPath("mypath"), PurePath)
-        self.assertTrue(issubclass(WindowsPath, PurePath))
+        assert isinstance(WindowsPath("mypath"), PurePath)
+        assert issubclass(WindowsPath, PurePath)
 
     @unittest.skipIf(os.name != "posix", "Test must be run on Posix os")
     def test_posix_path_isinstance(self):
-        self.assertIsInstance(PosixPath("mypath"), PurePath)
-        self.assertTrue(issubclass(PosixPath, PurePath))
+        assert isinstance(PosixPath("mypath"), PurePath)
+        assert issubclass(PosixPath, PurePath)
 
     @unittest.skipIf(os.name != "nt", "Test must be run on Windows os")
     def test_windows_path_isinstance_path(self):
-        self.assertIsInstance(WindowsPath("mypath"), Path)
-        self.assertTrue(issubclass(WindowsPath, Path))
+        assert isinstance(WindowsPath("mypath"), Path)
+        assert issubclass(WindowsPath, Path)
 
     @unittest.skipIf(os.name != "posix", "Test must be run on Posix os")
     def test_posix_path_isinstance_path(self):
-        self.assertIsInstance(PosixPath("mypath"), Path)
-        self.assertTrue(issubclass(PosixPath, Path))
+        assert isinstance(PosixPath("mypath"), Path)
+        assert issubclass(PosixPath, Path)
 
     @unittest.skipIf(os.name != "nt", "Test must be run on Windows os")
     def test_purepath_not_isinstance_windows_path(self):
-        self.assertNotIsInstance(PurePath("mypath"), WindowsPath)
-        self.assertFalse(issubclass(PurePath, WindowsPath))
+        assert not isinstance(PurePath("mypath"), WindowsPath)
+        assert not issubclass(PurePath, WindowsPath)
 
     @unittest.skipIf(os.name != "posix", "Test must be run on Posix os")
     def test_purepath_not_isinstance_posix_path(self):
-        self.assertNotIsInstance(PurePath("mypath"), PosixPath)
-        self.assertFalse(issubclass(PurePath, PosixPath))
+        assert not isinstance(PurePath("mypath"), PosixPath)
+        assert not issubclass(PurePath, PosixPath)
 
     def test_purepath_not_isinstance_path(self):
-        self.assertNotIsInstance(PurePath("mypath"), Path)
-        self.assertFalse(issubclass(PurePath, Path))
+        assert not isinstance(PurePath("mypath"), Path)
+        assert not issubclass(PurePath, Path)
 
     def test_pathlib_pure_windows_path_isinstance(self):
-        self.assertIsInstance(PureWindowsPath("mypath"), pathlib.PurePath)
-        self.assertTrue(issubclass(PureWindowsPath, pathlib.PurePath))
-        self.assertIsInstance(pathlib.PureWindowsPath("mypath"), PurePath)
-        self.assertTrue(issubclass(pathlib.PureWindowsPath, PurePath))
+        assert isinstance(PureWindowsPath("mypath"), pathlib.PurePath)
+        assert issubclass(PureWindowsPath, pathlib.PurePath)
+        assert isinstance(pathlib.PureWindowsPath("mypath"), PurePath)
+        assert issubclass(pathlib.PureWindowsPath, PurePath)
 
     @unittest.skipIf(os.name != "posix", "Test must be run on Posix os")
     def test_pathlib_pure_posix_path_isinstance(self):
-        self.assertIsInstance(PurePosixPath("mypath"), pathlib.PurePath)
-        self.assertTrue(issubclass(PurePosixPath, pathlib.PurePath))
-        self.assertIsInstance(pathlib.PurePosixPath("mypath"), PurePath)
-        self.assertTrue(issubclass(pathlib.PurePosixPath, PurePath))
+        assert isinstance(PurePosixPath("mypath"), pathlib.PurePath)
+        assert issubclass(PurePosixPath, pathlib.PurePath)
+        assert isinstance(pathlib.PurePosixPath("mypath"), PurePath)
+        assert issubclass(pathlib.PurePosixPath, PurePath)
 
     def test_pathlib_path_isinstance(self):
-        self.assertIsInstance(Path("mypath"), pathlib.PurePath)
-        self.assertTrue(issubclass(Path, pathlib.PurePath))
-        self.assertIsInstance(pathlib.Path("mypath"), PurePath)
-        self.assertTrue(issubclass(pathlib.Path, PurePath))
+        assert isinstance(Path("mypath"), pathlib.PurePath)
+        assert issubclass(Path, pathlib.PurePath)
+        assert isinstance(pathlib.Path("mypath"), PurePath)
+        assert issubclass(pathlib.Path, PurePath)
 
     @unittest.skipIf(os.name != "nt", "Test must be run on Windows os")
     def test_pathlib_windows_path_isinstance(self):
-        self.assertIsInstance(WindowsPath("mypath"), pathlib.PurePath)
-        self.assertTrue(issubclass(WindowsPath, pathlib.PurePath))
-        self.assertIsInstance(pathlib.WindowsPath("mypath"), PurePath)
-        self.assertTrue(issubclass(pathlib.WindowsPath, PurePath))
+        assert isinstance(WindowsPath("mypath"), pathlib.PurePath)
+        assert issubclass(WindowsPath, pathlib.PurePath)
+        assert isinstance(pathlib.WindowsPath("mypath"), PurePath)
+        assert issubclass(pathlib.WindowsPath, PurePath)
 
     @unittest.skipIf(os.name != "posix", "Test must be run on Posix os")
     def test_pathlib_posix_path_isinstance(self):
-        self.assertIsInstance(PosixPath("mypath"), pathlib.PurePath)
-        self.assertTrue(issubclass(PosixPath, pathlib.PurePath))
-        self.assertIsInstance(pathlib.PosixPath("mypath"), PurePath)
-        self.assertTrue(issubclass(pathlib.PosixPath, PurePath))
+        assert isinstance(PosixPath("mypath"), pathlib.PurePath)
+        assert issubclass(PosixPath, pathlib.PurePath)
+        assert isinstance(pathlib.PosixPath("mypath"), PurePath)
+        assert issubclass(pathlib.PosixPath, PurePath)
 
     @unittest.skipIf(os.name != "nt", "Test must be run on Windows os")
     def test_pathlib_windows_path_isinstance_path(self):
-        self.assertIsInstance(WindowsPath("mypath"), pathlib.Path)
-        self.assertTrue(issubclass(WindowsPath, pathlib.Path))
-        self.assertIsInstance(pathlib.WindowsPath("mypath"), Path)
-        self.assertTrue(issubclass(pathlib.WindowsPath, Path))
+        assert isinstance(WindowsPath("mypath"), pathlib.Path)
+        assert issubclass(WindowsPath, pathlib.Path)
+        assert isinstance(pathlib.WindowsPath("mypath"), Path)
+        assert issubclass(pathlib.WindowsPath, Path)
 
     @unittest.skipIf(os.name != "posix", "Test must be run on Posix os")
     def test_pathlib_posix_path_isinstance_path(self):
-        self.assertIsInstance(PosixPath("mypath"), pathlib.Path)
-        self.assertTrue(issubclass(PosixPath, pathlib.Path))
-        self.assertIsInstance(pathlib.PosixPath("mypath"), Path)
-        self.assertTrue(issubclass(pathlib.PosixPath, Path))
+        assert isinstance(PosixPath("mypath"), pathlib.Path)
+        assert issubclass(PosixPath, pathlib.Path)
+        assert isinstance(pathlib.PosixPath("mypath"), Path)
+        assert issubclass(pathlib.PosixPath, Path)
 
     @unittest.skipIf(os.name != "nt", "Test must be run on Windows os")
     def test_pathlib_purepath_not_isinstance_windows_path(self):
-        self.assertNotIsInstance(PurePath("mypath"), pathlib.WindowsPath)
-        self.assertFalse(issubclass(PurePath, pathlib.WindowsPath))
-        self.assertNotIsInstance(pathlib.PurePath("mypath"), WindowsPath)
-        self.assertFalse(issubclass(pathlib.PurePath, WindowsPath))
+        assert not isinstance(PurePath("mypath"), pathlib.WindowsPath)
+        assert not issubclass(PurePath, pathlib.WindowsPath)
+        assert not isinstance(pathlib.PurePath("mypath"), WindowsPath)
+        assert not issubclass(pathlib.PurePath, WindowsPath)
 
     @unittest.skipIf(os.name != "posix", "Test must be run on Posix os")
     def test_pathlib_purepath_not_isinstance_posix_path(self):
-        self.assertNotIsInstance(PurePath("mypath"), pathlib.PosixPath)
-        self.assertFalse(issubclass(PurePath, pathlib.PosixPath))
-        self.assertNotIsInstance(pathlib.PurePath("mypath"), PosixPath)
-        self.assertFalse(issubclass(pathlib.PurePath, PosixPath))
+        assert not isinstance(PurePath("mypath"), pathlib.PosixPath)
+        assert not issubclass(PurePath, pathlib.PosixPath)
+        assert not isinstance(pathlib.PurePath("mypath"), PosixPath)
+        assert not issubclass(pathlib.PurePath, PosixPath)
 
     def test_pathlib_purepath_not_isinstance_path(self):
-        self.assertNotIsInstance(PurePath("mypath"), pathlib.Path)
-        self.assertFalse(issubclass(PurePath, pathlib.Path))
-        self.assertNotIsInstance(pathlib.PurePath("mypath"), Path)
-        self.assertFalse(issubclass(pathlib.PurePath, Path))
+        assert not isinstance(PurePath("mypath"), pathlib.Path)
+        assert not issubclass(PurePath, pathlib.Path)
+        assert not isinstance(pathlib.PurePath("mypath"), Path)
+        assert not issubclass(pathlib.PurePath, Path)
 
 
 if __name__ == "__main__":

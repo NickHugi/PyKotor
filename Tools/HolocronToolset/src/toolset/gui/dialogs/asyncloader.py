@@ -8,10 +8,20 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QThread, QTimer, Qt
-from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePolicy, QVBoxLayout
+from qtpy.QtWidgets import (
+    QDialog,
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QSizePolicy,
+    QVBoxLayout,
+)
 
 from toolset.gui.common.widgets.progressbar import AnimatedProgressBar
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import (
+    format_exception_with_variables,
+    universal_simplify_exception,
+)
 
 if TYPE_CHECKING:
     from multiprocessing import Process, Queue

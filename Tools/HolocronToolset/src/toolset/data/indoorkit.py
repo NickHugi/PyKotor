@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 from qtpy.QtGui import QImage
@@ -12,7 +13,6 @@ from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.generics.utd import read_utd
 from toolset.utils.misc import get_nums
 from utility.common.more_collections import CaseInsensitiveDict
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -90,7 +90,7 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
     kits = []
 
     kits_path = Path(path)
-    if not kits_path.safe_isdir():
+    if not kits_path.is_dir():
         kits_path.mkdir(parents=True)
     for file in (file for file in kits_path.iterdir() if file.suffix.lower() == ".json"):
         kit_json = json.loads(BinaryReader.load_file(file))

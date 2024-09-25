@@ -4,7 +4,6 @@ import math
 import pathlib
 import sys
 import unittest
-
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -30,90 +29,90 @@ class TestVector2(TestCase):
     def test_unpacking(self):
         source = Vector2(1.2, 2.3)
         x, y = source
-        self.assertEqual(x, 1.2)
-        self.assertEqual(y, 2.3)
+        assert x == 1.2
+        assert y == 2.3
 
     def test_from_vector2(self):
         source = Vector2(1.2, 2.3)
         vec2 = Vector2.from_vector2(source)
-        self.assertEqual(vec2.x, 1.2)
-        self.assertEqual(vec2.y, 2.3)
+        assert vec2.x == 1.2
+        assert vec2.y == 2.3
 
     def test_from_vector3(self):
         source = Vector3(1.2, 2.3, 3.4)
         vec2 = Vector2.from_vector3(source)
-        self.assertEqual(vec2.x, 1.2)
-        self.assertEqual(vec2.y, 2.3)
+        assert vec2.x == 1.2
+        assert vec2.y == 2.3
 
     def test_from_vector4(self):
         source = Vector4(1.2, 2.3, 3.4, 5.6)
         vec2 = Vector2.from_vector4(source)
-        self.assertEqual(vec2.x, 1.2)
-        self.assertEqual(vec2.y, 2.3)
+        assert vec2.x == 1.2
+        assert vec2.y == 2.3
 
 
 class TestVector3(TestCase):
     def test_unpacking(self):
         source = Vector3(1.2, 2.3, 3.4)
         x, y, z = source
-        self.assertEqual(x, 1.2)
-        self.assertEqual(y, 2.3)
-        self.assertEqual(z, 3.4)
+        assert x == 1.2
+        assert y == 2.3
+        assert z == 3.4
 
     def test_from_vector2(self):
         source = Vector2(1.2, 2.3)
         vec3 = Vector3.from_vector2(source)
-        self.assertEqual(vec3.x, 1.2)
-        self.assertEqual(vec3.y, 2.3)
-        self.assertEqual(vec3.z, 0.0)
+        assert vec3.x == 1.2
+        assert vec3.y == 2.3
+        assert vec3.z == 0.0
 
     def test_from_vector3(self):
         source = Vector3(1.2, 2.3, 3.4)
         vec3 = Vector3.from_vector3(source)
-        self.assertEqual(vec3.x, 1.2)
-        self.assertEqual(vec3.y, 2.3)
-        self.assertEqual(vec3.z, 3.4)
+        assert vec3.x == 1.2
+        assert vec3.y == 2.3
+        assert vec3.z == 3.4
 
     def test_from_vector4(self):
         source = Vector4(1.2, 2.3, 3.4, 5.6)
         vec3 = Vector3.from_vector4(source)
-        self.assertEqual(vec3.x, 1.2)
-        self.assertEqual(vec3.y, 2.3)
-        self.assertEqual(vec3.z, 3.4)
+        assert vec3.x == 1.2
+        assert vec3.y == 2.3
+        assert vec3.z == 3.4
 
 
 class TestVector4(TestCase):
     def test_unpacking(self):
         source = Vector4(1.2, 2.3, 3.4, 4.5)
         x, y, z, w = source
-        self.assertEqual(x, 1.2)
-        self.assertEqual(y, 2.3)
-        self.assertEqual(z, 3.4)
-        self.assertEqual(w, 4.5)
+        assert x == 1.2
+        assert y == 2.3
+        assert z == 3.4
+        assert w == 4.5
 
     def test_from_vector2(self):
         source = Vector2(1.2, 2.3)
         vec4 = Vector4.from_vector2(source)
-        self.assertEqual(vec4.x, 1.2)
-        self.assertEqual(vec4.y, 2.3)
-        self.assertEqual(vec4.z, 0.0)
-        self.assertEqual(vec4.w, 0.0)
+        assert vec4.x == 1.2
+        assert vec4.y == 2.3
+        assert vec4.z == 0.0
+        assert vec4.w == 0.0
 
     def test_from_vector3(self):
         source = Vector3(1.2, 2.3, 3.4)
         vec4 = Vector4.from_vector3(source)
-        self.assertEqual(vec4.x, 1.2)
-        self.assertEqual(vec4.y, 2.3)
-        self.assertEqual(vec4.z, 3.4)
-        self.assertEqual(vec4.w, 0.0)
+        assert vec4.x == 1.2
+        assert vec4.y == 2.3
+        assert vec4.z == 3.4
+        assert vec4.w == 0.0
 
     def test_from_vector4(self):
         source = Vector4(1.2, 2.3, 3.4, 5.6)
         vec4 = Vector4.from_vector4(source)
-        self.assertEqual(vec4.x, 1.2)
-        self.assertEqual(vec4.y, 2.3)
-        self.assertEqual(vec4.z, 3.4)
-        self.assertEqual(vec4.w, 5.6)
+        assert vec4.x == 1.2
+        assert vec4.y == 2.3
+        assert vec4.z == 3.4
+        assert vec4.w == 5.6
 
     def test_from_euler(self):
         # Converting degrees to radians
@@ -152,15 +151,15 @@ class TestFace(TestCase):
         v3 = Vector3(0.0, 1.0, 1.0)
         face = Face(v1, v2, v3)
         # At the points
-        self.assertEqual(0.0, face.determine_z(0.0, 0.0))  # v1
-        self.assertEqual(1.0, face.determine_z(1.0, 0.0))  # v2
-        self.assertEqual(1.0, face.determine_z(0.0, 1.0))  # v3
+        assert face.determine_z(0.0, 0.0) == 0.0  # v1
+        assert face.determine_z(1.0, 0.0) == 1.0  # v2
+        assert face.determine_z(0.0, 1.0) == 1.0  # v3
         # Middle of each edge
-        self.assertEqual(0.5, face.determine_z(0.5, 0.0))  # v1, v2
-        self.assertEqual(0.5, face.determine_z(0.0, 0.5))  # v1, v3
-        self.assertEqual(1.0, face.determine_z(0.5, 0.5))  # v2, v3
+        assert face.determine_z(0.5, 0.0) == 0.5  # v1, v2
+        assert face.determine_z(0.0, 0.5) == 0.5  # v1, v3
+        assert face.determine_z(0.5, 0.5) == 1.0  # v2, v3
         # Centre of the face
-        self.assertEqual(0.66, face.determine_z(0.33, 0.33))
+        assert face.determine_z(0.33, 0.33) == 0.66
 
 
 class TestPolygon2(TestCase):
@@ -176,16 +175,16 @@ class TestPolygon2(TestCase):
         )
 
         # Inside
-        self.assertTrue(poly.inside(Vector2(2.0, 4.0)))
-        self.assertTrue(poly.inside(Vector2(5.0, 6.0)))
+        assert poly.inside(Vector2(2.0, 4.0))
+        assert poly.inside(Vector2(5.0, 6.0))
 
         # On the edge
-        self.assertTrue(poly.inside(Vector2(0.0, 3.0)))
-        self.assertFalse(poly.inside(Vector2(0.0, 3.0), False))
+        assert poly.inside(Vector2(0.0, 3.0))
+        assert not poly.inside(Vector2(0.0, 3.0), False)
 
         # Outside
-        self.assertFalse(poly.inside(Vector2(3.0, 0.0)))
-        self.assertFalse(poly.inside(Vector2(3.0, 7.0)))
+        assert not poly.inside(Vector2(3.0, 0.0))
+        assert not poly.inside(Vector2(3.0, 7.0))
 
     def test_area(self):
         poly = Polygon2(
@@ -198,7 +197,7 @@ class TestPolygon2(TestCase):
             ]
         )
 
-        self.assertEqual(27.0, poly.area())
+        assert poly.area() == 27.0
 
 
 if __name__ == "__main__":
