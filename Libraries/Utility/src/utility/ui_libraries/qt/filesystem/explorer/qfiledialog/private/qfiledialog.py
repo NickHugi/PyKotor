@@ -34,6 +34,7 @@ from qtpy.QtWidgets import (
 )
 
 from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qplatformdialoghelper import QPlatformFileDialogHelper
+from utility.ui_libraries.qt.tests.test_enum_handling import sip_enum_to_int
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QAbstractItemModel, QAbstractProxyModel, QFileDevice, QObject, QPoint
@@ -59,11 +60,19 @@ class QFileDialogOptionsPrivate:
         self.fileMode: RealQFileDialog.FileMode = RealQFileDialog.FileMode.AnyFile
         self.acceptMode: RealQFileDialog.AcceptMode = RealQFileDialog.AcceptMode.AcceptOpen
         self.labelTexts: dict[RealQFileDialog.DialogLabel, str] = {}
-        for label in (RealQFileDialog.DialogLabel.LookIn, RealQFileDialog.DialogLabel.FileName,
-                      RealQFileDialog.DialogLabel.FileType, RealQFileDialog.DialogLabel.Accept,
-                      RealQFileDialog.DialogLabel.Reject):
+        for label in (
+            RealQFileDialog.DialogLabel.LookIn,
+            RealQFileDialog.DialogLabel.FileName,
+            RealQFileDialog.DialogLabel.FileType,
+            RealQFileDialog.DialogLabel.Accept,
+            RealQFileDialog.DialogLabel.Reject,
+        ):
             self.labelTexts[label] = ""
-        self.filter: QDir.Filter | QDir.Filters = QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot | QDir.Filter.AllDirs
+        self.filter: QDir.Filter | QDir.Filters = (
+            QDir.Filter.AllEntries
+            | QDir.Filter.NoDotAndDotDot
+            | QDir.Filter.AllDirs
+        )
         self.sidebarUrls: list[QUrl] = []
         self.nameFilters: list[str] = []
         self.mimeTypeFilters: list[str] = []
@@ -95,11 +104,7 @@ class QFSCompleter(QCompleter):
         self.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
     def pathFromIndex(self, index: QModelIndex) -> str:
-        dirModel: QAbstractItemModel | QFileSystemModel = (
-            self.proxyModel.sourceModel()
-            if self.proxyModel
-            else self.sourceModel
-        )
+        dirModel: QAbstractItemModel | QFileSystemModel = self.proxyModel.sourceModel() if self.proxyModel else self.sourceModel
         assert isinstance(dirModel, QFileSystemModel), f"{type(self).__name__}.pathFromIndex: Expected QFileSystemModel, got {type(dirModel).__name__}"
         current_location = Path(dirModel.rootPath().strip())
         path = os.path.abspath(os.path.normpath(str(index.data(QFileSystemModel.FilePathRole)).strip()))  # noqa: PTH100
@@ -131,6 +136,7 @@ class QFSCompleter(QCompleter):
 @dataclass
 class HistoryItem:
     """Represents an item in the file dialog history."""
+
     path: str
     selection: list[QPersistentModelIndex]
 
@@ -191,20 +197,23 @@ class QFileDialogPrivate:
 
         # QFileDialogArgs struct, used in some static methods of QFileDialog.
         from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.qfiledialog import QFileDialogOptions
-        self.options: QFileDialogOptions = QFileDialogOptions()
-        self.filter: str = ""
-        self.setWindowTitle: str = ""  # caption
-        self.mode: RealQFileDialog.FileMode = RealQFileDialog.FileMode.AnyFile if hasattr(RealQFileDialog.FileMode, "AnyFile") else RealQFileDialog.AnyFile
+
+        self.options: QFileDialogOptions = QFileDialogOptions() if options is None else options
+        self.filter: str = "" if filter is None else filter
+        self.setWindowTitle: str = "" if caption is None else caption  # caption
+        any_file = RealQFileDialog.FileMode.AnyFile if hasattr(RealQFileDialog.FileMode, "AnyFile") else RealQFileDialog.AnyFile
+        self.mode: RealQFileDialog.FileMode = any_file if mode is None else mode
         self.options.setOption(QFileDialogOptions.FileDialogOption.DontUseNativeDialog, True)  # TODO: native dialog, disable for now.  # noqa: FBT003
 
         # init_directory
-        self.directory: str = ""
-        self.selection: str = ""
+        self.directory: str = "" if directory is None else directory.toLocalFile()
+        self.selection: str = "" if selection is None else selection
 
         self.qFileDialogUi: Ui_QFileDialog | None = None
-        #from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.ui_qfiledialog import Ui_QFileDialog
-        #self.qFileDialogUi: Ui_QFileDialog = Ui_QFileDialog()
-        #self.qFileDialogUi.setupUi(q)
+        # from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.ui_qfiledialog import Ui_QFileDialog
+        # self.qFileDialogUi: Ui_QFileDialog = Ui_QFileDialog()
+        # self.qFileDialogUi.setupUi(q)
+        #self.init_directory(url=QUrl.fromLocalFile(self.directory))
 
     def init_directory(self, url: QUrl) -> None:
         """Initialize the directory and selection from the given URL.
@@ -320,6 +329,7 @@ class QFileDialogPrivate:
 
         # Initialize UI
         from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.ui_qfiledialog import Ui_QFileDialog
+
         self.qFileDialogUi = Ui_QFileDialog()
         self.qFileDialogUi.setupUi(q)
 
@@ -395,10 +405,7 @@ class QFileDialogPrivate:
         selections.selectionChanged.connect(self._q_selectionChanged)  # noqa: SLF001
         selections.currentChanged.connect(self._q_currentChanged)  # noqa: SLF001
 
-        self.qFileDialogUi.splitter.setStretchFactor(
-            self.qFileDialogUi.splitter.indexOf(self.qFileDialogUi.splitter.widget(1)),
-            1
-        )
+        self.qFileDialogUi.splitter.setStretchFactor(self.qFileDialogUi.splitter.indexOf(self.qFileDialogUi.splitter.widget(1)), 1)
 
         self.createToolButtons()
         self.createMenuActions()
@@ -409,10 +416,10 @@ class QFileDialogPrivate:
             q.restoreState(settings.value("Qt/filedialog"))
 
         # Set initial widget states from options
-        q.setFileMode(RealQFileDialog.FileMode(self.options.fileMode()))
-        q.setAcceptMode(RealQFileDialog.AcceptMode(self.options.acceptMode()))
-        q.setViewMode(RealQFileDialog.ViewMode(self.options.viewMode()))
-        q.setOptions(RealQFileDialog.Options(int(self.options.options() if qtpy.API_NAME == "PyQt5" else self.options.options().value)))  # pyright: ignore[reportAttributeAccessIssue]
+        q.setFileMode(self.options.fileMode())
+        q.setAcceptMode(self.options.acceptMode())
+        q.setViewMode(self.options.viewMode())
+        q.setOptions(int(self.options.options() if qtpy.API_NAME == "PyQt5" else self.options.options().value))  # pyright: ignore[reportAttributeAccessIssue]
         if self.options.sidebarUrls():
             q.setSidebarUrls(self.options.sidebarUrls())
         q.setDirectoryUrl(self.options.initialDirectory())
@@ -600,7 +607,7 @@ class QFileDialogPrivate:
         update the qFileDialogUi->fileNameEdit when in AcceptSave mode with the new extension.
         """
         assert self.qFileDialogUi is not None, f"{type(self).__name__}._q_useNameFilter: UI is None"
-        nameFilters = self.options.nameFilters()
+        nameFilters: list[str] = self.options.nameFilters()
         if index == len(nameFilters):
             comboModel = self.qFileDialogUi.fileTypeCombo.model()
             nameFilters.append(comboModel.index(comboModel.rowCount() - 1, 0).data())
@@ -608,7 +615,7 @@ class QFileDialogPrivate:
 
         nameFilter = nameFilters[index]
         newNameFilters = QPlatformFileDialogHelper.cleanFilterList(nameFilter)
-        if self.q_func().acceptMode() == RealQFileDialog.AcceptSave:
+        if sip_enum_to_int(self.q_func().acceptMode()) == sip_enum_to_int(RealQFileDialog.AcceptSave):
             newNameFilterExtension = ""
             if len(newNameFilters) > 0:
                 newNameFilterExtension = QFileInfo(newNameFilters[0]).suffix()
@@ -634,7 +641,7 @@ class QFileDialogPrivate:
         index: QModelIndex = self.qFileDialogUi.lookInCombo.model().index(
             self.qFileDialogUi.lookInCombo.currentIndex(),
             self.qFileDialogUi.lookInCombo.modelColumn(),
-            self.qFileDialogUi.lookInCombo.rootModelIndex()
+            self.qFileDialogUi.lookInCombo.rootModelIndex(),
         )
 
         path2 = path
@@ -760,12 +767,11 @@ class QFileDialogPrivate:
         If this function is removed, the tree and list views might become desynchronized,
         leading to inconsistent directory views and potential user confusion.
         """
-        mapped_index = self.mapFromSource(index)
-        tree_view = self.qFileDialogUi.treeView
-        list_view = self.qFileDialogUi.listView
-
-        tree_view.setRootIndex(mapped_index)
-        list_view.setRootIndex(mapped_index)
+        assert index.isValid() and index.model() == self.model, f"{type(self).__name__}.setRootIndex: Invalid index or model mismatch."
+        idx = self.mapFromSource(index)
+        assert self.qFileDialogUi is not None, f"{type(self).__name__}.setRootIndex: UI is None"
+        self.qFileDialogUi.treeView.setRootIndex(idx)
+        self.qFileDialogUi.listView.setRootIndex(idx)
 
     def currentView(self) -> QAbstractItemView | None:
         """Returns the currently active view (either list or tree view).
@@ -816,31 +822,21 @@ class QFileDialogPrivate:
             return
 
         q = self._public
-        self.qFileDialogUi.toParentButton.setEnabled(QDir(self.model.rootPath()).exists())
+        self.qFileDialogUi.toParentButton.setEnabled(QFileInfo(self.model.rootPath()).exists())
         self.qFileDialogUi.sidebar.selectUrl(QUrl.fromLocalFile(path))
-
         q.setHistory(self.qFileDialogUi.lookInCombo.history())
 
         newNativePath = QDir.toNativeSeparators(path)
-        self._updateHistoryForPathChange(newNativePath)
-
-    def _updateHistoryForPathChange(self, newNativePath: str) -> None:  # noqa: N803
-        """Manages the navigation history when the path changes.
-
-        Allows for proper back/forward navigation in the file dialog.
-
-        If this function is removed, the dialog would lose its ability to maintain
-        a browsing history, breaking the back/forward navigation functionality.
-        """
-        if self.currentHistoryLocation >= 0:
-            currentItem: HistoryItem = self.currentHistory[self.currentHistoryLocation]
-            if currentItem.path != newNativePath:
+        if self.currentHistoryLocation < 0 or self.currentHistory[self.currentHistoryLocation].path != newNativePath:
+            if self.currentHistoryLocation >= 0:
                 self.saveHistorySelection()
-                self._removeForwardHistory()
-                self.currentHistory.append(HistoryItem(newNativePath, []))
-                self.currentHistoryLocation += 1
+            while self.currentHistoryLocation >= 0 and self.currentHistoryLocation + 1 < len(self.currentHistory):
+                self.currentHistory.pop()
+            self.currentHistory.append(HistoryItem(newNativePath, []))
+            self.currentHistoryLocation += 1
 
-        self._updateNavigationButtons()
+        self.qFileDialogUi.forwardButton.setEnabled(len(self.currentHistory) - self.currentHistoryLocation > 1)
+        self.qFileDialogUi.backButton.setEnabled(self.currentHistoryLocation > 0)
 
     def maxNameLength(self, path: str | None = None) -> int:
         """Determines the maximum allowed length for file names in the current file system.
@@ -896,10 +892,7 @@ class QFileDialogPrivate:
         If this function is removed, the history navigation would become inconsistent,
         with the forward history remaining even after visiting new locations.
         """
-        while (
-            self.currentHistoryLocation >= 0
-            and self.currentHistoryLocation + 1 < len(self.currentHistory)
-        ):
+        while self.currentHistoryLocation >= 0 and self.currentHistoryLocation + 1 < len(self.currentHistory):
             self.currentHistory.pop()
 
     def _updateNavigationButtons(self) -> None:
@@ -916,10 +909,7 @@ class QFileDialogPrivate:
 
         This allows users to return to previously visited directories.
         """
-        if (
-            self.currentHistory
-            and self.currentHistoryLocation > 0
-        ):
+        if self.currentHistory and self.currentHistoryLocation > 0:
             self.saveHistorySelection()
             self.currentHistoryLocation -= 1
             self._navigateToHistoryItem(self.currentHistory[self.currentHistoryLocation])
@@ -929,10 +919,7 @@ class QFileDialogPrivate:
 
         This allows users to move forward in the directory history after going back.
         """
-        if (
-            self.currentHistory
-            and self.currentHistoryLocation < len(self.currentHistory) - 1
-        ):
+        if self.currentHistory and self.currentHistoryLocation < len(self.currentHistory) - 1:
             self.saveHistorySelection()
             self.currentHistoryLocation += 1
             self._navigateToHistoryItem(self.currentHistory[self.currentHistoryLocation])
@@ -1102,10 +1089,7 @@ class QFileDialogPrivate:
         """
         if self.showHiddenAction is not None:
             menu.addAction(self.showHiddenAction)
-        if (
-            self.newFolderAction is not None
-            and self.qFileDialogUi.newFolderButton.isVisible()
-        ):
+        if self.newFolderAction is not None and self.qFileDialogUi.newFolderButton.isVisible():
             self.newFolderAction.setEnabled(self.qFileDialogUi.newFolderButton.isEnabled())
             menu.addAction(self.newFolderAction)
 
@@ -1119,7 +1103,7 @@ class QFileDialogPrivate:
         """
         index = self.qFileDialogUi.listView.currentIndex()
         index = index.sibling(index.row(), 0)
-        #index = self.mapToSource(index)
+        # index = self.mapToSource(index)
         view = self.currentView()
         assert view is not None, f"{type(self).__name__}._q_renameCurrent: No view found."
         view.edit(index)
@@ -1156,11 +1140,7 @@ class QFileDialogPrivate:
 
         This function encapsulates the logic for safely removing an item from the file system.
         """
-        if (
-            not index.isValid()
-            or index.parent() is None
-            or index == self.qFileDialogUi.listView.rootIndex()
-        ):
+        if not index.isValid() or index.parent() is None or index == self.qFileDialogUi.listView.rootIndex():
             RobustLogger().warning(f"{type(self).__name__}._delete_item: Invalid index: {index}.")
             return
 
@@ -1185,10 +1165,7 @@ class QFileDialogPrivate:
         if not index.isValid() and self._confirm_deletion(fileName):
             return
 
-        if (
-            self.model.isDir(index)
-            and not self.model.fileInfo(index).isSymLink()
-        ):
+        if self.model.isDir(index) and not self.model.fileInfo(index).isSymLink():
             if not self.removeDirectory(filePath):
                 self._show_deletion_error()
             return
@@ -1212,12 +1189,8 @@ class QFileDialogPrivate:
         This prevents accidental deletions and gives users a chance to reconsider their action.
         """
         q = self._public
-        result: QMessageBox.StandardButton = (
-            QMessageBox.warning(q,
-                                q.tr("Delete", "QFileDialog"),
-                                q.tr(f"Are you sure you want to delete '{fileName}'?", "QFileDialog"),
-                                QMessageBox.Yes | QMessageBox.No,
-                                QMessageBox.No)
+        result: QMessageBox.StandardButton = QMessageBox.warning(
+            q, q.tr("Delete", "QFileDialog"), q.tr(f"Are you sure you want to delete '{fileName}'?", "QFileDialog"), QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         return result == QMessageBox.StandardButton.Yes
 
@@ -1321,12 +1294,12 @@ class QFileDialogPrivate:
         assert self.qFileDialogUi is not None, f"{type(self).__name__}._q_updateOkButton: No UI setup."
         button: QPushButton | None = self.qFileDialogUi.buttonBox.button(
             QDialogButtonBox.Open
-            if q.acceptMode() == RealQFileDialog.AcceptMode.AcceptOpen
+            if q.acceptMode() == sip_enum_to_int(RealQFileDialog.AcceptMode.AcceptOpen)
             else QDialogButtonBox.Save
         )
         if button is None:
             return
-        fileMode: RealQFileDialog.FileMode = q.fileMode()
+        fileMode: int = sip_enum_to_int(q.fileMode())
 
         enableButton: bool = True
         isOpenDirectory: bool = False
@@ -1343,7 +1316,7 @@ class QFileDialogPrivate:
             enableButton = False
         elif lineEditText == "..":
             isOpenDirectory = True
-        elif fileMode == RealQFileDialog.FileMode.Directory:
+        elif fileMode == sip_enum_to_int(RealQFileDialog.FileMode.Directory):
             assert self.model is not None, f"{type(self).__name__}._q_updateOkButton: No file system model setup."
             fn: str = files[0]
             idx: QModelIndex = self.model.index(fn)
@@ -1351,9 +1324,10 @@ class QFileDialogPrivate:
                 idx = self.model.index(os.path.expandvars(fn))
             if not idx.isValid() or not self.model.isDir(idx):
                 enableButton = False
-        elif fileMode == RealQFileDialog.FileMode.AnyFile:
+        elif fileMode == sip_enum_to_int(RealQFileDialog.FileMode.AnyFile):
             assert self.model is not None, f"{type(self).__name__}._q_updateOkButton: No file system model setup."
             fn: str = files[0]
+            assert fn is not None, f"{type(self).__name__}._q_updateOkButton: File name is None."
             info = QFileInfo(fn)
             idx: QModelIndex = self.model.index(fn)
             fileDir: str = ""
@@ -1375,7 +1349,7 @@ class QFileDialogPrivate:
             elif not idx.isValid():
                 maxLength: int = self.maxNameLength(fileDir)
                 enableButton = maxLength < 0 or len(fileName) <= maxLength
-        elif fileMode in (RealQFileDialog.FileMode.ExistingFile, RealQFileDialog.FileMode.ExistingFiles):
+        elif fileMode in (sip_enum_to_int(RealQFileDialog.FileMode.ExistingFile), sip_enum_to_int(RealQFileDialog.FileMode.ExistingFiles)):
             assert self.model is not None, f"{type(self).__name__}._q_updateOkButton: No file system model setup."
             for file in files:
                 idx: QModelIndex = self.model.index(file)
@@ -1399,25 +1373,19 @@ class QFileDialogPrivate:
         q = self._public
 
         if saveAsOnFolder:
-            self.setLabelTextControl(
-                RealQFileDialog.DialogLabel.Accept,
-                q.tr("&Open", "QFileDialog")
-            )
+            self.setLabelTextControl(RealQFileDialog.DialogLabel.Accept, q.tr("&Open", "QFileDialog"))
         elif self.options.isLabelExplicitlySet(RealQFileDialog.DialogLabel.Accept):
             self.setLabelTextControl(
                 RealQFileDialog.DialogLabel.Accept,
                 self.options.labelText(RealQFileDialog.DialogLabel.Accept),
             )
             return
-        elif q.fileMode() == RealQFileDialog.FileMode.Directory:
-            self.setLabelTextControl(
-                RealQFileDialog.DialogLabel.Accept,
-                q.tr("&Choose", "QFileDialog")
-            )
+        elif sip_enum_to_int(q.fileMode()) == sip_enum_to_int(RealQFileDialog.FileMode.Directory):
+            self.setLabelTextControl(RealQFileDialog.DialogLabel.Accept, q.tr("&Choose", "QFileDialog"))
         else:
             text = (
                 q.tr("&Open", "QFileDialog")
-                if q.acceptMode() == RealQFileDialog.AcceptMode.AcceptOpen
+                if sip_enum_to_int(q.acceptMode()) == sip_enum_to_int(RealQFileDialog.AcceptMode.AcceptOpen)
                 else q.tr("&Save", "QFileDialog")
             )
             self.setLabelTextControl(RealQFileDialog.DialogLabel.Accept, text)
@@ -1428,23 +1396,24 @@ class QFileDialogPrivate:
         Allows for dynamic updating of labels based on the dialog's state or localization needs.
         """
         assert self.qFileDialogUi is not None, f"{type(self).__name__}.setLabelTextControl: No UI setup."
-        if label == RealQFileDialog.DialogLabel.LookIn:
+        int_label = sip_enum_to_int(label)
+        if int_label == sip_enum_to_int(RealQFileDialog.DialogLabel.LookIn):
             self.qFileDialogUi.lookInLabel.setText(text)
-        elif label == RealQFileDialog.DialogLabel.FileName:
+        elif int_label == sip_enum_to_int(RealQFileDialog.DialogLabel.FileName):
             self.qFileDialogUi.fileNameLabel.setText(text)
-        elif label == RealQFileDialog.DialogLabel.FileType:
+        elif int_label == sip_enum_to_int(RealQFileDialog.DialogLabel.FileType):
             self.qFileDialogUi.fileTypeLabel.setText(text)
-        elif label == RealQFileDialog.DialogLabel.Accept:
+        elif int_label == sip_enum_to_int(RealQFileDialog.DialogLabel.Accept):
             q = self._public
-            if q.acceptMode() == RealQFileDialog.AcceptMode.AcceptOpen:
+            if q.acceptMode() == sip_enum_to_int(RealQFileDialog.AcceptMode.AcceptOpen):
                 button: QPushButton = self.qFileDialogUi.buttonBox.button(QDialogButtonBox.Open)
             else:
                 button = self.qFileDialogUi.buttonBox.button(QDialogButtonBox.Save)
-            if button:
+            if button is not None:
                 button.setText(text)
-        elif label == RealQFileDialog.DialogLabel.Reject:
+        elif int_label == sip_enum_to_int(RealQFileDialog.DialogLabel.Reject):
             button = self.qFileDialogUi.buttonBox.button(QDialogButtonBox.Cancel)
-            if button:
+            if button is not None:
                 button.setText(text)
 
     def _q_goToUrl(self, url: QUrl) -> None:
@@ -1489,7 +1458,7 @@ class QFileDialogPrivate:
         """
         q = self._public
         dirFilters = q.filter()
-        dirFilters ^= QDir.Filter.Hidden
+        dirFilters ^= sip_enum_to_int(QDir.Filter.Hidden)
         q.setFilter(dirFilters)
 
     def _q_rowsInserted(self, parent: QModelIndex) -> None:
@@ -1497,6 +1466,7 @@ class QFileDialogPrivate:
 
         This provides a default selection in cases where the view was previously empty.
         """
+        assert self.qFileDialogUi is not None, f"{type(self).__name__}._q_rowsInserted: {type(self.qFileDialogUi).__name__} is None"
         if (
             not self.qFileDialogUi.treeView
             or parent != self.qFileDialogUi.treeView.rootIndex()
@@ -1520,8 +1490,12 @@ class QFileDialogPrivate:
         after file renames, leading to confusion and potential errors in file operations.
         """
         q = self._public
-        fileMode = q.fileMode()
-        if fileMode == RealQFileDialog.FileMode.Directory and path == self.rootPath() and self.lineEdit().text() == oldName:
+        fileMode = sip_enum_to_int(q.fileMode())
+        if (
+            fileMode == sip_enum_to_int(RealQFileDialog.FileMode.Directory)
+            and path == self.rootPath()
+            and self.lineEdit().text() == oldName
+        ):
             self.lineEdit().setText(newName)
 
     def _q_emitUrlSelected(self, file: QUrl) -> None:
@@ -1597,9 +1571,9 @@ class QFileDialogPrivate:
         assert self.model is not None, f"{type(self).__name__}._q_selectionChanged: {type(self.model).__name__} is None"
         assert self.qFileDialogUi is not None, f"{type(self.qFileDialogUi).__name__}._q_selectionChanged: {type(self.qFileDialogUi).__name__} is None"
         q = self._public
-        file_mode: RealQFileDialog.FileMode = q.fileMode()
+        file_mode: int = sip_enum_to_int(q.fileMode())
         indexes: list[QModelIndex] = self.qFileDialogUi.listView.selectionModel().selectedRows()
-        strip_dirs: bool = file_mode != RealQFileDialog.Directory
+        strip_dirs: bool = file_mode != sip_enum_to_int(RealQFileDialog.FileMode.Directory)
 
         all_files: list[str] = []
         for index in indexes:
@@ -1629,6 +1603,7 @@ class QFileDialogPrivate:
 
         q = self._public
         if self.model.isDir(index):
+            assert self.qFileDialogUi is not None, f"{type(self).__name__}._q_enterDirectory: {type(self.qFileDialogUi).__name__} is None"
             self.qFileDialogUi.treeView.setCurrentIndex(index)
             filePath = self.model.filePath(index)
             q.setDirectory(filePath)
@@ -1675,15 +1650,9 @@ class QFileDialogPrivate:
         """
         q = self._public
         if visible:
-            if (
-                q.testAttribute(Qt.WidgetAttribute.WA_WState_ExplicitShowHide)
-                and not q.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
-            ):
+            if q.testAttribute(Qt.WidgetAttribute.WA_WState_ExplicitShowHide) and not q.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden):
                 return
-        elif (
-            q.testAttribute(Qt.WidgetAttribute.WA_WState_ExplicitShowHide)
-            and q.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
-        ):
+        elif q.testAttribute(Qt.WidgetAttribute.WA_WState_ExplicitShowHide) and q.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden):
             return
 
         if self.canBeNativeDialog():
@@ -1741,12 +1710,8 @@ class QFileDialogPrivate:
         if lastVisited:
             q.setDirectoryUrl(QUrl(lastVisited))
 
-        viewMode = (
-            RealQFileDialog.ViewMode.Detail
-            if settings.value("viewMode") == "Detail"
-            else RealQFileDialog.ViewMode.List
-        )
-        if viewMode:
+        viewMode = RealQFileDialog.ViewMode.Detail if settings.value("viewMode") == "Detail" else RealQFileDialog.ViewMode.List
+        if sip_enum_to_int(viewMode):
             q.setViewMode(viewMode)
 
         self.sidebarUrls: list[QUrl] = [QUrl(url) for url in settings.value("shortcuts", [])]
@@ -1875,7 +1840,7 @@ class QFileDialogPrivate:
             self.setLabelTextControl(RealQFileDialog.FileName, self.options.labelText(self.options.FileName))
         else:
             q = self._public
-            if q.fileMode() == RealQFileDialog.Directory:
+            if sip_enum_to_int(q.fileMode()) == sip_enum_to_int(RealQFileDialog.FileMode.Directory):
                 self.setLabelTextControl(RealQFileDialog.FileName, self.options.tr("Directory:"))
             else:
                 self.setLabelTextControl(RealQFileDialog.FileName, self.options.tr("File &name:"))
@@ -1933,8 +1898,8 @@ class QFileDialogPrivate:
         If this function is removed, file selections made programmatically
         might not be reflected in native dialogs, causing inconsistencies.
         """
-        #helper = self.platformFileDialogHelper()
-        #if helper and helper.isSupportedUrl(filename):
+        # helper = self.platformFileDialogHelper()
+        # if helper and helper.isSupportedUrl(filename):
         #    helper.selectFile(filename)
         if self.model:
             file_path = filename.toLocalFile()
@@ -1947,8 +1912,8 @@ class QFileDialogPrivate:
 
         Crucial for obtaining the user's file selection from native dialogs.
         """
-        #helper = self.platformFileDialogHelper()
-        #return [QUrl(url) for url in helper.selectedFiles()] if helper else []
+        # helper = self.platformFileDialogHelper()
+        # return [QUrl(url) for url in helper.selectedFiles()] if helper else []
         curView: QAbstractItemView | None = self.currentView()
         if curView is None:
             return []
@@ -2006,7 +1971,6 @@ class QFileDialogPrivate:
         if helper:
             helper.setVisible(visible)
 
-
     def visible_sys(self) -> bool:
         """Retrieves the visibility of the system (native) file dialog.
 
@@ -2056,8 +2020,8 @@ class QFileDialogPrivate:
 
 if __name__ == "__main__":
     from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.qfiledialog import QFileDialog as CustomQFileDialog
+
     app = QApplication(sys.argv)
     dialog = CustomQFileDialog()
     dialog.show()
     sys.exit(app.exec())
-
