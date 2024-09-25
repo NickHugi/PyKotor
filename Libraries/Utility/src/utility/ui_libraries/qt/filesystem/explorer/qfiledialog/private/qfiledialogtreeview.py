@@ -9,7 +9,7 @@ from qtpy.QtWidgets import QAbstractItemView, QTreeView
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QKeyEvent
-    from qtpy.QtWidgets import QFileDialog
+    from qtpy.QtWidgets import QWidget
 
     from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qfiledialog import QFileDialogPrivate
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class QFileDialogTreeView(QTreeView):
     def __init__(
         self,
-        parent: QFileDialog,
+        parent: QWidget,
     ):
         super().__init__(parent)
         self._private: QFileDialogPrivate | None = None

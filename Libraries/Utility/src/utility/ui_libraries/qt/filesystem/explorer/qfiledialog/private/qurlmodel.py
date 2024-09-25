@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from qtpy.QtCore import QDir, QFileInfo, QMimeData, QModelIndex, QOperatingSystemVersion, QSize, QUrl, Qt
 from qtpy.QtGui import QDragEnterEvent, QIcon, QStandardItemModel
@@ -23,9 +23,9 @@ class QUrlModel(QStandardItemModel):
         self.invalidUrls: list[QUrl] = []
 
     def mimeTypes(self) -> list[str]:
-        return super().mimeTypes()
+        return ["text/uri-list"]
 
-    def mimeData(self, indexes: list[QModelIndex]) -> QMimeData:
+    def mimeData(self, indexes: Iterable[QModelIndex]) -> QMimeData:
         """Create a QMimeData object with URLs for drag and drop.
 
         If indexes are valid: Returns QMimeData with URLs.
@@ -66,7 +66,10 @@ class QUrlModel(QStandardItemModel):
         return True
 
     def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
-        return super().dropMimeData(data, action, row, column, parent)
+        if self.mimeTypes()[0] not in data.formats():
+            return False
+        self.addUrls(data.urls(), row)
+        return True
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         """Get item flags for the item at thegiven index.
@@ -116,9 +119,9 @@ class QUrlModel(QStandardItemModel):
 
         dir_index: QModelIndex = self.fileSystemModel.index(url.toLocalFile())
         if self.showFullPath:
-            super().setData(index, self.fileSystemModel.data(dir_index, QFileSystemModel.FilePathRole))
+            super().setData(index, QDir.toNativeSeparators(self.fileSystemModel.data(dir_index, QFileSystemModel.FilePathRole)))
         else:
-            super().setData(index, self.fileSystemModel.data(dir_index, QFileSystemModel.FilePathRole), Qt.ItemDataRole.ToolTipRole)
+            super().setData(index, QDir.toNativeSeparators(self.fileSystemModel.data(dir_index, QFileSystemModel.FilePathRole)), Qt.ItemDataRole.ToolTipRole)
             super().setData(index, self.fileSystemModel.data(dir_index))
 
         super().setData(index, self.fileSystemModel.data(dir_index, Qt.ItemDataRole.DecorationRole), Qt.ItemDataRole.DecorationRole)
@@ -131,11 +134,11 @@ class QUrlModel(QStandardItemModel):
         Always: Clears existing data and adds new URLs.
         """
         self.removeRows(0, self.rowCount())
-        self.invalidUrls = []
         self.watching = []
+        self.invalidUrls = []
         self.addUrls(urls, 0)
 
-    def addUrls(self, urls: list[QUrl], row: int = -1, move: bool = True) -> None:
+    def addUrls(self, urls: list[QUrl], row: int = -1, move: bool = True) -> None:  # noqa: FBT001, FBT002
         """Add urls list into the list at row. If move then move existing ones to row.
 
         Args:
