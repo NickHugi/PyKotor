@@ -180,7 +180,7 @@ class Difference:
             old_value (object): The value from the original GFFStruct at the specified path.
             new_value (object): The value from the compared GFFStruct at the specified path.
         """
-        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
+        self.path: PureWindowsPath = PureWindowsPath(path)
         self.old_value: object = old_value
         self.new_value: object = new_value
 

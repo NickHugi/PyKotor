@@ -3,7 +3,7 @@ from __future__ import annotations
 from setuptools import find_packages, setup
 
 setup(
-    name="holo-patcher",
+    name="holopatcher",
     version="1.0.0",
     description="Holo Patcher",
     packages=find_packages(where="src"),
@@ -17,7 +17,7 @@ setup(
 from setuptools import find_packages, setup
 
 setup(
-    name="holo-patcher",
+    name="holopatcher",
     version="1.0.0",
     description="Holo Patcher",
     packages=find_packages(where="src"),

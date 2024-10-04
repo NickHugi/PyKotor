@@ -66,9 +66,9 @@ class ModInstaller:
             - Handle legacy changes ini path syntax (changes_ini_path used to just be a filename)
             - Initialize other attributes.
         """
-        self.game_path: CaseAwarePath = CaseAwarePath.pathify(game_path)
-        self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
-        self.changes_ini_path: CaseAwarePath = CaseAwarePath.pathify(changes_ini_path)
+        self.game_path: CaseAwarePath = CaseAwarePath(game_path)
+        self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
+        self.changes_ini_path: CaseAwarePath = CaseAwarePath(changes_ini_path)
         self.tslpatchdata_path: CaseAwarePath | None = None
         self.log: PatchLogger = logger or PatchLogger()
         self.game: Game | None = Installation.determine_game(self.game_path)

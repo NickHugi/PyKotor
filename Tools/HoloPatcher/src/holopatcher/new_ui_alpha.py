@@ -1198,7 +1198,7 @@ class HoloPatcher(toga.App):
             return
 
         try:
-            path: Path = Path.pathify(path_arg)
+            path: Path = Path(path_arg)
 
             def task(app: toga.App | None = None, **kwargs) -> bool:
                 extra_msg: str = ""
@@ -1596,7 +1596,7 @@ class HoloPatcher(toga.App):
 
     @property
     def log_file_path(self) -> Path:
-        return Path.pathify(self.mod_path) / "installlog.txt"
+        return Path(self.mod_path) / "installlog.txt"
 
     async def display_confirm_dialog(self, title: str, message: str) -> bool:
         """Utility to display error dialog on the main thread."""

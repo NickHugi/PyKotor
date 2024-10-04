@@ -9,7 +9,8 @@ from pathlib import Path
 from pykotor.common.language import Language
 from pykotor.font.draw import write_bitmap_font, write_bitmap_fonts
 
-os.chdir("./Libraries/PyKotorFont")
+if __name__ == "__main__":
+    os.chdir("./Libraries/PyKotorFont")
 FONT_PATH_FILE = Path("tests/files/roboto/Roboto-Black.ttf")
 CHINESE_FONT_PATH_FILE = Path("tests/files/chinese_simplified_ttf/Unifontexmono-AL3RA.ttf")
 THAI_FONT_PATH_FILE = Path("tests/files/TH Sarabun New Regular/TH Sarabun New Regular.ttf").resolve()

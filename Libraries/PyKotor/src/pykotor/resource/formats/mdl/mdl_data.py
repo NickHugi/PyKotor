@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import SurfaceMaterial, Vector3, Vector4
@@ -47,16 +47,10 @@ class MDL:
         Returns:
         -------
             pick: The node with the matching name or None.
-
-        Processing Logic:
-        ----------------
-            - Traverse the tree depth-first by recursively adding child nodes to a stack.
-            - Check each node's name against the target name.
-            - Return the matching node or None if not found.
         """
-        pick = None
+        pick: MDLNode | None = None
 
-        nodes = [self.root]
+        nodes: list[MDLNode] = [self.root]
         while nodes:
             node = nodes.pop()
             if node.name == node_name:
@@ -78,15 +72,6 @@ class MDL:
         Returns:
         -------
             list[MDLNode]: A list of all nodes in the tree
-
-        Processing Logic:
-        ----------------
-            - Initialize an empty list to store nodes
-            - Initialize a scan list with the root node
-            - Pop a node from scan and add it to nodes list
-            - Extend scan with children of the popped node
-            - Repeat until scan is empty
-            - Return the nodes list with all nodes
         """
         nodes: list[MDLNode] = []
         scan: list[MDLNode] = [self.root]
@@ -109,14 +94,6 @@ class MDL:
         Returns:
         -------
             parent: The parent node of the given child or None if not found
-
-        Processing Logic:
-        ----------------
-            - Get all nodes in the scene
-            - Iterate through all nodes
-            - Check if the child is in the node's children
-            - If found, set the parent variable to that node
-            - Return the parent node or None if not found.
         """
         all_nodes: list[MDLNode] = self.all_nodes()
         parent: MDLNode | None = None
@@ -138,13 +115,6 @@ class MDL:
         Returns:
         -------
             Vector3: The global position of the node
-
-        Processing Logic:
-        ----------------
-            - Traverse up the parent chain of the node and add each parent's position to a running total
-            - Start with the node's local position
-            - Keep traversing up parents until the parent is None (root node reached)
-            - Return the final global position
         """
         position: Vector3 = node.position
         parent: MDLNode | None = self.find_parent(node)
@@ -166,13 +136,6 @@ class MDL:
         Returns:
         -------
             MDLNode: The node with matching id
-
-        Processing Logic:
-        ----------------
-            - Iterate through all nodes in the graph
-            - Check if current node id matches argument node id
-            - Return node if id matches
-            - Raise error if no matching node found.
         """
         for node in self.all_nodes():
             if node.node_id == node_id:
@@ -191,13 +154,6 @@ class MDL:
         Returns:
         -------
             set[str]: A set containing all unique texture names used in meshes
-
-        Processing Logic:
-        ----------------
-            - Iterate through all nodes in the scene
-            - Check if the node has a mesh and the mesh has a valid texture name
-            - Add the texture name to a set to eliminate duplicates
-            - Return the final set of unique texture names.
         """
         return {
             node.mesh.texture_1
@@ -217,18 +173,15 @@ class MDL:
         Returns:
         -------
             set[str]: A set of all lightmap texture names used in nodes
-
-        Processing Logic:
-        ----------------
-            - Iterate through all nodes in the scene
-            - Check if the node has a mesh and a lightmap texture
-            - Add the lightmap texture to the return set if it is not empty.
         """
         return {
             node.mesh.texture_2
             for node in self.all_nodes()
             if (node.mesh and node.mesh.texture_2 != "NULL" and node.mesh.texture_2)
         }
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self.name!r}, supermodel={self.supermodel!r})"
 
 
 # region Animation Data
@@ -255,22 +208,17 @@ class MDLAnimation:
         Returns:
         -------
             list[MDLNode]: A list containing all nodes in the tree
-
-        Processing Logic:
-        ----------------
-            - Initialize an empty list to store nodes and a scan list containing just the root node
-            - Pop a node from scan and append it to nodes list
-            - Extend scan with children of the popped node
-            - Repeat until scan is empty
-            - Return the nodes list containing all nodes.
         """
-        nodes = []
-        scan = [self.root]
+        nodes: list[MDLNode] = []
+        scan: list[MDLNode] = [self.root]
         while scan:
             node = scan.pop()
             nodes.append(node)
             scan.extend(node.children)
         return nodes
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self.name!r}, root_model={self.root_model!r}, anim_length={self.anim_length!r}, transition_length={self.transition_length!r})"
 
 
 class MDLEvent:
@@ -285,7 +233,7 @@ class MDLEvent:
 
 
 # region Node Headers
-class MDLNodeFlags(IntEnum):
+class MDLNodeFlags(IntFlag):
     HEADER = 0x00000001
     LIGHT = 0x00000002
     EMITTER = 0x00000004
@@ -325,16 +273,6 @@ class MDLNode:
         Args:
         ----
             self: The MDLNode object being initialized
-
-        Processing Logic:
-        ----------------
-            - Sets the children list to an empty list
-            - Sets the controllers list to an empty list
-            - Sets the name to an empty string
-            - Sets the node ID to -1
-            - Sets the position to the null vector
-            - Sets the orientation to identity
-            - Sets all component references to None.
         """
         self.children: list[MDLNode] = []
         self.controllers: list[MDLController] = []
@@ -373,7 +311,7 @@ class MDLNode:
             - Recursively call descendants on the child to get its descendants and extend the ancestors list
             - Return the final ancestors list containing the node and all its descendants.
         """
-        ancestors = []
+        ancestors: list[MDLNode] = []
         for child in self.children:
             ancestors.append(child)
             ancestors.extend(child.descendants())
@@ -392,18 +330,14 @@ class MDLNode:
         Returns:
         -------
             MDLNode: Child node with matching name
-
-        Processing Logic:
-        ----------------
-            - Iterate through list of children nodes
-            - Check if child name matches name argument
-            - If match found, return child node
-            - If no match, raise KeyError.
         """
         for child in self.children:
             if child.name == name:
                 return child
         raise KeyError
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self.name!r}, node_id={self.node_id!r})"
 
 
 class MDLLight:
@@ -423,7 +357,7 @@ class MDLLight:
     def __init__(
         self,
     ):
-        # TODO: Make enums, check if bools, docs, merge flare data into class
+        # TODO(NickHugi): Make enums, check if bools, docs, merge flare data into class
         self.flare_radius: float = 0.0
         self.light_priority: int = 0
         self.ambient_only: int = 0
@@ -431,10 +365,13 @@ class MDLLight:
         self.shadow: int = 0
         self.flare: int = 0
         self.fading_light: int = 0
-        self.flare_sizes: list = []
-        self.flare_positions: list = []
-        self.flare_color_shifts: list = []
-        self.flare_textures: list = []
+        self.flare_sizes: list[float] = []
+        self.flare_positions: list[float] = []
+        self.flare_color_shifts: list[float] = []
+        self.flare_textures: list[str] = []
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(flare_radius={self.flare_radius!r}, light_priority={self.light_priority!r}, ambient_only={self.ambient_only!r}, dynamic_type={self.dynamic_type!r}, shadow={self.shadow!r}, flare={self.flare!r}, fading_light={self.fading_light!r})"
 
 
 class MDLEmitter:
@@ -465,7 +402,7 @@ class MDLEmitter:
     def __init__(
         self,
     ):
-        # TODO: Make enums, check if bools, docs, separate flags into booleans
+        # TODO(NickHugi): Make enums, check if bools, docs, separate flags into booleans
         self.dead_space: float = 0.0
         self.blast_radius: float = 0.0
         self.blast_length: float = 0.0
@@ -502,6 +439,9 @@ class MDLReference:
         # TODO: docs
         self.model: str = ""
         self.reattachable: bool = False
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(model={self.model!r}, reattachable={self.reattachable!r})"
 
 
 class MDLMesh:
@@ -550,9 +490,8 @@ class MDLMesh:
         self.dirt_coordinate_space: int = 0
         self.hide_in_hologram: bool = False
 
-    def gen_normals(
-        self,
-    ): ...
+    def gen_normals(self):
+        ...
 
 
 class MDLSkin:
@@ -561,7 +500,7 @@ class MDLSkin:
     def __init__(
         self,
     ):
-        self.bone_indices: tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        self.bone_indices: tuple[int, ...] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.qbones: list[Vector3] = []
         self.tbones: list[Vector3] = []
         self.bonemap: list[int] = []
@@ -569,16 +508,51 @@ class MDLSkin:
         self.vertex_bones: list[MDLBoneVertex] = []
 
 
+class MDLConstraint:
+    """Constraint data that can be attached to a node."""
+    def __init__(
+        self,
+    ):
+        self.name: str = ""
+        self.type: int = 0
+        self.target: int = 0
+        self.target_node: int = 0
+
+
 class MDLDangly:
     """Dangly data that can be attached to a node."""
+
+    def __init__(
+        self,
+    ):
+        self.constraints: list[MDLConstraint] = []
+        self.verts: list[Vector3] = []
+        self.verts_original: list[Vector3] = []
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(constraints={self.constraints!r}, verts={self.verts!r}, verts_original={self.verts_original!r})"
+
 
 
 class MDLWalkmesh:
     """AABB data that can be attached to a node."""
+    def __init__(
+        self,
+    ):
+        self.aabbs: list[MDLNode] = []
 
 
 class MDLSaber:
     """Saber data that can be attached to a node."""
+    def __init__(
+        self,
+    ):
+        self.saber_type: int = 0
+        self.saber_color: int = 0
+        self.saber_length: float = 0.0
+        self.saber_width: float = 0.0
+        self.saber_flare_color: int = 0
+        self.saber_flare_radius: float = 0.0
 
 
 # endregion
@@ -591,6 +565,9 @@ class MDLBoneVertex:
     ):
         self.vertex_weights: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
         self.vertex_indices: tuple[float, float, float, float] = (-1.0, -1.0, -1.0, -1.0)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(vertex_weights={self.vertex_weights!r}, vertex_indices={self.vertex_indices!r})"
 
 
 class MDLFace:
@@ -629,16 +606,23 @@ class MDLController:
 
     def __init__(
         self,
+        controller_type: MDLControllerType,
+        rows: list[MDLControllerRow],
     ):
-        self.controller_type: MDLControllerType = MDLControllerType.INVALID
-        self.rows: list[MDLControllerRow] = []
+        self.controller_type: MDLControllerType = controller_type
+        self.rows: list[MDLControllerRow] = rows
+
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}(controller_type={self.controller_type!r}, rows={self.rows!r})"
 
 
 class MDLControllerRow:
     def __init__(
         self,
-        time,
-        data,
+        time: float,
+        data: list[float],
     ):
         self.time: float = time
         self.data: list[float] = data
@@ -646,7 +630,7 @@ class MDLControllerRow:
     def __repr__(
         self,
     ):
-        return f"MDLControllerRow({self.time}, {self.data})"
+        return f"{self.__class__.__name__}({self.time!r}, {self.data!r})"
 
     def __str__(
         self,

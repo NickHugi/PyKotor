@@ -4,16 +4,24 @@ import subprocess
 import sys
 
 
-def run_command(command):
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    stdout, stderr = process.communicate()
+def run_command(command: str) -> str:
+    """Run a command and return the output."""
+    print(f"Running command: {command}")
+    process = subprocess.run(  # noqa: S603
+        command,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
     if process.returncode != 0:
         print(f"Error executing command: {command}")
-        print(stderr.decode())
+        print(process.stderr)
         sys.exit(1)
-    return stdout.decode()
+    return process.stdout
+
 
 def setup_dev_env():
+    """Setup the development environment."""
     # Install main package in editable mode
     run_command("pip install -e .")
 
@@ -32,6 +40,7 @@ def setup_dev_env():
     run_command("pip install -e Tools/BatchPatcher")
 
     print("Development environment setup complete.")
+
 
 if __name__ == "__main__":
     setup_dev_env()

@@ -140,7 +140,7 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream = Path.pathify(path).open("rb")
+        stream = Path(path).open("rb")
         instance = cls.from_stream(stream, offset, size)
         if instance._stream is not stream:
             stream.close()
@@ -215,7 +215,7 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        with Path.pathify(path).open("rb") as reader:
+        with Path(path).open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
 
@@ -769,7 +769,7 @@ class BinaryWriter(ABC):
         -------
             A new BinaryWriter instance.
         """
-        return BinaryWriterFile(Path.pathify(path).open("wb"))
+        return BinaryWriterFile(Path(path).open("wb"))
 
     @classmethod
     def to_bytearray(
@@ -823,7 +823,7 @@ class BinaryWriter(ABC):
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        with Path.pathify(path).open("wb") as file:
+        with Path(path).open("wb") as file:
             file.write(data)
 
     @abstractmethod

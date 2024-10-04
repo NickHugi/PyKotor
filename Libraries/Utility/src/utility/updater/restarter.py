@@ -42,7 +42,7 @@ class Restarter:
         logger: Logger | None = None,
     ):
         self.log = logger or RobustLogger()
-        self.current_app: Path = Path.pathify(current_app)
+        self.current_app: Path = Path(current_app)
         self.log.debug("Current App: %s resolved to %s", current_app, self.current_app)
         if is_frozen() and not self.current_app.safe_exists():
             raise ValueError(f"Bad path to current_app provided to Restarter: '{self.current_app}'")
@@ -55,7 +55,7 @@ class Restarter:
         self.data_dirpath = Path(self.data_dir.name)
         self.log.debug("Restart script dir: %s", self.data_dirpath)
         self.exithook = exithook
-        self.updated_app: Path = Path.pathify(updated_app)
+        self.updated_app: Path = Path(updated_app)
         self.log.debug("Update path: %s", self.updated_app)
         if not self.updated_app.exists():
             self.updated_app = self.updated_app.joinpath(self.updated_app.name)

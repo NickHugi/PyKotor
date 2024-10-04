@@ -124,7 +124,7 @@ class ModificationsNSS(PatcherModifications):
                 source.value,
                 game,
                 [],  # [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
-                library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
+                library_lookup=[CaseAwarePath(self.temp_script_folder)],
             )
         except EntryPointError as e:
             logger.add_note(str(e))

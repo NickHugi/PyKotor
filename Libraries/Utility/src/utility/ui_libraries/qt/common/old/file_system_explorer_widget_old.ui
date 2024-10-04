@@ -1,0 +1,682 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>FileSystemExplorerWidget</class>
+ <widget class="QMainWindow" name="FileSystemExplorerWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>914</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>File Explorer</string>
+  </property>
+  <widget class="QWidget" name="central_widget">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item>
+     <widget class="QWidget" name="toolbar_widget" native="true">
+      <property name="mouseTracking">
+       <bool>false</bool>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0,0,0,0,0,0,0,1">
+       <property name="spacing">
+        <number>6</number>
+       </property>
+       <property name="leftMargin">
+        <number>6</number>
+       </property>
+       <property name="topMargin">
+        <number>6</number>
+       </property>
+       <property name="rightMargin">
+        <number>6</number>
+       </property>
+       <property name="bottomMargin">
+        <number>6</number>
+       </property>
+       <item>
+        <widget class="QToolButton" name="back_button">
+         <property name="toolTip">
+          <string>Back</string>
+         </property>
+         <property name="autoDefault">
+          <bool>false</bool>
+         </property>
+         <property name="default">
+          <bool>false</bool>
+         </property>
+         <property name="flat">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="forward_button">
+         <property name="toolTip">
+          <string>Forward</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="history_expander">
+         <property name="font">
+          <font>
+           <family>MS Serif</family>
+          </font>
+         </property>
+         <property name="mouseTracking">
+          <bool>true</bool>
+         </property>
+         <property name="whatsThis">
+          <string>History Expander</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>8</width>
+           <height>8</height>
+          </size>
+         </property>
+         <property name="shortcut">
+          <string/>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonIconOnly</enum>
+         </property>
+         <property name="autoRaise">
+          <bool>false</bool>
+         </property>
+         <property name="arrowType">
+          <enum>Qt::DownArrow</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="up_button">
+         <property name="toolTip">
+          <string>Up</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="current_folder_label">
+         <property name="text">
+          <string>This PC</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>></string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="address_bar">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="font">
+          <font>
+           <family>MS Shell Dlg 2</family>
+           <pointsize>8</pointsize>
+           <weight>50</weight>
+           <italic>false</italic>
+           <bold>false</bold>
+           <underline>false</underline>
+           <strikeout>false</strikeout>
+           <stylestrategy>PreferDefault</stylestrategy>
+           <kerning>false</kerning>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>IBeamCursor</cursorShape>
+         </property>
+         <property name="mouseTracking">
+          <bool>true</bool>
+         </property>
+         <property name="whatsThis">
+          <string>Address Bar</string>
+         </property>
+         <property name="autoFillBackground">
+          <bool>false</bool>
+         </property>
+         <property name="maxLength">
+          <number>32767</number>
+         </property>
+         <property name="echoMode">
+          <enum>QLineEdit::Normal</enum>
+         </property>
+         <property name="cursorPosition">
+          <number>0</number>
+         </property>
+         <property name="dragEnabled">
+          <bool>true</bool>
+         </property>
+         <property name="placeholderText">
+          <string/>
+         </property>
+         <property name="cursorMoveStyle">
+          <enum>Qt::LogicalMoveStyle</enum>
+         </property>
+         <property name="clearButtonEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="go_button">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="whatsThis">
+          <string>Go button</string>
+         </property>
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
+         <property name="toolTip">
+          <string>Go</string>
+         </property>
+         <property name="default">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="search_bar">
+         <property name="placeholderText">
+          <string>Search</string>
+         </property>
+         <property name="styleSheet">
+          <string>QLineEdit {
+    border: 1px solid #a0a0a0;
+    border-radius: 2px;
+    padding: 2px;
+}</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="breadcrumb_widget" native="true">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="leftMargin">
+        <number>6</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>6</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QWidget" name="breadcrumb_bar" native="true">
+         <layout class="QHBoxLayout" name="breadcrumbLayout">
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QSplitter" name="splitter">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QTreeView" name="navigation_pane">
+       <property name="mouseTracking">
+        <bool>true</bool>
+       </property>
+       <property name="acceptDrops">
+        <bool>true</bool>
+       </property>
+       <property name="sizeAdjustPolicy">
+        <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+       </property>
+       <property name="tabKeyNavigation">
+        <bool>true</bool>
+       </property>
+       <property name="showDropIndicator" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="dragEnabled">
+        <bool>false</bool>
+       </property>
+       <property name="dragDropOverwriteMode">
+        <bool>true</bool>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::DropOnly</enum>
+       </property>
+       <property name="defaultDropAction">
+        <enum>Qt::TargetMoveAction</enum>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::SingleSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="sortingEnabled">
+        <bool>true</bool>
+       </property>
+       <property name="animated">
+        <bool>true</bool>
+       </property>
+       <property name="wordWrap">
+        <bool>false</bool>
+       </property>
+       <attribute name="headerVisible">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="headerMinimumSectionSize">
+        <number>39</number>
+       </attribute>
+       <attribute name="headerShowSortIndicator" stdset="0">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="headerStretchLastSection">
+        <bool>true</bool>
+       </attribute>
+      </widget>
+      <widget class="QListView" name="file_list_view">
+       <property name="cursor" stdset="0">
+        <cursorShape>ArrowCursor</cursorShape>
+       </property>
+       <property name="mouseTracking">
+        <bool>true</bool>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::StrongFocus</enum>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
+       <property name="acceptDrops">
+        <bool>true</bool>
+       </property>
+       <property name="whatsThis">
+        <string>Main File Area</string>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::WinPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Plain</enum>
+       </property>
+       <property name="lineWidth">
+        <number>1</number>
+       </property>
+       <property name="midLineWidth">
+        <number>0</number>
+       </property>
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAsNeeded</enum>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAsNeeded</enum>
+       </property>
+       <property name="tabKeyNavigation">
+        <bool>true</bool>
+       </property>
+       <property name="showDropIndicator" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="dragEnabled">
+        <bool>true</bool>
+       </property>
+       <property name="dragDropOverwriteMode">
+        <bool>true</bool>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::DragDrop</enum>
+       </property>
+       <property name="defaultDropAction">
+        <enum>Qt::MoveAction</enum>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectItems</enum>
+       </property>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menu_bar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>914</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_file">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="action_new_window"/>
+    <addaction name="action_open_windows_terminal"/>
+    <addaction name="separator"/>
+    <addaction name="action_close"/>
+    <addaction name="separator"/>
+    <addaction name="action_properties"/>
+    <addaction name="separator"/>
+    <addaction name="action_options"/>
+    <addaction name="action_exit"/>
+   </widget>
+   <widget class="QMenu" name="menu_edit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="action_cut"/>
+    <addaction name="action_copy"/>
+    <addaction name="action_paste"/>
+    <addaction name="action_delete"/>
+    <addaction name="separator"/>
+    <addaction name="action_select_all"/>
+    <addaction name="action_invert_selection"/>
+    <addaction name="action_select_none"/>
+   </widget>
+   <widget class="QMenu" name="menu_view">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <widget class="QMenu" name="menu_layout">
+     <property name="title">
+      <string>&amp;Layout</string>
+     </property>
+     <addaction name="action_extra_large_icons"/>
+     <addaction name="action_large_icons"/>
+     <addaction name="action_medium_icons"/>
+     <addaction name="action_small_icons"/>
+     <addaction name="action_list"/>
+     <addaction name="action_details"/>
+     <addaction name="action_tiles"/>
+     <addaction name="action_content"/>
+    </widget>
+    <addaction name="action_refresh"/>
+    <addaction name="separator"/>
+    <addaction name="menu_layout"/>
+    <addaction name="action_show_hidden_items"/>
+   </widget>
+   <widget class="QMenu" name="menu_tools">
+    <property name="title">
+     <string>&amp;Tools</string>
+    </property>
+    <addaction name="action_folder_options"/>
+   </widget>
+   <widget class="QMenu" name="menu_help">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="action_about"/>
+   </widget>
+   <addaction name="menu_file"/>
+   <addaction name="menu_edit"/>
+   <addaction name="menu_view"/>
+   <addaction name="menu_tools"/>
+   <addaction name="menu_help"/>
+  </widget>
+  <widget class="QToolBar" name="main_tool_bar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <widget class="QStatusBar" name="status_bar">
+   <widget class="QLabel" name="status_items">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>100</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0 items</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="status_size">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>100</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0 bytes</string>
+    </property>
+   </widget>
+  </widget>
+  <action name="action_back">
+   <property name="text">
+    <string>Back</string>
+   </property>
+  </action>
+  <action name="action_forward">
+   <property name="text">
+    <string>Forward</string>
+   </property>
+  </action>
+  <action name="action_up">
+   <property name="text">
+    <string>Up</string>
+   </property>
+  </action>
+  <action name="action_cut">
+   <property name="text">
+    <string>Cut</string>
+   </property>
+  </action>
+  <action name="action_copy">
+   <property name="text">
+    <string>Copy</string>
+   </property>
+  </action>
+  <action name="action_paste">
+   <property name="text">
+    <string>Paste</string>
+   </property>
+  </action>
+  <action name="action_delete">
+   <property name="text">
+    <string>Delete</string>
+   </property>
+  </action>
+  <action name="action_properties">
+   <property name="text">
+    <string>Properties</string>
+   </property>
+  </action>
+  <action name="action_new_window">
+   <property name="text">
+    <string>New Window</string>
+   </property>
+  </action>
+  <action name="action_exit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="action_select_all">
+   <property name="text">
+    <string>Select All</string>
+   </property>
+  </action>
+  <action name="action_refresh">
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+  </action>
+  <action name="action_large_icons">
+   <property name="text">
+    <string>Large icons</string>
+   </property>
+  </action>
+  <action name="action_list">
+   <property name="text">
+    <string>List</string>
+   </property>
+  </action>
+  <action name="action_details">
+   <property name="text">
+    <string>Details</string>
+   </property>
+  </action>
+  <action name="action_options">
+   <property name="text">
+    <string>Options</string>
+   </property>
+  </action>
+  <action name="action_about">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+  <action name="action_open_windows_terminal">
+   <property name="text">
+    <string>Open Windows Terminal</string>
+   </property>
+  </action>
+  <action name="action_close">
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </action>
+  <action name="action_invert_selection">
+   <property name="text">
+    <string>Invert Selection</string>
+   </property>
+  </action>
+  <action name="action_select_none">
+   <property name="text">
+    <string>Select None</string>
+   </property>
+  </action>
+  <action name="action_extra_large_icons">
+   <property name="text">
+    <string>Extra Large Icons</string>
+   </property>
+  </action>
+  <action name="action_medium_icons">
+   <property name="text">
+    <string>Medium Icons</string>
+   </property>
+  </action>
+  <action name="action_small_icons">
+   <property name="text">
+    <string>Small Icons</string>
+   </property>
+  </action>
+  <action name="action_tiles">
+   <property name="text">
+    <string>Tiles</string>
+   </property>
+  </action>
+  <action name="action_content">
+   <property name="text">
+    <string>Content</string>
+   </property>
+  </action>
+  <action name="action_show_hidden_items">
+   <property name="text">
+    <string>Show Hidden Items</string>
+   </property>
+  </action>
+  <action name="action_folder_options">
+   <property name="text">
+    <string>Folder Options</string>
+   </property>
+  </action>
+</ui>

@@ -109,7 +109,7 @@ def save_profiler_output(
     filepath: os.PathLike | str,
 ):
     profiler.disable()
-    profiler_output_file = Path.pathify(filepath)
+    profiler_output_file = Path(filepath)
     profiler_output_file_str = str(profiler_output_file)
     profiler.dump_stats(profiler_output_file_str)
 

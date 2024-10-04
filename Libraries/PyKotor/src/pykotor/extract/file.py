@@ -41,7 +41,7 @@ class FileResource:
         self._restype: ResourceType = restype
         self._size: int = size
         self._offset: int = offset
-        self._filepath: Path = Path.pathify(filepath)
+        self._filepath: Path = Path(filepath)
 
         self.inside_capsule: bool = is_capsule_file(self._filepath)
         self.inside_bif: bool = is_bif_file(self._filepath)
@@ -101,7 +101,7 @@ class FileResource:
 
     @classmethod
     def from_path(cls, path: os.PathLike | str) -> Self:
-        path_obj: Path = Path.pathify(path)
+        path_obj: Path = Path(path)
         resname, restype = path_obj.stem, ResourceType.from_extension(path_obj.suffix)
         return cls(
             resname=resname,
@@ -520,7 +520,7 @@ class ResourceIdentifier:
             - Handles exceptions during processing
         """
         try:
-            path_obj = PurePath.pathify(file_path)
+            path_obj = PurePath(file_path)
         except Exception:
             return cls("", ResourceType.from_extension(""))
 

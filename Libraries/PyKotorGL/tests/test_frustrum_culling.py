@@ -36,20 +36,21 @@ class TestPlane(unittest.TestCase):
 
     def test_point_in_front_of_plane(self):
         point = vec3(0, 0, 15)
-        assert self.plane.distance_to_point(point) >= 0
+        assert self.plane.distance_to_point(point) >= 0, f"Point {point} is in front of the plane {self.plane}"
 
     def test_point_behind_plane(self):
         point = vec3(0, 0, 5)
-        assert self.plane.distance_to_point(point) < 0
+        assert self.plane.distance_to_point(point) < 0, f"Point {point} is in front of the plane {self.plane}"
 
     def test_point_on_plane(self):
         point = vec3(0, 0, 10)
-        self.assertAlmostEqual(self.plane.distance_to_point(point), 0)
+        assert self.plane.distance_to_point(point) == 0, f"Point {point} is on the plane {self.plane}"
+
 
 class TestFrustum(unittest.TestCase):
     def setUp(self):
         fov = radians(90)
-        aspect_ratio = 16/9
+        aspect_ratio = 16 / 9
         near = 1.0
         far = 100.0
         self.projection_matrix = perspective(fov, aspect_ratio, near, far)
@@ -62,22 +63,23 @@ class TestFrustum(unittest.TestCase):
     def test_point_inside_frustum(self):
         point = vec3(0, 0, 5)
         radius = 1
-        assert self.frustum.is_sphere_visible(point, radius)
+        assert self.frustum.is_sphere_visible(point, radius), f"Point {point} is inside the frustum"
 
     def test_point_outside_frustum(self):
         point = vec3(0, 0, -20)  # behind the camera
         radius = 1
-        assert not self.frustum.is_sphere_visible(point, radius)
+        assert not self.frustum.is_sphere_visible(point, radius), f"Point {point} is inside the frustum"
 
     def test_point_on_near_plane(self):
         point = vec3(0, 0, 9)  # near the near plane
         radius = 1
-        assert self.frustum.is_sphere_visible(point, radius)
+        assert self.frustum.is_sphere_visible(point, radius), f"Point {point} is inside the frustum"
 
     def test_point_on_far_plane(self):
         point = vec3(0, 0, 0)  # near the far plane
         radius = 1
-        assert self.frustum.is_sphere_visible(point, radius)
+        assert self.frustum.is_sphere_visible(point, radius), f"Point {point} is inside the frustum"
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

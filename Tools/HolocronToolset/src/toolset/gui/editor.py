@@ -662,7 +662,7 @@ class Editor(QMainWindow):
         assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
 
         # Determine the physical file and the nested paths.
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(self._filepath)
         nested_paths: list[PurePath] = []
         if is_any_erf_type_file(c_filepath) or is_rim_file(c_filepath):
             nested_paths.append(c_filepath)
@@ -734,7 +734,7 @@ class Editor(QMainWindow):
         assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
 
         erftype: ERFType = ERFType.from_extension(self._filepath)
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(self._filepath)
 
         if c_filepath.is_file():
             erf: ERF = read_erf(c_filepath)
@@ -762,7 +762,7 @@ class Editor(QMainWindow):
 
     def _saveEndsWithOther(self, data: bytes, data_ext: bytes):
         assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(self._filepath)
         with c_filepath.open("wb") as file:
             file.write(data)
 
@@ -846,7 +846,7 @@ class Editor(QMainWindow):
             - Refresh window title
             - Emit loadedFile signal with load details.
         """
-        self._filepath = Path.pathify(filepath)  # pyright: ignore[reportGeneralTypeIssues]
+        self._filepath = Path(filepath)  # pyright: ignore[reportGeneralTypeIssues]
         self._resname = resref
         self._restype = restype
         self._revert = data

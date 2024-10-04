@@ -110,7 +110,7 @@ class RobustTableView(RobustAbstractItemView, QTableView):
             settings_key="horizontalSectionResizeMode",
         )
 
-        self._add_menu_action(actions_menu, "Visible", self.verticalHeader().isVisible, self.verticalHeader().setVisible, "verticalHeaderVisible")
+        self._add_menu_action(actions_menu, "Vertical Header Visible", self.verticalHeader().isVisible, self.verticalHeader().setVisible, "verticalHeaderVisible")
         self._add_exclusive_menu_action(
             settings_menu,
             "Section Resize Mode",

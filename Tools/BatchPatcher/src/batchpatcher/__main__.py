@@ -290,7 +290,7 @@ def patch_nested_gff(
         if sound and sound_str.strip() and sound_str in ALIEN_SOUNDS:
             alien_vo_count += 1
 
-    current_path = PurePath.pathify(current_path or "GFFRoot")
+    current_path = PurePath(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
         if label.lower() == "mod_name":
             continue
@@ -323,7 +323,7 @@ def recurse_through_list(
     made_change: bool = False,
     alien_vo_count: int = -1,
 ) -> tuple[bool, int]:
-    current_path = PurePath.pathify(current_path or "GFFListRoot")
+    current_path = PurePath(current_path or "GFFListRoot")
     for list_index, gff_struct in enumerate(gff_list):
         result_made_change, alien_vo_count = patch_nested_gff(gff_struct, gff_content, gff, current_path / str(list_index), made_change, alien_vo_count)
         made_change |= result_made_change
@@ -725,7 +725,7 @@ def patch_erf_or_rim(
 
 
 def patch_file(file: os.PathLike | str):
-    c_file = Path.pathify(file)
+    c_file = Path(file)
     if c_file in processed_files:
         return
 
@@ -737,7 +737,7 @@ def patch_file(file: os.PathLike | str):
 
 
 def patch_folder(folder_path: os.PathLike | str):
-    c_folderpath = Path.pathify(folder_path)
+    c_folderpath = Path(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)

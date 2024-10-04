@@ -156,7 +156,7 @@ class ModulePieceResource(Capsule):
     ):
         new_cls = cls
         if new_cls is ModulePieceResource:
-            path_obj = CaseAwarePath.pathify(path)
+            path_obj = CaseAwarePath(path)
             piece_info = ModulePieceInfo.from_filename(path_obj.name)
             if piece_info.modtype is KModuleType.DATA:
                 new_cls = ModuleDataPiece
@@ -174,7 +174,7 @@ class ModulePieceResource(Capsule):
         *args,
         **kwargs,
     ):
-        path_obj = CaseAwarePath.pathify(path)
+        path_obj = CaseAwarePath(path)
         self.piece_info: ModulePieceInfo = ModulePieceInfo.from_filename(path_obj.name)
         self.missing_resources: list[FileResource] = []  # TODO(th3w1zard1):
         super().__init__(path_obj, *args, **kwargs)
@@ -393,7 +393,7 @@ class Module:  # noqa: PLR0904
         -------
             The string for the root name of a module.
         """
-        root: str = PurePath.pathify(filepath).stem
+        root: str = PurePath(filepath).stem
         lower_root: str = root.lower()
         root = root[:-2] if lower_root.endswith("_s") else root
         root = root[:-4] if lower_root.endswith("_dlg") else root
@@ -1671,7 +1671,7 @@ class ModuleResource(Generic[T]):
         if filepath is None:
             self._active = next(iter(self._locations), None)
         else:
-            r_filepath = Path.pathify(filepath)
+            r_filepath = Path(filepath)
             if r_filepath not in self._locations:
                 self._locations.append(r_filepath)
             self._active = r_filepath

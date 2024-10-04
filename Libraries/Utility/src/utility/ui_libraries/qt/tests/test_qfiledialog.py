@@ -10,11 +10,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex
 from qtpy.QtCore import (
+    QAbstractItemModel,
     QDir,
     QEventLoop,
     QItemSelectionModel,
+    QModelIndex,
     QObject,
     QSettings,
     QSortFilterProxyModel,
@@ -46,8 +47,8 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qsidebar import QSidebar
-from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.qfiledialog import QFileDialog as PythonQFileDialog
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qsidebar import QSidebar
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.qfiledialog import QFileDialog as PythonQFileDialog
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QAbstractItemModel, QModelIndex, QUrl
@@ -686,15 +687,15 @@ class TestQFileDialog(unittest.TestCase):
         selected_files = fd.selectedFiles()
         selected_files_count = len(selected_files)
         assert selected_files_count == count, f"{selected_files_count} != {count}"
-        
+
         current_dir = fd.directory().path()
         current_dir_index = model.index(current_dir)
-        
+
         if temp_file is None:
             expected_dir = QDir.currentPath()
         else:
             expected_dir = QDir.tempPath()
-        
+
         expected_dir_index = model.index(expected_dir)
         assert current_dir_index == expected_dir_index, f"{current_dir_index} != {expected_dir_index}"
 

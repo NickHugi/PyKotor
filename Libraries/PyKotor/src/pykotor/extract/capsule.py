@@ -51,7 +51,7 @@ class LazyCapsule(FileResource):
             - Reload resources from file.
         """
         ident = ResourceIdentifier.from_path(path)
-        c_filepath = Path.pathify(path)
+        c_filepath = Path(path)
         if not is_capsule_file(c_filepath):
             msg = f"Invalid file extension in capsule filepath '{c_filepath}'."
             raise ValueError(msg)

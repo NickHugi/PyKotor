@@ -6,8 +6,8 @@ import qtpy
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QPoint, QSortFilterProxyModel, QTimer, Qt
-from qtpy.QtGui import QColor, QCursor, QPalette
+from qtpy.QtCore import QPoint, QSize, QSortFilterProxyModel, Qt
+from qtpy.QtGui import QColor, QCursor, QIcon, QPalette
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QAbstractScrollArea,
@@ -26,59 +26,58 @@ from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustBaseWidget
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QAbstractItemModel, QModelIndex
+    from qtpy.QtCore import QAbstractItemModel, QMargins, QModelIndex
     from qtpy.QtGui import QResizeEvent, QWheelEvent
-    from qtpy.QtWidgets import (
-        QAbstractItemDelegate,
-        QVBoxLayout,
-        QWidget,
-    )
+    from qtpy.QtWidgets import QAbstractItemDelegate, QWidget
     from typing_extensions import Literal
-
-
-def add_widgets(menu: QMenu, parent_layout: QVBoxLayout, parent: QWidget | None = None):
-    parent = None if parent is None else parent
-    for action in menu.actions():
-        if action.menu():
-            button = QPushButton(action.text(), parent)
-            button.setCheckable(True)
-            def toggle_submenu(_checked, submenu: QMenu):
-                submenu.exec_(QCursor.pos())
-            button.clicked.connect(lambda _checked, submenu, action=action: action.menu().exec_(QCursor.pos()))
-            parent_layout.addWidget(button)
-        else:
-            button = QPushButton(action.text(), parent)
-            button.clicked.connect(action.trigger)
-            parent_layout.addWidget(button)
 
 
 class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKING else object):
     def __init__(
         self,
         parent: QWidget | None = None,
-        *,
-        settings_name: str | None = None,
-        no_qt_init: bool = False,
+        *args,
+        **kwargs,
     ):
-        super().__init__(parent, settings_name=settings_name, no_qt_init=no_qt_init)
-        self._layout_changed_debounce_timer: QTimer = QTimer(self)
-        self._setup_backup_menu_when_header_hidden()
-        self._initialized = False
+        RobustBaseWidget.__init__(self, parent, *args, **kwargs)
+        self._fix_drawer_button()
+        self.restore_state()
 
-    def setModel(self, model: QAbstractItemModel):
-        super().setModel(model)
-        self._initialized = False
-        self.build_context_menu()  # doesn't actually build the menu, but initializes the settings with this new instance.
-        self._initialized = True
+    def debounce_layout_changed(
+        self,
+        timeout: int = 100,
+        *,
+        pre_change_emit: bool = False,
+    ):
+        self.viewport().update()
+        super().debounce_layout_changed(timeout, pre_change_emit=pre_change_emit)
 
-    def _setup_backup_menu_when_header_hidden(self):
+    def setParent(
+        self,
+        parent: QWidget,
+        f: Qt.WindowFlags | Qt.WindowType | None = None,
+    ) -> QWidget:
+        result = super().setParent(parent) if f is None else super().setParent(parent, f)
+        self.restore_state()
+        return result
+
+    def _create_drawer_button(self):
+        self._robustDrawer = QPushButton(self)
+        self._robustDrawer.setObjectName("_robustDrawer")
+        self._robustDrawer.setFixedSize(20, 20)
+        self._robustDrawer.clicked.connect(lambda _: self.show_header_context_menu())
+        self._robustDrawer.setToolTip("Show context menu")
+
+        # Create QIcon for the drawer button
+        icon = QIcon(QApplication.style().standardIcon(QStyle.SP_ToolBarHorizontalExtensionButton))
+
+        self._robustDrawer.setIcon(icon)
+        self._robustDrawer.setIconSize(QSize(14, 14))
+
+    def _fix_drawer_button(self):
         if not hasattr(self, "_robustDrawer"):
-            self._robustDrawer: QPushButton = QPushButton("☰", self)
-            self._robustDrawer.setObjectName("_robustDrawer")
-            self._robustDrawer.setFixedSize(20, 20)
-            self._robustDrawer.clicked.connect(lambda _some_bool_qt_is_sending: self.show_header_context_menu())
-            self._robustDrawer.setToolTip("Show context menu")
-        self._robustDrawer.show()
+            self._create_drawer_button()
+            self._robustDrawer.show()
         if self.verticalScrollBar().isVisible():
             self._robustDrawer.move(
                 self.width() - self._robustDrawer.width() - self.verticalScrollBar().width(),
@@ -87,6 +86,15 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         else:
             self._robustDrawer.move(self.width() - self._robustDrawer.width(), 0)
 
+    def restore_state(self):
+        """Acquire the QSettings for this widget and restore the state.
+
+        These settings were saved with the widget's object name the last time the widget was used.
+        """
+        self._initialized = False
+        self.build_context_menu()
+        self._initialized = True
+
     def show_header_context_menu(
         self,
         pos: QPoint | None = None,
@@ -94,16 +102,11 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         *,
         exec_menu: bool = True,
     ):
-        self._setup_backup_menu_when_header_hidden()
         menu = self.build_context_menu(parent)
         if not self._initialized:
             return
         if pos is None:
-            pos = (
-                QCursor.pos()
-                if parent is None
-                else parent.mapToGlobal(QPoint(parent.width(), parent.height()))
-            )
+            pos = QCursor.pos() if parent is None else parent.mapToGlobal(QPoint(parent.width(), parent.height()))
         if not exec_menu:
             return
         menu.exec(pos)
@@ -115,7 +118,8 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         for index in self.selectedIndexes():
             sourceIndex = (
                 current_model.mapToSource(index)  # pyright: ignore[reportArgumentType]
-                if isinstance(current_model, QSortFilterProxyModel) else index
+                if isinstance(current_model, QSortFilterProxyModel)
+                else index
             )
             if not sourceIndex.isValid():
                 RobustLogger().warning("Invalid source index for row %d", index.row())
@@ -133,16 +137,9 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
         self.debounce_layout_changed()
-        if getattr(self, "_robustDrawer", None) is None:
-            self._setup_backup_menu_when_header_hidden()
+        self._fix_drawer_button()
         if not hasattr(self, "_robustDrawer"):
             return
-        if self.verticalScrollBar().isVisible():
-            self._robustDrawer.move(self.width() - self._robustDrawer.width() - self.verticalScrollBar().width(), 0)
-        else:
-            self._robustDrawer.move(self.width() - self._robustDrawer.width(), 0)
-        self._robustDrawer.show()
-
     def wheelEvent(
         self,
         event: QWheelEvent,
@@ -188,7 +185,12 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self.scroll_multiple_steps("up" if delta > 0 else "down")
         return True
 
-    def _handle_color_action(self, get_func: Callable[[], Any], title: str, settings_key: str):
+    def _handle_color_action(
+        self,
+        get_func: Callable[[], Any],
+        title: str,
+        settings_key: str,
+    ):
         super()._handle_color_action(get_func, title, settings_key)
         self.debounce_layout_changed()
         self.viewport().update()
@@ -214,20 +216,6 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
 
     def update_columns_after_text_size_change(self):
         """This method should be implemented by subclasses if needed."""
-
-    def emit_layout_changed(self):
-        model = self.model()
-        if model is not None:
-            model.layoutChanged.emit()
-
-    def debounce_layout_changed(self, timeout: int = 100, *, pre_change_emit: bool = False):
-        self.viewport().update()
-        # self.update()
-        if self._layout_changed_debounce_timer.isActive():
-            self._layout_changed_debounce_timer.stop()
-        elif pre_change_emit:
-            self.model().layoutAboutToBeChanged.emit()
-        self._layout_changed_debounce_timer.start(timeout)
 
     def set_scroll_step_size(self, value: int):
         """Set the number of items to scroll per wheel event."""
@@ -272,14 +260,48 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             option.text = index.data(Qt.ItemDataRole.DisplayRole)
         return option
 
-    def build_header_context_menu(self, parent: QWidget | None = None) -> QMenu:
+    def _handle_recent_action(self, settings_key: str):
+        """Handle action for recently changed settings."""
+        recent_settings = self.get_setting("recently_changed", [], param_type=list)
+        if settings_key in recent_settings:
+            recent_settings.remove(settings_key)
+        recent_settings.append(settings_key)
+        self.set_setting("recently_changed", recent_settings)
+
+    def build_header_context_menu(
+        self,
+        parent: QWidget | None = None,
+    ) -> QMenu:
         """Subclass should override this to add header-specific actions."""
         return QMenu("Header", self if parent is None else parent)
 
-    def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
+    def build_context_menu(
+        self,
+        parent: QWidget | None = None,
+    ) -> QMenu:
         print(f"{self.__class__.__name__}.build_context_menu")
         parent = self if parent is None else parent
         context_menu = QMenu(parent)
+
+        # Recently Changed submenu
+        recent_menu = context_menu.addMenu("Recently Changed")
+        recent_settings = self.get_setting("recently_changed", [])
+        for settings_key in recent_settings:
+            action = QAction(settings_key, self)
+            action.triggered.connect(lambda _, key=settings_key: self._handle_recent_action(key))
+            recent_menu.addAction(action)
+
+        reset_menu = context_menu.addMenu("Reset Configs")
+        reset_to_qt_defaults = QAction("Reset to Qt Defaults", self)
+        reset_to_qt_defaults = QAction("Reset to Qt Defaults", self)
+        reset_to_qt_defaults.triggered.connect(self._reset_to_qt_defaults)
+        reset_menu.addAction(reset_to_qt_defaults)
+        reset_to_subclass_defaults = QAction("Reset to Recommended Config", self)
+        reset_to_subclass_defaults.triggered.connect(self._reset_to_subclass_defaults)
+        reset_menu.addAction(reset_to_subclass_defaults)
+        reset_all_defaults = QAction("Delete settings information.", self)
+        reset_all_defaults.triggered.connect(self._reset_all_defaults)
+        reset_menu.addAction(reset_all_defaults)
         advanced_menu = context_menu.addMenu("Advanced")
         context_menu.insertMenu(context_menu.actions()[0], self.build_header_context_menu(parent))
 
@@ -308,6 +330,8 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             },
             settings_key="textElideMode",
         )
+
+        self._add_menu_action(display_advanced_menu, "Edit Stylesheet", self.styleSheet, self.setStyleSheet, "customStylesheet", param_type=str)
 
         self._add_menu_action(
             display_menu,
@@ -577,19 +601,22 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         )
 
         # Viewport menu
+        def set_viewport_margins(m: QMargins):
+            if isinstance(m, (tuple, list)):
+                self.setViewportMargins(*m)
+            elif isinstance(m, QtCore.QMargins):
+                self.setViewportMargins(m.left(), m.top(), m.right(), m.bottom())
+            else:
+                self.setViewportMargins(0, 0, 0, 0)  # Default values if neither tuple/list nor QMargins
+
         viewport_menu = context_menu.addMenu("Viewport")
         self._add_menu_action(
             viewport_menu,
             "Viewport Margins",
             self.viewportMargins,
-            lambda m: self.setViewportMargins(
-                cast(QtCore.QMargins, m).left(),
-                cast(QtCore.QMargins, m).top(),
-                cast(QtCore.QMargins, m).right(),
-                cast(QtCore.QMargins, m).bottom(),
-            ),
+            set_viewport_margins,
             settings_key="viewportMargins",
-            param_type=QtCore.QMargins,
+            param_type=tuple,
         )
         self._add_menu_action(
             viewport_menu,
@@ -609,9 +636,14 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self._add_simple_action(refresh_menu, "Select All", self.selectAll)
 
         # Help menu
-        whats_this_action = QAction(self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarContextHelpButton), "What's This?", self)
+        whats_this_action = QAction(
+            self.style().standardIcon(
+                QStyle.StandardPixmap.SP_TitleBarContextHelpButton
+            ),
+            "What's This?",
+            self,
+        )
         whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
         whats_this_action.setToolTip("Enter 'What's This?' mode.")
         context_menu.addAction(whats_this_action)
-
         return context_menu

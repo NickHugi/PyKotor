@@ -109,11 +109,11 @@ def read_tpc(
         msg = "Failed to determine the format of the TPC/TGA file."
         raise ValueError(msg)
     if txi_source is None and isinstance(source, (os.PathLike, str)):
-        txi_source = CaseAwarePath.pathify(source).with_suffix(".txi")
+        txi_source = CaseAwarePath(source).with_suffix(".txi")
         if not txi_source.is_file():
             return loaded_tpc
     elif isinstance(txi_source, (os.PathLike, str)):
-        txi_source = CaseAwarePath.pathify(txi_source).with_suffix(".txi")
+        txi_source = CaseAwarePath(txi_source).with_suffix(".txi")
         if not txi_source.is_file():
             return loaded_tpc
 

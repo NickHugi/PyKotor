@@ -20,22 +20,26 @@
             "cwd": "${fileDirname}"
         },
         {
+            "name": "Python C++ Debug",
+            "type": "pythoncpp",
+            "request": "launch",
+            "pythonConfig": "default",
+            "cppConfig": "default (win) Attach"
+        },
+        {
             "name": "Python: Current File",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-        },
-        {
-            "name": "Debug Unit Test",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "purpose": [
-                "debug-test"
+            "pythonArgs": [
+                "-Xfrozen_modules=off",
+                "-Xdev"
             ],
-            "justMyCode": true,
+            "autoReload": {
+                "enable": true,
+            },
         },
         {
             "name": "Run Holocron Toolset",
@@ -64,6 +68,9 @@
                 "-Xdev"
             ],
             "justMyCode": false,
+            "autoReload": {
+                "enable": true,
+            },
         },
         {
             "name": "Run HoloPatcher",

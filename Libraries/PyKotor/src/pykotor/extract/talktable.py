@@ -37,7 +37,7 @@ class TalkTable:  # TODO: dialogf.tlk
         self,
         path: os.PathLike | str,
     ):
-        self._path: Path = Path.pathify(path)
+        self._path: Path = Path(path)
 
     def path(self) -> Path:
         return self._path

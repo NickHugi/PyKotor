@@ -6,50 +6,18 @@ import os
 import platform
 import shutil
 import sys
+
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
 from pathlib import Path, PurePath
-from typing import TYPE_CHECKING, Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, cast
 
 import qtpy
+
 from loggerplus import RobustLogger
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import (
-    FileResource,
-    LocationResult,
-    ResourceIdentifier,
-    ResourceResult,
-)
-from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
-from pykotor.resource.formats.erf.erf_data import ERF, ERFType
-from pykotor.resource.formats.mdl import read_mdl, write_mdl
-from pykotor.resource.formats.rim.rim_auto import read_rim, write_rim
-from pykotor.resource.formats.rim.rim_data import RIM
-from pykotor.resource.formats.tpc import read_tpc, write_tpc
-from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
-from pykotor.resource.type import ResourceType
-from pykotor.tools import model, module
-from pykotor.tools.misc import (
-    is_any_erf_type_file,
-    is_bif_file,
-    is_capsule_file,
-    is_erf_file,
-    is_mod_file,
-    is_rim_file,
-)
-from pykotor.tools.path import CaseAwarePath
 from qtpy import QtCore
-from qtpy.QtCore import (
-    QCoreApplication,
-    QEvent,
-    QFile,
-    QMutex,
-    Qt,
-    QTextStream,
-    QThread,
-)
+from qtpy.QtCore import QCoreApplication, QEvent, QFile, QMutex, QTextStream, QThread, Qt
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -67,18 +35,22 @@ from qtpy.QtWidgets import (
     QTreeView,
     QVBoxLayout,
 )
-from utility.error_handling import universal_simplify_exception
-from utility.misc import ProcessorArchitecture, is_debug_mode
-from utility.tricks import debug_reload_pymodules
-from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyFileInfoGatherer
-from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
-from utility.updater.update import AppUpdate
 
-from toolset.config import (
-    CURRENT_VERSION,
-    getRemoteToolsetUpdateInfo,
-    remoteVersionNewer,
-)
+from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
+from pykotor.resource.formats.erf.erf_data import ERF, ERFType
+from pykotor.resource.formats.mdl import read_mdl, write_mdl
+from pykotor.resource.formats.rim.rim_auto import read_rim, write_rim
+from pykotor.resource.formats.rim.rim_data import RIM
+from pykotor.resource.formats.tpc import read_tpc, write_tpc
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
+from pykotor.resource.type import ResourceType
+from pykotor.tools import model, module
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
+from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncLoader, ProgressDialog
@@ -113,50 +85,39 @@ from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.ui import stylesheet_resources  # noqa: F401
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
-<<<<<<< Updated upstream
 from ui import stylesheet_resources  # noqa: F401
 from utility.error_handling import universal_simplify_exception
 from utility.misc import ProcessorArchitecture, is_debug_mode
 from utility.system.path import Path, PurePath
 from utility.tricks import debug_reload_pymodules
-from utility.ui_libraries.qt.filesystem.common.pyfileinfogatherer import PyFileInfoGatherer
+from utility.ui_libraries.qt.adapters.filesystem.pyfileinfogatherer import PyFileInfoGatherer
 from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 from utility.updater.update import AppUpdate
-=======
->>>>>>> Stashed changes
 
 if qtpy.API_NAME == "PySide2":
-    from toolset.rcc import (
-        resources_rc_pyside2,  # noqa: PLC0415, F401  # pylint: disable=C0415
-    )
+    from toolset.rcc import resources_rc_pyside2  # noqa: PLC0415, F401  # pylint: disable=C0415
 elif qtpy.API_NAME == "PySide6":
-    from toolset.rcc import (
-        resources_rc_pyside6,  # noqa: PLC0415, F401  # pylint: disable=C0415
-    )
+    from toolset.rcc import resources_rc_pyside6  # noqa: PLC0415, F401  # pylint: disable=C0415
 elif qtpy.API_NAME == "PyQt5":
-    from toolset.rcc import (
-        resources_rc_pyqt5,  # noqa: PLC0415, F401  # pylint: disable=C0415
-    )
+    from toolset.rcc import resources_rc_pyqt5  # noqa: PLC0415, F401  # pylint: disable=C0415
 elif qtpy.API_NAME == "PyQt6":
-    from toolset.rcc import (
-        resources_rc_pyqt6,  # noqa: PLC0415, F401  # pylint: disable=C0415
-    )
+    from toolset.rcc import resources_rc_pyqt6  # noqa: PLC0415, F401  # pylint: disable=C0415
 else:
     raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
 if TYPE_CHECKING:
 
-    from pykotor.resource.formats.mdl.mdl_data import MDL
-    from pykotor.resource.formats.tpc import TPC
-    from pykotor.resource.type import SOURCE_TYPES
     from qtpy import QtGui
     from qtpy.QtCore import QObject
     from qtpy.QtGui import QCloseEvent, QKeyEvent, QMouseEvent
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
-    from utility.common.more_collections import CaseInsensitiveDict
 
+    from pykotor.resource.formats.mdl.mdl_data import MDL
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import TextureList
+    from utility.common.more_collections import CaseInsensitiveDict
 
 def run_module_designer(
     active_path: str,
@@ -188,7 +149,7 @@ def run_module_designer(
 
 
 class UpdateCheckThread(QThread):
-    update_info_fetched = QtCore.Signal(dict, dict, bool)  # pyright: ignore[reportPrivateImportUsage]
+    update_info_fetched: ClassVar[QtCore.Signal] = QtCore.Signal(dict, dict, bool)  # pyright: ignore[reportPrivateImportUsage]
     def __init__(self, toolWindow: ToolWindow, *, silent: bool = False):
         super().__init__()
         self.toolWindow: ToolWindow = toolWindow
@@ -627,7 +588,7 @@ class ToolWindow(QMainWindow):
                                           QColor(25, 25, 25), self.adjust_color(QColor("orange"), saturation=80, hue_shift=-10), QColor(255, 69, 0))
         elif self.settings.selectedTheme == "QDarkStyle":
             try:
-                import qdarkstyle  # pyright: ignore[reportMissingTypeStubs]
+                import qdarkstyle  # pyright: ignore[reportMissingImport, reportMissingTypeStubs]
             except ImportError:
                 QMessageBox.critical(self, "Theme not found", "QDarkStyle is not installed in this environment.")
             else:

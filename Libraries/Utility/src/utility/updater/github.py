@@ -50,7 +50,8 @@ if __name__ == "__main__":
         toolset_path = file_absolute_path.parents[5] / "Tools/HolocronToolset/src/toolset"
         if toolset_path.exists():
             update_sys_path(toolset_path.parent)
-            os.chdir(toolset_path)
+            if __name__ == "__main__":
+                os.chdir(toolset_path)
 
 T = TypeVar("T")
 
@@ -668,8 +669,8 @@ def download_github_directory_fallback(
     repo_path: os.PathLike | str,
 ):
     """There were two versions of this function and I can't remember which one worked."""
-    repo = PurePath.pathify(repo)
-    repo_path = PurePath.pathify(repo_path)
+    repo = PurePath(repo)
+    repo_path = PurePath(repo_path)
     api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
     data = _request_api_data(api_url)
     for item in data:

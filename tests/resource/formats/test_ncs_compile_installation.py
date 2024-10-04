@@ -550,7 +550,7 @@ class TestCompileInstallation(unittest.TestCase):
         # Print the captured output to console
         print(*args, **kwargs)  # noqa: T201
 
-        filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path.pathify(filepath)
+        filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path(filepath)
         with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
             f.write(msg)
 

@@ -253,7 +253,7 @@ def _load_as_erf_rim(
 
     if isinstance(capsule_obj, (os.PathLike, str)):
         try:
-            path = Path.pathify(capsule_obj)
+            path = Path(capsule_obj)
             return LazyCapsule(path, create_nonexisting=True).as_cached()
         except Exception:
             RobustLogger().warning(f"Invalid path passed to `validate_capsule`: '{capsule_obj}'", exc_info=True)

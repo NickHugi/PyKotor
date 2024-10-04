@@ -196,7 +196,7 @@ class HelpWindow(QMainWindow):
             help_zip_path.unlink()
 
     def displayFile(self, filepath: os.PathLike | str):
-        filepath = Path.pathify(filepath)
+        filepath = Path(filepath)
         try:
             text: str = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
             html: str = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.suffix.lower() == ".md" else text

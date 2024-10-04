@@ -138,7 +138,7 @@ class ConfigReader:
     ):
         self.previously_parsed_sections = set()
         self.ini: ConfigParser = ini
-        self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
+        self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
         self.tslpatchdata_path: CaseAwarePath | None = tslpatchdata_path  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
@@ -170,7 +170,7 @@ class ConfigReader:
         """
         from pykotor.tslpatcher.config import PatcherConfig  # noqa: PLC0415 Prevent circular imports
 
-        resolved_file_path: Path = Path.pathify(file_path).resolve()
+        resolved_file_path: Path = Path(file_path).resolve()
 
         ini = ConfigParser(
             delimiters=("="),

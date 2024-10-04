@@ -4,45 +4,14 @@ import sys
 
 from typing import TYPE_CHECKING, Any, Callable, Sequence
 
-from qtpy.QtCore import (
-    QRect,
-    QSize,
-    QSortFilterProxyModel,
-    QStringListModel,
-    QTimer,
-    Qt,
-)
-from qtpy.QtGui import (
-    QFontMetrics,
-    QStandardItem,
-    QStandardItemModel,
-)
-from qtpy.QtWidgets import (
-    QApplication,
-    QComboBox,
-    QLineEdit,
-    QListView,
-    QMainWindow,
-    QSizePolicy,
-    QStyleOptionViewItem,
-    QStyledItemDelegate,
-    QVBoxLayout,
-    QWidget,
-)
+from qtpy.QtCore import QRect, QSize, QSortFilterProxyModel, QStringListModel, QTimer, Qt
+from qtpy.QtGui import QFontMetrics, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QApplication, QComboBox, QLineEdit, QListView, QMainWindow, QSizePolicy, QStyleOptionViewItem, QStyledItemDelegate, QVBoxLayout, QWidget
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import (
-        QAbstractItemModel,
-        QModelIndex,
-        QObject,
-    )
-    from qtpy.QtGui import (
-        QKeyEvent,
-        QMouseEvent,
-    )
-    from qtpy.QtWidgets import (
-        QPushButton,
-    )
+    from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtWidgets import QPushButton
 
 
 class FilterProxyModel(QSortFilterProxyModel):
@@ -214,7 +183,7 @@ class FilterComboBox(QComboBox):
             line_edit.mousePressEvent = lambda *args: self.hidePopup() if self.isPoppedUp else self.showPopup()  # type: ignore[attr-value]
         else:
             line_edit.mousePressEvent = lambda *args: QLineEdit.mousePressEvent(line_edit, *args)  # type: ignore[attr-value]
-        line_edit.home(False)
+        line_edit.home(False)  # noqa: FBT003
         return line_edit
 
     def setModel(self, model: QStringListModel | QStandardItemModel):

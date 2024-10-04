@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, cast
 
 import qtpy
 
-from qtpy.QtCore import QAbstractItemModel, QTimer, Qt
-from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtCore import QAbstractItemModel, Qt
+from qtpy.QtGui import QPalette, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import QHeaderView, QMenu, QPushButton, QStyle, QStyleOptionViewItem, QTreeView, QVBoxLayout
 
 from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
@@ -22,15 +22,16 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
     def __init__(
         self,
         parent: QWidget | None = None,
-        *,
+        *args,
         use_columns: bool = False,
-        settings_name: str | None = None,
+        should_call_qt_init: bool = True,
+        **kwargs
     ):
+        if should_call_qt_init:
+            QTreeView.__init__(self, parent)
         self.branch_connectors_enabled: bool = False
         self.header_visible: bool = False
-        super().__init__(parent, settings_name=settings_name)
-        self.layout_changed_debounce_timer: QTimer = QTimer(self)
-        self.original_stylesheet: str = self.styleSheet()
+        RobustAbstractItemView.__init__(self, parent, *args, **kwargs)
         self.header_visible: bool = self.get_setting("horizontalScrollBarVisible", False)  # noqa: FBT003
         self.header().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.header().customContextMenuRequested.connect(lambda pos: self.show_header_context_menu(pos, self.header()))
@@ -102,19 +103,19 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         if model is not None:
             for i in range(self.header().count()):
                 section_name = model.headerData(i, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
-            self._add_exclusive_menu_action(
-                resize_mode_menu,
-                f"[{i}] {section_name}",
-                lambda idx=i: self.header().sectionResizeMode(idx),
-                (lambda mode, idx=i: self.header().setSectionResizeMode(idx, mode)) if qtpy.QT5 else (lambda mode, idx=i: self.header().setSectionResizeMode(idx, QHeaderView.ResizeMode(mode))),
-                options={
-                    "Interactive": QHeaderView.ResizeMode.Interactive,
-                    "Fixed": QHeaderView.ResizeMode.Fixed,
-                    "Stretch": QHeaderView.ResizeMode.Stretch,
-                    "Resize to Contents": QHeaderView.ResizeMode.ResizeToContents
-                },
-                settings_key=f"headerResizeMode_{i}"
-            )
+                self._add_exclusive_menu_action(
+                    resize_mode_menu,
+                    f"[{i}] {section_name}",
+                    lambda idx=i: self.header().sectionResizeMode(idx),
+                    (lambda mode, idx=i: self.header().setSectionResizeMode(idx, mode)) if qtpy.QT5 else (lambda mode, idx=i: self.header().setSectionResizeMode(idx, QHeaderView.ResizeMode(mode))),
+                    options={
+                        "Interactive": QHeaderView.ResizeMode.Interactive,
+                        "Fixed": QHeaderView.ResizeMode.Fixed,
+                        "Stretch": QHeaderView.ResizeMode.Stretch,
+                        "Resize to Contents": QHeaderView.ResizeMode.ResizeToContents
+                    },
+                    settings_key=f"headerResizeMode_{i}"
+                )
 
         # Sizing options
         sizing_menu = header_menu.addMenu("Sizing")
@@ -316,61 +317,61 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
             self.setStyleSheet(self.original_stylesheet)
         else:
             self.branch_connectors_enabled = True
-            self.setStyleSheet("""
-            QTreeView {
+            self.setStyleSheet(f"""
+            QTreeView {{
                 show-decoration-selected: 1;
-            }
+            }}
 
-            QTreeView::item {
-                border: 1px solid #d9d9d9;
+            QTreeView::item {{
+                border: 1px solid {self.palette().color(QPalette.ColorRole.Mid).name()};
                 border-top-color: transparent;
                 border-bottom-color: transparent;
-            }
+            }}
 
-            QTreeView::item:hover {
-                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #e7effd, stop: 1 #cbdaf1);
-                border: 1px solid #bfcde4;
-            }
+            QTreeView::item:hover {{
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 {self.palette().color(QPalette.ColorRole.Highlight).lighter(120).name()}, stop: 1 {self.palette().color(QPalette.ColorRole.Highlight).lighter(110).name()});
+                border: 1px solid {self.palette().color(QPalette.ColorRole.Highlight).name()};
+            }}
 
-            QTreeView::item:selected {
-                border: 1px solid #567dbc;
-            }
+            QTreeView::item:selected {{
+                border: 1px solid {self.palette().color(QPalette.ColorRole.Highlight).darker(110).name()};
+            }}
 
-            QTreeView::item:selected:active {
-                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #6ea1f1, stop: 1 #567dbc);
-            }
+            QTreeView::item:selected:active {{
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 {self.palette().color(QPalette.ColorRole.Highlight).name()}, stop: 1 {self.palette().color(QPalette.ColorRole.Highlight).darker(110).name()});
+            }}
 
-            QTreeView::item:selected:!active {
-                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #6b9be8, stop: 1 #577fbf);
-            }
+            QTreeView::item:selected:!active {{
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 {self.palette().color(QPalette.ColorRole.Highlight).lighter(110).name()}, stop: 1 {self.palette().color(QPalette.ColorRole.Highlight).name()});
+            }}
 
-            QTreeView::branch {
-                background: palette(base);
-            }
+            QTreeView::branch {{
+                background: {self.palette().color(QPalette.ColorRole.Base).name()};
+            }}
 
-            QTreeView::branch:has-siblings:!adjoins-item {
+            QTreeView::branch:has-siblings:!adjoins-item {{
                 border-image: url(:/images/common/stylesheet-vline.png) 0;
-            }
+            }}
 
-            QTreeView::branch:has-siblings:adjoins-item {
+            QTreeView::branch:has-siblings:adjoins-item {{
                 border-image: url(:/images/common/stylesheet-branch-more.png) 0;
-            }
+            }}
 
-            QTreeView::branch:!has-children:!has-siblings:adjoins-item {
+            QTreeView::branch:!has-children:!has-siblings:adjoins-item {{
                 border-image: url(:/images/common/stylesheet-branch-end.png) 0;
-            }
+            }}
 
             QTreeView::branch:has-children:!has-siblings:closed,
-            QTreeView::branch:closed:has-children:has-siblings {
+            QTreeView::branch:closed:has-children:has-siblings {{
                 border-image: none;
                 image: url(:/images/common/stylesheet-branch-closed.png);
-            }
+            }}
 
             QTreeView::branch:open:has-children:!has-siblings,
-            QTreeView::branch:open:has-children:has-siblings {
+            QTreeView::branch:open:has-children:has-siblings {{
                 border-image: none;
                 image: url(:/images/common/stylesheet-branch-open.png);
-            }
+            }}
             """)
 
     def resizeEvent(self, event: QResizeEvent):
@@ -458,7 +459,7 @@ if __name__ == "__main__":
             self.setCentralWidget(central_widget)
             layout = QVBoxLayout(central_widget)
 
-            self.tree_view: RobustTreeView = RobustTreeView(use_columns=True)
+            self.tree_view: RobustTreeView = RobustTreeView(use_columns=True, parent=self.centralWidget())
             layout.addWidget(self.tree_view)
 
             # Create a model and set it to the tree view

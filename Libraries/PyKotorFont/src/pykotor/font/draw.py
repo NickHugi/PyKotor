@@ -53,7 +53,7 @@ def write_bitmap_fonts(
     custom_scaling: float = 1.0,
     font_color=None,
 ):
-    target_path = Path.pathify(target)
+    target_path = Path(target)
     target_path.mkdir(parents=True, exist_ok=True)
 
     for font_name in TXIFontInformation.FONT_TEXTURES:
@@ -85,7 +85,7 @@ def write_bitmap_font(
         msg = f"resolution must be nonzero, got {resolution}"
         raise ZeroDivisionError(msg)
 
-    font_path, target_path = (Path.pathify(p) for p in (font_path, target))
+    font_path, target_path = (Path(p) for p in (font_path, target))
     charset_list: list[str] = get_charset_from_singlebyte_encoding(lang.get_encoding())
     numchars: int = len([char for char in charset_list if char])
 

@@ -223,7 +223,7 @@ class ModifyGFF(ABC):
             - Acquires the container at each step from the parent container
             - Returns the container at the end or None if not found along the path
         """
-        path = PureWindowsPath.pathify(path)
+        path = PureWindowsPath(path)
         if not path.name:
             return root_container
         container: GFFStruct | GFFList | None = root_container
@@ -241,7 +241,7 @@ class ModifyGFF(ABC):
         path: PureWindowsPath | os.PathLike | str,
     ) -> _GFFField | None:
         """Navigates to a field from the root gff struct from a path."""
-        path = PureWindowsPath.pathify(path)
+        path = PureWindowsPath(path)
         container: GFFList | GFFStruct | None = self._navigate_containers(root_container, path.parent)
         label: str = path.name
 
@@ -272,7 +272,7 @@ class AddStructToListGFF(ModifyGFF):
         if not isinstance(value, (FieldValueListIndex, FieldValueConstant)):
             raise TypeError(f"value must be FieldValueListIndex or FieldValueConstant, instead got {value.__class__.__name__}")
         self.value: FieldValueListIndex | FieldValueConstant = value
-        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
+        self.path: PureWindowsPath = PureWindowsPath(path)
         self.index_to_token: int | None = index_to_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -356,7 +356,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
+        self.path: PureWindowsPath = PureWindowsPath(path)
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 
@@ -437,7 +437,7 @@ class Memory2DAModifierGFF(ModifyGFF):
         self.identifier: str = identifier
         self.dest_token_id: int = dst_token_id
         self.src_token_id: int | None = src_token_id
-        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
+        self.path: PureWindowsPath = PureWindowsPath(path)
 
     def apply(
         self,
@@ -496,7 +496,7 @@ class ModifyFieldGFF(ModifyGFF):
         value: FieldValue,
         identifier: str = ""
     ):
-        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
+        self.path: PureWindowsPath = PureWindowsPath(path)
         self.value: FieldValue = value
         self.identifier: str = identifier
 

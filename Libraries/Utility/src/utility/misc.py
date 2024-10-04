@@ -236,7 +236,7 @@ def generate_hash(
         else:
             hasher.update(data_input)
     else:
-        with Path.pathify(data_input).open("rb") as f:
+        with Path(data_input).open("rb") as f:
             for chunk in iter(lambda: f.read(chunk_size), b""):
                 hasher.update(chunk)
 

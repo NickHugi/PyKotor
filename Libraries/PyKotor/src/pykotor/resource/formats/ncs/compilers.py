@@ -33,7 +33,7 @@ class InbuiltNCSCompiler(NCSCompiler):
         *,
         debug: bool = False,
     ):
-        source_filepath: Path = Path.pathify(source_path)
+        source_filepath: Path = Path(source_path)
         nss_data: bytes = BinaryReader.load_file(source_filepath)
         nss_contents: str = decode_bytes_with_fallbacks(nss_data)
         ncs: NCS = compile_nss(nss_contents, game, optimizers, library_lookup=[source_filepath.parent], debug=debug)
@@ -172,7 +172,7 @@ class ExternalNCSCompiler(NCSCompiler):
         return KnownExternalCompilers.from_sha256(self.filehash)
 
     def change_nwnnsscomp_path(self, nwnnsscomp_path: os.PathLike | str):
-        self.nwnnsscomp_path: Path = Path.pathify(nwnnsscomp_path)
+        self.nwnnsscomp_path: Path = Path(nwnnsscomp_path)
         self.filehash: str = generate_hash(self.nwnnsscomp_path, hash_algo="sha256").upper()
 
     def config(
@@ -202,7 +202,7 @@ class ExternalNCSCompiler(NCSCompiler):
             - Converts game arg to Game enum if integer
             - Returns NwnnsscompConfig object configured with args useable with the compile_script and decompile_script functions.
         """
-        source_filepath, output_filepath = map(Path.pathify, (source_file, output_file))
+        source_filepath, output_filepath = map(Path, (source_file, output_file))
         if not isinstance(game, Game):
             game = Game(game)
         return NwnnsscompConfig(self.filehash, source_filepath, output_filepath, game)

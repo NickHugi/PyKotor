@@ -249,7 +249,7 @@ class SpoofKotorRegistry:
 
         # Key name at the path containing the value.
         self.key: str = "Path"
-        self.spoofed_path: Path = Path.pathify(installation_path).resolve()
+        self.spoofed_path: Path = Path(installation_path).resolve()
 
         if game is not None:
             determined_game = game

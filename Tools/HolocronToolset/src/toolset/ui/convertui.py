@@ -26,7 +26,8 @@ if not TOOLSET_DIR.is_dir():
     if TOOLSET_DIR.name.lower() != "toolset":
         raise RuntimeError("Could not find the toolset folder! Please ensure this script is ran somewhere inside the toolset folder or a subdirectory.")
 
-os.chdir(TOOLSET_DIR)
+if __name__ == "__main__":
+    os.chdir(TOOLSET_DIR)
 
 UI_SOURCE_DIR = Path("../ui/")
 UI_TARGET_DIR = Path("../toolset/uic/")

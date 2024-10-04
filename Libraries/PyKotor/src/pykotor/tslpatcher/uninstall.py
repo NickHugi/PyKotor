@@ -131,7 +131,7 @@ class ModUninstaller:
             - Return None if no valid backups found
             - Otherwise return the subfolder with the maximum datetime parsed from folder name.
         """
-        backup_folder_path = Path.pathify(backup_folder)
+        backup_folder_path = Path(backup_folder)
         valid_backups: list[Path] = [
             subfolder
             for subfolder in backup_folder_path.iterdir()  # type: ignore[attr-defined]
@@ -175,7 +175,7 @@ class ModUninstaller:
             file_path.unlink(missing_ok=True)  # type: ignore[attr-defined]
             self.log.add_note(f"Removed {rel_filepath}...")
         for file in files_in_backup:
-            file_path = Path.pathify(file)
+            file_path = Path(file)
             if file_path.name == "remove these files.txt":
                 continue
             destination_path = self.game_path / file_path.relative_to(backup_folder)  # type: ignore[attr-defined]

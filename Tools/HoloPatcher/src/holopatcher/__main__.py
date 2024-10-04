@@ -1040,7 +1040,7 @@ class App:
             return
 
         try:
-            path: Path = Path.pathify(path_arg)
+            path: Path = Path(path_arg)
 
             def task() -> bool:
                 extra_msg: str = ""
@@ -1434,7 +1434,7 @@ class App:
 
     @property
     def log_file_path(self) -> Path:
-        return Path.pathify(self.mod_path) / "installlog.txt"
+        return Path(self.mod_path) / "installlog.txt"
 
     def _handle_exception_during_install(
         self,
@@ -1502,7 +1502,7 @@ class App:
         from utility.pyth3.plugins.plaintext.writer import PlaintextWriter
         from utility.pyth3.plugins.rtf15.reader import Rtf15Reader
 
-        with Path.pathify(file_path).open("rb") as file:
+        with Path(file_path).open("rb") as file:
             rtf_contents_as_utf8_encoded: bytes = decode_bytes_with_fallbacks(file.read()).encode()
             doc = Rtf15Reader.read(io.BytesIO(rtf_contents_as_utf8_encoded))
         self.main_text.config(state=tk.NORMAL)

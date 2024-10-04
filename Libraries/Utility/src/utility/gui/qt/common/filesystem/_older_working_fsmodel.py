@@ -57,7 +57,8 @@ if __name__ == "__main__":
     toolset_path = file_absolute_path.parents[3] / "toolset"
     if toolset_path.exists():
         update_sys_path(toolset_path.parent)
-        os.chdir(toolset_path)
+        if __name__ == "__main__":
+            os.chdir(toolset_path)
 
 
 from pykotor.extract.file import FileResource  # noqa: E402

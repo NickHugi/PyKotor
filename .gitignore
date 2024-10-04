@@ -115,3 +115,8 @@ qrc_*.cpp
 
 src/tests/results/*
 /src/pykotor/tools/toolset/kits
+.history
+.history/**
+.history/**/**
+.history*
+/Tools/HolocronToolset/src/resources/extra_themes

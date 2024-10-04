@@ -151,7 +151,7 @@ class DLG:
                 self._find_paths_recursive(node.links, target, current_path / node_path / link_list_name, paths, seen_links_and_nodes)
 
     def lookup_from_path(self, path: PureWindowsPath | str) -> list[DLGNode] | DLGNode | list[DLGLink] | DLGLink | None:
-        path = PureWindowsPath.pathify(path)
+        path = PureWindowsPath(path)
         if not path.parts or not path.name:
             return None
         num_of_parts = len(path.parts)

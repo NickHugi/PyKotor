@@ -97,7 +97,7 @@ class SetBindWidget(QWidget):
     def setMouseAndKeyBinds(self, bind: Bind):
         # these asserts will be removed automatically with -O PYTHONOPTIMIZE flag, performance isn't affected there.
         assert isinstance(bind, tuple), f"{bind} ({bind.__class__.__name__}) is not a tuple"
-        assert len(bind) == 2, f"{len(bind)} != 2"
+        assert len(bind) == 2, f"{len(bind)} != 2"  # noqa: PLR2004
         assert isinstance(bind[0], set), f"{bind[0]!r} <{bind[0]}> ({bind[0].__class__.__name__}) is not a set"
         assert isinstance(bind[1], (set, type(None))), f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a set"
 

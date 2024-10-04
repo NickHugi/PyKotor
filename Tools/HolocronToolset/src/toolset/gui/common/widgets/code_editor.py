@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from loggerplus import RobustLogger
-from qtpy.QtCore import QRect, QSettings, QSize, QStringListModel, Qt, Signal
+from qtpy.QtCore import QRect, QSettings, QSize, QStringListModel, QUrl, Qt, Signal
 from qtpy.QtGui import QColor, QPainter, QPalette, QTextCursor, QTextFormat
+from qtpy.QtWebEngineCore import QWebEngineHttpRequest
 from qtpy.QtWidgets import (
     QAction,
     QCompleter,
@@ -31,16 +32,19 @@ from utility.ui_libraries.qt.widgets.itemviews.treewidget import RobustTreeWidge
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
     from qtpy.QtGui import (
+        QContextMenuEvent,
+        QDragEnterEvent,
+        QDropEvent,
         QFocusEvent,
         QKeyEvent,
+        QMoveEvent,
         QPaintEvent,
         QResizeEvent,
         QTextBlock,
         QTextDocument,
     )
     from qtpy.QtWidgets import QTreeWidgetItem
-    from typing_extensions import Literal
-
+    from typing_extensions import Literal, Self  # noqa: F401
 
 
 class CodeEditor(QPlainTextEdit):
@@ -48,11 +52,12 @@ class CodeEditor(QPlainTextEdit):
 
     Ported from the C++ code at: https://doc.qt.io/qt-5/qtwidgets-widgets-codeeditor-example.html
     """
-    snippetAdded: Signal = Signal(str, str)  # name, content
-    snippetRemoved: Signal = Signal(int)  # index
-    snippetInsertRequested: Signal = Signal(str)  # content
-    snippetsLoadRequested: Signal = Signal()
-    snippetsSaveRequested: Signal = Signal(list)  # list of dicts
+
+    snippetAdded: ClassVar[Signal] = Signal(str, str)  # name, content
+    snippetRemoved: ClassVar[Signal] = Signal(int)  # index
+    snippetInsertRequested: ClassVar[Signal] = Signal(str)  # content
+    snippetsLoadRequested: ClassVar[Signal] = Signal()
+    snippetsSaveRequested: ClassVar[Signal] = Signal(list)  # list of dicts
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -71,7 +76,7 @@ class CodeEditor(QPlainTextEdit):
         self.snippets: dict[str, Any] = {}
 
         # Settings
-        self.settings = GlobalSettings()
+        self.settings: GlobalSettings = GlobalSettings()
 
         # Bookmarks
         self.bookmarkTree: RobustTreeWidget = RobustTreeWidget()
@@ -139,15 +144,6 @@ class CodeEditor(QPlainTextEdit):
         Args:
         ----
             e (QPaintEvent): Paint event
-
-        Processing Logic:
-        ----------------
-            - Gets the painter object for the line number area
-            - Fills the rect with a light gray color
-            - Gets the first visible block and its top position
-            - Loops through visible blocks within the paint rect
-                - Draws the block number at the top position
-                - Updates the top position for the next block.
         """
         painter = QPainter(self._lineNumberArea)
         painter.fillRect(e.rect(), self.palette().color(QPalette.ColorRole.AlternateBase))
@@ -167,8 +163,7 @@ class CodeEditor(QPlainTextEdit):
         while block.isValid() and top <= e.rect().bottom():
             if block.isVisible() and bottom >= e.rect().top():
                 number = str(blockNumber + 1)
-                painter.drawText(0, int(top), line_number_area_width, font_height,
-                                 Qt.AlignmentFlag.AlignRight, number)
+                painter.drawText(0, int(top), line_number_area_width, font_height, Qt.AlignmentFlag.AlignRight, number)
 
                 # Draw breakpoint
                 if blockNumber in self.breakpoints:
@@ -200,12 +195,6 @@ class CodeEditor(QPlainTextEdit):
         Returns:
         -------
             int: The width in pixels needed to display line numbers.
-
-        Processing Logic:
-        ----------------
-            - Calculates the number of digits needed to display the maximum line number.
-            - Uses the maximum line number and digit count to calculate the minimum space needed.
-            - Returns the larger of the minimum and calculated widths.
         """
         digits = 1
         maximum: int = max(1, self.blockCount())
@@ -274,6 +263,7 @@ class CodeEditor(QPlainTextEdit):
 
             if inserted == "\n" and indent > 0:
                 from toolset.gui.editors.nss import NSSEditor
+
                 space = " " * NSSEditor.TAB_SIZE if NSSEditor.TAB_AS_SPACE else "\t"
                 self.insertPlainText(space * indent)
 
@@ -308,7 +298,7 @@ class CodeEditor(QPlainTextEdit):
             bookmarks.append({"line": item.data(0, Qt.ItemDataRole.UserRole), "description": item.text(1)})
         QSettings().setValue("bookmarks", json.dumps(bookmarks))
 
-    def contextMenuEvent(self, event):
+    def contextMenuEvent(self, event: QContextMenuEvent):
         """Override context menu to show snippet options."""
         menu = self.createStandardContextMenu()
         snippet_menu = QMenu("Snippets", self)
@@ -443,6 +433,7 @@ class CodeEditor(QPlainTextEdit):
 
     def search(self):
         from toolset.gui.editors.nss import NSSEditor
+
         searchText = cast(NSSEditor, self.parent()).ui.searchBar.text()
         if not searchText:
             return
@@ -470,6 +461,7 @@ class CodeEditor(QPlainTextEdit):
 
         if word:
             from toolset.gui.editors.nss import NSSEditor
+
             for obj in cast(NSSEditor, self.parent()).ui.outlineView.findItems(word, Qt.MatchFlag.MatchRecursive):  # pyright: ignore[reportArgumentType]
                 if obj.data(0, Qt.ItemDataRole.UserRole):
                     self.on_outline_item_double_clicked(obj, 0)  # pyright: ignore[reportArgumentType]
@@ -624,6 +616,7 @@ class LineNumberArea(QWidget):
     def paintEvent(self, event):
         self._editor.lineNumberAreaPaintEvent(event)
 
+
 class NSSCodeEditor(CodeEditor):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -631,21 +624,17 @@ class NSSCodeEditor(CodeEditor):
         self.load_settings()
 
     def load_settings(self):
-        settings = QSettings()
-        self.restoreGeometry(settings.value("NSSCodeEditor/geometry", self.saveGeometry()))
+        self.restoreGeometry(QSettings().value("NSSCodeEditor/geometry", self.saveGeometry()))
 
     def save_settings(self):
-        settings = QSettings()
-        settings.setValue("NSSCodeEditor/geometry", self.saveGeometry())
+        QSettings().setValue("NSSCodeEditor/geometry", self.saveGeometry())
 
-    def dragEnterEvent(self, event):
+    def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasText():
             event.acceptProposedAction()
 
-    def dropEvent(self, event):
-        pos = event.pos()
-        text = event.mimeData().text()
-        self.insert_text_at_position(text, pos)
+    def dropEvent(self, event: QDropEvent):
+        self.insert_text_at_position(event.mimeData().text(), event.pos())
 
     def insert_text_at_position(self, text: str, pos: QPoint):
         cursor = self.cursorForPosition(pos)
@@ -655,76 +644,25 @@ class NSSCodeEditor(CodeEditor):
         super().resizeEvent(event)
         self.save_settings()
 
-    def moveEvent(self, event):
+    def moveEvent(self, event: QMoveEvent):
         super().moveEvent(event)
         self.save_settings()
+
 
 class WebViewEditor(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
-        self.web_view = None
-        self.init_ui()
-
-    def init_ui(self):
         layout = QVBoxLayout(self)
         try:
-            from qtpy.QtWebEngineWidgets import QWebEngineView
+            from qtpy.QtWebEngineWidgets import QWebEngineView  # pyright: ignore[reportPrivateImportUsage]
+
             self.web_view = QWebEngineView(self)
             layout.addWidget(self.web_view)
         except ImportError:
-            label = QLabel("Web engine not available. Please install QtWebEngine.", self)
+            label = QLabel("WebEngine not available. Please install QtWebEngine.", self)
             layout.addWidget(label)
 
     def load_url(self, url: str):
         if self.web_view:
-            self.web_view.load(url)
-
-class NSSEditor(QWidget):
-    def __init__(self, parent: QWidget):
-        super().__init__(parent)
-        self.native_editor = NSSCodeEditor(self)
-        self.web_editor = WebViewEditor(self)
-        self.current_editor = self.native_editor
-        self.init_ui()
-
-    def init_ui(self):
-        layout = QVBoxLayout(self)
-        self.editor_stack = QStackedWidget(self)
-        self.editor_stack.addWidget(self.native_editor)
-        self.editor_stack.addWidget(self.web_editor)
-        layout.addWidget(self.editor_stack)
-
-        self.toggle_button = QPushButton("Toggle Editor", self)
-        self.toggle_button.clicked.connect(self.toggle_editor)
-        layout.addWidget(self.toggle_button)
-
-    def toggle_editor(self):
-        if self.current_editor == self.native_editor:
-            self.editor_stack.setCurrentWidget(self.web_editor)
-            self.current_editor = self.web_editor
-            # Here you would sync the content from native to web editor
-        else:
-            self.editor_stack.setCurrentWidget(self.native_editor)
-            self.current_editor = self.native_editor
-            # Here you would sync the content from web to native editor
-
-    def load_file(self, file_path: str):
-        with open(file_path) as file:
-            content = file.read()
-        self.native_editor.setPlainText(content)
-        # If using web editor, you'd need to implement a way to load the content there as well
-
-    def save_file(self, file_path: str):
-        content = self.native_editor.toPlainText()
-        with open(file_path, "w") as file:
-            file.write(content)
-        # If using web editor, you'd need to implement a way to get the content from there as well
-
-    def set_syntax_highlighter(self, highlighter):
-        # Assuming the highlighter is compatible with QSyntaxHighlighter
-        highlighter(self.native_editor.document())
-        # For web editor, you'd need to implement syntax highlighting differently
-
-    def get_text(self) -> str:
-        return self.native_editor.toPlainText()
-        # If using web editor, you'd need to implement a way to get the content from there as well
+            get_request = QWebEngineHttpRequest(QUrl(url), QWebEngineHttpRequest.Method.Get)
+            self.web_view.load(get_request)

@@ -3,32 +3,27 @@ from __future__ import annotations
 import os
 import pathlib
 import sys
+
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, Union, cast
 
 import qtpy
+
 from loggerplus import RobustLogger
+
 from pykotor.extract.capsule import LazyCapsule
-<<<<<<< Updated upstream
-from utility.ui_libraries.qt.filesystem.tools.icon_util import qicon_from_file_ext, qpixmap_to_qicon
-=======
-from utility.ui_libraries.qt.filesystem.icon_util import (
-    qicon_from_file_ext,
-    qpixmap_to_qicon,
-)
->>>>>>> Stashed changes
+from utility.ui_libraries.qt.tools.image import qicon_from_file_ext, qpixmap_to_qicon
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
     QDesktopWidget = None
-    from qtpy.QtGui import (  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
-        QUndoCommand,
+    from qtpy.QtGui import (
+        QUndoCommand,  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
         QUndoStack,
     )
 elif qtpy.API_NAME in ("PyQt5", "PySide2"):
-    from qtpy.QtWidgets import (  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
-        QDesktopWidget,
-        QUndoCommand,
+    from qtpy.QtWidgets import (
+        QUndoCommand,  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
         QUndoStack,
     )
 else:
@@ -68,48 +63,33 @@ if utility_path.exists():
 toolset_path = file_absolute_path.parents[3] / "toolset"
 if toolset_path.exists():
     update_sys_path(toolset_path.parent)
-    os.chdir(toolset_path)
+    if __name__ == "__main__":
+        os.chdir(toolset_path)
 
 
 
 from pathlib import Path  # noqa: E402
 
+from qtpy.QtCore import QAbstractItemModel, QDir, QModelIndex, QObject, Qt  # noqa: E402, F401
+from qtpy.QtGui import QColor, QDrag, QIcon, QImage, QPixmap  # noqa: E402
+from qtpy.QtWidgets import QFileSystemModel, QHBoxLayout, QLineEdit, QPushButton  # noqa: E402
+
 from pykotor.extract.file import FileResource  # noqa: E402
 from pykotor.tools.misc import is_capsule_file  # noqa: E402
-from qtpy.QtCore import (  # noqa: E402, F401
-    QAbstractItemModel,
-    QDir,
-    QModelIndex,
-    QObject,
-    Qt,
-)
-from qtpy.QtGui import QColor, QDrag, QIcon, QImage, QPixmap  # noqa: E402
-from qtpy.QtWidgets import (  # noqa: E402
-    QFileSystemModel,
-    QHBoxLayout,
-    QLineEdit,
-    QPushButton,
-)
-from utility.system.os_helper import get_size_on_disk  # noqa: E402
-from utility.ui_libraries.qt.widgets.itemviews.html_delegate import (  # noqa: E402
-    _ICONS_DATA_ROLE,
-    HTMLDelegate,
-)
-from utility.ui_libraries.qt.widgets.itemviews.treeview import (
-    RobustTreeView,  # noqa: E402
-)
-
 from toolset.__main__ import main_init  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.utils.window import openResourceEditor  # noqa: E402
+from utility.system.os_helper import get_size_on_disk  # noqa: E402
+from utility.ui_libraries.qt.widgets.itemviews.html_delegate import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent
-    from utility.ui_libraries.qt.filesystem.pyfilesystemmodel import PyFileSystemModel
 
     from toolset.data.installation import HTInstallation
     from toolset.gui.windows.main import ToolWindow
+    from utility.ui_libraries.qt.filesystem.adapters.pyfilesystemmodel import PyFileSystemModel
 
 
 class TreeItem:
@@ -121,7 +101,7 @@ class TreeItem:
         parent: DirItem | None = None,
     ):
         super().__init__()
-        self.path: Path = Path.pathify(path)
+        self.path: Path = Path(path)
         self.parent: DirItem | None = parent
 
     def row(self) -> int:

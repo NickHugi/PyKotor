@@ -280,7 +280,7 @@ class CodeRoot:
         if library_lookup:
             if not isinstance(library_lookup, list):
                 library_lookup = [library_lookup]
-            self.library_lookup = [Path.pathify(item) for item in library_lookup]
+            self.library_lookup = [Path(item) for item in library_lookup]
 
         self.function_map: dict[str, FunctionReference] = {}
         self._global_scope: list[ScopedValue] = []

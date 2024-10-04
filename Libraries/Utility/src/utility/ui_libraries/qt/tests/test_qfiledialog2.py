@@ -45,18 +45,14 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from utility.ui_libraries.qt.filesystem.common.pyfileinfogatherer import PyFileInfoGatherer as QFileInfoGatherer
-from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.private.qsidebar import QSidebar
-from utility.ui_libraries.qt.filesystem.explorer.qfiledialog.qfiledialog import QFileDialog as PythonQFileDialog
-from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qplatformdialoghelper import QPlatformFileDialogHelper
+from utility.ui_libraries.qt.adapters.filesystem.pyfileinfogatherer import PyFileInfoGatherer as QFileInfoGatherer
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qsidebar import QSidebar
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.qfiledialog import QFileDialog as PythonQFileDialog
+from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qplatformdialoghelper import QPlatformFileDialogHelper
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import (
-        QAbstractItemModel,
-    )
-    from qtpy.QtWidgets import (
-        QPushButton,
-    )
+    from qtpy.QtCore import QAbstractItemModel
+    from qtpy.QtWidgets import QPushButton
 
 
 class FilterDirModel(QAbstractProxyModel):
@@ -64,16 +60,16 @@ class FilterDirModel(QAbstractProxyModel):
         super().__init__(*args, **kwargs)
         self._sourceModel = None
 
-    def setSourceModel(self, sourceModel: QAbstractItemModel):
+    def setSourceModel(self, sourceModel: QAbstractItemModel):  # noqa: N803
         self._sourceModel = sourceModel
         super().setSourceModel(sourceModel)
 
-    def mapToSource(self, proxyIndex: QModelIndex) -> QModelIndex:
+    def mapToSource(self, proxyIndex: QModelIndex) -> QModelIndex:  # noqa: N803
         if not self._sourceModel:
             return QModelIndex()
         return self._sourceModel.index(proxyIndex.row(), proxyIndex.column(), proxyIndex.parent())
 
-    def mapFromSource(self, sourceIndex: QModelIndex) -> QModelIndex:
+    def mapFromSource(self, sourceIndex: QModelIndex) -> QModelIndex:  # noqa: N803
         if not sourceIndex.isValid():
             return QModelIndex()
         return self.index(sourceIndex.row(), sourceIndex.column(), sourceIndex.parent())
@@ -387,8 +383,8 @@ class TestQFileDialog2(unittest.TestCase):
     def test_settingsCompatibility(self):
         ba32 = (
             b"\x00\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xf7\x00\x00\x00\x04\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            + b"d\xff\xff\xff\xff\x00\x00\x00\x81\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x01\t\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00>\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"
-            + b"B\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00n\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03\xe8\x00\xff\xff\xff\xff\x00\x00\x00\x00"
+            b"d\xff\xff\xff\xff\x00\x00\x00\x81\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x01\t\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00>\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"
+            b"B\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00n\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03\xe8\x00\xff\xff\xff\xff\x00\x00\x00\x00"
         )
         fd = self.fd_class()
 
@@ -404,10 +400,10 @@ class TestQFileDialog2(unittest.TestCase):
         dialog.show()
         dialog.show()
         self._qtest.qWaitForWindowExposed(dialog)
-        list = dialog.findChild(QListView, "listView")
-        assert list is not None, "List view was not found with name 'listView'"
-        self._qtest.keyClick(list, Qt.Key.Key_Down)
-        self._qtest.keyClick(list, Qt.Key.Key_Return)
+        _list = dialog.findChild(QListView, "listView")
+        assert _list is not None, "List view was not found with name 'listView'"
+        self._qtest.keyClick(_list, Qt.Key.Key_Down)
+        self._qtest.keyClick(_list, Qt.Key.Key_Return)
         dialog.close()
         fd.close()
         fd2 = self.fd_class(None, "I should not crash with a proxy", str(self.temp_path), Qt.KeyboardModifier.NoModifier)

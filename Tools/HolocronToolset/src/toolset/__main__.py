@@ -84,7 +84,8 @@ def fix_sys_and_cwd_path():
     toolset_path = file_absolute_path.parents[1] / "toolset"
     if toolset_path.exists():
         update_sys_path(toolset_path.parent)
-        os.chdir(toolset_path)
+        if __name__ == "__main__":
+            os.chdir(toolset_path)
 
 
 def fix_qt_env_var():

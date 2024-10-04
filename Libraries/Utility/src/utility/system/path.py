@@ -965,7 +965,7 @@ class ChDir:
         logger: Logger | None = None,
     ):
         self.old_dir: Path = Path.cwd()
-        self.new_dir: Path = Path.pathify(path)
+        self.new_dir: Path = Path(path)
         self.log = logger or RobustLogger()
 
     def __enter__(self):

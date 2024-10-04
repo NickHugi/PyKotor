@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
+
+from typing_extensions import Literal
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, Game
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
 
 
 class _ModelHeader:
-    SIZE = 196
+    SIZE: ClassVar[int] = 196
 
     def __init__(
         self,
@@ -608,30 +610,30 @@ class _NodeHeader:
 
 
 class _MDXDataFlags:
-    VERTEX = 0x0001
-    TEXTURE1 = 0x0002
-    TEXTURE2 = 0x0004
-    NORMAL = 0x0020
-    BUMPMAP = 0x0080
+    VERTEX: Literal[0x0001] = 0x0001
+    TEXTURE1: Literal[0x0002] = 0x0002
+    TEXTURE2: Literal[0x0004] = 0x0004
+    NORMAL: Literal[0x0020] = 0x0020
+    BUMPMAP: Literal[0x0080] = 0x0080
 
 
 class _TrimeshHeader:
-    K1_SIZE = 332
-    K2_SIZE = 340
+    K1_SIZE: Literal[332] = 332
+    K2_SIZE: Literal[340] = 340
 
-    K1_FUNCTION_POINTER0 = 4216656
-    K2_FUNCTION_POINTER0 = 4216880
-    K1_SKIN_FUNCTION_POINTER0 = 4216592
-    K2_SKIN_FUNCTION_POINTER0 = 4216816
-    K1_DANGLY_FUNCTION_POINTER0 = 4216640
-    K2_DANGLY_FUNCTION_POINTER0 = 4216864
+    K1_FUNCTION_POINTER0: Literal[4216656] = 4216656
+    K2_FUNCTION_POINTER0: Literal[4216880] = 4216880
+    K1_SKIN_FUNCTION_POINTER0: Literal[4216592] = 4216592
+    K2_SKIN_FUNCTION_POINTER0: Literal[4216816] = 4216816
+    K1_DANGLY_FUNCTION_POINTER0: Literal[4216640] = 4216640
+    K2_DANGLY_FUNCTION_POINTER0: Literal[4216864] = 4216864
 
-    K1_FUNCTION_POINTER1 = 4216672
-    K2_FUNCTION_POINTER1 = 4216896
-    K1_SKIN_FUNCTION_POINTER1 = 4216608
-    K2_SKIN_FUNCTION_POINTER1 = 4216832
-    K1_DANGLY_FUNCTION_POINTER1 = 4216624
-    K2_DANGLY_FUNCTION_POINTER1 = 4216848
+    K1_FUNCTION_POINTER1: Literal[4216672] = 4216672
+    K2_FUNCTION_POINTER1: Literal[4216896] = 4216896
+    K1_SKIN_FUNCTION_POINTER1: Literal[4216608] = 4216608
+    K2_SKIN_FUNCTION_POINTER1: Literal[4216832] = 4216832
+    K1_DANGLY_FUNCTION_POINTER1: Literal[4216624] = 4216624
+    K2_DANGLY_FUNCTION_POINTER1: Literal[4216848] = 4216848
 
     def __init__(
         self,
@@ -852,7 +854,11 @@ class _TrimeshHeader:
         self,
         game: Game,
     ) -> int:
-        return _TrimeshHeader.K1_SIZE if game == Game.K1 else _TrimeshHeader.K2_SIZE
+        return (
+            _TrimeshHeader.K1_SIZE
+            if game == Game.K1
+            else _TrimeshHeader.K2_SIZE
+        )
 
     def faces_size(
         self,

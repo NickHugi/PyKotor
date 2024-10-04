@@ -32,7 +32,7 @@ class WrappedStr(str):
         self._content: str = content
 
     def __repr__(self):
-        return f"MutableStr({self._content!r})"
+        return f"WrappedStr({self._content!r})"
 
     def __reduce__(self):
         return (self.__class__, (self._content,))

@@ -5,18 +5,23 @@ from typing import TYPE_CHECKING
 from qtpy.QtGui import QTransform
 from qtpy.QtWidgets import QGraphicsView
 
-from utility.ui_libraries.qt.widgets.itemviews.abstractview import (
-    RobustAbstractItemView,
-)
+from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QMenu, QWidget
 
 
 class RobustGraphicsView(RobustAbstractItemView, QGraphicsView):
-    def __init__(self, parent: QWidget | None = None):
-        QGraphicsView.__init__(self, parent)
-        RobustAbstractItemView.__init__(self, parent)
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        *args,
+        should_call_qt_init: bool = True,
+        **kwargs,
+    ):
+        if should_call_qt_init:
+            QGraphicsView.__init__(self, parent)
+        RobustAbstractItemView.__init__(self, parent, *args, **kwargs)
 
     def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
         menu = super().build_context_menu(parent)

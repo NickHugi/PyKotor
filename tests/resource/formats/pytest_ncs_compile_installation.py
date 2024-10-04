@@ -24,7 +24,8 @@ def add_sys_path(p: pathlib.Path):
 
 if PYKOTOR_PATH.joinpath("pykotor").is_dir():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
+    if __name__ == "__main__":
+        os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").is_dir():
     add_sys_path(UTILITY_PATH)
 
@@ -131,7 +132,7 @@ def log_file(
     # Print the captured output to console
     print(*args, **kwargs)  # noqa: T201
 
-    filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path.pathify(filepath)
+    filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path(filepath)
     with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
         f.write(msg)
 
@@ -454,7 +455,7 @@ def save_profiler_output(
     filepath: os.PathLike | str,
 ):
     profiler.disable()
-    profiler_output_file = Path.pathify(filepath)
+    profiler_output_file = Path(filepath)
     profiler_output_file_str = str(profiler_output_file)
     profiler.dump_stats(profiler_output_file_str)
 

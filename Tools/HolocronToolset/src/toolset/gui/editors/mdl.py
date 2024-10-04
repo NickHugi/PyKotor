@@ -9,7 +9,8 @@ from qtpy.QtWidgets import QMessageBox
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf import read_erf
-from pykotor.resource.formats.mdl import MDL, read_mdl, write_mdl
+from pykotor.resource.formats.mdl.mdl_auto import read_mdl, write_mdl
+from pykotor.resource.formats.mdl.mdl_data import MDL
 from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
@@ -76,7 +77,8 @@ class MDLEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self): ...
+    def _setupSignals(self):
+        ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a model resource and its associated data.
@@ -94,7 +96,7 @@ class MDLEditor(Editor):
             - Sets model data on renderer if both MDL and MDX found
             - Displays error if unable to find associated data.
         """
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(filepath)
         super().load(c_filepath, resref, restype, data)
 
         mdl_data: bytes | None = None
@@ -133,6 +135,12 @@ class MDLEditor(Editor):
         self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0)
 
     def _loadMDL(self, mdl: MDL):
+        """Load an MDL model into the editor.
+
+        Args:
+        ----
+            mdl: {MDL}: The MDL model to load
+        """
         self._mdl = mdl
 
     def build(self) -> tuple[bytes, bytes]:
