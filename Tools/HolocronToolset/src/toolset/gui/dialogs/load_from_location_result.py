@@ -72,6 +72,8 @@ if __name__ == "__main__":
 
 from pathlib import Path
 
+from pathlib import Path
+
 from loggerplus import RobustLogger
 
 from pykotor.common.misc import Game
@@ -85,7 +87,7 @@ from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
 from pykotor.tools.path import find_kotor_paths_from_default
 from toolset.data.installation import HTInstallation
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import open_resource_editor
 from utility.misc import is_float, is_int
 from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
 
@@ -265,7 +267,7 @@ class CustomItem:
 
         return menu_dict
 
-    def runContextMenu(self, position: QPoint) -> QAction:
+    def run_context_menu(self, position: QPoint) -> QAction:
         return self.build_menu().exec_(self.viewport().mapToGlobal(position))  # noqa: RET504
 
 
@@ -773,7 +775,7 @@ class ResourceItems(FileItems):
         for _, action in action_sort_order:
             menu.addAction(action)
 
-    def runContextMenu(
+    def run_context_menu(
         self,
         position: QPoint,
         installation: HTInstallation | None = None,
@@ -881,7 +883,7 @@ class ResourceItems(FileItems):
                 RobustLogger().error("Exception occurred in open_selected_resource", exc_info=True)
                 QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "File no longer exists, might have been deleted.").exec_()
                 return
-            openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), data, installation, gff_specialized=gff_specialized)
+            open_resource_editor(resource.filepath(), resource.resname(), resource.restype(), data, installation, gff_specialized=gff_specialized)
 
 
 class CustomTableWidget(CustomItem, QTableWidget):
@@ -999,7 +1001,7 @@ class FileSelectionWindow(QMainWindow):
         self._init_table()
         self.resize(self.resource_table.sizeHint().width(), self.resource_table.sizeHint().height())
         self.resource_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.resource_table.customContextMenuRequested.connect(lambda x: self.resource_table.runContextMenu(x, self.installation))
+        self.resource_table.customContextMenuRequested.connect(lambda x: self.resource_table.run_context_menu(x, self.installation))
 
     def centerAndAdjustWindow(self):
         screen = QApplication.primaryScreen().geometry()
@@ -1176,9 +1178,9 @@ class FileSelectionWindow(QMainWindow):
             return []
 
 if __name__ == "__main__":
-    from toolset.__main__ import onAppCrash
+    from toolset.__main__ import on_app_crash
     faulthandler.enable(file=sys.stderr, all_threads=True)
-    sys.excepthook = onAppCrash
+    sys.excepthook = on_app_crash
     app = QApplication([])
     resname, restype = ResourceIdentifier.from_path("dan14_juhani.utc").unpack()
     found_kotors: dict[Game, list[CaseAwarePath]] = find_kotor_paths_from_default()

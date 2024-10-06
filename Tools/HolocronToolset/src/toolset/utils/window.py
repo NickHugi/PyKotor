@@ -20,25 +20,30 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
     from toolset.gui.editor import Editor
 
-WINDOWS: list[QWidget] = []
+TOOLSET_WINDOWS: list[QDialog | QMainWindow] = []
+"""TODO: Remove this implementation, there's better ways to keep windows from being garbage collected."""
 
 unique_sentinel = object()
-def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool = True):
+def add_window(
+    window: QDialog | QMainWindow,
+    *,
+    show: bool = True,
+):
     """Prevents Qt's garbage collection by keeping a reference to the window."""
     # Save the original closeEvent method
     original_closeEvent = window.closeEvent
 
     # Define a new closeEvent method that also calls the original
-    def newCloseEvent(
+    def new_close_event(
         event: QCloseEvent | None = unique_sentinel,  # pyright: ignore[reportArgumentType]
         *args,
         **kwargs,
     ):
         from toolset.gui.editor import Editor
         if isinstance(window, Editor) and window._filepath is not None:  # noqa: SLF001
-            addRecentFile(window._filepath)  # noqa: SLF001
-        if window in WINDOWS:
-            WINDOWS.remove(window)
+            add_recent_file(window._filepath)  # noqa: SLF001
+        if window in TOOLSET_WINDOWS:
+            TOOLSET_WINDOWS.remove(window)
         # Call the original closeEvent
         if event is unique_sentinel:  # Make event arg optional just in case the class has the wrong definition.
             original_closeEvent(*args, **kwargs)
@@ -46,33 +51,33 @@ def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool = True):
             original_closeEvent(event, *args, **kwargs)  # pyright: ignore[reportArgumentType]
 
     # Override the widget's closeEvent with the new one
-    window.closeEvent = newCloseEvent  # pyright: ignore[reportAttributeAccessIssue]
+    window.closeEvent = new_close_event  # pyright: ignore[reportAttributeAccessIssue]
 
     # Add the window to the global list and show it
-    WINDOWS.append(window)
+    TOOLSET_WINDOWS.append(window)
     if show:
         if isinstance(window, QDialog):
             window.exec_()
         else:
             window.show()
 
-def addRecentFile(file: Path):
+def add_recent_file(file: Path):
     """Update the list of recent files."""
     settings = GlobalSettings()
-    recentFiles: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.is_file()]
-    recentFiles.insert(0, str(file))
-    if len(recentFiles) > 15:  # noqa: PLR2004
-        recentFiles.pop()
-    settings.recentFiles = recentFiles
+    recent_files: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.is_file()]
+    recent_files.insert(0, str(file))
+    if len(recent_files) > 15:  # noqa: PLR2004
+        recent_files.pop()
+    settings.recentFiles = recent_files
 
 
-def openResourceEditor(
+def open_resource_editor(
     filepath: os.PathLike | str,
     resref: str,
     restype: ResourceType,
     data: bytes,
     installation: HTInstallation | None = None,
-    parentWindow: QWidget | None = None,
+    parent_window: QWidget | None = None,
     *,
     gff_specialized: bool | None = None,
 ) -> tuple[os.PathLike | str, Editor | QMainWindow] | tuple[None, None]:
@@ -83,13 +88,13 @@ def openResourceEditor(
 
     Args:
     ----
-        filepath: Path to the resource.
-        resref: The ResRef.
-        restype: The resource type.
-        data: The resource data.
-        parentwindow:
-        installation:
-        gff_specialized: Use the editor specific to the GFF-type file. If None, uses is configured in the settings.
+        filepath (PathLike | str): Path to the resource.
+        resref (str): The ResRef.
+        restype (ResourceType): The resource type.
+        data (bytes): The resource data.
+        parent_window (QWidget | None): The parent window.
+        installation (HTInstallation | None): The installation.
+        gff_specialized (bool | None): Use the editor specific to the GFF-type file. If None, uses is configured in the settings.
 
     Returns:
     -------
@@ -127,7 +132,7 @@ def openResourceEditor(
         gff_specialized = GlobalSettings().gff_specializedEditors
 
     editor = None
-    parentWindowWidget = parentWindow if isinstance(parentWindow, QWidget) else None
+    parent_window_widget = parent_window if isinstance(parent_window, QWidget) else None
     # don't send parentWindowWidget to the editors. This allows each editor to be treated as their own window.
 
     if restype.target_type() is ResourceType.TwoDA:
@@ -153,7 +158,7 @@ def openResourceEditor(
 
     if restype is ResourceType.NCS:
         QMessageBox.warning(
-            parentWindowWidget,
+            parent_window_widget,
             "Cannot decompile NCS without an installation active",
             "Please select an installation from the dropdown before loading an NCS.",
         )
@@ -245,8 +250,8 @@ def openResourceEditor(
 
     if restype.category == "Audio":
         editor = AudioPlayer(None)
-        if parentWindowWidget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
-            editor.setWindowIcon(parentWindowWidget.windowIcon())
+        if parent_window_widget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
+            editor.setWindowIcon(parent_window_widget.windowIcon())
 
     if restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM):
         editor = ERFEditor(None, installation)
@@ -266,7 +271,7 @@ def openResourceEditor(
             editor.show()
             editor.activateWindow()
 
-            addWindow(editor)
+            add_window(editor)
 
         except Exception as e:
             QMessageBox(
@@ -274,7 +279,7 @@ def openResourceEditor(
                 "An unexpected error has occurred",
                 str(universal_simplify_exception(e)),
                 QMessageBox.StandardButton.Ok,
-                parentWindowWidget,
+                parent_window_widget,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
             ).show()
             raise
@@ -286,7 +291,7 @@ def openResourceEditor(
             "Failed to open file",
             f"The selected file format '{restype}' is not yet supported.",
             QMessageBox.StandardButton.Ok,
-            parentWindowWidget,
+            parent_window_widget,
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
         ).show()
 

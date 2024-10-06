@@ -12,7 +12,7 @@ from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncLoader
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import open_resource_editor
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
@@ -301,11 +301,11 @@ class FileResults(QDialog):
             return
 
         resource: FileResource = item.data(QtCore.Qt.ItemDataRole.UserRole)
-        openResourceEditor(
+        open_resource_editor(
             filepath=resource.filepath(),
             resref=resource.resname(),
             restype=resource.restype(),
             data=resource.data(),
             installation=self.installation,
-            parentWindow=self.window().parent(),  # type: ignore[arg-type]
+            parent_window=self.window().parent(),  # type: ignore[arg-type]
         )

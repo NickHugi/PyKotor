@@ -6,19 +6,44 @@
     "configurations": [
         {
             "name":"Python: Current File",
-            "type":"python",
+            "type":"debugpy",
             "request":"launch",
             "program":"${file}",
             "console":"integratedTerminal",
-            "justMyCode":true
+            "justMyCode":false
         },
         {
-            "name": "Python: Module",
-            "type": "python",
-            "request": "launch",
-            "module": "toolset",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}/src"
+            "name":"Run Toolset",
+            "type":"debugpy",
+            "request":"launch",
+            "module":"toolset",
+            "justMyCode":false,
+            "cwd":"${workspaceFolder}/src",
+            "args":["--debug"],
+            "env":{
+                "SPYDER_DEBUG":"1",
+                "SPYDER_DEBUG_PORT":"5678",
+                "SPYDER_DEBUG_WORKERS":"1",
+                "SPYDER_DEBUG_UI":"1",
+                "SPYDER_DEBUG_IP":"127.0.0.1",
+                "SPYDER_DEBUG_WAIT":"1",
+                "SPYDER_DEBUG_SLEEP":"1",
+                "SPYDER_DEBUG_SLEEP_TIME":"1",
+                "SPYDER_DEBUG_SLEEP_TIME_MULTIPLIER":"1",
+                "PYTHONBREAKPOINT":"pdb.set_trace",
+                "PYTHONINSPECT":"1",
+                "PYTHONSTARTUP":"${workspaceFolder}/src/toolset/config/pdb_config.py",
+                "PYTHONUNBUFFERED":"1",
+                "PYTHONIOENCODING":"utf-8",
+                "PYTHONOPTIMIZE":"0",
+                "PYTHONDEVMODE":"1",
+                "PYTHONDEVMODE_VERBOSE":"1",
+                "PYTHONDEVMODE_LOG_LEVEL":"DEBUG",
+                "PYTHONDEVMODE_LOG_FILE":"${workspaceFolder}/src/toolset/config/pdb_config.py",
+                "PYTHONDEVMODE_LOG_FILE_LEVEL":"DEBUG",
+                "PYTHONDEVMODE_LOG_FILE_FORMAT":"%(asctime)s - %(levelname)s - %(message)s",
+                "PYTHONDEVMODE_LOG_FILE_DATE_FORMAT":"%Y-%m-%d %H:%M:%S",
+            }
         }
     ]
 }

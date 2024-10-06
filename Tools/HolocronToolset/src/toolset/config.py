@@ -122,7 +122,7 @@ def getRemoteToolsetUpdateInfo(
     return remoteInfo
 
 
-def remoteVersionNewer(localVersion: str, remoteVersion: str) -> bool | None:
+def is_remote_version_newer(localVersion: str, remoteVersion: str) -> bool | None:
     version_check: bool | None = None
     with suppress(Exception):
         from packaging import version

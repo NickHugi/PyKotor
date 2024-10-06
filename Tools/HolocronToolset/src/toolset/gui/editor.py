@@ -281,16 +281,16 @@ class MediaPlayerWidget(QWidget):
 
     def setVisible(self, visible: bool):  # noqa: FBT001
         """Override to control visibility based on player state."""
-        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
-        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateEnum: type[QMediaPlayer.State] = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter: Callable[[], QMediaPlayer.State] = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
         if stateGetter() == stateEnum.PlayingState:
             return
         super().setVisible(visible)
 
     def showEvent(self, event: QShowEvent):
         """Override to prevent showing unless playing."""
-        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
-        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateEnum: type[QMediaPlayer.State] = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter: Callable[[], QMediaPlayer.State] = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
         if stateGetter() != stateEnum.PlayingState:
             return
         super().showEvent(event)
@@ -348,8 +348,11 @@ class Editor(QMainWindow):
         self._revert: bytes | None = None
         self._global_settings: GlobalSettings = GlobalSettings()
 
-        #self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self)
-        #self.layout().addWidget(self.mediaPlayer)
+        self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self)
+        # TODO: use existing layout
+        #editor_layout = QVBoxLayout()
+        #self.setLayout(editor_layout)
+        #editor_layout.addWidget(self.mediaPlayer)
         self.setWindowTitle(title)
         self._setupIcon(iconName)
 
