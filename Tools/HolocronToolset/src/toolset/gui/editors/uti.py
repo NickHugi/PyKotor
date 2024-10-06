@@ -31,7 +31,7 @@ from toolset.gui.dialogs.load_from_location_result import (
     ResourceItems,
 )
 from toolset.gui.editor import Editor
-from toolset.utils.window import addWindow
+from toolset.utils.window import add_window
 
 if TYPE_CHECKING:
 
@@ -477,7 +477,7 @@ class UTIEditor(Editor):
         selectionWindow = FileSelectionWindow(locations, self._installation)
         selectionWindow.show()
         selectionWindow.activateWindow()
-        addWindow(selectionWindow)
+        add_window(selectionWindow)
 
     def _copyIconTooltip(self):
         tooltipText = self._generateIconTooltip(asHtml=False)

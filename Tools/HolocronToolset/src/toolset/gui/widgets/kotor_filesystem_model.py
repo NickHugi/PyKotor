@@ -78,7 +78,7 @@ from pykotor.extract.file import FileResource  # noqa: E402
 from pykotor.tools.misc import is_capsule_file  # noqa: E402
 from toolset.__main__ import main_init  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
-from toolset.utils.window import openResourceEditor  # noqa: E402
+from toolset.utils.window import open_resource_editor  # noqa: E402
 from utility.system.os_helper import get_size_on_disk  # noqa: E402
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
@@ -414,7 +414,7 @@ class ResourceFileSystemWidget(QWidget):
             print("<SDM> [fileSystemModelDoubleClick scope] ToolWindow: ", mw)
             if mw is None:
                 return
-            openResourceEditor(item.path, item.resource.resname(), item.resource.restype(), item.resource.data(), installation=mw.active, parentWindow=None)
+            open_resource_editor(item.path, item.resource.resname(), item.resource.restype(), item.resource.data(), installation=mw.active, parentWindow=None)
         elif isinstance(item, DirItem):
             if not item.children and isinstance(self.fsModel, (ResourceFileSystemModel, QFileSystemModel)):
                 item.loadChildren(self.fsModel)
@@ -550,10 +550,10 @@ class ResourceFileSystemWidget(QWidget):
         m = QMenu(self)
         print("<SDM> [fileSystemModelContextMenu scope] m: ", m)
 
-        m.addAction("Open").triggered.connect(lambda: [openResourceEditor(r.filepath(), r.resname(), r.restype(), r.data(), installation=active_installation) for r in resources])  # pyright: ignore[reportOptionalMemberAccess]
+        m.addAction("Open").triggered.connect(lambda: [open_resource_editor(r.filepath(), r.resname(), r.restype(), r.data(), installation=active_installation) for r in resources])  # pyright: ignore[reportOptionalMemberAccess]
 
         if all(r.restype().contents == "gff" for r in resources):
-            m.addAction("Open with GFF Editor").triggered.connect(lambda: [openResourceEditor(r.filepath(), r.resname(), r.restype(), r.data(), installation=active_installation, gff_specialized=False) for r in resources])  # pyright: ignore[reportOptionalMemberAccess]
+            m.addAction("Open with GFF Editor").triggered.connect(lambda: [open_resource_editor(r.filepath(), r.resname(), r.restype(), r.data(), installation=active_installation, gff_specialized=False) for r in resources])  # pyright: ignore[reportOptionalMemberAccess]
 
         m.addSeparator()
         ResourceItems(resources=list(resources), viewport=lambda: self.parent()).runContextMenu(point, installation=active_installation, menu=m)

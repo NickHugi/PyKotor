@@ -15,7 +15,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.misc import Color
 from utility.misc import is_int
-from utility.ui_libraries.qt.corelib.itemmodels.filters import (
+from utility.ui_libraries.qt.adapters.itemmodels.filters import (
     HoverEventFilter,
     NoScrollEventFilter,
 )

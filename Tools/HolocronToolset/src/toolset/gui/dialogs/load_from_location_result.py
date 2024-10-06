@@ -72,8 +72,6 @@ if __name__ == "__main__":
 
 from pathlib import Path
 
-from pathlib import Path
-
 from loggerplus import RobustLogger
 
 from pykotor.common.misc import Game

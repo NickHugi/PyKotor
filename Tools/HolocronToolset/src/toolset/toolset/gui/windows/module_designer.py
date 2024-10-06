@@ -87,7 +87,7 @@ from toolset.utils.misc import (
     getQtButtonString,
     getQtKeyString,
 )
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import open_resource_editor
 from utility.error_handling import safe_repr
 
 if TYPE_CHECKING:
@@ -611,7 +611,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.resourceTree.setSortingEnabled(True)
 
     def openModuleResource(self, resource: ModuleResource):
-        editor: Editor | QMainWindow | None = openResourceEditor(
+        editor: Editor | QMainWindow | None = open_resource_editor(
             resource.active(),
             resource.resname(),
             resource.restype(),

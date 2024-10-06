@@ -110,7 +110,7 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.misc import getQtKeyString
-from utility.ui_libraries.qt.corelib.itemmodels.filters import NoScrollEventFilter
+from utility.ui_libraries.qt.adapters.itemmodels.filters import NoScrollEventFilter
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import (
     _ICONS_DATA_ROLE,
     HTMLDelegate,

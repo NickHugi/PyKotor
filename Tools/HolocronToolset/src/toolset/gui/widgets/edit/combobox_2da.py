@@ -207,7 +207,7 @@ class ComboBox2DA(QComboBox):
             return
         from pykotor.resource.formats.twoda.twoda_auto import bytes_2da
         from toolset.gui.editors.twoda import TwoDAEditor
-        from toolset.utils.window import addWindow
+        from toolset.utils.window import add_window
         editor = TwoDAEditor(None, self._installation)
         editor.new()
         try:
@@ -221,7 +221,7 @@ class ComboBox2DA(QComboBox):
         else:
             editor.jumpToRow(self.currentIndex())
         editor.setWindowTitle(f"{self._resname}.2da - 2DAEditor({self._installation.name})")
-        addWindow(editor)
+        add_window(editor)
 
     def openModdedValueDialog(self):
         """Opens a dialog where the player can manually set the index into the 2DA file."""

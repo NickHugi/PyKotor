@@ -65,7 +65,7 @@ from pykotor.extract.file import FileResource  # noqa: E402
 from qtpy.QtGui import QIcon  # noqa: E402
 from qtpy.QtWidgets import QTreeView  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
-from toolset.utils.window import openResourceEditor  # noqa: E402
+from toolset.utils.window import open_resource_editor  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject, QPoint
@@ -319,7 +319,7 @@ class FileSystemTreeView(QTreeView):
         item: ResourceItem | DirItem = idx.internalPointer()
         if isinstance(item, ResourceItem) and item.path.exists() and item.path.is_file():
             mw: ToolWindow = next((w for w in QApplication.topLevelWidgets() if isinstance(w, QMainWindow) and w.__class__.__name__ == "ToolWindow"), None)  # pyright: ignore[reportAssignmentType]
-            openResourceEditor(item.path, item.resource.resname(), item.resource.restype(), item.resource.data(), installation=mw.active, parentWindow=None)
+            open_resource_editor(item.path, item.resource.resname(), item.resource.restype(), item.resource.data(), installation=mw.active, parentWindow=None)
         elif isinstance(item, DirItem):
             if not item.children:
                 item.load_children(self.model())
@@ -404,9 +404,9 @@ class FileSystemTreeView(QTreeView):
             return
         mw: ToolWindow = next((w for w in QApplication.topLevelWidgets() if isinstance(w, QMainWindow) and w.__class__.__name__ == "ToolWindow"), None)  # pyright: ignore[reportAssignmentType]
         m = QMenu(self)
-        m.addAction("Open").triggered.connect(lambda: [openResourceEditor(r.filepath(), r.resname(), r.restype(), r.data(), installation=mw.active) for r in resources])
+        m.addAction("Open").triggered.connect(lambda: [open_resource_editor(r.filepath(), r.resname(), r.restype(), r.data(), installation=mw.active) for r in resources])
         if all(r.restype().contents == "gff" for r in resources):
-            m.addAction("Open with GFF Editor").triggered.connect(lambda: [openResourceEditor(r.filepath(), r.resname(), r.restype(), r.data(), installation=mw.active, gff_specialized=False) for r in resources])
+            m.addAction("Open with GFF Editor").triggered.connect(lambda: [open_resource_editor(r.filepath(), r.resname(), r.restype(), r.data(), installation=mw.active, gff_specialized=False) for r in resources])
         m.addSeparator()
         ResourceItems(resources=resources, viewport=lambda: self.parent()).runContextMenu(point, installation=mw.active, menu=m)
 

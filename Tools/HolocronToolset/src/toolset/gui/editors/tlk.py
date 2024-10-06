@@ -28,7 +28,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.search import FileResults
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.window import addWindow, openResourceEditor
+from toolset.utils.window import add_window, open_resource_editor
 
 if TYPE_CHECKING:
     import os
@@ -283,7 +283,7 @@ class TLKEditor(Editor):
             )
         )
         loader.startWorker()
-        addWindow(loader)
+        add_window(loader)
 
     def handleSearchCompleted(
         self,
@@ -303,7 +303,7 @@ class TLKEditor(Editor):
         resultsDialog.setModal(False)  # Make the dialog non-modal
         resultsDialog.show()  # Show the dialog without blocking
         resultsDialog.setWindowTitle(f"{len(results_list)} results for stringref '{stringref}' in {self._installation.path()}")
-        addWindow(resultsDialog)
+        add_window(resultsDialog)
         resultsDialog.selectionSignal.connect(self.handleResultsSelection)
 
     def handleResultsSelection(
@@ -311,7 +311,7 @@ class TLKEditor(Editor):
         selection: FileResource,
     ):
         # Open relevant tab then select resource in the tree
-        filepath, editor = openResourceEditor(
+        filepath, editor = open_resource_editor(
             selection.filepath(),
             selection.resname(),
             selection.restype(),

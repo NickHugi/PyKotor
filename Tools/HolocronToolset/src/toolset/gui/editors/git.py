@@ -52,7 +52,7 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
-from toolset.utils.window import addWindow, openResourceEditor
+from toolset.utils.window import add_window, open_resource_editor
 
 if TYPE_CHECKING:
     import os
@@ -970,10 +970,10 @@ class _InstanceMode(_Mode):
             selectionWindow = FileSelectionWindow(search, self._installation)
             selectionWindow.show()
             selectionWindow.activateWindow()
-            addWindow(selectionWindow)
+            add_window(selectionWindow)
         elif search:
             resource = search[0].as_file_resource()
-            openResourceEditor(
+            open_resource_editor(
                 resource.filepath(),
                 resource.resname(),
                 resource.restype(),
@@ -1061,7 +1061,7 @@ class _InstanceMode(_Mode):
             )
             selectionWindow.show()
             selectionWindow.activateWindow()
-            addWindow(selectionWindow)
+            add_window(selectionWindow)
 
         fileMenu.addAction("Details...").triggered.connect(moreInfo)
         return menu

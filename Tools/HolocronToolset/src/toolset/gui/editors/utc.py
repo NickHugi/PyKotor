@@ -30,7 +30,7 @@ from toolset.gui.dialogs.load_from_location_result import (
 )
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.window import addWindow, openResourceEditor
+from toolset.utils.window import add_window, open_resource_editor
 
 if TYPE_CHECKING:
     import os
@@ -174,7 +174,7 @@ class UTCEditor(Editor):
         selectionWindow = FileSelectionWindow(locations, self._installation)
         selectionWindow.show()
         selectionWindow.activateWindow()
-        addWindow(selectionWindow)
+        add_window(selectionWindow)
 
     def _copyPortraitTooltip(self):
         tooltipText = self._generatePortraitTooltip(asHtml=False)
@@ -782,7 +782,7 @@ class UTCEditor(Editor):
             print(f"Data/filepath cannot be None in self.editConversation() relevance: (resname={resname}, restype={restype!r}, filepath={filepath!r})")
             return
 
-        openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
+        open_resource_editor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
     def openInventory(self):
         """Opens the inventory editor.

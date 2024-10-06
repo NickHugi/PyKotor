@@ -26,7 +26,7 @@ from qtpy.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from toolset.config import getRemoteToolsetUpdateInfo, remoteVersionNewer
+from toolset.config import getRemoteToolsetUpdateInfo, is_remote_version_newer
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
@@ -142,7 +142,7 @@ class HelpWindow(QMainWindow):
             if self.version is None:
                 title = "Help book missing"
                 text = "You do not seem to have a valid help booklet downloaded, would you like to download it?"
-            elif remoteVersionNewer(self.version, new_version):
+            elif is_remote_version_newer(self.version, new_version):
                 title = "Update available"
                 text = "A newer version of the help book is available for download, would you like to download it?"
             else:

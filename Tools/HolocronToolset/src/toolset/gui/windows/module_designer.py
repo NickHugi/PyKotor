@@ -72,7 +72,7 @@ from toolset.gui.windows.designer_controls import (
 )
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import MODIFIER_KEY_NAMES, getQtButtonString, getQtKeyString
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import open_resource_editor
 from utility.error_handling import safe_repr
 from utility.misc import is_debug_mode
 
@@ -569,7 +569,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.resourceTree.setSortingEnabled(True)
 
     def openModuleResource(self, resource: ModuleResource):
-        editor: Editor | QMainWindow | None = openResourceEditor(
+        editor: Editor | QMainWindow | None = open_resource_editor(
             resource.active(),
             resource.resname(),
             resource.restype(),

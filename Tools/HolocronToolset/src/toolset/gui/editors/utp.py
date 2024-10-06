@@ -23,7 +23,7 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import open_resource_editor
 
 if TYPE_CHECKING:
     import os
@@ -407,7 +407,7 @@ class UTPEditor(Editor):
             resname, restype, filepath, data = search
 
         if data is not None:
-            openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
+            open_resource_editor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
     def openInventory(self):
         """Opens inventory editor for the module.

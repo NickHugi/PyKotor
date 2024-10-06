@@ -55,7 +55,7 @@ from pathlib import Path  # noqa: E402
 
 from pykotor.extract.file import FileResource  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
-from toolset.utils.window import openResourceEditor  # noqa: E402
+from toolset.utils.window import open_resource_editor  # noqa: E402
 
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView  # noqa: E402
@@ -363,7 +363,7 @@ class FileSystemTreeView(RobustTreeView):
         tree_item = index.internalPointer()
         if isinstance(tree_item, ResourceItem):
             fileres: FileResource = tree_item.resource
-            openResourceEditor(
+            open_resource_editor(
                 file_path,
                 fileres.resname(),
                 fileres.restype(),
@@ -486,10 +486,10 @@ class FileSystemTreeView(RobustTreeView):
             return
 
         menu = QMenu(self)
-        menu.addAction("Open").triggered.connect(lambda *args: (openResourceEditor(res.filepath(), res.resname(), res.restype(), res.data()) for res in resources))
+        menu.addAction("Open").triggered.connect(lambda *args: (open_resource_editor(res.filepath(), res.resname(), res.restype(), res.data()) for res in resources))
         if all(resource.restype().contents == "gff" for resource in resources):
             menu.addAction("Open with GFF Editor").triggered.connect(
-                lambda *args: (openResourceEditor(res.filepath(), res.resname(), res.restype(), res.data(), gff_specialized=False) for res in resources)
+                lambda *args: (open_resource_editor(res.filepath(), res.resname(), res.restype(), res.data(), gff_specialized=False) for res in resources)
             )
         menu.addSeparator()
         builder = ResourceItems(resources=resources)

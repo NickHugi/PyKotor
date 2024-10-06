@@ -275,7 +275,7 @@ class Installation:
             return {}
 
         self._log.info("Loading '%s' from installation...", r_path.relative_to(self._path))
-        files_iter = r_path.safe_rglob("*") if recurse else r_path.safe_iterdir()
+        files_iter = r_path.rglob("*") if recurse else r_path.iterdir()
 
         resources_dict: dict[str, list[FileResource]] = {}
 
@@ -325,9 +325,9 @@ class Installation:
 
         self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
         files_iter = (
-            path.safe_rglob("*")
+            path.rglob("*")
             if recurse
-            else path.safe_iterdir()
+            else path.iterdir()
         )
 
         resources_list: list[FileResource] = []
@@ -443,7 +443,7 @@ class Installation:
                 is_k1 = True
                 RobustLogger().exception("Failed to get the game of your installation!")
             if is_k1:
-                target_dirs = [f for f in override_path.safe_rglob("*") if f.is_dir()]
+                target_dirs = [f for f in override_path.rglob("*") if f.is_dir()]
             target_dirs.append(override_path)
             self._override = {}
 
@@ -1417,7 +1417,7 @@ class Installation:
 
         def check_folders(resource_folders: list[Path]):
             for folder in resource_folders:
-                for file in folder.safe_rglob("*"):
+                for file in folder.rglob("*"):
                     if not file.is_file():
                         continue
                     identifier = ResourceIdentifier.from_path(file)
@@ -1604,7 +1604,7 @@ class Installation:
             for folder in resource_folders:
                 queried_texture_files.update(
                     file
-                    for file in folder.safe_rglob("*")
+                    for file in folder.rglob("*")
                     if (
                         file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in texture_types
@@ -1793,7 +1793,7 @@ class Installation:
             for folder in values:  # Having two loops makes it easier to filter out irrelevant files when stepping through the 2nd
                 relevant_files.update(
                     file
-                    for file in folder.safe_rglob("*")
+                    for file in folder.rglob("*")
                     if (
                         file.suffix
                         and (
@@ -1945,7 +1945,7 @@ class Installation:
             for folder in values:
                 queried_sound_files.update(
                     file
-                    for file in folder.safe_rglob("*")
+                    for file in folder.rglob("*")
                     if (
                         file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in sound_formats

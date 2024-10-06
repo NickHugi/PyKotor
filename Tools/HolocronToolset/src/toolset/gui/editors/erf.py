@@ -30,7 +30,7 @@ from toolset.gui.common.filters import RobustSortFilterProxyModel
 from toolset.gui.dialogs.save.generic_file_saver import FileSaveHandler
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import open_resource_editor
 from utility.error_handling import universal_simplify_exception
 from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 
@@ -559,7 +559,7 @@ class ERFEditor(Editor):
                 RobustLogger().info(f"Nested capsule selected for opening, appending resref/restype '{resource.resref}.{resource.restype}' to the filepath.")
                 new_filepath /= str(ResourceIdentifier(str(resource.resref), resource.restype))
 
-            _tempPath, editor = openResourceEditor(
+            _tempPath, editor = open_resource_editor(
                 new_filepath,
                 str(resource.resref),
                 resource.restype,

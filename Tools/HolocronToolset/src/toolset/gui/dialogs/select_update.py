@@ -35,7 +35,7 @@ from qtpy.QtWidgets import (
 
 from toolset.config import (
     LOCAL_PROGRAM_INFO,
-    remoteVersionNewer,
+    is_remote_version_newer,
     toolset_tag_to_version,
     version_to_toolset_tag,
 )
@@ -170,7 +170,7 @@ class UpdateDialog(QDialog):
         currentVersionLayout = QHBoxLayout()
         currentVersionLayout.addStretch(1)
         currentVersion = LOCAL_PROGRAM_INFO["currentVersion"]
-        versionColor = "#FFA500" if remoteVersionNewer(currentVersion, toolset_tag_to_version(self.get_selected_tag())) else "#00FF00"
+        versionColor = "#FFA500" if is_remote_version_newer(currentVersion, toolset_tag_to_version(self.get_selected_tag())) else "#00FF00"
         versionText = f"<span style='font-size:16px; font-weight:bold; color:{versionColor};'>{currentVersion}</span>"
         currentVersionLabel = QLabel(f"Holocron Toolset Current Version: {versionText}")
         currentVersionLabel.setFont(QFont("Arial", 12))
@@ -244,7 +244,7 @@ class UpdateDialog(QDialog):
             print("No releases found, attempt to try again with prereleases")
             self.set_prerelease(True)
             return
-        self.releases.sort(key=lambda x: bool(remoteVersionNewer("0.0.0", x.tag_name)))
+        self.releases.sort(key=lambda x: bool(is_remote_version_newer("0.0.0", x.tag_name)))
 
         # Update Combo Box
         self.releaseComboBox.clear()

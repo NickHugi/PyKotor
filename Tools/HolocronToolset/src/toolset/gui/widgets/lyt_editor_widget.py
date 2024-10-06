@@ -79,7 +79,6 @@ if TYPE_CHECKING:
         QShowEvent,
         QWheelEvent,
     )
-
     from ui.module import ModuleRenderer
 
 

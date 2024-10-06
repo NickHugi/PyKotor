@@ -36,7 +36,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from toolset.config import getRemoteToolsetUpdateInfo, remoteVersionNewer
+from toolset.config import getRemoteToolsetUpdateInfo, is_remote_version_newer
 from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -1103,7 +1103,7 @@ class KitDownloader(QDialog):
                     else:
                         local_kit_version = str(localKitDict["version"])
                         retrieved_kit_version = str(kitDict["version"])
-                        if remoteVersionNewer(local_kit_version, retrieved_kit_version) is not False:
+                        if is_remote_version_newer(local_kit_version, retrieved_kit_version) is not False:
                             button.setText("Update Available")
                             button.setEnabled(True)
                 else:
