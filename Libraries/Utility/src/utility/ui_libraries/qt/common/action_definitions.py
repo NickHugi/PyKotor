@@ -21,124 +21,60 @@ class FileExplorerActions:
         self.menu_handler: MenuActionsDispatcher = menu_handler
 
         # Open actions
-        self.actionOpenFile = QAction(QIcon.fromTheme("document-open"), "Open")
-        self.actionOpenFile.setShortcut(QKeySequence("Enter"))
-        self.actionOpenFile.triggered.connect(lambda: self.menu_handler.queue_task("open_file", self.menu_handler.get_selected_paths()))
+        self.actionOpen = QAction(QIcon.fromTheme("document-open"), "Open")
+        self.actionOpen.setShortcut(QKeySequence("Enter"))
+        self.actionOpen.triggered.connect(lambda: self.menu_handler.queue_task("open_item", self.menu_handler.get_selected_paths()))
 
-        self.actionOpenDir = QAction(QIcon.fromTheme("folder-open"), "Open")
-        self.actionOpenDir.setShortcut(QKeySequence("Enter"))
-        self.actionOpenDir.triggered.connect(lambda: self.menu_handler.queue_task("open_dir", self.menu_handler.get_selected_paths()))
+        self.actionOpenInNewWindow = QAction(QIcon.fromTheme("window-new"), "Open in New Window")
+        self.actionOpenInNewWindow.setShortcut(QKeySequence("Shift+Enter"))
+        # openInNewWindow trigger implemented in explorer/browser widget
 
-        self.actionOpenInNewWindowFile = QAction(QIcon.fromTheme("window-new"), "Open in New Window")
-        self.actionOpenInNewWindowFile.setShortcut(QKeySequence("Shift+Enter"))
-        # openInNewWindowFile trigger implemented in explorer/browser widget
+        self.actionOpenInNewTab = QAction(QIcon.fromTheme("tab-new"), "Open in New Tab")
+        self.actionOpenInNewTab.setShortcut(QKeySequence("Ctrl+T"))
+        # actionOpenInNewTab trigger implemented in explorer/browser widget
 
-        self.actionOpenInNewWindowDir = QAction(QIcon.fromTheme("window-new"), "Open in New Window")
-        self.actionOpenInNewWindowDir.setShortcut(QKeySequence("Shift+Enter"))
-        # actionOpenInNewWindowDir trigger implemented in explorer/browser widget
+        self.actionOpenWith = QAction(QIcon.fromTheme("document-open"), "Open With...")
+        self.actionOpenWith.setShortcut(QKeySequence("Alt+Enter"))
+        self.actionOpenWith.triggered.connect(lambda: self.menu_handler.queue_task("open_with", self.menu_handler.get_selected_paths()))
 
-        self.actionOpenInNewTabFile = QAction(QIcon.fromTheme("tab-new"), "Open in New Tab")
-        self.actionOpenInNewTabFile.setShortcut(QKeySequence("Ctrl+T"))
-        # actionOpenInNewTabFile trigger implemented in explorer/browser widget
-
-        self.actionOpenInNewTabDir = QAction(QIcon.fromTheme("tab-new"), "Open in New Tab")
-        self.actionOpenInNewTabDir.setShortcut(QKeySequence("Ctrl+T"))
-        # actionOpenInNewTabFile trigger implemented in explorer/browser widget
-
-        self.actionOpenWithFile = QAction(QIcon.fromTheme("document-open"), "Open With...")
-        self.actionOpenWithFile.setShortcut(QKeySequence("Alt+Enter"))
-        self.actionOpenWithFile.triggered.connect(lambda: self.menu_handler.queue_task("open_with", self.menu_handler.get_selected_paths()))
-
-        self.actionPropertiesFile = QAction(QIcon.fromTheme("document-properties"), "Properties")
-        self.actionPropertiesFile.setShortcut(QKeySequence("Alt+Enter"))
-        self.actionPropertiesFile.triggered.connect(lambda: self.menu_handler.queue_task("get_properties", self.menu_handler.get_selected_paths()))
-
-        self.actionPropertiesDir = QAction(QIcon.fromTheme("folder-properties"), "Properties")
-        self.actionPropertiesDir.setShortcut(QKeySequence("Alt+Enter"))
-        self.actionPropertiesDir.triggered.connect(lambda: self.menu_handler.queue_task("get_properties", self.menu_handler.get_selected_paths()))
-
-        self.actionOpenTerminalFile = QAction(QIcon.fromTheme("utilities-terminal"), "Open Terminal")
-        self.actionOpenTerminalFile.setShortcut(QKeySequence("Shift+F10"))
-        self.actionOpenTerminalFile.triggered.connect(lambda: self.menu_handler.queue_task("open_terminal", self.menu_handler.get_selected_paths().parent))
+        self.actionProperties = QAction(QIcon.fromTheme("document-properties"), "Properties")
+        self.actionProperties.setShortcut(QKeySequence("Alt+Enter"))
+        self.actionProperties.triggered.connect(lambda: self.menu_handler.queue_task("get_properties", self.menu_handler.get_selected_paths()))
 
         self.actionOpenTerminal = QAction(QIcon.fromTheme("utilities-terminal"), "Open Terminal")
         self.actionOpenTerminal.setShortcut(QKeySequence("Shift+F10"))
         self.actionOpenTerminal.triggered.connect(lambda: self.menu_handler.queue_task("open_terminal", self.menu_handler.get_selected_paths()))
 
-        self.actionCutFile = QAction(QIcon.fromTheme("edit-cut"), "Cut")
-        self.actionCutFile.setShortcut(QKeySequence.StandardKey.Cut)
-        self.actionCutFile.triggered.connect(self.menu_handler.on_cut_file)
+        self.actionCut = QAction(QIcon.fromTheme("edit-cut"), "Cut")
+        self.actionCut.setShortcut(QKeySequence.StandardKey.Cut)
+        self.actionCut.triggered.connect(self.menu_handler.on_cut_items)
 
-        self.actionCutDir = QAction(QIcon.fromTheme("edit-cut"), "Cut")
-        self.actionCutDir.setShortcut(QKeySequence.StandardKey.Cut)
-        self.actionCutDir.triggered.connect(self.menu_handler.on_cut_dir)
+        self.actionCopy = QAction(QIcon.fromTheme("edit-copy"), "Copy")
+        self.actionCopy.setShortcut(QKeySequence.StandardKey.Copy)
+        self.actionCopy.triggered.connect(self.menu_handler.on_copy_items)
 
-        self.actionCopyFile = QAction(QIcon.fromTheme("edit-copy"), "Copy")
-        self.actionCopyFile.setShortcut(QKeySequence.StandardKey.Copy)
-        self.actionCopyFile.triggered.connect(self.menu_handler.on_copy_file)
+        self.actionPaste = QAction(QIcon.fromTheme("edit-paste"), "Paste")
+        self.actionPaste.setShortcut(QKeySequence.StandardKey.Paste)
+        self.actionPaste.triggered.connect(self.menu_handler.on_paste_items)
 
-        self.actionCopyDir = QAction(QIcon.fromTheme("edit-copy"), "Copy")
-        self.actionCopyDir.setShortcut(QKeySequence.StandardKey.Copy)
-        self.actionCopyDir.triggered.connect(self.menu_handler.on_copy_dir)
+        self.actionDelete = QAction(QIcon.fromTheme("edit-delete"), "Delete")
+        self.actionDelete.setShortcut(QKeySequence.StandardKey.Delete)
+        self.actionDelete.triggered.connect(lambda: self.menu_handler.queue_task("delete_items", self.menu_handler.get_selected_paths()))
 
-        self.actionPasteFile = QAction(QIcon.fromTheme("edit-paste"), "Paste")
-        self.actionPasteFile.setShortcut(QKeySequence.StandardKey.Paste)
-        self.actionPasteFile.triggered.connect(self.menu_handler.on_paste_file)
-
-        self.actionPasteDir = QAction(QIcon.fromTheme("edit-paste"), "Paste")
-        self.actionPasteDir.setShortcut(QKeySequence.StandardKey.Paste)
-        self.actionPasteDir.triggered.connect(self.menu_handler.on_paste_dir)
-
-        self.actionDeleteFile = QAction(QIcon.fromTheme("edit-delete"), "Delete")
-        self.actionDeleteFile.setShortcut(QKeySequence.StandardKey.Delete)
-        self.actionDeleteFile.triggered.connect(lambda: self.menu_handler.queue_task("delete_items", [self.menu_handler.get_selected_paths()]))
-
-        self.actionDeleteDir = QAction(QIcon.fromTheme("edit-delete"), "Delete")
-        self.actionDeleteDir.setShortcut(QKeySequence.StandardKey.Delete)
-        self.actionDeleteDir.triggered.connect(lambda: self.menu_handler.queue_task("delete_items", [self.menu_handler.get_selected_paths()]))
-
-        self.actionRenameFile = QAction(QIcon.fromTheme("edit-rename"), "Rename")
-        self.actionRenameFile.setShortcut("F2")
-        self.actionRenameFile.triggered.connect(lambda: self.menu_handler.queue_task("rename_item", self.menu_handler.get_selected_paths()))
-
-        self.actionRenameDir = QAction(QIcon.fromTheme("edit-rename"), "Rename")
-        self.actionRenameDir.setShortcut("F2")
-        self.actionRenameDir.triggered.connect(lambda: self.menu_handler.queue_task("rename_item", self.menu_handler.get_selected_paths()))
+        self.actionRename = QAction(QIcon.fromTheme("edit-rename"), "Rename")
+        self.actionRename.setShortcut("F2")
+        self.actionRename.triggered.connect(lambda: self.menu_handler.queue_task("rename_item", self.menu_handler.get_selected_paths()))
 
         # ... (other actions)
 
         # Multi-selection actions
-        self.actionCopyFiles = QAction(QIcon.fromTheme("edit-copy"), "Copy Files")
-        self.actionCopyFiles.setShortcut(QKeySequence.StandardKey.Copy)
-        self.actionCopyFiles.triggered.connect(self.menu_handler.on_copy_files)
-
-        self.actionCopyDirs = QAction(QIcon.fromTheme("edit-copy"), "Copy Directories")
-        self.actionCopyDirs.setShortcut(QKeySequence.StandardKey.Copy)
-        self.actionCopyDirs.triggered.connect(self.menu_handler.on_copy_dirs)
-
         self.actionCopyItems = QAction(QIcon.fromTheme("edit-copy"), "Copy Items")
         self.actionCopyItems.setShortcut(QKeySequence.StandardKey.Copy)
         self.actionCopyItems.triggered.connect(self.menu_handler.on_copy_items)
 
-        self.actionCutFiles = QAction(QIcon.fromTheme("edit-cut"), "Cut Files")
-        self.actionCutFiles.setShortcut(QKeySequence.StandardKey.Cut)
-        self.actionCutFiles.triggered.connect(self.menu_handler.on_cut_files)
-
-        self.actionCutDirs = QAction(QIcon.fromTheme("edit-cut"), "Cut Directories")
-        self.actionCutDirs.setShortcut(QKeySequence.StandardKey.Cut)
-        self.actionCutDirs.triggered.connect(self.menu_handler.on_cut_dirs)
-
         self.actionCutItems = QAction(QIcon.fromTheme("edit-cut"), "Cut Items")
         self.actionCutItems.setShortcut(QKeySequence.StandardKey.Cut)
         self.actionCutItems.triggered.connect(self.menu_handler.on_cut_items)
-
-        self.actionDeleteFiles = QAction(QIcon.fromTheme("edit-delete"), "Delete Files")
-        self.actionDeleteFiles.setShortcut(QKeySequence.StandardKey.Delete)
-        self.actionDeleteFiles.triggered.connect(lambda: self.menu_handler.queue_task("delete_items", self.menu_handler.get_selected_paths()))
-
-        self.actionDeleteDirs = QAction(QIcon.fromTheme("edit-delete"), "Delete Directories")
-        self.actionDeleteDirs.setShortcut(QKeySequence.StandardKey.Delete)
-        self.actionDeleteDirs.triggered.connect(lambda: self.menu_handler.queue_task("delete_items", self.menu_handler.get_selected_paths()))
 
         self.actionDeleteItems = QAction(QIcon.fromTheme("edit-delete"), "Delete Items")
         self.actionDeleteItems.setShortcut(QKeySequence.StandardKey.Delete)
@@ -320,28 +256,9 @@ class FileExplorerActions:
         self.actionSendToBluetoothDevice = QAction(QIcon.fromTheme("bluetooth"), "Bluetooth Device")
         self.actionSendToBluetoothDevice.setShortcut(QKeySequence("Alt+S, B"))
 
-        # Shift-held actions for files
-        self.actionOpenAsAdminFile = QAction(QIcon.fromTheme("dialog-password"), "Open as Administrator")
-        self.actionOpenAsAdminFile.setShortcut(QKeySequence("Ctrl+Shift+A"))
-        self.actionTakeOwnershipFile = QAction(QIcon.fromTheme("dialog-password"), "Take Ownership")
-        self.actionTakeOwnershipFile.setShortcut(QKeySequence("Ctrl+Shift+O"))
-        self.actionTakeOwnershipFile.triggered.connect(lambda: self.menu_handler.queue_task("take_ownership", self.menu_handler.get_selected_paths()))
-
-        self.actionOpenPowerShellFile = QAction(QIcon.fromTheme("utilities-terminal"), "Open PowerShell Window Here")
-        self.actionOpenPowerShellFile.setShortcut(QKeySequence("Shift+F10"))
-        self.actionAddToArchiveFile = QAction(QIcon.fromTheme("archive-insert"), "Add to Archive")
-        self.actionAddToArchiveFile.setShortcut(QKeySequence("Ctrl+Shift+Z"))
-        self.actionAddToArchiveFile.triggered.connect(lambda: self.menu_handler.queue_task("add_to_archive", self.menu_handler.get_selected_paths()))
-
-        self.actionScanWithAntivirusFile = QAction(QIcon.fromTheme("security-high"), "Scan with Antivirus")
-        self.actionScanWithAntivirusFile.setShortcut(QKeySequence("Ctrl+Shift+V"))
-        self.actionScanWithAntivirusFile.triggered.connect(lambda: self.menu_handler.queue_task("scan_with_antivirus", self.menu_handler.get_selected_paths()))
-        self.actionExtendedPropertiesFile = QAction(QIcon.fromTheme("document-properties"), "Extended Properties")
-        self.actionExtendedPropertiesFile.setShortcut(QKeySequence("Ctrl+Shift+X"))
-
-        # Shift-held actions for directories
-        self.actionOpenAsAdminDir = QAction(QIcon.fromTheme("dialog-password"), "Open as Administrator")
-        self.actionOpenAsAdminDir.setShortcut(QKeySequence("Ctrl+Shift+A"))
+        # Shift-held actions
+        self.actionOpenAsAdmin = QAction(QIcon.fromTheme("dialog-password"), "Open as Administrator")
+        self.actionOpenAsAdmin.setShortcut(QKeySequence("Ctrl+Shift+A"))
         self.actionTakeOwnership = QAction(QIcon.fromTheme("dialog-password"), "Take Ownership")
         self.actionTakeOwnership.setShortcut(QKeySequence("Ctrl+Shift+O"))
         self.actionTakeOwnership.triggered.connect(lambda: self.menu_handler.queue_task("take_ownership", self.menu_handler.get_selected_paths()))
@@ -386,48 +303,29 @@ class FileExplorerActions:
         self.actionViewContent.setShortcut(QKeySequence("Ctrl+Shift+7"))
 
         # Set shortcuts
-        self.actionPrintFile = QAction(QIcon.fromTheme("document-print"), "Print")
-        self.actionPrintFile.setShortcut(QKeySequence.StandardKey.Print)
-        self.actionCopyPathFile = QAction(QIcon.fromTheme("edit-copy"), "Copy Path")
-        self.actionCopyPathFile.setShortcut(QKeySequence("Ctrl+Shift+C"))
-        self.actionCopyPathFile.triggered.connect(lambda: self.menu_handler.queue_task("copy_path", self.menu_handler.get_selected_paths()))
-
-        self.actionCopyAsPathFile = QAction(QIcon.fromTheme("edit-copy"), "Copy as Path")
-        self.actionCopyAsPathFile.setShortcut(QKeySequence("Ctrl+Alt+C"))
-        self.actionCopyAsPathFile.triggered.connect(lambda: self.menu_handler.queue_task("copy_as_path", self.menu_handler.get_selected_paths()))
-
-        self.actionCreateShortcutFile = QAction(QIcon.fromTheme("insert-link"), "Create Shortcut")
-        self.actionCreateShortcutFile.setShortcut(QKeySequence("Ctrl+Shift+S"))
-        self.actionCreateShortcutFile.triggered.connect(lambda: self.menu_handler.queue_task("create_shortcut", self.menu_handler.get_selected_paths()))
-
-        self.actionCompressFile = QAction(QIcon.fromTheme("archive-insert"), "Compress")
-        self.actionCompressFile.setShortcut(QKeySequence("Ctrl+Alt+Z"))
-        self.actionCompressFile.triggered.connect(lambda: self.menu_handler.queue_task("compress", self.menu_handler.get_selected_paths()))
-
-        self.actionExtractFile = QAction(QIcon.fromTheme("archive-extract"), "Extract")
-        self.actionExtractFile.setShortcut(QKeySequence("Ctrl+Alt+X"))
-        self.actionExtractFile.triggered.connect(lambda: self.menu_handler.queue_task("extract", self.menu_handler.get_selected_paths()))
-
-        self.actionShareFile = QAction(QIcon.fromTheme("document-share"), "Share")
-        self.actionShareFile.setShortcut(QKeySequence("Alt+S"))
-
-        # Directory actions
-        self.actionCopyPathDir = QAction(QIcon.fromTheme("edit-copy"), "Copy Path")
-        self.actionCopyPathDir.setShortcut(QKeySequence("Ctrl+Shift+C"))
-        self.actionCopyPathDir.triggered.connect(lambda: self.menu_handler.queue_task("copy_path", self.menu_handler.get_selected_paths()))
+        self.actionPrint = QAction(QIcon.fromTheme("document-print"), "Print")
+        self.actionPrint.setShortcut(QKeySequence.StandardKey.Print)
+        self.actionCopyPath = QAction(QIcon.fromTheme("edit-copy"), "Copy Path")
+        self.actionCopyPath.setShortcut(QKeySequence("Ctrl+Shift+C"))
+        self.actionCopyPath.triggered.connect(lambda: self.menu_handler.queue_task("copy_path", self.menu_handler.get_selected_paths()))
 
         self.actionCopyAsPath = QAction(QIcon.fromTheme("edit-copy"), "Copy as Path")
+        self.actionCopyAsPath.setShortcut(QKeySequence("Ctrl+Alt+C"))
         self.actionCopyAsPath.triggered.connect(lambda: self.menu_handler.queue_task("copy_as_path", self.menu_handler.get_selected_paths()))
 
-        self.actionCreateShortcutDir = QAction(QIcon.fromTheme("insert-link"), "Create Shortcut")
-        self.actionCreateShortcutDir.triggered.connect(lambda: self.menu_handler.queue_task("create_shortcut", self.menu_handler.get_selected_paths()))
+        self.actionCreateShortcut = QAction(QIcon.fromTheme("insert-link"), "Create Shortcut")
+        self.actionCreateShortcut.setShortcut(QKeySequence("Ctrl+Shift+S"))
+        self.actionCreateShortcut.triggered.connect(lambda: self.menu_handler.queue_task("create_shortcut", self.menu_handler.get_selected_paths()))
 
-        self.actionCompressDir = QAction(QIcon.fromTheme("archive-insert"), "Compress")
-        self.actionCompressDir.triggered.connect(lambda: self.menu_handler.queue_task("compress", self.menu_handler.get_selected_paths()))
+        self.actionCompress = QAction(QIcon.fromTheme("archive-insert"), "Compress")
+        self.actionCompress.setShortcut(QKeySequence("Ctrl+Alt+Z"))
+        self.actionCompress.triggered.connect(self.menu_handler.prepare_compress)
 
-        self.actionExtractHereDir = QAction(QIcon.fromTheme("archive-extract"), "Extract Here")
-        self.actionExtractHereDir.triggered.connect(lambda: self.menu_handler.queue_task("extract_here", self.menu_handler.get_selected_paths()))
+        self.actionExtract = QAction(QIcon.fromTheme("archive-extract"), "Extract")
+        self.actionExtract.setShortcut(QKeySequence("Ctrl+Alt+X"))
+        self.actionExtract.triggered.connect(self.menu_handler.prepare_extract)
 
-        self.actionShareDir = QAction(QIcon.fromTheme("document-share"), "Share")
+        self.actionShare = QAction(QIcon.fromTheme("document-share"), "Share")
+        self.actionShare.setShortcut(QKeySequence("Alt+S"))
 
-        self.actionEditFile = QAction(QIcon.fromTheme("document-edit"), "Edit")
+        self.actionEdit = QAction(QIcon.fromTheme("document-edit"), "Edit")

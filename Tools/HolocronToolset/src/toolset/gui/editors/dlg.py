@@ -25,7 +25,6 @@ from typing import (
     overload,
 )
 
-from qtpy.QtCore import QSettings
 import qtpy
 
 from loggerplus import RobustLogger
@@ -41,6 +40,7 @@ from qtpy.QtCore import (
     QPointF,
     QPropertyAnimation,
     QRect,
+    QSettings,
     QTimer,
     Qt,
 )
@@ -2002,8 +2002,6 @@ class DLGTreeView(RobustTreeView):
 
     def set_text_size(self, size: int):
         super().set_text_size(size)
-        if self.editor is not None:
-            self.set_setting("textSize", size)
 
     def emit_layout_changed(self):  # sourcery skip: remove-unreachable-code
         super().emit_layout_changed()

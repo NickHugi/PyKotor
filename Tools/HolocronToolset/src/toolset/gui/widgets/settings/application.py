@@ -29,7 +29,10 @@ from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.gui.widgets.settings.env_vars import ENV_VARS, EnvVariableDialog
 
 if TYPE_CHECKING:
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtWidgets import (
+        QAction,
+        QWidget,
+    )
 
 
 class ApplicationSettingsWidget(SettingsWidget):
@@ -180,7 +183,9 @@ class ApplicationSettingsWidget(SettingsWidget):
             for env_var in filter(lambda var: var.group == group, ENV_VARS):
                 action = group_menu.addAction(env_var.name)
                 action.setToolTip(env_var.description)
-                action.hovered.connect(lambda act=action: QToolTip.showText(QCursor.pos(), act.toolTip()))
+                def show_tooltip(act: QAction = action):
+                    QToolTip.showText(QCursor.pos(), act.toolTip())
+                action.hovered.connect(show_tooltip)
                 action.triggered.connect(lambda _, ev=env_var: self.add_environment_variable_from_menu(ev.name, ev.default))
 
         self.ui.addButton.setMenu(self.add_menu)  # pyright: ignore[reportArgumentType]
@@ -269,7 +274,13 @@ class ApplicationSettingsWidget(SettingsWidget):
         assert key_item is not None
         key = key_item.text()
         self.ui.tableWidget.removeRow(selected_row)
-        self.remove_environment_variable_from_settings(key)
+
+        # Update the app_env_variables in settings
+        environment_variables = self.settings.app_env_variables
+        if key in environment_variables:
+            del environment_variables[key]
+            self.settings.app_env_variables = environment_variables
+
         self.editedSignal.emit()
 
     def reset_attributes(self):

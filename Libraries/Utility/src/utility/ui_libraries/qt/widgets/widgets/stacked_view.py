@@ -28,9 +28,9 @@ class DynamicStackedView(QStackedWidget):
     def __init__(
         self,
         parent: QWidget | None = None,
-        all_views: list[RobustAbstractItemView | QWidget] | None = None,
+        all_views: list[RobustAbstractItemView] | None = None,
         initial_view_mode: QFileDialog.ViewMode | RobustListView.ViewMode | None = None,
-        initial_view: RobustAbstractItemView | QWidget | None = None,
+        initial_view: RobustAbstractItemView | None = None,
         *,
         should_call_qt_init: bool = True,
     ):
@@ -42,7 +42,7 @@ class DynamicStackedView(QStackedWidget):
         else:
             list_view_icon_mode = RobustListView(self)
             list_view_icon_mode.setViewMode(RobustListView.ViewMode.IconMode)
-            self.all_views: list[RobustAbstractItemView | QWidget] = [
+            self.all_views: list[RobustAbstractItemView] = [
                 RobustTreeView(self),
                 RobustTableView(self),
                 #RobustHeaderView(self),

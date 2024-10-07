@@ -75,7 +75,7 @@ def handle_operation(func):
 def handle_multiple(func):
     @wraps(func)
     def wrapper(
-        cls,
+        cls: type[FileOperations],
         paths: list[Path],
         *args,
         progress_queue: Queue[int],
@@ -85,19 +85,22 @@ def handle_multiple(func):
     ):
 
         total_items = len(paths)
+        results = []
         for i, path in enumerate(paths, 1):
             if cancel_flag and cancel_flag.value:
-                return
+                return results
 
             while pause_flag and pause_flag.value:
                 if cancel_flag and cancel_flag.value:
-                    return
+                    return results
                 time.sleep(0.1)
 
-            func(cls, path, *args, **kwargs)
+            results.append(func(cls, path, *args, **kwargs))
 
             if progress_queue:
                 progress_queue.put(int((i / total_items) * 100))
+
+        return results
 
     return wrapper
 
@@ -364,23 +367,23 @@ class FileOperations:
     def compress_items(
         cls,
         paths: list[Path],
-        archive_name: str,
+        archive_path: Path,
         **kwargs,
     ):
-        casefold_name = archive_name.casefold()
+        casefold_name = archive_path.name.casefold()
         if casefold_name.endswith(".zip"):
-            cls._compress_zip(paths, archive_name, **kwargs)
+            cls._compress_zip(paths, archive_path, **kwargs)
         elif casefold_name.endswith((".tar", ".tar.gz", ".tgz")):
-            cls._compress_tar(paths, archive_name, **kwargs)
+            cls._compress_tar(paths, archive_path, **kwargs)
         else:
-            raise ValueError(f"Unsupported archive format: '{archive_name}'")
+            raise ValueError(f"Unsupported archive format: '{archive_path}'")
 
     @classmethod
-    def _compress_zip(cls, paths: list[Path], archive_name: str, **kwargs):
+    def _compress_zip(cls, paths: list[Path], archive_path: Path, **kwargs):
         total_size = sum(f.stat().st_size for path in paths for f in path.rglob("*") if f.is_file())
         compressed_size = 0
 
-        with zipfile.ZipFile(archive_name, "w", zipfile.ZIP_DEFLATED) as archive:
+        with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as archive:
             for path in paths:
                 if path is not None and path.exists():
                     if path.is_file():
@@ -398,12 +401,12 @@ class FileOperations:
                     kwargs["progress_queue"].put(progress)
 
     @classmethod
-    def _compress_tar(cls, paths: list[Path], archive_name: str, **kwargs):
+    def _compress_tar(cls, paths: list[Path], archive_path: Path, **kwargs):
         total_size = sum(f.stat().st_size for path in paths for f in path.rglob("*") if f.is_file())
         compressed_size = 0
 
-        mode = "w:gz" if archive_name.casefold().endswith((".tar.gz", ".tgz")) else "w"
-        with tarfile.open(archive_name, mode) as archive:
+        mode = "w:gz" if archive_path.name.casefold().endswith((".tar.gz", ".tgz")) else "w"
+        with tarfile.open(archive_path, mode) as archive:
             for path in paths:
                 if path is not None and path.exists():
                     archive.add(path, arcname=path.name)
