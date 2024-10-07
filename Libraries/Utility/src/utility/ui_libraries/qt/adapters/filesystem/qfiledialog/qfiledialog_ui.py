@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 
-# 
+#
 # Copyright (C) 2016 The Qt Company Ltd.
 # SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
-# 
+#
 
 ################################################################################
 ## Form generated from reading UI file 'qfiledialog.ui'
@@ -12,40 +11,44 @@
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
+from __future__ import annotations
 
-from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
-    QMetaObject, QObject, QPoint, QRect,
-    QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractButton, QApplication, QComboBox, QDialog,
-    QDialogButtonBox, QFrame, QGridLayout, QHBoxLayout,
-    QHeaderView, QLabel, QListWidgetItem, QSizePolicy,
-    QSplitter, QStackedWidget, QToolButton, QVBoxLayout,
-    QWidget)
-
-from private.qfiledialog_p import (QFileDialogComboBox, QFileDialogLineEdit, QFileDialogListView, QFileDialogTreeView)
+from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDialogButtonBox,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QSplitter,
+    QStackedWidget,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
+from private.qfiledialog_p import QFileDialogComboBox, QFileDialogLineEdit, QFileDialogListView, QFileDialogTreeView
 from private.qsidebar_p import QSidebar
 
-class Ui_QFileDialog(object):
+
+class Ui_QFileDialog:
     def setupUi(self, QFileDialog):
         if not QFileDialog.objectName():
-            QFileDialog.setObjectName(u"QFileDialog")
+            QFileDialog.setObjectName("QFileDialog")
         QFileDialog.resize(521, 316)
         QFileDialog.setSizeGripEnabled(True)
         self.gridLayout = QGridLayout(QFileDialog)
-        self.gridLayout.setObjectName(u"gridLayout")
+        self.gridLayout.setObjectName("gridLayout")
         self.lookInLabel = QLabel(QFileDialog)
-        self.lookInLabel.setObjectName(u"lookInLabel")
+        self.lookInLabel.setObjectName("lookInLabel")
 
         self.gridLayout.addWidget(self.lookInLabel, 0, 0, 1, 1)
 
         self.hboxLayout = QHBoxLayout()
-        self.hboxLayout.setObjectName(u"hboxLayout")
+        self.hboxLayout.setObjectName("hboxLayout")
         self.lookInCombo = QFileDialogComboBox(QFileDialog)
-        self.lookInCombo.setObjectName(u"lookInCombo")
+        self.lookInCombo.setObjectName("lookInCombo")
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
@@ -56,32 +59,32 @@ class Ui_QFileDialog(object):
         self.hboxLayout.addWidget(self.lookInCombo)
 
         self.backButton = QToolButton(QFileDialog)
-        self.backButton.setObjectName(u"backButton")
+        self.backButton.setObjectName("backButton")
 
         self.hboxLayout.addWidget(self.backButton)
 
         self.forwardButton = QToolButton(QFileDialog)
-        self.forwardButton.setObjectName(u"forwardButton")
+        self.forwardButton.setObjectName("forwardButton")
 
         self.hboxLayout.addWidget(self.forwardButton)
 
         self.toParentButton = QToolButton(QFileDialog)
-        self.toParentButton.setObjectName(u"toParentButton")
+        self.toParentButton.setObjectName("toParentButton")
 
         self.hboxLayout.addWidget(self.toParentButton)
 
         self.newFolderButton = QToolButton(QFileDialog)
-        self.newFolderButton.setObjectName(u"newFolderButton")
+        self.newFolderButton.setObjectName("newFolderButton")
 
         self.hboxLayout.addWidget(self.newFolderButton)
 
         self.listModeButton = QToolButton(QFileDialog)
-        self.listModeButton.setObjectName(u"listModeButton")
+        self.listModeButton.setObjectName("listModeButton")
 
         self.hboxLayout.addWidget(self.listModeButton)
 
         self.detailModeButton = QToolButton(QFileDialog)
-        self.detailModeButton.setObjectName(u"detailModeButton")
+        self.detailModeButton.setObjectName("detailModeButton")
 
         self.hboxLayout.addWidget(self.detailModeButton)
 
@@ -89,7 +92,7 @@ class Ui_QFileDialog(object):
         self.gridLayout.addLayout(self.hboxLayout, 0, 1, 1, 2)
 
         self.splitter = QSplitter(QFileDialog)
-        self.splitter.setObjectName(u"splitter")
+        self.splitter.setObjectName("splitter")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
@@ -98,38 +101,38 @@ class Ui_QFileDialog(object):
         self.splitter.setOrientation(Qt.Horizontal)
         self.splitter.setChildrenCollapsible(False)
         self.sidebar = QSidebar(self.splitter)
-        self.sidebar.setObjectName(u"sidebar")
+        self.sidebar.setObjectName("sidebar")
         self.splitter.addWidget(self.sidebar)
         self.frame = QFrame(self.splitter)
-        self.frame.setObjectName(u"frame")
+        self.frame.setObjectName("frame")
         self.frame.setFrameShape(QFrame.NoFrame)
         self.frame.setFrameShadow(QFrame.Raised)
         self.vboxLayout = QVBoxLayout(self.frame)
         self.vboxLayout.setSpacing(0)
-        self.vboxLayout.setObjectName(u"vboxLayout")
+        self.vboxLayout.setObjectName("vboxLayout")
         self.vboxLayout.setContentsMargins(0, 0, 0, 0)
         self.stackedWidget = QStackedWidget(self.frame)
-        self.stackedWidget.setObjectName(u"stackedWidget")
+        self.stackedWidget.setObjectName("stackedWidget")
         self.page = QWidget()
-        self.page.setObjectName(u"page")
+        self.page.setObjectName("page")
         self.vboxLayout1 = QVBoxLayout(self.page)
         self.vboxLayout1.setSpacing(0)
-        self.vboxLayout1.setObjectName(u"vboxLayout1")
+        self.vboxLayout1.setObjectName("vboxLayout1")
         self.vboxLayout1.setContentsMargins(0, 0, 0, 0)
         self.listView = QFileDialogListView(self.page)
-        self.listView.setObjectName(u"listView")
+        self.listView.setObjectName("listView")
 
         self.vboxLayout1.addWidget(self.listView)
 
         self.stackedWidget.addWidget(self.page)
         self.page_2 = QWidget()
-        self.page_2.setObjectName(u"page_2")
+        self.page_2.setObjectName("page_2")
         self.vboxLayout2 = QVBoxLayout(self.page_2)
         self.vboxLayout2.setSpacing(0)
-        self.vboxLayout2.setObjectName(u"vboxLayout2")
+        self.vboxLayout2.setObjectName("vboxLayout2")
         self.vboxLayout2.setContentsMargins(0, 0, 0, 0)
         self.treeView = QFileDialogTreeView(self.page_2)
-        self.treeView.setObjectName(u"treeView")
+        self.treeView.setObjectName("treeView")
 
         self.vboxLayout2.addWidget(self.treeView)
 
@@ -142,7 +145,7 @@ class Ui_QFileDialog(object):
         self.gridLayout.addWidget(self.splitter, 1, 0, 1, 3)
 
         self.fileNameLabel = QLabel(QFileDialog)
-        self.fileNameLabel.setObjectName(u"fileNameLabel")
+        self.fileNameLabel.setObjectName("fileNameLabel")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
@@ -153,7 +156,7 @@ class Ui_QFileDialog(object):
         self.gridLayout.addWidget(self.fileNameLabel, 2, 0, 1, 1)
 
         self.fileNameEdit = QFileDialogLineEdit(QFileDialog)
-        self.fileNameEdit.setObjectName(u"fileNameEdit")
+        self.fileNameEdit.setObjectName("fileNameEdit")
         sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         sizePolicy3.setHorizontalStretch(1)
         sizePolicy3.setVerticalStretch(0)
@@ -163,14 +166,14 @@ class Ui_QFileDialog(object):
         self.gridLayout.addWidget(self.fileNameEdit, 2, 1, 1, 1)
 
         self.buttonBox = QDialogButtonBox(QFileDialog)
-        self.buttonBox.setObjectName(u"buttonBox")
+        self.buttonBox.setObjectName("buttonBox")
         self.buttonBox.setOrientation(Qt.Vertical)
         self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
 
         self.gridLayout.addWidget(self.buttonBox, 2, 2, 2, 1)
 
         self.fileTypeLabel = QLabel(QFileDialog)
-        self.fileTypeLabel.setObjectName(u"fileTypeLabel")
+        self.fileTypeLabel.setObjectName("fileTypeLabel")
         sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         sizePolicy4.setHorizontalStretch(0)
         sizePolicy4.setVerticalStretch(0)
@@ -180,7 +183,7 @@ class Ui_QFileDialog(object):
         self.gridLayout.addWidget(self.fileTypeLabel, 3, 0, 1, 1)
 
         self.fileTypeCombo = QComboBox(QFileDialog)
-        self.fileTypeCombo.setObjectName(u"fileTypeCombo")
+        self.fileTypeCombo.setObjectName("fileTypeCombo")
         sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         sizePolicy5.setHorizontalStretch(0)
         sizePolicy5.setVerticalStretch(0)
@@ -211,83 +214,83 @@ class Ui_QFileDialog(object):
     # setupUi
 
     def retranslateUi(self, QFileDialog):
-        self.lookInLabel.setText(QCoreApplication.translate("QFileDialog", u"Look in:", None))
+        self.lookInLabel.setText(QCoreApplication.translate("QFileDialog", "Look in:", None))
 #if QT_CONFIG(tooltip)
-        self.backButton.setToolTip(QCoreApplication.translate("QFileDialog", u"Back", None))
+        self.backButton.setToolTip(QCoreApplication.translate("QFileDialog", "Back", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(accessibility)
-        self.backButton.setAccessibleName(QCoreApplication.translate("QFileDialog", u"Back", None))
+        self.backButton.setAccessibleName(QCoreApplication.translate("QFileDialog", "Back", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.backButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", u"Go back", None))
+        self.backButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", "Go back", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(shortcut)
-        self.backButton.setShortcut(QCoreApplication.translate("QFileDialog", u"Alt+Left", None))
+        self.backButton.setShortcut(QCoreApplication.translate("QFileDialog", "Alt+Left", None))
 #endif // QT_CONFIG(shortcut)
 #if QT_CONFIG(tooltip)
-        self.forwardButton.setToolTip(QCoreApplication.translate("QFileDialog", u"Forward", None))
+        self.forwardButton.setToolTip(QCoreApplication.translate("QFileDialog", "Forward", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(accessibility)
-        self.forwardButton.setAccessibleName(QCoreApplication.translate("QFileDialog", u"Forward", None))
+        self.forwardButton.setAccessibleName(QCoreApplication.translate("QFileDialog", "Forward", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.forwardButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", u"Go forward", None))
+        self.forwardButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", "Go forward", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(shortcut)
-        self.forwardButton.setShortcut(QCoreApplication.translate("QFileDialog", u"Alt+Right", None))
+        self.forwardButton.setShortcut(QCoreApplication.translate("QFileDialog", "Alt+Right", None))
 #endif // QT_CONFIG(shortcut)
 #if QT_CONFIG(tooltip)
-        self.toParentButton.setToolTip(QCoreApplication.translate("QFileDialog", u"Parent Directory", None))
+        self.toParentButton.setToolTip(QCoreApplication.translate("QFileDialog", "Parent Directory", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(accessibility)
-        self.toParentButton.setAccessibleName(QCoreApplication.translate("QFileDialog", u"Parent Directory", None))
+        self.toParentButton.setAccessibleName(QCoreApplication.translate("QFileDialog", "Parent Directory", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.toParentButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", u"Go to the parent directory", None))
+        self.toParentButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", "Go to the parent directory", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(shortcut)
-        self.toParentButton.setShortcut(QCoreApplication.translate("QFileDialog", u"Alt+Up", None))
+        self.toParentButton.setShortcut(QCoreApplication.translate("QFileDialog", "Alt+Up", None))
 #endif // QT_CONFIG(shortcut)
 #if QT_CONFIG(tooltip)
-        self.newFolderButton.setToolTip(QCoreApplication.translate("QFileDialog", u"Create New Folder", None))
+        self.newFolderButton.setToolTip(QCoreApplication.translate("QFileDialog", "Create New Folder", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(accessibility)
-        self.newFolderButton.setAccessibleName(QCoreApplication.translate("QFileDialog", u"Create New Folder", None))
+        self.newFolderButton.setAccessibleName(QCoreApplication.translate("QFileDialog", "Create New Folder", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.newFolderButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", u"Create a New Folder", None))
+        self.newFolderButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", "Create a New Folder", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(tooltip)
-        self.listModeButton.setToolTip(QCoreApplication.translate("QFileDialog", u"List View", None))
+        self.listModeButton.setToolTip(QCoreApplication.translate("QFileDialog", "List View", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(accessibility)
-        self.listModeButton.setAccessibleName(QCoreApplication.translate("QFileDialog", u"List View", None))
+        self.listModeButton.setAccessibleName(QCoreApplication.translate("QFileDialog", "List View", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.listModeButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", u"Change to list view mode", None))
+        self.listModeButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", "Change to list view mode", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(tooltip)
-        self.detailModeButton.setToolTip(QCoreApplication.translate("QFileDialog", u"Detail View", None))
+        self.detailModeButton.setToolTip(QCoreApplication.translate("QFileDialog", "Detail View", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(accessibility)
-        self.detailModeButton.setAccessibleName(QCoreApplication.translate("QFileDialog", u"Detail View", None))
+        self.detailModeButton.setAccessibleName(QCoreApplication.translate("QFileDialog", "Detail View", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.detailModeButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", u"Change to detail view mode", None))
+        self.detailModeButton.setAccessibleDescription(QCoreApplication.translate("QFileDialog", "Change to detail view mode", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.sidebar.setAccessibleName(QCoreApplication.translate("QFileDialog", u"Sidebar", None))
+        self.sidebar.setAccessibleName(QCoreApplication.translate("QFileDialog", "Sidebar", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.sidebar.setAccessibleDescription(QCoreApplication.translate("QFileDialog", u"List of places and bookmarks", None))
+        self.sidebar.setAccessibleDescription(QCoreApplication.translate("QFileDialog", "List of places and bookmarks", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.listView.setAccessibleName(QCoreApplication.translate("QFileDialog", u"Files", None))
+        self.listView.setAccessibleName(QCoreApplication.translate("QFileDialog", "Files", None))
 #endif // QT_CONFIG(accessibility)
 #if QT_CONFIG(accessibility)
-        self.treeView.setAccessibleName(QCoreApplication.translate("QFileDialog", u"Files", None))
+        self.treeView.setAccessibleName(QCoreApplication.translate("QFileDialog", "Files", None))
 #endif // QT_CONFIG(accessibility)
-        self.fileTypeLabel.setText(QCoreApplication.translate("QFileDialog", u"Files of type:", None))
+        self.fileTypeLabel.setText(QCoreApplication.translate("QFileDialog", "Files of type:", None))
         pass
     # retranslateUi
 

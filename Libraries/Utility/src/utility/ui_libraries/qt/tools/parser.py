@@ -27,7 +27,6 @@ from qtpy.QtCore import (
     QPointF,
     QRect,
     QRectF,
-    QRegExp,
     QRegularExpression,
     QSize,
     QSizeF,
@@ -182,7 +181,6 @@ class QtObjectParser:
             QMetaType.Type.QLineF: lambda: cls.create_line_widget(current_value, float),
             QMetaType.Type.QPoint: lambda: cls.create_point_widget(current_value),
             QMetaType.Type.QPointF: lambda: cls.create_point_widget(current_value, float),
-            QMetaType.Type.QRegExp: lambda: cls.create_regexp_widget(current_value),
             QMetaType.Type.QVariantHash: lambda: cls.create_variant_hash_widget(current_value),
             QMetaType.Type.QEasingCurve: lambda: cls.create_easing_curve_widget(current_value),
             QMetaType.Type.QUuid: lambda: cls.create_uuid_widget(current_value),
@@ -209,7 +207,7 @@ class QtObjectParser:
             QMetaType.Type.QPen: lambda: cls.create_pen_widget(current_value),
             QMetaType.Type.QTextLength: lambda: cls.create_text_length_widget(current_value),
             QMetaType.Type.QTextFormat: lambda: cls.create_text_format_widget(current_value),
-            QMetaType.Type.QMatrix: lambda: cls.create_matrix_widget(current_value),
+            #QMetaType.Type.QMatrix: lambda: cls.create_text_format_widget(current_value),
             QMetaType.Type.QTransform: lambda: cls.create_transform_widget(current_value),
             QMetaType.Type.QMatrix4x4: lambda: cls.create_matrix4x4_widget(current_value),
             QMetaType.Type.QVector2D: lambda: cls.create_vector2d_widget(current_value),
@@ -217,7 +215,7 @@ class QtObjectParser:
             QMetaType.Type.QVector4D: lambda: cls.create_vector4d_widget(current_value),
             QMetaType.Type.QQuaternion: lambda: cls.create_quaternion_widget(current_value),
             QMetaType.Type.QPolygonF: lambda: cls.create_polygon_widget(current_value, float),
-            QMetaType.Type.QSizePolicy: lambda: cls.create_size_policy_widget(current_value),
+            QMetaType.Type.QSizePolicy: lambda: cls.create_text_format_widget(current_value),
         }
 
         if meta_type_type in widget_creators:

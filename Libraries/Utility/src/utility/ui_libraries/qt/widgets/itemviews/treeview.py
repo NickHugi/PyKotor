@@ -6,7 +6,7 @@ import qtpy
 
 from qtpy.QtCore import QAbstractItemModel, Qt
 from qtpy.QtGui import QPalette, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QHeaderView, QMenu, QPushButton, QStyle, QStyleOptionViewItem, QTreeView, QVBoxLayout
+from qtpy.QtWidgets import QHeaderView, QMenu, QPushButton, QStyleOptionViewItem, QTreeView, QVBoxLayout
 
 from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
@@ -38,11 +38,17 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         if not use_columns:
             self.set_horizontal_scrollbar(state=False)
 
+    def _create_drawer_button(self):
+        super()._create_drawer_button()
+        self._robustDrawer.clicked.connect(lambda _: self.show_header_context_menu())
+
+
     def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
         print(f"{self.__class__.__name__}.build_context_menu")
         menu = super().build_context_menu(parent)
 
         tree_view_menu = menu.addMenu("TreeView")
+        tree_view_menu.addMenu(self.build_header_context_menu(parent))
         advanced_menu = tree_view_menu.addMenu("Advanced")
 
         # Actions submenu items
@@ -87,7 +93,6 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         return menu
 
     def build_header_context_menu(self, parent: QWidget | None = None) -> QMenu:
-        """Subclass should override this to add header-specific actions."""
         header_menu = QMenu("Header", self if parent is None else parent)
         self._add_simple_action(header_menu, "Toggle Visibility", lambda: self.header().setVisible(not self.header().isVisible()))
         self._add_simple_action(header_menu, "Toggle First Section Movable", lambda: self.header().setFirstSectionMovable(not self.header().isFirstSectionMovable()))
@@ -402,44 +407,9 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         return super().model()
 
     def styleOptionForIndex(self, index: QModelIndex) -> QStyleOptionViewItem:
-        """Construct and configure a QStyleOptionViewItem for the given index.
-
-        Required for non-pyqt5 versions of Qt.
-        """
-        option = QStyleOptionViewItem()
-        if index.isValid():
-            # Initialize style option from the widget
-            option.initFrom(self)
-
-            # Set state flags based on item's selection, focus, and enabled states
-            if self.selectionModel().isSelected(index):
-                option.state |= QStyle.StateFlag.State_Selected
-            if index == self.currentIndex() and self.hasFocus():
-                option.state |= QStyle.StateFlag.State_HasFocus
-            if not self.isEnabled():
-                option.state = cast(QStyle.StateFlag, option.state & ~QStyle.StateFlag.State_Enabled)
-            if self.isExpanded(index):
-                option.features |= QStyleOptionViewItem.ViewItemFeature.HasDecoration
-
-            # Additional properties
-            checkStateData = index.data(Qt.ItemDataRole.CheckStateRole)
-            option.checkState = Qt.CheckState.Unchecked if checkStateData is None else checkStateData
-            option.decorationPosition = QStyleOptionViewItem.Position.Top
-            option.decorationAlignment = Qt.AlignmentFlag.AlignCenter
-            option.displayAlignment = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-            option.index = index
-            option.locale = self.locale()
-            option.showDecorationSelected = True
-            option.text = index.data(Qt.ItemDataRole.DisplayRole)
-            #option.backgroundBrush = QColor(Qt.GlobalColor.yellow)
-            #option.decorationSize = QSize(32, 32)
-            #option.font = QFont("Arial", 12, QFont.Weight.Bold)
-            #option.icon = QIcon("/path/to/icon.png")  # Example path to an icon
-            #option.textElideMode = Qt.TextElideMode.ElideMiddle
-            #option.viewItemPosition = QStyleOptionViewItem.ViewItemPosition.Middle
-            #if index.row() % 2 == 0:
-            #    option.backgroundBrush = QColor(Qt.GlobalColor.lightGray)
-
+        option = super().styleOptionForIndex(index)
+        if self.isExpanded(index):
+            option.features |= QStyleOptionViewItem.ViewItemFeature.HasDecoration
         return option
 
 

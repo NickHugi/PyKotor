@@ -614,3 +614,5 @@ $RECYCLE.BIN/
 /src/toolset/uic
 /Tools/HolocronToolset/.git.backup
 /Tools/HolocronToolset/.git.backup
+/Tools/HolocronToolset/src/toolset/uic
+/Tools/HolocronToolset/src/ui

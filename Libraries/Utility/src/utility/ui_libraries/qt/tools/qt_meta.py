@@ -21,7 +21,9 @@ def get_qt_meta_type(param_type: type, current_value: QObject | None = None) -> 
     return meta_type
 
 
-def determine_type(param_type: type, current_value: QObject | None = None) -> QMetaType:
+def determine_type(param_type: type, current_value: QObject | None = None) -> QMetaType | type:
+    if not issubclass(param_type, QObject):
+        return param_type
     if isinstance(current_value, QObject):
         return QMetaType(current_value.metaObject().userProperty().userType())
     if qtpy.QT5:

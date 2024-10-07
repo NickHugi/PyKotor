@@ -6,21 +6,9 @@ import qtpy
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QPoint, QSize, QSortFilterProxyModel, Qt
-from qtpy.QtGui import QColor, QCursor, QIcon, QPalette
-from qtpy.QtWidgets import (
-    QAbstractItemView,
-    QAbstractScrollArea,
-    QAction,
-    QApplication,
-    QFrame,
-    QMenu,
-    QPushButton,
-    QStyle,
-    QStyleOptionViewItem,
-    QStyledItemDelegate,
-    QWhatsThis,
-)
+from qtpy.QtCore import QPoint, QSortFilterProxyModel, QTimer, Qt
+from qtpy.QtGui import QCursor
+from qtpy.QtWidgets import QAbstractItemView, QAbstractScrollArea, QAction, QApplication, QFrame, QMenu, QStyle, QStyleOptionViewItem, QStyledItemDelegate, QWhatsThis
 
 from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustBaseWidget
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
@@ -28,7 +16,7 @@ from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 if TYPE_CHECKING:
     from qtpy.QtCore import QAbstractItemModel, QMargins, QModelIndex
     from qtpy.QtGui import QResizeEvent, QWheelEvent
-    from qtpy.QtWidgets import QAbstractItemDelegate, QWidget
+    from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
 
@@ -40,6 +28,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         **kwargs,
     ):
         RobustBaseWidget.__init__(self, parent, *args, **kwargs)
+        self._layout_changed_debounce_timer: QTimer = QTimer(self)
         self._fix_drawer_button()
         self.restore_state()
 
@@ -50,29 +39,19 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         pre_change_emit: bool = False,
     ):
         self.viewport().update()
-        super().debounce_layout_changed(timeout, pre_change_emit=pre_change_emit)
+        if self._layout_changed_debounce_timer.isActive():
+            self._layout_changed_debounce_timer.stop()
+        elif pre_change_emit:
+            self.model().layoutAboutToBeChanged.emit()
+        self._layout_changed_debounce_timer.start(timeout)
 
     def setParent(
         self,
         parent: QWidget,
         f: Qt.WindowFlags | Qt.WindowType | None = None,
-    ) -> QWidget:
-        result = super().setParent(parent) if f is None else super().setParent(parent, f)
+    ) -> None:
+        super().setParent(parent) if f is None else super().setParent(parent, f)
         self.restore_state()
-        return result
-
-    def _create_drawer_button(self):
-        self._robustDrawer = QPushButton(self)
-        self._robustDrawer.setObjectName("_robustDrawer")
-        self._robustDrawer.setFixedSize(20, 20)
-        self._robustDrawer.clicked.connect(lambda _: self.show_header_context_menu())
-        self._robustDrawer.setToolTip("Show context menu")
-
-        # Create QIcon for the drawer button
-        icon = QIcon(QApplication.style().standardIcon(QStyle.SP_ToolBarHorizontalExtensionButton))
-
-        self._robustDrawer.setIcon(icon)
-        self._robustDrawer.setIconSize(QSize(14, 14))
 
     def _fix_drawer_button(self):
         if not hasattr(self, "_robustDrawer"):
@@ -86,15 +65,6 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         else:
             self._robustDrawer.move(self.width() - self._robustDrawer.width(), 0)
 
-    def restore_state(self):
-        """Acquire the QSettings for this widget and restore the state.
-
-        These settings were saved with the widget's object name the last time the widget was used.
-        """
-        self._initialized = False
-        self.build_context_menu()
-        self._initialized = True
-
     def show_header_context_menu(
         self,
         pos: QPoint | None = None,
@@ -106,7 +76,11 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         if not self._initialized:
             return
         if pos is None:
-            pos = QCursor.pos() if parent is None else parent.mapToGlobal(QPoint(parent.width(), parent.height()))
+            pos = (
+                QCursor.pos()
+                if parent is None
+                else parent.mapToGlobal(QPoint(parent.width(), parent.height()))
+            )
         if not exec_menu:
             return
         menu.exec(pos)
@@ -137,9 +111,10 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
         self.debounce_layout_changed()
-        self._fix_drawer_button()
         if not hasattr(self, "_robustDrawer"):
             return
+        self._fix_drawer_button()
+
     def wheelEvent(
         self,
         event: QWheelEvent,
@@ -161,7 +136,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         delta: int = event.angleDelta().y()
         if not delta:
             return False
-        item_delegate: HTMLDelegate | QStyledItemDelegate | QAbstractItemDelegate = self.itemDelegate()
+        item_delegate = self.itemDelegate()
         if isinstance(item_delegate, HTMLDelegate):
             single_step: Literal[-1, 1] = 1 if delta > 0 else -1
             new_vertical_spacing: int = max(0, item_delegate.customVerticalSpacing + single_step)
@@ -243,68 +218,58 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             scrollStep = -self.get_text_size() if direction == "up" else self.get_text_size()
             vertScrollBar.setValue(vertScrollBar.value() + scrollStep * step_size)
 
+    def emit_layout_changed(self):
+        model = self.model()
+        if model is not None:
+            model.layoutChanged.emit()
+
     def styleOptionForIndex(self, index: QModelIndex) -> QStyleOptionViewItem:
+        """Construct and configure a QStyleOptionViewItem for the given index.
+
+        Required for non-pyqt5 versions of Qt.
+        """
         option = QStyleOptionViewItem()
         if index.isValid():
+            # Initialize style option from the widget
             option.initFrom(self)
+
+            # Set state flags based on item's selection, focus, and enabled states
             if self.selectionModel().isSelected(index):
                 option.state |= QStyle.StateFlag.State_Selected
             if index == self.currentIndex() and self.hasFocus():
                 option.state |= QStyle.StateFlag.State_HasFocus
             if not self.isEnabled():
                 option.state = cast(QStyle.StateFlag, option.state & ~QStyle.StateFlag.State_Enabled)
+
+            # Additional properties
             checkStateData = index.data(Qt.ItemDataRole.CheckStateRole)
             option.checkState = Qt.CheckState.Unchecked if checkStateData is None else checkStateData
-            option.displayAlignment = Qt.AlignLeft | Qt.AlignVCenter
+            option.decorationPosition = QStyleOptionViewItem.Position.Top
+            option.decorationAlignment = Qt.AlignmentFlag.AlignCenter
+            option.displayAlignment = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
             option.index = index
+            option.locale = self.locale()
+            option.showDecorationSelected = True
             option.text = index.data(Qt.ItemDataRole.DisplayRole)
+            #option.backgroundBrush = QColor(Qt.GlobalColor.yellow)
+            #option.decorationSize = QSize(32, 32)
+            #option.font = QFont("Arial", 12, QFont.Weight.Bold)
+            #option.icon = QIcon("/path/to/icon.png")  # Example path to an icon
+            #option.textElideMode = Qt.TextElideMode.ElideMiddle
+            #option.viewItemPosition = QStyleOptionViewItem.ViewItemPosition.Middle
+            #if index.row() % 2 == 0:
+            #    option.backgroundBrush = QColor(Qt.GlobalColor.lightGray)
+
         return option
-
-    def _handle_recent_action(self, settings_key: str):
-        """Handle action for recently changed settings."""
-        recent_settings = self.get_setting("recently_changed", [], param_type=list)
-        if settings_key in recent_settings:
-            recent_settings.remove(settings_key)
-        recent_settings.append(settings_key)
-        self.set_setting("recently_changed", recent_settings)
-
-    def build_header_context_menu(
-        self,
-        parent: QWidget | None = None,
-    ) -> QMenu:
-        """Subclass should override this to add header-specific actions."""
-        return QMenu("Header", self if parent is None else parent)
 
     def build_context_menu(
         self,
         parent: QWidget | None = None,
     ) -> QMenu:
         print(f"{self.__class__.__name__}.build_context_menu")
-        parent = self if parent is None else parent
-        context_menu = QMenu(parent)
-
-        # Recently Changed submenu
-        recent_menu = context_menu.addMenu("Recently Changed")
-        recent_settings = self.get_setting("recently_changed", [])
-        for settings_key in recent_settings:
-            action = QAction(settings_key, self)
-            action.triggered.connect(lambda _, key=settings_key: self._handle_recent_action(key))
-            recent_menu.addAction(action)
-
-        reset_menu = context_menu.addMenu("Reset Configs")
-        reset_to_qt_defaults = QAction("Reset to Qt Defaults", self)
-        reset_to_qt_defaults = QAction("Reset to Qt Defaults", self)
-        reset_to_qt_defaults.triggered.connect(self._reset_to_qt_defaults)
-        reset_menu.addAction(reset_to_qt_defaults)
-        reset_to_subclass_defaults = QAction("Reset to Recommended Config", self)
-        reset_to_subclass_defaults.triggered.connect(self._reset_to_subclass_defaults)
-        reset_menu.addAction(reset_to_subclass_defaults)
-        reset_all_defaults = QAction("Delete settings information.", self)
-        reset_all_defaults.triggered.connect(self._reset_all_defaults)
-        reset_menu.addAction(reset_all_defaults)
+        menu = super().build_context_menu(parent)
+        context_menu = menu.addMenu("QAbstractItemView")
         advanced_menu = context_menu.addMenu("Advanced")
-        context_menu.insertMenu(context_menu.actions()[0], self.build_header_context_menu(parent))
-
         # Display menu
         display_menu = context_menu.addMenu("Display")
         self._add_menu_action(
@@ -331,7 +296,14 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             settings_key="textElideMode",
         )
 
-        self._add_menu_action(display_advanced_menu, "Edit Stylesheet", self.styleSheet, self.setStyleSheet, "customStylesheet", param_type=str)
+        self._add_menu_action(
+            display_advanced_menu,
+            "Edit Stylesheet",
+            self.styleSheet,
+            self.setStyleSheet,
+            "customStylesheet",
+            param_type=str,
+        )
 
         self._add_menu_action(
             display_menu,
@@ -340,12 +312,6 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             self.set_text_size,
             settings_key="fontSize",
             param_type=int,
-        )
-        self._add_color_menu_action(
-            display_menu,
-            "Text Color",
-            lambda: QColor(self.get_setting("textColor", QApplication.palette().color(QPalette.ColorRole.Text))),
-            settings_key="textColor",
         )
         self._add_menu_action(
             display_menu,
@@ -465,21 +431,6 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             settings_key="tabKeyNavigation",
         )
         behavior_advanced_menu = behavior_menu.addMenu("Advanced")
-        self._add_exclusive_menu_action(
-            behavior_advanced_menu,
-            "Focus Policy",
-            self.focusPolicy,
-            self.setFocusPolicy,
-            options={
-                "No Focus": Qt.FocusPolicy.NoFocus,
-                "Tab Focus": Qt.FocusPolicy.TabFocus,
-                "Click Focus": Qt.FocusPolicy.ClickFocus,
-                "Strong Focus": Qt.FocusPolicy.StrongFocus,
-                "Wheel Focus": Qt.FocusPolicy.WheelFocus,
-            },
-            settings_key="focusPolicy",
-            param_type=Qt.FocusPolicy,
-        )
         self._add_menu_action(
             behavior_menu,
             "Auto Fill Background",
@@ -628,12 +579,11 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
 
         # Actions menu
         refresh_menu = context_menu.addMenu("Refresh...")
-        self._add_simple_action(refresh_menu, "Update", self.update)
-        self._add_simple_action(refresh_menu, "Repaint", self.repaint)
         self._add_simple_action(refresh_menu, "Update Geometries", self.updateGeometries)
         self._add_simple_action(refresh_menu, "Reset View", self.reset)
         self._add_simple_action(refresh_menu, "Clear Selection", self.clearSelection)
         self._add_simple_action(refresh_menu, "Select All", self.selectAll)
+        self._add_simple_action(refresh_menu, "Emit Layout Changed", self.emit_layout_changed)
 
         # Help menu
         whats_this_action = QAction(
@@ -646,4 +596,4 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
         whats_this_action.setToolTip("Enter 'What's This?' mode.")
         context_menu.addAction(whats_this_action)
-        return context_menu
+        return menu

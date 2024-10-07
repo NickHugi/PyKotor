@@ -2,15 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import qtpy
+
 from qtpy.QtCore import QAbstractTableModel, QItemSelectionModel, QModelIndex, Qt
-from qtpy.QtWidgets import QApplication, QHeaderView, QPushButton, QTableView, QVBoxLayout, QWidget
+from qtpy.QtWidgets import QApplication, QHeaderView, QMenu, QPushButton, QTableView, QVBoxLayout, QWidget
 
 from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QRect
+    from qtpy.QtCore import QAbstractItemModel, QRect
     from qtpy.QtGui import QMouseEvent
-    from qtpy.QtWidgets import QMenu
 
 
 class RobustTableView(RobustAbstractItemView, QTableView):
@@ -38,6 +39,104 @@ class RobustTableView(RobustAbstractItemView, QTableView):
 
     def firstColumnInteractable(self) -> bool:
         return self.only_first_column_selectable
+
+    def build_header_context_menu(self, parent: QWidget | None = None) -> QMenu:
+        """Build a context menu for the table header."""
+        header_menu = QMenu("Header", self if parent is None else parent)
+
+        # Toggle visibility actions
+        self._add_simple_action(header_menu, "Toggle Horizontal Header Visibility", lambda: self.horizontalHeader().setVisible(not self.horizontalHeader().isVisible()))
+        self._add_simple_action(header_menu, "Toggle Vertical Header Visibility", lambda: self.verticalHeader().setVisible(not self.verticalHeader().isVisible()))
+
+        # Common header actions
+        self._add_simple_action(header_menu, "Toggle Sections Movable", lambda: self.horizontalHeader().setSectionsMovable(not self.horizontalHeader().sectionsMovable()))
+        self._add_simple_action(header_menu, "Toggle Sections Clickable", lambda: self.horizontalHeader().setSectionsClickable(not self.horizontalHeader().sectionsClickable()))
+        self._add_simple_action(header_menu, "Toggle Stretch Last Section", lambda: self.horizontalHeader().setStretchLastSection(not self.horizontalHeader().stretchLastSection()))
+        self._add_simple_action(header_menu, "Toggle Cascading Section Resizes", lambda: self.horizontalHeader().setCascadingSectionResizes(not self.horizontalHeader().cascadingSectionResizes()))
+        self._add_simple_action(header_menu, "Toggle Highlight Sections", lambda: self.horizontalHeader().setHighlightSections(not self.horizontalHeader().highlightSections()))
+
+        # Resize modes submenu
+        resize_mode_menu = header_menu.addMenu("Resize Mode")
+        model: QAbstractItemModel | None = self.model()
+        if model is not None:
+            for i in range(self.horizontalHeader().count()):
+                section_name = model.headerData(i, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
+                self._add_exclusive_menu_action(
+                    resize_mode_menu,
+                    f"[{i}] {section_name}",
+                    lambda idx=i: self.horizontalHeader().sectionResizeMode(idx),
+                    (lambda mode, idx=i: self.horizontalHeader().setSectionResizeMode(idx, mode)) if qtpy.QT5 else (lambda mode, idx=i: self.horizontalHeader().setSectionResizeMode(idx, QHeaderView.ResizeMode(mode))),
+                    options={
+                        "Interactive": QHeaderView.ResizeMode.Interactive,
+                        "Fixed": QHeaderView.ResizeMode.Fixed,
+                        "Stretch": QHeaderView.ResizeMode.Stretch,
+                        "Resize to Contents": QHeaderView.ResizeMode.ResizeToContents
+                    },
+                    settings_key=f"headerResizeMode_{i}"
+                )
+
+        # Sizing options
+        sizing_menu = header_menu.addMenu("Sizing")
+        self._add_simple_action(sizing_menu, "Reset Default Section Size", self.horizontalHeader().resetDefaultSectionSize)
+        self._add_menu_action(sizing_menu, "Set Maximum Section Size", self.horizontalHeader().maximumSectionSize, self.horizontalHeader().setMaximumSectionSize, "maximumSectionSize", param_type=int)
+        self._add_menu_action(sizing_menu, "Set Minimum Section Size", self.horizontalHeader().minimumSectionSize, self.horizontalHeader().setMinimumSectionSize, "minimumSectionSize", param_type=int)
+        self._add_menu_action(sizing_menu, "Set Default Section Size", self.horizontalHeader().defaultSectionSize, self.horizontalHeader().setDefaultSectionSize, "defaultSectionSize", param_type=int)
+
+        # Alignment
+        self._add_exclusive_menu_action(
+            header_menu,
+            "Alignment",
+            self.horizontalHeader().defaultAlignment,
+            self.horizontalHeader().setDefaultAlignment,
+            options={
+                "Left": Qt.AlignmentFlag.AlignLeft,
+                "Center": Qt.AlignmentFlag.AlignCenter,
+                "Right": Qt.AlignmentFlag.AlignRight
+            },
+            settings_key="headerDefaultAlignment",
+            param_type=Qt.AlignmentFlag,
+        )
+
+        # Sorting
+        sorting_menu = header_menu.addMenu("Sorting")
+        self._add_simple_action(sorting_menu, "Toggle Sort Indicator", lambda: self.horizontalHeader().setSortIndicatorShown(not self.horizontalHeader().isSortIndicatorShown()))
+        sort_order_menu = sorting_menu.addMenu("Sort Order")
+        self._add_exclusive_menu_action(
+            sort_order_menu,
+            "Sort Order",
+            self.horizontalHeader().sortIndicatorOrder,
+            lambda order: self.horizontalHeader().setSortIndicator(self.horizontalHeader().sortIndicatorSection(), order),
+            options={
+                "Ascending": Qt.SortOrder.AscendingOrder,
+                "Descending": Qt.SortOrder.DescendingOrder
+            },
+            settings_key="headerSortOrder",
+            param_type=Qt.SortOrder,
+        )
+
+        # Section-specific actions
+        section_menu = header_menu.addMenu("Sections")
+        for i in range(self.horizontalHeader().count()):
+            section_submenu = section_menu.addMenu(f"Section {i}")
+            self._add_simple_action(section_submenu, "Hide/Show", lambda idx=i: self.horizontalHeader().setSectionHidden(idx, not self.horizontalHeader().isSectionHidden(idx)))
+            self._add_menu_action(
+                section_submenu,
+                "Resize",
+                lambda idx=i: self.horizontalHeader().sectionSize(idx),
+                lambda size, idx=i: self.horizontalHeader().resizeSection(idx, size),
+                settings_key=f"headerSectionSize_{i}",
+                param_type=int
+            )
+            self._add_menu_action(
+                section_submenu,
+                "Move",
+                lambda idx=i: self.horizontalHeader().visualIndex(idx),
+                lambda new_idx, idx=i: self.horizontalHeader().moveSection(idx, new_idx),
+                settings_key=f"headerSectionPosition_{i}",
+                param_type=int
+            )
+
+        return header_menu
 
     def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
         print(f"{self.__class__.__name__}.build_context_menu")

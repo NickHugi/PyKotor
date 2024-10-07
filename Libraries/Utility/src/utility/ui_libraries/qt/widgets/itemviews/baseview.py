@@ -9,8 +9,8 @@ import qtpy
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QMargins, QMetaType, QSettings, QSize, QTimer, Qt
-from qtpy.QtGui import QColor, QPalette, QSyntaxHighlighter, QTextCharFormat
+from qtpy.QtCore import QLocale, QMargins, QMetaType, QRect, QSettings, QSize, Qt
+from qtpy.QtGui import QColor, QCursor, QFont, QIcon, QPalette, QRegion, QSyntaxHighlighter, QTextCharFormat
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QAction,
@@ -28,10 +28,12 @@ from qtpy.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QMessageBox,
     QPushButton,
     QSpinBox,
     QSplitter,
+    QStyle,
     QTextEdit,
     QTimeEdit,
     QVBoxLayout,
@@ -39,13 +41,11 @@ from qtpy.QtWidgets import (
 )
 
 from utility.ui_libraries.qt.tools.debug.print_qobject import format_qt_obj
-from utility.ui_libraries.qt.tools.parser import QtObjectParser
 from utility.ui_libraries.qt.tools.qt_meta import get_qt_meta_type
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject
     from qtpy.QtGui import QTextDocument
-    from qtpy.QtWidgets import QMenu
 
 
 class StyleSheetHighlighter(QSyntaxHighlighter):
@@ -92,45 +92,221 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         *,
         settings_name: str | None = None,
     ):
-        self._settings_name: str = settings_name and settings_name.strip() or getattr(self, "objectName", lambda: self.__class__.__name__)()
+        self._settings_name: str = (
+            settings_name
+            and settings_name.strip()
+            or getattr(self, "objectName", lambda: self.__class__.__name__)()
+        )
 
         self._settings_cache: dict[str, QSettings] = {}
         self.original_stylesheet: str = self.styleSheet()
-        self._layout_changed_debounce_timer: QTimer = QTimer(self)
         self._initialized: bool = False
 
-    def _bold_if_changed(self, action: QAction, settings_key: str, current_value: Any):
-        default_value = self.get_setting(settings_key, None)
-        if current_value != default_value:
-            font = action.font()
-            font.setBold(True)
-            action.setFont(font)
-    def _update_recently_changed(self, settings_key: str):
-        recent_settings = self.get_setting("recently_changed", [])
-        if settings_key not in recent_settings:
-            recent_settings.append(settings_key)
-        self.set_setting("recently_changed", recent_settings)
-    def _add_reset_actions(self, menu: QMenu):
-        action_qt_defaults = QAction("Qt Defaults", self)
-        action_qt_defaults.triggered.connect(self._reset_to_qt_defaults)
-        menu.addAction(action_qt_defaults)
-        action_subclass_defaults = QAction("Subclass Defaults", self)
-        action_subclass_defaults.triggered.connect(self._reset_to_subclass_defaults)
-        menu.addAction(action_subclass_defaults)
-        action_all_defaults = QAction(f"Reset All Defaults for {self._settings_name}", self)
-        action_all_defaults.triggered.connect(self._reset_all_defaults)
-        menu.addAction(action_all_defaults)
-    def _reset_to_qt_defaults(self):
-        self.set_setting("customStylesheet", "")
-        self.setStyleSheet("")
-        self.update()
-        # TODO(th3w1zard1): determine what was specifically set in the subclass's `__init__`.
-    def _reset_to_subclass_defaults(self):
-        self.restore_state()
-    def _reset_all_defaults(self):
-        self._settings_cache = {}
-        self.restore_state()
-        self.update()
+    def _create_drawer_button(self):
+        self._robustDrawer = QPushButton(self)
+        self._robustDrawer.setObjectName("_robustDrawer")
+        self._robustDrawer.setToolTip("Show context menu")
+        icon = QIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_ToolBarHorizontalExtensionButton))
+        self._robustDrawer.setIcon(icon)
+
+    def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
+        self.menu = QMenu(None if parent is None else parent)
+        widget_menu = self.menu.addMenu("QWidget")
+
+        # Window properties
+        window_menu = widget_menu.addMenu("Window")
+        self._add_menu_action(window_menu, "Set Window Title", self.windowTitle, self.setWindowTitle, "windowTitle", param_type=str)
+        self._add_menu_action(window_menu, "Set Window Icon", self.windowIcon, self.setWindowIcon, "windowIcon", param_type=QIcon)
+        self._add_menu_action(window_menu, "Set Window Icon Text", self.windowIconText, self.setWindowIconText, "windowIconText", param_type=str)
+        self._add_menu_action(window_menu, "Set Window Opacity", self.windowOpacity, self.setWindowOpacity, "windowOpacity", param_type=float)
+        self._add_menu_action(window_menu, "Set Window Modified", self.isWindowModified, self.setWindowModified, "windowModified")
+        self._add_menu_action(window_menu, "Set Window Role", self.windowRole, self.setWindowRole, "windowRole", param_type=str)
+        self._add_menu_action(window_menu, "Set Window FilePath", self.windowFilePath, self.setWindowFilePath, "windowFilePath", param_type=str)
+        self._add_exclusive_menu_action(window_menu, "Set Window State", self.windowState, self.setWindowState, {
+            "Normal": Qt.WindowState.WindowNoState,
+            "Minimized": Qt.WindowState.WindowMinimized,
+            "Maximized": Qt.WindowState.WindowMaximized,
+            "FullScreen": Qt.WindowState.WindowFullScreen,
+        }, "windowState", param_type=Qt.WindowState)
+        self._add_exclusive_menu_action(window_menu, "Set Window Modality", self.windowModality, self.setWindowModality, {
+            "Non Modal": Qt.WindowModality.NonModal,
+            "Window Modal": Qt.WindowModality.WindowModal,
+            "Application Modal": Qt.WindowModality.ApplicationModal,
+        }, "windowModality", param_type=Qt.WindowModality)
+
+        # Geometry and layout
+        geometry_menu = widget_menu.addMenu("Geometry")
+        self._add_menu_action(geometry_menu, "Set Geometry", self.geometry, self.setGeometry, "geometry", param_type=QRect)
+        self._add_menu_action(geometry_menu, "Set Fixed Size", self.size, self.setFixedSize, "fixedSize", param_type=QSize)
+        self._add_menu_action(geometry_menu, "Set Minimum Size", self.minimumSize, self.setMinimumSize, "minimumSize", param_type=QSize)
+        self._add_menu_action(geometry_menu, "Set Maximum Size", self.maximumSize, self.setMaximumSize, "maximumSize", param_type=QSize)
+        self._add_menu_action(geometry_menu, "Set Base Size", self.baseSize, self.setBaseSize, "baseSize", param_type=QSize)
+        self._add_menu_action(geometry_menu, "Set Size Increment", self.sizeIncrement, self.setSizeIncrement, "sizeIncrement", param_type=QSize)
+        self._add_menu_action(geometry_menu, "Set Minimum Width", self.minimumWidth, self.setMinimumWidth, "minimumWidth", param_type=int)
+        self._add_menu_action(geometry_menu, "Set Minimum Height", self.minimumHeight, self.setMinimumHeight, "minimumHeight", param_type=int)
+        self._add_menu_action(geometry_menu, "Set Maximum Width", self.maximumWidth, self.setMaximumWidth, "maximumWidth", param_type=int)
+        self._add_menu_action(geometry_menu, "Set Maximum Height", self.maximumHeight, self.setMaximumHeight, "maximumHeight", param_type=int)
+        self._add_menu_action(geometry_menu, "Set Fixed Width", self.width, self.setFixedWidth, "fixedWidth", param_type=int)
+        self._add_menu_action(geometry_menu, "Set Fixed Height", self.height, self.setFixedHeight, "fixedHeight", param_type=int)
+        self._add_menu_action(geometry_menu, "Set Contents Margins", self.contentsMargins, self.setContentsMargins, "contentsMargins", param_type=QMargins)
+
+        # Appearance
+        appearance_menu = widget_menu.addMenu("Appearance")
+        self._add_menu_action(appearance_menu, "Set Style Sheet", self.styleSheet, self.setStyleSheet, "styleSheet", param_type=str)
+        self._add_menu_action(appearance_menu, "Set Font", self.font, self.setFont, "font", param_type=QFont)
+        self._add_menu_action(appearance_menu, "Set Cursor", self.cursor, self.setCursor, "cursor", param_type=QCursor)
+        self._add_menu_action(appearance_menu, "Set Mask", self.mask, self.setMask, "mask", param_type=QRegion)
+        self._add_menu_action(appearance_menu, "Set Palette", self.palette, self.setPalette, "palette", param_type=QPalette)
+        self._add_exclusive_menu_action(
+            appearance_menu,
+            "Set Background Role",
+            self.backgroundRole,
+            self.setBackgroundRole,
+            {
+                attr_name: role
+                for attr_name, role in QPalette.ColorRole.__dict__.items()
+                if not attr_name.startswith("_")
+            },
+            "backgroundRole",
+            param_type=QPalette.ColorRole,
+        )
+        self._add_exclusive_menu_action(
+            appearance_menu,
+            "Set Foreground Role",
+            self.foregroundRole,
+            self.setForegroundRole,
+            {
+                attr_name: role
+                for attr_name, role in QPalette.ColorRole.__dict__.items()
+                if not attr_name.startswith("_")
+            },
+            "foregroundRole",
+            param_type=QPalette.ColorRole,
+        )
+        self._add_menu_action(appearance_menu, "Set Auto Fill Background", self.autoFillBackground, self.setAutoFillBackground, "autoFillBackground")
+
+        # Behavior
+        behavior_menu = widget_menu.addMenu("Behavior")
+        self._add_menu_action(behavior_menu, "Set Enabled", self.isEnabled, self.setEnabled, "enabled")
+        self._add_menu_action(behavior_menu, "Set Visible", self.isVisible, self.setVisible, "visible")
+        self._add_menu_action(behavior_menu, "Set Hidden", self.isHidden, self.setHidden, "hidden")
+        self._add_menu_action(behavior_menu, "Set Mouse Tracking", self.hasMouseTracking, self.setMouseTracking, "mouseTracking")
+        self._add_menu_action(behavior_menu, "Set Tablet Tracking", self.hasTabletTracking, self.setTabletTracking, "tabletTracking")
+        self._add_menu_action(behavior_menu, "Set Updates Enabled", self.updatesEnabled, self.setUpdatesEnabled, "updatesEnabled")
+        behavior_advanced_menu = behavior_menu.addMenu("Advanced")
+        self._add_exclusive_menu_action(
+            behavior_advanced_menu,
+            "Focus Policy",
+            self.focusPolicy,
+            self.setFocusPolicy,
+            options={
+                "No Focus": Qt.FocusPolicy.NoFocus,
+                "Tab Focus": Qt.FocusPolicy.TabFocus,
+                "Click Focus": Qt.FocusPolicy.ClickFocus,
+                "Strong Focus": Qt.FocusPolicy.StrongFocus,
+                "Wheel Focus": Qt.FocusPolicy.WheelFocus,
+            },
+            settings_key="focusPolicy",
+            param_type=Qt.FocusPolicy,
+        )
+        self._add_exclusive_menu_action(
+            behavior_advanced_menu,
+            "Set Context Menu Policy",
+            self.contextMenuPolicy,
+            self.setContextMenuPolicy,
+            {
+                "No Context Menu": Qt.ContextMenuPolicy.NoContextMenu,
+                "Default Context Menu": Qt.ContextMenuPolicy.DefaultContextMenu,
+                "Actions Context Menu": Qt.ContextMenuPolicy.ActionsContextMenu,
+                "Custom Context Menu": Qt.ContextMenuPolicy.CustomContextMenu,
+                "Prevent Context Menu": Qt.ContextMenuPolicy.PreventContextMenu,
+            },
+            "contextMenuPolicy",
+            param_type=Qt.ContextMenuPolicy,
+        )
+        self._add_menu_action(behavior_menu, "Set Accept Drops", self.acceptDrops, self.setAcceptDrops, "acceptDrops")
+        self._add_exclusive_menu_action(behavior_menu, "Set Layout Direction", self.layoutDirection, self.setLayoutDirection, {
+            "Left to Right": Qt.LayoutDirection.LeftToRight,
+            "Right to Left": Qt.LayoutDirection.RightToLeft,
+            "Auto": Qt.LayoutDirection.LayoutDirectionAuto,
+        }, "layoutDirection", param_type=Qt.LayoutDirection)
+
+        # Accessibility
+        accessibility_menu = widget_menu.addMenu("Accessibility")
+        self._add_menu_action(accessibility_menu, "Set Accessible Name", self.accessibleName, self.setAccessibleName, "accessibleName", param_type=str)
+        self._add_menu_action(accessibility_menu, "Set Accessible Description", self.accessibleDescription, self.setAccessibleDescription, "accessibleDescription", param_type=str)
+
+        # Locale
+        locale_menu = widget_menu.addMenu("Locale")
+        self._add_menu_action(locale_menu, "Set Locale", self.locale, self.setLocale, "locale", param_type=QLocale)
+
+        # Actions
+        actions_menu = widget_menu.addMenu("Actions")
+
+        # Actions menu
+        refresh_menu = widget_menu.addMenu("Refresh...")
+        self._add_simple_action(refresh_menu, "Update", self.update)
+        self._add_simple_action(refresh_menu, "Repaint", self.repaint)
+        self._add_simple_action(actions_menu, "Raise", self.raise_)
+        self._add_simple_action(actions_menu, "Lower", self.lower)
+        self._add_simple_action(actions_menu, "Stack Under", lambda: self.stackUnder(self.parentWidget()))
+        self._add_simple_action(actions_menu, "Move", lambda: self.move(self.x(), self.y()))
+        self._add_simple_action(actions_menu, "Resize", lambda: self.resize(self.width(), self.height()))
+        self._add_simple_action(actions_menu, "Adjust Size", self.adjustSize)
+        self._add_simple_action(actions_menu, "Update Geometry", self.updateGeometry)
+        self._add_simple_action(actions_menu, "Update", self.update)
+        self._add_simple_action(actions_menu, "Repaint", self.repaint)
+        self._add_simple_action(actions_menu, "Set Focus", self.setFocus)
+        self._add_simple_action(actions_menu, "Clear Focus", self.clearFocus)
+        self._add_simple_action(actions_menu, "Activate Window", self.activateWindow)
+        self._add_simple_action(actions_menu, "Show Normal", self.showNormal)
+        self._add_simple_action(actions_menu, "Show Minimized", self.showMinimized)
+        self._add_simple_action(actions_menu, "Show Maximized", self.showMaximized)
+        self._add_simple_action(actions_menu, "Show Full Screen", self.showFullScreen)
+        self._add_simple_action(actions_menu, "Show", self.show)
+        self._add_simple_action(actions_menu, "Hide", self.hide)
+        self._add_simple_action(actions_menu, "Close", self.close)
+
+        # Advanced
+        advanced_menu = widget_menu.addMenu("Advanced")
+        widget_attributes_menu = advanced_menu.addMenu("Widget Attributes")
+        for attr_name, attr_value in Qt.WidgetAttribute.__dict__.items():
+            if not attr_name.startswith("WA_"):
+                continue
+            self._add_menu_action(
+                widget_attributes_menu,
+                attr_name,
+                lambda v=attr_value: self.testAttribute(v),  # Example getter
+                lambda b, v=attr_value: self.setAttribute(v, b),
+                "setAttribute",
+                param_type=bool
+            )
+
+        #meta_enum = QMetaEnum.fromType(Qt.WindowType)
+        #window_type_options = {meta_enum.valueToKey(i): i for i in range(meta_enum.keyCount())}
+        #self._add_multi_option_menu_action(
+        #    advanced_menu,
+        #    "Set Window Flag",
+        #    self.windowFlags,
+        #    self.setWindowFlags,
+        #    {flag.name: flag for flag in Qt.WindowType},
+        #    "setWindowFlag",
+        #    param_type=Qt.WindowType
+        #)
+        if qtpy.QT5:
+            self._add_menu_action(advanced_menu, "Set Input Method Hints", self.inputMethodHints, self.setInputMethodHints, "inputMethodHints", param_type=Qt.InputMethodHints)
+        self._add_menu_action(advanced_menu, "Set Tool Tip Duration", self.toolTipDuration, self.setToolTipDuration, "toolTipDuration", param_type=int)
+
+        return self.menu
+
+    def restore_state(self):
+        """Acquire the QSettings for this widget and restore the state.
+
+        These settings were saved with the widget's object name the last time the widget was used.
+        """
+        self._initialized = False
+        self.build_context_menu()
+        self._initialized = True
 
     def _all_settings(
         self,
@@ -146,6 +322,8 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         default: Any,
         val_type: type | None = None,
     ) -> Any:
+        # see the FIXME in _init_setting
+        return default
         # First check settings for _settings_name
         settings = self._all_settings(self._settings_name)
         try:
@@ -206,26 +384,14 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             )
         )
         if not self._initialized:
-            print("First time initializing setting:", settings_key, "with value:", repr(initial_value))
-            set_func(initial_value)
-        return initial_value
-
-    def emit_layout_changed(self):
-        model = self.model()
-        if model is not None:
-            model.layoutChanged.emit()
-
-    def debounce_layout_changed(
-        self,
-        timeout: int = 100,
-        *,
-        pre_change_emit: bool = False,
-    ):
-        if self._layout_changed_debounce_timer.isActive():
-            self._layout_changed_debounce_timer.stop()
-        elif pre_change_emit:
-            self.model().layoutAboutToBeChanged.emit()
-        self._layout_changed_debounce_timer.start(timeout)
+            if initial_value == "true":
+                initial_value = True
+            elif initial_value == "false":
+                initial_value = False
+            # FIXME: initial settings are causing all sorts of bugs, disable for now.
+            #set_func(initial_value)
+        #return initial_value
+        return current_value
 
     def _add_menu_action(  # noqa: PLR0913
         self,
@@ -236,12 +402,12 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         settings_key: str,
         param_type: type = bool,
     ):
+        current_value = self._init_setting(get_func, set_func, settings_key, param_type)
         if title == "Edit Stylesheet":
             action = QAction(title, self)
             action.triggered.connect(lambda: self._show_stylesheet_editor(get_func, set_func, settings_key))
             menu.addAction(action)
             return
-        current_value = self.get_setting(settings_key, get_func())
         action_title = f"{title}: {format_qt_obj(current_value)[:10]}" if param_type is not bool else title
         action = QAction(action_title, self)
 
@@ -251,33 +417,22 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             if isinstance(setting_value, str):
                 with suppress(ValueError, SyntaxError):
                     setting_value = ast.literal_eval(setting_value)
-            settings_value = False if setting_value == "false" else bool(setting_value)
-            action.setChecked(settings_value)
-            set_func(settings_value)  # Apply the initial value from settings
-
+            if setting_value == "false":
+                setting_value = False
+            elif setting_value == "true":
+                setting_value = True
+            else:
+                setting_value = bool(setting_value)
+            action.setChecked(setting_value)
             def on_toggled(checked: bool):  # noqa: FBT001
                 set_func(checked)
                 self.set_setting(settings_key, checked)
-
             action.toggled.connect(on_toggled)
         else:
 
             def on_triggered():
                 self._handle_generic_action(get_func, set_func, title, settings_key, param_type)
-
             action.triggered.connect(on_triggered)
-        self._bold_if_changed(action, settings_key, get_func())
-        menu.addAction(action)
-
-    def _add_color_menu_action(
-        self,
-        menu: QMenu,
-        title: str,
-        current_color_func: Callable[[], QColor],
-        settings_key: str,
-    ):
-        action = QAction(title, self)
-        action.triggered.connect(lambda: self._handle_color_action(current_color_func, title, settings_key))
         menu.addAction(action)
 
     def _add_simple_action(self, menu: QMenu, title: str, func: Callable[[], Any]):
@@ -297,18 +452,17 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
     ):
         initial_value = self._init_setting(current_state_func, set_func, settings_key, param_type)
         sub_menu = menu.addMenu(title)
-        action_group = QActionGroup(self)
+        action_group = QActionGroup(sub_menu)
         action_group.setExclusive(True)
         for option_name, option_value in options.items():
             action = QAction(option_name, self)
             action.setCheckable(True)
             action.setChecked(initial_value == option_value)
-            action.triggered.connect(
-                lambda checked, val=option_value: [
-                    set_func(val),
-                    self.set_setting(settings_key, val),
-                ]
-            )
+            def on_triggered(_checked, val=option_value):
+                set_func(val)
+                self.set_setting(settings_key, val)
+                self._update_action_text(title, val)
+            action.triggered.connect(on_triggered)
             sub_menu.addAction(action)
             action_group.addAction(action)
 
@@ -325,33 +479,26 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         initial_value = self._init_setting(get_func, set_func, settings_key, param_type)
         sub_menu = menu.addMenu(title)
 
-        def update_state():
+        def update_state(menu: QMenu = sub_menu):
             current_state = 0
-            for action in sub_menu.actions():
+            for action in menu.actions():
                 if action.isChecked():
                     current_state |= options[action.text()]
-            if not isinstance(current_state, initial_value.__class__) and initial_value is not None:
+            if (
+                initial_value is not None
+                and not isinstance(current_state, initial_value.__class__)
+            ):
                 current_state = initial_value.__class__(current_state)
             set_func(current_state)
             self.set_setting(settings_key, current_state)
 
-        for option_name, option_value in options.items():
-            action = QAction(option_name, self)
-            action.setCheckable(True)
-            action.setChecked(bool(initial_value & option_value))
-            action.triggered.connect(update_state)
-            sub_menu.addAction(action)
-
-    def _handle_checkable_action(
-        self,
-        checked: bool,
-        setter: Callable[[Any], None],
-        settings_key: str,
-        param_type: type | None = None,
-    ) -> None:  # noqa: FBT001
-        value = checked if param_type is None else param_type(checked)
-        setter(value)
-        self.set_setting(settings_key, value)
+        if not self._initialized:
+            for option_name, option_value in options.items():
+                action = QAction(option_name, self)
+                action.setCheckable(True)
+                action.setChecked(bool(initial_value & option_value))
+                action.triggered.connect(update_state)
+                sub_menu.addAction(action)
 
     def _handle_color_action(
         self,
@@ -372,13 +519,14 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         settings_key: str,
         param_type: type,
     ):
-        current_value = self.get_setting(settings_key, get_func(), get_func().__class__)
+        get_result = get_func()
+        current_value: Any = self.get_setting(settings_key, get_result, get_result.__class__)
 
         dialog = QDialog(self)
         dialog.setWindowTitle(f"Set {title}")
         layout = QVBoxLayout(dialog)
 
-        input_widget = QtObjectParser.create_input_widget(param_type, current_value)
+        input_widget = self._create_input_widget(param_type, current_value)
         layout.addWidget(input_widget)
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -648,7 +796,7 @@ if __name__ == "__main__":
             self.test_generic_action.clicked.connect(self.test_generic_action_method)
 
         def on_button_click(self):
-            self.label.setText("Button Clicked!")
+            self.build_context_menu().exec()
 
         def test_color_action_method(self):
             self._handle_color_action(lambda: Qt.red, "Test Color", "testColorSetting")
