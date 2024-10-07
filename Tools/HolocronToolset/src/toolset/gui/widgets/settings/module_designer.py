@@ -4,8 +4,6 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy import QtCore
-
 from pykotor.common.misc import Color
 from toolset.data.settings import Settings, SettingsProperty
 from toolset.gui.widgets.settings.base import SettingsWidget
@@ -20,8 +18,6 @@ if TYPE_CHECKING:
 
 
 class ModuleDesignerWidget(SettingsWidget):
-    editedSignal = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
-
     def __init__(self, parent: QWidget):
         """Initializes the Module Designer UI.
 

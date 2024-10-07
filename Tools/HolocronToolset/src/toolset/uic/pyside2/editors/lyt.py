@@ -17,193 +17,186 @@ class Ui_LYTEditor(object):
     def setupUi(self, LYTEditor):
         if not LYTEditor.objectName():
             LYTEditor.setObjectName(u"LYTEditor")
-        LYTEditor.resize(800, 600)
-        self.verticalLayout = QVBoxLayout(LYTEditor)
-        self.verticalLayout.setObjectName(u"verticalLayout")
+        LYTEditor.resize(1200, 800)
+        self.horizontalLayout = QHBoxLayout(LYTEditor)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.splitter = QSplitter(LYTEditor)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Horizontal)
-        self.leftPanel = QWidget(self.splitter)
-        self.leftPanel.setObjectName(u"leftPanel")
-        self.verticalLayout_2 = QVBoxLayout(self.leftPanel)
-        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.graphicsView = QGraphicsView(self.leftPanel)
+        self.leftWidget = QWidget(self.splitter)
+        self.leftWidget.setObjectName(u"leftWidget")
+        self.verticalLayout = QVBoxLayout(self.leftWidget)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.viewTabWidget = QTabWidget(self.leftWidget)
+        self.viewTabWidget.setObjectName(u"viewTabWidget")
+        self.topDownTab = QWidget()
+        self.topDownTab.setObjectName(u"topDownTab")
+        self.verticalLayout_7 = QVBoxLayout(self.topDownTab)
+        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.graphicsView = QGraphicsView(self.topDownTab)
         self.graphicsView.setObjectName(u"graphicsView")
+        self.graphicsView.setDragMode(QGraphicsView.ScrollHandDrag)
 
-        self.verticalLayout_2.addWidget(self.graphicsView)
+        self.verticalLayout_7.addWidget(self.graphicsView)
 
-        self.zoomSlider = QSlider(self.leftPanel)
+        self.viewTabWidget.addTab(self.topDownTab, "")
+        self.threeDTab = QWidget()
+        self.threeDTab.setObjectName(u"threeDTab")
+        self.verticalLayout_8 = QVBoxLayout(self.threeDTab)
+        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+        self.openGLWidget = QOpenGLWidget(self.threeDTab)
+        self.openGLWidget.setObjectName(u"openGLWidget")
+
+        self.verticalLayout_8.addWidget(self.openGLWidget)
+
+        self.viewTabWidget.addTab(self.threeDTab, "")
+
+        self.verticalLayout.addWidget(self.viewTabWidget)
+
+        self.zoomSlider = QSlider(self.leftWidget)
         self.zoomSlider.setObjectName(u"zoomSlider")
+        self.zoomSlider.setMinimum(10)
+        self.zoomSlider.setMaximum(200)
+        self.zoomSlider.setValue(100)
         self.zoomSlider.setOrientation(Qt.Horizontal)
 
-        self.verticalLayout_2.addWidget(self.zoomSlider)
+        self.verticalLayout.addWidget(self.zoomSlider)
 
-        self.splitter.addWidget(self.leftPanel)
-        self.rightPanel = QWidget(self.splitter)
-        self.rightPanel.setObjectName(u"rightPanel")
-        self.verticalLayout_3 = QVBoxLayout(self.rightPanel)
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.tabWidget = QTabWidget(self.rightPanel)
+        self.splitter.addWidget(self.leftWidget)
+        self.rightWidget = QWidget(self.splitter)
+        self.rightWidget.setObjectName(u"rightWidget")
+        self.verticalLayout_2 = QVBoxLayout(self.rightWidget)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.tabWidget = QTabWidget(self.rightWidget)
         self.tabWidget.setObjectName(u"tabWidget")
         self.roomsTab = QWidget()
         self.roomsTab.setObjectName(u"roomsTab")
-        self.verticalLayout_4 = QVBoxLayout(self.roomsTab)
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.verticalLayout_3 = QVBoxLayout(self.roomsTab)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.roomsList = QListWidget(self.roomsTab)
         self.roomsList.setObjectName(u"roomsList")
 
-        self.verticalLayout_4.addWidget(self.roomsList)
+        self.verticalLayout_3.addWidget(self.roomsList)
 
-        self.horizontalLayout = QHBoxLayout()
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.addRoomButton = QPushButton(self.roomsTab)
         self.addRoomButton.setObjectName(u"addRoomButton")
 
-        self.horizontalLayout.addWidget(self.addRoomButton)
-
-        self.editRoomButton = QPushButton(self.roomsTab)
-        self.editRoomButton.setObjectName(u"editRoomButton")
-
-        self.horizontalLayout.addWidget(self.editRoomButton)
-
-        self.deleteRoomButton = QPushButton(self.roomsTab)
-        self.deleteRoomButton.setObjectName(u"deleteRoomButton")
-
-        self.horizontalLayout.addWidget(self.deleteRoomButton)
-
-
-        self.verticalLayout_4.addLayout(self.horizontalLayout)
+        self.verticalLayout_3.addWidget(self.addRoomButton)
 
         self.tabWidget.addTab(self.roomsTab, "")
         self.tracksTab = QWidget()
         self.tracksTab.setObjectName(u"tracksTab")
-        self.verticalLayout_5 = QVBoxLayout(self.tracksTab)
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
+        self.verticalLayout_4 = QVBoxLayout(self.tracksTab)
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
         self.tracksList = QListWidget(self.tracksTab)
         self.tracksList.setObjectName(u"tracksList")
 
-        self.verticalLayout_5.addWidget(self.tracksList)
+        self.verticalLayout_4.addWidget(self.tracksList)
 
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.addTrackButton = QPushButton(self.tracksTab)
         self.addTrackButton.setObjectName(u"addTrackButton")
 
-        self.horizontalLayout_2.addWidget(self.addTrackButton)
-
-        self.editTrackButton = QPushButton(self.tracksTab)
-        self.editTrackButton.setObjectName(u"editTrackButton")
-
-        self.horizontalLayout_2.addWidget(self.editTrackButton)
-
-        self.deleteTrackButton = QPushButton(self.tracksTab)
-        self.deleteTrackButton.setObjectName(u"deleteTrackButton")
-
-        self.horizontalLayout_2.addWidget(self.deleteTrackButton)
-
-
-        self.verticalLayout_5.addLayout(self.horizontalLayout_2)
+        self.verticalLayout_4.addWidget(self.addTrackButton)
 
         self.tabWidget.addTab(self.tracksTab, "")
         self.obstaclesTab = QWidget()
         self.obstaclesTab.setObjectName(u"obstaclesTab")
-        self.verticalLayout_6 = QVBoxLayout(self.obstaclesTab)
-        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+        self.verticalLayout_5 = QVBoxLayout(self.obstaclesTab)
+        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
         self.obstaclesList = QListWidget(self.obstaclesTab)
         self.obstaclesList.setObjectName(u"obstaclesList")
 
-        self.verticalLayout_6.addWidget(self.obstaclesList)
+        self.verticalLayout_5.addWidget(self.obstaclesList)
 
-        self.horizontalLayout_3 = QHBoxLayout()
-        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.addObstacleButton = QPushButton(self.obstaclesTab)
         self.addObstacleButton.setObjectName(u"addObstacleButton")
 
-        self.horizontalLayout_3.addWidget(self.addObstacleButton)
-
-        self.editObstacleButton = QPushButton(self.obstaclesTab)
-        self.editObstacleButton.setObjectName(u"editObstacleButton")
-
-        self.horizontalLayout_3.addWidget(self.editObstacleButton)
-
-        self.deleteObstacleButton = QPushButton(self.obstaclesTab)
-        self.deleteObstacleButton.setObjectName(u"deleteObstacleButton")
-
-        self.horizontalLayout_3.addWidget(self.deleteObstacleButton)
-
-
-        self.verticalLayout_6.addLayout(self.horizontalLayout_3)
+        self.verticalLayout_5.addWidget(self.addObstacleButton)
 
         self.tabWidget.addTab(self.obstaclesTab, "")
         self.doorhooksTab = QWidget()
         self.doorhooksTab.setObjectName(u"doorhooksTab")
-        self.verticalLayout_7 = QVBoxLayout(self.doorhooksTab)
-        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.verticalLayout_6 = QVBoxLayout(self.doorhooksTab)
+        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
         self.doorhooksList = QListWidget(self.doorhooksTab)
         self.doorhooksList.setObjectName(u"doorhooksList")
 
-        self.verticalLayout_7.addWidget(self.doorhooksList)
+        self.verticalLayout_6.addWidget(self.doorhooksList)
 
-        self.horizontalLayout_4 = QHBoxLayout()
-        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
-        self.addDoorhookButton = QPushButton(self.doorhooksTab)
-        self.addDoorhookButton.setObjectName(u"addDoorhookButton")
+        self.addDoorHookButton = QPushButton(self.doorhooksTab)
+        self.addDoorHookButton.setObjectName(u"addDoorHookButton")
 
-        self.horizontalLayout_4.addWidget(self.addDoorhookButton)
-
-        self.editDoorhookButton = QPushButton(self.doorhooksTab)
-        self.editDoorhookButton.setObjectName(u"editDoorhookButton")
-
-        self.horizontalLayout_4.addWidget(self.editDoorhookButton)
-
-        self.deleteDoorhookButton = QPushButton(self.doorhooksTab)
-        self.deleteDoorhookButton.setObjectName(u"deleteDoorhookButton")
-
-        self.horizontalLayout_4.addWidget(self.deleteDoorhookButton)
-
-
-        self.verticalLayout_7.addLayout(self.horizontalLayout_4)
+        self.verticalLayout_6.addWidget(self.addDoorHookButton)
 
         self.tabWidget.addTab(self.doorhooksTab, "")
 
-        self.verticalLayout_3.addWidget(self.tabWidget)
+        self.verticalLayout_2.addWidget(self.tabWidget)
 
-        self.generateWalkmeshButton = QPushButton(self.rightPanel)
+        self.texturesGroupBox = QGroupBox(self.rightWidget)
+        self.texturesGroupBox.setObjectName(u"texturesGroupBox")
+        self.verticalLayout_9 = QVBoxLayout(self.texturesGroupBox)
+        self.verticalLayout_9.setObjectName(u"verticalLayout_9")
+        self.textureBrowser = QListWidget(self.texturesGroupBox)
+        self.textureBrowser.setObjectName(u"textureBrowser")
+
+        self.verticalLayout_9.addWidget(self.textureBrowser)
+
+        self.importTextureButton = QPushButton(self.texturesGroupBox)
+        self.importTextureButton.setObjectName(u"importTextureButton")
+
+        self.verticalLayout_9.addWidget(self.importTextureButton)
+
+
+        self.verticalLayout_2.addWidget(self.texturesGroupBox)
+
+        self.roomTemplatesGroupBox = QGroupBox(self.rightWidget)
+        self.roomTemplatesGroupBox.setObjectName(u"roomTemplatesGroupBox")
+        self.verticalLayout_10 = QVBoxLayout(self.roomTemplatesGroupBox)
+        self.verticalLayout_10.setObjectName(u"verticalLayout_10")
+        self.roomTemplateList = QListWidget(self.roomTemplatesGroupBox)
+        self.roomTemplateList.setObjectName(u"roomTemplateList")
+
+        self.verticalLayout_10.addWidget(self.roomTemplateList)
+
+
+        self.verticalLayout_2.addWidget(self.roomTemplatesGroupBox)
+
+        self.importModelButton = QPushButton(self.rightWidget)
+        self.importModelButton.setObjectName(u"importModelButton")
+
+        self.verticalLayout_2.addWidget(self.importModelButton)
+
+        self.generateWalkmeshButton = QPushButton(self.rightWidget)
         self.generateWalkmeshButton.setObjectName(u"generateWalkmeshButton")
 
-        self.verticalLayout_3.addWidget(self.generateWalkmeshButton)
+        self.verticalLayout_2.addWidget(self.generateWalkmeshButton)
 
-        self.splitter.addWidget(self.rightPanel)
+        self.splitter.addWidget(self.rightWidget)
 
-        self.verticalLayout.addWidget(self.splitter)
+        self.horizontalLayout.addWidget(self.splitter)
 
 
         self.retranslateUi(LYTEditor)
-
-        self.tabWidget.setCurrentIndex(0)
-
 
         QMetaObject.connectSlotsByName(LYTEditor)
     # setupUi
 
     def retranslateUi(self, LYTEditor):
         LYTEditor.setWindowTitle(QCoreApplication.translate("LYTEditor", u"LYT Editor", None))
+        self.viewTabWidget.setTabText(self.viewTabWidget.indexOf(self.topDownTab), QCoreApplication.translate("LYTEditor", u"Top-Down View", None))
+        self.viewTabWidget.setTabText(self.viewTabWidget.indexOf(self.threeDTab), QCoreApplication.translate("LYTEditor", u"3D View", None))
         self.addRoomButton.setText(QCoreApplication.translate("LYTEditor", u"Add Room", None))
-        self.editRoomButton.setText(QCoreApplication.translate("LYTEditor", u"Edit Room", None))
-        self.deleteRoomButton.setText(QCoreApplication.translate("LYTEditor", u"Delete Room", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.roomsTab), QCoreApplication.translate("LYTEditor", u"Rooms", None))
         self.addTrackButton.setText(QCoreApplication.translate("LYTEditor", u"Add Track", None))
-        self.editTrackButton.setText(QCoreApplication.translate("LYTEditor", u"Edit Track", None))
-        self.deleteTrackButton.setText(QCoreApplication.translate("LYTEditor", u"Delete Track", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tracksTab), QCoreApplication.translate("LYTEditor", u"Tracks", None))
         self.addObstacleButton.setText(QCoreApplication.translate("LYTEditor", u"Add Obstacle", None))
-        self.editObstacleButton.setText(QCoreApplication.translate("LYTEditor", u"Edit Obstacle", None))
-        self.deleteObstacleButton.setText(QCoreApplication.translate("LYTEditor", u"Delete Obstacle", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.obstaclesTab), QCoreApplication.translate("LYTEditor", u"Obstacles", None))
-        self.addDoorhookButton.setText(QCoreApplication.translate("LYTEditor", u"Add Doorhook", None))
-        self.editDoorhookButton.setText(QCoreApplication.translate("LYTEditor", u"Edit Doorhook", None))
-        self.deleteDoorhookButton.setText(QCoreApplication.translate("LYTEditor", u"Delete Doorhook", None))
+        self.addDoorHookButton.setText(QCoreApplication.translate("LYTEditor", u"Add Door Hook", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.doorhooksTab), QCoreApplication.translate("LYTEditor", u"Doorhooks", None))
+        self.texturesGroupBox.setTitle(QCoreApplication.translate("LYTEditor", u"Textures", None))
+        self.importTextureButton.setText(QCoreApplication.translate("LYTEditor", u"Import Texture", None))
+        self.roomTemplatesGroupBox.setTitle(QCoreApplication.translate("LYTEditor", u"Room Templates", None))
+        self.importModelButton.setText(QCoreApplication.translate("LYTEditor", u"Import Model", None))
         self.generateWalkmeshButton.setText(QCoreApplication.translate("LYTEditor", u"Generate Walkmesh", None))
     # retranslateUi
 

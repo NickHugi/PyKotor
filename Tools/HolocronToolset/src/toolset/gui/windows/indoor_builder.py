@@ -36,7 +36,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from toolset.config import getRemoteToolsetUpdateInfo, is_remote_version_newer
+from toolset.config import get_remote_toolset_update_info, is_remote_version_newer
 from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -1080,7 +1080,7 @@ class KitDownloader(QDialog):
                 - If not, sets button to "Download"
             - Adds kit name and button to layout in group box
         """
-        updateInfoData = getRemoteToolsetUpdateInfo(
+        updateInfoData = get_remote_toolset_update_info(
             useBetaChannel=GlobalSettings().useBetaChannel,
         )
         try:

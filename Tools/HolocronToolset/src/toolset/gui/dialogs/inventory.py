@@ -800,7 +800,7 @@ class ItemBuilderDialog(QDialog):  # FIXME(th3w1zard1): There is UI code used in
         self._worker.start()
 
     def utiLoaded(self, uti: UTI, result: ResourceResult):
-        baseitems = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        baseitems = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
         name = result.resname if uti is None else self._installation.string(uti.name, result.resname)
 
         # Split category by base item:
@@ -843,7 +843,7 @@ class ItemBuilderDialog(QDialog):  # FIXME(th3w1zard1): There is UI code used in
             slots: int = -1
             droid: bool = False
         else:
-            baseitems: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+            baseitems: TwoDA = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
             slots = baseitems.get_row(uti.base_item).get_integer("equipableslots", 0)
             droid = baseitems.get_row(uti.base_item).get_integer("droidorhuman", 0) == 2
 

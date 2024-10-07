@@ -65,7 +65,7 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.searchEdit)
 
-        self.resourceList = QListView(Form)
+        self.resourceList = RobustListView(Form)
         self.resourceList.setObjectName(u"resourceList")
         self.resourceList.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.resourceList.setProperty("showDropIndicator", False)

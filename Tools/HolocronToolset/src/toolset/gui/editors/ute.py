@@ -118,26 +118,26 @@ class UTEEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        difficulties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        difficulties: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_ENC_DIFFICULTIES)
         self.ui.difficultySelect.clear()
         self.ui.difficultySelect.setItems(difficulties.get_column("label"))
         self.ui.difficultySelect.setContext(difficulties, installation, HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
-        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        factions: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
         self.ui.factionSelect.clear()
         self.ui.factionSelect.setItems(factions.get_column("label"))
         self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
-        self._installation.setupFileContextMenu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onExhaustedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onExhaustedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
         self.relevant_creature_resnames = sorted(
             iter(
                 {
                     res.resname().lower()
-                    for res in self._installation.getRelevantResources(
+                    for res in self._installation.get_relevant_resources(
                         ResourceType.UTC, self._filepath
                     )
                 }
@@ -214,7 +214,7 @@ class UTEEditor(Editor):
             iter(
                 {
                     res.resname().lower()
-                    for res in self._installation.getRelevantResources(
+                    for res in self._installation.get_relevant_resources(
                         ResourceType.NCS, self._filepath
                     )
                 }
@@ -378,7 +378,7 @@ class UTEEditor(Editor):
         resrefCombo.populateComboBox(self.relevant_creature_resnames)
         resrefCombo.setComboBoxText(resname)
         if self._installation is not None:
-            self._installation.setupFileContextMenu(resrefCombo, [ResourceType.UTC])
+            self._installation.setup_file_context_menu(resrefCombo, [ResourceType.UTC])
 
         self.ui.creatureTable.setCellWidget(rowId, 0, singleCheckbox)
         self.ui.creatureTable.setCellWidget(rowId, 1, challengeSpin)

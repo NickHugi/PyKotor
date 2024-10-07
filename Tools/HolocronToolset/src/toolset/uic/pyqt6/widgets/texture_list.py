@@ -40,7 +40,7 @@ class Ui_Form(object):
         self.searchEdit = QtWidgets.QLineEdit(parent=Form)
         self.searchEdit.setObjectName("searchEdit")
         self.verticalLayout.addWidget(self.searchEdit)
-        self.resourceList = QtWidgets.QListView(parent=Form)
+        self.resourceList = RobustListView(parent=Form)
         self.resourceList.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.resourceList.setProperty("showDropIndicator", False)
         self.resourceList.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
@@ -65,5 +65,6 @@ class Ui_Form(object):
         self.reloadButton.setToolTip(_translate("Form", "Reload the active module/folder."))
         self.reloadButton.setText(_translate("Form", "Reload"))
         self.searchEdit.setPlaceholderText(_translate("Form", "search..."))
+from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 
 from toolset.rcc import resources_rc_pyqt6

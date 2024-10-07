@@ -127,7 +127,7 @@ class AREEditor(Editor):
             iter(
                 {
                     res.resname().lower()
-                    for res in self._installation.getRelevantResources(
+                    for res in self._installation.get_relevant_resources(
                         ResourceType.NCS, self._filepath
                     )
                 }
@@ -157,7 +157,7 @@ class AREEditor(Editor):
 
         self.ui.nameEdit.setInstallation(installation)
 
-        cameras: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_CAMERAS)
+        cameras: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_CAMERAS)
 
         self.ui.cameraStyleSelect.clear()
         self.ui.cameraStyleSelect.setContext(cameras, self._installation, HTInstallation.TwoDA_CAMERAS)
@@ -171,10 +171,10 @@ class AREEditor(Editor):
         self.ui.rainCheck.setVisible(installation.tsl)
         self.ui.lightningCheck.setVisible(installation.tsl)
 
-        installation.setupFileContextMenu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)

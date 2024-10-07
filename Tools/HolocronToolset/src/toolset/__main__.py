@@ -12,12 +12,10 @@ import pathlib
 import sys
 import tempfile
 
-from contextlib import suppress
-from types import TracebackType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from inspect import FrameInfo
+    from types import TracebackType
 
     from qtpy.QtCore import QSettings, QThread
 
@@ -29,8 +27,8 @@ def is_frozen() -> bool:
         bool: True if the toolset is frozen, False otherwise.
     """
     return (
-        getattr(sys, "frozen", False) or getattr(sys, "_MEIPASS", False)
-        # or tempfile.gettempdir() in sys.executable
+        getattr(sys, "frozen", False)
+        or getattr(sys, "_MEIPASS", False)
     )
 
 
@@ -43,27 +41,11 @@ def on_app_crash(
 
     This function should be called when an uncaught exception occurs, set to sys.excepthook.
     """
-    from loggerplus import RobustLogger
+    from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 
     if issubclass(etype, KeyboardInterrupt):
         sys.__excepthook__(etype, exc, tback)
         return
-    if tback is None:
-        with suppress(Exception):
-            import inspect
-
-            # Get the current stack frames
-            current_stack: list[FrameInfo] = inspect.stack()
-            if current_stack:
-                # Reverse the stack to have the order from caller to callee
-                current_stack = current_stack[1:][::-1]
-                fake_traceback = None
-                for frame_info in current_stack:
-                    frame = frame_info.frame
-                    fake_traceback = TracebackType(fake_traceback, frame, frame.f_lasti, frame.f_lineno)
-                exc = exc.with_traceback(fake_traceback)
-                # Now exc has a traceback :)
-                tback = exc.__traceback__
     logger = RobustLogger()
     logger.critical("Uncaught exception", exc_info=(etype, exc, tback))
 
@@ -154,7 +136,6 @@ def is_running_from_temp() -> bool:
 def qt_cleanup():
     """Cleanup so we can exit."""
     from loggerplus import RobustLogger
-    from qtpy.QtCore import QThread
 
     from toolset.utils.window import TOOLSET_WINDOWS
     from utility.system.app_process.shutdown import terminate_child_processes
@@ -165,17 +146,7 @@ def qt_cleanup():
         window.destroy()
     TOOLSET_WINDOWS.clear()
     gc.collect()
-    for obj in gc.get_objects():
-        with suppress(RuntimeError):  # wrapped C/C++ object of type QThread has been deleted
-            if isinstance(obj, QThread) and obj.isRunning():
-                RobustLogger().info(f"Terminating QThread obj with name: {obj.objectName()}")
-                obj.terminate()
-                # obj.wait()  # DO NOT UNCOMMENT THIS, causes a deadlock.
-            elif isinstance(obj, multiprocessing.Process):
-                RobustLogger().info(f"Terminating multiprocessing.Process obj with pid: {obj.pid}")
-                obj.terminate()
-                obj.join()
-    app_close_event.set()
+    print("terminating child processes")
     terminate_child_processes()
 
 
@@ -184,7 +155,7 @@ def last_resort_cleanup():
 
     This function should be registered with atexit as early as possible.
     """
-    from loggerplus import RobustLogger
+    from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 
     from utility.system.app_process.shutdown import (
         gracefully_shutdown_threads,
@@ -234,7 +205,7 @@ def main_init():
         atexit.register(last_resort_cleanup)  # last_resort_cleanup already handles child processes.
 
     if is_frozen():
-        from loggerplus import RobustLogger
+        from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 
         RobustLogger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
@@ -314,13 +285,7 @@ if __name__ == "__main__":
 
         This block is ran when users run __main__.py directly.
         """
-        try:
-            from qasync import QEventLoop  # pyright: ignore[reportMissingTypeStubs]
-        except ImportError:
-            use_qasync = False
-        else:
-            use_qasync = True
-        from loggerplus import RobustLogger
+        from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
         from qtpy.QtCore import QThread  # pylint: disable=no-name-in-module
         from qtpy.QtGui import QIcon
         from qtpy.QtWidgets import QApplication, QMessageBox  # pylint: disable=no-name-in-module
@@ -334,6 +299,9 @@ if __name__ == "__main__":
         app.setOrganizationName("PyKotor")
         app.setOrganizationDomain("github.com/NickHugi/PyKotor")
         app.setApplicationVersion(CURRENT_VERSION)
+        app.setDesktopFileName("com.pykotor.toolset")
+        app.setWindowIcon(QIcon(":/images/icons/sith.ico"))
+        app.setApplicationDisplayName("Holocron Toolset")
         app.setQuitOnLastWindowClosed(True)
         icon_path = ":/images/icons/sith.ico"
         if QIcon(icon_path).isNull():
@@ -362,15 +330,9 @@ if __name__ == "__main__":
 
         tool_window = ToolWindow()
         tool_window.show()
-        tool_window.check_for_updates(silent=True)
+        tool_window.update_manager.check_for_updates(silent=True)
 
-        if use_qasync:
-            loop = QEventLoop(app)
-            asyncio.set_event_loop(loop)
-            with loop:
-                loop.run_forever()
-        else:
-            sys.exit(app.exec())
+        sys.exit(app.exec())
 
     main_init()
     main()

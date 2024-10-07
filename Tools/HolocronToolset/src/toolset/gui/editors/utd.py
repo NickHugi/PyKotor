@@ -60,7 +60,7 @@ class UTDEditor(Editor):
         super().__init__(parent, "Door Editor", "door", supported, supported, installation)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
-        self._genericdoors2DA: TwoDA = installation.htGetCache2DA("genericdoors")
+        self._genericdoors2DA: TwoDA = installation.ht_get_cache_2da("genericdoors")
         self._utd: UTD = UTD()
 
         if qtpy.API_NAME == "PySide2":
@@ -135,10 +135,10 @@ class UTDEditor(Editor):
 
         # Load required 2da files if they have not been loaded already
         required: list[str] = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
-        installation.htBatchCache2DA(required)
+        installation.ht_batch_cache_2da(required)
 
-        appearances: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
-        factions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        appearances: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_DOORS)
+        factions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
 
         self.ui.appearanceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_DOORS)
         self.ui.factionSelect.setContext(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
@@ -152,18 +152,18 @@ class UTDEditor(Editor):
         self.handleWidgetWithTSL(self.ui.difficultyLabel, installation)
         self.handleWidgetWithTSL(self.ui.difficultyModLabel, installation)
 
-        installation.setupFileContextMenu(self.ui.onClickEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
+        installation.setup_file_context_menu(self.ui.onClickEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.conversationEdit, [ResourceType.DLG])
 
     def handleWidgetWithTSL(self, widget: QWidget, installation: HTInstallation):
         widget.setEnabled(installation.tsl)
@@ -244,7 +244,7 @@ class UTDEditor(Editor):
             iter(
                 {
                     res.resname().lower()
-                    for res in self._installation.getRelevantResources(
+                    for res in self._installation.get_relevant_resources(
                         ResourceType.NCS, self._filepath
                     )
                 }
@@ -266,7 +266,7 @@ class UTDEditor(Editor):
                 iter(
                     {
                         res.resname().lower()
-                        for res in self._installation.getRelevantResources(
+                        for res in self._installation.get_relevant_resources(
                             ResourceType.DLG, self._filepath
                         )
                     }

@@ -61,7 +61,7 @@ class UTPEditor(Editor):
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
-        self._placeables2DA = installation.htGetCache2DA("placeables")
+        self._placeables2DA = installation.ht_get_cache_2da("placeables")
         self._utp = UTP()
 
         if qtpy.API_NAME == "PySide2":
@@ -135,10 +135,10 @@ class UTPEditor(Editor):
 
         # Load required 2da files if they have not been loaded already
         required: list[str] = [HTInstallation.TwoDA_PLACEABLES, HTInstallation.TwoDA_FACTIONS]
-        installation.htBatchCache2DA(required)
+        installation.ht_batch_cache_2da(required)
 
-        appearances: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_PLACEABLES)
-        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        appearances: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLACEABLES)
+        factions: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
 
         self.ui.appearanceSelect.setContext(appearances, installation, HTInstallation.TwoDA_PLACEABLES)
         self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
@@ -152,21 +152,21 @@ class UTPEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-        installation.setupFileContextMenu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onInventoryEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onLockEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUsedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
+        installation.setup_file_context_menu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onInventoryEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onLockEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onUsedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.conversationEdit, [ResourceType.DLG])
 
     def load(
         self,
@@ -235,7 +235,7 @@ class UTPEditor(Editor):
             iter(
                 {
                     res.resname().lower()
-                    for res in self._installation.getRelevantResources(
+                    for res in self._installation.get_relevant_resources(
                         ResourceType.NCS, self._filepath
                     )
                 }
@@ -256,7 +256,7 @@ class UTPEditor(Editor):
         self.ui.onUnlockEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onUsedEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.conversationEdit.populateComboBox(sorted(res.resname() for res in self._installation.getRelevantResources(ResourceType.DLG)))
+        self.ui.conversationEdit.populateComboBox(sorted(res.resname() for res in self._installation.get_relevant_resources(ResourceType.DLG)))
 
         # Scripts
         self.ui.onClosedEdit.setComboBoxText(str(utp.on_closed))

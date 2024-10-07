@@ -156,8 +156,8 @@ class UTCEditor(Editor):
     def _getPortraitResRef(self) -> str:
         index = self.ui.portraitSelect.currentIndex()
         alignment = self.ui.alignmentSlider.value()
-        portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
-        assert portraits is not None, f"portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS) {portraits}: {portraits}"
+        portraits = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS)
+        assert portraits is not None, f"portraits = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS) {portraits}: {portraits}"
         result = portraits.get_cell(index, "baseresref")
         if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):
             result = portraits.get_cell(index, "baseresrefe")
@@ -251,18 +251,18 @@ class UTCEditor(Editor):
             HTInstallation.TwoDA_FEATS,
             HTInstallation.TwoDA_POWERS,
         ]
-        installation.htBatchCache2DA(required)
+        installation.ht_batch_cache_2da(required)
 
-        appearances = installation.htGetCache2DA(HTInstallation.TwoDA_APPEARANCES)
-        soundsets = installation.htGetCache2DA(HTInstallation.TwoDA_SOUNDSETS)
-        portraits = installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
-        subraces = installation.htGetCache2DA(HTInstallation.TwoDA_SUBRACES)
-        speeds = installation.htGetCache2DA(HTInstallation.TwoDA_SPEEDS)
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        genders = installation.htGetCache2DA(HTInstallation.TwoDA_GENDERS)
-        perceptions = installation.htGetCache2DA(HTInstallation.TwoDA_PERCEPTIONS)
-        classes = installation.htGetCache2DA(HTInstallation.TwoDA_CLASSES)
-        races = installation.htGetCache2DA(HTInstallation.TwoDA_RACES)
+        appearances = installation.ht_get_cache_2da(HTInstallation.TwoDA_APPEARANCES)
+        soundsets = installation.ht_get_cache_2da(HTInstallation.TwoDA_SOUNDSETS)
+        portraits = installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS)
+        subraces = installation.ht_get_cache_2da(HTInstallation.TwoDA_SUBRACES)
+        speeds = installation.ht_get_cache_2da(HTInstallation.TwoDA_SPEEDS)
+        factions = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
+        genders = installation.ht_get_cache_2da(HTInstallation.TwoDA_GENDERS)
+        perceptions = installation.ht_get_cache_2da(HTInstallation.TwoDA_PERCEPTIONS)
+        classes = installation.ht_get_cache_2da(HTInstallation.TwoDA_CLASSES)
+        races = installation.ht_get_cache_2da(HTInstallation.TwoDA_RACES)
 
         if appearances is not None:
             self.ui.appearanceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_APPEARANCES)
@@ -311,7 +311,7 @@ class UTCEditor(Editor):
         self.ui.raceSelect.addItem("Droid", 5)
         self.ui.raceSelect.addItem("Creature", 6)
 
-        feats = installation.htGetCache2DA(HTInstallation.TwoDA_FEATS)
+        feats = installation.ht_get_cache_2da(HTInstallation.TwoDA_FEATS)
         if feats is not None:
             self.ui.featList.clear()
             for feat in feats:
@@ -326,7 +326,7 @@ class UTCEditor(Editor):
             self.ui.featList.setSortingEnabled(True)
             self.ui.featList.sortItems(Qt.SortOrder.AscendingOrder)  # pyright: ignore[reportArgumentType]
 
-        powers = installation.htGetCache2DA(HTInstallation.TwoDA_POWERS)
+        powers = installation.ht_get_cache_2da(HTInstallation.TwoDA_POWERS)
         if powers is not None:
             self.ui.powerList.clear()
             for power in powers:
@@ -346,19 +346,19 @@ class UTCEditor(Editor):
         self.ui.hologramCheckbox.setVisible(installation.tsl)
         self.ui.k2onlyBox.setVisible(installation.tsl)
 
-        self._installation.setupFileContextMenu(self.ui.onBlockedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onAttackedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onNoticeEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onConversationEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onEndRoundEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onDisturbedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onSpawnEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onSpellCastEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onBlockedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onAttackedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onNoticeEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onConversationEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onEndRoundEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onDisturbedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onSpawnEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onSpellCastEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
 
     def load(
         self,
@@ -492,10 +492,10 @@ class UTCEditor(Editor):
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                     self.ui.powerList.addItem(item)  # pyright: ignore[reportCallIssue, reportArgumentType]
                 item.setCheckState(Qt.CheckState.Checked)
-        self.relevant_script_resnames = sorted(iter({res.resname().lower() for res in self._installation.getRelevantResources(ResourceType.NCS, self._filepath)}))
+        self.relevant_script_resnames = sorted(iter({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.NCS, self._filepath)}))
 
-        self.ui.conversationEdit.populateComboBox(sorted(iter({res.resname().lower() for res in self._installation.getRelevantResources(ResourceType.DLG, self._filepath)})))
-        self._installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
+        self.ui.conversationEdit.populateComboBox(sorted(iter({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.DLG, self._filepath)})))
+        self._installation.setup_file_context_menu(self.ui.conversationEdit, [ResourceType.DLG])
 
         self.ui.onBlockedEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onAttackedEdit.populateComboBox(self.relevant_script_resnames)
@@ -714,8 +714,8 @@ class UTCEditor(Editor):
             4. Converting the texture to a QPixmap.
         """
         alignment: int = self.ui.alignmentSlider.value()
-        portraits: TwoDA | None = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
-        assert portraits is not None, f"portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS) {portraits.__class__.__name__}: {portraits}"
+        portraits: TwoDA | None = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS)
+        assert portraits is not None, f"portraits = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS) {portraits.__class__.__name__}: {portraits}"
         portrait: str = portraits.get_cell(index, "baseresref")
 
         if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):  # TODO(th3w1zard1): document these magic numbers

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import Future, ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, cast
@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, cast
 import qtpy
 
 from loggerplus import RobustLogger
-from qtpy.QtCore import QFileInfo, QPoint, QSize, QSortFilterProxyModel, QTimer, Qt, Signal
-from qtpy.QtGui import QCursor, QImage, QStandardItem, QStandardItemModel
+from qtpy.QtCore import QFileInfo, QPoint, QSortFilterProxyModel, QTimer, Qt, Signal, Slot
+from qtpy.QtGui import QCursor, QIcon, QImage, QPixmap, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import QFileIconProvider, QHeaderView, QMenu, QToolTip, QWidget
 
 from pykotor.resource.formats.tpc.tpc_auto import read_tpc
@@ -22,13 +22,13 @@ from toolset.gui.dialogs.load_from_location_result import ResourceItems
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
-    from concurrent.futures import Future
 
-    from qtpy.QtCore import QAbstractItemModel, QEvent, QModelIndex, QObject
-    from qtpy.QtGui import QIcon, QMouseEvent, QPixmap, QResizeEvent, QShowEvent
-    from qtpy.QtWidgets import QAbstractItemView, QScrollBar
+    from qtpy.QtCore import QEvent, QModelIndex, QObject
+    from qtpy.QtGui import QMouseEvent, QResizeEvent, QShowEvent
+    from qtpy.QtWidgets import QScrollBar
 
     from pykotor.extract.file import FileResource
+    from pykotor.tools.path import CaseAwarePath
     from toolset.data.installation import HTInstallation
 
 
@@ -202,6 +202,10 @@ class ResourceList(MainWindowList):
                 continue
             self.ui.sectionCombo.setCurrentIndex(i)
 
+    def setInstallation(self, installation: HTInstallation):
+        """Set the installation for the resource list."""
+        self._installation = installation
+
     def set_resources(
         self,
         resources: list[FileResource],
@@ -324,7 +328,6 @@ class ResourceList(MainWindowList):
         builder.run_context_menu(point, menu=menu)
 
     def on_resource_double_clicked(self):
-        """Handle the resource double click event."""
         self.sig_request_open_resource.emit(self.selected_resources(), None)
 
     def resizeEvent(self, event):
@@ -538,14 +541,15 @@ class ResourceModel(QStandardItemModel):
 class TextureList(MainWindowList):
     """A list widget for displaying tpc/tga textures, providing functionality to load images without blocking the UI."""
 
-    request_reload: Signal = Signal(object)  # pyright: ignore[reportPrivateImportUsage]
-    request_refresh: Signal = Signal()  # pyright: ignore[reportPrivateImportUsage]
-    icon_loaded: Signal = Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    sig_request_reload: Signal = Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    sig_request_refresh: Signal = Signal()  # pyright: ignore[reportPrivateImportUsage]
+    sig_icon_loaded: Signal = Signal(Future)  # pyright: ignore[reportPrivateImportUsage]
 
     BLANK_IMAGE: QImage = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format.Format_RGB888)
 
     def __init__(self, parent: QWidget):
         """Initialize the texture list."""
+        print(f"Initializing TextureList with parent: {parent}")
         super().__init__(parent)
 
         if qtpy.API_NAME == "PySide2":
@@ -567,34 +571,35 @@ class TextureList(MainWindowList):
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
+        print(f"Using Qt bindings: {qtpy.API_NAME}")
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+        self.ui.resourceList.setUniformItemSizes(False)  # should be default but for clarity
         self.setup_signals()
 
         self._installation: HTInstallation | None = None
 
+        print(f"Max child processes: {GlobalSettings().max_child_processes}")
+        self._executor: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=GlobalSettings().max_child_processes)
+
         self.texture_models: defaultdict[str, QStandardItemModel] = defaultdict(QStandardItemModel)
         self.textures_proxy_model: QSortFilterProxyModel = QSortFilterProxyModel()
         self.textures_proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        self.ui.resourceList.setModel(self.textures_proxy_model)  # type: ignore[arg-type]
-        self.ui.resourceList.setIconSize(QSize(64, 64))  # pyright: ignore[reportArgumentType]
 
-        self.section_model: QStandardItemModel = QStandardItemModel()
-        self.ui.sectionCombo.setModel(self.section_model)  # type: ignore[arg-type]
-
-        self._executor: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=GlobalSettings().max_child_processes)
-
+        self.ui.resourceList.setModel(self.textures_proxy_model)  # pyright: ignore[reportArgumentType]
         self.ui.resourceList.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
         self.ui.resourceList.customContextMenuRequested.connect(self.show_context_menu)
         self._loading_resources: set[FileResource] = set()
 
     def __del__(self):
         """Shutdown the executor when the texture list is deleted."""
+        print("Shutting down executor in TextureList destructor")
         self._executor.shutdown(wait=False)
 
     def setup_signals(self):
         """Setup the signals for the texture list."""
-        self.ui.searchEdit.textEdited.connect(self.on_filter_string_updated)
+        print("Setting up signals for TextureList")
+        self.ui.searchEdit.editingFinished.connect(self.on_filter_string_updated)
         self.ui.sectionCombo.currentIndexChanged.connect(self.on_section_changed)
         self.ui.resourceList.doubleClicked.connect(self.on_resource_double_clicked)
 
@@ -603,21 +608,140 @@ class TextureList(MainWindowList):
             RobustLogger().warning("Could not find vertical scroll bar for resource list")
         else:
             vert_scroll_bar.valueChanged.connect(self.queue_load_visible_icons)
-        self.ui.searchEdit.textChanged.connect(self.queue_load_visible_icons)
-        self.icon_loaded.connect(self.on_icon_loaded)
+        self.sig_icon_loaded.connect(self.on_icon_loaded)
+
+    def setInstallation(self, installation: HTInstallation):
+        """Set the installation for the resource list."""
+        self._installation = installation
+
+    def selected_resources(self) -> list[FileResource]:
+        """Get the user selected resources from the texture list."""
+        print("Getting selected resources from TextureList")
+        resources = []
+        current_section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+        print(f"Current section: {current_section_name}")
+        cur_src_model = self.texture_models[current_section_name]
+
+        for index in self.ui.resourceList.selectedIndexes():
+            source_index = self.textures_proxy_model.mapToSource(index)
+            if not source_index.isValid():
+                print(f"Warning: Invalid source index for row {source_index.row()}")
+                continue
+            item = cur_src_model.itemFromIndex(source_index)
+            if item is None:
+                print(f"Warning: No item found for row {source_index.row()}")
+                continue
+            if not isinstance(item, ResourceStandardItem):
+                print(f"Warning: Expected ResourceStandardItem, got {type(item).__name__}")
+                continue
+            resource = item.data(Qt.ItemDataRole.UserRole + 1)
+            resources.append(resource)
+
+        print(f"Selected resources: {resources}")
+        return resources
+
+    def visible_indexes(self) -> list[QModelIndex]:
+        """Get the visible source indexes visible on the viewport."""
+        print("Getting visible indexes for TextureList")
+        view = self.ui.resourceList
+        if (
+            not view.isVisible()
+            or self.textures_proxy_model.rowCount() == 0
+        ):
+            print("View is not visible or model is empty")
+            return []
+
+        visible_rect = view.viewport().rect()  # pyright: ignore[reportOptionalMemberAccess]
+        print(f"Visible rect: {visible_rect}")
+
+        visible_indexes: list[QModelIndex] = []
+        for row in range(self.textures_proxy_model.rowCount()):
+            proxy_index = self.textures_proxy_model.index(row, 0)
+            if not proxy_index.isValid():
+                print(f"Warning: Invalid proxy index for row {row}")
+                continue
+            if not view.visualRect(proxy_index).intersects(visible_rect):  # pyright: ignore[reportArgumentType]
+                continue
+            src_index = self.textures_proxy_model.mapToSource(proxy_index)  # pyright: ignore[reportArgumentType]
+            if not src_index.isValid():
+                print(f"Warning: Invalid source index for row {row}")
+                continue
+            visible_indexes.append(src_index)
+
+        print(f"Number of visible indexes: {len(visible_indexes)}")
+        return visible_indexes
+
+    def set_sections(self, items: list[QStandardItem]):
+        """Set the sections to be displayed in the texture list combobox."""
+        print(f"Setting sections for TextureList with {len(items)} items")
+        current_sections: set[str] = {
+            self.ui.sectionCombo.itemData(i, Qt.ItemDataRole.UserRole)
+            for i in range(self.ui.sectionCombo.count())
+        }
+        new_sections: set[str] = {
+            item.data(Qt.ItemDataRole.UserRole)
+            for item in items
+        }
+
+        # Remove sections that are no longer present
+        removed_sections: set[str] = current_sections - new_sections
+        for section in removed_sections:
+            del self.texture_models[section]
+
+        self.ui.sectionCombo.clear()
+
+        for item in items:
+            section = item.data(Qt.ItemDataRole.UserRole)
+            self.ui.sectionCombo.addItem(item.text(), section)
+
+    def set_resources(self, resources: list[FileResource]):
+        """Set the resources to be displayed in the texture list."""
+        print(f"Setting resources for TextureList with {len(resources)} resources")
+        current_section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+        print(f"Current section: {current_section_name}")
+        current_source_model: QStandardItemModel = self.texture_models[current_section_name]
+        current_source_model.clear()
+
+        added_count = 0
+        for resource in resources:
+            resname, restype = resource.resname(), resource.restype()
+            if restype not in (ResourceType.TGA, ResourceType.TPC):
+                continue
+            item = ResourceStandardItem(resname, resource=resource)
+            item.setData(resource, Qt.ItemDataRole.UserRole + 1)
+            current_source_model.appendRow(item)
+            added_count += 1
+
+        print(f"Added {added_count} resources to the model")
+        self.queue_load_visible_icons()
+
+    def on_section_changed(self):
+        """Handle the section combobox selection change."""
+        new_section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+        print(f"Section changed to: {new_section_name}")
+        new_source_model = self.texture_models[new_section_name]
+        self.textures_proxy_model.setSourceModel(new_source_model)
+        self.sig_section_changed.emit(new_section_name)
+
+    def on_filter_string_updated(self):
+        """Handle the filter string update."""
+        filter_string = self.ui.searchEdit.text()
+        print(f"Updating filter string to: {filter_string}")
+        self.textures_proxy_model.setFilterFixedString(filter_string)
 
     def show_context_menu(self, position: QPoint):
         """Show the context menu for the texture list."""
+        print(f"Showing context menu at position: {position}")
         menu = QMenu(self)
         reload_action = menu.addAction("Reload")
         reload_action.triggered.connect(self.on_reload_clicked)
         action = menu.exec_(self.ui.resourceList.mapToGlobal(position))  # pyright: ignore[reportArgumentType, reportCallIssue]
         if action != reload_action:
             return
-        index = self.ui.resourceList.indexAt(position)  # pyright: ignore[reportArgumentType]
-        if not index.isValid():
+        proxy_index = self.ui.resourceList.indexAt(position)  # pyright: ignore[reportArgumentType]
+        if not proxy_index.isValid():
             return
-        source_index = self.textures_proxy_model.mapToSource(index)  # pyright: ignore[reportArgumentType]
+        source_index = self.textures_proxy_model.mapToSource(proxy_index)  # pyright: ignore[reportArgumentType]
         if not source_index.isValid():
             return
         section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
@@ -630,186 +754,44 @@ class TextureList(MainWindowList):
             return
         self.offload_texture_load(item, reload=True)
 
-    def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=unused-argument,invalid-name
-        """Ensures icons that come into view are queued to load when the widget is resized."""
-        QTimer.singleShot(0, self.queue_load_visible_icons)
-
-    def showEvent(self, a0: QShowEvent):  # pylint: disable=unused-argument,invalid-name
-        """Ensures icons that come into view are queued to load when the widget is shown."""
-        QTimer.singleShot(0, self.queue_load_visible_icons)
-
-    def mouseMoveEvent(self, event: QMouseEvent):  # pylint: disable=unused-argument,invalid-name
-        """Prioritize loading textures for the currently hovered item."""
-        super().mouseMoveEvent(event)
-        global_pos = self.mapToGlobal(event.pos())
-        proxy_index: QModelIndex = self.ui.resourceList.indexAt(self.ui.resourceList.mapFromGlobal(global_pos))  # pyright: ignore[reportAssignmentType, reportCallIssue, reportArgumentType]
-        source_index: QModelIndex = self.map_to_source_index(proxy_index, self.ui.resourceList.model())  # pyright: ignore[reportArgumentType]
-        section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
-        item: QStandardItem | None = self.texture_models[section_name].itemFromIndex(source_index)
-        if item is None:
-            RobustLogger().warning("Could not find item in the texture model for row %d", source_index.row())
-            return
-        if not isinstance(item, ResourceStandardItem):
-            RobustLogger().warning("Expected ResourceStandardItem, got %s", type(item).__name__)
-            return
-        self.offload_texture_load(item, reload=False)
-
-    def set_resources(self, resources: list[FileResource]):
-        """Set the resources to be displayed in the texture list."""
-        section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
-        model: QStandardItemModel = self.texture_models[section_name]
-        model.clear()
-
-        for resource in resources:
-            resname, restype = resource.resname(), resource.restype()
-            if restype not in (ResourceType.TGA, ResourceType.TPC):
-                continue
-            item = ResourceStandardItem(resname, resource=resource)
-            item.setData(resource, Qt.ItemDataRole.UserRole + 1)
-            model.appendRow(item)
-
-        self.ui.resourceList.setModel(model)  # pyright: ignore[reportArgumentType]
-
-        self.queue_load_visible_icons()
-
-    def set_sections(self, items: list[QStandardItem]):
-        """Set the sections to be displayed in the texture list combobox."""
-        current_sections: set[str] = {
-            self.ui.sectionCombo.itemData(i, Qt.ItemDataRole.UserRole)
-            for i in range(self.ui.sectionCombo.count())
-        }
-        new_sections: set[str] = {
-            item.data(Qt.ItemDataRole.UserRole)
-            for item in items
-        }
-
-        # Remove sections that are no longer present
-        for section in current_sections - new_sections:
-            del self.texture_models[section]
-
-        self.ui.sectionCombo.clear()
-
-        for item in items:
-            section = item.data(Qt.ItemDataRole.UserRole)
-            self.ui.sectionCombo.addItem(item.text(), section)
-            if section not in self.texture_models:
-                self.texture_models[section] = QStandardItemModel()
-
-        # Set the model for the current section
-        if self.ui.sectionCombo.count() > 0:
-            current_section: str = self.ui.sectionCombo.itemData(0, Qt.ItemDataRole.UserRole)
-            self.textures_proxy_model.setSourceModel(self.texture_models[current_section])
-
-    @classmethod
-    def get_selected_source_indexes(cls, resource_list: QAbstractItemView) -> list[QModelIndex]:
-        """Retrieve the selected source indexes from the given resource list view.
-
-        This method handles both direct model and proxy model scenarios, mapping
-        proxy indexes to their source indexes when necessary.
-
-        Args:
-            resource_list (QAbstractItemView): The view containing the selected items.
-
-        Returns:
-            list[QModelIndex]: A list of valid source model indexes for the selected items.
-
-        Note:
-            - If the view uses a proxy model (QSortFilterProxyModel), the returned indexes
-                will be mapped to their corresponding source model indexes.
-            - Invalid source indexes are logged as warnings and excluded from the result.
-        """
-        return [
-            source_index for source_index in (cls.map_to_source_index(index, resource_list.model()) for index in resource_list.selectedIndexes()) if source_index.isValid()
-        ]
-
-    @staticmethod
-    def map_to_source_index(index: QModelIndex, model: QAbstractItemModel) -> QModelIndex:
-        """Map a proxy index to its corresponding source index.
-
-        Args:
-            index (QModelIndex): The index to map.
-            model (QAbstractItemModel): The model containing the index.
-
-        Returns:
-            QModelIndex: The corresponding source index.
-
-        Note:
-            - If the model is a QSortFilterProxyModel, the index is mapped to its source.
-            - If the resulting source index is invalid, a warning is logged.
-        """
-        source_index = (
-            model.mapToSource(index)  # pyright: ignore[reportArgumentType]
-            if isinstance(model, QSortFilterProxyModel)
-            else index
-        )
-        if not source_index.isValid():
-            RobustLogger().warning("Invalid source index for row %d", index.row())
-        return source_index
-
-    def selected_resources(self) -> list[FileResource]:
-        """Get the user selected resources from the texture list."""
-        section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
-        texture_model: QStandardItemModel = self.texture_models[section_name]
-        resources: list[FileResource] = [
-            item.data(Qt.ItemDataRole.UserRole + 1)
-            for index in self.get_selected_source_indexes(self.ui.resourceList)  # pyright: ignore[reportArgumentType]
-            for item in [texture_model.itemFromIndex(index)]
-            if item is not None
-        ]
-        return resources
-
-    @staticmethod
-    def visible_indexes(view: QAbstractItemView) -> list[QModelIndex]:
-        """Get the visible indexes from the resource list utilizing the viewport."""
-        if not view.isVisible() or view.model().rowCount() == 0:
-            return []
-
-        visible_rect = view.viewport().rect()  # pyright: ignore[reportOptionalMemberAccess]
-
-        model = view.model()
-        visible_indexes: list[QModelIndex] = []
-        for row in range(model.rowCount()):
-            idx = model.index(row, 0)
-            src_idx = (
-                model.mapToSource(idx)  # pyright: ignore[reportArgumentType]
-                if isinstance(model, QSortFilterProxyModel)
-                else idx
-            )
-            if not view.visualRect(idx).intersects(visible_rect):  # pyright: ignore[reportArgumentType]
-                continue
-            if not src_idx.isValid():
-                RobustLogger().warning("Could not find item in the texture model for row %d", row)
-                continue
-            visible_indexes.append(src_idx)
-
-        return visible_indexes
-
-    def on_filter_string_updated(self):
-        """Handle the filter string update."""
-        filter_string = self.ui.searchEdit.text()
-        self.textures_proxy_model.setFilterFixedString(filter_string)
-
-    def on_section_changed(self):
-        """Handle the section combobox selection change."""
-        section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
-        self.textures_proxy_model.setSourceModel(self.texture_models[section_name])
-        self.sig_section_changed.emit(section_name)
-
     def on_reload_clicked(self):
         """Handle the reload button click."""
-        section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
-        for row in range(self.texture_models[section_name].rowCount()):
-            item = self.texture_models[section_name].item(row)
+        print("Reload button clicked")
+        cur_section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+        cur_src_model = self.texture_models[cur_section_name]
+        for row in range(self.textures_proxy_model.rowCount()):
+            proxy_index = self.textures_proxy_model.index(row, 0)
+            if not proxy_index.isValid():
+                RobustLogger().warning("Could not find item in the proxy model for row %d", row)
+                continue
+            src_index = self.textures_proxy_model.mapToSource(proxy_index)  # pyright: ignore[reportArgumentType]
+            if not src_index.isValid():
+                RobustLogger().warning("Could not find item in the src model for row %d", row)
+                continue
+            item = cur_src_model.itemFromIndex(src_index)
             if item is None:
                 RobustLogger().warning("Could not find item in the texture model for row %d", row)
+                continue
+            if not isinstance(item, ResourceStandardItem):
+                RobustLogger().warning("Expected ResourceStandardItem, got %s", type(item).__name__)
                 continue
             self.offload_texture_load(item, reload=True)
 
     def on_refresh_clicked(self):
         """Handle the refresh button click."""
-        section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
-        for row in range(self.texture_models[section_name].rowCount()):
-            item = self.texture_models[section_name].item(row)
+        print("Refresh button clicked")
+        cur_section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+        cur_src_model = self.texture_models[cur_section_name]
+        for row in range(self.textures_proxy_model.rowCount()):
+            proxy_index = self.textures_proxy_model.index(row, 0)
+            if not proxy_index.isValid():
+                RobustLogger().warning("Could not find item in the proxy model for row %d", row)
+                continue
+            src_index = self.textures_proxy_model.mapToSource(proxy_index)  # pyright: ignore[reportArgumentType]
+            if not src_index.isValid():
+                RobustLogger().warning("Could not find item in the src model for row %d", row)
+                continue
+            item = cur_src_model.itemFromIndex(src_index)
             if item is None:
                 RobustLogger().warning("Could not find item in the texture model for row %d", row)
                 continue
@@ -819,19 +801,27 @@ class TextureList(MainWindowList):
             self.offload_texture_load(item=item, reload=False)
             self.ui.resourceList.update(item.index())  # pyright: ignore[reportArgumentType]
         viewport: QWidget | None = self.ui.resourceList.viewport()  # pyright: ignore[reportAssignmentType]
-        assert viewport is not None, "Could not find viewport for resource list"
+        if viewport is None:
+            RobustLogger().warning("Could not find viewport for resource list")
         viewport.update(0, 0, viewport.width(), viewport.height())
 
     def queue_load_visible_icons(self):
         """Queue the loading of icons for visible items."""
-        visible_indexes = self.visible_indexes(self.ui.resourceList)  # pyright: ignore[reportArgumentType]
+        print("Queueing load of visible icons")
+        visible_indexes = self.visible_indexes()
+        print(f"Number of visible indexes: {len(visible_indexes)}")
         if not visible_indexes:
             return
         section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+        print(f"Current section: {section_name}")
+        cur_src_model: QStandardItemModel = self.texture_models[section_name]
         for index in visible_indexes:
-            item = self.texture_models[section_name].itemFromIndex(index)
+            item = cur_src_model.itemFromIndex(index)
             if item is None:
-                RobustLogger().warning("Could not find item in the texture model for row %d", index.row())
+                print(f"Warning: No item found for row {index.row()}")
+                continue
+            if not isinstance(item, ResourceStandardItem):
+                print(f"Warning: Expected ResourceStandardItem, got {type(item).__name__}")
                 continue
             self.offload_texture_load(item, reload=False)
 
@@ -843,10 +833,12 @@ class TextureList(MainWindowList):
         reload: bool = False,
     ):
         """Queue the loading of an icon for a given item."""
+        print(f"Offloading texture load for item: {item.text()}, desired_mipmap: {desired_mipmap}, reload: {reload}")
         assert isinstance(item, ResourceStandardItem), f"Expected ResourceStandardItem, got {type(item).__name__}"
         if reload:
             self._loading_resources.discard(item.resource)
         if item.resource in self._loading_resources:
+            print(f"Resource {item.resource.resname()} already loading, skipping")
             return
         self._loading_resources.add(item.resource)
 
@@ -854,33 +846,80 @@ class TextureList(MainWindowList):
         row = item.row()
         try:
             future = self._executor.submit(get_image_from_resource, (section_name, row), item.resource, desired_mipmap)
+            print(f"Submitted texture load job for {item.resource.resname()}")
         except BrokenProcessPool as e:
-            RobustLogger().warning("Process pool is broken, recreating...", exc_info=e)
+            print(f"Process pool is broken, recreating... Error: {e}")
             self._executor = ProcessPoolExecutor(max_workers=GlobalSettings().max_child_processes)
             future = self._executor.submit(get_image_from_resource, (section_name, row), item.resource, desired_mipmap)
-        future.add_done_callback(self.icon_loaded.emit)
+            print(f"Resubmitted texture load job for {item.resource.resname()}")
+        future.add_done_callback(self.sig_icon_loaded.emit)
 
+    @Slot(Future)
     def on_icon_loaded(
         self,
         future: Future[tuple[tuple[str, int], TPCGetResult]],
     ):
         """Handle the completion of an icon load."""
+        print("Icon loaded callback triggered")
         item_context, tpc_get_result = future.result()
         section_name, row = item_context
-        item: QStandardItem | None = self.texture_models[section_name].item(row)
-        if item is None:
-            RobustLogger().warning("Could not find item in the texture model for row %d", row)
+        print(f"Loaded icon for section: {section_name}, row: {row}")
+        src_index = self.texture_models[section_name].index(row, 0)
+        if not src_index.isValid():
+            print(f"Warning: Invalid source index for row {row}")
             return
-        item.setIcon(tpc_get_result.to_qicon())
-        self.ui.resourceList.update(item.index())  # pyright: ignore[reportArgumentType]
+        item = self.texture_models[section_name].itemFromIndex(src_index)
+        if item is None:
+            print(f"Warning: No item found for row {row}")
+            return
+        image: QImage = tpc_get_result.to_qimage()
+        print(f"Image size: {image.width()}x{image.height()}")
+        flipped_image = image.mirrored(horizontal=False, vertical=True)
+        pixmap = QPixmap.fromImage(flipped_image)
+        pixmap = pixmap.scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        item.setIcon(QIcon(pixmap))
+        proxy_index = self.textures_proxy_model.mapFromSource(src_index)  # pyright: ignore[reportArgumentType]
+        if not proxy_index.isValid():
+            print(f"Warning: Invalid proxy index for row {row}")
+            return
+        self.ui.resourceList.update(proxy_index)  # pyright: ignore[reportArgumentType]
+        print(f"Updated icon for {item.text()}")
 
     def on_resource_double_clicked(self):
-        """Handle the double click event on a resource."""
-        selected = self.selected_resources()
-        if not selected:
-            RobustLogger().warning("No resources selected in texture list for double click event")
+        self.sig_request_open_resource.emit(self.selected_resources(), None)
+
+    def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=unused-argument,invalid-name
+        """Ensures icons that come into view are queued to load when the widget is resized."""
+        print(f"Resize event: {a0.size()}")
+        QTimer.singleShot(0, self.queue_load_visible_icons)
+
+    def showEvent(self, a0: QShowEvent):  # pylint: disable=unused-argument,invalid-name
+        """Ensures icons that come into view are queued to load when the widget is shown."""
+        print("Show event triggered")
+        QTimer.singleShot(0, self.queue_load_visible_icons)
+
+    def mouseMoveEvent(self, event: QMouseEvent):  # pylint: disable=unused-argument,invalid-name
+        """Prioritize loading textures for the currently hovered item."""
+        super().mouseMoveEvent(event)
+        global_pos = self.mapToGlobal(event.pos())
+        print(f"Mouse move event at global position: {global_pos}")
+        proxy_index: QModelIndex = self.ui.resourceList.indexAt(self.ui.resourceList.mapFromGlobal(global_pos))  # pyright: ignore[reportAssignmentType, reportCallIssue, reportArgumentType]
+        if not proxy_index.isValid():
             return
-        self.sig_request_open_resource.emit(selected, None)
+        source_index: QModelIndex = self.textures_proxy_model.mapToSource(proxy_index)  # pyright: ignore[reportArgumentType]
+        if not source_index.isValid():
+            return
+        section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+        model = self.texture_models[section_name]
+        item: QStandardItem | None = model.itemFromIndex(source_index)
+        if item is None:
+            RobustLogger().warning(f"Warning: No item found for row {source_index.row()}")
+            return
+        if not isinstance(item, ResourceStandardItem):
+            RobustLogger().warning(f"Warning: Expected ResourceStandardItem, got {type(item).__name__}")
+            return
+        print(f"Prioritizing texture load for hovered item: {item.text()}")
+        self.offload_texture_load(item, reload=False)
 
 
 T = TypeVar("T")
@@ -890,8 +929,8 @@ def get_image_from_tpc(resource: FileResource, desired_mipmap: int) -> TPCGetRes
     """Get an image from a TPC resource."""
     tpc = read_tpc(resource.data())
     best_mipmap = next((i for i in range(tpc.mipmap_count()) if tpc.get(i).width <= desired_mipmap), 0)
-    width, height, data = tpc.convert(TPCTextureFormat.RGBA, best_mipmap)
-    return TPCGetResult(width, height, TPCTextureFormat.RGBA, data)
+    width, height, data = tpc.convert(TPCTextureFormat.RGB, best_mipmap)
+    return TPCGetResult(width, height, TPCTextureFormat.RGB, data)
 
 
 def get_image_from_pillow(resource: FileResource) -> TPCGetResult:
@@ -958,11 +997,71 @@ def get_image_from_resource(
     try:
         return context, get_image_from_pillow(resource)
     except ImportError:  # noqa: S110
-        RobustLogger().warning(f"Pillow not available to load image data in resource: {resource._path_identifier!r}")
+        RobustLogger().warning(f"Pillow not available to load image data in resource: {resource.path_ident()!r}")
 
     try:
         return context, get_image_from_qt(resource, desired_mipmap)
     except ImportError:  # noqa: S110
-        RobustLogger().warning(f"Qt not available to load image data in resource: {resource._path_identifier!r}")
+        RobustLogger().warning(f"Qt not available to load image data in resource: {resource.path_ident()!r}")
 
-    raise ValueError(f"No suitable image processing library available to load image data in resource: {resource._path_identifier!r}")
+    raise ValueError(f"No suitable image processing library available to load image data in resource: {resource.path_ident()!r}")
+
+
+def on_open_resources(
+    resources: list[FileResource],
+    resource_widget: ResourceList | TextureList,
+    active: HTInstallation | None,
+):
+    """Open the given resources."""
+    from pykotor.common.stream import BinaryReader
+    from pykotor.extract.file import ResourceIdentifier
+    from toolset.utils.window import open_resource_editor
+    for resource in resources:
+        _filepath, _editor = open_resource_editor(
+            resource.filepath(),
+            resource.resname(),
+            resource.restype(),
+            resource.data(reload=True),
+            active,
+            gff_specialized=GlobalSettings().gff_specializedEditors,
+        )
+        print("<SDM> [onOpenResources scope] _editor: ", _editor)
+
+    if (
+        resources
+        or isinstance(resource_widget, TextureList)
+    ):
+        return
+    filename: str = resource_widget.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+    print("<SDM> [onOpenResources scope] filename: ", filename)
+
+    if (
+        not filename
+        or not filename.strip()
+        or not active
+    ):
+        return
+    erf_filepath: CaseAwarePath = active.module_path() / filename
+    print("<SDM> [onOpenResources scope] erf_filepath: ", erf_filepath)
+
+    if (
+        not erf_filepath.exists()
+        or not erf_filepath.is_file()
+    ):
+        RobustLogger().warning(f"Not loading '{erf_filepath}'. File does not exist")
+        return
+    res_ident: ResourceIdentifier = ResourceIdentifier.from_path(erf_filepath)
+    print("<SDM> [onOpenResources scope] res_ident: ", res_ident)
+
+    if not res_ident.restype:
+        RobustLogger().warning(f"Not loading '{erf_filepath}'. Invalid resource")
+        return
+    _filepath, _editor = open_resource_editor(
+        erf_filepath,
+        res_ident.resname,
+        res_ident.restype,
+        BinaryReader.load_file(erf_filepath),
+        active,
+        gff_specialized=GlobalSettings().gff_specializedEditors,
+    )
+    print("<SDM> [onOpenResources scope] _editor: ", _editor)

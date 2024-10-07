@@ -26,7 +26,7 @@ from qtpy.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from toolset.config import getRemoteToolsetUpdateInfo, is_remote_version_newer
+from toolset.config import get_remote_toolset_update_info, is_remote_version_newer
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
@@ -133,7 +133,7 @@ class HelpWindow(QMainWindow):
             self._setupContentsRecXML(item, child)
 
     def checkForUpdates(self):
-        remoteInfo = getRemoteToolsetUpdateInfo(useBetaChannel=GlobalSettings().useBetaChannel)
+        remoteInfo = get_remote_toolset_update_info(useBetaChannel=GlobalSettings().useBetaChannel)
         try:
             if not isinstance(remoteInfo, dict):
                 raise remoteInfo  # noqa: TRY301

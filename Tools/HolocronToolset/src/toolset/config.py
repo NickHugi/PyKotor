@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 import json
-import multiprocessing
 import re
 
 from contextlib import suppress
@@ -71,35 +70,31 @@ def fetch_update_info(update_link: str, timeout: int = 15) -> Any:
     return file_data
 
 
-def getRemoteToolsetUpdateInfo(
+def get_remote_toolset_update_info(
     *,
-    useBetaChannel: bool = False,
+    use_beta_channel: bool = False,
     silent: bool = False,
 ) -> Exception | dict[str, Any]:
-    if useBetaChannel:
+    if use_beta_channel:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateBetaInfoLink"]
     else:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateInfoLink"]
 
-    # Use multiprocessing pool to handle timeout
-    pool = multiprocessing.Pool(1)  # Create a Pool with a single worker
-    try:  # Download this same file config.py from the repo and only parse the json between the markers. This prevents remote execution security issues.
+    try:
         timeout = 2 if silent else 10
-        result = pool.apply_async(fetch_update_info, [UPDATE_INFO_LINK, timeout])
-        file_data = result.get(timeout=timeout)
+        file_data = fetch_update_info(UPDATE_INFO_LINK, timeout)
         base64_content = file_data["content"]
-        decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
+        decoded_content = base64.b64decode(base64_content)
         decoded_content_str = decoded_content.decode(encoding="utf-8")
         json_data_match = re.search(r"<---JSON_START--->\s*\#\s*(.*?)\s*\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
         if not json_data_match:
-            raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
+            raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")
         json_str = json_data_match[1]
         remoteInfo = json.loads(json_str)
         if not isinstance(remoteInfo, dict):
-            raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
-    except Exception as e:  # noqa: BLE001
-        pool.terminate()  # Terminate the pool
+            raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")
+    except Exception as e:
         errMsg = str(universal_simplify_exception(e))
         result = silent or QMessageBox.question(
             None,
@@ -116,24 +111,21 @@ def getRemoteToolsetUpdateInfo(
         if result not in {QMessageBox.StandardButton.Yes, True}:
             return e
         remoteInfo = LOCAL_PROGRAM_INFO
-    finally:
-        pool.close()  # Close the pool
-        pool.join()  # Wait for the worker to finish
     return remoteInfo
 
 
-def is_remote_version_newer(localVersion: str, remoteVersion: str) -> bool | None:
+def is_remote_version_newer(local_version: str, remote_version: str) -> bool | None:
     version_check: bool | None = None
     with suppress(Exception):
         from packaging import version
 
-        version_check = version.parse(remoteVersion) > version.parse(localVersion)
+        version_check = version.parse(remote_version) > version.parse(local_version)
     if version_check is None:
-        RobustLogger().warning(f"Version string might be malformed, attempted 'packaging.version.parse({localVersion}) > packaging.version.parse({remoteVersion})'")
+        RobustLogger().warning(f"Version string might be malformed, attempted 'packaging.version.parse({local_version}) > packaging.version.parse({remote_version})'")
         with suppress(Exception):
             from distutils.version import LooseVersion
 
-            version_check = LooseVersion(remoteVersion) > LooseVersion(localVersion)
+            version_check = LooseVersion(remote_version) > LooseVersion(local_version)
     return version_check
 
 

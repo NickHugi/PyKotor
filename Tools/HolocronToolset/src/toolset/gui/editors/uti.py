@@ -138,10 +138,10 @@ class UTIEditor(Editor):
         self.ui.descEdit.setInstallation(installation)
 
         required: list[str] = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
-        installation.htBatchCache2DA(required)
+        installation.ht_batch_cache_2da(required)
 
-        baseitems: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        itemProperties: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        baseitems: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
+        itemProperties: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_ITEM_PROPERTIES)
         self.ui.baseSelect.clear()
         if baseitems is None:
             RobustLogger().error("Failed to retrieve BASEITEMS 2DA.")
@@ -162,7 +162,7 @@ class UTIEditor(Editor):
                     item.setData(0, Qt.ItemDataRole.UserRole + 1, i)
                     continue
 
-                subtype = installation.htGetCache2DA(subtypeResname)
+                subtype = installation.ht_get_cache_2da(subtypeResname)
                 if subtype is None:
                     RobustLogger().warning(f"Failed to retrieve subtype '{subtypeResname}' for property name '{propName}' at index {i}. Skipping...")
                     continue
@@ -342,7 +342,7 @@ class UTIEditor(Editor):
             - Adds a summary of the property to the assigned properties list widget.
             - Sets the UTIProperty as user data on the list item.
         """
-        itemprops: TwoDA | None = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        itemprops: TwoDA | None = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_ITEM_PROPERTIES)
         if itemprops is None:
             return
 
@@ -515,7 +515,7 @@ class UTIEditor(Editor):
         installation: HTInstallation,
         prop: int,
     ) -> str:
-        properties: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        properties: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_ITEM_PROPERTIES)
         if properties is None:
             RobustLogger().error("Failed to retrieve ITEM_PROPERTIES 2DA.")
             return "Unknown"
@@ -543,7 +543,7 @@ class UTIEditor(Editor):
         -------
             string - The name of the subproperty
         """
-        properties: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        properties: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_ITEM_PROPERTIES)
         if properties is None:
             RobustLogger().error("Failed to retrieve ITEM_PROPERTIES 2DA.")
             return None
@@ -551,7 +551,7 @@ class UTIEditor(Editor):
         if not subtypeResname:
             RobustLogger().error(f"Failed to retrieve subtypeResname for property {prop}.")
             return None
-        subproperties: TwoDA | None = installation.htGetCache2DA(subtypeResname)
+        subproperties: TwoDA | None = installation.ht_get_cache_2da(subtypeResname)
         if subproperties is None:
             return None
         headerStrref: Literal["name", "string_ref"] = "name" if "name" in subproperties.get_headers() else "string_ref"
@@ -564,7 +564,7 @@ class UTIEditor(Editor):
         cost: int,
         value: int,
     ) -> str | None:
-        costtableList: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
+        costtableList: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_COSTTABLE)
         if costtableList is None:
             RobustLogger().error("Failed to retrieve IPRP_COSTTABLE 2DA.")
             return None
@@ -574,7 +574,7 @@ class UTIEditor(Editor):
             RobustLogger().error(f"Failed to retrieve costtable 'name' for cost '{cost}'.")
             return None
 
-        costtable: TwoDA | None = installation.htGetCache2DA(costtable_name)
+        costtable: TwoDA | None = installation.ht_get_cache_2da(costtable_name)
         if costtable is None:
             RobustLogger().error(f"Failed to retrieve '{costtable_name}' 2DA.")
             return None
@@ -596,7 +596,7 @@ class UTIEditor(Editor):
         RobustLogger().info(f"Attempting to get param name for paramtable: {paramtable}, param: {param}")
 
         # Get the IPRP_PARAMTABLE 2DA
-        paramtable_list: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
+        paramtable_list: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_PARAMTABLE)
         paramtable_2da: TwoDA | None = None
         if paramtable_list is None:
             RobustLogger().error("Failed to retrieve IPRP_PARAMTABLE 2DA.")
@@ -607,7 +607,7 @@ class UTIEditor(Editor):
             table_resref = paramtable_list.get_cell(paramtable, "tableresref")
             RobustLogger().info(f"Retrieved table_resref: '{table_resref}' for paramtable: '{paramtable}'")
 
-            paramtable_2da = installation.htGetCache2DA(table_resref)
+            paramtable_2da = installation.ht_get_cache_2da(table_resref)
             if paramtable_2da is None:
                 RobustLogger().error(f"Failed to retrieve 2DA file: {table_resref}.")
                 return None
@@ -693,12 +693,12 @@ class PropertyEditor(QDialog):
         self._installation = installation
         self._utiProperty: UTIProperty = utiProperty
 
-        costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)  # noqa: F841
+        costtableList = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_COSTTABLE)  # noqa: F841
         if costtableList is None:
             RobustLogger().warning("Failed to get IPRP_COSTTABLE")
             return
         if utiProperty.cost_table != 0xFF:  # noqa: PLR2004
-            costtable = installation.htGetCache2DA(costtableList.get_cell(utiProperty.cost_table, "name"))
+            costtable = installation.ht_get_cache_2da(costtableList.get_cell(utiProperty.cost_table, "name"))
             if costtable is None:
                 RobustLogger().warning(f"Failed to get costtable for name: {costtableList.get_cell(utiProperty.cost_table, 'name')}")
                 return
@@ -711,7 +711,7 @@ class PropertyEditor(QDialog):
                 self.ui.costList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
         if utiProperty.param1 != 0xFF:  # noqa: PLR2004
-            paramList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
+            paramList = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_PARAMTABLE)
             if paramList is None:
                 RobustLogger().warning("Failed to get IPRP_PARAMTABLE")
                 return
@@ -721,7 +721,7 @@ class PropertyEditor(QDialog):
                 RobustLogger().warning(f"No tableresref found for param1: {utiProperty.param1}")
                 return
 
-            paramtable = installation.htGetCache2DA(paramtable_resref)
+            paramtable = installation.ht_get_cache_2da(paramtable_resref)
             if paramtable is None:
                 RobustLogger().warning(f"Failed to get paramtable for resref: {paramtable_resref}")
                 return
@@ -734,7 +734,7 @@ class PropertyEditor(QDialog):
                 item.setData(Qt.ItemDataRole.UserRole, i)
                 self.ui.parameterList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
-        upgrades = installation.htGetCache2DA(HTInstallation.TwoDA_UPGRADES)
+        upgrades = installation.ht_get_cache_2da(HTInstallation.TwoDA_UPGRADES)
         if upgrades is not None:
             upgrade_items = [
                 upgrades.get_cell(i, "label").replace("_", " ").title()

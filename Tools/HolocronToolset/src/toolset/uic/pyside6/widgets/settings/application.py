@@ -17,8 +17,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QHeaderView,
     QLabel, QPushButton, QScrollArea, QSizePolicy,
-    QSpacerItem, QTableWidget, QTableWidgetItem, QVBoxLayout,
-    QWidget)
+    QSpacerItem, QTableWidgetItem, QVBoxLayout, QWidget)
+
+from utility.ui_libraries.qt.widgets.itemviews.tablewidget import RobustTableWidget
 
 class Ui_ApplicationSettingsWidget(object):
     def setupUi(self, ApplicationSettingsWidget):
@@ -52,7 +53,7 @@ class Ui_ApplicationSettingsWidget(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 780, 580))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 763, 450))
         self.verticalLayout_2 = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.groupBoxFontSettings = QGroupBox(self.scrollAreaWidgetContents)
@@ -76,7 +77,7 @@ class Ui_ApplicationSettingsWidget(object):
         self.groupBoxEnvVariables.setObjectName(u"groupBoxEnvVariables")
         self.verticalLayout_env = QVBoxLayout(self.groupBoxEnvVariables)
         self.verticalLayout_env.setObjectName(u"verticalLayout_env")
-        self.tableWidget = QTableWidget(self.groupBoxEnvVariables)
+        self.tableWidget = RobustTableWidget(self.groupBoxEnvVariables)
         if (self.tableWidget.columnCount() < 2):
             self.tableWidget.setColumnCount(2)
         __qtablewidgetitem = QTableWidgetItem()
@@ -84,8 +85,15 @@ class Ui_ApplicationSettingsWidget(object):
         __qtablewidgetitem1 = QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(1, __qtablewidgetitem1)
         self.tableWidget.setObjectName(u"tableWidget")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(1)
+        sizePolicy1.setHeightForWidth(self.tableWidget.sizePolicy().hasHeightForWidth())
+        self.tableWidget.setSizePolicy(sizePolicy1)
+        self.tableWidget.setSortingEnabled(True)
         self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnCount(2)
+        self.tableWidget.horizontalHeader().setStretchLastSection(True)
 
         self.verticalLayout_env.addWidget(self.tableWidget)
 

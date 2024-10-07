@@ -87,9 +87,9 @@ class UTTEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        cursors: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
-        factions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        traps: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
+        cursors: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_CURSORS)
+        factions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
+        traps: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_TRAPS)
 
         if cursors:
             self.ui.cursorSelect.setContext(cursors, installation, HTInstallation.TwoDA_CURSORS)
@@ -106,7 +106,7 @@ class UTTEditor(Editor):
             iter(
                 {
                     res.resname().lower()
-                    for res in self._installation.getRelevantResources(
+                    for res in self._installation.get_relevant_resources(
                         ResourceType.NCS, self._filepath
                     )
                 }
@@ -114,19 +114,19 @@ class UTTEditor(Editor):
         )
 
         self.ui.onClickEdit.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onClickEdit, [ResourceType.NCS, ResourceType.NSS])
+        installation.setup_file_context_menu(self.ui.onClickEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onDisarmEdit.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onDisarmEdit, [ResourceType.NCS, ResourceType.NSS])
+        installation.setup_file_context_menu(self.ui.onDisarmEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onEnterSelect, [ResourceType.NCS, ResourceType.NSS])
+        installation.setup_file_context_menu(self.ui.onEnterSelect, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onExitSelect, [ResourceType.NCS, ResourceType.NSS])
+        installation.setup_file_context_menu(self.ui.onExitSelect, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onTrapTriggeredEdit.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onTrapTriggeredEdit, [ResourceType.NCS, ResourceType.NSS])
+        installation.setup_file_context_menu(self.ui.onTrapTriggeredEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NCS, ResourceType.NSS])
+        installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NCS, ResourceType.NSS])
+        installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NCS, ResourceType.NSS])
 
     def load(
         self,

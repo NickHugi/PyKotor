@@ -66,7 +66,7 @@ class SAVEditor(Editor):
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
 
-        planets: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
+        planets: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLANETS)
         for row in planets:
             (
                 self._installation.talktable().string(row.get_integer("name", 0))

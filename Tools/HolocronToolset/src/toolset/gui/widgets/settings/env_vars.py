@@ -4,24 +4,10 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from qtpy.QtCore import QStringListModel, Qt
 from qtpy.QtGui import QStandardItemModel
-from qtpy.QtWidgets import (
-    QComboBox,
-    QCompleter,
-    QDialog,
-    QFileDialog,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QTextEdit,
-    QVBoxLayout,
-)
+from qtpy.QtWidgets import QComboBox, QCompleter, QDialog, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QVBoxLayout
 
 if TYPE_CHECKING:
-    from qtpy.QtWidgets import (
-        QWidget,
-    )
+    from qtpy.QtWidgets import QWidget
 
 
 class EnvVar(NamedTuple):

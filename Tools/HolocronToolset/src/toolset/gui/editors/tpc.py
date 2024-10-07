@@ -114,7 +114,7 @@ class TPCEditor(Editor):
             txi_filepath: CaseAwarePath | None = CaseAwarePath(filepath).with_suffix(".txi")
             self._tpc = read_tpc(data, txi_source=txi_filepath)
             orig_format = self._tpc.format()
-            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=orig_format is TPCTextureFormat.RGB)
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0)
             self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)
         else:
             pillow: Image.Image = Image.open(io.BytesIO(data))
@@ -125,8 +125,7 @@ class TPCEditor(Editor):
             width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0)
 
         image = QImage(img_bytes, width, height, QImage.Format.Format_RGB888)
-        if orig_format is not TPCTextureFormat.RGB:
-            image = image.mirrored(False, True)  # flip vertically.
+        image = image.mirrored(False, True)  # flip vertically.
 
         # Calculate new dimensions maintaining aspect ratio
         max_width, max_height = 640, 480

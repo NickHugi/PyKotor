@@ -25,6 +25,7 @@ from typing import (
     overload,
 )
 
+from qtpy.QtCore import QSettings
 import qtpy
 
 from loggerplus import RobustLogger
@@ -1475,11 +1476,11 @@ class DLGStandardItemModel(QStandardItemModel):
         color: QColor = QColor(100, 100, 100)
         prefix: Literal["E", "R", "N"] = "N"
         if isinstance(item.link.node, DLGEntry):
-            color = QColor(self.treeView.get_setting("entryTextColor", QColor(255, 0, 0)))  # if not item.isCopy() else QColor(210, 90, 90)
+            color = QColor(255, 0, 0)  # if not item.isCopy() else QColor(210, 90, 90)
             prefix = "E"
             extra_node_info = ""
         elif isinstance(item.link.node, DLGReply):
-            color = QColor(self.treeView.get_setting("replyTextColor", QColor(0, 0, 255)))  # if not item.isCopy() else QColor(90, 90, 210)
+            color = QColor(0, 0, 255)  # if not item.isCopy() else QColor(90, 90, 210)
             prefix = "R"
             extra_node_info = " This means the player will not see this reply as a choice, and will (continue) to next entry."
 
@@ -2877,7 +2878,6 @@ Should return 1 or 0, representing a boolean.
         self.find_layout.addWidget(self.results_label)
         self.ui.verticalLayout_main.insertWidget(0, self.find_bar)  # type: ignore[arg-type]
         self.setup_completer()
-        self.ui.dialogTree.set_text_size(self.ui.dialogTree.get_setting("text_size", self.ui.dialogTree.get_text_size()))
 
     def setup_completer(self):
         temp_entry = DLGEntry()
@@ -3277,12 +3277,6 @@ Should return 1 or 0, representing a boolean.
             settings_key="verticalSpacing",
             param_type=int,
         )
-        self.ui.dialogTree._add_color_menu_action(
-            displaySettingsMenu,
-            "Set Text Color",
-            lambda: QColor(self.ui.dialogTree.get_setting("textColor", QColor(0, 0, 0))),
-            settings_key="textColor",
-        )
 
         # Focus and scrolling settings
         self.ui.dialogTree._add_exclusive_menu_action(
@@ -3334,21 +3328,6 @@ Should return 1 or 0, representing a boolean.
             self.autoFillBackground,
             self.setAutoFillBackground,
             settings_key="autoFillBackground",
-        )
-        self.ui.dialogTree._add_menu_action(
-            self.settingsMenu,
-            "Expand All Root Item Children",
-            lambda: self.ui.dialogTree.get_setting("ExpandRootChildren", False),
-            lambda value: self.ui.dialogTree.set_setting("ExpandRootChildren", value),
-            settings_key="ExpandRootChildren",
-        )
-        self.ui.dialogTree._add_menu_action(
-            self.settingsMenu,
-            "Items Scrolled Per Wheel",
-            lambda: self.ui.dialogTree.get_setting("scrollStepSize", 1),
-            lambda value: self.ui.dialogTree.set_scroll_step_size(value),
-            settings_key="scrollStepSize",
-            param_type=int,
         )
 
         self.ui.dialogTree._add_simple_action(self.advancedMenu, "Repaint", self.repaint)
@@ -3505,14 +3484,14 @@ Should return 1 or 0, representing a boolean.
         self.ui.unequipAllCheckbox.setChecked(dlg.unequip_items)
         self.ui.entryDelaySpin.setValue(dlg.delay_entry)
         self.ui.replyDelaySpin.setValue(dlg.delay_reply)
-        relevant_script_resnames = sorted({res.resname().lower() for res in self._installation.getRelevantResources(ResourceType.NCS, self._filepath)})
+        relevant_script_resnames = sorted({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.NCS, self._filepath)})
         self.ui.script2ResrefEdit.populateComboBox(relevant_script_resnames)
         self.ui.condition2ResrefEdit.populateComboBox(relevant_script_resnames)
         self.ui.script1ResrefEdit.populateComboBox(relevant_script_resnames)
         self.ui.condition1ResrefEdit.populateComboBox(relevant_script_resnames)
         self.ui.onEndEdit.populateComboBox(relevant_script_resnames)
         self.ui.onAbortCombo.populateComboBox(relevant_script_resnames)
-        relevant_model_resnames = sorted({res.resname().lower() for res in self._installation.getRelevantResources(ResourceType.MDL, self._filepath)})
+        relevant_model_resnames = sorted({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.MDL, self._filepath)})
         self.ui.cameraModelSelect.populateComboBox(relevant_model_resnames)
 
     def restartVoIdEditTimer(self):
@@ -3611,7 +3590,7 @@ Should return 1 or 0, representing a boolean.
 
         data = bytearray()
         gameToUse = self._installation.game()
-        tslWidgetHandlingSetting = self.ui.dialogTree.get_setting("TSLWidgetHandling", "Default")
+        tslWidgetHandlingSetting = DLGSettings().tslWidgetHandling("Default")
         if gameToUse.is_k1() and tslWidgetHandlingSetting == "Enable":
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Icon.Information)
@@ -3636,7 +3615,7 @@ Should return 1 or 0, representing a boolean.
         self._installation = installation
         print("<SDM> [_setupInstallation scope] self._installation: ", self._installation)
 
-        installation.setupFileContextMenu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
         if installation.game().is_k1():
             required: list[str] = [HTInstallation.TwoDA_VIDEO_EFFECTS, HTInstallation.TwoDA_DIALOG_ANIMS]
 
@@ -3647,7 +3626,7 @@ Should return 1 or 0, representing a boolean.
                 HTInstallation.TwoDA_VIDEO_EFFECTS,
                 HTInstallation.TwoDA_DIALOG_ANIMS,
             ]
-        installation.htBatchCache2DA(required)
+        installation.ht_batch_cache_2da(required)
 
         self.all_voices = sorted({res.resname() for res in installation._streamwaves}, key=str.lower)  # noqa: SLF001
         self.all_sounds = sorted({res.resname() for res in [*installation._streamwaves, *installation._streamsounds]}, key=str.lower)  # noqa: SLF001
@@ -3656,15 +3635,15 @@ Should return 1 or 0, representing a boolean.
         self.ui.soundComboBox.populateComboBox(self.all_sounds)  # noqa: SLF001
         self.ui.ambientTrackCombo.populateComboBox(self.all_music)
         self.ui.ambientTrackCombo.set_button_delegate("Play", lambda text: self.playSound(text))
-        installation.setupFileContextMenu(self.ui.cameraModelSelect, [ResourceType.MDL], [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
-        installation.setupFileContextMenu(self.ui.ambientTrackCombo, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.MUSIC])
-        installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
-        installation.setupFileContextMenu(self.ui.voiceComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.VOICE])
-        installation.setupFileContextMenu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onEndEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onAbortCombo, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.cameraModelSelect, [ResourceType.MDL], [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
+        installation.setup_file_context_menu(self.ui.ambientTrackCombo, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.MUSIC])
+        installation.setup_file_context_menu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
+        installation.setup_file_context_menu(self.ui.voiceComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.VOICE])
+        installation.setup_file_context_menu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onEndEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onAbortCombo, [ResourceType.NSS, ResourceType.NCS])
 
-        videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
+        videoEffects: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_VIDEO_EFFECTS)
         if videoEffects:
             self.ui.cameraEffectSelect.clear()
             self.ui.cameraEffectSelect.setPlaceholderText("[Unset]")
@@ -3675,7 +3654,7 @@ Should return 1 or 0, representing a boolean.
             )
             self.ui.cameraEffectSelect.setContext(videoEffects, installation, HTInstallation.TwoDA_VIDEO_EFFECTS)
 
-        plot2DA: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_PLOT)
+        plot2DA: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLOT)
         if plot2DA:
             self.ui.plotIndexCombo.clear()
             self.ui.plotIndexCombo.addItem("[None]", -1)
@@ -3687,20 +3666,20 @@ Should return 1 or 0, representing a boolean.
 
     def _setupTSLEmotionsAndExpressions(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection."""
-        emotions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_EMOTIONS)
+        emotions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_EMOTIONS)
         if emotions:
             self.ui.emotionSelect.clear()
             self.ui.emotionSelect.setItems(emotions.get_column("label"))
             self.ui.emotionSelect.setContext(emotions, installation, HTInstallation.TwoDA_EMOTIONS)
 
-        expressions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_EXPRESSIONS)
+        expressions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_EXPRESSIONS)
         if expressions:
             self.ui.expressionSelect.clear()
             self.ui.expressionSelect.setItems(expressions.get_column("label"))
             self.ui.expressionSelect.setContext(expressions, installation, HTInstallation.TwoDA_EXPRESSIONS)
 
-        installation.setupFileContextMenu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
     def editText(
         self,
@@ -4750,8 +4729,6 @@ Should return 1 or 0, representing a boolean.
         assert item is not None
         if not item.isLoaded():
             self._fullyLoadFutureExpandItem(item)
-        if self.ui.dialogTree.get_setting("ExpandRootChildren", False) and item.parent() is None:
-            self.setExpandRecursively(item, set(), expand=True)
         self.ui.dialogTree.debounce_layout_changed(pre_change_emit=False)
 
     def _fullyLoadFutureExpandItem(self, item: DLGStandardItem):
@@ -4875,7 +4852,7 @@ Should return 1 or 0, representing a boolean.
     def refreshAnimList(self):
         """Refreshes the animations list."""
         self.ui.animsList.clear()
-        animations_2da: TwoDA | None = self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
+        animations_2da: TwoDA | None = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_DIALOG_ANIMS)
         if animations_2da is None:
             RobustLogger().error(f"refreshAnimList: {HTInstallation.TwoDA_DIALOG_ANIMS}.2da not found, the Animation List will not function!!")
             return
@@ -5034,3 +5011,31 @@ class ReferenceChooserDialog(QDialog):
         parent = self.parent()
         self.backButton.setEnabled(parent.current_reference_index > 0)
         self.forwardButton.setEnabled(parent.current_reference_index < len(parent.reference_history) - 1)
+
+class DLGSettings:
+    def __init__(self, settings_name: str = "RobustTreeView"):
+        self.settings: QSettings = QSettings("HolocronToolsetV3", settings_name)
+
+    def get(self, key: str, default: Any) -> Any:
+        # sourcery skip: assign-if-exp, reintroduce-else
+        if qtpy.API_NAME in ("PyQt5", "PySide2"):
+            return self.settings.value(
+                key,
+                default,
+                default.__class__,
+            )
+        result = self.settings.value(key, default)
+        if result == "true":
+            return True
+        if result == "false":
+            return False
+        return result
+
+    def set(self, key: str, value: Any):
+        self.settings.setValue(key, value)
+
+    def tslWidgetHandling(self, default: str) -> str:
+        return self.get("TSLWidgetHandling", default)
+
+    def setTslWidgetHandling(self, value: str):
+        self.set("TSLWidgetHandling", value)

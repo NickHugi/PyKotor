@@ -139,12 +139,12 @@ class JRLEditor(Editor):
         self._installation = installation
         self.ui.categoryNameEdit.setInstallation(installation)
 
-        planets: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
+        planets: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLANETS)
         if planets is None:
             QMessageBox(QMessageBox.Icon.Warning, "Missing 2DA", f"'{HTInstallation.TwoDA_PLANETS}.2da' is missing from your installation. Please reinstall your game, this should be in the read-only bifs.").exec_()
             return
 
-        plot2DA: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_PLOT)
+        plot2DA: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLOT)
         if plot2DA:
             self.ui.categoryPlotSelect.clear()
             self.ui.categoryPlotSelect.setPlaceholderText("[Unset]")

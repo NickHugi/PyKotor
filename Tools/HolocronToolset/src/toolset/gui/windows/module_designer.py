@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import time
 
-from typing import TYPE_CHECKING, Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Sequence, cast
 
 import qtpy
 
@@ -11,20 +11,7 @@ from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QCursor, QIcon, QPixmap
-from qtpy.QtWidgets import (
-    QAction,
-    QApplication,
-    QHBoxLayout,
-    QLabel,
-    QListWidgetItem,
-    QMainWindow,
-    QMenu,
-    QMessageBox,
-    QStatusBar,
-    QTreeWidgetItem,
-    QVBoxLayout,
-    QWidget,
-)
+from qtpy.QtWidgets import QAction, QApplication, QHBoxLayout, QLabel, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QStatusBar, QTreeWidgetItem, QVBoxLayout, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -32,47 +19,26 @@ from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.gl.scene import Camera
-from pykotor.resource.generics.git import (
-    GITCamera,
-    GITCreature,
-    GITDoor,
-    GITEncounter,
-    GITInstance,
-    GITPlaceable,
-    GITSound,
-    GITStore,
-    GITTrigger,
-    GITWaypoint,
-)
+from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITEncounter, GITInstance, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from pykotor.tools.misc import is_mod_file
+from pykotor.tools.path import CaseAwarePath
+from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
-from toolset.gui.editors.git import (
-    DeleteCommand,
-    MoveCommand,
-    RotateCommand,
-    _GeometryMode,
-    _InstanceMode,
-    _SpawnMode,
-    openInstanceDialog,
-)
+from toolset.gui.editors.git import DeleteCommand, MoveCommand, RotateCommand, _GeometryMode, _InstanceMode, _SpawnMode, openInstanceDialog
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
-from toolset.gui.windows.designer_controls import (
-    ModuleDesignerControls2d,
-    ModuleDesignerControls3d,
-    ModuleDesignerControlsFreeCam,
-)
+from toolset.gui.windows.designer_controls import ModuleDesignerControls2d, ModuleDesignerControls3d, ModuleDesignerControlsFreeCam
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import MODIFIER_KEY_NAMES, getQtButtonString, getQtKeyString
-from toolset.utils.window import open_resource_editor
+from toolset.utils.window import add_window, open_resource_editor
 from utility.error_handling import safe_repr
 from utility.misc import is_debug_mode
 
@@ -91,8 +57,6 @@ if TYPE_CHECKING:
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.git import GIT
     from pykotor.resource.generics.ifo import IFO
-    from pykotor.tools.path import CaseAwarePath
-    from toolset.data.installation import HTInstallation
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
     from toolset.utils.misc import QtKey, QtMouse
 
@@ -102,6 +66,38 @@ elif qtpy.API_NAME in ("PyQt6", "PySide6"):
     from qtpy.QtGui import QUndoStack
 else:
     raise ValueError(f"Invalid QT_API: '{qtpy.API_NAME}'")
+
+
+def run_module_designer(
+    active_path: str,
+    active_name: str,
+    active_tsl: bool,  # noqa: FBT001
+    module_path: str | None = None,
+):
+    """An alternative way to start the ModuleDesigner: run thisfunction in a new process so the main tool window doesn't wait on the module designer."""
+    import sys
+
+    from toolset.__main__ import main_init
+
+    main_init()
+    app = QApplication(sys.argv)
+    designer_ui = ModuleDesigner(
+        None,
+        HTInstallation(active_path, active_name, tsl=active_tsl),
+        CaseAwarePath(module_path) if module_path is not None else None,
+    )
+    # Standardized resource path format
+    icon_path = ":/images/icons/sith.png"
+
+    # Debugging: Check if the resource path is accessible
+    if not QPixmap(icon_path).isNull():
+        designer_ui.log.debug(f"HT main window Icon loaded successfully from {icon_path}")
+        designer_ui.setWindowIcon(QIcon(QPixmap(icon_path)))
+        cast(QApplication, QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
+    else:
+        print(f"Failed to load HT main window icon from {icon_path}")
+    add_window(designer_ui, show=False)
+    sys.exit(app.exec_())
 
 
 class ModuleDesigner(QMainWindow):
@@ -162,21 +158,13 @@ class ModuleDesigner(QMainWindow):
         self.mousePosHistory: list[Vector2] = [Vector2(0, 0), Vector2(0, 0)]
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows.module_designer import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
+            from toolset.uic.pyside2.windows.module_designer import Ui_MainWindow
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows.module_designer import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
+            from toolset.uic.pyside6.windows.module_designer import Ui_MainWindow
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows.module_designer import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
+            from toolset.uic.pyqt5.windows.module_designer import Ui_MainWindow
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows.module_designer import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
+            from toolset.uic.pyqt6.windows.module_designer import Ui_MainWindow
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
@@ -371,7 +359,9 @@ class ModuleDesigner(QMainWindow):
             worldPos3d = Vector3(pos.x, pos.y, pos.z)
             self.mousePosLabel.setText(f"Mouse Coords: {worldPos3d.y:.2f}, {worldPos3d.z:.2f}")
             camera = renderer.scene.camera
-            self.viewCameraLabel.setText(f"View: Pos ({camera.x:.2f}, {camera.y:.2f}, {camera.z:.2f}), Pitch: {camera.pitch:.2f}, Yaw: {camera.yaw:.2f}, FOV: {camera.fov:.2f}")
+            self.viewCameraLabel.setText(
+                f"View: Pos ({camera.x:.2f}, {camera.y:.2f}, {camera.z:.2f}), Pitch: {camera.pitch:.2f}, Yaw: {camera.yaw:.2f}, FOV: {camera.fov:.2f}"
+            )
         else:
             worldPos = renderer.toWorldCoords(normMousePos.x, normMousePos.y)
             self.mousePosLabel.setText(f"Mouse Coords: {worldPos.y:.2f}")
@@ -415,10 +405,7 @@ class ModuleDesigner(QMainWindow):
             if not git:
                 raise ValueError(f"This module '{mod_root}' is missing a GIT!")
 
-            walkmeshes = [
-                bwm.resource() for bwm in combined_module.resources.values()
-                if bwm.restype() is ResourceType.WOK and bwm.resource() is not None
-            ]
+            walkmeshes = [bwm.resource() for bwm in combined_module.resources.values() if bwm.restype() is ResourceType.WOK and bwm.resource() is not None]
             return (combined_module, git, walkmeshes)
 
         self.unloadModule()
@@ -1426,17 +1413,10 @@ class ModuleDesigner(QMainWindow):
         buttons = self.ui.mainRenderer.mouseDown()
         if self._controls3d.speedBoostControl.satisfied(buttons, keys, exactKeysAndButtons=False):
             moveUnitsDelta = (
-                (self.settings.boostedFlyCameraSpeedFC)
-                if isinstance(self._controls3d, ModuleDesignerControlsFreeCam)
-                else (self.settings.boostedMoveCameraSensitivity3d)
+                (self.settings.boostedFlyCameraSpeedFC) if isinstance(self._controls3d, ModuleDesignerControlsFreeCam) else (self.settings.boostedMoveCameraSensitivity3d)
             )
         else:
-            moveUnitsDelta = (
-                (self.settings.flyCameraSpeedFC)
-                if isinstance(self._controls3d, ModuleDesignerControlsFreeCam)
-                else (self.settings.moveCameraSensitivity3d)
-            )
-
+            moveUnitsDelta = (self.settings.flyCameraSpeedFC) if isinstance(self._controls3d, ModuleDesignerControlsFreeCam) else (self.settings.moveCameraSensitivity3d)
 
         moveUnitsDelta /= 500  # normalize
         moveUnitsDelta *= timeSinceLastFrame * self.baseFrameRate  # apply modifier based on user's fps

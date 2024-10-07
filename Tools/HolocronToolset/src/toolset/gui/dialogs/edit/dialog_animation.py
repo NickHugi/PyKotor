@@ -47,7 +47,7 @@ class EditAnimationDialog(QDialog):
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
-        animList = installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
+        animList = installation.ht_get_cache_2da(HTInstallation.TwoDA_DIALOG_ANIMS)
         assert animList is not None
         self.ui.animationSelect.setItems(animList.get_column("name"), sortAlphabetically=True, cleanupStrings=True, ignoreBlanks=True)
 
