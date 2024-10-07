@@ -17,7 +17,6 @@
     "./Tools/HolocronToolset/src",
     "./Tools/HoloPatcher/src",
     "./Tools/KotorDiff/src",
-    "./Tools/MDLDecompile/src",
     "./Libraries/PyKotor/src",
     "./Libraries/PyKotorGL/src",
     "./Libraries/PyKotorFont/src",

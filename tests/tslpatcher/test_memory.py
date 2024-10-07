@@ -23,12 +23,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.tslpatcher.memory import PatcherMemory
-from pykotor.tslpatcher.mods.gff import (
-    FieldValue2DAMemory,
-    FieldValueConstant,
-    FieldValueTLKMemory,
-    LocalizedStringDelta,
-)
+from pykotor.tslpatcher.mods.gff import FieldValue2DAMemory, FieldValueConstant, FieldValueTLKMemory, LocalizedStringDelta
 
 
 class TestLocalizedStringDelta(TestCase):

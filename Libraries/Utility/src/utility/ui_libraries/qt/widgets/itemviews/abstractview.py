@@ -2,21 +2,29 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, cast
 
-import qtpy
-
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QPoint, QSortFilterProxyModel, QTimer, Qt
+from qtpy.QtCore import QSortFilterProxyModel, QTimer, Qt
 from qtpy.QtGui import QCursor
-from qtpy.QtWidgets import QAbstractItemView, QAbstractScrollArea, QAction, QApplication, QFrame, QMenu, QStyle, QStyleOptionViewItem, QStyledItemDelegate, QWhatsThis
+from qtpy.QtWidgets import (
+    QAbstractItemView,
+    QAbstractScrollArea,
+    QFrame,
+    QStyle,
+    QStyleOptionViewItem,
+)
 
 from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustBaseWidget
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QAbstractItemModel, QMargins, QModelIndex
+    from qtpy.QtCore import QAbstractItemModel, QMargins, QModelIndex, QPoint
     from qtpy.QtGui import QResizeEvent, QWheelEvent
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtWidgets import (
+        QAbstractItemDelegate,
+        QMenu,
+        QWidget,
+    )
     from typing_extensions import Literal
 
 
@@ -30,7 +38,10 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         RobustBaseWidget.__init__(self, parent, *args, **kwargs)
         self._layout_changed_debounce_timer: QTimer = QTimer(self)
         self._fix_drawer_button()
-        self.restore_state()
+
+    def _create_drawer_button(self):
+        super()._create_drawer_button()
+        self._robustDrawer.clicked.connect(lambda _: self.show_header_context_menu())
 
     def debounce_layout_changed(
         self,
@@ -51,7 +62,6 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         f: Qt.WindowFlags | Qt.WindowType | None = None,
     ) -> None:
         super().setParent(parent) if f is None else super().setParent(parent, f)
-        self.restore_state()
 
     def _fix_drawer_button(self):
         if not hasattr(self, "_robustDrawer"):
@@ -69,21 +79,9 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self,
         pos: QPoint | None = None,
         parent: QWidget | None = None,
-        *,
-        exec_menu: bool = True,
     ):
-        menu = self.build_context_menu(parent)
-        if not self._initialized:
-            return
-        if pos is None:
-            pos = (
-                QCursor.pos()
-                if parent is None
-                else parent.mapToGlobal(QPoint(parent.width(), parent.height()))
-            )
-        if not exec_menu:
-            return
-        menu.exec(pos)
+        menu = self.build_context_menu()
+        menu.exec(QCursor.pos())
 
     def selected_source_indexes(self) -> list[QModelIndex]:
         """Same as QAbstractItemView.selectedIndexes, but returns the source indexes instead of the proxy model indexes."""
@@ -101,18 +99,9 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             indexes.append(sourceIndex)
         return indexes
 
-    def itemDelegate(self) -> QStyledItemDelegate:
-        return super().itemDelegate()  # pyright: ignore[reportReturnType]
-
-    def setItemDelegate(self, delegate: QStyledItemDelegate):
-        assert isinstance(delegate, QStyledItemDelegate), f"Expected QStyledItemDelegate, got {type(delegate).__name__}."
-        super().setItemDelegate(delegate)
-
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
         self.debounce_layout_changed()
-        if not hasattr(self, "_robustDrawer"):
-            return
         self._fix_drawer_button()
 
     def wheelEvent(
@@ -126,8 +115,6 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             handled = self._wheel_changes_item_spacing(event)
         elif bool(modifiers & Qt.KeyboardModifier.ControlModifier):
             handled = self._wheel_changes_text_size(event)
-        elif (not int(modifiers)) if qtpy.QT5 else (modifiers != Qt.KeyboardModifier.NoModifier):
-            handled = self._wheel_changes_vertical_scroll(event)
 
         if not handled:
             super().wheelEvent(event)
@@ -152,14 +139,6 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self.set_text_size(self.get_text_size() + (1 if delta > 0 else -1))
         return True
 
-    def _wheel_changes_vertical_scroll(self, event: QWheelEvent) -> bool:
-        delta: int = event.angleDelta().y()
-        # print("wheelVerticalScroll, delta: ", delta)
-        if not delta:
-            return True
-        self.scroll_multiple_steps("up" if delta > 0 else "down")
-        return True
-
     def _handle_color_action(
         self,
         get_func: Callable[[], Any],
@@ -171,7 +150,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self.viewport().update()
 
     def set_text_size(self, size: int):
-        delegate: QStyledItemDelegate = self.itemDelegate()
+        delegate: QAbstractItemDelegate = self.itemDelegate()
         if isinstance(delegate, HTMLDelegate):
             text_size = max(1, size)
             model: QAbstractItemModel | None = self.model()
@@ -186,37 +165,11 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self.debounce_layout_changed()
 
     def get_text_size(self) -> int:
-        delegate: QStyledItemDelegate = self.itemDelegate()
+        delegate: QAbstractItemDelegate = self.itemDelegate()
         return delegate.text_size if isinstance(delegate, HTMLDelegate) else self.font().pointSize()
 
     def update_columns_after_text_size_change(self):
         """This method should be implemented by subclasses if needed."""
-
-    def set_scroll_step_size(self, value: int):
-        """Set the number of items to scroll per wheel event."""
-        print(f"scrollStepSize set to {value}")
-        self.set_setting("scrollStepSize", value)
-
-    def scroll_multiple_steps(self, direction: Literal["up", "down"]):
-        """Scroll multiple steps based on the user-defined setting.
-
-        Determines what a 'step' is by checking `self.verticalScrollMode()`
-        and multiplies it by the user-defined number of items to scroll.
-        """
-        vertScrollBar = self.verticalScrollBar()
-        assert vertScrollBar is not None
-        step_size = self.get_setting("scrollStepSize", 1)
-
-        if self.verticalScrollMode() == QAbstractItemView.ScrollMode.ScrollPerItem:
-            if qtpy.QT5:
-                action = vertScrollBar.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderSingleStepAdd
-            else:
-                action = vertScrollBar.SliderAction.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderAction.SliderSingleStepAdd
-            for _ in range(step_size):
-                vertScrollBar.triggerAction(action)
-        else:
-            scrollStep = -self.get_text_size() if direction == "up" else self.get_text_size()
-            vertScrollBar.setValue(vertScrollBar.value() + scrollStep * step_size)
 
     def emit_layout_changed(self):
         model = self.model()
@@ -294,15 +247,6 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
                 "Elide None": Qt.TextElideMode.ElideNone,
             },
             settings_key="textElideMode",
-        )
-
-        self._add_menu_action(
-            display_advanced_menu,
-            "Edit Stylesheet",
-            self.styleSheet,
-            self.setStyleSheet,
-            "customStylesheet",
-            param_type=str,
         )
 
         self._add_menu_action(
@@ -423,23 +367,9 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
 
         # Behavior menu
         behavior_menu = context_menu.addMenu("Behavior")
-        self._add_menu_action(
-            behavior_menu,
-            "Tab Key Navigation",
-            self.tabKeyNavigation,
-            self.setTabKeyNavigation,
-            settings_key="tabKeyNavigation",
-        )
-        behavior_advanced_menu = behavior_menu.addMenu("Advanced")
-        self._add_menu_action(
-            behavior_menu,
-            "Auto Fill Background",
-            self.autoFillBackground,
-            self.setAutoFillBackground,
-            settings_key="autoFillBackground",
-        )
+        behavior_frame_menu = behavior_menu.addMenu("Frame")
         self._add_exclusive_menu_action(
-            behavior_advanced_menu,
+            behavior_frame_menu,
             "Frame Shape",
             self.frameShape,
             self.setFrameShape,
@@ -456,7 +386,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             param_type=QFrame.Shape,
         )
         self._add_exclusive_menu_action(
-            behavior_advanced_menu,
+            behavior_frame_menu,
             "Frame Shadow",
             self.frameShadow,
             self.setFrameShadow,
@@ -467,6 +397,13 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             },
             settings_key="frameShadow",
             param_type=QFrame.Shadow,
+        )
+        self._add_menu_action(
+            behavior_menu,
+            "Tab Key Navigation",
+            self.tabKeyNavigation,
+            self.setTabKeyNavigation,
+            settings_key="tabKeyNavigation",
         )
         self._add_menu_action(
             behavior_menu,
@@ -487,14 +424,6 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
 
         # Scroll menu
         behavior_menu.addSeparator()
-        self._add_menu_action(
-            behavior_menu,
-            "Scroll Step Size",
-            lambda: self.get_setting("scrollStepSize", QApplication.wheelScrollLines()),
-            self.set_scroll_step_size,
-            settings_key="scrollStepSize",
-            param_type=int,
-        )
         self._add_exclusive_menu_action(
             behavior_menu,
             "Horizontal Scroll Mode",
@@ -537,7 +466,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         )
 
         # Size Adjustment menu
-        self._add_exclusive_menu_action(
+        self._add_exclusive_menu_action(  # QAbstractScrollArea
             advanced_menu,
             "Size Adjust Policy",
             self.sizeAdjustPolicy,
@@ -564,17 +493,10 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self._add_menu_action(
             viewport_menu,
             "Viewport Margins",
-            self.viewportMargins,
+            self.viewportMargins,  # QAbstractScrollArea
             set_viewport_margins,
             settings_key="viewportMargins",
             param_type=tuple,
-        )
-        self._add_menu_action(
-            viewport_menu,
-            "Auto Fill Background",
-            self.autoFillBackground,
-            self.setAutoFillBackground,
-            settings_key="autoFillBackground",
         )
 
         # Actions menu
@@ -584,16 +506,4 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self._add_simple_action(refresh_menu, "Clear Selection", self.clearSelection)
         self._add_simple_action(refresh_menu, "Select All", self.selectAll)
         self._add_simple_action(refresh_menu, "Emit Layout Changed", self.emit_layout_changed)
-
-        # Help menu
-        whats_this_action = QAction(
-            self.style().standardIcon(
-                QStyle.StandardPixmap.SP_TitleBarContextHelpButton
-            ),
-            "What's This?",
-            self,
-        )
-        whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
-        whats_this_action.setToolTip("Enter 'What's This?' mode.")
-        context_menu.addAction(whats_this_action)
         return menu

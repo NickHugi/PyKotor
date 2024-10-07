@@ -134,8 +134,8 @@ def remove_any(
     missing_ok: bool = True
 ):
     path_obj = Path(path)
-    isdir_func = Path.safe_isdir if ignore_errors else Path.is_dir
-    isfile_func = Path.safe_exists if ignore_errors else Path.exists
+    isdir_func = Path.is_dir
+    isfile_func = Path.exists
     if not isfile_func(path_obj):
         if missing_ok:
             return
@@ -157,7 +157,7 @@ def remove_any(
         else:
             if not isfile_func(path_obj):
                 return
-            print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)  # DO NOT IMPORT GET_ROOT_LOGGER HERE
+            print(f"File/folder {path_obj} still exists (remove_any)", file=sys.stderr)
     else:
         for i in range(100):
             try:
@@ -169,7 +169,7 @@ def remove_any(
             else:
                 if not isfile_func(path_obj):
                     return
-                print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)  # DO NOT IMPORT GET_ROOT_LOGGER HERE
+                print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)
         if not ignore_errors:  # should raise at this point.
             _remove_any(path_obj)
 
@@ -181,11 +181,11 @@ def get_mac_dot_app_dir(directory: os.PathLike | str) -> Path:
 
     Args:
     ----
-       directory (os.PathLike | str): Directory of the literal executable inside the .app (e.g. '~/MyApp.app/Contents/MacOS/MyApp')
+        directory (os.PathLike | str): Directory of the literal executable inside the .app (e.g. '~/MyApp.app/Contents/MacOS/MyApp')
 
     Returns:
     -------
-       (pathlib.Path): Path to the .app
+        (pathlib.Path): Path to the .app
     """
     return Path(directory).parents[2]
 

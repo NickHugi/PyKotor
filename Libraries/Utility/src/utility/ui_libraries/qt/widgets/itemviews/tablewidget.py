@@ -21,8 +21,8 @@ class RobustTableWidget(QTableWidget, RobustTableView):
         QTableWidget.__init__(self, parent)
         RobustTableView.__init__(self, parent)
 
-    def build_context_menu(self) -> QMenu:
-        menu = super().build_context_menu()
+    def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
+        menu = super().build_context_menu(parent)
 
         # Table-specific actions
         table_widget_menu = menu.addMenu("TableWidget")

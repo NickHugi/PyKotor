@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-import ast
-
-from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Callable
 
 import qtpy
 
+from PyQt5.QtWidgets import QWhatsThis
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QLocale, QMargins, QMetaType, QRect, QSettings, QSize, Qt
+from qtpy.QtCore import QLocale, QMargins, QMetaType, QRect, QSize, Qt
 from qtpy.QtGui import QColor, QCursor, QFont, QIcon, QPalette, QRegion, QSyntaxHighlighter, QTextCharFormat
 from qtpy.QtWidgets import (
-    QAbstractItemView,
     QAction,
     QActionGroup,
     QApplication,
@@ -44,7 +41,7 @@ from utility.ui_libraries.qt.tools.debug.print_qobject import format_qt_obj
 from utility.ui_libraries.qt.tools.qt_meta import get_qt_meta_type
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QObject
+    from qtpy.QtCore import QObject, QSettings
     from qtpy.QtGui import QTextDocument
 
 
@@ -110,7 +107,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         self._robustDrawer.setIcon(icon)
 
     def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
-        self.menu = QMenu(None if parent is None else parent)
+        self.menu = QMenu(None)
         widget_menu = self.menu.addMenu("QWidget")
 
         # Window properties
@@ -185,8 +182,33 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         )
         self._add_menu_action(appearance_menu, "Set Auto Fill Background", self.autoFillBackground, self.setAutoFillBackground, "autoFillBackground")
 
+        self._add_menu_action(
+            appearance_menu,
+            "Edit Stylesheet",
+            self.styleSheet,
+            self.setStyleSheet,
+            "customStylesheet",
+            param_type=str,
+        )
+
         # Behavior
         behavior_menu = widget_menu.addMenu("Behavior")
+        self._add_menu_action(
+            behavior_menu,
+            "Auto Fill Background",
+            self.autoFillBackground,
+            self.setAutoFillBackground,
+            settings_key="autoFillBackground",
+        )
+
+        # Help menu
+        whats_this_action = QAction(
+            self.style().standardIcon(
+                QStyle.StandardPixmap.SP_TitleBarContextHelpButton
+            ),
+            "What's This?",
+            self,
+        )
         self._add_menu_action(behavior_menu, "Set Enabled", self.isEnabled, self.setEnabled, "enabled")
         self._add_menu_action(behavior_menu, "Set Visible", self.isVisible, self.setVisible, "visible")
         self._add_menu_action(behavior_menu, "Set Hidden", self.isHidden, self.setHidden, "hidden")
@@ -297,101 +319,10 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             self._add_menu_action(advanced_menu, "Set Input Method Hints", self.inputMethodHints, self.setInputMethodHints, "inputMethodHints", param_type=Qt.InputMethodHints)
         self._add_menu_action(advanced_menu, "Set Tool Tip Duration", self.toolTipDuration, self.setToolTipDuration, "toolTipDuration", param_type=int)
 
+        whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
+        whats_this_action.setToolTip("Enter 'What's This?' mode.")
+        self.menu.addAction(whats_this_action)
         return self.menu
-
-    def restore_state(self):
-        """Acquire the QSettings for this widget and restore the state.
-
-        These settings were saved with the widget's object name the last time the widget was used.
-        """
-        self._initialized = False
-        self.build_context_menu()
-        self._initialized = True
-
-    def _all_settings(
-        self,
-        settings_group: str,
-    ) -> QSettings:
-        if settings_group not in self._settings_cache:
-            self._settings_cache[settings_group] = QSettings(f"QtCustomWidgets{qtpy.API_NAME}", settings_group)
-        return self._settings_cache[settings_group]
-
-    def get_setting(
-        self,
-        key: str,
-        default: Any,
-        val_type: type | None = None,
-    ) -> Any:
-        # see the FIXME in _init_setting
-        return default
-        # First check settings for _settings_name
-        settings = self._all_settings(self._settings_name)
-        try:
-            value = settings.value(key, default) if val_type is None else settings.value(key, default, val_type)
-        except Exception as e:  # noqa: BLE001
-            RobustLogger().warning(f"Error getting setting {key}: {e}")
-            settings.setValue(key, default)
-            return default
-        else:
-            if value is not None:
-                return value
-
-        # Then check the class hierarchy
-        for cls in self.__class__.__mro__:
-            if cls is QAbstractItemView:
-                break
-            if cls.__name__ == self._settings_name:
-                continue  # Skip, as we've already checked this
-            value = (
-                self._all_settings(cls.__name__).value(key, None)
-                if val_type is None
-                else self._all_settings(cls.__name__).value(key, None, val_type)
-            )
-            if value is not None:
-                return value
-        return default
-
-    def set_setting(
-        self,
-        key: str,
-        value: Any,
-    ):
-        settings = self._all_settings(self._settings_name)
-        settings.setValue(key, value)
-
-    def _init_setting(
-        self,
-        get_func: Callable[[], Any],
-        set_func: Callable[[Any], Any],
-        settings_key: str,
-        param_type: type | None = None,
-    ) -> Any:
-        """Acquires the current setting, or initializes if it is not already set to this widget's lifetime.
-
-        Widgets should manage `self._initialized` if they require a different behavior.
-        Default behavior is to run the menus and actions to set the initial value. If _initialized is False, the menu will not be shown.
-        """
-        current_value = get_func()
-
-        # QT6 does not like the 3rd argument to QSettings.value for some reason.
-        initial_value = (
-            self.get_setting(settings_key, current_value)
-            if qtpy.QT6
-            else self.get_setting(
-                settings_key,
-                current_value,
-                current_value.__class__ if param_type is None else param_type,
-            )
-        )
-        if not self._initialized:
-            if initial_value == "true":
-                initial_value = True
-            elif initial_value == "false":
-                initial_value = False
-            # FIXME: initial settings are causing all sorts of bugs, disable for now.
-            #set_func(initial_value)
-        #return initial_value
-        return current_value
 
     def _add_menu_action(  # noqa: PLR0913
         self,
@@ -402,7 +333,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         settings_key: str,
         param_type: type = bool,
     ):
-        current_value = self._init_setting(get_func, set_func, settings_key, param_type)
+        current_value = get_func()
         if title == "Edit Stylesheet":
             action = QAction(title, self)
             action.triggered.connect(lambda: self._show_stylesheet_editor(get_func, set_func, settings_key))
@@ -413,20 +344,9 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
 
         if param_type is bool:
             action.setCheckable(True)
-            setting_value = self.get_setting(settings_key, current_value)
-            if isinstance(setting_value, str):
-                with suppress(ValueError, SyntaxError):
-                    setting_value = ast.literal_eval(setting_value)
-            if setting_value == "false":
-                setting_value = False
-            elif setting_value == "true":
-                setting_value = True
-            else:
-                setting_value = bool(setting_value)
-            action.setChecked(setting_value)
+            action.setChecked(current_value)
             def on_toggled(checked: bool):  # noqa: FBT001
                 set_func(checked)
-                self.set_setting(settings_key, checked)
             action.toggled.connect(on_toggled)
         else:
 
@@ -450,17 +370,16 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         settings_key: str,
         param_type: type = bool,
     ):
-        initial_value = self._init_setting(current_state_func, set_func, settings_key, param_type)
+        current_value = current_state_func()
         sub_menu = menu.addMenu(title)
         action_group = QActionGroup(sub_menu)
         action_group.setExclusive(True)
         for option_name, option_value in options.items():
             action = QAction(option_name, self)
             action.setCheckable(True)
-            action.setChecked(initial_value == option_value)
+            action.setChecked(current_value == option_value)
             def on_triggered(_checked, val=option_value):
                 set_func(val)
-                self.set_setting(settings_key, val)
                 self._update_action_text(title, val)
             action.triggered.connect(on_triggered)
             sub_menu.addAction(action)
@@ -476,7 +395,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         settings_key: str,
         param_type: type | None = None,
     ):  # noqa: PLR0913
-        initial_value = self._init_setting(get_func, set_func, settings_key, param_type)
+        initial_value = get_func()
         sub_menu = menu.addMenu(title)
 
         def update_state(menu: QMenu = sub_menu):
@@ -490,7 +409,6 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             ):
                 current_state = initial_value.__class__(current_state)
             set_func(current_state)
-            self.set_setting(settings_key, current_state)
 
         if not self._initialized:
             for option_name, option_value in options.items():
@@ -508,7 +426,6 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
     ):
         color = QColorDialog.getColor(get_func(), self, title)
         if color.isValid():
-            self.set_setting(settings_key, color.name())
             self.update()
 
     def _handle_generic_action(
@@ -520,7 +437,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         param_type: type,
     ):
         get_result = get_func()
-        current_value: Any = self.get_setting(settings_key, get_result, get_result.__class__)
+        current_value: Any = get_result
 
         dialog = QDialog(self)
         dialog.setWindowTitle(f"Set {title}")
@@ -540,7 +457,11 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         try:
             new_value = self._get_new_value(input_widget, param_type)
         except (ValueError, TypeError):
-            QMessageBox.warning(self, "Invalid Input", f"Invalid input for {title}. Please enter a valid {param_type.__name__}.")
+            QMessageBox.warning(
+                self,
+                "Invalid Input",
+                f"Invalid input for {title}. Please enter a valid {param_type.__name__}.",
+            )
             return
 
         try:
@@ -548,7 +469,6 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         except TypeError:
             RobustLogger().error(f"Error setting {title} to {new_value}", exc_info=True)
             return
-        self.set_setting(settings_key, new_value)
         self._update_action_text(title, new_value)
 
     def _create_input_widget(self, param_type: type, current_value: Any) -> QWidget:
@@ -556,9 +476,13 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
 
         if meta_type in (QMetaType.Int, QMetaType.Long, QMetaType.LongLong):
             widget = QSpinBox()
+            widget.setMinimum(-0x80000000)
+            widget.setMaximum(0x7FFFFFFF)
             widget.setValue(int(current_value))  # pyright: ignore[reportArgumentType]
         elif meta_type in (QMetaType.Float, QMetaType.Double):
             widget = QDoubleSpinBox()
+            widget.setMinimum(-0x80000000)
+            widget.setMaximum(0x7FFFFFFF)
             widget.setValue(float(current_value))  # pyright: ignore[reportArgumentType]
         elif meta_type == QMetaType.Bool:
             widget = QCheckBox()
@@ -727,7 +651,6 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
     def _apply_stylesheet(self, set_func: Callable[[Any], Any], settings_key: str):
         new_stylesheet = self._stylesheet_text_edit.toPlainText()
         set_func(new_stylesheet)
-        self.set_setting(settings_key, new_stylesheet)
         if hasattr(self, "_preview_area"):
             self._preview_area.setStyleSheet(new_stylesheet)
 
@@ -741,13 +664,6 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         if color.isValid():
             cursor = self._stylesheet_text_edit.textCursor()
             cursor.insertText(color.name())
-
-    def setStyleSheet(self, sheet: str) -> None:
-        super().setStyleSheet(sheet)
-        self.set_setting("customStylesheet", sheet)
-
-    def styleSheet(self) -> str:
-        return self.get_setting("customStylesheet", super().styleSheet())
 
 
 if __name__ == "__main__":

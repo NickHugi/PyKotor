@@ -27,6 +27,7 @@ from pathlib import Path
 
 from pykotor.extract.capsule import Capsule
 from pykotor.tslpatcher.patcher import ModInstaller
+from pykotor.tools.path import CaseAwarePath
 
 
 class TestLookupResourceFunction(unittest.TestCase):
@@ -38,7 +39,7 @@ class TestLookupResourceFunction(unittest.TestCase):
         with NamedTemporaryFile() as tmpfile:
             tmpfile_path = Path(tmpfile.name)
             self.config = ModInstaller("", "", tmpfile_path)
-        self.config.mod_path = Path("test_mod_path")
+        self.config.mod_path = CaseAwarePath("test_mod_path")
         self.output_container_path = Path("test_output_container_path")
 
     def tearDown(self):
@@ -283,7 +284,7 @@ class TestShouldPatchFunction(unittest.TestCase):
     def test_capsule_not_exist(self):
         patch = MagicMock(destination="capsule", action="Patching", sourcefile="file1")
         capsule = MagicMock()
-        cast(Capsule, capsule).filepath().safe_isfile.return_value = False
+        cast(Capsule, capsule).filepath().is_file.return_value = False
         result = self.patcher.should_patch(patch, capsule=capsule)
         assert not result
 

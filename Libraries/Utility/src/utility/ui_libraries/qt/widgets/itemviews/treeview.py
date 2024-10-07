@@ -32,16 +32,10 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         self.branch_connectors_enabled: bool = False
         self.header_visible: bool = False
         RobustAbstractItemView.__init__(self, parent, *args, **kwargs)
-        self.header_visible: bool = self.get_setting("horizontalScrollBarVisible", False)  # noqa: FBT003
         self.header().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.header().customContextMenuRequested.connect(lambda pos: self.show_header_context_menu(pos, self.header()))
         if not use_columns:
             self.set_horizontal_scrollbar(state=False)
-
-    def _create_drawer_button(self):
-        super()._create_drawer_button()
-        self._robustDrawer.clicked.connect(lambda _: self.show_header_context_menu())
-
 
     def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
         print(f"{self.__class__.__name__}.build_context_menu")
@@ -70,16 +64,9 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         self._add_menu_action(tree_view_menu, "Tree Indentation", self.indentation, self.setIndentation, "indentation", param_type=int)
         self._add_menu_action(tree_view_menu, "Show Horizontal Scrollbar", lambda: self.header_visible, self.set_horizontal_scrollbar, "horizontalScrollBarVisible")
         self._add_menu_action(tree_view_menu, "Vertical Spacing",
-                            lambda: getattr(self.itemDelegate(), "customVerticalSpacing", 0),
-                            lambda x: getattr(self.itemDelegate(), "setVerticalSpacing", lambda _: None)(x),
-                            "verticalSpacing", param_type=int)
-        self._add_menu_action(
-            tree_view_menu,
-            "Expand All Root Item Children",
-            lambda: self.get_setting("ExpandRootChildren", False),  # noqa: FBT003
-            lambda value: self.set_setting("ExpandRootChildren", value),
-            settings_key="ExpandRootChildren",
-        )
+            lambda: getattr(self.itemDelegate(), "customVerticalSpacing", 0),
+            lambda x: getattr(self.itemDelegate(), "setVerticalSpacing", lambda _: None)(x),
+            "verticalSpacing", param_type=int)
         self._add_menu_action(tree_view_menu, "Word Wrap", self.wordWrap, self.setWordWrap, "wordWrap")
         self._add_menu_action(advanced_menu, "All Columns Show Focus", self.allColumnsShowFocus, self.setAllColumnsShowFocus, "allColumnsShowFocus")
         self._add_menu_action(tree_view_menu, "Animated", self.isAnimated, self.setAnimated, "animated")
@@ -125,7 +112,6 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         # Sizing options
         sizing_menu = header_menu.addMenu("Sizing")
         self._add_simple_action(sizing_menu, "Reset Default Section Size", self.header().resetDefaultSectionSize)
-        self._add_menu_action(sizing_menu, "Auto-fit Columns", lambda: self.get_setting("autoResizeEnabled", True, bool), self.set_auto_resize_enabled, "autoResizeEnabled")  # noqa: FBT003
         self._add_menu_action(sizing_menu, "Set Maximum Section Size", self.header().maximumSectionSize, self.header().setMaximumSectionSize, "maximumSectionSize", param_type=int)  # noqa: E501
         self._add_menu_action(sizing_menu, "Set Minimum Section Size", self.header().minimumSectionSize, self.header().setMinimumSectionSize, "minimumSectionSize", param_type=int)  # noqa: E501
         self._add_menu_action(sizing_menu, "Set Default Section Size", self.header().defaultSectionSize, self.header().setDefaultSectionSize, "defaultSectionSize", param_type=int)  # noqa: E501
@@ -248,7 +234,6 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
             self.horizontalScrollBar().hide()
         else:
             self.horizontalScrollBar().show()
-        self.set_setting("horizontalScrollBarVisible", state)
 
     def set_text_size(self, size: int):
         delegate = self.itemDelegate()
@@ -305,13 +290,6 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         assert header is not None, "Header is None in resetColumnWidths"
         for col in range(header.count()):
             header.resizeSection(col, header.defaultSectionSize())
-
-    def set_auto_resize_enabled(self, state: bool):  # noqa: FBT001
-        self.set_setting("autoResizeEnabled", state)
-        if self.get_setting("autoResizeEnabled", True, bool):  # noqa: FBT003
-            self.resize_all_columns_to_fit()
-        else:
-            self.reset_column_widths()
 
     def draw_connectors(
         self,

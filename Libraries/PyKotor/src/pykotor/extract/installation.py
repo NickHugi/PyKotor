@@ -5,7 +5,6 @@ import os
 import platform
 import sys
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
@@ -143,7 +142,7 @@ class Installation:
         self,
         path: os.PathLike | str,
         *,
-        multithread: bool = False,
+        multithread: bool = True,
         progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = None
     ):
         self.use_multithreading: bool = multithread  # Tested. Slower on my machine (th3w1zard1)
@@ -218,37 +217,36 @@ class Installation:
     # region Load Data
     def _build_single_resource(
         self,
-        filepath: Path | CaseAwarePath,
+        entry: os.DirEntry,
     ) -> FileResource | None:
         try:
             if self.progress_callback:
-                self.progress_callback(f"Loading {filepath.relative_to(self._path)}", "update_subtask_text")
-            resname, restype = ResourceIdentifier.from_path(filepath).unpack()
+                self.progress_callback(f"Loading {Path(entry.path).relative_to(self._path)}", "update_subtask_text")
+            resname, restype = ResourceIdentifier.from_path(entry.path).unpack()
             if restype.is_invalid:
                 return None
-            resource = FileResource(resname, restype, filepath.stat().st_size, 0, filepath)
+            resource = FileResource(resname, restype, entry.stat().st_size, 0, Path(entry.path))
         except Exception:  # noqa: BLE001
-            self._log.exception(f"Error loading file {filepath}")
+            self._log.exception(f"Error loading file {entry.path}")
             return None
         return resource
 
     def _build_resource_list(
         self,
-        filepath: Path | CaseAwarePath,
+        entry: os.DirEntry,
         capsule_check: Callable,
     ) -> tuple[Path, list[FileResource] | None]:
-        # sourcery skip: extract-method
         try:
-            if not capsule_check(filepath):
-                return filepath, None
+            if not capsule_check(entry.path):
+                return Path(entry.path), None
             if self.progress_callback:
-                self.progress_callback(f"Indexing capsule '{filepath.relative_to(self._path)}'", "update_subtask_text")
-            resource_list = list(Capsule(filepath))
+                self.progress_callback(f"Indexing capsule '{Path(entry.path).relative_to(self._path)}'", "update_subtask_text")
+            resource_list = list(Capsule(entry.path))
         except Exception:  # noqa: BLE001
-            self._log.exception(f"Error loading file {filepath}")
-            return filepath, None
+            self._log.exception(f"Error loading file {entry.path}")
+            return Path(entry.path), None
         else:
-            return filepath, resource_list
+            return Path(entry.path), resource_list
 
     def load_resources_dict(
         self,
@@ -275,28 +273,22 @@ class Installation:
             return {}
 
         self._log.info("Loading '%s' from installation...", r_path.relative_to(self._path))
-        files_iter = r_path.rglob("*") if recurse else r_path.iterdir()
-
         resources_dict: dict[str, list[FileResource]] = {}
 
-        if self.use_multithreading:
-            num_cores = os.cpu_count() or 1
-            max_workers = num_cores * 4
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                for future in as_completed(
-                    executor.submit(self._build_resource_list, file, capsule_check)
-                    for file in files_iter
-                ):
-                    filepath, resource = future.result()
-                    if resource is None:
-                        continue
-                    resources_dict[filepath.name] = resource
-        else:
-            for file in files_iter:
-                filepath, resource = self._build_resource_list(file, capsule_check)
-                if resource is None:
-                    continue
-                resources_dict[filepath.name] = resource
+        try:
+            for entry in os.scandir(r_path):
+                try:
+                    if recurse and entry.is_dir(follow_symlinks=False):
+                        resources_dict.update(self.load_resources_dict(CaseAwarePath(entry.path), capsule_check, recurse=True))
+                    else:
+                        filepath, resource = self._build_resource_list(entry, capsule_check)
+                        if resource is not None:
+                            resources_dict[filepath.name] = resource
+                except Exception:  # noqa: BLE001
+                    self._log.exception(f"Error processing entry {entry.path}")
+        except Exception:  # noqa: BLE001
+            self._log.exception(f"Error scanning directory {r_path}")
+
         if not resources_dict:
             self._log.warning("No resources found at '%s' when loading the installation, skipping...", r_path)
         return resources_dict
@@ -324,29 +316,22 @@ class Installation:
             return []
 
         self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
-        files_iter = (
-            path.rglob("*")
-            if recurse
-            else path.iterdir()
-        )
-
         resources_list: list[FileResource] = []
 
-        if self.use_multithreading:
-            num_cores = os.cpu_count() or 1
-            max_workers = num_cores * 2
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                for future in as_completed(executor.submit(self._build_single_resource, file) for file in files_iter):
-                    resource = future.result()
-                    if resource is None:
-                        continue
-                    resources_list.append(resource)
-        else:
-            for file in files_iter:
-                resource = self._build_single_resource(file)
-                if resource is None:
-                    continue
-                resources_list.append(resource)
+        try:
+            for entry in os.scandir(r_path):
+                try:
+                    if recurse and entry.is_dir(follow_symlinks=False):
+                        resources_list.extend(self.load_resources_list(CaseAwarePath(entry.path), recurse=True))
+                    else:
+                        resource = self._build_single_resource(entry)
+                        if resource is not None:
+                            resources_list.append(resource)
+                except Exception:  # noqa: BLE001
+                    self._log.exception(f"Error processing entry {entry.path}")
+        except Exception:  # noqa: BLE001
+            self._log.exception(f"Error scanning directory {r_path}")
+
         if not resources_list:
             self._log.warning("No resources found at '%s' when loading the installation, skipping...", r_path)
         return resources_list
@@ -401,7 +386,7 @@ class Installation:
         self,
     ):
         """Reloads the data in the 'saves' folder linked to the Installation."""
-        self.saves = {}
+        self.saves.clear()
         for save_location in self.save_locations():
             self._log.debug(f"Found an active save location at '{save_location}'")
             self.saves[save_location] = {}
@@ -445,7 +430,7 @@ class Installation:
             if is_k1:
                 target_dirs = [f for f in override_path.rglob("*") if f.is_dir()]
             target_dirs.append(override_path)
-            self._override = {}
+            self._override.clear()
 
         for folder in target_dirs:
             try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
@@ -498,51 +483,21 @@ class Installation:
         self,
     ):
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
-        self._streammusic = self.load_resources_list(self.streammusic_path())
+        self._streammusic[:] = self.load_resources_list(self.streammusic_path())
 
     def load_streamsounds(
         self,
     ):
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
-        self._streamsounds = self.load_resources_list(self.streamsounds_path())
-
-    def _quicker_load_resources(self, folder_path: Path) -> list[FileResource]:
-        """streamwaves/streamvoice have tens of thousands of audio files, offload here for performance reasons.
-
-        More or less executes exactly the same as load_resources_list/dict methods.
-        """
-        files: list[FileResource] = []
-        try:
-            if not folder_path.is_dir():
-                return files
-            stack: list[str] = [str(folder_path)]
-            install_path_str = str(self.path())
-
-            while stack:
-                current_dir = stack.pop()
-                with os.scandir(current_dir) as it:
-                    for entry in it:
-                        if entry.is_file():
-                            try:
-                                if self.progress_callback:
-                                    relpath = entry.path[len(install_path_str):].strip("\\").strip("/")
-                                    self.progress_callback(f"Loading '{relpath}'...", "update_subtask_text")
-                                files.append(FileResource.from_path(entry.path))
-                            except Exception:  # noqa: BLE001
-                                self._log.exception("Error loading resource:", entry.path)
-                        elif entry.is_dir():
-                            stack.append(entry.path)
-        except Exception:  # noqa: BLE001
-            self._log.exception("Error loading resources from folder:", folder_path)
-        return files
+        self._streamsounds[:] = self.load_resources_list(self.streamsounds_path())
 
     def load_streamwaves(self):
         """Reloads the list of resources in the streamwaves folder linked to the Installation."""
-        self._streamwaves[:] = self._quicker_load_resources(self._find_resource_folderpath(("streamvoice", "streamwaves")))
+        self._streamwaves[:] = self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves")))
 
     def load_streamvoice(self):
         """Reloads the list of resources in the streamvoice folder linked to the Installation."""
-        self._streamwaves[:] = self._quicker_load_resources(self._find_resource_folderpath(("streamwaves", "streamvoice")))
+        self._streamwaves[:] = self.load_resources_list(self._find_resource_folderpath(("streamwaves", "streamvoice")))
 
     # endregion
 
