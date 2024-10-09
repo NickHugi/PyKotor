@@ -4,122 +4,150 @@ import sys
 
 from typing import TYPE_CHECKING, Literal, TypeVar, cast
 
-from qtpy.QtCore import QEvent, QItemSelectionModel, QModelIndex, QSize, Qt  # pyright: ignore[reportPrivateImportUsage]
-from qtpy.QtGui import QWheelEvent
-from qtpy.QtWidgets import QApplication, QStackedWidget
+from qtpy.QtCore import QItemSelectionModel, QModelIndex, QSize, Qt  # pyright: ignore[reportPrivateImportUsage]
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import QAbstractItemView, QApplication, QColumnView, QHeaderView, QListView, QStackedWidget, QTableView, QTreeView
 
 from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 from utility.ui_libraries.qt.widgets.itemviews.columnview import RobustColumnView  # noqa: F401
-from utility.ui_libraries.qt.widgets.itemviews.headerview import RobustHeaderView  # noqa: F401
 from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QAbstractItemModel, QObject
-    from qtpy.QtGui import QIcon
-    from qtpy.QtWidgets import QFileDialog, QWidget
+    from collections.abc import Iterable
+
+    from qtpy.QtCore import QAbstractItemModel
+    from qtpy.QtGui import QIcon, QWheelEvent
+    from qtpy.QtWidgets import QWidget
 
 
-T = TypeVar("T", bound=RobustAbstractItemView)
+T = TypeVar("T", bound=QAbstractItemView)
 
 
 class DynamicStackedView(QStackedWidget):
     def __init__(
         self,
         parent: QWidget | None = None,
-        all_views: list[RobustAbstractItemView] | None = None,
-        initial_view_mode: QFileDialog.ViewMode | RobustListView.ViewMode | None = None,
-        initial_view: RobustAbstractItemView | None = None,
+        all_views: list[QAbstractItemView | QWidget] | None = None,
+        initial_view_mode: QListView.ViewMode | None = None,
+        initial_view: QAbstractItemView | QWidget | None = None,
         *,
         should_call_qt_init: bool = True,
     ):
         if should_call_qt_init:
             super().__init__(parent)
-        self.current_view_mode: RobustListView.ViewMode | QFileDialog.ViewMode = initial_view_mode or RobustListView.ViewMode.ListMode
+        self.current_view_mode: QListView.ViewMode = initial_view_mode or QListView.ViewMode.ListMode
         if all_views:
-            self.all_views = all_views
+            self.set_widgets(all_views)
         else:
-            list_view_icon_mode = RobustListView(self)
-            list_view_icon_mode.setViewMode(RobustListView.ViewMode.IconMode)
-            self.all_views: list[RobustAbstractItemView] = [
-                RobustTreeView(self),
-                RobustTableView(self),
-                #RobustHeaderView(self),
-                RobustColumnView(self),
-                list_view_icon_mode,
-            ]
-        for view in self.all_views:
-            view.setParent(self)
-            view.hide()
-            view.installEventFilter(self)
-            self.addWidget(view)
-        self.setCurrentWidget(initial_view or self.all_views[0])
+            list_view_icon_mode = QListView(self)
+            list_view_icon_mode.setViewMode(QListView.ViewMode.IconMode)
+            self.set_widgets(
+                [
+                    QListView(self),
+                    QTreeView(self),
+                    QTableView(self),
+                    QColumnView(self),
+                    list_view_icon_mode,
+                ],
+            )
+        self.setCurrentWidget(initial_view or self.all_widgets()[0])
 
         self.min_text_size = 6
         self.current_view_index = 0
 
         # Set up a common selection model
-        first_view = self.get_actual_view(self.all_views[0])
+        first_view = self.all_views()[0]
         common_selection_model = first_view.selectionModel() if first_view else None
         if common_selection_model is None:
             self.common_selection_model = QItemSelectionModel(first_view.model() if first_view else None)
         else:
             self.common_selection_model = common_selection_model
-        for view in self.all_views:
-            actual_view = self.get_actual_view(view)
+        for widget in self.all_widgets():
+            actual_view = self.get_actual_view(widget)
             if actual_view:
                 actual_view.setSelectionModel(self.common_selection_model)
 
-    def get_actual_view(self, widget: QWidget, cls: type[T] = RobustAbstractItemView) -> T | None:
-        if isinstance(widget, RobustAbstractItemView):
+    def all_widgets(self) -> tuple[QWidget, ...]:
+        return tuple(self.widget(i) for i in range(self.count()))
+
+    def set_widgets(self, value: Iterable[QWidget]) -> None:
+        for i, widget in enumerate(value):
+            widget_container = widget
+            if isinstance(widget, QAbstractItemView):
+                widget_container = QWidget()
+                widget_container.setObjectName(f"dyn_stack_page_{i}")
+                layout = QVBoxLayout(widget_container)
+                layout.setContentsMargins(2, 2, 2, 2)
+                layout.addWidget(widget)
+            self.addWidget(widget_container)
+            view = self.get_actual_view(widget)
+            if isinstance(view, RobustAbstractItemView):
+                view.wheelEvent = self.wheelEvent
+                assert view.__class__.wheelEvent is not self.wheelEvent
+
+    def all_views(self) -> list[QAbstractItemView]:
+        return [self.get_actual_view(widget) for widget in self.all_widgets()]
+
+    def get_actual_view(self, widget: QWidget, cls: type[T] = QAbstractItemView) -> T:
+        if isinstance(widget, QAbstractItemView):
             return cast(cls, widget)
-        for child in widget.findChildren(RobustAbstractItemView):
+        for child in widget.findChildren(QAbstractItemView):
             return cast(cls, child)
-        return None
+        raise ValueError(f"No view of type {cls.__name__} found in widget {widget.__class__.__name__}")
 
     def setModel(self, model: QAbstractItemModel) -> None:
-        for view in self.all_views:
-            actual_view = self.get_actual_view(view)
-            if actual_view:
-                actual_view.setModel(model)
+        for view in self.all_views():
+            view.setModel(model)
 
-    def current_view(self) -> RobustAbstractItemView | None:
+    def current_view(self) -> QAbstractItemView | None:
         return self.get_actual_view(self.currentWidget())
 
-    def list_view(self) -> RobustListView | None:
-        return next((self.get_actual_view(view) for view in self.all_views if isinstance(self.get_actual_view(view), RobustListView)), None)
+    def list_view(self) -> QListView | None:
+        for view in self.all_views():
+            if isinstance(view, QListView):
+                return cast(QListView, view)
+        return None
 
-    def table_view(self) -> RobustTableView | None:
-        return next((self.get_actual_view(view) for view in self.all_views if isinstance(self.get_actual_view(view), RobustTableView)), None)
+    def table_view(self) -> QTableView | None:
+        for view in self.all_views():
+            if isinstance(view, QTableView):
+                return cast(QTableView, view)
+        return None
 
-    def header_view(self) -> RobustHeaderView | None:
-        return next((self.get_actual_view(view) for view in self.all_views if isinstance(self.get_actual_view(view), RobustHeaderView)), None)
+    def header_view(self) -> QHeaderView | None:
+        for view in self.all_views():
+            if isinstance(view, QHeaderView):
+                return cast(QHeaderView, view)
+        return None
 
-    def column_view(self) -> RobustColumnView | None:
-        return next((self.get_actual_view(view) for view in self.all_views if isinstance(self.get_actual_view(view), RobustColumnView)), None)
+    def column_view(self) -> QColumnView | None:
+        for view in self.all_views():
+            if isinstance(view, QColumnView):
+                return cast(QColumnView, view)
+        return None
 
-    def tree_view(self) -> RobustTreeView | None:
-        return next((self.get_actual_view(view) for view in self.all_views if isinstance(self.get_actual_view(view), RobustTreeView)), None)
+    def tree_view(self) -> QTreeView | None:
+        for view in self.all_views():
+            if isinstance(view, QTreeView):
+                return cast(QTreeView, view)
+        return None
 
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if (
-            isinstance(event, QEvent)
-            and event.type() == QEvent.Type.Wheel
-            and isinstance(event, QWheelEvent)
-            and bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier)
-        ):
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        if bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier):
             delta: Literal[1, -1] = 1 if event.angleDelta().y() > 0 else -1
             self.adjust_view_size(delta)
-            return True
-
-        return super().eventFilter(obj, event)
+            event.accept()
+        else:
+            super().wheelEvent(event)
 
     def adjust_view_size(self, delta: int) -> None:
         current_view = self.current_view()
         if not current_view:
             return
-        new_text_size = current_view.get_text_size() + delta
+        cur_text_size: int = current_view.get_text_size() if isinstance(current_view, RobustAbstractItemView) else current_view.font().pointSize()
+        new_text_size = cur_text_size + delta
         new_text_size = max(self.min_text_size, new_text_size)
 
         if delta > 0 and not self.is_size_suitable_for_view():
@@ -127,7 +155,10 @@ class DynamicStackedView(QStackedWidget):
         elif delta < 0 and new_text_size <= self.min_text_size:
             self.switch_to_previous_view()
         else:
-            current_view.set_text_size(new_text_size)
+            if isinstance(current_view, RobustAbstractItemView):
+                current_view.set_text_size(new_text_size)
+            else:
+                current_view.setFont(QFont(current_view.font().family(), new_text_size))
             self.update_icon_size(new_text_size)
 
     def is_size_suitable_for_view(self, max_item_percent: float = 0.1) -> bool:
@@ -147,12 +178,10 @@ class DynamicStackedView(QStackedWidget):
 
         max_allowed_area = viewport_area * max_item_percent
 
-        if isinstance(current_view, RobustListView):
+        if isinstance(current_view, QListView):
             return item_size.width() < 200
-
         if item_area > max_allowed_area:
             return False
-
         if item_size.width() == 0 or item_size.height() == 0:
             return False
 
@@ -166,84 +195,69 @@ class DynamicStackedView(QStackedWidget):
 
         font_metrics = current_view.fontMetrics()
         item_text = model.data(model.index(0, 0))
-        if (
-            isinstance(item_text, str)
-            and font_metrics.horizontalAdvance(item_text) > item_size.width()
-        ):
+        if isinstance(item_text, str) and font_metrics.horizontalAdvance(item_text) > item_size.width():
             return False
 
         return visible_items >= max_item_percent * total_items
 
     def update_icon_size(self, text_size: int) -> None:
         icon_size = QSize(int(text_size), int(text_size))
-        for view in self.all_views:
+        for view in self.all_widgets():
             actual_view = self.get_actual_view(view)
             if actual_view:
                 actual_view.setIconSize(icon_size)
 
     def switch_to_next_view(self) -> None:
-        if self.current_view_index < len(self.all_views) - 1:
+        if self.current_view_index < len(self.all_widgets()) - 1:
             self.current_view_index += 1
-            current_view = self.get_actual_view(self.all_views[self.current_view_index])
+            current_view = self.get_actual_view(self.all_widgets()[self.current_view_index])
             model = current_view.model() if current_view else None
-            while (
-                self.current_view_index < len(self.all_views) - 1
-                and isinstance(current_view, RobustTableView)
-                and model is not None
-                and model.columnCount() == 1
-            ):
+            while self.current_view_index < len(self.all_widgets()) - 1 and isinstance(current_view, QTableView) and model is not None and model.columnCount() == 1:
                 self.current_view_index += 1
-                current_view = self.get_actual_view(self.all_views[self.current_view_index])
+                current_view = self.get_actual_view(self.all_widgets()[self.current_view_index])
                 model = current_view.model() if current_view else None
-            self.setCurrentWidget(self.all_views[self.current_view_index])
-            for view in self.all_views:
-                actual_view = self.get_actual_view(view)
-                if actual_view:
-                    actual_view.set_text_size(self.min_text_size)
+            self.setCurrentWidget(self.all_widgets()[self.current_view_index])
+            for view in self.all_views():
+                if isinstance(view, RobustAbstractItemView):
+                    view.set_text_size(self.min_text_size)
+                else:
+                    view.setFont(QFont(view.font().family(), self.min_text_size))
             self.update_icon_size(self.min_text_size)
 
     def switch_to_previous_view(self) -> None:
         if self.current_view_index > 0:
             self.current_view_index -= 1
-            current_view = self.get_actual_view(self.all_views[self.current_view_index])
+            current_view = self.all_views()[self.current_view_index]
             model = current_view.model() if current_view else None
-            while (
-                self.current_view_index > 0
-                and isinstance(current_view, RobustTableView)
-                and model is not None
-                and model.columnCount() == 1
-            ):
+            while self.current_view_index > 0 and isinstance(current_view, QTableView) and model is not None and model.columnCount() == 1:
                 self.current_view_index -= 1
-                current_view = self.get_actual_view(self.all_views[self.current_view_index])
+                current_view = self.all_views()[self.current_view_index]
                 model = current_view.model() if current_view else None
-            self.setCurrentWidget(self.all_views[self.current_view_index])
-            for view in self.all_views:
-                actual_view = self.get_actual_view(view)
-                if actual_view:
-                    actual_view.set_text_size(64)
+            self.setCurrentWidget(self.all_widgets()[self.current_view_index])
+            for view in self.all_views():
+                if isinstance(view, RobustAbstractItemView):
+                    view.set_text_size(64)
+                else:
+                    view.setFont(QFont(view.font().family(), 64))
             self.update_icon_size(64)
 
     def setCurrentWidget(self, widget: QWidget) -> None:
         super().setCurrentWidget(widget)
-        if widget not in self.all_views:
-            self.all_views.append(widget)
-        self.current_view_index = self.all_views.index(widget)
+        if widget not in self.all_widgets():
+            self.set_widgets((*self.all_widgets(), widget))
+        self.current_view_index = self.all_widgets().index(widget)
 
     def setRootIndex(self, index: QModelIndex) -> None:
-        for view in self.all_views:
-            actual_view = self.get_actual_view(view)
-            if actual_view:
-                actual_view.setRootIndex(index)
+        for view in self.all_views():
+            view.setRootIndex(index)
 
     def rootIndex(self) -> QModelIndex:
         current_view = self.current_view()
         return current_view.rootIndex() if current_view else QModelIndex()
 
     def clearSelection(self) -> None:
-        for view in self.all_views:
-            actual_view = self.get_actual_view(view)
-            if actual_view:
-                actual_view.clearSelection()
+        for view in self.all_views():
+            view.clearSelection()
 
     def selectionModel(self) -> QItemSelectionModel:
         return self.common_selection_model
@@ -280,7 +294,9 @@ if __name__ == "__main__":
     icons: list[QIcon] = [
         QApplication.style().standardIcon(getattr(QApplication.style().StandardPixmap, attr))
         for attr in dir(QApplication.style().StandardPixmap)
-        if not attr.startswith("_") and attr not in (
+        if not attr.startswith("_")
+        and attr
+        not in (
             "as_integer_ratio",
             "bit_length",
             "conjugate",
