@@ -45,7 +45,6 @@ from qtpy.QtWidgets import (
 )
 
 from utility.ui_libraries.qt.common.actions_dispatcher import ActionsDispatcher
-from utility.ui_libraries.qt.common.ribbons_widget import RibbonsWidget
 from utility.ui_libraries.qt.common.tasks.actions_executor import FileActionsExecutor
 from utility.ui_libraries.qt.common.tasks.task_details_dialog import TaskDetailsDialog
 from utility.ui_libraries.qt.filesystem.qfiledialogextended.explorer_ui import Ui_QFileExplorer
@@ -105,7 +104,7 @@ class FileSystemExplorerWidget(QMainWindow):
         self.ui.dynamicView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.dynamicView.customContextMenuRequested.connect(self.show_context_menu)
         self.ui.addressBar.refreshButton.clicked.connect(self.refresh)
-        self.ui.ribbonTabWidget.currentChanged.connect(self.on_ribbon_tab_changed)
+        self.ui.ribbonWidget.tab_widget.currentChanged.connect(self.on_ribbon_tab_changed)
         self.ui.zoomSlider.valueChanged.connect(self.on_zoom_slider_changed)
         self.ui.itemCountLabel.linkActivated.connect(self.on_item_count_clicked)
         self.ui.selectedCountLabel.linkActivated.connect(self.on_selected_count_clicked)
@@ -136,8 +135,6 @@ class FileSystemExplorerWidget(QMainWindow):
 
         for i in range(1, self.fs_model.columnCount()):
             self.ui.fileSystemTreeView.hideColumn(i)
-        self.ribbons_widget = RibbonsWidget(self, menus=self.dispatcher.menus)
-        self.ui.ribbonTabWidget.addWidget(self.ribbons_widget)
         self.ui.previewWidget.setVisible(False)
         self.statusBar().addPermanentWidget(self.ui.taskStatusWidget)
         self.task_status_toggle: QPushButton = QPushButton("Task Status")
@@ -168,7 +165,7 @@ class FileSystemExplorerWidget(QMainWindow):
         self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionPaste)
         self.ui.mainToolBar.addSeparator()
         self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionRefresh)
-        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionShowHiddenItems)
+        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionShowHideHiddenItems)
 
         if self.ui.searchBar.isVisible():
             self.ui.searchBar.hide()
@@ -224,6 +221,14 @@ class FileSystemExplorerWidget(QMainWindow):
                 except ImportError:
                     RobustLogger().warning("Neither comtypes nor pywin32 is available. COM interfaces will not be used.")
                     self.shell = None
+
+    def selectedFiles(self) -> list[str]:
+        selected_proxy_indexes = self.ui.dynamicView.selectedIndexes()
+        selected_source_indexes = [self.proxy_model.mapToSource(index) for index in selected_proxy_indexes]
+        return [self.fs_model.filePath(index) for index in selected_source_indexes]
+
+    def proxyModel(self) -> QSortFilterProxyModel:
+        return self.proxy_model
 
     def apply_modern_style(self):
         palette = self.palette()
@@ -308,11 +313,11 @@ class FileSystemExplorerWidget(QMainWindow):
 
     def toggle_ribbon(self):
         """Toggle the visibility of the ribbon menu."""
-        if self.ui.ribbonTabWidget.isVisible():
-            self.ui.ribbonTabWidget.hide()
+        if self.ui.ribbonWidget.isVisible():
+            self.ui.ribbonWidget.hide()
             self.toggle_ribbon_button.setText("▼")
         else:
-            self.ui.ribbonTabWidget.show()
+            self.ui.ribbonWidget.show()
             self.toggle_ribbon_button.setText("▲")
 
     def on_sidepanel_treeview_clicked(self, index):
@@ -387,7 +392,7 @@ class FileSystemExplorerWidget(QMainWindow):
             self.ui.fileSystemTreeView.setCurrentIndex(source_index)
             self.ui.addressBar.update_path(path_obj)
             self.directory_changed.emit(str(path_obj))
-            self.ui.addressBar._update_history(path_obj)
+            self.ui.addressBar._update_history(path_obj)  # noqa: SLF001
             self.update_ui()
         else:
             # Handle invalid path

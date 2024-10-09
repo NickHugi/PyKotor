@@ -20,8 +20,8 @@ class RibbonsWidget(QWidget):
             super().__init__(parent)
         else:
             super().__init__(parent, flags)
-        self.actions_definitions = FileExplorerActions()
-        self.menus = FileExplorerMenus() if menus is None else menus
+        self.actions_definitions: FileExplorerActions = FileExplorerActions()
+        self.menus: FileExplorerMenus = FileExplorerMenus() if menus is None else menus
         self.setup_main_layout()
         self.set_stylesheet()
 
@@ -29,7 +29,7 @@ class RibbonsWidget(QWidget):
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
-        self.tab_widget = QTabWidget()
+        self.tab_widget: QTabWidget = QTabWidget()
 
         file_tab = QWidget()
         self.setup_file_ribbon(file_tab)
@@ -80,7 +80,7 @@ class RibbonsWidget(QWidget):
 
         tab.setLayout(layout)
 
-    def create_clipboard_group(self):
+    def create_clipboard_group(self) -> QGroupBox:
         group = QGroupBox("Clipboard")
         layout = QVBoxLayout()
         layout.setSpacing(2)
@@ -101,7 +101,7 @@ class RibbonsWidget(QWidget):
         group.setLayout(layout)
         return group
 
-    def create_organize_group(self):
+    def create_organize_group(self) -> QGroupBox:
         group = QGroupBox("Organize")
         layout = QVBoxLayout()
         layout.setSpacing(2)
@@ -127,7 +127,7 @@ class RibbonsWidget(QWidget):
         group.setLayout(layout)
         return group
 
-    def create_new_group(self):
+    def create_new_group(self) -> QGroupBox:
         group = QGroupBox("New")
         layout = QVBoxLayout()
         layout.setSpacing(2)
@@ -143,7 +143,7 @@ class RibbonsWidget(QWidget):
         group.setLayout(layout)
         return group
 
-    def create_open_group(self):
+    def create_open_group(self) -> QGroupBox:
         group = QGroupBox("Open")
         layout = QVBoxLayout()
         layout.setSpacing(2)
@@ -170,7 +170,7 @@ class RibbonsWidget(QWidget):
         group.setLayout(layout)
         return group
 
-    def create_select_group(self):
+    def create_select_group(self) -> QGroupBox:
         group = QGroupBox("Select")
         layout = QVBoxLayout()
         layout.setSpacing(2)
@@ -183,7 +183,7 @@ class RibbonsWidget(QWidget):
         group.setLayout(layout)
         return group
 
-    def create_panes_group(self):
+    def create_panes_group(self) -> QGroupBox:
         group = QGroupBox("Panes")
         layout = QHBoxLayout()
         layout.setSpacing(2)
@@ -198,7 +198,7 @@ class RibbonsWidget(QWidget):
         group.setLayout(layout)
         return group
 
-    def create_layout_group(self):
+    def create_layout_group(self) -> QGroupBox:
         group = QGroupBox("Layout")
         layout = QGridLayout()
         layout.setSpacing(2)
@@ -216,7 +216,7 @@ class RibbonsWidget(QWidget):
         group.setLayout(layout)
         return group
 
-    def create_current_view_group(self):
+    def create_current_view_group(self) -> QGroupBox:
         group = QGroupBox("Current view")
         layout = QVBoxLayout()
         layout.setSpacing(2)
@@ -257,7 +257,7 @@ class RibbonsWidget(QWidget):
         dialog = SetDefaultColumnsDialog(self)
         dialog.exec_()
 
-    def create_show_hide_group(self):
+    def create_show_hide_group(self) -> QGroupBox:
         group = QGroupBox("Show/hide")
         layout = QVBoxLayout()
         layout.setSpacing(2)
@@ -325,7 +325,8 @@ class RibbonsWidget(QWidget):
             QTabBar::tab:selected, QTabBar::tab:hover {
                 background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                             stop: 0 #fafafa, stop: 0.4 #f4f4f4,
-                                            stop: 0.5 #e7e7e7, stop: 1            }
+                                            stop: 0.5 #e7e7e7, stop: 1.0 #e0e0e0);
+            }
             QTabBar::tab:selected {
                 border-color: #9B9B9B;
                 border-bottom-color: #C2C7CB;
@@ -351,10 +352,6 @@ class RibbonsWidget(QWidget):
                 background-color: #E5F3FF;
             }
             QToolButton:pressed, QToolButton:checked {
-                border: 1px solid #0078D7;
-                background-color: #CCE8FF;
-            }
-            QToolButton:checked {
                 border: 1px solid #0078D7;
                 background-color: #CCE8FF;
             }

@@ -580,7 +580,7 @@ class ActionsDispatcher:
         # Set the Preferred DropEffect
         drop_effect = DropEffect.CUT if is_cut else DropEffect.COPY
         effect_data = QByteArray()
-        data_stream = QDataStream(effect_data, QIODevice.OpenMode(QIODevice.OpenModeFlag.WriteOnly))
+        data_stream = QDataStream(effect_data, QIODevice.OpenModeFlag.WriteOnly)
         data_stream.setByteOrder(QDataStream.ByteOrder.LittleEndian)
         data_stream.writeInt32(drop_effect.value)
         mime_data.setData("Preferred DropEffect", effect_data)

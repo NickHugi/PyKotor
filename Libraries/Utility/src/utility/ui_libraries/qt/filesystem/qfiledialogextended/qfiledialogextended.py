@@ -6,13 +6,15 @@ import traceback
 from enum import Enum
 from typing import TYPE_CHECKING, cast, overload
 
-from loggerplus import RobustLogger
-from qtpy.QtCore import QAbstractItemModel, QEvent, QItemSelectionModel, QPersistentModelIndex, QSize, QUrl, Qt, Signal
-from qtpy.QtGui import QKeyEvent, QMouseEvent
-from qtpy.QtWidgets import QAbstractItemView, QAbstractScrollArea, QAction, QApplication, QFileDialog, QFileSystemModel, QListView, QMenu, QMessageBox, QWidget
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
+from qtpy.QtCore import (
+    QAbstractItemModel,
+    QEvent,
+    Qt,
+)
+from qtpy.QtGui import QMouseEvent
+from qtpy.QtWidgets import QApplication, QFileDialog, QFileSystemModel, QMessageBox, QWidget
 
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.private.qsidebar import QSideBarDelegate
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.private.qurlmodel import QUrlModel
 from utility.ui_libraries.qt.common.actions_dispatcher import ActionsDispatcher
 from utility.ui_libraries.qt.common.tasks.actions_executor import FileActionsExecutor
 from utility.ui_libraries.qt.filesystem.qfiledialogextended.ui_qfiledialogextended import Ui_QFileDialogExtended
@@ -21,8 +23,7 @@ from utility.ui_libraries.qt.widgets.widgets.stacked_view import DynamicStackedV
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject, QPoint
-    from qtpy.QtGui import QDragEnterEvent, QFocusEvent
-    from qtpy.QtWidgets import QTreeView
+    from qtpy.QtWidgets import QAbstractItemView, QListView, QTreeView
 
 
 
@@ -30,81 +31,6 @@ class ReplaceStrategy(Enum):
     RECREATION_EXTENDED = "recreation_extended"
     RECREATION = "recreation"
     CLASS_REASSIGN = "class_reassign"
-
-
-class QSidebar(QListView):
-    goToUrl = Signal(QUrl)
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.urlModel: QUrlModel | None = None
-
-    def setModelAndUrls(self, model: QFileSystemModel, newUrls: list[QUrl]) -> None:  # noqa: N803
-        self.setUniformItemSizes(True)
-        self.urlModel = QUrlModel(self)
-        self.urlModel.setFileSystemModel(model)
-        self.setModel(self.urlModel)
-        self.setItemDelegate(QSideBarDelegate(self))
-
-        self.selectionModel().currentChanged.connect(self.clicked)
-        self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.showContextMenu)
-        self.urlModel.setUrls(newUrls)
-        self.setCurrentIndex(self.model().index(0, 0))
-
-    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
-        if self.urlModel and self.urlModel.canDrop(event):
-            QListView.dragEnterEvent(self, event)
-
-    def sizeHint(self) -> QSize:
-        if self.model():
-            return self.sizeHintForIndex(self.model().index(0, 0)) + QSize(2 * self.frameWidth(), 2 * self.frameWidth())
-        return QListView.sizeHint(self)
-
-    def selectUrl(self, url: QUrl) -> None:
-        self.selectionModel().currentChanged.disconnect(self.clicked)
-        self.selectionModel().clear()
-        for i in range(self.model().rowCount()):
-            if self.model().index(i, 0).data(QUrlModel.UrlRole) == url:
-                self.selectionModel().select(self.model().index(i, 0), QItemSelectionModel.SelectionFlag.Select)
-                break
-        self.selectionModel().currentChanged.connect(self.clicked)
-
-    def showContextMenu(self, position: QPoint) -> None:
-        actions: list[QAction] = []
-        if self.indexAt(position).isValid():
-            action = QAction(self.tr("Remove"), self)
-            if self.indexAt(position).data(QUrlModel.UrlRole).path() == "":
-                action.setEnabled(False)
-            action.triggered.connect(self.removeEntry)
-            actions.append(action)
-        if actions:
-            QMenu.exec(actions, self.mapToGlobal(position))
-
-    def removeEntry(self) -> None:
-        indexes: list[QModelIndex] = self.selectionModel().selectedIndexes()
-        persistent_indexes: list[QPersistentModelIndex] = [QPersistentModelIndex(idx) for idx in indexes]
-        for persistent in persistent_indexes:
-            if cast(QUrl, persistent.data(QUrlModel.UrlRole)).path() != "":
-                self.model().removeRow(persistent.row())
-
-    def clicked(self, index: QModelIndex) -> None:
-        url = self.model().index(index.row(), 0).data(QUrlModel.UrlRole)
-        self.goToUrl.emit(url)
-        self.selectUrl(url)
-
-    def focusInEvent(self, event: QFocusEvent) -> None:
-        QAbstractScrollArea.focusInEvent(self, event)
-        self.viewport().update()
-
-    def event(self, event: QEvent) -> bool:
-        if event.type() == QEvent.Type.KeyRelease:
-            key_event = cast(QKeyEvent, event)
-            if key_event.key() == Qt.Key.Key_Delete:
-                self.removeEntry()
-                return True
-        return QListView.event(self, event)
 
 
 class QFileDialogExtended(QFileDialog):
