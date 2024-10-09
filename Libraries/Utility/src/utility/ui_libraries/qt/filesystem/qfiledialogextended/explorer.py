@@ -6,15 +6,15 @@ import shutil
 import subprocess
 import sys
 
-from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar, cast
+from typing import TYPE_CHECKING, cast
 
-from PyQt5.QtCore import QFile, QItemSelectionModel
-from PySide2.QtCore import QIODevice
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import (
     QDir,
+    QFile,
+    QIODevice,
+    QItemSelectionModel,
     QMimeData,
     QModelIndex,
     QSize,
@@ -23,7 +23,7 @@ from qtpy.QtCore import (
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
-from qtpy.QtGui import QIcon, QPalette, QStandardItemModel
+from qtpy.QtGui import QIcon, QImage, QPalette, QPixmap, QStandardItemModel
 from qtpy.QtWidgets import (
     QAction,
     QApplication,
@@ -34,7 +34,6 @@ from qtpy.QtWidgets import (
     QFileSystemModel,
     QInputDialog,
     QLabel,
-    QLineEdit,
     QListView,
     QMainWindow,
     QMenu,
@@ -45,68 +44,21 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from utility.ui_libraries.qt.common.actions_dispatcher import MenuActionsDispatcher
-from utility.ui_libraries.qt.common.filesystem.preview_widget import PreviewWidget
+from utility.ui_libraries.qt.common.actions_dispatcher import ActionsDispatcher
+from utility.ui_libraries.qt.common.ribbons_widget import RibbonsWidget
 from utility.ui_libraries.qt.common.tasks.actions_executor import FileActionsExecutor
 from utility.ui_libraries.qt.common.tasks.task_details_dialog import TaskDetailsDialog
 from utility.ui_libraries.qt.filesystem.qfiledialogextended.explorer_ui import Ui_QFileExplorer
+from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 
 if TYPE_CHECKING:
 
     from types import TracebackType
 
-    from PyQt5.QtGui import QResizeEvent
-    from qtpy.QtCore import QFileInfo, QModelIndex, QPoint
+    from PyQt5.QtGui import QDragMoveEvent, QResizeEvent
+    from qtpy.QtCore import QModelIndex, QPoint
     from qtpy.QtGui import QDragEnterEvent, QDropEvent
     from qtpy.QtWidgets import QWidget
-
-
-class FileOperation(Enum):
-    COPY = auto()
-    MOVE = auto()
-    DELETE = auto()
-    RENAME = auto()
-
-
-T = TypeVar("T")
-
-
-class Task(Generic[T]):
-    def __init__(
-        self,
-        func: Callable[..., T],
-        args: tuple[Any, ...],
-        callback: Callable[[T], None] | None = None,
-        error_callback: Callable[[Exception], None] | None = None,
-    ):
-        self.func: Callable[..., T] = func
-        self.args: tuple[Any, ...] = args
-        self.callback: Callable[[T], None] | None = callback
-        self.error_callback: Callable[[Exception], None] | None = error_callback
-
-    def __call__(self):
-        try:
-            result = self.func(*self.args)
-            if self.callback:
-                self.callback(result)
-        except Exception as e:  # noqa: BLE001
-            if self.error_callback:
-                self.error_callback(e)
-
-
-F = TypeVar("F", bound=Callable[..., Any])
-
-
-class Callback(Generic[F]):
-    def __init__(self, func: F, *args: Any, **kwargs: Any):
-        self.wrapped_func: F = func
-        self.args: tuple[Any, ...] = args or ()
-        self.kwargs: dict[str, Any] = kwargs or {}
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        func = self.wrapped_func(*self.args, **self.kwargs)
-        result: Any = func(*args, **kwargs)
-        return result
 
 
 class FileSystemExplorerWidget(QMainWindow):
@@ -125,150 +77,8 @@ class FileSystemExplorerWidget(QMainWindow):
 
         # Initialize basic attributes
         self.current_path: Path = Path.home() if initial_path is None else Path(initial_path)
-        self.navigation_history: list[Path] = []
-        self.navigation_index: int = -1
         self.cut_files: list[Path] | None = None
-        self.task_queue = []
 
-        self.setup_models()
-
-        # Connect signals
-        self.connect_ui_signals()
-
-        # Setup UI components
-        self.setup_ui_components()
-
-        # Setup file watcher and icon loader
-        self.setup_file_watcher_and_icon_loader()
-
-        # Setup Platform-specific features
-        self.setup_platform_features()
-
-        # Apply styling
-        self.apply_styling()
-
-        # Final UI updates
-        self.update_ui()
-        self.update_address_bar(self.current_path)
-        self.ui.dynamicView.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(self.current_path))))
-
-    def setup_ui_components(self):
-
-        # Setup other UI components
-        self.setup_sidebar()
-        self.setup_preview_widget()
-        self.setup_task_status_widget()
-        self.setup_progress_bar()
-        self.setup_drive_buttons()
-        self.setup_view_mode_actions()
-        self.setup_ribbons()
-
-        # Set visibility
-        self.ui.sidebarToolBox.setVisible(True)
-        self.ui.previewWidget.setVisible(False)
-        self.ui.taskStatusWidget.setVisible(True)
-        self.ui.ribbonTabWidget.setVisible(False)  # Hide ribbon by default
-
-        # Setup toolbar
-        self.setup_toolbar()
-
-        # Add ribbon toggle button
-        self.toggle_ribbon_button = QPushButton("▼", self)
-        self.toggle_ribbon_button.setToolTip("Toggle Ribbon Menu")
-        self.toggle_ribbon_button.setMaximumWidth(20)
-        self.ui.mainToolBar.addWidget(self.toggle_ribbon_button)
-        self.toggle_ribbon_button.clicked.connect(self.toggle_ribbon)
-
-        # Adjust UI sizes
-        self.adjust_ui_sizes()
-
-    def setup_file_watcher_and_icon_loader(self):
-        self.fs_model.directoryLoaded.connect(self.on_directory_loaded)
-        self.fs_model.setReadOnly(False)
-        self.fs_model.setOption(QFileSystemModel.Option.DontWatchForChanges, False)  # noqa: FBT003
-        self.icon_provider: QFileIconProvider = QFileIconProvider()
-        self.fs_model.setIconProvider(self.icon_provider)
-
-    def setup_platform_features(self):
-        if platform.system() == "Windows":
-            try:
-                import comtypes.client as cc  # pyright: ignore[reportMissingTypeStubs]
-                self.shell = cc.CreateObject("Shell.Application")
-            except ImportError:
-                try:
-                    import win32com.client
-                    self.shell = win32com.client.Dispatch("Shell.Application")
-                except ImportError:
-                    RobustLogger().warning("Neither comtypes nor pywin32 is available. COM interfaces will not be used.")
-                    self.shell = None
-
-    def apply_styling(self):
-        self.apply_modern_style()
-        self.apply_progress_bar_style()
-
-    def setup_sidebar(self):
-        self.ui.fileSystemTreeView.setModel(self.fs_model)
-        self.ui.fileSystemTreeView.setRootIndex(self.fs_model.index(QDir.rootPath()))
-        self.ui.fileSystemTreeView.clicked.connect(self.on_sidepanel_treeview_clicked)
-        self.ui.fileSystemTreeView.expanded.connect(self.on_treeview_expanded)
-        self.ui.fileSystemTreeView.collapsed.connect(self.on_treeview_collapsed)
-
-        for i in range(1, self.fs_model.columnCount()):
-            self.ui.fileSystemTreeView.hideColumn(i)
-
-    def setup_task_status_widget(self):
-        self.statusBar().addPermanentWidget(self.ui.taskStatusWidget)
-        self.task_status_toggle: QPushButton = QPushButton("Task Status")
-        self.task_status_toggle.setCheckable(True)
-        self.task_status_toggle.setChecked(True)
-        self.task_status_toggle.clicked.connect(self.toggle_task_status_widget)
-
-    def setup_progress_bar(self):
-        self.ui.progressBar.mousePressEvent = self.show_task_details
-        self.ui.progressBar.hide()
-
-    def setup_drive_buttons(self):
-        drive_layout = self.ui.horizontalLayout_2
-        for drive in QDir.drives():
-            drive_path = drive.path()
-            drive_button = QPushButton(drive_path)
-            drive_button.clicked.connect(lambda _, path=drive_path: self.set_current_path(path))
-            drive_layout.addWidget(drive_button)
-
-    def setup_view_mode_actions(self):
-        self.actionIconView = QAction("Icon View", self)
-        self.actionListView = QAction("List View", self)
-        self.actionDetailView = QAction("Detail View", self)
-
-        self.actionIconView.triggered.connect(lambda: self.ui.dynamicView.list_view().setViewMode(QListView.ViewMode.IconMode))
-        self.actionListView.triggered.connect(lambda: self.ui.dynamicView.list_view().setViewMode(QListView.ViewMode.ListMode))
-        self.actionDetailView.triggered.connect(lambda: self.ui.dynamicView.setCurrentWidget(self.ui.dynamicView.tree_view()))
-
-    def setup_toolbar(self):
-        self.ui.mainToolBar.addWidget(self.ui.taskStatusToggle)
-        self.ui.mainToolBar.setMovable(False)
-        self.ui.mainToolBar.setIconSize(QSize(24, 24))
-
-        self.ui.mainToolBar.addAction(self._actions.actionNewWindow)
-        self.ui.mainToolBar.addAction(self._actions.actionOpenTerminal)
-        self.ui.mainToolBar.addSeparator()
-        self.ui.mainToolBar.addAction(self._actions.actionCut)
-        self.ui.mainToolBar.addAction(self._actions.actionCopy)
-        self.ui.mainToolBar.addAction(self._actions.actionPaste)
-        self.ui.mainToolBar.addSeparator()
-        self.ui.mainToolBar.addAction(self._actions.actionRefresh)
-        self.ui.mainToolBar.addAction(self._actions.actionShowHiddenItems)
-
-        if self.ui.searchBar.isVisible():
-            self.ui.searchBar.hide()
-        else:
-            self.ui.searchBar.show()
-            self.ui.searchBar.setFocus()
-
-        self.ui.searchBar.textChanged.connect(self.on_search_text_changed)
-        self.ui.searchBar.setPlaceholderText("Search...")
-
-    def setup_models(self):
         self.fs_model: QFileSystemModel = QFileSystemModel()
         self.fs_model.setOption(QFileSystemModel.Option.DontWatchForChanges, False)  # noqa: FBT003
         self.fs_model.setOption(QFileSystemModel.Option.DontResolveSymlinks, True)  # noqa: FBT003
@@ -286,9 +96,8 @@ class FileSystemExplorerWidget(QMainWindow):
 
         # Setup actions and connections
         self.executor = FileActionsExecutor()
-        self.dispatcher: MenuActionsDispatcher = MenuActionsDispatcher(self.fs_model, self.proxy_model, self.executor)
+        self.dispatcher: ActionsDispatcher = ActionsDispatcher(self.fs_model, self, self.executor)
 
-    def connect_ui_signals(self):
         self.ui.fileSystemTreeView.clicked.connect(self.on_navigation_pane_clicked)
         for view in self.ui.dynamicView.all_views:
             view.clicked.connect(self.on_file_list_view_clicked)
@@ -318,9 +127,103 @@ class FileSystemExplorerWidget(QMainWindow):
         self.executor.ProgressUpdated.connect(self.update_progress_bar)
         self.ui.taskStatusWidget.task_clicked.connect(self.show_task_details)
 
-    def setup_ribbons(self):
-        self.ui.homeTab.setLayout(self.dispatcher.menus.home_ribbon_layout)
-        self.ui.viewTab.setLayout(self.dispatcher.menus.view_ribbon_layout)
+        # Setup other UI components
+        self.ui.fileSystemTreeView.setModel(self.fs_model)
+        self.ui.fileSystemTreeView.setRootIndex(self.fs_model.index(QDir.rootPath()))
+        self.ui.fileSystemTreeView.clicked.connect(self.on_sidepanel_treeview_clicked)
+        self.ui.fileSystemTreeView.expanded.connect(self.on_treeview_expanded)
+        self.ui.fileSystemTreeView.collapsed.connect(self.on_treeview_collapsed)
+
+        for i in range(1, self.fs_model.columnCount()):
+            self.ui.fileSystemTreeView.hideColumn(i)
+        self.ribbons_widget = RibbonsWidget(self, menus=self.dispatcher.menus)
+        self.ui.ribbonTabWidget.addWidget(self.ribbons_widget)
+        self.ui.previewWidget.setVisible(False)
+        self.statusBar().addPermanentWidget(self.ui.taskStatusWidget)
+        self.task_status_toggle: QPushButton = QPushButton("Task Status")
+        self.task_status_toggle.setCheckable(True)
+        self.task_status_toggle.setChecked(True)
+        self.task_status_toggle.clicked.connect(self.toggle_task_status_widget)
+        self.ui.progressBar.mousePressEvent = self.show_task_details
+        self.ui.progressBar.hide()
+        drive_layout = self.ui.horizontalLayout_2
+        for drive in QDir.drives():
+            drive_path = drive.path()
+            drive_button = QPushButton(drive_path)
+            drive_button.clicked.connect(lambda _, path=drive_path: self.set_current_path(path))
+            drive_layout.addWidget(drive_button)
+
+        self.dispatcher.menus.actions.actionTiles.triggered.connect(lambda: self.ui.dynamicView.list_view().setViewMode(QListView.ViewMode.IconMode))
+        self.dispatcher.menus.actions.actionList.triggered.connect(lambda: self.ui.dynamicView.list_view().setViewMode(QListView.ViewMode.ListMode))
+        self.dispatcher.menus.actions.actionDetails.triggered.connect(lambda: self.ui.dynamicView.setCurrentWidget(self.ui.dynamicView.tree_view()))
+
+        self.ui.mainToolBar.addWidget(self.ui.taskStatusToggle)
+        self.ui.mainToolBar.setMovable(False)
+        self.ui.mainToolBar.setIconSize(QSize(24, 24))
+
+        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionOpenTerminal)
+        self.ui.mainToolBar.addSeparator()
+        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionCut)
+        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionCopy)
+        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionPaste)
+        self.ui.mainToolBar.addSeparator()
+        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionRefresh)
+        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionShowHiddenItems)
+
+        if self.ui.searchBar.isVisible():
+            self.ui.searchBar.hide()
+        else:
+            self.ui.searchBar.show()
+            self.ui.searchBar.setFocus()
+
+        self.ui.searchBar.textChanged.connect(self.on_search_text_changed)
+        self.ui.searchBar.setPlaceholderText("Search...")
+
+        # Add ribbon toggle button
+        self.toggle_ribbon_button = QPushButton("▼", self)
+        self.toggle_ribbon_button.setToolTip("Toggle Ribbon Menu")
+        self.toggle_ribbon_button.setMaximumWidth(20)
+        self.ui.mainToolBar.addWidget(self.toggle_ribbon_button)
+        self.toggle_ribbon_button.clicked.connect(self.toggle_ribbon)
+
+        # Adjust UI sizes
+        self.resize(1000, 600)
+        self.ui.mainSplitter.setSizes([200, 800])
+        self.ui.sidebarToolBox.setMinimumWidth(150)
+        self.ui.dynamicView.setMinimumWidth(400)
+        self.ui.mainToolBar.setFixedHeight(30)
+        self.ui.searchAndAddressWidget.setFixedHeight(30)
+        self.fs_model.directoryLoaded.connect(self.on_directory_loaded)
+        self.fs_model.setReadOnly(False)
+        self.fs_model.setOption(QFileSystemModel.Option.DontWatchForChanges, False)  # noqa: FBT003
+        self.icon_provider: QFileIconProvider = QFileIconProvider()
+        self.fs_model.setIconProvider(self.icon_provider)
+
+        # Setup Platform-specific features
+        self.setup_platform_features()
+
+        # Apply styling
+        self.apply_modern_style()
+        self.apply_progress_bar_style()
+
+        # Final UI updates
+        self.update_ui()
+        self.ui.addressBar.update_path(self.current_path)
+        self.ui.dynamicView.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(self.current_path))))
+
+    def setup_platform_features(self):
+        """Massive TODO."""
+        if platform.system() == "Windows":
+            try:
+                import comtypes.client as cc  # pyright: ignore[reportMissingTypeStubs]
+                self.shell = cc.CreateObject("Shell.Application")
+            except ImportError:
+                try:
+                    import win32com.client
+                    self.shell = win32com.client.Dispatch("Shell.Application")
+                except ImportError:
+                    RobustLogger().warning("Neither comtypes nor pywin32 is available. COM interfaces will not be used.")
+                    self.shell = None
 
     def apply_modern_style(self):
         palette = self.palette()
@@ -412,30 +315,6 @@ class FileSystemExplorerWidget(QMainWindow):
             self.ui.ribbonTabWidget.show()
             self.toggle_ribbon_button.setText("▲")
 
-    def adjust_ui_sizes(self):
-        """Adjust UI sizes to match typical file explorer dimensions."""
-        # Set initial window size
-        # TODO: find alternatives to hardcoded window sizes
-        self.resize(1000, 600)
-
-        # Adjust splitter sizes
-        self.ui.mainSplitter.setSizes([200, 800])  # Left sidebar: 200px, Main view: 800px
-
-        # Set minimum sizes for better usability
-        # TODO: find alternative to hardcoded minimum sizes
-        self.ui.sidebarToolBox.setMinimumWidth(150)
-        self.ui.dynamicView.setMinimumWidth(400)
-
-        # Adjust toolbar and address bar heights
-        # TODO: find alternative to fixed heights please
-        self.ui.mainToolBar.setFixedHeight(30)
-        self.ui.searchAndAddressWidget.setFixedHeight(30)
-
-        # Adjust font sizes
-        font = self.font()
-        font.setPointSize(9)
-        self.setFont(font)
-
     def on_sidepanel_treeview_clicked(self, index):
         path = self.fs_model.filePath(index)
         self.set_current_path(path)
@@ -443,10 +322,6 @@ class FileSystemExplorerWidget(QMainWindow):
     def on_bookmark_clicked(self, index):
         path = self.bookmarks_model.data(index, Qt.ItemDataRole.UserRole)
         self.set_current_path(path)
-
-    def setup_actions(self):
-        # This method is no longer needed as we're using FileExplorerMenus
-        pass
 
     # Remove duplicate setup_ribbons, setup_home_ribbon, and setup_view_ribbon functions
 
@@ -677,25 +552,6 @@ class FileSystemExplorerWidget(QMainWindow):
         task_details_dialog = TaskDetailsDialog(self.executor, task_id, self)
         task_details_dialog.exec()
 
-    def rename(self):
-        selected_indexes = self.ui.dynamicView.selectedIndexes()
-        if selected_indexes:
-            file_path = Path(self.fs_model.filePath(selected_indexes[0]))  # pyright: ignore[reportArgumentType]
-            new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", QLineEdit.EchoMode.Normal, file_path.name)
-            if ok and new_name:
-                new_path = file_path.with_name(new_name)
-                if new_path.exists():
-                    QMessageBox.warning(self, "Rename", "A file with this name already exists.")
-                else:
-
-                    def redo_rename():
-                        self.executor.queue_task("rename_item", args=(file_path, new_path), on_complete=self.refresh)
-
-                    def undo_rename():
-                        self.executor.queue_task("rename_item", args=(new_path, file_path), on_complete=self.refresh)
-
-                    self.create_undo_command(redo_rename, undo_rename, f"Rename {file_path.name} to {new_name}")
-
     def update_progress(self, value: int):
         self.ui.progressBar.setValue(value)
         if value >= 100:  # noqa: PLR2004
@@ -721,10 +577,6 @@ class FileSystemExplorerWidget(QMainWindow):
         self.fs_model.setRootPath(str(self.current_path))
         self.ui.dynamicView.setRootIndex(current_index)
         self.update_ui()
-
-    def update_address_bar(self, path: os.PathLike | str):
-        path_obj = Path(path)
-        self.ui.addressBar.update_path(path_obj)
 
     def on_address_bar_path_changed(self, path: Path):
         self.change_path(path)
@@ -834,20 +686,6 @@ class FileSystemExplorerWidget(QMainWindow):
         self.executor.queue_task("prepare_copy", args=([file_path],), callback=lambda _: self.set_cut_files(None))
         self.copy_to_clipboard([file_path])
 
-    def paste_file(self) -> None:
-        """Paste the file from the clipboard."""
-        mime_data = QApplication.clipboard().mimeData()
-        if mime_data.hasUrls():
-            source_paths = [Path(url.toLocalFile()) for url in mime_data.urls()]
-            destination_path = self.current_path
-            self.executor.queue_task("paste", args=(source_paths, destination_path), callback=self.on_paste_complete)
-
-    def on_paste_complete(self, _) -> None:
-        """Handle completion of paste operation."""
-        self.refresh()
-        if self.cut_files:
-            self.executor.queue_task("delete_items", args=(self.cut_files,), callback=lambda _: self.set_cut_files(None))
-
     def set_cut_files(self, files: list[Path] | None) -> None:
         """Set the files that have been cut."""
         self.cut_files = files
@@ -865,60 +703,10 @@ class FileSystemExplorerWidget(QMainWindow):
         # Connect actions to appropriate methods
         for action in menu.actions():
             if action.data():
-                action.triggered.connect(lambda checked, a=action: self.execute_menu_action(a.data()))
+                action.triggered.connect(lambda _checked, a=action: self.execute_menu_action(a.data()))
 
         current_view = self.ui.dynamicView
         menu.exec(current_view.mapToGlobal(pos))
-
-    def get_permissions_string(self, file_info: QFileInfo) -> str:
-        permissions = []
-        if file_info.isReadable():
-            permissions.append("Read")
-        if file_info.isWritable():
-            permissions.append("Write")
-        if file_info.isExecutable():
-            permissions.append("Execute")
-        return ", ".join(permissions)
-
-    def toggle_hidden_items(self):
-        self._actions.actionShowHiddenItems.trigger()
-        self.refresh()
-
-    def toggle_all_directories(self):
-        self._actions.actionShowAllDirectories.trigger()
-        self.refresh()
-
-    def toggle_files(self):
-        self._actions.actionShowFiles.trigger()
-        self.refresh()
-
-    def toggle_executables(self):
-        self._actions.actionShowExecutables.trigger()
-        self.refresh()
-
-    def toggle_symlinks(self):
-        self._actions.actionShowSymlinks.trigger()
-        self.refresh()
-
-    def toggle_readable(self):
-        self._actions.actionShowReadable.trigger()
-        self.refresh()
-
-    def toggle_writable(self):
-        self._actions.actionShowWritable.trigger()
-        self.refresh()
-
-    def toggle_system(self):
-        self._actions.actionShowSystem.trigger()
-        self.refresh()
-
-    def toggle_dot_and_dotdot(self):
-        self._actions.actionShowDotAndDotDot.trigger()
-        self.refresh()
-
-    def toggle_dirs(self):
-        self._actions.actionShowDirs.trigger()
-        self.refresh()
 
     def focus_search_bar(self):
         self.ui.searchBar.setFocus()
@@ -951,44 +739,6 @@ class FileSystemExplorerWidget(QMainWindow):
         else:
             event.ignore()
 
-    # ... implement other file action methods ...
-
-    # Update the context menu creation to use the new file _actions
-    def create_context_menu(self, index: QModelIndex) -> QMenu:
-        menu = QMenu(self)
-        if index.isValid():
-            file_path = Path(self.fs_model.filePath(index))
-            delete_action = menu.addAction("Delete")
-            assert delete_action is not None, "Delete action is None"
-            delete_action.triggered.connect(lambda: self.executor.queue_task("delete_items", args=([file_path],), callback=self.refresh))
-            rename_action = menu.addAction("Rename")
-            assert rename_action is not None, "Rename action is None"
-            rename_action.triggered.connect(lambda: self.show_rename_dialog(file_path))
-
-            copy_action = menu.addAction("Copy")
-            assert copy_action is not None, "Copy action is None"
-            copy_action.triggered.connect(lambda: self.copy_file(file_path))
-
-            cut_action = menu.addAction("Cut")
-            assert cut_action is not None, "Cut action is None"
-            cut_action.triggered.connect(lambda: self.cut_file(file_path))
-
-            if file_path.is_dir():
-                compress_action = menu.addAction("Compress")
-                assert compress_action is not None, "Compress action is None"
-                compress_action.triggered.connect(lambda: self.compress_items([file_path]))
-
-            properties_action = menu.addAction("Properties")
-            assert properties_action is not None, "Properties action is None"
-            properties_action.triggered.connect(lambda: self.executor.queue_task("get_properties", args=(file_path,), callback=self.show_properties))
-
-        paste_action = menu.addAction("Paste")
-        assert paste_action is not None, "Paste action is None"
-        paste_action.triggered.connect(self.paste_file)
-        paste_action.setEnabled(QApplication.clipboard().mimeData().hasUrls())
-
-        return menu
-
     def show_rename_dialog(self, path: Path):
         new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", text=path.name)
         if ok and new_name:
@@ -1009,10 +759,6 @@ class FileSystemExplorerWidget(QMainWindow):
             self.executor.queue_task(
                 "compress_items", args=(paths, archive_name), callback=self.refresh, error_callback=lambda e: QMessageBox.warning(self, "Compression Error", str(e))
             )
-
-    def setup_preview_widget(self):
-        self.ui.previewWidget = PreviewWidget(self)
-        self.ui.previewWidget.setVisible(False)
 
     def update_preview(self):
         selected_indexes = self.ui.dynamicView.selectedIndexes()

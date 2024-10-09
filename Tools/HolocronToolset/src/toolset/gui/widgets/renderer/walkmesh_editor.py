@@ -4,9 +4,9 @@ import math
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from PyQt5.QtCore import QRectF, Qt, pyqtSignal as Signal
-from PyQt5.QtGui import QBrush, QColor, QPainter, QPen
-from PyQt5.QtWidgets import (
+from qtpy.QtCore import QRectF, Qt, pyqtSignal as Signal
+from qtpy.QtGui import QBrush, QColor, QPainter, QPen
+from qtpy.QtWidgets import (
     QComboBox,
     QDialog,
     QDoubleSpinBox,
@@ -24,25 +24,17 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PyQt5.uic import loadUi
+from qtpy.uic import loadUi
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm.bwm_data import BWM
-from pykotor.resource.formats.lyt.lyt_data import (
-    LYT,
-    LYTDoorHook,
-    LYTObstacle,
-    LYTRoom,
-    LYTTrack,
-)
+from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 
 if TYPE_CHECKING:
-    from PyQt5.QtCore import QPointF
-    from PyQt5.QtGui import QMouseEvent, QWheelEvent
-    from PyQt5.QtWidgets import (
-        QGraphicsItem,
-    )
+    from qtpy.QtCore import QPointF
+    from qtpy.QtGui import QMouseEvent, QWheelEvent
+    from qtpy.QtWidgets import QGraphicsItem
 
 
 class LYTEditor(QWidget):

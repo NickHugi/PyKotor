@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 import qtpy
 
-from PyQt5.QtWidgets import QPushButton
 from qtpy.QtCore import (
     QAbstractProxyModel,
     QCoreApplication,
@@ -40,14 +39,15 @@ from qtpy.QtWidgets import (
     QFileSystemModel,  # pyright: ignore[reportPrivateImportUsage]
     QLineEdit,
     QListView,
+    QPushButton,
     QToolButton,
     QTreeView,
     QWidget,
 )
 
 from utility.ui_libraries.qt.adapters.filesystem.pyfileinfogatherer import PyFileInfoGatherer as QFileInfoGatherer
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qsidebar import QSidebar
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.qfiledialog import QFileDialog as PythonQFileDialog
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.private.qsidebar_p import QSidebar
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.qfiledialog import QFileDialog as PythonQFileDialog
 from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qplatformdialoghelper import QPlatformFileDialogHelper
 
 if TYPE_CHECKING:

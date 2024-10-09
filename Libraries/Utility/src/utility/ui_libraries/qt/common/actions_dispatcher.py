@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 import contextlib
+import os
 import platform
 
-from datetime import datetime
+from enum import IntEnum
 from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Union, cast
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
-from qtpy.QtCore import QAbstractProxyModel, QByteArray, QItemSelectionModel, QMimeData, QModelIndex, QSortFilterProxyModel, QUrl, Qt
-from qtpy.QtGui import QValidator
+from qtpy.QtCore import QAbstractProxyModel, QByteArray, QDataStream, QIODevice, QMimeData, QSortFilterProxyModel, QUrl, Qt
+from qtpy.QtGui import QClipboard, QValidator
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QApplication,
+    QColumnView,
     QDialog,
     QFileDialog,
     QFileSystemModel,
@@ -24,23 +26,46 @@ from qtpy.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QStyledItemDelegate,
     QTableView,
     QVBoxLayout,
     QWidget,
 )
 
+from utility.ui_libraries.qt.common.column_options_dialog import SetDefaultColumnsDialog
+from utility.ui_libraries.qt.common.filesystem.file_properties_dialog import FilePropertiesDialog
 from utility.ui_libraries.qt.common.filesystem.filename_validator import FileNameValidator
-from utility.ui_libraries.qt.common.menu_definitions import FileExplorerMenus
+from utility.ui_libraries.qt.common.menu_definitions import FileExplorerMenus, MenuContext
 from utility.ui_libraries.qt.common.tasks.actions_executor import FileActionsExecutor
 
+try:
+    from win32com.shell import shell, shellcon  # pyright: ignore[reportMissingModuleSource]
+    HAS_PYWIN32 = True
+except ImportError:
+    HAS_PYWIN32 = False
+
+try:
+    import comtypes  # pyright: ignore[reportMissingModuleSource, reportMissingTypeStubs]
+    import comtypes.client  # pyright: ignore[reportMissingModuleSource, reportMissingTypeStubs]
+    HAS_COMTYPES = True
+except ImportError:
+    HAS_COMTYPES = False
+
 if TYPE_CHECKING:
-    from qtpy.QtCore import QPoint
+    from qtpy.QtCore import QModelIndex, QPoint
     from qtpy.QtWidgets import QMenu
 
-    from utility.ui_libraries.qt.common.expensive_functions import FileProperties
+    from utility.ui_libraries.qt.common.filesystem.file_properties_dialog import FileProperties
 
 
-class MenuActionsDispatcher:
+class DropEffect(IntEnum):
+    NONE = 0
+    CUT = 2
+    LINK = 4
+    COPY = 5
+
+
+class ActionsDispatcher:
     """Dispatches certain actions to the executor after preparing them.
 
     Actions defined here will need more context and preparation before they can call queue_task.
@@ -58,16 +83,123 @@ class MenuActionsDispatcher:
     ):
         self.fs_model: QFileSystemModel = fs_model
         self.dialog: QFileDialog = dialog
-        self.file_actions_executor: FileActionsExecutor = (
-            FileActionsExecutor()
-            if file_actions_executor is None
-            else file_actions_executor
-        )
+        self.file_actions_executor: FileActionsExecutor = FileActionsExecutor() if file_actions_executor is None else file_actions_executor
         self.file_actions_executor.TaskCompleted.connect(self._handle_task_result)
         self.file_actions_executor.TaskFailed.connect(self._handle_task_error)
         RobustLogger().debug("Connected TaskCompleted signal to handle_task_result")
-        self.menus: FileExplorerMenus = FileExplorerMenus(self)
+        self.menus: FileExplorerMenus = FileExplorerMenus()
         self.task_operations: dict[str, str] = {}
+        self.setup_signals()
+
+    def setup_signals(self):
+        self.menus.actions.actionOpen.triggered.connect(lambda: self.queue_task("open_item", self.get_selected_paths()))
+        self.menus.actions.actionOpenWith.triggered.connect(lambda: self.queue_task("open_with", self.get_selected_paths()))
+        self.menus.actions.actionProperties.triggered.connect(lambda: self.queue_task("get_properties", self.get_selected_paths()))
+        self.menus.actions.actionOpenTerminal.triggered.connect(lambda: self.queue_task("open_terminal", self.get_selected_paths()))
+        self.menus.actions.actionCut.triggered.connect(self.on_cut_items)
+        self.menus.actions.actionCopy.triggered.connect(self.on_copy_items)
+        self.menus.actions.actionPaste.triggered.connect(self.on_paste_items)
+        self.menus.actions.actionDelete.triggered.connect(lambda: self.queue_task("delete_items", self.get_selected_paths()))
+        self.menus.actions.actionRename.triggered.connect(lambda: self.queue_task("rename_item", self.get_selected_paths()))
+        self.menus.actions.actionSortByName.triggered.connect(lambda: self.prepare_sort("name"))
+        self.menus.actions.actionSortByDateModified.triggered.connect(lambda: self.prepare_sort("date_modified"))
+        self.menus.actions.actionSortByType.triggered.connect(lambda: self.prepare_sort("type"))
+        self.menus.actions.actionSortBySize.triggered.connect(lambda: self.prepare_sort("size"))
+        self.menus.actions.actionSortByDateCreated.triggered.connect(lambda: self.prepare_sort("date_created"))
+        self.menus.actions.actionSortByAuthor.triggered.connect(lambda: self.prepare_sort("author"))
+        self.menus.actions.actionSortByTitle.triggered.connect(lambda: self.prepare_sort("title"))
+        self.menus.actions.actionSortByTags.triggered.connect(lambda: self.prepare_sort("tags"))
+        self.menus.actions.actionToggleSortOrder.triggered.connect(self.toggle_sort_order)
+        self.menus.actions.actionShowFileOperations.triggered.connect(lambda: self.queue_task("show_file_operations"))
+        self.menus.actions.actionDuplicateFinder.triggered.connect(self.prepare_duplicate_finder)
+        self.menus.actions.actionHashGenerator.triggered.connect(self.prepare_hash_generator)
+        self.menus.actions.actionPermissionsEditor.triggered.connect(self.prepare_permissions_editor)
+        self.menus.actions.actionFileShredder.triggered.connect(self.prepare_file_shredder)
+        self.menus.actions.actionFileComparison.triggered.connect(self.prepare_file_comparison)
+        self.menus.actions.actionOpenInTerminal.triggered.connect(self.prepare_open_in_terminal)
+        self.menus.actions.actionCustomizeContextMenu.triggered.connect(self.prepare_customize_context_menu)
+        # self.menus.actions.actionAddColumns.triggered.connect(self.show_set_default_columns_dialog)
+        # self.menus.actions.actionSizeColumnsToFit.triggered.connect(self.size_columns_to_fit)
+        # self.menus.actions.actionItemCheckBoxes.triggered.connect(self.toggle_item_checkboxes)
+
+    def prepare_duplicate_finder(self):
+        directory = self.get_current_directory()
+        self.queue_task("find_duplicates", directory)
+
+    def prepare_hash_generator(self):
+        selected_items = self.get_selected_paths()
+        if not selected_items:
+            return
+
+        algorithms = ["MD5", "SHA1", "SHA256"]
+        algorithm, ok = QInputDialog.getItem(self.dialog, "Hash Generator", "Select hash algorithm:", algorithms, 0, editable=False)
+        if ok and algorithm:
+            self.queue_task("generate_hashes", selected_items, algorithm)
+
+    def prepare_permissions_editor(self):
+        selected_items = self.get_selected_paths()
+        if not selected_items:
+            return
+
+        self.queue_task("edit_permissions", selected_items)
+
+    def prepare_file_shredder(self):
+        selected_items = self.get_selected_paths()
+        if not selected_items:
+            return
+
+        confirm = QMessageBox.warning(
+            self.dialog,
+            "Confirm Secure Deletion",
+            "Are you sure you want to securely delete the selected files? This action cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if confirm == QMessageBox.StandardButton.Yes:
+            self.queue_task("shred_files", selected_items)
+
+    def prepare_file_comparison(self):
+        selected_items = self.get_selected_paths()
+        if len(selected_items) != 2:
+            QMessageBox.warning(self.dialog, "Invalid Selection", "Please select exactly two files for comparison.")
+            return
+
+        self.queue_task("compare_files", selected_items)
+
+    def prepare_open_in_terminal(self):
+        current_dir = self.get_current_directory()
+        self.queue_task("open_terminal", current_dir)
+
+    def prepare_customize_context_menu(self):
+        # This would typically open a dialog to customize the context menu.
+        # For now, we'll just show a message.
+        QMessageBox.information(self.dialog, "Customize Context Menu", "Context menu customization feature is not implemented yet.")
+
+    def show_set_default_columns_dialog(self):
+        dialog = SetDefaultColumnsDialog(self.dialog)
+        if dialog.exec_():
+            selected_columns = dialog.get_selected_columns()
+            self.queue_task("set_default_columns", selected_columns)
+
+    def size_columns_to_fit(self):
+        view = self.get_current_view()
+        if isinstance(view, QTableView):
+            view.resizeColumnsToContents()
+        elif isinstance(view, QTreeView):
+            for column in range(view.header().count()):
+                view.resizeColumnToContents(column)
+        elif isinstance(view, QHeaderView):
+            view.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        elif isinstance(view, QColumnView):
+            view.setSizeAdjustPolicy(QColumnView.SizeAdjustPolicy.AdjustToContents)
+
+    def toggle_item_checkboxes(self):
+        view: QAbstractItemView = self.get_current_view()
+        if not isinstance(view.itemDelegate(), QStyledItemDelegate):
+            view.setItemDelegate(QStyledItemDelegate())
+        current_state = view.itemDelegate().hasCheckBoxes if hasattr(view.itemDelegate(), "hasCheckBoxes") else False
+        view.itemDelegate().setCheckBoxes(not current_state)
+        view.viewport().update()
 
     def get_current_directory(self) -> Path:
         return Path(self.fs_model.rootPath()).absolute()
@@ -125,30 +257,23 @@ class MenuActionsDispatcher:
         shift_mod = Qt.KeyboardModifier.ShiftModifier
         shift_held = bool(QApplication.keyboardModifiers() & shift_mod) or bool(QApplication.queryKeyboardModifiers() & shift_mod)
         if not index.isValid():
-            return self.menus.menu_empty_shift if shift_held else self.menus.menu_empty
+            return self.menus.create_menu(context=MenuContext.EMPTY, shift=shift_held)
         proxy_model: QAbstractProxyModel | None = cast(Union[None, QAbstractProxyModel], self.dialog.proxyModel())
-        source_index: QModelIndex = (
-            index
-            if proxy_model is None
-            else proxy_model.mapToSource(index)
-        )
+        source_index: QModelIndex = index if proxy_model is None else proxy_model.mapToSource(index)
         if self.fs_model.isDir(source_index):
-            return self.menus.menu_dir_shift if shift_held else self.menus.menu_dir
-        return self.menus.menu_file_shift if shift_held else self.menus.menu_file
+            return self.menus.create_menu(context=MenuContext.DIR, shift=shift_held)
+        return self.menus.create_menu(context=MenuContext.FILE, shift=shift_held)
 
     def get_context_menu(self, view: QAbstractItemView, pos: QPoint) -> QMenu:
-        selectionModel: QItemSelectionModel | None = view.selectionModel()
-        if selectionModel is None:
-            view.setSelectionModel(QItemSelectionModel())
         selected_indexes = view.selectionModel().selectedIndexes()
         if not selected_indexes:
-            return self.get_menu(QModelIndex())
+            return self.menus.create_menu(context=MenuContext.EMPTY)
         if len(selected_indexes) == 1:
             return self.get_menu(selected_indexes[0])
 
         # Multiple items selected
         shift_mod = Qt.KeyboardModifier.ShiftModifier
-        shift_held = bool(QApplication.keyboardModifiers() & shift_mod) #or bool(QApplication.queryKeyboardModifiers() & shift_mod)
+        shift_held = bool(QApplication.keyboardModifiers() & shift_mod)  # or bool(QApplication.queryKeyboardModifiers() & shift_mod)
 
         # Convert selection indexes to source indexes
         source_indexes: list[QModelIndex] = []
@@ -158,23 +283,22 @@ class MenuActionsDispatcher:
             model = idx.model()
             if isinstance(model, QAbstractProxyModel):
                 source_indexes.append(model.mapToSource(idx))
-            if self.fs_model is not model:
+            elif self.fs_model is not model:
                 raise ValueError("Selected indexes are not from the same model")
-            source_indexes.append(idx)
+            else:
+                source_indexes.append(idx)
 
         all_dirs = all(self.fs_model.isDir(idx) for idx in source_indexes)
         all_files = all(not self.fs_model.isDir(idx) for idx in source_indexes)
 
-        if all_dirs:
-            return self.menus.menu_dir_shift if shift_held else self.menus.menu_dir
-        if all_files:
-            return self.menus.menu_file_shift if shift_held else self.menus.menu_file
-        return self.menus.menu_mixed_selection_shift if shift_held else self.menus.menu_mixed_selection
+        context = MenuContext.DIR if all_dirs else MenuContext.FILE if all_files else MenuContext.MIXED
+        multi = len(source_indexes) > 1
+        return self.menus.create_menu(context=context, shift=shift_held, multi=multi)
 
     def _handle_task_error(self, task_name: str, error: Exception):
         RobustLogger().error(f"Task '{task_name}' failed with error: {error}")
 
-    def prepare_sort(self, column_name, order=Qt.SortOrder.AscendingOrder):
+    def prepare_sort(self, column_name):
         column_map: dict[str, int] = {}
         for column in range(self.fs_model.columnCount()):
             header = self.fs_model.headerData(column, Qt.Horizontal, Qt.DisplayRole)
@@ -183,16 +307,15 @@ class MenuActionsDispatcher:
 
         assert isinstance(column_name, str)
         if column_name.casefold() in column_map:
-            column = column_map[column_name.casefold()]
-            self.fs_model.sort(column, order)
+            self.toggle_sort_order()
         else:
-            print(f"Warning: Unsupported sort column '{column_name}'")
+            RobustLogger().warning(f"Unsupported sort column '{column_name}'")
 
     def get_current_view(self) -> QAbstractItemView:
         for view in self.dialog.findChildren(QAbstractItemView):
             if view.isVisible() and view.isEnabled():
                 return view
-        raise ValueError("No visible view found")
+        raise RuntimeError("No visible view found")
 
     def toggle_sort_order(self):
         # stubs are wrong, cast it as correct type.
@@ -201,11 +324,7 @@ class MenuActionsDispatcher:
             current_column = proxy_model.sortColumn()
             current_order = proxy_model.sortOrder()
 
-            new_order = (
-                Qt.SortOrder.DescendingOrder
-                if current_order == Qt.SortOrder.AscendingOrder
-                else Qt.SortOrder.AscendingOrder
-            )
+            new_order = Qt.SortOrder.DescendingOrder if current_order == Qt.SortOrder.AscendingOrder else Qt.SortOrder.AscendingOrder
             proxy_model.sort(current_column, new_order)
         else:
             view: QAbstractItemView = self.get_current_view()
@@ -215,11 +334,7 @@ class MenuActionsDispatcher:
                 current_column = view.header().sortIndicatorSection()
                 current_order = view.header().sortIndicatorOrder()
 
-                new_order = (
-                    Qt.SortOrder.DescendingOrder
-                    if current_order == Qt.SortOrder.AscendingOrder
-                    else Qt.SortOrder.AscendingOrder
-                )
+                new_order = Qt.SortOrder.DescendingOrder if current_order == Qt.SortOrder.AscendingOrder else Qt.SortOrder.AscendingOrder
                 view.sortByColumn(current_column, new_order)
                 view.header().setSortIndicator(current_column, new_order)
             elif isinstance(view, QTableView):
@@ -227,21 +342,13 @@ class MenuActionsDispatcher:
                     return
                 current_column = view.horizontalHeader().sortIndicatorSection()
                 current_order = view.horizontalHeader().sortIndicatorOrder()
-                new_order = (
-                    Qt.SortOrder.DescendingOrder
-                    if current_order == Qt.SortOrder.AscendingOrder
-                    else Qt.SortOrder.AscendingOrder
-                )
+                new_order = Qt.SortOrder.DescendingOrder if current_order == Qt.SortOrder.AscendingOrder else Qt.SortOrder.AscendingOrder
                 view.sortByColumn(current_column, new_order)
                 view.horizontalHeader().setSortIndicator(current_column, new_order)
             elif isinstance(view, QHeaderView):
                 current_order = view.sortIndicatorOrder()
                 current_column = view.sortIndicatorSection()
-                next_sort_order = (
-                    Qt.SortOrder.DescendingOrder
-                    if current_order == Qt.SortOrder.AscendingOrder
-                    else Qt.SortOrder.AscendingOrder
-                )
+                next_sort_order = Qt.SortOrder.DescendingOrder if current_order == Qt.SortOrder.AscendingOrder else Qt.SortOrder.AscendingOrder
                 view.setSortIndicator(current_column, next_sort_order)
 
     def prepare_rename(self):
@@ -258,13 +365,8 @@ class MenuActionsDispatcher:
                 "File name:",
                 QLineEdit.EchoMode.Normal,
                 "",
-                flags=Qt.WindowType.Dialog
-                | Qt.WindowType.WindowStaysOnTopHint
-                | Qt.WindowType.MSWindowsFixedSizeDialogHint
-                | Qt.WindowType.WindowCloseButtonHint,
-                inputMethodHints=Qt.InputMethodHint.ImhNoAutoUppercase
-                | Qt.InputMethodHint.ImhLatinOnly
-                | Qt.InputMethodHint.ImhNoPredictiveText,
+                flags=Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.MSWindowsFixedSizeDialogHint | Qt.WindowType.WindowCloseButtonHint,
+                inputMethodHints=Qt.InputMethodHint.ImhNoAutoUppercase | Qt.InputMethodHint.ImhLatinOnly | Qt.InputMethodHint.ImhNoPredictiveText,
             )
             if not ok:
                 return
@@ -305,13 +407,8 @@ class MenuActionsDispatcher:
                 "File name:",
                 QLineEdit.EchoMode.Normal,
                 "",
-                flags=Qt.WindowType.Dialog
-                | Qt.WindowType.WindowStaysOnTopHint
-                | Qt.WindowType.MSWindowsFixedSizeDialogHint
-                | Qt.WindowType.WindowCloseButtonHint,
-                inputMethodHints=Qt.InputMethodHint.ImhNoAutoUppercase
-                | Qt.InputMethodHint.ImhLatinOnly
-                | Qt.InputMethodHint.ImhNoPredictiveText,
+                flags=Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.MSWindowsFixedSizeDialogHint | Qt.WindowType.WindowCloseButtonHint,
+                inputMethodHints=Qt.InputMethodHint.ImhNoAutoUppercase | Qt.InputMethodHint.ImhLatinOnly | Qt.InputMethodHint.ImhNoPredictiveText,
             )
             if not ok:
                 return
@@ -338,12 +435,6 @@ class MenuActionsDispatcher:
             return
         if self.confirm_deletion(paths):
             self.queue_task("delete", paths)
-
-    def prepare_properties(self):
-        paths = self.get_selected_paths()
-        if not paths:
-            return
-        self.queue_task("show_properties", paths)
 
     def prepare_create_shortcut(self):
         source_paths = self.get_selected_paths()
@@ -413,11 +504,7 @@ class MenuActionsDispatcher:
         self.queue_task("share", paths)
 
     def prepare_show_hidden_items(self, show: bool):  # noqa: FBT001
-        self.fs_model.setFilter(
-            self.fs_model.filter() | QDir.Hidden
-            if show
-            else self.fs_model.filter() & ~QDir.Hidden
-        )
+        self.fs_model.setFilter(self.fs_model.filter() | QDir.Hidden if show else self.fs_model.filter() & ~QDir.Hidden)
         self.queue_task("refresh_view")
 
     def prepare_show_file_extensions(self, show: bool):  # noqa: FBT001
@@ -478,12 +565,10 @@ class MenuActionsDispatcher:
         self.queue_task("delete_items", paths)
 
     def on_paste_items(self):
+        print("on_paste_items")
         self._handle_paste()
 
-    def _prepare_clipboard_data(
-        self,
-        is_cut: bool,
-    ):  # noqa: FBT001, FBT002
+    def _prepare_clipboard_data(self, *, is_cut: bool):
         paths = self.get_selected_paths()
         if not paths:
             return
@@ -492,30 +577,32 @@ class MenuActionsDispatcher:
         urls = [QUrl.fromLocalFile(str(item)) for item in paths]
         mime_data.setUrls(urls)
 
-        if is_cut:
-            mime_data.setData("Preferred DropEffect", QByteArray(b"2"))  # TODO: ??? find the docs on this
+        # Set the Preferred DropEffect
+        drop_effect = DropEffect.CUT if is_cut else DropEffect.COPY
+        effect_data = QByteArray()
+        data_stream = QDataStream(effect_data, QIODevice.OpenMode(QIODevice.OpenModeFlag.WriteOnly))
+        data_stream.setByteOrder(QDataStream.ByteOrder.LittleEndian)
+        data_stream.writeInt32(drop_effect.value)
+        mime_data.setData("Preferred DropEffect", effect_data)
+
+        # Set platform-specific data
         if platform.system() == "Windows":
             file_descriptor_list = [f"<{p.absolute()}>" for p in paths]
             file_contents = "\n".join(file_descriptor_list)
-            mime_data.setData("FileGroupDescriptor", QByteArray(file_contents.encode()))
+            mime_data.setData("FileGroupDescriptorW", QByteArray(file_contents.encode("utf-16-le")))
         elif platform.system() == "Darwin":
             import plistlib
-
             plist_data = {"NSFilenamesPboardType": [str(item) for item in paths]}
             mime_data.setData("com.apple.NSFilePromiseContent", QByteArray(plistlib.dumps(plist_data)))
         else:  # Linux and other Unix-like
             action = "cut" if is_cut else "copy"
             mime_data.setData("x-special/gnome-copied-files", QByteArray(f"{action}\n".encode() + b"\n".join(str(item).encode() for item in paths)))
 
-        QApplication.clipboard().setMimeData(mime_data)
+        QApplication.clipboard().setMimeData(mime_data, QClipboard.Mode.Clipboard)
         self.copied_items = paths
         self.is_cut = is_cut
 
-    def _handle_paste(self):  # noqa: FBT001
-        paths = self.get_selected_paths()
-        if not paths:
-            return
-
+    def _handle_paste(self):
         destination_folder = self.get_current_directory()
         clipboard = QApplication.clipboard()
         mime_data = clipboard.mimeData()
@@ -523,50 +610,61 @@ class MenuActionsDispatcher:
         if mime_data.hasUrls():
             urls = mime_data.urls()
             sources = [Path(url.toLocalFile()) for url in urls]
-            is_cut = mime_data.data("Preferred DropEffect") == b"2"
-            self.queue_task("paste", sources, destination_folder, is_cut)
-            if is_cut:
-                clipboard.clear()  # Clear clipboard after cut-paste operation
+            is_cut = self._get_preferred_drop_effect(mime_data) == DropEffect.CUT
+
+            if self._can_paste_data_object(destination_folder, mime_data):
+                if is_cut:
+                    self.queue_task("move_item", sources, destination_folder)
+                else:
+                    self.queue_task("copy_item", sources, destination_folder)
+                if is_cut:
+                    clipboard.clear()
+            else:
+                QMessageBox.warning(self.dialog, "Paste Error", "Cannot paste the items to the selected destination.")
+
+    def _can_paste_data_object(self, destination: Path, mime_data: QMimeData) -> bool:
+        if not destination.is_dir() or not os.access(str(destination), os.W_OK):
+            return False
+
+        if mime_data.hasUrls():
+            for url in mime_data.urls():
+                source_path = Path(url.toLocalFile())
+                if not source_path.exists():
+                    return False
+                if source_path.is_dir() and destination in source_path.parents:
+                    return False
+
+        return True
+
+    def _get_preferred_drop_effect(self, mime_data: QMimeData) -> int:
+        effect_data = mime_data.data("Preferred DropEffect")
+        if effect_data:
+            return int.from_bytes(effect_data, byteorder="little")
+        return DropEffect.COPY.value
 
     def _handle_task_result(self, task_id: str, result: Any):
+        """Maps the task_id to the operation's callback function and calls it with the result."""
         RobustLogger().debug(f"Handling task result for task_id: {task_id}, result: {result}")
         operation = self.task_operations.get(task_id)
         if operation == "get_properties":
             self.show_properties_dialog(result)
-        # Clean up the task_operations dictionary
-        self.task_operations.pop(task_id, None)
-
-    def _get_relative_time(self, timestamp: datetime) -> str:
-        now = datetime.now().astimezone()
-        timestamp = timestamp.replace(tzinfo=now.tzinfo)  # Make timestamp offset-aware
-        delta = now - timestamp
-        if delta.days > 365:  # noqa: PLR2004
-            return f"{delta.days // 365} years ago"
-        if delta.days > 30:  # noqa: PLR2004
-            return f"{delta.days // 30} months ago"
-        if delta.days > 0:
-            return f"{delta.days} days ago"
-        if delta.seconds > 3600:  # noqa: PLR2004
-            return f"{delta.seconds // 3600} hours ago"
-        if delta.seconds > 60:  # noqa: PLR2004
-            return f"{delta.seconds // 60} minutes ago"
-        return "Just now"
+        elif operation == "batch_rename":
+            self.result_batch_rename(result)
+        elif operation == "find_duplicates":
+            self.result_find_duplicates(result)  # TODO: create a dialog for this
+        elif operation == "generate_hashes":
+            self.result_generate_hashes(result)  # TODO: create a dialog for this
+        elif operation == "shred_files":
+            self.fs_model.refreshFiles()
+        else:
+            print("Operation completed successfully:", operation)
+        self.task_operations.pop(task_id)
 
     def show_properties_dialog(self, properties: list[FileProperties]):
         for prop in properties:
             RobustLogger().debug(f"Showing properties dialog for: {prop.name}")
-            msg = QMessageBox(self.dialog)
-            msg.setWindowTitle("File Properties")
-            msg.setText(f"Properties for {prop.name}")
-            msg.setInformativeText(f"""
-            Type: {prop.type}
-            Size: {prop.size}
-            Size on disk: {prop.size_on_disk}
-            Created: {prop.created} ({self._get_relative_time(datetime.fromisoformat(prop.created))})
-            Modified: {prop.modified} ({self._get_relative_time(datetime.fromisoformat(prop.modified))})
-            Accessed: {prop.accessed} ({self._get_relative_time(datetime.fromisoformat(prop.accessed))})
-            """)
-            msg.show()
+            dialog = FilePropertiesDialog(prop, self.dialog)
+            dialog.show()  # don't block
 
     def queue_task(self, operation: str, *args, **kwargs) -> str:
         task_id = self.file_actions_executor.queue_task(operation, args=args, kwargs=kwargs)
@@ -594,7 +692,7 @@ if __name__ == "__main__":
     fs_model = tree_view.model()
     assert isinstance(fs_model, QFileSystemModel)
     file_actions_executor = FileActionsExecutor()
-    menu_actions_dispatcher = MenuActionsDispatcher(fs_model, file_dialog, file_actions_executor)
+    menu_actions_dispatcher = ActionsDispatcher(fs_model, file_dialog, file_actions_executor)
 
     def on_task_failed(task_id: str, error: Exception):
         RobustLogger().exception(f"Task {task_id} failed", exc_info=error)
@@ -605,6 +703,7 @@ if __name__ == "__main__":
         error_msg.setDetailedText("".join(traceback.format_exception(type(error), error, None)))
         error_msg.setWindowTitle("Task Failed")
         error_msg.exec_()
+
     file_actions_executor.TaskFailed.connect(on_task_failed)
     views = file_dialog.findChildren(QAbstractItemView)
 

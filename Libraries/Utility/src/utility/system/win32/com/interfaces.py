@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ctypes import POINTER, POINTER as C_POINTER, Structure, byref, c_bool, c_char_p, c_int, c_uint, c_ulong, c_void_p, c_wchar_p, windll
+from ctypes import POINTER, POINTER as C_POINTER, Structure, byref, c_bool, c_char_p, c_int, c_uint, c_ulong, c_ulonglong, c_void_p, c_wchar_p, windll
 from ctypes.wintypes import BOOL, DWORD, HWND, LPCWSTR, LPWSTR, ULONG
 from enum import IntFlag
 from typing import TYPE_CHECKING, Callable, ClassVar, Sequence
@@ -267,6 +267,56 @@ class IShellItem(comtypes.IUnknown):
         if hr != 0:
             raise OSError(f"Failed to create IShellItem from path. HRESULT: {hr}")
         return pShellItem
+
+class IShellItem2(IShellItem):
+    _iid_ = IID_IShellItem2
+    _methods_: ClassVar[list[_ComMemberSpec]] = [
+        COMMETHOD([], HRESULT, "GetPropertyStore",
+                  (["in"], c_uint, "flags"),
+                  (["in"], POINTER(GUID), "riid"),
+                  (["out"], POINTER(c_void_p), "ppv")),
+        COMMETHOD([], HRESULT, "GetPropertyStoreWithCreateObject",
+                  (["in"], c_uint, "flags"),
+                  (["in"], POINTER(IUnknown), "punkCreateObject"),
+                  (["in"], POINTER(GUID), "riid"),
+                  (["out"], POINTER(c_void_p), "ppv")),
+        COMMETHOD([], HRESULT, "GetPropertyStoreForKeys",
+                  (["in"], POINTER(GUID), "rgKeys"),
+                  (["in"], c_uint, "cKeys"),
+                  (["in"], c_uint, "flags"),
+                  (["in"], POINTER(GUID), "riid"),
+                  (["out"], POINTER(c_void_p), "ppv")),
+        COMMETHOD([], HRESULT, "GetPropertyDescriptionList",
+                  (["in"], POINTER(GUID), "keyType"),
+                  (["in"], POINTER(GUID), "riid"),
+                  (["out"], POINTER(c_void_p), "ppv")),
+        COMMETHOD([], HRESULT, "Update",
+                  (["in"], POINTER(comtypes.IUnknown), "pbc")),
+        COMMETHOD([], HRESULT, "GetProperty",
+                  (["in"], POINTER(GUID), "key"),
+                  (["out"], POINTER(c_void_p), "ppv")),
+        COMMETHOD([], HRESULT, "GetCLSID",
+                  (["in"], POINTER(GUID), "key"),
+                  (["out"], POINTER(GUID), "pclsid")),
+        COMMETHOD([], HRESULT, "GetFileTime",
+                  (["in"], POINTER(GUID), "key"),
+                  (["out"], POINTER(c_void_p), "pft")),
+        COMMETHOD([], HRESULT, "GetInt32",
+                  (["in"], POINTER(GUID), "key"),
+                  (["out"], POINTER(c_int), "pi")),
+        COMMETHOD([], HRESULT, "GetString",
+                  (["in"], POINTER(GUID), "key"),
+                  (["out"], POINTER(LPWSTR), "ppsz")),
+        COMMETHOD([], HRESULT, "GetUInt32",
+                  (["in"], POINTER(GUID), "key"),
+                  (["out"], POINTER(c_uint), "pui")),
+        COMMETHOD([], HRESULT, "GetUInt64",
+                  (["in"], POINTER(GUID), "key"),
+                  (["out"], POINTER(c_ulonglong), "pull")),
+        COMMETHOD([], HRESULT, "GetBool",
+                  (["in"], POINTER(GUID), "key"),
+                  (["out"], POINTER(c_int), "pf"))
+    ]
 
 class ShellItem(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IShellItem]

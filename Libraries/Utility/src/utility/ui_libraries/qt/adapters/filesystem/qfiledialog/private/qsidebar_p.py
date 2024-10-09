@@ -4,13 +4,42 @@ import os
 
 from typing import TYPE_CHECKING, Any, Iterable, cast
 
-from qtpy.QtCore import QDir, QFileInfo, QMimeData, QModelIndex, QSize, QUrl, Qt
-from qtpy.QtGui import QStandardItemModel
-from qtpy.QtWidgets import QFileIconProvider, QFileSystemModel  # pyright: ignore[reportPrivateImportUsage]
+from qtpy.QtCore import (
+    QDir,
+    QEvent,
+    QFileInfo,
+    QItemSelectionModel,
+    QMimeData,
+    QModelIndex,
+    QPersistentModelIndex,
+    QSize,
+    QUrl,
+    Qt,
+    Signal,  # pyright: ignore[reportPrivateImportUsage]
+)
+from qtpy.QtGui import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QIcon,
+    QKeyEvent,
+    QStandardItemModel,
+)
+from qtpy.QtWidgets import QAbstractItemView, QAbstractScrollArea, QFileIconProvider, QFileSystemModel, QListView, QMenu, QStyle, QStyledItemDelegate
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QModelIndex, QObject
-    from qtpy.QtGui import QDragEnterEvent
+    from qtpy.QtCore import QModelIndex, QObject, QPoint
+    from qtpy.QtGui import QDragEnterEvent, QFocusEvent
+    from qtpy.QtWidgets import QStyleOptionViewItem, QWidget  # pyright: ignore[reportPrivateImportUsage]
+
+
+class QSideBarDelegate(QStyledItemDelegate):
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+
+    def initStyleOption(self, option: QStyleOptionViewItem, index: QModelIndex) -> None:
+        super().initStyleOption(option, index)
+        value = index.data(QUrlModel.EnabledRole)
+        if value is not None and not value:
+            option.state &= ~QStyle.StateFlag.State_Enabled  # pyright: ignore[reportAttributeAccessIssue]
 
 
 class QUrlModel(QStandardItemModel):
@@ -33,7 +62,7 @@ class QUrlModel(QStandardItemModel):
     def mimeTypes(self) -> list[str]:
         return ["text/uri-list"]
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
+    def flags(self, index: QModelIndex) -> Qt.ItemFlag | Qt.ItemFlags:  # pyright: ignore[reportIncompatibleMethodOverride]
         flags = super().flags(index)
         if index.isValid():
             flags &= ~Qt.ItemFlag.ItemIsEditable
@@ -65,13 +94,25 @@ class QUrlModel(QStandardItemModel):
                 return False
         return True
 
-    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+    def dropMimeData(
+        self,
+        data: QMimeData,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
         if self.mimeTypes()[0] not in data.formats():
             return False
         self.addUrls(data.urls(), row)
         return True
 
-    def setData(self, index: QModelIndex, value: Any, role: int = Qt.ItemDataRole.EditRole) -> bool:
+    def setData(
+        self,
+        index: QModelIndex,
+        value: Any,
+        role: int = Qt.ItemDataRole.EditRole,
+    ) -> bool:
         if isinstance(value, QUrl):
             url = value
             assert self.fileSystemModel is not None, "fileSystemModel is None"
@@ -87,9 +128,15 @@ class QUrlModel(QStandardItemModel):
             return True
         return super().setData(index, value, role)
 
-    def setUrl(self, index: QModelIndex, url: QUrl, dirIndex: QModelIndex):  # noqa: N803
+    def setUrl(
+        self,
+        index: QModelIndex,
+        url: QUrl,
+        dirIndex: QModelIndex,  # noqa: N803
+    ):
         self.setData(index, url, self.UrlRole)
         if not url.path().strip():
+            assert self.fileSystemModel is not None, "fileSystemModel is None"
             self.setData(index, self.fileSystemModel.myComputer())
             self.setData(index, self.fileSystemModel.myComputer(Qt.ItemDataRole.DecorationRole), Qt.ItemDataRole.DecorationRole)
         else:
@@ -118,7 +165,7 @@ class QUrlModel(QStandardItemModel):
 
             if index.data() != newName:
                 self.setData(index, newName)
-            oldIcon = index.data(Qt.ItemDataRole.DecorationRole)
+            oldIcon = cast(QIcon, index.data(Qt.ItemDataRole.DecorationRole))
             if oldIcon.cacheKey() != newIcon.cacheKey():
                 self.setData(index, newIcon, Qt.ItemDataRole.DecorationRole)
 
@@ -128,7 +175,13 @@ class QUrlModel(QStandardItemModel):
         self.watching.clear()
         self.addUrls(list_, 0)
 
-    def addUrls(self, list_: list[QUrl], row: int, move: bool = False):  # noqa: FBT001, FBT002
+    def addUrls(
+        self,
+        list_: list[QUrl],
+        row: int,
+        *,
+        move: bool = True,
+    ):
         if row == -1:
             row = self.rowCount()
         row = min(row, self.rowCount())
@@ -144,7 +197,7 @@ class QUrlModel(QStandardItemModel):
 
             for j in range(self.rowCount()):
                 if move:
-                    local = self.index(j, 0).data(self.UrlRole).toLocalFile()
+                    local = cast(QUrl, self.index(j, 0).data(self.UrlRole)).toLocalFile()
                     if (
                         cleanUrl.casefold() == local.casefold()
                         if os.name == "nt"
@@ -194,7 +247,7 @@ class QUrlModel(QStandardItemModel):
                 and index.column() <= bottomRight.column()
                 and index.parent() == parent
             ):
-                    self.changed(self.watching[i].path)
+                self.changed(self.watching[i].path)
 
     def layoutChanged(self):
         paths: list[str] = [item.path for item in self.watching]
@@ -212,7 +265,92 @@ class QUrlModel(QStandardItemModel):
             if cast(QUrl, idx.data(self.UrlRole)).toLocalFile() == path:
                 self.setData(idx, idx.data(self.UrlRole))
 
-    class WatchItem:
+    class WatchItem:  # noqa: D106
         def __init__(self, index: QModelIndex, path: str):
             self.index: QModelIndex = index
             self.path: str = path
+
+
+class QSidebar(QListView):
+    goToUrl = Signal(QUrl)
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.urlModel: QUrlModel | None = None
+
+    def urls(self) -> list[QUrl]:
+        assert self.urlModel is not None, f"{type(self).__name__}.urls: No URL model setup."
+        return self.urlModel.urls()
+
+    def setUrls(self, urls: list[QUrl]) -> None:
+        assert self.urlModel is not None, f"{type(self).__name__}.setUrls: No URL model setup."
+        self.urlModel.setUrls(urls)
+
+    def setModelAndUrls(self, model: QFileSystemModel, newUrls: list[QUrl]) -> None:  # noqa: N803
+        self.setUniformItemSizes(True)
+        self.urlModel = QUrlModel(self)
+        self.urlModel.setFileSystemModel(model)
+        self.setModel(self.urlModel)
+        self.setItemDelegate(QSideBarDelegate(self))
+
+        self.selectionModel().currentChanged.connect(self.clicked)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.showContextMenu)
+        self.urlModel.setUrls(newUrls)
+        self.setCurrentIndex(self.model().index(0, 0))
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if self.urlModel and self.urlModel.canDrop(event):
+            QListView.dragEnterEvent(self, event)
+
+    def sizeHint(self) -> QSize:
+        if self.model():
+            return self.sizeHintForIndex(self.model().index(0, 0)) + QSize(
+                2 * self.frameWidth(), 2 * self.frameWidth()
+            )
+        return QListView.sizeHint(self)
+
+    def selectUrl(self, url: QUrl) -> None:
+        self.selectionModel().currentChanged.disconnect(self.clicked)
+        self.selectionModel().clear()
+        for i in range(self.model().rowCount()):
+            if self.model().index(i, 0).data(QUrlModel.UrlRole) == url:
+                self.selectionModel().select(self.model().index(i, 0), QItemSelectionModel.SelectionFlag.Select)
+                break
+        self.selectionModel().currentChanged.connect(self.clicked)
+
+    def showContextMenu(self, position: QPoint) -> None:
+        actions: list[QAction] = []
+        if self.indexAt(position).isValid():
+            action = QAction(self.tr("Remove"), self)
+            if cast(QUrl, self.indexAt(position).data(QUrlModel.UrlRole)).path().strip():
+                action.setEnabled(False)
+            action.triggered.connect(self.removeEntry)
+            actions.append(action)
+        if actions:
+            QMenu.exec(actions, self.mapToGlobal(position))
+
+    def removeEntry(self) -> None:
+        indexes: list[QModelIndex] = self.selectionModel().selectedIndexes()
+        persistent_indexes: list[QPersistentModelIndex] = [QPersistentModelIndex(idx) for idx in indexes]
+        for persistent in persistent_indexes:
+            if not cast(QUrl, persistent.data(QUrlModel.UrlRole)).path().strip():
+                self.model().removeRow(persistent.row())
+
+    def clicked(self, index: QModelIndex) -> None:
+        url = self.model().index(index.row(), 0).data(QUrlModel.UrlRole)
+        self.goToUrl.emit(url)
+        self.selectUrl(url)
+
+    def focusInEvent(self, event: QFocusEvent) -> None:
+        QAbstractScrollArea.focusInEvent(self, event)
+        self.viewport().update()
+
+    def event(self, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.KeyRelease:
+            key_event = cast(QKeyEvent, event)
+            if key_event.key() == Qt.Key.Key_Delete:
+                self.removeEntry()
+                return True
+        return QListView.event(self, event)

@@ -22,12 +22,13 @@ from qtpy.QtWidgets import (
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QLayout
+    from typing_extensions import Self
 
     from utility.ui_libraries.qt.filesystem.qfiledialogextended.qfiledialogextended import QFileDialogExtended
 
 
 class Ui_QFileDialogExtended(QFileDialog):  # noqa: N801
-    def setupUi(self, dialog: QFileDialogExtended):
+    def setupUi(self, dialog: QFileDialogExtended) -> Self:
         # Main layout
         gridlayout: QLayout | None = dialog.layout()
         assert isinstance(gridlayout, QGridLayout)
@@ -86,7 +87,7 @@ class Ui_QFileDialogExtended(QFileDialog):  # noqa: N801
         stacked_widget: QStackedWidget | None = dialog.findChild(QStackedWidget, "stackedWidget")
         assert isinstance(stacked_widget, QStackedWidget)
         self.stackedWidget: QStackedWidget = stacked_widget
-        assert self.stackedWidget.count() == 2, "StackedWidget should contain 2 pages"
+        assert self.stackedWidget.count() == 2, "StackedWidget should contain 2 pages"  # noqa: PLR2004
 
         # List view page
         page: QWidget | None = self.stackedWidget.widget(0)

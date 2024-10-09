@@ -1,27 +1,30 @@
 from __future__ import annotations
 
+import mimetypes
 import os
 import platform
 import shlex
 import shutil
+import stat
 import struct
 import subprocess
 import tarfile
 import time
 import zipfile
 
-from dataclasses import dataclass
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Sequence, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Sequence, TypeVar
 
 import send2trash
 import structlog
 
 from qtpy.QtWidgets import QFileDialog
 
+from utility.misc import generate_hash, get_file_attributes
 from utility.system.os_helper import get_size_on_disk
+from utility.ui_libraries.qt.common.filesystem.file_properties_dialog import FileProperties
 
 if TYPE_CHECKING:
     from ctypes import _CData
@@ -32,20 +35,9 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 
-@dataclass(frozen=True)
-class FileProperties:
-    name: str
-    type: str
-    size: str
-    size_on_disk: str
-    created: str
-    modified: str
-    accessed: str
-
-
 T = TypeVar("T")
 
-def handle_operation(func):
+def handle_operation(func: Callable[..., T]):
     @wraps(func)
     def wrapper(
         *args: Any,
@@ -72,7 +64,7 @@ def handle_operation(func):
     return wrapper
 
 
-def handle_multiple(func):
+def handle_multiple(func: Callable[..., T]):
     @wraps(func)
     def wrapper(
         cls: type[FileOperations],
@@ -82,7 +74,7 @@ def handle_multiple(func):
         pause_flag: ValueProxy[bool],
         cancel_flag: ValueProxy[bool],
         **kwargs: Any,
-    ):
+    ) -> list[T | None]:
 
         total_items = len(paths)
         results = []
@@ -159,9 +151,10 @@ class FileOperations:
             for command in file_managers:
                 try:
                     subprocess.run(command, check=True)  # noqa: S603
-                    return
                 except subprocess.CalledProcessError:  # noqa: PERF203, S112
                     continue
+                else:
+                    return
 
             # Fallback to opening the parent directory
             subprocess.run(["xdg-open", str(file_path.parent)], check=True)  # noqa: S603
@@ -240,24 +233,91 @@ class FileOperations:
 
     @classmethod
     @handle_multiple
-    def paste_item(cls, source: Path, destination: Path) -> None:
-        if source.is_file():
-            shutil.copy2(source, destination)
-        elif source.is_dir():
-            shutil.copytree(source, destination / source.name)
-
-    @classmethod
-    @handle_multiple
     def get_properties(cls, path: Path) -> FileProperties:
         info = path.stat()
+
+        is_symlink = path.is_symlink()
+        symlink_target = os.readlink(path) if is_symlink else ""
+
+        if os.name == "posix":
+            try:
+                import pwd
+
+                owner = pwd.getpwuid(info.st_uid).pw_name
+            except KeyError:
+                owner = str(info.st_uid)
+
+            try:
+                import grp
+
+                group = grp.getgrgid(info.st_gid).gr_name
+            except KeyError:
+                group = str(info.st_gid)
+        elif os.name == "nt":
+            import ctypes
+
+            from ctypes import wintypes
+
+            # Define necessary structures and functions
+            class SECURITY_DESCRIPTOR(ctypes.Structure):  # noqa: N801
+                _fields_ = [("buf", wintypes.BYTE * 256)]  # noqa: RUF012
+
+            class ACL(ctypes.Structure):
+                _fields_ = [("buf", wintypes.BYTE * 256)]  # noqa: RUF012
+
+            GetFileSecurity = ctypes.windll.advapi32.GetFileSecurityW
+            GetSecurityDescriptorOwner = ctypes.windll.advapi32.GetSecurityDescriptorOwner
+            LookupAccountSid = ctypes.windll.advapi32.LookupAccountSidW
+
+            # Get file security information
+            sd = SECURITY_DESCRIPTOR()
+            owner_sid = ctypes.c_void_p()
+            GetFileSecurity(str(path), 1, ctypes.byref(sd), 256, ctypes.byref(ctypes.c_uint32()))  # noqa: S113
+            GetSecurityDescriptorOwner(ctypes.byref(sd), ctypes.byref(owner_sid), ctypes.byref(ctypes.c_bool()))
+
+            # Look up owner name
+            owner_name = ctypes.create_unicode_buffer(256)
+            owner_name_size = wintypes.DWORD(256)
+            domain_name = ctypes.create_unicode_buffer(256)
+            domain_name_size = wintypes.DWORD(256)
+            sid_type = wintypes.DWORD()
+            LookupAccountSid(None, owner_sid, owner_name, ctypes.byref(owner_name_size),
+                             domain_name, ctypes.byref(domain_name_size), ctypes.byref(sid_type))
+
+            owner = owner_name.value
+            group = domain_name.value
+
+        attributes = get_file_attributes(path)
+
         return FileProperties(
             name=path.name,
+            path=str(path.absolute()),
             type="Directory" if path.is_dir() else "File",
-            size=FileOperations.format_size(info.st_size),
-            size_on_disk=FileOperations.format_size(get_size_on_disk(path, info)),
-            created=FileOperations.format_time(info.st_ctime),
-            modified=FileOperations.format_time(info.st_mtime),
-            accessed=FileOperations.format_time(info.st_atime),
+            size=cls.format_size(info.st_size),
+            size_on_disk=cls.format_size(get_size_on_disk(path, info)),
+            created=cls.format_time(info.st_ctime),
+            modified=cls.format_time(info.st_mtime),
+            accessed=cls.format_time(info.st_atime),
+            mime_type=mimetypes.guess_type(path)[0] or "Unknown",
+            owner=owner,
+            group=group,
+            permissions=stat.filemode(info.st_mode),
+            inode=info.st_ino,
+            num_hard_links=info.st_nlink,
+            device=info.st_dev,
+            is_symlink=is_symlink,
+            symlink_target=symlink_target,
+            md5=generate_hash(path, "md5"),
+            sha1=generate_hash(path, "sha1"),
+            sha256=generate_hash(path, "sha256"),
+            is_hidden=attributes["is_hidden"],
+            is_system=attributes["is_system"],
+            is_archive=attributes["is_archive"],
+            is_compressed=attributes["is_compressed"],
+            is_encrypted=attributes["is_encrypted"],
+            is_readonly=attributes["is_readonly"],
+            is_temporary=attributes["is_temporary"],
+            extension=path.suffix,
         )
 
     @classmethod

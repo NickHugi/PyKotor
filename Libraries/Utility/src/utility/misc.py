@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import platform
+import stat
 import sys
 
 from contextlib import suppress
@@ -193,7 +195,7 @@ def is_frozen() -> bool:
 
 def has_attr_excluding_object(cls: type, attr_name: str) -> bool:
     # Exclude the built-in 'object' class
-    mro_classes = [c for c in cls.mro() if c != object]
+    mro_classes = [c for c in cls.mro() if c is not object]
 
     return any(attr_name in base_class.__dict__ for base_class in mro_classes)
 
@@ -241,6 +243,67 @@ def generate_hash(
                 hasher.update(chunk)
 
     return hasher.hexdigest(64) if "shake" in hash_algo else hasher.hexdigest()  # type: ignore[call-arg]
+
+
+def get_file_attributes(path: Path) -> dict:
+    attributes = {
+        "is_hidden": False,
+        "is_system": False,
+        "is_archive": False,
+        "is_compressed": False,
+        "is_encrypted": False,
+        "is_readonly": False,
+        "is_temporary": False,
+    }
+
+    # Check if file is hidden
+    attributes["is_hidden"] = (
+        path.name.startswith(".")
+        or bool(path.stat().st_file_attributes & stat.FILE_ATTRIBUTE_HIDDEN)
+        if hasattr(stat, "FILE_ATTRIBUTE_HIDDEN")
+        else False
+    )
+
+    # Check if file is read-only
+    attributes["is_readonly"] = not os.access(path, os.W_OK)
+
+    # Check if file is temporary (based on name)
+    attributes["is_temporary"] = path.name.endswith(".tmp")
+
+    # Platform-specific checks
+    if os.name == "nt":  # Windows
+        try:
+            import ctypes
+            FILE_ATTRIBUTE_SYSTEM = 0x4
+            FILE_ATTRIBUTE_ARCHIVE = 0x20
+            FILE_ATTRIBUTE_COMPRESSED = 0x800
+            FILE_ATTRIBUTE_ENCRYPTED = 0x4000
+
+            attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))
+            if attrs != -1:
+                attributes["is_system"] = bool(attrs & FILE_ATTRIBUTE_SYSTEM)
+                attributes["is_archive"] = bool(attrs & FILE_ATTRIBUTE_ARCHIVE)
+                attributes["is_compressed"] = bool(attrs & FILE_ATTRIBUTE_COMPRESSED)
+                attributes["is_encrypted"] = bool(attrs & FILE_ATTRIBUTE_ENCRYPTED)
+        except Exception:
+            logging.getLogger(__name__).exception(f"Failed to get file attributes for: '{path}'")
+    else:  # Unix-like systems
+        # Check if file is system (based on location)
+        attributes["is_system"] = str(path).startswith(("/etc", "/var", "/bin", "/sbin", "/usr/bin", "/usr/sbin"))
+
+        # Check if file is archived (based on extension)
+        archive_extensions = {".tar", ".gz", ".bz2", ".xz", ".zip", ".7z", ".rar"}
+        attributes["is_archive"] = path.suffix.lower() in archive_extensions
+
+        # Check if file is compressed (based on extension)
+        compressed_extensions = {".gz", ".bz2", ".xz", ".zip", ".7z", ".rar"}
+        attributes["is_compressed"] = path.suffix.lower() in compressed_extensions
+
+        # Check if file is encrypted (based on extension, not reliable)
+        encrypted_extensions = {".gpg", ".enc", ".asc"}
+        attributes["is_encrypted"] = path.suffix.lower() in encrypted_extensions
+
+    return attributes
 
 
 def indent(

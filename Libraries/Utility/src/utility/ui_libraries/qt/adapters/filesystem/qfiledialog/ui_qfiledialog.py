@@ -9,13 +9,24 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 from qtpy import QtCore
-from qtpy.QtWidgets import QComboBox, QDialogButtonBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QSizePolicy, QSplitter, QStackedWidget, QToolButton, QVBoxLayout, QWidget
+from qtpy.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDialogButtonBox,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QSplitter,
+    QStackedWidget,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qfiledialogcombobox import QFileDialogComboBox
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qfiledialoglineedit import QFileDialogLineEdit
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qfiledialoglistview import QFileDialogListView
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qfiledialogtreeview import QFileDialogTreeView
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qsidebar import QSidebar
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.private.qfiledialog_p import QFileDialogComboBox, QFileDialogLineEdit, QFileDialogListView, QFileDialogTreeView
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.private.qsidebar_p import QSidebar
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QFileDialog
@@ -198,7 +209,7 @@ class Ui_QFileDialog:  # noqa: N801
         QFileDialog.setTabOrder(self.buttonBox, self.fileTypeCombo)
 
     def retranslateUi(self, QFileDialog: QFileDialog):  # noqa: N803
-        _translate: Callable[[str, str, str | None, int | None], str] = QtCore.QCoreApplication.translate
+        _translate: Callable[[str, str], str] = QApplication.instance().translate
         self.lookInLabel.setText(_translate("QFileDialog", "Look in:"))
 
         self.backButton.setToolTip(_translate("QFileDialog", "Back"))

@@ -11,16 +11,16 @@ from qtpy.QtCore import QAbstractItemModel, QEvent, QItemSelectionModel, QPersis
 from qtpy.QtGui import QKeyEvent, QMouseEvent
 from qtpy.QtWidgets import QAbstractItemView, QAbstractScrollArea, QAction, QApplication, QFileDialog, QFileSystemModel, QListView, QMenu, QMessageBox, QWidget
 
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qsidebar import QSideBarDelegate
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qurlmodel import QUrlModel
-from utility.ui_libraries.qt.common.actions_dispatcher import MenuActionsDispatcher
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.private.qsidebar import QSideBarDelegate
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.private.qurlmodel import QUrlModel
+from utility.ui_libraries.qt.common.actions_dispatcher import ActionsDispatcher
 from utility.ui_libraries.qt.common.tasks.actions_executor import FileActionsExecutor
 from utility.ui_libraries.qt.filesystem.qfiledialogextended.ui_qfiledialogextended import Ui_QFileDialogExtended
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 from utility.ui_libraries.qt.widgets.widgets.stacked_view import DynamicStackedView
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject, QPoint, QSortFilterProxyModel
+    from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject, QPoint
     from qtpy.QtGui import QDragEnterEvent, QFocusEvent
     from qtpy.QtWidgets import QTreeView
 
@@ -125,7 +125,7 @@ class QFileDialogExtended(QFileDialog):
         self.ui.setupUi(self)
         self.model_setup()
         self.executor: FileActionsExecutor = FileActionsExecutor()
-        self.dispatcher: MenuActionsDispatcher = MenuActionsDispatcher(self.model, None, self.executor)
+        self.dispatcher: ActionsDispatcher = ActionsDispatcher(self.model, self, self.executor)
         self.connect_signals()
         self.setMouseTracking(True)
         #self.installEventFilter(self)
@@ -222,7 +222,6 @@ class QFileDialogExtended(QFileDialog):
         self.ui.listModeButton.clicked.connect(self._q_showListView)
         self.ui.detailModeButton.clicked.connect(self._q_showDetailsView)
 
-
     def currentView(self) -> QAbstractItemView | None:
         assert self.ui is not None, f"{type(self).__name__}.currentView: UI is None"
         assert self.ui.stackedWidget is not None, f"{type(self).__name__}.currentView: stackedWidget is None"
@@ -250,7 +249,6 @@ class QFileDialogExtended(QFileDialog):
         index = view.indexAt(position)
         if not index.isValid():
             view.clearSelection()
-        self.dispatcher.selection_model = view.selectionModel()
         menu = self.dispatcher.get_context_menu(view, position)
         menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)  # noqa: FBT003
         menu.exec(view.viewport().mapToGlobal(position))
@@ -269,7 +267,6 @@ class QFileDialogExtended(QFileDialog):
             index = view.indexAt(pos)
             if not index.isValid():
                 view.clearSelection()
-            self.dispatcher.selection_model = view.selectionModel()
             menu = self.dispatcher.get_context_menu(view, pos)
             if menu:
                 menu.exec_(view.viewport().mapToGlobal(pos))
@@ -289,10 +286,6 @@ class QFileDialogExtended(QFileDialog):
         error_msg.setDetailedText("".join(traceback.format_exception(type(error), error, None)))
         error_msg.setWindowTitle("Task Failed")
         error_msg.exec_()
-
-    def setProxyModel(self, proxy_model: QSortFilterProxyModel):
-        super().setProxyModel(proxy_model)
-        self.dispatcher.proxy_model = proxy_model
 
 
 if __name__ == "__main__":

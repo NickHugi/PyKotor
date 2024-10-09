@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, ClassVar, Iterable, overload
 
 import qtpy
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import (
     QByteArray,
     QDataStream,
@@ -28,7 +28,7 @@ from qtpy.QtCore import (
 )
 from qtpy.QtWidgets import QAction, QApplication, QDialog, QDialogButtonBox, QFileDialog as RealQFileDialog, QFileIconProvider, QFileSystemModel, QMessageBox
 
-from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.rewritten.private.qfiledialog_p import QFileDialogOptionsPrivate, QFileDialogPrivate, qt_make_filter_list
+from utility.ui_libraries.qt.adapters.filesystem.qfiledialog.private.qfiledialog_p import QFileDialogOptionsPrivate, QFileDialogPrivate, qt_make_filter_list
 from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qplatformdialoghelper import QPlatformFileDialogHelper
 from utility.ui_libraries.qt.tests.test_enum_handling import sip_enum_to_int
 
@@ -140,7 +140,7 @@ class QFileDialogOptions(QObject):
                 return NotImplemented
 
             def __and__(
-                self, other: QFileDialogOptions.FileDialogOption | RealQFileDialog.Options if qtpy.QT5 else RealQFileDialog.Option | int  # pyright: ignore[reportAttributeAccessIssue]
+                self, other: QFileDialogOptions.FileDialogOption | RealQFileDialog.Options | int  # pyright: ignore[reportAttributeAccessIssue]
             ) -> QFileDialogOptions.FileDialogOption:
                 if isinstance(other, (QFileDialogOptions.FileDialogOption, RealQFileDialog.Options if qtpy.QT5 else RealQFileDialog.Option, RealQFileDialog.Option, int)):
                     return QFileDialogOptions.FileDialogOption(int(self) & int(other))
@@ -152,14 +152,14 @@ class QFileDialogOptions(QObject):
                 return NotImplemented
 
             def __xor__(
-                self, other: QFileDialogOptions.FileDialogOption | RealQFileDialog.Options if qtpy.QT5 else RealQFileDialog.Option | int  # pyright: ignore[reportAttributeAccessIssue]
+                self, other: QFileDialogOptions.FileDialogOption | RealQFileDialog.Options | int  # pyright: ignore[reportAttributeAccessIssue]
             ) -> QFileDialogOptions.FileDialogOption:
                 if isinstance(other, (QFileDialogOptions.FileDialogOption, RealQFileDialog.Options if qtpy.QT5 else RealQFileDialog.Option, RealQFileDialog.Option, int)):
                     return QFileDialogOptions.FileDialogOption(int(self) ^ int(other))
                 return NotImplemented
 
             def __rxor__(
-                self, other: QFileDialogOptions.FileDialogOption | RealQFileDialog.Options if qtpy.QT5 else RealQFileDialog.Option | int  # pyright: ignore[reportAttributeAccessIssue]
+                self, other: QFileDialogOptions.FileDialogOption | RealQFileDialog.Options | int  # pyright: ignore[reportAttributeAccessIssue]
             ) -> QFileDialogOptions.FileDialogOption:
                 if isinstance(other, (QFileDialogOptions.FileDialogOption, RealQFileDialog.Options if qtpy.QT5 else RealQFileDialog.Option, RealQFileDialog.Option, int)):  # pyright: ignore[reportAttributeAccessIssue]
                     return QFileDialogOptions.FileDialogOption(int(other) ^ int(self))
@@ -172,21 +172,21 @@ class QFileDialogOptions(QObject):
         ViewMode = RealQFileDialog.Option.ViewMode if hasattr(RealQFileDialog.Option, "ViewMode") else RealQFileDialog.ViewMode
     else:
 
-        class ViewMode(Enum, RealQFileDialog.ViewMode if TYPE_CHECKING else object):
+        class ViewMode(Enum, RealQFileDialog.ViewMode if TYPE_CHECKING else object):  # noqa: D106
             Detail = RealQFileDialog.ViewMode.Detail if hasattr(RealQFileDialog.ViewMode, "Detail") else RealQFileDialog.ViewMode.Detail
             List = RealQFileDialog.ViewMode.List if hasattr(RealQFileDialog.ViewMode, "List") else RealQFileDialog.ViewMode.List
 
-        class FileMode(Enum, RealQFileDialog.FileMode if TYPE_CHECKING else object):  # pyright: ignore[reportGeneralTypeIssues]
+        class FileMode(Enum, RealQFileDialog.FileMode if TYPE_CHECKING else object):  # pyright: ignore[reportGeneralTypeIssues]  # noqa: D106
             AnyFile = RealQFileDialog.FileMode.AnyFile if hasattr(RealQFileDialog.FileMode, "AnyFile") else RealQFileDialog.AnyFile  # pyright: ignore[reportAttributeAccessIssue]
             ExistingFile = RealQFileDialog.FileMode.ExistingFile if hasattr(RealQFileDialog.FileMode, "ExistingFile") else RealQFileDialog.ExistingFile  # pyright: ignore[reportAttributeAccessIssue]
             Directory = RealQFileDialog.FileMode.Directory if hasattr(RealQFileDialog.FileMode, "Directory") else RealQFileDialog.Directory  # pyright: ignore[reportAttributeAccessIssue]
             ExistingFiles = RealQFileDialog.FileMode.ExistingFiles if hasattr(RealQFileDialog.FileMode, "ExistingFiles") else RealQFileDialog.ExistingFiles  # pyright: ignore[reportAttributeAccessIssue]
 
-        class AcceptMode(Enum, RealQFileDialog.AcceptMode if TYPE_CHECKING else object):
+        class AcceptMode(Enum, RealQFileDialog.AcceptMode if TYPE_CHECKING else object):  # noqa: D106
             AcceptOpen = RealQFileDialog.AcceptMode.AcceptOpen if hasattr(RealQFileDialog.AcceptMode, "AcceptOpen") else RealQFileDialog.AcceptOpen  # pyright: ignore[reportAttributeAccessIssue]
             AcceptSave = RealQFileDialog.AcceptMode.AcceptSave if hasattr(RealQFileDialog.AcceptMode, "AcceptSave") else RealQFileDialog.AcceptSave  # pyright: ignore[reportAttributeAccessIssue]
 
-        class DialogLabel(Enum, RealQFileDialog.DialogLabel if TYPE_CHECKING else object):
+        class DialogLabel(Enum, RealQFileDialog.DialogLabel if TYPE_CHECKING else object):  # noqa: D106
             LookIn = RealQFileDialog.DialogLabel.LookIn if hasattr(RealQFileDialog.DialogLabel, "LookIn") else RealQFileDialog.LookIn  # pyright: ignore[reportAttributeAccessIssue]
             FileName = RealQFileDialog.DialogLabel.FileName if hasattr(RealQFileDialog.DialogLabel, "FileName") else RealQFileDialog.FileName  # pyright: ignore[reportAttributeAccessIssue]
             FileType = RealQFileDialog.DialogLabel.FileType if hasattr(RealQFileDialog.DialogLabel, "FileType") else RealQFileDialog.FileType  # pyright: ignore[reportAttributeAccessIssue]
@@ -239,7 +239,7 @@ class QFileDialogOptions(QObject):
         d: QFileDialogOptionsPrivate = self._private
         d.acceptMode = mode
 
-    def filter(self) -> QDir.Filter:
+    def filter(self) -> QDir.Filter | QDir.Filters:  # pyright: ignore[reportIncompatibleMethodOverride]
         d: QFileDialogOptionsPrivate = self._private
         return d.filter
 
@@ -385,18 +385,18 @@ class QFileDialogOptions(QObject):
     # def windowTitle(self) -> str:
     #    ...
 
-    def options(self) -> RealQFileDialog.Option:
+    def options(self) -> RealQFileDialog.Option | RealQFileDialog.Options:
         d: QFileDialogOptionsPrivate = self._private
         return d.options
 
     def setOption(self, option: QFileDialogOptions.FileDialogOption, on: bool = True) -> None:  # noqa: FBT001, FBT002
         previous_options = self.options()
         if (not bool(previous_options & option)) != (not on):
-            self.setOptions(previous_options ^ option)
+            self.setOptions(previous_options ^ option)  # pyright: ignore[reportArgumentType]
 
-    def setOptions(self, options: RealQFileDialog.Option) -> None:
+    def setOptions(self, options: RealQFileDialog.Option | RealQFileDialog.Options) -> None:
         d: QFileDialogOptionsPrivate = self._private
-        d.options = options
+        d.options = options  # pyright: ignore[reportAttributeAccessIssue]
 
     def testOption(self, option: RealQFileDialog.Option) -> bool:
         d: QFileDialogOptionsPrivate = self._private
@@ -681,8 +681,9 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
         files = [file.toLocalFile() for file in d.userSelectedFiles()]
         if not files and d.usingWidgets():
             fm = self.fileMode()
-            if fm != QFileDialog.FileMode.ExistingFile and fm != QFileDialog.FileMode.ExistingFiles:
-                files.append(d.rootIndex().data(QFileSystemModel.Roles.FilePathRole))
+            if fm not in (QFileDialog.FileMode.ExistingFile, QFileDialog.FileMode.ExistingFiles):
+                path: str = d.rootIndex().data(QFileSystemModel.Roles.FilePathRole)
+                files.append(path)
         return files
 
     def fileFromPath(self, rootPath: str, path: str) -> str:  # noqa: N803
@@ -793,12 +794,12 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
     def setOption(self, option: RealQFileDialog.Option, on: bool = True) -> None:  # noqa: FBT001, FBT002
         previous_options: RealQFileDialog.Option = self.options()
         if (not bool(previous_options & option)) != (not on):
-            self.setOptions(previous_options ^ option)
+            self.setOptions(previous_options ^ option)  # pyright: ignore[reportArgumentType]
 
     def testOption(self, option: RealQFileDialog.Option) -> bool:
         return bool(self.options() & option)
 
-    def setOptions(self, options: RealQFileDialog.Option) -> None:
+    def setOptions(self, options: RealQFileDialog.Option | RealQFileDialog.Options) -> None:
         d: QFileDialogPrivate = self._private
         parsed_options = sip_enum_to_int(options)
         cur_options = sip_enum_to_int(self.options())
@@ -845,8 +846,8 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
             result = (fil & ~fil_files) if bool(parsed_options & show_dirs_only) else (fil | fil_files)
             self.setFilter(QDir.Filter(result))
 
-    def options(self) -> RealQFileDialog.Option:
-        return self._private.options.options()
+    def options(self) -> RealQFileDialog.Option | RealQFileDialog.Options:
+        return self._private.options.options()  # pyright: ignore[reportAttributeAccessIssue]
 
     # MIME type operations
     def selectedMimeTypeFilter(self) -> str:
@@ -859,7 +860,7 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
 
     def setSupportedSchemes(self, schemes: Iterable[str | None]) -> None:
         d: QFileDialogPrivate = self._private
-        d.options.setSupportedSchemes(schemes)
+        d.options.setSupportedSchemes(list(filter(None, schemes)))
 
     # URL operations
     def selectedUrls(self) -> list[QUrl]:
@@ -908,7 +909,7 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
     def setVisible(self, visible: bool) -> None:  # noqa: FBT001
         d: QFileDialogPrivate = self._private
         if d.canBeNativeDialog():
-            d.setVisible_sys(visible)
+            d.setVisible_sys(visible=visible)
         else:
             QDialog.setVisible(self, visible)
 
@@ -935,7 +936,7 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
     def setFilter(self, filters: QDir.Filter) -> None:
         self._private.options.setFilter(filters)
 
-    def filter(self) -> QDir.Filter:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def filter(self) -> QDir.Filter | QDir.Filters:  # pyright: ignore[reportIncompatibleMethodOverride]
         d: QFileDialogPrivate = self._private
         return d.options.filter()
 
@@ -963,9 +964,9 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
 
         idx = d.rootIndex()
         if d.proxyModel:
-            d.proxyModel.rowsInserted.disconnect(d._q_rowsInserted)
+            d.proxyModel.rowsInserted.disconnect(d._q_rowsInserted)  # noqa: SLF001
         else:
-            d.model.rowsInserted.disconnect(d._q_rowsInserted)
+            d.model.rowsInserted.disconnect(d._q_rowsInserted)  # noqa: SLF001
 
         assert d.qFileDialogUi is not None, f"{type(self)}.setProxyModel: No UI setup."
         if model is not None:
@@ -977,7 +978,7 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
             if d.completer:
                 d.completer.setModel(d.proxyModel)
                 d.completer.proxyModel = d.proxyModel
-            d.proxyModel.rowsInserted.connect(d._q_rowsInserted)
+            d.proxyModel.rowsInserted.connect(d._q_rowsInserted)  # noqa: SLF001
         else:
             d.proxyModel = None
             d.qFileDialogUi.listView.setModel(d.model)
@@ -986,7 +987,7 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
                 d.completer.setModel(d.model)
                 d.completer.sourceModel = d.model
                 d.completer.proxyModel = None
-            d.model.rowsInserted.connect(d._q_rowsInserted)
+            d.model.rowsInserted.connect(d._q_rowsInserted)  # noqa: SLF001
 
         _selModel: QItemSelectionModel = d.qFileDialogUi.treeView.selectionModel()
         d.qFileDialogUi.treeView.setSelectionModel(d.qFileDialogUi.listView.selectionModel())
@@ -995,8 +996,8 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
 
         # reconnect selection
         selections = d.qFileDialogUi.listView.selectionModel()
-        selections.selectionChanged.connect(d._q_selectionChanged)
-        selections.currentChanged.connect(d._q_currentChanged)
+        selections.selectionChanged.connect(d._q_selectionChanged)  # noqa: SLF001
+        selections.currentChanged.connect(d._q_currentChanged)  # noqa: SLF001
 
     # State operations
     def restoreState(self, state: QByteArray | bytes | bytearray) -> bool:
@@ -1023,7 +1024,7 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
         if sidebarUrls is not None:
             d.sidebarUrls = sidebarUrls
         history = stream.readQStringList()
-        if version == 3:
+        if version == 3:  # noqa: PLR2004
             currentDirectoryString: bytes = stream.readString()
             currentDirectory: QUrl = QUrl.fromLocalFile(currentDirectoryString.decode())
         else:
@@ -1127,7 +1128,7 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
             if not info.exists():
                 info = QFileInfo(os.path.expandvars(fn))
             if not info.exists():
-                d.itemNotFound(info.fileName(), file_mode)
+                d.itemNotFound(info.fileName(), file_mode)  # pyright: ignore[reportArgumentType]
                 return
 
             if info.isDir():
@@ -1175,7 +1176,7 @@ class QFileDialog(RealQFileDialog if TYPE_CHECKING else QDialog):
                 if not info.exists():
                     info = QFileInfo(os.path.expandvars(file))
                 if not info.exists():
-                    d.itemNotFound(info.fileName(), file_mode)
+                    d.itemNotFound(info.fileName(), file_mode)  # pyright: ignore[reportArgumentType]
                     return
 
                 if info.isDir():
