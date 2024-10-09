@@ -98,7 +98,7 @@ class FileSystemExplorerWidget(QMainWindow):
         self.dispatcher: ActionsDispatcher = ActionsDispatcher(self.fs_model, self, self.executor)
 
         self.ui.fileSystemTreeView.clicked.connect(self.on_navigation_pane_clicked)
-        for view in self.ui.dynamicView.all_views:
+        for view in self.ui.dynamicView.all_views():
             view.clicked.connect(self.on_file_list_view_clicked)
             view.doubleClicked.connect(self.on_item_double_clicked)
         self.ui.dynamicView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -598,7 +598,7 @@ class FileSystemExplorerWidget(QMainWindow):
         # Set up the DynamicView
         self.ui.dynamicView.setModel(self.proxy_model)
         self.ui.dynamicView.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(self.current_path))))
-        for view in self.ui.dynamicView.all_views:
+        for view in self.ui.dynamicView.all_views():
             view.doubleClicked.connect(self.on_item_double_clicked)
             view.clicked.connect(self.on_view_clicked)
 
@@ -637,7 +637,7 @@ class FileSystemExplorerWidget(QMainWindow):
         proxy_index = self.proxy_model.mapFromSource(source_index)
         self.ui.dynamicView.setRootIndex(proxy_index)
         self.ui.fileSystemTreeView.setCurrentIndex(source_index)
-        self.update_address_bar(path)
+        self.ui.addressBar.update_path(path)
 
     def on_view_clicked(self, index: QModelIndex):
         source_index = self.proxy_model.mapToSource(index)
