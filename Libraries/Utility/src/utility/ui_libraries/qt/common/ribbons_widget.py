@@ -208,8 +208,8 @@ class RibbonsWidget(QWidget):
         layout.addWidget(self.create_small_button("Large\nicons", self.actions_definitions.actionLargeIcons), 0, 1)
         layout.addWidget(self.create_small_button("Medium\nicons", self.actions_definitions.actionMediumIcons), 0, 2)
         layout.addWidget(self.create_small_button("Small\nicons", self.actions_definitions.actionSmallIcons), 1, 0)
-        layout.addWidget(self.create_small_button("List", self.actions_definitions.actionList), 1, 1)
-        layout.addWidget(self.create_small_button("Details", self.actions_definitions.actionDetails), 1, 2)
+        layout.addWidget(self.create_small_button("List", self.actions_definitions.actionListView), 1, 1)
+        layout.addWidget(self.create_small_button("Details", self.actions_definitions.actionDetailView), 1, 2)
         layout.addWidget(self.create_small_button("Tiles", self.actions_definitions.actionTiles), 2, 0)
         layout.addWidget(self.create_small_button("Content", self.actions_definitions.actionContent), 2, 1)
 

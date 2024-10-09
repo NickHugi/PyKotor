@@ -83,8 +83,8 @@ class FileExplorerMenus:
             view_menu.addAction(self.actions.actionLargeIcons)
             view_menu.addAction(self.actions.actionMediumIcons)
             view_menu.addAction(self.actions.actionSmallIcons)
-            view_menu.addAction(self.actions.actionList)
-            view_menu.addAction(self.actions.actionDetails)
+            view_menu.addAction(self.actions.actionListView)
+            view_menu.addAction(self.actions.actionDetailView)
             view_menu.addAction(self.actions.actionTiles)
 
             sort_menu.addAction(self.actions.actionSortByName)

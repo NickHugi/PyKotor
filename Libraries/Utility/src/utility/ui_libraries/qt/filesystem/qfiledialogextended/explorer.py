@@ -17,19 +17,18 @@ from qtpy.QtCore import (
     QItemSelectionModel,
     QMimeData,
     QModelIndex,
-    QSize,
     QSortFilterProxyModel,
     QUrl,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
-from qtpy.QtGui import QIcon, QImage, QPalette, QPixmap, QStandardItemModel
+from qtpy.QtGui import QFont, QIcon, QImage, QPalette, QPixmap, QStandardItemModel
 from qtpy.QtWidgets import (
+    QAbstractItemView,
     QAction,
     QApplication,
     QCompleter,
     QDialog,
-    QFileDialog,
     QFileIconProvider,
     QFileSystemModel,
     QInputDialog,
@@ -48,6 +47,7 @@ from utility.ui_libraries.qt.common.actions_dispatcher import ActionsDispatcher
 from utility.ui_libraries.qt.common.tasks.actions_executor import FileActionsExecutor
 from utility.ui_libraries.qt.common.tasks.task_details_dialog import TaskDetailsDialog
 from utility.ui_libraries.qt.filesystem.qfiledialogextended.explorer_ui import Ui_QFileExplorer
+from utility.ui_libraries.qt.tools.image import IconLoader
 from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 
 if TYPE_CHECKING:
@@ -61,11 +61,11 @@ if TYPE_CHECKING:
 
 
 class FileSystemExplorerWidget(QMainWindow):
-    file_selected = Signal(str)
-    directory_changed = Signal(str)
-    open_in_new_tab = Signal(str)
+    file_selected: Signal = Signal(str)
+    directory_changed: Signal = Signal(str)
+    open_in_new_tab: Signal = Signal(str)
 
-    def __init__(
+    def __init__(  # noqa: PLR0915
         self,
         initial_path: os.PathLike | str | None = None,
         parent: QWidget | None = None,
@@ -82,40 +82,49 @@ class FileSystemExplorerWidget(QMainWindow):
         self.fs_model.setOption(QFileSystemModel.Option.DontWatchForChanges, False)  # noqa: FBT003
         self.fs_model.setOption(QFileSystemModel.Option.DontResolveSymlinks, True)  # noqa: FBT003
         self.fs_model.setRootPath(str(self.current_path.root))
-        self.proxy_model: QSortFilterProxyModel = QSortFilterProxyModel()
-        self.proxy_model.setSourceModel(self.fs_model)
-        self.completer: QCompleter = QCompleter(self)
-        self.completer.setModel(self.fs_model)
-        self.bookmarks_model = QStandardItemModel()
-
-        self.ui.fileSystemTreeView.setModel(self.proxy_model)
-        self.ui.dynamicView.setModel(self.proxy_model)
-        self.ui.dynamicView.show()
-        self.ui.bookmarksListView.setModel(self.bookmarks_model)
 
         # Setup actions and connections
         self.executor = FileActionsExecutor()
         self.dispatcher: ActionsDispatcher = ActionsDispatcher(self.fs_model, self, self.executor)
+        self.icon_loader: IconLoader = IconLoader()
 
-        self.ui.fileSystemTreeView.clicked.connect(self.on_navigation_pane_clicked)
+        self.proxy_model: QSortFilterProxyModel = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.fs_model)
+        self.completer: QCompleter = QCompleter(self)
+        self.completer.setModel(self.fs_model)
+
+        self.ui.fileSystemTreeView.setModel(self.proxy_model)
+        self.ui.dynamicView.setModel(self.proxy_model)
+        self.ui.dynamicView.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(self.current_path))))
+        self.ui.dynamicView.show()
         for view in self.ui.dynamicView.all_views():
             view.clicked.connect(self.on_file_list_view_clicked)
             view.doubleClicked.connect(self.on_item_double_clicked)
         self.ui.dynamicView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.dynamicView.customContextMenuRequested.connect(self.show_context_menu)
+        self.ui.dynamicView.selectionModel().selectionChanged.connect(self.update_preview)
+        self.bookmarks_model: QStandardItemModel = QStandardItemModel()
+        self.ui.bookmarksListView.setModel(self.bookmarks_model)
+        self.ui.bookmarksListView.clicked.connect(self.on_bookmark_clicked)
+
+        # Setup other UI components
+        self.ui.fileSystemTreeView.setModel(self.fs_model)
+        self.ui.fileSystemTreeView.setRootIndex(self.fs_model.index(QDir.rootPath()))
+        self.ui.fileSystemTreeView.clicked.connect(self.on_sidepanel_treeview_clicked)
+        self.ui.fileSystemTreeView.expanded.connect(self.on_treeview_expanded)
+        self.ui.fileSystemTreeView.collapsed.connect(self.on_treeview_collapsed)
+        for i in range(1, self.fs_model.columnCount()):  # Show only the Name column in the tree view
+            self.ui.fileSystemTreeView.hideColumn(i)
+        self.ui.fileSystemTreeView.clicked.connect(self.on_navigation_pane_clicked)
         self.ui.addressBar.refreshButton.clicked.connect(self.refresh)
-        self.ui.ribbonWidget.tab_widget.currentChanged.connect(self.on_ribbon_tab_changed)
+        self.ui.addressBar.pathChanged.connect(self.on_address_bar_path_changed)
+        self.ui.addressBar.returnPressed.connect(self.on_address_bar_return)
+
         self.ui.zoomSlider.valueChanged.connect(self.on_zoom_slider_changed)
         self.ui.itemCountLabel.linkActivated.connect(self.on_item_count_clicked)
         self.ui.selectedCountLabel.linkActivated.connect(self.on_selected_count_clicked)
         self.ui.freeSpaceLabel.linkActivated.connect(self.on_free_space_clicked)
-        self.ui.progressBar.mousePressEvent = self.show_task_details  # pyright: ignore[reportAttributeAccessIssue]
         self.ui.taskStatusToggle.clicked.connect(self.toggle_task_status_widget)
-        self.ui.addressBar.pathChanged.connect(self.on_address_bar_path_changed)
-        self.ui.addressBar.returnPressed.connect(self.on_address_bar_return)
-        self.ui.bookmarksListView.clicked.connect(self.on_bookmark_clicked)
-
-        self.ui.dynamicView.selectionModel().selectionChanged.connect(self.update_preview)
 
         self.executor.TaskStarted.connect(self.on_task_started)
         self.executor.TaskCompleted.connect(self.on_task_completed)
@@ -125,23 +134,13 @@ class FileSystemExplorerWidget(QMainWindow):
         self.executor.AllTasksCompleted.connect(self.on_all_tasks_completed)
         self.executor.ProgressUpdated.connect(self.update_progress_bar)
         self.ui.taskStatusWidget.task_clicked.connect(self.show_task_details)
-
-        # Setup other UI components
-        self.ui.fileSystemTreeView.setModel(self.fs_model)
-        self.ui.fileSystemTreeView.setRootIndex(self.fs_model.index(QDir.rootPath()))
-        self.ui.fileSystemTreeView.clicked.connect(self.on_sidepanel_treeview_clicked)
-        self.ui.fileSystemTreeView.expanded.connect(self.on_treeview_expanded)
-        self.ui.fileSystemTreeView.collapsed.connect(self.on_treeview_collapsed)
-
-        for i in range(1, self.fs_model.columnCount()):
-            self.ui.fileSystemTreeView.hideColumn(i)
         self.ui.previewWidget.setVisible(False)
         self.statusBar().addPermanentWidget(self.ui.taskStatusWidget)
         self.task_status_toggle: QPushButton = QPushButton("Task Status")
         self.task_status_toggle.setCheckable(True)
         self.task_status_toggle.setChecked(True)
         self.task_status_toggle.clicked.connect(self.toggle_task_status_widget)
-        self.ui.progressBar.mousePressEvent = self.show_task_details
+        self.ui.progressBar.mousePressEvent = self.show_task_details  # pyright: ignore[reportAttributeAccessIssue]
         self.ui.progressBar.hide()
         drive_layout = self.ui.horizontalLayout_2
         for drive in QDir.drives():
@@ -151,21 +150,8 @@ class FileSystemExplorerWidget(QMainWindow):
             drive_layout.addWidget(drive_button)
 
         self.dispatcher.menus.actions.actionTiles.triggered.connect(lambda: self.ui.dynamicView.list_view().setViewMode(QListView.ViewMode.IconMode))
-        self.dispatcher.menus.actions.actionList.triggered.connect(lambda: self.ui.dynamicView.list_view().setViewMode(QListView.ViewMode.ListMode))
-        self.dispatcher.menus.actions.actionDetails.triggered.connect(lambda: self.ui.dynamicView.setCurrentWidget(self.ui.dynamicView.tree_view()))
-
-        self.ui.mainToolBar.addWidget(self.ui.taskStatusToggle)
-        self.ui.mainToolBar.setMovable(False)
-        self.ui.mainToolBar.setIconSize(QSize(24, 24))
-
-        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionOpenTerminal)
-        self.ui.mainToolBar.addSeparator()
-        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionCut)
-        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionCopy)
-        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionPaste)
-        self.ui.mainToolBar.addSeparator()
-        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionRefresh)
-        self.ui.mainToolBar.addAction(self.dispatcher.menus.actions.actionShowHideHiddenItems)
+        self.dispatcher.menus.actions.actionListView.triggered.connect(lambda: self.ui.dynamicView.list_view().setViewMode(QListView.ViewMode.ListMode))
+        self.dispatcher.menus.actions.actionDetailView.triggered.connect(lambda: self.ui.dynamicView.setCurrentWidget(self.ui.dynamicView.tree_view()))
 
         if self.ui.searchBar.isVisible():
             self.ui.searchBar.hide()
@@ -180,7 +166,6 @@ class FileSystemExplorerWidget(QMainWindow):
         self.toggle_ribbon_button = QPushButton("▼", self)
         self.toggle_ribbon_button.setToolTip("Toggle Ribbon Menu")
         self.toggle_ribbon_button.setMaximumWidth(20)
-        self.ui.mainToolBar.addWidget(self.toggle_ribbon_button)
         self.toggle_ribbon_button.clicked.connect(self.toggle_ribbon)
 
         # Adjust UI sizes
@@ -188,7 +173,6 @@ class FileSystemExplorerWidget(QMainWindow):
         self.ui.mainSplitter.setSizes([200, 800])
         self.ui.sidebarToolBox.setMinimumWidth(150)
         self.ui.dynamicView.setMinimumWidth(400)
-        self.ui.mainToolBar.setFixedHeight(30)
         self.ui.searchAndAddressWidget.setFixedHeight(30)
         self.fs_model.directoryLoaded.connect(self.on_directory_loaded)
         self.fs_model.setReadOnly(False)
@@ -328,34 +312,29 @@ class FileSystemExplorerWidget(QMainWindow):
         path = self.bookmarks_model.data(index, Qt.ItemDataRole.UserRole)
         self.set_current_path(path)
 
-    # Remove duplicate setup_ribbons, setup_home_ribbon, and setup_view_ribbon functions
-
-    def on_ribbon_tab_changed(self, index):
-        # Handle ribbon tab changes
-        pass
-
-    def on_zoom_slider_changed(self, value):
+    def on_zoom_slider_changed(self, value: int):
         # Implement zoom functionality
-        self.ui.dynamicView.current_view().set_text_size(value)
+        view = self.ui.dynamicView.current_view()
+        assert isinstance(view, QAbstractItemView), f"View is not a QAbstractItemView, instead was a {type(view)}"
+        if isinstance(view, RobustAbstractItemView):
+            view.set_text_size(value)
+        else:
+            view.setFont(QFont(view.font().family(), value))
 
-    # These methods have been removed as they are no longer used
-
-    def on_item_count_clicked(self, link):
+    def on_item_count_clicked(self, link: QLabel):
         # Handle item count label click
         total_items = self.fs_model.rowCount(self.ui.dynamicView.rootIndex())
         QMessageBox.information(self, "Item Count", f"Total items: {total_items}")
 
-    def on_selected_count_clicked(self, link):
+    def on_selected_count_clicked(self, link: QLabel):
         # Handle selected count label click
         selected_items = len(self.ui.dynamicView.selectedIndexes())
         QMessageBox.information(self, "Selected Count", f"Selected items: {selected_items}")
 
-    def on_free_space_clicked(self, link):
+    def on_free_space_clicked(self, link: QLabel):
         # Handle free space label click
         free_space = shutil.disk_usage(self.current_path).free
         QMessageBox.information(self, "Free Space", f"Free space on {self.current_path}: {self.format_size(free_space)}")
-
-    # Remove duplicate show_progress_log function
 
     def on_navigation_pane_clicked(self, index: QModelIndex):
         path = self.fs_model.filePath(index)
@@ -594,38 +573,6 @@ class FileSystemExplorerWidget(QMainWindow):
             child_index = self.fs_model.index(i, 0, self.fs_model.index(path))
             file_path = self.fs_model.filePath(child_index)
 
-    def setup_views(self):
-        # Set up the DynamicView
-        self.ui.dynamicView.setModel(self.proxy_model)
-        self.ui.dynamicView.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(self.current_path))))
-        for view in self.ui.dynamicView.all_views():
-            view.doubleClicked.connect(self.on_item_double_clicked)
-            view.clicked.connect(self.on_view_clicked)
-
-        # Set up the tree view in the sidebar
-        self.ui.fileSystemTreeView.setModel(self.fs_model)
-        self.ui.fileSystemTreeView.setRootIndex(self.fs_model.index(QDir.rootPath()))
-        self.ui.fileSystemTreeView.clicked.connect(self.on_sidepanel_treeview_clicked)
-        self.ui.fileSystemTreeView.expanded.connect(self.on_treeview_expanded)
-        self.ui.fileSystemTreeView.collapsed.connect(self.on_treeview_collapsed)
-
-        # Set up the PyAddressBar
-        self.ui.addressBar.pathChanged.connect(self.on_address_bar_path_changed)
-        self.ui.addressBar.returnPressed.connect(self.on_address_bar_return)
-
-        # Show only the Name column in the tree view
-        for i in range(1, self.fs_model.columnCount()):
-            self.ui.fileSystemTreeView.hideColumn(i)
-
-        # Set up view mode actions
-        self.actionIconView = QAction("Icon View", self)
-        self.actionListView = QAction("List View", self)
-        self.actionDetailView = QAction("Detail View", self)
-
-        self.actionIconView.triggered.connect(lambda: self.ui.dynamicView.list_view().setViewMode(QListView.ViewMode.IconMode))
-        self.actionListView.triggered.connect(lambda: self.ui.dynamicView.list_view().setViewMode(QListView.ViewMode.ListMode))
-        self.actionDetailView.triggered.connect(lambda: self.ui.dynamicView.setCurrentWidget(self.ui.dynamicView.tree_view()))
-
     def on_treeview_expanded(self, index: QModelIndex):
         self.fs_model.fetchMore(index)
 
@@ -648,13 +595,13 @@ class FileSystemExplorerWidget(QMainWindow):
         super().resizeEvent(event)
 
     def show_context_menu(self, pos: QPoint):
-        current_view: QWidget | None = self.ui.dynamicView.currentWidget()
-        assert isinstance(current_view, RobustAbstractItemView), f"Current view is not a QListView, instead was a {type(current_view).__name__}"
-        index: QModelIndex = current_view.indexAt(pos)
-        if index.isValid():
-            self.show_item_context_menu(current_view.viewport().mapToGlobal(pos), index)
-        else:
-            self.show_empty_space_context_menu(current_view.viewport().mapToGlobal(pos))
+        current_view: QWidget | None = self.ui.dynamicView.current_view()
+        assert isinstance(current_view, QAbstractItemView), f"Current view is not a QListView, instead was a {type(current_view).__name__}"
+        index = current_view.indexAt(pos)
+        if not index.isValid():
+            current_view.clearSelection()
+        menu: QMenu = self.dispatcher.get_context_menu(current_view, pos)
+        menu.exec(current_view.viewport().mapToGlobal(pos))
 
     def create_new_folder(self):
         folder_name, ok = QInputDialog.getText(self, "New Folder", "Enter folder name:")
@@ -680,38 +627,6 @@ class FileSystemExplorerWidget(QMainWindow):
                 self.fs_model.setRootPath(str(self.current_path))  # Refresh the view
             else:
                 QMessageBox.warning(self, "Error", "Failed to create file.")
-
-    def cut_file(self, file_path: Path) -> None:
-        """Cut the selected file."""
-        self.executor.queue_task("prepare_cut", args=([file_path],), callback=lambda _: self.set_cut_files([file_path]))
-        self.copy_to_clipboard([file_path])
-
-    def copy_file(self, file_path: Path) -> None:
-        """Copy the selected file."""
-        self.executor.queue_task("prepare_copy", args=([file_path],), callback=lambda _: self.set_cut_files(None))
-        self.copy_to_clipboard([file_path])
-
-    def set_cut_files(self, files: list[Path] | None) -> None:
-        """Set the files that have been cut."""
-        self.cut_files = files
-
-    def copy_to_clipboard(self, paths: list[Path]) -> None:
-        """Copy the given paths to the clipboard."""
-        mime_data = QMimeData()
-        urls = [QUrl.fromLocalFile(str(path)) for path in paths]
-        mime_data.setUrls(urls)
-        QApplication.clipboard().setMimeData(mime_data)
-
-    def show_empty_space_context_menu(self, pos: QPoint):
-        menu = self.dispatcher.get_menu(shift_held=bool(QApplication.keyboardModifiers() & Qt.KeyboardModifier.ShiftModifier))
-
-        # Connect actions to appropriate methods
-        for action in menu.actions():
-            if action.data():
-                action.triggered.connect(lambda _checked, a=action: self.execute_menu_action(a.data()))
-
-        current_view = self.ui.dynamicView
-        menu.exec(current_view.mapToGlobal(pos))
 
     def focus_search_bar(self):
         self.ui.searchBar.setFocus()
@@ -744,26 +659,11 @@ class FileSystemExplorerWidget(QMainWindow):
         else:
             event.ignore()
 
-    def show_rename_dialog(self, path: Path):
-        new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", text=path.name)
-        if ok and new_name:
-            self.executor.queue_task("rename_item", (path, new_name))
-
     def create_mime_data(self, paths: list[Path]) -> QMimeData:
         mime_data = QMimeData()
         urls = [QUrl.fromLocalFile(str(path)) for path in paths]
         mime_data.setUrls(urls)
         return mime_data
-
-    def compress_items(self, paths: list[Path]) -> None:
-        """Compress selected items into an archive."""
-        archive_name, _ = QFileDialog.getSaveFileName(self, "Save Compressed File", str(self.current_path), "Zip Files (*.zip)")
-        if archive_name:
-            if not archive_name.lower().endswith(".zip"):
-                archive_name += ".zip"
-            self.executor.queue_task(
-                "compress_items", args=(paths, archive_name), callback=self.refresh, error_callback=lambda e: QMessageBox.warning(self, "Compression Error", str(e))
-            )
 
     def update_preview(self):
         selected_indexes = self.ui.dynamicView.selectedIndexes()

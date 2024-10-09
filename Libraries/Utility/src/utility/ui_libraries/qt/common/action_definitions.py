@@ -56,11 +56,11 @@ class FileExplorerActions:
         self.actionSmallIcons = QAction(QIcon.fromTheme("view-list-icons"), "Small icons")
         self.actionSmallIcons.setShortcut(QKeySequence("Ctrl+Shift+4"))
 
-        self.actionList = QAction(QIcon.fromTheme("view-list-details"), "List")
-        self.actionList.setShortcut(QKeySequence("Ctrl+Shift+5"))
+        self.actionListView = QAction(QIcon.fromTheme("view-list-details"), "List")
+        self.actionListView.setShortcut(QKeySequence("Ctrl+Shift+5"))
 
-        self.actionDetails = QAction(QIcon.fromTheme("view-list-tree"), "Details")
-        self.actionDetails.setShortcut(QKeySequence("Ctrl+Shift+6"))
+        self.actionDetailView = QAction(QIcon.fromTheme("view-list-tree"), "Details")
+        self.actionDetailView.setShortcut(QKeySequence("Ctrl+Shift+6"))
 
         self.actionTiles = QAction(QIcon.fromTheme("view-list-icons"), "Tiles")
         self.actionTiles.setShortcut(QKeySequence("Ctrl+Shift+7"))
