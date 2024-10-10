@@ -108,11 +108,9 @@ class Model:
 class Node:
     def __init__(
         self,
-        scene: Scene,
         parent: Node | None,
         name: str,
     ):
-        self._scene: Scene = scene
         self._parent: Node | None = parent
         self.name: str = name
         self._transform: mat4 = mat4()
