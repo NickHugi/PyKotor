@@ -8,6 +8,7 @@ from copy import copy
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
+from glm import mat4, vec3, vec4, quat
 
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import NodePath, GeomVertexFormat, GeomVertexData, Geom, GeomVertexWriter, GeomTriangles, GeomNode, Texture as PandaTexture
@@ -18,7 +19,7 @@ from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
-from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model
+from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model, RenderObject
 from pykotor.gl.models.predefined_mdl import (
     CAMERA_MDL_DATA,
     CAMERA_MDX_DATA,
@@ -561,46 +562,20 @@ class Scene(ShowBase):
             self._render_object(shader, child, transform)
 
     def picker_render(self):
-        glClearColor(1.0, 1.0, 1.0, 1.0)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore[]
-
-        if self.backface_culling:
-            glEnable(GL_CULL_FACE)
-        else:
-            glDisable(GL_CULL_FACE)
-
-        self.picker_shader.use()
-        self.picker_shader.set_matrix4("view", self.camera.view())
-        self.picker_shader.set_matrix4("projection", self.camera.projection())
-        instances = list(self.objects.values())
-        for obj in instances:
-            int_rgb: int = instances.index(obj)
-            r: int = int_rgb & 0xFF
-            g: int = (int_rgb >> 8) & 0xFF
-            b: int = (int_rgb >> 16) & 0xFF
-            color = vec3(r / 0xFF, g / 0xFF, b / 0xFF)
-            self.picker_shader.set_vector3("colorId", color)
-
-            self._picker_render_object(obj, mat4())
+        # Implement Panda3D-specific picker rendering here
+        pass
 
     def _picker_render_object(self, obj: RenderObject, transform: mat4):
-        if self.should_hide_obj(obj):
-            return
-
-        model: Model = self.model(obj.model)
-        model.draw(self.picker_shader, transform * obj.transform())
-        for child in obj.children:
-            self._picker_render_object(child, obj.transform())
+        # Implement Panda3D-specific object rendering for picker here
+        pass
 
     def pick(
         self,
         x: float,
         y: float,
     ) -> RenderObject | None:
-        self.picker_render()
-        pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
-        instances = list(self.objects.values())
-        return instances[pixel] if pixel != 0xFFFFFF else None  # noqa: PLR2004
+        # Implement Panda3D-specific picking here
+        return None
 
     def select(
         self,
@@ -624,31 +599,12 @@ class Scene(ShowBase):
         self.selection.append(actual_target)
 
     def screen_to_world(self, x: int, y: int) -> Vector3:
-        self._prepare_gl_and_shader()
-        group1: list[RenderObject] = [obj for obj in self.objects.values() if isinstance(obj.data, LYTRoom)]
-        for obj in group1:
-            self._render_object(self.shader, obj, mat4())
-
-        zpos = glReadPixels(x, self.camera.height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]  # type: ignore[]
-        cursor: vec3 = glm.unProject(
-            vec3(x, self.camera.height - y, zpos),
-            self.camera.view(),
-            self.camera.projection(),
-            vec4(0, 0, self.camera.width, self.camera.height),
-        )
-        return Vector3(cursor.x, cursor.y, cursor.z)
+        # Implement Panda3D-specific screen to world conversion here
+        return Vector3(0, 0, 0)
 
     def _prepare_gl_and_shader(self):
-        glClearColor(0.5, 0.5, 1, 1.0)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore[]
-        if self.backface_culling:
-            glEnable(GL_CULL_FACE)
-        else:
-            glDisable(GL_CULL_FACE)
-        glDisable(GL_BLEND)
-        self.shader.use()
-        self.shader.set_matrix4("view", self.camera.view())
-        self.shader.set_matrix4("projection", self.camera.projection())
+        # This method is no longer needed with Panda3D
+        pass
 
     def load_model(self, name: str) -> Model | Future[tuple[str, Model]]:
         """Load model data asynchronously. Currently unused."""
