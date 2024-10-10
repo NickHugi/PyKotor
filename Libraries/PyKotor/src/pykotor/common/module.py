@@ -179,6 +179,17 @@ class ModulePieceResource(Capsule):
         self.missing_resources: list[FileResource] = []  # TODO(th3w1zard1):
         super().__init__(path_obj, *args, **kwargs)
 
+    def __reduce__(self):
+        # Return a tuple with the callable, arguments, and state
+        return (self.__class__, (str(self.filepath()),), self.__getstate__())
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove or modify any non-picklable attributes if necessary
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
 
 class ModuleLinkPiece(ModulePieceResource):
     def ifo(self) -> GFF:
@@ -1588,7 +1599,7 @@ class ModuleResource(Generic[T]):
                     msg = f"Resource '{self._identifier}' not found in '{active_path}'"
                     RobustLogger().error(msg)
                     return None
-                self._resource_obj = conversions[self._restype](data)
+                self._resource_obj = conversions.get(self._restype, lambda _: None)(data)
 
             elif is_bif_file(active_path):
                 resource: ResourceResult | None = self._installation.resource(
@@ -1600,11 +1611,11 @@ class ModuleResource(Generic[T]):
                     msg = f"Resource '{self._identifier}' not found in '{active_path}'"
                     RobustLogger().error(msg)
                     return None
-                self._resource_obj = conversions[self._restype](resource.data)
+                self._resource_obj = conversions.get(self._restype, lambda _: None)(resource.data)
 
             else:
                 data = BinaryReader.load_file(active_path)
-                self._resource_obj = conversions[self._restype](data)
+                self._resource_obj = conversions.get(self._restype, lambda _: None)(data)
 
         return self._resource_obj
 
@@ -1634,7 +1645,7 @@ class ModuleResource(Generic[T]):
             ResourceType.WOK: write_bwm,
         }
         result: bytearray = bytearray()
-        conversions[self._restype](self._resource_obj, result)
+        conversions.get(self._restype, lambda _: None)(self._resource_obj, result)
         return bytes(result)
 
     def add_locations(self, filepaths: Iterable[Path]):
@@ -1779,7 +1790,7 @@ class ModuleResource(Generic[T]):
             write_rim(rim, active_path)
 
         else:
-            BinaryWriter.dump(active_path, conversions[self._restype](self.resource()))
+            BinaryWriter.dump(active_path, conversions.get(self._restype, lambda _: None)(self.resource()))
 
     def _create_anew_in_override(self) -> CaseAwarePath:
         bytedata = self.to_bytes()

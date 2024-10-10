@@ -82,7 +82,7 @@ if TYPE_CHECKING:
     from pykotor.common.module import Module, ModulePieceResource, ModuleResource
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.extract.installation import Installation
-    from pykotor.gl.models.mdl import Model, Node
+    from pykotor.gl.models.mdl import Model
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.generics.git import GIT
@@ -112,7 +112,7 @@ class Scene:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glCullFace(GL_BACK)
 
-        self.executor: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=multiprocessing.cpu_count())
+        self.executor: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=max(1, int(multiprocessing.cpu_count() / 2)))
 
         self.textures_data_queue: multiprocessing.Queue[tuple[str, TPC | None, bool]] = multiprocessing.Queue()
         """Textures currently loading in a child process with ProcessPoolExecutor"""
@@ -234,29 +234,30 @@ class Scene:
                 appearance=self.table_creatures,
                 baseitems=self.table_baseitems,
             )
-            mask_model = creature.get_mask_model(
-                utc,
-                self.installation,
-            )
 
             obj = RenderObject(body_model, data=instance, override_texture=body_texture)
+
+            rhand_hook = self.model(body_model).find("rhand")
+            if rhand_model and rhand_hook:
+                rhand_obj = RenderObject(rhand_model)
+                rhand_obj.set_transform(rhand_hook.global_transform())
+                obj.children.append(rhand_obj)
+            lhand_hook = self.model(body_model).find("lhand")
+            if lhand_model and lhand_hook:
+                lhand_obj = RenderObject(lhand_model)
+                lhand_obj.set_transform(lhand_hook.global_transform())
+                obj.children.append(lhand_obj)
 
             head_hook = self.model(body_model).find("headhook")
             if head_model and head_hook:
                 head_obj = RenderObject(head_model, override_texture=head_texture)
                 head_obj.set_transform(head_hook.global_transform())
                 obj.children.append(head_obj)
-
-            rhand_hook = self.model(body_model).find("rhand")
-            if rhand_model and rhand_hook:
-                self._transform_hand(rhand_model, rhand_hook, obj)
-            lhand_hook = self.model(body_model).find("lhand")
-            if lhand_model and lhand_hook:
-                self._transform_hand(lhand_model, lhand_hook, obj)
             if head_hook is None:
                 mask_hook = self.model(body_model).find("gogglehook")
             elif head_model:
                 mask_hook = self.model(head_model).find("gogglehook")
+            mask_model = creature.get_mask_model(utc, self.installation)
             if mask_model and mask_hook:
                 mask_obj = RenderObject(mask_model)
                 mask_obj.set_transform(mask_hook.global_transform())
@@ -265,22 +266,12 @@ class Scene:
                 elif head_obj is not None:
                     head_obj.children.append(mask_obj)
 
-        except Exception:
+        except Exception:  # noqa: BLE001
             RobustLogger().exception("Exception occurred getting the creature render object.")
             # If failed to load creature models, use the unknown model instead
             obj = RenderObject("unknown", data=instance)
 
         return obj
-
-    def _transform_hand(
-        self,
-        modelname: str,
-        hook: Node,
-        obj: RenderObject,
-    ):
-        rhand_obj = RenderObject(modelname)
-        rhand_obj.set_transform(hook.global_transform())
-        obj.children.append(rhand_obj)
 
     @property
     def module(self) -> Module:
@@ -809,52 +800,6 @@ class Scene:
             self.models[name] = model
         return self.models[name]
 
-    def fetch_model_data(self, name: str, installation: Installation | None, module: Module | None) -> Model:
-        mdl_data = EMPTY_MDL_DATA
-        mdx_data = EMPTY_MDX_DATA
-
-        if name == "waypoint":
-            mdl_data, mdx_data = WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA
-        elif name == "sound":
-            mdl_data, mdx_data = SOUND_MDL_DATA, SOUND_MDX_DATA
-        elif name == "store":
-            mdl_data, mdx_data = STORE_MDL_DATA, STORE_MDX_DATA
-        elif name == "entry":
-            mdl_data, mdx_data = ENTRY_MDL_DATA, ENTRY_MDX_DATA
-        elif name == "encounter":
-            mdl_data, mdx_data = ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA
-        elif name == "trigger":
-            mdl_data, mdx_data = TRIGGER_MDL_DATA, TRIGGER_MDX_DATA
-        elif name == "camera":
-            mdl_data, mdx_data = CAMERA_MDL_DATA, CAMERA_MDX_DATA
-        elif name == "empty":
-            mdl_data, mdx_data = EMPTY_MDL_DATA, EMPTY_MDX_DATA
-        elif name == "cursor":
-            mdl_data, mdx_data = CURSOR_MDL_DATA, CURSOR_MDX_DATA
-        elif name == "unknown":
-            mdl_data, mdx_data = UNKNOWN_MDL_DATA, UNKNOWN_MDX_DATA
-        elif installation is not None:
-            capsules: list[ModulePieceResource] = [] if module is None else module.capsules()
-            mdl_search: ResourceResult | None = installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
-            mdx_search: ResourceResult | None = installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
-            if mdl_search is not None and mdl_search.data:
-                mdl_data = mdl_search.data
-            if mdx_search is not None and mdx_search.data:
-                mdx_data = mdx_search.data
-
-        try:
-            mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
-            mdx_reader = BinaryReader.from_bytes(mdx_data)
-            model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
-        except Exception:  # noqa: BLE001
-            model = gl_load_stitched_model(
-                self,
-                BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
-                BinaryReader.from_bytes(EMPTY_MDX_DATA),
-            )
-
-        return model
-
     def load_texture(
         self,
         name: str,
@@ -888,6 +833,7 @@ class Scene:
 
     def _texture_loaded_callback(self, future: Future[tuple[str, TPC | None, bool]]):
         type_name = "texture/lightmap"
+        name = "unknown"
         try:
             name, tpc, is_lightmap = future.result()
             type_name = "lightmap" if is_lightmap else "texture"
@@ -901,7 +847,7 @@ class Scene:
                 RobustLogger().debug(f"Creating Texture object from TPC for {type_name} '{name}'")
                 self.textures[name] = Texture.from_tpc(tpc)
                 RobustLogger().debug(f"{type_name} '{name}' successfully loaded and stored")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             RobustLogger().exception(f"Exception in texture loading callback for {type_name} '{name}'", exc_info=e)
         finally:
             RobustLogger().debug(f"Removing {type_name} '{name}' from pending {type_name}s")
@@ -912,8 +858,7 @@ class Scene:
         name: str,
         installation: Installation | None = None,
         module: Module | None = None,
-        *,
-        is_lightmap: bool = False,
+        is_lightmap: bool = False,  # noqa: FBT001, FBT002
     ) -> tuple[str, TPC | None, bool]:
         type_name = "lightmap" if is_lightmap else "texture"
         RobustLogger().debug(f"Fetching {type_name} data for '{name}'")
@@ -941,7 +886,7 @@ class Scene:
                     RobustLogger().debug(f"Successfully loaded {type_name} '{name}' from installation")
                 else:
                     RobustLogger().warning(f"Failed to load {type_name} '{name}' from installation")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             RobustLogger().exception(f"Exception thrown while loading {type_name} '{name}'", exc_info=e)
             tpc = None  # Use a blank texture if an error occurs.
 
@@ -1005,7 +950,11 @@ class RenderObject:
         return copy(self._position)
 
     def set_position(self, x: float, y: float, z: float):
-        if self._position.x == x and self._position.y == y and self._position.z == z:
+        if (
+            self._position.x == x
+            and self._position.y == y
+            and self._position.z == z
+        ):
             return
 
         self._position = vec3(x, y, z)

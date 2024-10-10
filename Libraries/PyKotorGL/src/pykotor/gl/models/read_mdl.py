@@ -55,9 +55,9 @@ def _load_node(
     node = Node(scene, node, names[name_id])
 
     mdl.seek(offset + 16)
-    node._position = glm.vec3(mdl.read_single(), mdl.read_single(), mdl.read_single())
-    node._rotation = glm.quat(mdl.read_single(), mdl.read_single(), mdl.read_single(), mdl.read_single())
-    node._recalc_transform()
+    node._position = glm.vec3(mdl.read_single(), mdl.read_single(), mdl.read_single())  # noqa: SLF001
+    node._rotation = glm.quat(mdl.read_single(), mdl.read_single(), mdl.read_single(), mdl.read_single())  # noqa: SLF001
+    node._recalc_transform()  # noqa: SLF001
     child_offsets = mdl.read_uint32()
     child_count = mdl.read_uint32()
 
@@ -118,8 +118,8 @@ def _load_node(
                 node,
                 texture,
                 lightmap,
-                vertex_data,
-                element_data,
+                bytearray(vertex_data),
+                bytearray(element_data),
                 mdx_block_size,
                 mdx_data_bitflags,
                 mdx_vertex_offset,
@@ -175,7 +175,7 @@ def gl_load_mdl(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
 
 
-def gl_load_stitched_model(mdl: BinaryReader, mdx: BinaryReader) -> Model:
+def gl_load_stitched_model(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     """Returns a model instance that has meshes with the same textures merged together.
 
     Loads and stitches together a gltf model from binary files
@@ -198,7 +198,7 @@ def gl_load_stitched_model(mdl: BinaryReader, mdx: BinaryReader) -> Model:
         - Creates a single mesh for each unique material
         - Assembles the full model hierarchy.
     """
-    root = Node(None, "root")
+    root = Node(scene, None, "root")
 
     mdl.seek(40)
     offset = mdl.read_uint32()
@@ -251,7 +251,7 @@ def gl_load_stitched_model(mdl: BinaryReader, mdx: BinaryReader) -> Model:
             node = Node(scene, root, names[name_list_index])
             root.children.append(node)
             glm.decompose(transform, vec3(), node._rotation, node._position, vec3(), vec4())  # noqa: SLF001  # type: ignore[call-overload, reportCallIssue, reportArgumentType]
-            node._recalc_transform()
+            node._recalc_transform()  # noqa: SLF001
 
     merged: dict[str, list[tuple[int, mat4x4]]] = {}
     for offset, transform in offsets:
@@ -266,7 +266,7 @@ def gl_load_stitched_model(mdl: BinaryReader, mdx: BinaryReader) -> Model:
     for key, value in merged.items():
         vertex_data = bytearray()
         elements: list[int] = []
-        child = Node(root, "child")
+        child = Node(scene, root, "child")
         root.children.append(child)
 
         last_element = 0
@@ -334,6 +334,6 @@ def gl_load_stitched_model(mdl: BinaryReader, mdx: BinaryReader) -> Model:
             element_data += struct.pack("H", element)
 
         texture, lightmap = key.split("\n")
-        child.mesh = Mesh(child, texture, lightmap, vertex_data, element_data, 40, mdx_data_bitflags, 0, 12, 24, 32)
+        child.mesh = Mesh(scene, child, texture, lightmap, vertex_data, element_data, 40, mdx_data_bitflags, 0, 12, 24, 32)
 
-    return Model(root)
+    return Model(scene, root)
