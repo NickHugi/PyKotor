@@ -175,14 +175,13 @@ def gl_load_mdl(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
 
 
-def gl_load_stitched_model(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
+def gl_load_stitched_model(mdl: BinaryReader, mdx: BinaryReader) -> Model:
     """Returns a model instance that has meshes with the same textures merged together.
 
     Loads and stitches together a gltf model from binary files
 
     Args:
     ----
-        scene: {Scene}: The scene to add the model to
         mdl: {BinaryReader}: Reader for the binary model file
         mdx: {BinaryReader}: Reader for the binary mesh data file
 
@@ -199,7 +198,7 @@ def gl_load_stitched_model(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -
         - Creates a single mesh for each unique material
         - Assembles the full model hierarchy.
     """
-    root = Node(scene, None, "root")
+    root = Node(None, "root")
 
     mdl.seek(40)
     offset = mdl.read_uint32()
@@ -267,7 +266,7 @@ def gl_load_stitched_model(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -
     for key, value in merged.items():
         vertex_data = bytearray()
         elements: list[int] = []
-        child = Node(scene, root, "child")
+        child = Node(root, "child")
         root.children.append(child)
 
         last_element = 0
@@ -335,6 +334,6 @@ def gl_load_stitched_model(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -
             element_data += struct.pack("H", element)
 
         texture, lightmap = key.split("\n")
-        child.mesh = Mesh(scene, child, texture, lightmap, vertex_data, element_data, 40, mdx_data_bitflags, 0, 12, 24, 32)
+        child.mesh = Mesh(child, texture, lightmap, vertex_data, element_data, 40, mdx_data_bitflags, 0, 12, 24, 32)
 
-    return Model(scene, root)
+    return Model(root)

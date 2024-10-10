@@ -538,9 +538,11 @@ class Scene:
         if self.should_hide_obj(obj):
             return
 
-        model: Model = self.model(obj.model)
+        model: Model | None = self.model(obj.model)
+        if model is None:
+            return  # Skip rendering this object for now
         transform = transform * obj.transform()
-        model.draw(shader, transform, override_texture=obj.override_texture)
+        model.draw(self, shader, transform, override_texture=obj.override_texture)
 
         for child in obj.children:
             self._render_object(shader, child, transform)
@@ -710,64 +712,67 @@ class Scene:
         RobustLogger().debug(f"(background task) Finished model '{name}.mdl'")
         return (name, model)
 
-    def model(self, name: str) -> Model:
+    def model(self, name: str) -> Model | None:
+        if name in self.models:
+            model = self.models[name]
+            if isinstance(model, Future):
+                if model.done():
+                    self.models[name] = model.result()
+                    return model.result()
+                else:
+                    return None  # Model is still loading
+            else:
+                return model
+        else:
+            # Start loading the model asynchronously
+            future = self.executor.submit(self.fetch_model_data, name, self.installation, self._module)
+            self.models[name] = future
+            return None  # Model is not yet loaded
+
+    def fetch_model_data(self, name: str, installation: Installation | None, module: Module | None) -> Model:
         mdl_data = EMPTY_MDL_DATA
         mdx_data = EMPTY_MDX_DATA
 
-        if name not in self.models:
-            if name == "waypoint":
-                mdl_data = WAYPOINT_MDL_DATA
-                mdx_data = WAYPOINT_MDX_DATA
-            elif name == "sound":
-                mdl_data = SOUND_MDL_DATA
-                mdx_data = SOUND_MDX_DATA
-            elif name == "store":
-                mdl_data = STORE_MDL_DATA
-                mdx_data = STORE_MDX_DATA
-            elif name == "entry":
-                mdl_data = ENTRY_MDL_DATA
-                mdx_data = ENTRY_MDX_DATA
-            elif name == "encounter":
-                mdl_data = ENCOUNTER_MDL_DATA
-                mdx_data = ENCOUNTER_MDX_DATA
-            elif name == "trigger":
-                mdl_data = TRIGGER_MDL_DATA
-                mdx_data = TRIGGER_MDX_DATA
-            elif name == "camera":
-                mdl_data = CAMERA_MDL_DATA
-                mdx_data = CAMERA_MDX_DATA
-            elif name == "empty":
-                mdl_data = EMPTY_MDL_DATA
-                mdx_data = EMPTY_MDX_DATA
-            elif name == "cursor":
-                mdl_data = CURSOR_MDL_DATA
-                mdx_data = CURSOR_MDX_DATA
-            elif name == "unknown":
-                mdl_data = UNKNOWN_MDL_DATA
-                mdx_data = UNKNOWN_MDX_DATA
-            elif self.installation is not None:
-                capsules: list[ModulePieceResource] = [] if self._module is None else self.module.capsules()
-                mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
-                mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
-                if mdl_search is not None and mdl_search.data:
-                    mdl_data: bytes = mdl_search.data
-                if mdx_search is not None and mdx_search.data:
-                    mdx_data: bytes = mdx_search.data
+        if name == "waypoint":
+            mdl_data, mdx_data = WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA
+        elif name == "sound":
+            mdl_data, mdx_data = SOUND_MDL_DATA, SOUND_MDX_DATA
+        elif name == "store":
+            mdl_data, mdx_data = STORE_MDL_DATA, STORE_MDX_DATA
+        elif name == "entry":
+            mdl_data, mdx_data = ENTRY_MDL_DATA, ENTRY_MDX_DATA
+        elif name == "encounter":
+            mdl_data, mdx_data = ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA
+        elif name == "trigger":
+            mdl_data, mdx_data = TRIGGER_MDL_DATA, TRIGGER_MDX_DATA
+        elif name == "camera":
+            mdl_data, mdx_data = CAMERA_MDL_DATA, CAMERA_MDX_DATA
+        elif name == "empty":
+            mdl_data, mdx_data = EMPTY_MDL_DATA, EMPTY_MDX_DATA
+        elif name == "cursor":
+            mdl_data, mdx_data = CURSOR_MDL_DATA, CURSOR_MDX_DATA
+        elif name == "unknown":
+            mdl_data, mdx_data = UNKNOWN_MDL_DATA, UNKNOWN_MDX_DATA
+        elif installation is not None:
+            capsules: list[ModulePieceResource] = [] if module is None else module.capsules()
+            mdl_search: ResourceResult | None = installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
+            mdx_search: ResourceResult | None = installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
+            if mdl_search is not None and mdl_search.data:
+                mdl_data = mdl_search.data
+            if mdx_search is not None and mdx_search.data:
+                mdx_data = mdx_search.data
 
-            try:
-                mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
-                mdx_reader = BinaryReader.from_bytes(mdx_data)
-                model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
-            except Exception:  # noqa: BLE001
-                # print(format_exception_with_variables(e))
-                model = gl_load_stitched_model(
-                    self,
-                    BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
-                    BinaryReader.from_bytes(EMPTY_MDX_DATA),
-                )
+        try:
+            mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
+            mdx_reader = BinaryReader.from_bytes(mdx_data)
+            model = gl_load_stitched_model(mdl_reader, mdx_reader)
+        except Exception:  # noqa: BLE001
+            model = gl_load_stitched_model(
+                BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+                BinaryReader.from_bytes(EMPTY_MDX_DATA),
+            )
 
-            self.models[name] = model
-        return self.models[name]
+        return model
 
     def update_textures(self):
         while not self.textures_data_queue.empty():

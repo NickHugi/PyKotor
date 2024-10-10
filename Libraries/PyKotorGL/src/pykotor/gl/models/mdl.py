@@ -32,18 +32,18 @@ if TYPE_CHECKING:
 
 
 class Model:
-    def __init__(self, scene: Scene, root: Node):
-        self._scene: Scene = scene
+    def __init__(self, root: Node):
         self.root: Node = root
 
     def draw(
         self,
+        scene: Scene,
         shader: Shader,
         transform: mat4,
         *,
         override_texture: str | None = None,
     ):
-        self.root.draw(shader, transform, override_texture)
+        self.root.draw(scene, shader, transform, override_texture)
 
     def find(self, name: str) -> Node | None:
         nodes: list[Node] = [self.root]
@@ -209,7 +209,6 @@ class Node:
 class Mesh:
     def __init__(
         self,
-        scene: Scene,
         node: Node,
         texture: str,
         lightmap: str,
@@ -222,11 +221,10 @@ class Mesh:
         texture_offset: int,
         lightmap_offset: int,
     ):
-        self._scene: Scene = scene
         self._node: Node = node
 
-        self.texture: str = "NULL"
-        self.lightmap: str = "NULL"
+        self.texture: str = texture
+        self.lightmap: str = lightmap
 
         self.vertex_data = vertex_data
         self.mdx_size = block_size
@@ -256,18 +254,17 @@ class Mesh:
         if data_bitflags & 0x0020 and texture and texture != "NULL":
             glEnableVertexAttribArray(3)
             glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, block_size, ctypes.c_void_p(texture_offset))
-            self.texture = texture
 
         if data_bitflags & 0x0004 and lightmap and lightmap != "NULL":
             glEnableVertexAttribArray(4)
             glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, block_size, ctypes.c_void_p(lightmap_offset))
-            self.lightmap = lightmap
 
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
 
     def draw(
         self,
+        scene: Scene,
         shader: Shader,
         transform: mat4,
         override_texture: str | None = None,
@@ -275,10 +272,10 @@ class Mesh:
         shader.set_matrix4("model", transform)
 
         glActiveTexture(GL_TEXTURE0)
-        self._scene.load_texture(override_texture or self.texture).use()
+        scene.load_texture(override_texture or self.texture).use()
 
         glActiveTexture(GL_TEXTURE1)
-        self._scene.load_texture(self.lightmap, lightmap=True).use()
+        scene.load_texture(self.lightmap, lightmap=True).use()
 
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
