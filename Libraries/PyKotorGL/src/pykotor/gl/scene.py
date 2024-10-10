@@ -496,7 +496,6 @@ class Scene(ShowBase):
             self._render_object(self.shader, obj, mat4())
 
         # Draw all instance types that lack a proper model
-        glEnable(GL_BLEND)
         self.plain_shader.use()
         self.plain_shader.set_matrix4("view", self.camera.view())
         self.plain_shader.set_matrix4("projection", self.camera.projection())
@@ -511,7 +510,6 @@ class Scene(ShowBase):
             obj.cube(self).draw(self.plain_shader, obj.transform())
 
         # Draw boundary for selected objects
-        glDisable(GL_CULL_FACE)
         self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.8))
         for obj in self.selection:
             obj.boundary(self).draw(self.plain_shader, obj.transform())
@@ -668,11 +666,10 @@ class Scene(ShowBase):
                 RobustLogger().debug(f"(background task) Parsing: '{name}.mdl'")
                 mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
                 mdx_reader = BinaryReader.from_bytes(mdx_data)
-                model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
+                model = gl_load_stitched_model(mdl_reader, mdx_reader)
             except Exception as e:  # noqa: BLE001
                 RobustLogger().warning(f"Error loading model '{name}'", exc_info=e)
                 model = gl_load_stitched_model(
-                    self,
                     BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
                     BinaryReader.from_bytes(EMPTY_MDX_DATA),
                 )
