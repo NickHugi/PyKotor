@@ -17,13 +17,7 @@ from OpenGL.raw.GL.ARB.vertex_shader import GL_FLOAT
 from OpenGL.raw.GL.VERSION.GL_1_0 import GL_UNSIGNED_SHORT
 from OpenGL.raw.GL.VERSION.GL_1_1 import glDrawElements
 from OpenGL.raw.GL.VERSION.GL_1_3 import GL_TEXTURE0, GL_TEXTURE1, glActiveTexture
-from OpenGL.raw.GL.VERSION.GL_1_5 import (
-    GL_ARRAY_BUFFER,
-    GL_ELEMENT_ARRAY_BUFFER,
-    GL_STATIC_DRAW,
-    glBindBuffer,
-    glBufferData,
-)
+from OpenGL.raw.GL.VERSION.GL_1_5 import GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, glBindBuffer, glBufferData
 from OpenGL.raw.GL.VERSION.GL_2_0 import glEnableVertexAttribArray
 from OpenGL.raw.GL.VERSION.GL_3_0 import glBindVertexArray
 from glm import mat4, quat, vec3, vec4
@@ -70,23 +64,6 @@ class Model:
         return all_nodes
 
     def box(self) -> tuple[vec3, vec3]:
-        """Calculates bounding box of the scene.
-
-        Args:
-        ----
-            self: {Node to calculate bounding box for}.
-
-        Returns:
-        -------
-            tuple[vec3, vec3]: {Minimum and maximum points of bounding box}
-
-        Processing Logic:
-        ----------------
-            - Initialize minimum and maximum points to extreme values
-            - Recursively calculate bounding box of each child node
-            - Expand bounding box by 0.1 units in each direction
-            - Return minimum and maximum points of final bounding box.
-        """
         min_point = vec3(100000, 100000, 100000)
         max_point = vec3(-100000, -100000, -100000)
         self._box_rec(self.root, mat4(), min_point, max_point)
@@ -107,26 +84,8 @@ class Model:
         min_point: vec3,
         max_point: vec3,
     ):
-        """Calculates bounding box of node and its children recursively.
-
-        Call the 'box' function to get started here, don't call this directly.
-
-        Args:
-        ----
-            node: {Node object whose bounding box is calculated}
-            transform: {Transformation matrix to apply on node}
-            min_point: {vec3 to store minimum point of bounding box}
-            max_point: {vec3 to store maximum point of bounding box}.
-
-        Processing Logic:
-        ----------------
-            - Apply transformation on node position and rotation
-            - Iterate through vertices of node mesh if present
-            - Transform vertices and update bounding box points
-            - Recursively call function for each child node.
-        """
-        transform = transform * glm.translate(node._position)
-        transform = transform * glm.mat4_cast(node._rotation)
+        transform = transform * glm.translate(node._position)  # noqa: SLF001
+        transform = transform * glm.mat4_cast(node._rotation)  # noqa: SLF001
 
         if node.mesh and node.render:
             vertex_count = len(node.mesh.vertex_data) // node.mesh.mdx_size
@@ -168,7 +127,7 @@ class Node:
     def root(self) -> Node | None:
         ancestor: Node | None = self._parent
         while ancestor:
-            ancestor = ancestor._parent
+            ancestor = ancestor._parent  # noqa: SLF001
         return ancestor
 
     def ancestors(self) -> list[Node]:
@@ -176,15 +135,15 @@ class Node:
         ancestor: Node | None = self._parent
         while ancestor:
             ancestors.append(ancestor)
-            ancestor = ancestor._parent
+            ancestor = ancestor._parent  # noqa: SLF001
         return list(reversed(ancestors))
 
     def global_position(self) -> vec3:  # sourcery skip: class-extract-method
         ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = transform * glm.translate(ancestor._position)
-            transform = transform * glm.mat4_cast(ancestor._rotation)
+            transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
+            transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         position = vec3()
         glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())
         return position
@@ -193,8 +152,8 @@ class Node:
         ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = transform * glm.translate(ancestor._position)
-            transform = transform * glm.mat4_cast(ancestor._rotation)
+            transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
+            transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         rotation = quat()
         glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())
         return rotation
@@ -203,8 +162,8 @@ class Node:
         ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = transform * glm.translate(ancestor._position)
-            transform = transform * glm.mat4_cast(ancestor._rotation)
+            transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
+            transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         return transform
 
     def transform(self) -> mat4:
@@ -263,31 +222,6 @@ class Mesh:
         texture_offset: int,
         lightmap_offset: int,
     ):
-        """Initializes a Mesh object.
-
-        Args:
-        ----
-            scene: Scene - The scene object
-            node: Node - The node object
-            texture: str - The texture path
-            lightmap: str - The lightmap path
-            vertex_data: bytearray - The vertex data
-            element_data: bytearray - The element data
-            block_size: int - The block size
-            data_bitflags: int - The data bitflags
-            vertex_offset: int - The vertex offset
-            normal_offset: int - The normal offset
-            texture_offset: int - The texture offset
-            lightmap_offset: int - The lightmap offset
-
-        Processing Logic:
-        ----------------
-            - Generates VAO and VBO
-            - Binds vertex and element data to VBO and EBO
-            - Enables vertex attributes based on bitflags
-            - Sets texture and lightmap if present
-            - Unbinds buffers.
-        """
         self._scene: Scene = scene
         self._node: Node = node
 
@@ -341,10 +275,10 @@ class Mesh:
         shader.set_matrix4("model", transform)
 
         glActiveTexture(GL_TEXTURE0)
-        self._scene.loadTexture(override_texture or self.texture).use()
+        self._scene.load_texture(override_texture or self.texture).use()
 
         glActiveTexture(GL_TEXTURE1)
-        self._scene.loadTexture(self.lightmap, lightmap=True).use()
+        self._scene.load_texture(self.lightmap, lightmap=True).use()
 
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
@@ -357,21 +291,6 @@ class Cube:
         min_point: vec3 | None = None,
         max_point: vec3 | None = None,
     ):
-        """Initializes a cube mesh.
-
-        Args:
-        ----
-            scene: Scene: The scene object
-            min_point: vec3 | None: The minimum point of the cube (default is (-1, -1, -1))
-            max_point: vec3 | None: The maximum point of the cube (default is (1, 1, 1)).
-
-        Processing Logic:
-        ----------------
-            - Sets default values for min_point and max_point if not provided
-            - Generates vertex and element arrays for the cube mesh
-            - Binds VAO, VBO and EBO buffers and uploads data
-            - Enables vertex attribute arrays.
-        """
         self._scene = scene
 
         min_point = vec3(-1.0, -1.0, -1.0) if min_point is None else min_point
@@ -429,21 +348,6 @@ class Boundary:
         scene: Scene,
         vertices: list[Vector3],
     ):
-        """Initializes a mesh from vertices.
-
-        Args:
-        ----
-            scene: Scene - The scene to add this mesh to
-            vertices: list[Vector3] - The vertices of the mesh
-
-        Processing Logic:
-        ----------------
-            - Build normalized data from vertices
-            - Generate VAO, VBO, EBO OpenGL buffers
-            - Populate VBO with vertex data
-            - Populate EBO with element indices
-            - Configure vertex attributes.
-        """
         self._scene: Scene = scene
 
         vertices, elements = self._build_nd(vertices)
@@ -473,24 +377,6 @@ class Boundary:
         radius: float,
         smoothness: int = 10,
     ) -> Boundary:
-        """Generates a circular boundary from a circle.
-
-        Args:
-        ----
-            scene: Scene - The scene to add the boundary to
-            radius: float - The radius of the circle
-            smoothness: int = 10 - The number of vertices used to approximate the circle
-
-        Returns:
-        -------
-            Boundary - The generated circular boundary
-
-        Processing Logic:
-        ----------------
-            - Calculate vertex positions around the circle at intervals of smoothness
-            - Add vertices rotating around the circle four times
-            - Return a new Boundary instance with the calculated vertices.
-        """
         vertices: list[Vector3] = []
         for i in range(smoothness):
             x = math.cos(i / smoothness * math.pi / 2)

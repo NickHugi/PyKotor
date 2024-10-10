@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import math
-import threading
-import traceback
+import multiprocessing
+import queue
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures._base import Future
 from copy import copy
-from multiprocessing import JoinableQueue, Queue
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
@@ -63,33 +63,11 @@ from pykotor.gl.models.predefined_mdl import (
     WAYPOINT_MDX_DATA,
 )
 from pykotor.gl.models.read_mdl import gl_load_stitched_model
-from pykotor.gl.shader import (
-    KOTOR_FSHADER,
-    KOTOR_VSHADER,
-    PICKER_FSHADER,
-    PICKER_VSHADER,
-    PLAIN_FSHADER,
-    PLAIN_VSHADER,
-    Shader,
-    Texture,
-)
+from pykotor.gl.shader import KOTOR_FSHADER, KOTOR_VSHADER, PICKER_FSHADER, PICKER_VSHADER, PLAIN_FSHADER, PLAIN_VSHADER, Shader, Texture
 from pykotor.resource.formats.lyt import LYTRoom
 from pykotor.resource.formats.lyt.lyt_data import LYT
-from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import TwoDA, read_2da
-from pykotor.resource.generics.git import (
-    GIT,
-    GITCamera,
-    GITCreature,
-    GITDoor,
-    GITEncounter,
-    GITInstance,
-    GITPlaceable,
-    GITSound,
-    GITStore,
-    GITTrigger,
-    GITWaypoint,
-)
+from pykotor.resource.generics.git import GIT, GITCamera, GITCreature, GITDoor, GITEncounter, GITInstance, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from pykotor.resource.generics.utd import UTD
 from pykotor.resource.generics.utp import UTP
 from pykotor.resource.generics.uts import UTS
@@ -99,6 +77,8 @@ from utility.common.more_collections import CaseInsensitiveDict
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from concurrent.futures import Future
+    from multiprocessing import Queue
 
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
@@ -107,6 +87,7 @@ if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
     from pykotor.gl.models.mdl import Model, Node
     from pykotor.resource.formats.lyt import LYT
+    from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.generics.git import GIT
     from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.utc import UTC
@@ -127,57 +108,42 @@ class Scene:
         installation: Installation | None = None,
         module: Module | None = None,
     ):
-        """Initializes the renderer.
-
-        Args:
-        ----
-            installation: Installation: The installation to load resources from
-            module: Module: The active module
-
-        Processing Logic:
-        ----------------
-            - Initializes OpenGL settings
-            - Sets up default textures, shaders, camera
-            - Loads 2DA tables from installation
-            - Hides certain object types by default
-            - Sets other renderer options.
-        """
         module_id_part = "" if module is None else f" from module '{module.root()}'"
-        RobustLogger().info("Start initialize Scene%s", module_id_part)
+        RobustLogger().info(f"Start initialize Scene{module_id_part}")
 
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glCullFace(GL_BACK)
 
-        self.executor = ThreadPoolExecutor(max_workers=4)
-        self.texture_data_futures = {}
-        self.textures_data_queue: dict[str, tuple[TPC | None, bool]] = {}  # This will hold the texture data loaded in the background
-        self.textures_data_lock: threading.Lock = threading.Lock()
-        self.model_data_futures = {}
-        self.models_data_queue: dict[str, Any] = {}
-        self.models_data_lock: threading.Lock = threading.Lock()
+        self.executor: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=multiprocessing.cpu_count())
+
+        self.textures_data_queue: multiprocessing.Queue[tuple[str, TPC | None, bool]] = multiprocessing.Queue()
+        """Textures currently loading in a child process with ProcessPoolExecutor"""
+        self.pending_textures: set[str] = set()
+        """Textures currently on the queue. Only the main process should ever need access to this."""
+        self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
+        """Fully loaded textures."""
+
+        self.blank_texture: Texture = Texture.from_color(255, 0, 255)
+        self.blank_lightmap: Texture = Texture.from_color(0, 0, 0)
+        self.textures["NULL"] = Texture.from_color()
+
+        self.models_data_queue: multiprocessing.Queue[tuple[str, Model]] = multiprocessing.Queue()
+        self.pending_models: set[str] = set()
+        self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
+
+        self.cursor: RenderObject = RenderObject("cursor")
+        self.objects: dict[Any, RenderObject] = {}
+        """RenderObjects currently in the scene."""
 
         self.installation: Installation | None = installation
-        self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
-        self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
-        self.objects: dict[Any, RenderObject] = {}
         self.selection: list[RenderObject] = []
         self._module: Module | None = module
         self.camera: Camera = Camera()
-        self.cursor: RenderObject = RenderObject("cursor")
-        self.blank_texture: Texture | None = None
-        self.blank_lightmap: Texture | None = None
-
-        self.textures["NULL"] = Texture.from_color()
 
         self.git: GIT | None = None
         self.layout: LYT | None = None
-        self.clearCacheBuffer: list[ResourceIdentifier] = []
-
-        self.texture_task_queue: JoinableQueue = JoinableQueue()
-        self.model_task_queue: JoinableQueue = JoinableQueue()
-        self.texture_result_queue: Queue = Queue()
-        self.model_result_queue: Queue = Queue()
+        self.clear_cache_buffer: list[ResourceIdentifier] = []
 
         self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
         self.plain_shader: Shader = Shader(PLAIN_VSHADER, PLAIN_FSHADER)
@@ -191,7 +157,7 @@ class Scene:
         self.table_heads: TwoDA = TwoDA()
         self.table_baseitems: TwoDA = TwoDA()
         if installation is not None:
-            self.setInstallation(installation)
+            self.set_installation(installation)
 
         self.hide_creatures: bool = False
         self.hide_placeables: bool = False
@@ -209,116 +175,69 @@ class Scene:
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
         module_id_part = "" if module is None else f" from module '{module.root()}'"
-        RobustLogger().debug("Completed pre-initialize Scene%s", module_id_part)
+        RobustLogger().debug(f"Completed pre-initialize Scene{module_id_part}")
 
-    def setInstallation(self, installation: Installation):
+    def set_installation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
-
-    def getCreatureRenderObject(
+    def get_creature_render_object(
         self,
         instance: GITCreature,
         utc: UTC | None = None,
     ) -> RenderObject:
-        """Generates a render object for a creature instance.
+        assert self.installation is not None, "Installation is not set"
 
-        Args:
-        ----
-            instance: {Creature instance}: Creature instance to generate render object for
-            utc: {Optional timestamp}: Timestamp to use for generation or current time if None
+        def create_and_attach_object(
+            parent: RenderObject,
+            model: str,
+            hook: Node | None,
+            texture: str | None = None,
+        ) -> RenderObject:
+            child = RenderObject(model, override_texture=texture)
+            if hook:
+                child.set_transform(hook.global_transform())
+            parent.children.append(child)
+            return child
 
-        Returns:
-        -------
-            RenderObject: Render object representing the creature
-
-        Processing Logic:
-        ----------------
-            - Gets body, head, weapon and mask models/textures based on creature appearance
-            - Creates base render object and attaches head, hands and mask sub-objects
-            - Catches exceptions and returns default "unknown" render object if model loading fails.
-        """
-        assert self.installation is not None
         try:
+            utc = utc or self._resource_from_gitinstance(instance, self.module.creature)
             if utc is None:
-                utc = self._resource_from_gitinstance(instance, self.module.creature)
-            if utc is None:
-                RobustLogger().error(f"Cannot getCreatureRenderObject of GITCreature instance '{instance.identifier()}', not found in mod/override.")
+                RobustLogger().error(f"Cannot get_creature_render_object of GITCreature instance '{instance.identifier()}', not found in mod/override.")
                 return RenderObject("unknown", data=instance)
 
-            head_obj: RenderObject | None = None
-            mask_hook = None
-
-            body_model, body_texture = creature.get_body_model(
-                utc,
-                self.installation,
-                appearance=self.table_creatures,
-                baseitems=self.table_baseitems,
-            )
+            body_model, body_texture = creature.get_body_model(utc, self.installation, appearance=self.table_creatures, baseitems=self.table_baseitems)
             if not body_model or not body_model.strip():
-                raise ValueError("creature.get_body_model failed to return a valid body_model resref str.")  # noqa: TRY301
-            head_model, head_texture = creature.get_head_model(
-                utc,
-                self.installation,
-                appearance=self.table_creatures,
-                heads=self.table_heads,
-            )
-            rhand_model, lhand_model = creature.get_weapon_models(
-                utc,
-                self.installation,
-                appearance=self.table_creatures,
-                baseitems=self.table_baseitems,
-            )
-            mask_model = creature.get_mask_model(
-                utc,
-                self.installation,
-            )
-
+                RobustLogger().error("creature.get_body_model failed to return a valid body_model resref str.")
+                return RenderObject("unknown", data=instance)
             obj = RenderObject(body_model, data=instance, override_texture=body_texture)
+            body: Model = self.model(body_model)
 
-            head_hook = self.model(body_model).find("headhook")
-            if head_model and head_hook:
-                head_obj = RenderObject(head_model, override_texture=head_texture)
-                head_obj.set_transform(head_hook.global_transform())
-                obj.children.append(head_obj)
+            head_model, head_texture = creature.get_head_model(utc, self.installation, appearance=self.table_creatures, heads=self.table_heads)
+            head_hook: Node | None = body.find("headhook")
+            head_obj: RenderObject | None = create_and_attach_object(obj, head_model, head_hook, head_texture) if head_model and head_hook else None
 
-            rhand_hook = self.model(body_model).find("rhand")
-            if rhand_model and rhand_hook:
-                self._transform_hand(rhand_model, rhand_hook, obj)
-            lhand_hook = self.model(body_model).find("lhand")
-            if lhand_model and lhand_hook:
-                self._transform_hand(lhand_model, lhand_hook, obj)
-            if head_hook is None:
-                mask_hook = self.model(body_model).find("gogglehook")
-            elif head_model:
-                mask_hook = self.model(head_model).find("gogglehook")
+            mask_model: str | None = creature.get_mask_model(utc, self.installation)
+            mask_hook: Node | None = body.find("gogglehook") if head_hook is None else self.model(head_model).find("gogglehook") if head_model else None
             if mask_model and mask_hook:
-                mask_obj = RenderObject(mask_model)
-                mask_obj.set_transform(mask_hook.global_transform())
-                if head_hook is None:
-                    obj.children.append(mask_obj)
-                elif head_obj is not None:
-                    head_obj.children.append(mask_obj)
+                create_and_attach_object(head_obj or obj, mask_model, mask_hook)
 
-        except Exception:
-            RobustLogger().exception("Exception occurred getting the creature render object.")
-            # If failed to load creature models, use the unknown model instead
+            rhand_model, lhand_model = creature.get_weapon_models(utc, self.installation, appearance=self.table_creatures, baseitems=self.table_baseitems)
+            rhand_hook, lhand_hook = body.find("rhand"), body.find("lhand")
+
+            if rhand_model and rhand_hook:
+                create_and_attach_object(obj, rhand_model, rhand_hook)
+            if lhand_model and lhand_hook:
+                create_and_attach_object(obj, lhand_model, lhand_hook)
+
+        except Exception as e:  # noqa: BLE001
+            RobustLogger().warning("Could not get the creature render object due to an error.", exc_info=e)
             obj = RenderObject("unknown", data=instance)
 
         return obj
-
-    def _transform_hand(
-        self,
-        modelname: str,
-        hook: Node,
-        obj: RenderObject,
-    ):
-        rhand_obj = RenderObject(modelname)
-        rhand_obj.set_transform(hook.global_transform())
-        obj.children.append(rhand_obj)
 
     @property
     def module(self) -> Module:
@@ -327,77 +246,65 @@ class Scene:
         return self._module
 
     @module.setter
-    def module(self, value):
+    def module(self, value: Module):
         self._module = value
 
-    def _getGit(self) -> GIT | None:
-        module_resource_git = self.module.git()
+    def _get_git(self) -> GIT | None:
+        module_resource_git: ModuleResource[GIT] | None = self.module.git()
         return self._resource_from_module(module_resource_git, "' is missing a GIT.")
 
-    def _getLyt(self) -> LYT | None:
-        layout_module_resource = self.module.layout()
+    def _get_lyt(self) -> LYT | None:
+        layout_module_resource: ModuleResource[LYT] | None = self.module.layout()
         return self._resource_from_module(layout_module_resource, "' is missing a LYT.")
 
-    def _getIfo(self) -> IFO | None:
-        info_module_resource = self.module.info()
+    def _get_ifo(self) -> IFO | None:
+        info_module_resource: ModuleResource[IFO] | None = self.module.info()
         return self._resource_from_module(info_module_resource, "' is missing an IFO.")
 
     def _resource_from_module(self, module_res: ModuleResource[T] | None, errpart: str) -> T | None:
         if module_res is None:
             RobustLogger().error(f"Cannot render a frame in Scene when this module '{self.module.root()}{errpart}")
             return None
-        git_resource = module_res.resource()
-        if git_resource is None:
+        resource: T | None = module_res.resource()
+        if resource is None:
             RobustLogger().error(f"No locations found for '{module_res.identifier()}', needed to render a Scene for module '{self.module.root()}'")
             return None
-        return git_resource
+        return resource
 
     def _resource_from_gitinstance(
         self,
         instance: GITInstance,
         lookup_func: Callable[..., ModuleResource[T] | None],
     ) -> T | None:
-        resource = lookup_func(str(instance.resref))
+        resource: ModuleResource[T] | None = lookup_func(str(instance.resref))
         if resource is None:
             RobustLogger().error(f"The module '{self.module.root()}' does not store '{instance.identifier()}' needed to render a Scene.")
             return None
-        resource_data = resource.resource()
+        resource_data: T | None = resource.resource()
         if resource_data is None:
             RobustLogger().error(f"No locations found for '{resource.identifier()}' needed by module '{self.module.root()}'")
             return None
         return resource_data
 
-    def buildCache(
+    def build_cache(
         self,
         *,
         clear_cache: bool = False,
     ):
-        """Builds and caches game objects from the module.
-
-        Args:
-        ----
-            clear_cache (bool): Whether to clear the existing cache
-
-        Processing Logic:
-        ----------------
-            - Clear existing cache if clear_cache is True
-            - Delete objects matching identifiers in clearCacheBuffer
-            - Retrieve/update game objects from module
-            - Add/update objects in cache..
-        """
         if self._module is None:
             return
 
         if clear_cache:
-            self.objects = {}
+            self.objects.clear()
 
         if self.git is None:
-            self.git = self._getGit()
+            self.git = self._get_git()
 
         if self.layout is None:
-            self.layout = self._getLyt()
+            self.layout = self._get_lyt()
 
-        for identifier in self.clearCacheBuffer:
+        assert self.git is not None, "GIT is not loaded"
+        for identifier in self.clear_cache_buffer:
             for git_creature in self.git.creatures.copy():
                 if identifier.resname == git_creature.resref and identifier.restype is ResourceType.UTC:
                     del self.objects[git_creature]
@@ -414,12 +321,12 @@ class Scene:
             if identifier.restype is ResourceType.GIT:
                 for instance in self.git.instances():
                     del self.objects[instance]
-                self.git = self._getGit()
+                self.git = self._get_git()
             if identifier.restype is ResourceType.LYT:
                 for room in self.layout.rooms:
                     del self.objects[room]
-                self.layout = self._getLyt()
-        self.clearCacheBuffer = []
+                self.layout = self._get_lyt()
+        self.clear_cache_buffer = []
 
         for room in self.layout.rooms:
             if room not in self.objects:
@@ -462,7 +369,7 @@ class Scene:
 
         for git_creature in self.git.creatures:
             if git_creature not in self.objects:
-                self.objects[git_creature] = self.getCreatureRenderObject(git_creature)
+                self.objects[git_creature] = self.get_creature_render_object(git_creature)
 
             self.objects[git_creature].set_position(git_creature.position.x, git_creature.position.y, git_creature.position.z)
             self.objects[git_creature].set_rotation(0, 0, git_creature.bearing)
@@ -492,8 +399,7 @@ class Scene:
                 if uts is None:
                     uts = UTS()
 
-                obj = RenderObject("sound", vec3(), vec3(),
-                                    data=sound, gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance))
+                obj = RenderObject("sound", vec3(), vec3(), data=sound, gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance))
                 self.objects[sound] = obj
 
             self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
@@ -501,8 +407,7 @@ class Scene:
 
         for encounter in self.git.encounters:
             if encounter not in self.objects:
-                obj = RenderObject("encounter", vec3(), vec3(),
-                                    data=encounter, gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points))
+                obj = RenderObject("encounter", vec3(), vec3(), data=encounter, gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points))
                 self.objects[encounter] = obj
 
             self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
@@ -510,8 +415,7 @@ class Scene:
 
         for trigger in self.git.triggers:
             if trigger not in self.objects:
-                obj = RenderObject("trigger", vec3(), vec3(),
-                                    data=trigger, gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points))
+                obj = RenderObject("trigger", vec3(), vec3(), data=trigger, gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points))
                 self.objects[trigger] = obj
 
             self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
@@ -566,37 +470,8 @@ class Scene:
             del objects[obj]
 
     def render(self):
-        """Renders the scene.
-
-        Args:
-        ----
-            self: Renderer object containing scene data
-
-        Returns:
-        -------
-            None: Does not return anything, renders directly to the framebuffer
-
-        Processing Logic:
-        ----------------
-            - Clear color and depth buffers
-            - Enable/disable backface culling
-            - Set view and projection matrices
-            - Render opaque geometry with lighting
-            - Render instanced objects without lighting
-            - Render selection bounding boxes
-            - Render selection boundaries
-            - Render non-selected boundaries
-            - Render cursor if shown.
-        """
-        if self.blank_texture is None:
-            self.blank_texture = Texture.from_color(255, 0, 255)
-        if self.blank_lightmap is None:
-            self.blank_lightmap = Texture.from_color(0,0,0)
-        #module_id_part = "" if self._module is None else f" from module '{self.module._id}'"
-        #get_root_logger().debug("Refresh/build cache for scene%s", module_id_part)
-        self.buildCache()
+        self.build_cache()
         self.update_textures()  # Ensure newly loaded textures are created
-        #self.update_models()
 
         self._prepare_gl_and_shader()
         self.shader.set_bool("enableLightmap", self.use_lightmap)
@@ -605,7 +480,6 @@ class Scene:
             self._render_object(self.shader, obj, mat4())
 
         # Draw all instance types that lack a proper model
-        #get_root_logger().debug("Draw all instance types that lack a proper model...")
         glEnable(GL_BLEND)
         self.plain_shader.use()
         self.plain_shader.set_matrix4("view", self.camera.view())
@@ -616,13 +490,11 @@ class Scene:
             self._render_object(self.plain_shader, obj, mat4())
 
         # Draw bounding box for selected objects
-        #get_root_logger().debug("Draw bounding box for selected objects...")
         self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
         for obj in self.selection:
             obj.cube(self).draw(self.plain_shader, obj.transform())
 
         # Draw boundary for selected objects
-        #get_root_logger().debug("Draw boundary for selected objects...")
         glDisable(GL_CULL_FACE)
         self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.8))
         for obj in self.selection:
@@ -639,35 +511,6 @@ class Scene:
         if self.show_cursor:
             self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
             self._render_object(self.plain_shader, self.cursor, mat4())
-
-    def update_textures(self):
-        """Create OpenGL textures from data loaded in background."""
-        with self.textures_data_lock:
-            for name, result in list(self.textures_data_queue.items()):
-                if result is None:  # still processing...
-                    continue
-                tpc, is_lightmap = result
-                if name in self.textures:
-                    continue  # Skip if already created
-                if tpc is None:
-                    if self.blank_lightmap is None or self.blank_texture is None:
-                        return
-                    self.textures[name] = self.blank_lightmap if is_lightmap else self.blank_texture
-                else:
-                    self.textures[name] = Texture.from_tpc(tpc)
-                del self.textures_data_queue[name]
-
-    def update_models(self):
-        """Currently unused."""
-        with self.models_data_lock:
-            for result in self.models_data_queue.copy().values():
-                if result is None:  # still processing...
-                    continue
-                name, model = result
-                if name in self.models:
-                    continue  # Skip if already created.
-                self.models[name] = model
-                del self.models_data_queue[name]
 
     def should_hide_obj(self, obj: RenderObject) -> bool:
         result = False
@@ -753,7 +596,7 @@ class Scene:
         if clear_existing:
             self.selection.clear()
 
-        self.buildCache()
+        self.build_cache()
         actual_target: RenderObject
         if isinstance(target, GITInstance):
             for obj in self.objects.values():
@@ -765,7 +608,7 @@ class Scene:
 
         self.selection.append(actual_target)
 
-    def screenToWorld(self, x: int, y: int) -> Vector3:
+    def screen_to_world(self, x: int, y: int) -> Vector3:
         self._prepare_gl_and_shader()
         group1: list[RenderObject] = [obj for obj in self.objects.values() if isinstance(obj.data, LYTRoom)]
         for obj in group1:
@@ -792,51 +635,28 @@ class Scene:
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
 
-    def loadTexture(
-        self,
-        name: str,
-        *,
-        lightmap: bool = False,
-    ):
-        """Load texture data asynchronously."""
-        if name in self.textures:
-            return self.textures[name]
-        with self.textures_data_lock:
-            if name in self.textures_data_queue:
-                return self.blank_lightmap if lightmap else self.blank_texture
-        self.executor.submit(self.fetch_texture_data, name, lightmap=lightmap)
-        return self.blank_lightmap if lightmap else self.blank_texture
-
-    def loadModel(self, name: str) -> Model:
+    def load_model(self, name: str) -> Model | Future[tuple[str, Model]]:
         """Load model data asynchronously. Currently unused."""
         if name in self.models:
             return self.models[name]
-        with self.models_data_lock:
-            if name not in self.models_data_queue:
-                RobustLogger().debug(f"Offloading {name}.mdl")
-                self.executor.submit(self.fetch_model_data, name)
-        return gl_load_stitched_model(
-            self,
-            BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
-            BinaryReader.from_bytes(EMPTY_MDX_DATA),
+        future: Future[tuple[str, Model]] = self.executor.submit(
+            self.fetch_model_data,
+            name,
+            self.installation,
+            self._module,
         )
+        return future
 
+    @staticmethod
     def fetch_model_data(
-        self,
         name: str,
-    ):
-        """This function runs in a background thread and handles the I/O and processing to get the model data.
-
-        Currently unused.
-        """
-        RobustLogger().debug(f"async queue {name}.mdl call")
+        installation: Installation | None = None,
+        module: Module | None = None,
+    ) -> tuple[str, Model]:
+        RobustLogger().debug(f"(background task) Loading '{name}.mdl' into memory...")
         mdl_data = EMPTY_MDL_DATA
         mdx_data = EMPTY_MDX_DATA
 
-        with self.models_data_lock:
-            if name in self.models_data_queue:
-                return
-            self.models_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
         if name == "waypoint":
             mdl_data = WAYPOINT_MDL_DATA
             mdx_data = WAYPOINT_MDX_DATA
@@ -867,28 +687,28 @@ class Scene:
         elif name == "unknown":
             mdl_data = UNKNOWN_MDL_DATA
             mdx_data = UNKNOWN_MDX_DATA
-        elif self.installation is not None:
-            mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER)
-            mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER)
-            if mdl_search is not None and mdx_search is not None and mdl_search.data:
+        elif installation is not None:
+            capsules: list[ModulePieceResource] = [] if module is None else module.capsules()
+            mdl_search: ResourceResult | None = installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
+            mdx_search: ResourceResult | None = installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
+            if mdl_search is not None and mdl_search.data:
                 mdl_data: bytes = mdl_search.data
+            if mdx_search is not None and mdx_search.data:
                 mdx_data: bytes = mdx_search.data
             try:
-                print(f"update from queue: {name}.mdl")
+                RobustLogger().debug(f"(background task) Parsing: '{name}.mdl'")
                 mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
                 mdx_reader = BinaryReader.from_bytes(mdx_data)
-                model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
-            except Exception as e:  # noqa: BLE001, PERF203
-                RobustLogger().debug(traceback.format_exc())
+                model = gl_load_stitched_model(mdl_reader, mdx_reader)
+            except Exception as e:  # noqa: BLE001
+                RobustLogger().warning(f"Error loading model '{name}'", exc_info=e)
                 model = gl_load_stitched_model(
-                    self,
                     BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
                     BinaryReader.from_bytes(EMPTY_MDX_DATA),
                 )
 
-        with self.models_data_lock:
-            RobustLogger().debug("async finally queue model data to load.")
-            self.models_data_queue[name] = (name, model)
+        RobustLogger().debug(f"(background task) Finished model '{name}.mdl'")
+        return (name, model)
 
     def model(self, name: str) -> Model:
         mdl_data = EMPTY_MDL_DATA
@@ -929,16 +749,17 @@ class Scene:
                 capsules: list[ModulePieceResource] = [] if self._module is None else self.module.capsules()
                 mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
                 mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
-                if mdl_search is not None and mdx_search is not None:
+                if mdl_search is not None and mdl_search.data:
                     mdl_data: bytes = mdl_search.data
+                if mdx_search is not None and mdx_search.data:
                     mdx_data: bytes = mdx_search.data
 
-            try:  # TODO(th3w1zard1): offload to another thread.
+            try:
                 mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
                 mdx_reader = BinaryReader.from_bytes(mdx_data)
                 model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
-            except Exception as e:  # noqa: BLE001
-                #print(format_exception_with_variables(e))
+            except Exception:  # noqa: BLE001
+                # print(format_exception_with_variables(e))
                 model = gl_load_stitched_model(
                     self,
                     BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
@@ -948,41 +769,73 @@ class Scene:
             self.models[name] = model
         return self.models[name]
 
-    def fetch_texture_data(
+    def update_textures(self):
+        while not self.textures_data_queue.empty():
+            try:
+                name, tpc, is_lightmap = self.textures_data_queue.get_nowait()
+                if tpc is None:
+                    self.textures[name] = self.blank_lightmap if is_lightmap else self.blank_texture
+                else:
+                    self.textures[name] = Texture.from_tpc(tpc)
+                self.pending_textures.remove(name)
+            except queue.Empty:  # noqa: PERF203
+                break
+
+    def load_texture(
         self,
         name: str,
         *,
         lightmap: bool = False,
+    ) -> Texture | None:
+        if name in self.textures:
+            return self.textures[name]
+        blank: Texture = self.blank_lightmap if lightmap else self.blank_texture
+        if name in self.pending_textures:
+            return blank  # Prevents submitting duplicates to the executor.
+        self.executor.submit(
+            self.fetch_texture_data,
+            name,
+            queue=self.textures_data_queue,
+            installation=self.installation,
+            module=self._module,
+            is_lightmap=lightmap,
+        )
+        self.pending_textures.add(name)
+        return blank
+
+    @staticmethod
+    def fetch_texture_data(
+        name: str,
+        queue: Queue[tuple[str, TPC | None, bool]],
+        installation: Installation | None = None,
+        module: Module | None = None,
+        *,
+        is_lightmap: bool = False,
     ):
-        """This function runs in a background thread and handles the I/O and processing to get the texture data."""
-        with self.textures_data_lock:
-            if name in self.textures_data_queue:
-                return
-            self.textures_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
-        type_name = "lightmap" if lightmap else "texture"
+        type_name = "lightmap" if is_lightmap else "texture"
+        tpc: TPC | None = None
         try:
-            tpc: TPC | None = None
-            # Check the textures linked to the module first
-            if self._module is not None:
-                RobustLogger().debug(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
-                module_tex = self.module.texture(name)
+            if module is not None:
+                RobustLogger().debug(f"Locating {type_name} '{name}' in module '{module.root()}'")
+                module_tex = module.texture(name)
                 if module_tex is not None:
-                    RobustLogger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
+                    RobustLogger().debug(f"Loading {type_name} '{name}' from module '{module.root()}'")
                     tpc = module_tex.resource()
 
-            # Otherwise just search through all relevant game files
-            if tpc is None and self.installation:
+            if installation is None:
+                RobustLogger().warning("An installation is required to load non-module textures.")
+            elif tpc is None:
                 RobustLogger().debug(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
-                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
-            if tpc is None:
-                RobustLogger().warning(f"MISSING {type_name.upper()}: '%s'", name)
+                capsules: list[ModulePieceResource] = [] if module is None else module.capsules()
+                tpc = installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN], capsules=capsules)
         except Exception:  # noqa: BLE001
-            RobustLogger().exception("Exception thrown while loading %s.", type_name)
-            # If an error occurs during the loading process, just use a blank image.
-            tpc = TPC()
+            RobustLogger().exception(f"Exception thrown while loading {type_name} '{name}'.")
+            tpc = None  # Use a blank texture if an error occurs.
+        else:
+            if tpc is None:
+                RobustLogger().error(f"MISSING {type_name.upper()}: '{name}'")
 
-        with self.textures_data_lock:
-            self.textures_data_queue[name] = (tpc or TPC(), lightmap)
+        queue.put((name, tpc, is_lightmap))
 
     def jump_to_entry_location(self):
         if self._module is None:
@@ -997,7 +850,7 @@ class Scene:
 
 
 class RenderObject:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         model: str,
         position: vec3 | None = None,
@@ -1014,7 +867,7 @@ class RenderObject:
         self._rotation: vec3 = vec3() if rotation is None else rotation
         self._cube: Cube | None = None
         self._boundary: Boundary | Empty | None = None
-        self.genBoundary: Callable[[], Boundary] | None = gen_boundary
+        self.gen_boundary: Callable[[], Boundary] | None = gen_boundary
         self.data: Any = data
         self.override_texture: str | None = override_texture
 
@@ -1026,7 +879,7 @@ class RenderObject:
     def set_transform(self, transform: mat4):
         self._transform = transform
         rotation = quat()
-        glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())
+        glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())  # pyright: ignore[reportCallIssue, reportArgumentType]
         self._rotation = glm.eulerAngles(rotation)
 
     def _recalc_transform(self):
@@ -1066,14 +919,7 @@ class RenderObject:
 
     def radius(self, scene: Scene) -> float:
         cube = self.cube(scene)
-        return max(
-            abs(cube.min_point.x),
-            abs(cube.min_point.y),
-            abs(cube.min_point.z),
-            abs(cube.max_point.x),
-            abs(cube.max_point.y),
-            abs(cube.max_point.z),
-        )
+        return max(abs(cube.min_point.x), abs(cube.min_point.y), abs(cube.min_point.z), abs(cube.max_point.x), abs(cube.max_point.y), abs(cube.max_point.z))
 
     def _cube_rec(
         self,
@@ -1099,11 +945,12 @@ class RenderObject:
         self._boundary = None
 
     def boundary(self, scene: Scene) -> Boundary | Empty:
-        if not self._boundary:
-            if self.genBoundary is None:
-                self._boundary = Empty(scene)
-            else:
-                self._boundary = self.genBoundary()
+        if self._boundary is None:
+            self._boundary = (
+                Empty(scene)
+                if self.gen_boundary is None
+                else self.gen_boundary()
+            )
         return self._boundary
 
 
@@ -1119,27 +966,13 @@ class Camera:
         self.distance: float = 10.0
         self.fov: float = 90.0
 
+    def set_resolution(self, width: int, height: int):
+        self.width, self.height = width, height
+
     def set_position(self, position: Vector3 | vec3):
-        self.x = position.x
-        self.y = position.y
-        self.z = position.z
+        self.x, self.y, self.z = position
 
     def view(self) -> mat4:
-        """Returns the view matrix for the camera.
-
-        Args:
-        ----
-            self: The camera object
-
-        Returns:
-        -------
-            mat4: The view matrix
-
-        Processing Logic:
-        ----------------
-            - Calculate camera position based on yaw, pitch and distance from origin
-            - Construct view matrix by translating to camera position and rotating by yaw and pitch
-        """
         up = vec3(0, 0, 1)
         pitch = glm.vec3(1, 0, 0)
 
@@ -1154,22 +987,6 @@ class Camera:
         return glm.inverse(camera)
 
     def projection(self) -> mat4:
-        """Generate a perspective projection matrix.
-
-        Args:
-        ----
-            self: The camera object
-
-        Returns:
-        -------
-            mat4: The 4x4 perspective projection matrix
-
-        Processing Logic:
-        ----------------
-            - Calculate the aspect ratio of the viewport from the camera's width and height
-            - Use the aspect ratio and field of view to generate a perspective projection matrix using glm.perspective
-            - The projection matrix transforms world coordinates into clip coordinates and maps the scene to the viewport
-        """
         return glm.perspective(self.fov, self.width / self.height, 0.1, 5000)
 
     def translate(self, translation: vec3):
@@ -1186,120 +1003,39 @@ class Camera:
         lower_limit: float = 0,
         upper_limit: float = math.pi,
     ):
-        """Rotates the object by yaw and pitch angles.
-
-        Args:
-        ----
-            yaw: float - Yaw angle in radians
-            pitch: float - Pitch angle in radians
-
-        Returns:
-        -------
-            None - Rotates object in place
-
-        Processes rotation:
-        ------------------
-            - Increments pitch by pitch argument
-            - Increments yaw by yaw argument
-            - Clips pitch to valid range between 0 and pi radians to avoid gimbal lock
-        """
-        # Update pitch and yaw
         self.pitch = self.pitch + pitch
         self.yaw = self.yaw + yaw
-
-        # ensure yaw doesn't get too large.
         if self.yaw > 2 * math.pi:
             self.yaw -= 4 * math.pi
         elif self.yaw < -2 * math.pi:
             self.yaw += 4 * math.pi
-
         if pitch == 0:
             return
-
-        # ensure pitch doesn't get too large.
         if self.pitch > 2 * math.pi:
             self.pitch -= 4 * math.pi
         elif self.pitch < -2 * math.pi:
             self.pitch += 4 * math.pi
-
         if clamp:
             if self.pitch < lower_limit:
                 self.pitch = lower_limit
             elif self.pitch > upper_limit:
                 self.pitch = upper_limit
-
-        # Add a small value to pitch to jump to the other side if near the limits
-        gimbal_lock_range = .05
+        gimbal_lock_range = 0.05
         pitch_limit = math.pi / 2
         if pitch_limit - gimbal_lock_range < self.pitch < pitch_limit + gimbal_lock_range:
-            small_value = .02 if pitch > 0 else -.02
+            small_value = 0.02 if pitch > 0 else -0.02
             self.pitch += small_value
-            #RobustLogger.debug(f"Avoiding {'positive' if pitch > 0 else 'negative'} pitch gimbal lock. pitch: {self.pitch}, deltaPitch: {pitch}")
-        #else:
-            #RobustLogger.debug(f"New rotation yaw: {self.yaw}, pitch: {self.pitch}, deltaPitch: {pitch}")
-
-
 
     def forward(self, *, ignore_z: bool = True) -> vec3:
-        """Calculates the forward vector from the camera's rotation.
-
-        Args:
-        ----
-            ignore_z: Whether to ignore z component of vector {True by default}.
-
-        Returns:
-        -------
-            vec3: Normalized forward vector from camera rotation
-
-        Processing Logic:
-        ----------------
-            - Calculate x component of eye vector from yaw and pitch
-            - Calculate y component of eye vector from yaw and pitch
-            - Set z component to 0 if ignore_z is True, else calculate from pitch
-            - Return normalized negative of eye vector as forward vector.
-        """
         eye_x: float = math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2)
         eye_y: float = math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2)
         eye_z: float | Literal[0] = 0 if ignore_z else math.sin(self.pitch - math.pi / 2)
         return glm.normalize(-vec3(eye_x, eye_y, eye_z))
 
     def sideward(self, *, ignore_z: bool = True) -> vec3:
-        """Returns a normalized vector perpendicular to the forward direction.
-
-        Args:
-        ----
-            ignore_z: Ignore z-component of forward vector.
-
-        Returns:
-        -------
-            vec3: Normalized sideward vector.
-
-        Processing Logic:
-        ----------------
-            - Calculate cross product of forward vector and (0,0,1) to get sideward vector
-            - Normalize sideward vector to get unit sideward vector
-            - Return normalized sideward vector
-        """
         return glm.normalize(glm.cross(self.forward(ignore_z=ignore_z), vec3(0.0, 0.0, 1.0)))
 
     def upward(self, *, ignore_xy: bool = True) -> vec3:
-        """Returns the upward vector of the entity.
-
-        Args:
-        ----
-            ignore_xy (bool): Ignore x and y components of the vector if True.
-
-        Returns:
-        -------
-            vec3: The normalized upward vector.
-
-        Processing Logic:
-        ----------------
-            - Calculate forward vector ignoring z component
-            - Calculate sideward vector ignoring z component
-            - Take cross product of forward and sideward vectors
-            - Return normalized cross product vector
-        """
         if ignore_xy:
             return glm.normalize(vec3(0, 0, 1))
         forward: vec3 = self.forward(ignore_z=False)
@@ -1308,22 +1044,6 @@ class Camera:
         return glm.normalize(cross)
 
     def true_position(self) -> vec3:
-        """Calculates the true position of an object based on its orientation and distance from origin.
-
-        Args:
-        ----
-            self: {Object with x, y, z, yaw, pitch, and distance attributes}
-
-        Returns:
-        -------
-            vec3: {Calculated true position as a 3D vector}
-
-        Processing Logic:
-        ----------------
-            - Calculate x, y, z offsets based on orientation and distance
-            - Add offsets to base x, y, z to get true position
-            - Return true position as a 3D vector
-        """
         x, y, z = self.x, self.y, self.z
         x += math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
         y += math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
