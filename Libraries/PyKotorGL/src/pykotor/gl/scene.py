@@ -9,27 +9,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
 
-from OpenGL.GL import glReadPixels
-from OpenGL.raw.GL.ARB.vertex_shader import GL_FLOAT
-from OpenGL.raw.GL.VERSION.GL_1_0 import (
-    GL_BACK,
-    GL_BLEND,
-    GL_COLOR_BUFFER_BIT,
-    GL_CULL_FACE,
-    GL_DEPTH_BUFFER_BIT,
-    GL_DEPTH_COMPONENT,
-    GL_DEPTH_TEST,
-    GL_ONE_MINUS_SRC_ALPHA,
-    GL_SRC_ALPHA,
-    glBlendFunc,
-    glClear,
-    glClearColor,
-    glCullFace,
-    glDisable,
-    glEnable,
-)
-from OpenGL.raw.GL.VERSION.GL_1_2 import GL_BGRA, GL_UNSIGNED_INT_8_8_8_8
-from glm import mat4, quat, vec3, vec4
+from direct.showbase.ShowBase import ShowBase
+from panda3d.core import NodePath, GeomVertexFormat, GeomVertexData, Geom, GeomVertexWriter, GeomTriangles, GeomNode, Texture as PandaTexture
 from loggerplus import RobustLogger
 
 from pykotor.common.geometry import Vector3
@@ -96,7 +77,7 @@ SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocatio
 SEARCH_ORDER: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
-class Scene:
+class Scene(ShowBase):
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
     def __init__(
@@ -105,12 +86,9 @@ class Scene:
         installation: Installation | None = None,
         module: Module | None = None,
     ):
+        super().__init__()
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().info(f"Start initialize Scene{module_id_part}")
-
-        glEnable(GL_DEPTH_TEST)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glCullFace(GL_BACK)
 
         self.executor: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=max(1, int(multiprocessing.cpu_count() / 2)))
 
@@ -173,6 +151,10 @@ class Scene:
         self.show_cursor: bool = True
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().debug(f"Completed pre-initialize Scene{module_id_part}")
+
+        # Set up Panda3D rendering
+        self.render.setShaderAuto()
+        self.taskMgr.add(self.update, "update")
 
     def set_installation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
