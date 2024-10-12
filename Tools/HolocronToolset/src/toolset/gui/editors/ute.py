@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING, cast
 
-import qtpy
-
 from qtpy.QtWidgets import QCheckBox, QDoubleSpinBox, QSizePolicy, QSpinBox
 
 from pykotor.common.misc import ResRef
@@ -49,29 +47,11 @@ class UTEEditor(Editor):
         supported: list[ResourceType] = [ResourceType.UTE, ResourceType.BTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.ute import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.ute import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.ute import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.ute import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.ute import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setupInstallation(installation)
 
@@ -79,24 +59,24 @@ class UTEEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Connects UI signals to handler functions.
 
         Processing Logic:
         ----------------
-            - Connects the tagGenerateButton clicked signal to generateTag handler
+            - Connects the tagGenerateButton clicked signal to generate_tag handler
             - Connects the resrefGenerateButton clicked signal to generateResref handler
             - Connects the infiniteRespawnCheckbox stateChanged signal to setInfiniteRespawn handler
             - Connects the spawnSelect currentIndexChanged signal to setContinuous handler
             - Connects the addCreatureButton clicked signal to addCreature handler
-            - Connects the removeCreatureButton clicked signal to removeSelectedCreature handler.
+            - Connects the removeCreatureButton clicked signal to remove_selectedCreature handler.
         """
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.infiniteRespawnCheckbox.stateChanged.connect(self.setInfiniteRespawn)
         self.ui.spawnSelect.currentIndexChanged.connect(self.setContinuous)
         self.ui.addCreatureButton.clicked.connect(self.addCreature)
-        self.ui.removeCreatureButton.clicked.connect(self.removeSelectedCreature)
+        self.ui.removeCreatureButton.clicked.connect(self.remove_selectedCreature)
 
     def _setupInstallation(
         self,
@@ -116,7 +96,7 @@ class UTEEditor(Editor):
             - Clears and populates the dropdowns with the faction and difficulty labels
         """
         self._installation = installation
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
 
         difficulties: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_ENC_DIFFICULTIES)
         self.ui.difficultySelect.clear()
@@ -204,11 +184,11 @@ class UTEEditor(Editor):
             )
 
         # Scripts
-        self.ui.onEnterSelect.setComboBoxText(str(ute.on_entered))
-        self.ui.onExitSelect.setComboBoxText(str(ute.on_exit))
-        self.ui.onExhaustedEdit.setComboBoxText(str(ute.on_exhausted))
-        self.ui.onHeartbeatSelect.setComboBoxText(str(ute.on_heartbeat))
-        self.ui.onUserDefinedSelect.setComboBoxText(str(ute.on_user_defined))
+        self.ui.onEnterSelect.set_combo_box_text(str(ute.on_entered))
+        self.ui.onExitSelect.set_combo_box_text(str(ute.on_exit))
+        self.ui.onExhaustedEdit.set_combo_box_text(str(ute.on_exhausted))
+        self.ui.onHeartbeatSelect.set_combo_box_text(str(ute.on_heartbeat))
+        self.ui.onUserDefinedSelect.set_combo_box_text(str(ute.on_user_defined))
 
         self.relevant_script_resnames = sorted(
             iter(
@@ -221,11 +201,11 @@ class UTEEditor(Editor):
             )
         )
 
-        self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onExhaustedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onEnterSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onExitSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onExhaustedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populate_combo_box(self.relevant_script_resnames)
 
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)
@@ -300,10 +280,10 @@ class UTEEditor(Editor):
 
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        if dialog.exec():
+            self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
@@ -375,8 +355,8 @@ class UTEEditor(Editor):
         resrefCombo = FilterComboBox()
         resrefCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         resrefCombo.setMinimumWidth(20)
-        resrefCombo.populateComboBox(self.relevant_creature_resnames)
-        resrefCombo.setComboBoxText(resname)
+        resrefCombo.populate_combo_box(self.relevant_creature_resnames)
+        resrefCombo.set_combo_box_text(resname)
         if self._installation is not None:
             self._installation.setup_file_context_menu(resrefCombo, [ResourceType.UTC])
 
@@ -385,7 +365,7 @@ class UTEEditor(Editor):
         self.ui.creatureTable.setCellWidget(rowId, 2, appearanceSpin)
         self.ui.creatureTable.setCellWidget(rowId, 3, resrefCombo)
 
-    def removeSelectedCreature(self):
+    def remove_selectedCreature(self):
         if self.ui.creatureTable.selectedItems():
             item: QTableWidgetItem = self.ui.creatureTable.selectedItems()[0]
             self.ui.creatureTable.removeRow(item.row())

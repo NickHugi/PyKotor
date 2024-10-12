@@ -3,10 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import qtpy
-
-from loggerplus import RobustLogger
-from qtpy import QtCore
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
+from qtpy.QtCore import Qt
 from qtpy.QtGui import QBrush, QPalette
 from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QMessageBox
 
@@ -54,53 +52,41 @@ class InsertInstanceDialog(QDialog):
             - Initializes location selector.
         """
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowMinMaxButtonsHint
+        )
 
         self._installation: HTInstallation = installation
         self._module: Module = module
         self._restype: ResourceType = restype
 
-        self.globalSettings = GlobalSettings()
+        self.global_settings: GlobalSettings = GlobalSettings()
         self.resname: str = ""
         self.data: bytes = b""
         self.filepath: Path | None = None
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.insert_instance import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.insert_instance import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.insert_instance import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.insert_instance import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.dialogs.insert_instance import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
         self.ui.previewRenderer.installation = installation
-        self._setupSignals()
-        self._setupLocationSelect()
-        self._setupResourceList()
+        self._setup_signals()
+        self._setup_location_select()
+        self._setup_resource_list()
         self.setMinimumHeight(500)
 
-    def _setupSignals(self):
-        self.ui.createResourceRadio.toggled.connect(self.onResourceRadioToggled)
-        self.ui.reuseResourceRadio.toggled.connect(self.onResourceRadioToggled)
-        self.ui.copyResourceRadio.toggled.connect(self.onResourceRadioToggled)
-        self.ui.resrefEdit.textEdited.connect(self.onResRefEdited)
-        self.ui.resourceFilter.textChanged.connect(self.onResourceFilterChanged)
-        self.ui.resourceList.itemSelectionChanged.connect(self.onResourceSelected)
+    def _setup_signals(self):
+        self.ui.createResourceRadio.toggled.connect(self.on_resource_radio_toggled)
+        self.ui.reuseResourceRadio.toggled.connect(self.on_resource_radio_toggled)
+        self.ui.copyResourceRadio.toggled.connect(self.on_resource_radio_toggled)
+        self.ui.resrefEdit.textEdited.connect(self.on_resref_edited)
+        self.ui.resourceFilter.textChanged.connect(self.on_resource_filter_changed)
+        self.ui.resourceList.itemSelectionChanged.connect(self.on_resource_selected)
 
-    def _setupLocationSelect(self):
+    def _setup_location_select(self):
         self.ui.locationSelect.addItem(str(self._installation.override_path()), self._installation.override_path())
         for capsule in self._module.capsules():
             if is_rim_file(capsule.filepath()) and GlobalSettings().disableRIMSaving:
@@ -108,7 +94,7 @@ class InsertInstanceDialog(QDialog):
             self.ui.locationSelect.addItem(str(capsule.filepath()), capsule.filepath())
         self.ui.locationSelect.setCurrentIndex(self.ui.locationSelect.count() - 1)
 
-    def _setupResourceList(self):
+    def _setup_resource_list(self):
         """Populates a resource list widget with available resources.
 
         Args:
@@ -122,12 +108,12 @@ class InsertInstanceDialog(QDialog):
             - Selects first item if list is populated.
         """
         palette = self.palette()  # Get the current application palette if needed
-        textColor = palette.color(QPalette.WindowText)
+        text_color = palette.color(QPalette.ColorRole.WindowText)
         for resource in self._installation.core_resources():
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
                 item.setToolTip(str(resource.filepath()))
-                item.setData(QtCore.Qt.ItemDataRole.UserRole, resource)
+                item.setData(Qt.ItemDataRole.UserRole, resource)
                 self.ui.resourceList.addItem(item)
 
         for capsule in self._module.capsules():
@@ -135,12 +121,12 @@ class InsertInstanceDialog(QDialog):
                 if resource.restype() == self._restype:
                     item = QListWidgetItem(resource.resname())
                     item.setToolTip(str(resource.filepath()))
-                    item.setForeground(QBrush(textColor))
-                    item.setData(QtCore.Qt.ItemDataRole.UserRole, resource)
+                    item.setForeground(QBrush(text_color))
+                    item.setData(Qt.ItemDataRole.UserRole, resource)
                     self.ui.resourceList.addItem(item)
 
         if self.ui.resourceList.count() > 0:
-            self.ui.resourceList.item(0).setSelected(True)
+            self.ui.resourceList.item(0).setSelected(True)  # pyright: ignore[reportOptionalMemberAccess]
 
     def accept(self):  # noqa: C901, PLR0912
         """Accepts resource selection and updates module accordingly.
@@ -156,9 +142,9 @@ class InsertInstanceDialog(QDialog):
 
         new = True
         if not self.ui.resourceList.selectedItems():
-            BetterMessageBox("Choose an instance", "You must choose an instance, use the radial buttons to determine where/how to create the GIT instance.", icon=QMessageBox.Critical).exec_()
+            BetterMessageBox("Choose an instance", "You must choose an instance, use the radial buttons to determine where/how to create the GIT instance.", icon=QMessageBox.Critical).exec()
             return
-        resource: FileResource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
+        resource: FileResource = self.ui.resourceList.selectedItems()[0].data(Qt.ItemDataRole.UserRole)
 
         if self.ui.reuseResourceRadio.isChecked():
             new = False
@@ -207,7 +193,7 @@ class InsertInstanceDialog(QDialog):
         assert self.filepath is not None
         self._module.add_locations(self.resname, self._restype, [self.filepath])
 
-    def onResourceRadioToggled(self):
+    def on_resource_radio_toggled(self):
         self.ui.resourceList.setEnabled(not self.ui.createResourceRadio.isChecked())
         self.ui.resourceFilter.setEnabled(not self.ui.createResourceRadio.isChecked())
         self.ui.resrefEdit.setEnabled(not self.ui.reuseResourceRadio.isChecked())
@@ -220,37 +206,37 @@ class InsertInstanceDialog(QDialog):
         if self.ui.copyResourceRadio.isChecked():
             button = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
             assert button is not None, "buttonBox does not have an OK button assigned."
-            button.setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+            button.setEnabled(self.is_valid_resref(self.ui.resrefEdit.text()))
 
         if self.ui.createResourceRadio.isChecked():
             button = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
             assert button is not None, "buttonBox does not have an OK button assigned."
-            button.setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+            button.setEnabled(self.is_valid_resref(self.ui.resrefEdit.text()))
 
-    def onResourceSelected(self):
+    def on_resource_selected(self):
         """Updates the dynamic text label when a resource is selected."""
         selected_items = self.ui.resourceList.selectedItems()
         if selected_items:
-            resource: FileResource = selected_items[0].data(QtCore.Qt.ItemDataRole.UserRole)
-            summary_text = self.generateResourceSummary(resource)
+            resource: FileResource = selected_items[0].data(Qt.ItemDataRole.UserRole)
+            summary_text = self.generate_resource_summary(resource)
             self.ui.dynamicTextLabel.setText(summary_text)
-            if resource.restype() is ResourceType.UTC and self.globalSettings.showPreviewUTC:
+            if resource.restype() is ResourceType.UTC and self.global_settings.showPreviewUTC:
                 self.ui.previewRenderer.setCreature(read_utc(resource.data()))
             else:
                 mdl_data: bytes | None = None
                 mdx_data: bytes | None = None
-                if resource.restype() is ResourceType.UTD and self.globalSettings.showPreviewUTD:
+                if resource.restype() is ResourceType.UTD and self.global_settings.showPreviewUTD:
                     modelname: str = door.get_model(read_utd(resource.data()), self._installation)
-                    self.setRenderModel(modelname)
-                elif resource.restype() is ResourceType.UTP and self.globalSettings.showPreviewUTP:
+                    self.set_render_model(modelname)
+                elif resource.restype() is ResourceType.UTP and self.global_settings.showPreviewUTP:
                     modelname: str = placeable.get_model(read_utp(resource.data()), self._installation)
-                    self.setRenderModel(modelname)
+                    self.set_render_model(modelname)
                 elif (
                     resource.restype() in (ResourceType.MDL, ResourceType.MDX)
                     and any((
-                        self.globalSettings.showPreviewUTC,
-                        self.globalSettings.showPreviewUTD,
-                        self.globalSettings.showPreviewUTP,
+                        self.global_settings.showPreviewUTC,
+                        self.global_settings.showPreviewUTD,
+                        self.global_settings.showPreviewUTP,
                     ))
                 ):
                     data = resource.data()
@@ -284,7 +270,7 @@ class InsertInstanceDialog(QDialog):
                     else:
                         self.ui.previewRenderer.clearModel()
 
-    def setRenderModel(self, modelname):
+    def set_render_model(self, modelname):
         mdl: ResourceResult | None = self._installation.resource(
             modelname, ResourceType.MDL
         )
@@ -296,7 +282,7 @@ class InsertInstanceDialog(QDialog):
         else:
             self.ui.previewRenderer.clearModel()
 
-    def generateResourceSummary(self, resource: FileResource) -> str:
+    def generate_resource_summary(self, resource: FileResource) -> str:
         """Generates a summary of the selected resource.
 
         Args:
@@ -315,12 +301,12 @@ class InsertInstanceDialog(QDialog):
         ]
         return "\n".join(summary)
 
-    def onResRefEdited(self, text: str):
+    def on_resref_edited(self, text: str):
         button = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
         assert button is not None, "ok button is not setup on the buttonBox"
-        button.setEnabled(self.isValidResref(text))
+        button.setEnabled(self.is_valid_resref(text))
 
-    def onResourceFilterChanged(self):
+    def on_resource_filter_changed(self):
         text = self.ui.resourceFilter.text()
         for row in range(self.ui.resourceList.count()):
             item = self.ui.resourceList.item(row)
@@ -329,5 +315,5 @@ class InsertInstanceDialog(QDialog):
                 continue
             item.setHidden(text not in item.text())
 
-    def isValidResref(self, text: str) -> bool:
+    def is_valid_resref(self, text: str) -> bool:
         return self._module.resource(text, self._restype) is None and ResRef.is_valid(text)

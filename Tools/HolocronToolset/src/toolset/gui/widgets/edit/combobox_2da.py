@@ -215,16 +215,16 @@ class ComboBox2DA(QComboBox):
             editor._load_main(bytes_data)  # noqa: SLF001
         except (ValueError, OSError) as e:
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec()
             editor.proxyModel.setSourceModel(editor.model)
             editor.new()
         else:
-            editor.jumpToRow(self.currentIndex())
+            editor.jump_to_row(self.currentIndex())
         editor.setWindowTitle(f"{self._resname}.2da - 2DAEditor({self._installation.name})")
         add_window(editor)
 
     def openModdedValueDialog(self):
         """Opens a dialog where the player can manually set the index into the 2DA file."""
         dialog = ModdedValueSpinboxDialog(self)
-        if dialog.exec_():
+        if dialog.exec():
             self.setCurrentIndex(dialog.value())

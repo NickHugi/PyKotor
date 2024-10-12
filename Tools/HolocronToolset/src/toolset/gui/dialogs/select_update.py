@@ -88,7 +88,7 @@ def run_progress_dialog(
     icon = app.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation)
     dialog.setWindowIcon(QIcon(icon))
     dialog.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 class UpdateDialog(QDialog):
     def __init__(self, parent=None):
@@ -287,7 +287,7 @@ class UpdateDialog(QDialog):
     def on_install_selected(self):
         release = self.releaseComboBox.currentData()
         if not release:
-            QMessageBox(QMessageBox.Icon.Information, "Select a release", "No release selected, select one first.").exec_()
+            QMessageBox(QMessageBox.Icon.Information, "Select a release", "No release selected, select one first.").exec()
             return
         self.start_update(release)
 
@@ -312,7 +312,7 @@ class UpdateDialog(QDialog):
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
-            ).exec_()
+            ).exec()
 
         progress_queue = Queue()
         progress_process = multiprocessing.Process(

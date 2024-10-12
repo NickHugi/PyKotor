@@ -177,7 +177,7 @@ class ActionsDispatcher:
 
     def show_set_default_columns_dialog(self):
         dialog = SetDefaultColumnsDialog(self.dialog)
-        if dialog.exec_():
+        if dialog.exec():
             selected_columns = dialog.get_selected_columns()
             self.queue_task("set_default_columns", selected_columns)
 
@@ -247,7 +247,7 @@ class ActionsDispatcher:
                 layout.addLayout(button_layout)
 
         dialog = CustomDeleteDialog(self.dialog, items)
-        result = dialog.exec_()
+        result = dialog.exec()
         return result == QDialog.Accepted
 
     def get_selected_paths(self) -> list[Path]:
@@ -702,7 +702,7 @@ if __name__ == "__main__":
         error_msg.setInformativeText(str(error))
         error_msg.setDetailedText("".join(traceback.format_exception(type(error), error, None)))
         error_msg.setWindowTitle("Task Failed")
-        error_msg.exec_()
+        error_msg.exec()
 
     file_actions_executor.TaskFailed.connect(on_task_failed)
     views = file_dialog.findChildren(QAbstractItemView)
@@ -716,7 +716,7 @@ if __name__ == "__main__":
                 view.clearSelection()
             menu = menu_actions_dispatcher.get_context_menu(view, pos)
             if menu:
-                menu.exec_(view.viewport().mapToGlobal(pos))
+                menu.exec(view.viewport().mapToGlobal(pos))
 
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         with contextlib.suppress(TypeError):  # TypeError: disconnect() failed between 'customContextMenuRequested' and all its connections
@@ -726,4 +726,4 @@ if __name__ == "__main__":
     file_dialog.resize(800, 600)
     file_dialog.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

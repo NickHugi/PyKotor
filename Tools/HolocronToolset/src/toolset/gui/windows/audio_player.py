@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QTimer
 from qtpy.QtMultimedia import QAudioOutput, QMediaPlayer
@@ -34,24 +34,7 @@ class AudioPlayer(QMainWindow):
     def __init__(self, parent: QWidget | None):
         super().__init__(parent)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows.audio_player import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows.audio_player import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows.audio_player import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows.audio_player import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.windows.audio_player import Ui_MainWindow
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -64,15 +47,15 @@ class AudioPlayer(QMainWindow):
         self.ui.playButton.clicked.connect(self.player.play)
         self.ui.pauseButton.clicked.connect(self.player.pause)
         self.ui.timeSlider.sliderReleased.connect(self.changePosition)
-        self.player.durationChanged.connect(self.durationChanged)
+        self.player.durationChanged.connect(self.duration_changed)
         self.player.positionChanged.connect(self.positionChanged)
         self.destroyed.connect(self.closeEvent)
         if qtpy.API_NAME in {"PySide2", "PyQt5"}:
             self.player.error.connect(lambda _=None: self.handleError())
         else:
-            self.player.errorOccurred.connect(lambda *args, **kwargs: self.handleError(*args, **kwargs))
+            self.player.errorOccurred.connect(lambda *args, **kwargs: self.handleError(*args, **kwargs))  # noqa: FBT001  # pyright: ignore[reportAttributeAccessIssue]
 
-        self.tempFile = None  # Reference to the temporary file for PyQt6/Pyside6
+        self.temp_file = None  # Reference to the temporary file for PyQt6/Pyside6
 
     def handleError(self, *args, **kwargs):
         print("Error:", *args, **kwargs)
@@ -83,10 +66,10 @@ class AudioPlayer(QMainWindow):
         self.player.stop()
         data = sound.deobfuscate_audio(data)
         # Clear any existing temporary file
-        if self.tempFile and Path(self.tempFile.name).is_file():
-            self.tempFile.delete = True
-            remove_any(self.tempFile.name)
-        self.tempFile = None
+        if self.temp_file and Path(self.temp_file.name).is_file():
+            self.temp_file.delete = True
+            remove_any(self.temp_file.name)
+        self.temp_file = None
 
         if not data:
             return
@@ -100,20 +83,20 @@ class AudioPlayer(QMainWindow):
             from qtpy.QtMultimedia import QMediaContent
             self.player.setMedia(QMediaContent(), self.buffer)
         else:
-            self.tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-            self.tempFile.write(data)
-            self.tempFile.flush()
-            self.tempFile.seek(0)
-            self.tempFile.close()
+            self.temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+            self.temp_file.write(data)
+            self.temp_file.flush()
+            self.temp_file.seek(0)
+            self.temp_file.close()
 
-            audioOutput = QAudioOutput(self)
-            self.player.setAudioOutput(audioOutput)
-            self.player.setSource(QtCore.QUrl.fromLocalFile(self.tempFile.name))
-            audioOutput.setVolume(1)
-            self.player.mediaStatusChanged.connect(lambda status, file_name=self.tempFile.name: self.removeTempAudioFile(status, file_name))
+            audio_output = QAudioOutput(self)
+            self.player.setAudioOutput(audio_output)  # pyright: ignore[reportAttributeAccessIssue]
+            self.player.setSource(QtCore.QUrl.fromLocalFile(self.temp_file.name))  # pyright: ignore[reportAttributeAccessIssue]
+            audio_output.setVolume(1)
+            self.player.mediaStatusChanged.connect(lambda status, file_name=self.temp_file.name: self.remove_temp_audio_file(status, file_name))
         QtCore.QTimer.singleShot(0, self.player.play)
 
-    def removeTempAudioFile(
+    def remove_temp_audio_file(
         self,
         status: QMediaPlayer.MediaStatus,
         filePathStr: str,
@@ -137,7 +120,7 @@ class AudioPlayer(QMainWindow):
                 data: bytes = BinaryReader.load_file(filepath)
                 self.load(filepath, resname, restype, data)
 
-    def durationChanged(self, duration: int):
+    def duration_changed(self, duration: int):
         totalTime: str = time.strftime("%H:%M:%S", time.gmtime(duration // 1000))
         self.ui.totalTimeLabel.setText(totalTime)
         self.ui.timeSlider.setMaximum(duration)
@@ -148,7 +131,7 @@ class AudioPlayer(QMainWindow):
 
         # sometimes QMediaPlayer does not accurately calculate the duration of the audio
         if position > self.ui.timeSlider.maximum():
-            self.durationChanged(position)
+            self.duration_changed(position)
 
         self.ui.timeSlider.setValue(position)
 

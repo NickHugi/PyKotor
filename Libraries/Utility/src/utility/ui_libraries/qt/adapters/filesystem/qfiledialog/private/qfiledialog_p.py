@@ -1249,8 +1249,8 @@ class QFileDialogPrivate:
                 newFiles.append(idx)
             else:
                 oldFiles.remove(idx)
-        for newFile in newFiles:
-            self.select(newFile)
+        for new_file in newFiles:
+            self.select(new_file)
         if not self.lineEdit().hasFocus():
             return
         sm = self.qFileDialogUi.listView.selectionModel()

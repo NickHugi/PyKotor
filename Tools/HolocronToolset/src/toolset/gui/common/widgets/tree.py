@@ -96,9 +96,9 @@ class RobustTreeView(QTreeView):
         #self.setColumnWidth(0, 2000)  # an alternative way to get the horizontal scrollbar, but not recommended, seemed to jerk around.
 
 
-    def showHeaderContextMenu(self, pos: QPoint, menu: QMenu | None = None):
+    def show_header_context_menu(self, pos: QPoint, menu: QMenu | None = None):
         menu = self.headerMenu if menu is None else menu
-        menu.exec_(self.header().mapToGlobal(pos))
+        menu.exec(self.header().mapToGlobal(pos))
 
     def setTextSize(self, size: int):
         delegate = self.itemDelegate()

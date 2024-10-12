@@ -345,9 +345,9 @@ class PyFileSystemModel(QAbstractItemModel):
         if parentNode.dirtyChildrenIndex == -1:
             parentNode.dirtyChildrenIndex = len(parentNode.visibleChildren)
 
-        for newFile in newFiles:
-            parentNode.visibleChildren.append(newFile)
-            parentNode.children[newFile].isVisible = True
+        for new_file in newFiles:
+            parentNode.visibleChildren.append(new_file)
+            parentNode.children[new_file].isVisible = True
 
         if not indexHidden:
             self.endInsertRows()
@@ -1360,4 +1360,4 @@ if __name__ == "__main__":
 
     main_window.show()
 
-    sys.exit(app.exec_() if hasattr(app, "exec_") else app.exec())  # pyright: ignore[reportAttributeAccessIssue]
+    sys.exit(app.exec() if hasattr(app, "exec_") else app.exec())  # pyright: ignore[reportAttributeAccessIssue]

@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import Qt
@@ -62,33 +60,15 @@ class UTIEditor(Editor):
 
         self._uti = UTI()
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.uti import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.uti import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.uti import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.uti import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.uti import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         self._installation: HTInstallation
 
         self._setupInstallation(installation)
-        self.ui.descEdit.setInstallation(installation)
+        self.ui.descEdit.set_installation(installation)
 
         self.setMinimumSize(700, 350)
 
@@ -99,13 +79,13 @@ class UTIEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Set up signal connections for UI elements."""
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.tagGenerateButton.setToolTip("Reset this custom tag so it matches the resref")
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.editPropertyButton.clicked.connect(self.editSelectedProperty)
-        self.ui.removePropertyButton.clicked.connect(self.removeSelectedProperty)
+        self.ui.removePropertyButton.clicked.connect(self.remove_selectedProperty)
         self.ui.addPropertyButton.clicked.connect(self.addSelectedProperty)
         self.ui.availablePropertyList.doubleClicked.connect(self.onAvailablePropertyListDoubleClicked)
         self.ui.assignedPropertiesList.doubleClicked.connect(self.onAssignedPropertyListDoubleClicked)
@@ -134,8 +114,8 @@ class UTIEditor(Editor):
             - Adds subproperties from subtype 2DAs to their parent properties.
         """
         self._installation = installation
-        self.ui.nameEdit.setInstallation(installation)
-        self.ui.descEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
+        self.ui.descEdit.set_installation(installation)
 
         required: list[str] = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
         installation.ht_batch_cache_2da(required)
@@ -281,17 +261,17 @@ class UTIEditor(Editor):
 
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if not dialog.exec_():
+        if not dialog.exec():
             return
-        self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
+        self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
     def changeDesc(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring())
-        if not dialog.exec_():
+        if not dialog.exec():
             return
-        self._loadLocstring(self.ui.descEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
+        self._load_locstring(self.ui.descEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
-    def generateTag(self):
+    def generate_tag(self):
         resrefText = self.ui.resrefEdit.text()
         if not resrefText or not resrefText.strip():
             self.generateResref()
@@ -308,7 +288,7 @@ class UTIEditor(Editor):
             return
         utiProperty: UTIProperty = self.ui.assignedPropertiesList.selectedItems()[0].data(Qt.ItemDataRole.UserRole)
         dialog = PropertyEditor(self._installation, utiProperty)
-        if not dialog.exec_():
+        if not dialog.exec():
             return
         self.ui.assignedPropertiesList.selectedItems()[0].setData(Qt.ItemDataRole.UserRole, dialog.utiProperty())
         self.ui.assignedPropertiesList.selectedItems()[0].setText(self.propertySummary(dialog.utiProperty()))
@@ -360,7 +340,7 @@ class UTIEditor(Editor):
         item.setData(Qt.ItemDataRole.UserRole, utiProperty)
         self.ui.assignedPropertiesList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
-    def removeSelectedProperty(self):
+    def remove_selectedProperty(self):
         if not self.ui.assignedPropertiesList.selectedItems():
             return
         index = self.ui.assignedPropertiesList.selectedIndexes()[0]
@@ -396,10 +376,10 @@ class UTIEditor(Editor):
         textureVariation = self.ui.textureVarSpin.value()
 
         assert self._installation is not None
-        baseItemName = self._installation.getItemBaseName(baseItem)
-        modelVarName = self._installation.getModelVarName(modelVariation)
-        textureVarName = self._installation.getTextureVarName(textureVariation)
-        iconPath = self._installation.getItemIconPath(baseItem, modelVariation, textureVariation)
+        baseItemName = self._installation.get_item_base_name(baseItem)
+        modelVarName = self._installation.get_model_var_name(modelVariation)
+        textureVarName = self._installation.get_texture_var_name(textureVariation)
+        iconPath = self._installation.get_item_icon_path(baseItem, modelVariation, textureVariation)
 
         if asHtml:
             tooltip = (
@@ -424,7 +404,7 @@ class UTIEditor(Editor):
         baseItem = self.ui.baseSelect.currentIndex()
         modelVariation = self.ui.modelVarSpin.value()
         textureVariation = self.ui.textureVarSpin.value()
-        iconPath = self._installation.getItemIconPath(baseItem, modelVariation, textureVariation)
+        iconPath = self._installation.get_item_icon_path(baseItem, modelVariation, textureVariation)
 
         summaryItemIconAction = QAction("Icon Summary", self)
         summaryItemIconAction.triggered.connect(lambda: self._copyIconTooltip())
@@ -471,7 +451,7 @@ class UTIEditor(Editor):
             fileMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
 
         contextMenu.addMenu(copyMenu)
-        contextMenu.exec_(self.ui.iconLabel.mapToGlobal(position))  # pyright: ignore[reportArgumentType]
+        contextMenu.exec(self.ui.iconLabel.mapToGlobal(position))  # pyright: ignore[reportArgumentType]
 
     def _openDetails(self, locations: list[LocationResult]):
         selectionWindow = FileSelectionWindow(locations, self._installation)
@@ -508,7 +488,7 @@ class UTIEditor(Editor):
     def onDelShortcut(self):
         if not self.ui.assignedPropertiesList.hasFocus():
             return
-        self.removeSelectedProperty()
+        self.remove_selectedProperty()
 
     @staticmethod
     def propertyName(
@@ -663,25 +643,7 @@ class PropertyEditor(QDialog):
         super().__init__()
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.property import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.property import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.property import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.property import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.dialogs.property import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

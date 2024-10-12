@@ -494,7 +494,7 @@ class GitHubFileSelector(QDialog):
         context_menu.addAction("Open in Web Browser").triggered.connect(lambda: self.open_in_web_browser(item))
         context_menu.addAction("Copy URL").triggered.connect(lambda: self.copy_url(item))
         context_menu.addAction("Download").triggered.connect(lambda: self.download(item))
-        context_menu.exec_(self.repoTreeWidget.viewport().mapToGlobal(position))
+        context_menu.exec(self.repoTreeWidget.viewport().mapToGlobal(position))
 
     def convert_item_to_web_url(self, item: QTreeWidgetItem) -> str:
         # Extract owner and repo from self
@@ -570,4 +570,4 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     dialog = GitHubFileSelector(owner, repo, selectedFiles=["k_act_com33.nss"], parent=None)
-    dialog.exec_()
+    dialog.exec()

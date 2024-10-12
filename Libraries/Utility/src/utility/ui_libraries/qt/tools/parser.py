@@ -983,8 +983,8 @@ class QtObjectParser:
         if param_type == QTextCursor:
             pos, anchor = map(int, value_str.replace("pos:", "").replace("anchor:", "").split(","))
             cursor = QTextCursor()
-            cursor.setPosition(pos)
-            cursor.setPosition(anchor, QTextCursor.KeepAnchor)
+            cursor.set_position(pos)
+            cursor.set_position(anchor, QTextCursor.KeepAnchor)
             return cursor
         if param_type == QTextCharFormat:
             font_family, color = value_str.split(",")

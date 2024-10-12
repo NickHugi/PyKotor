@@ -1,27 +1,18 @@
 from __future__ import annotations
 
-import cProfile
-import uuid
-
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
-from loggerplus import RobustLogger
-from qtpy import QtCore
-from qtpy.QtCore import QThread, QTimer, Qt
-from qtpy.QtWidgets import (
-    QDialog,
-    QLabel,
-    QMessageBox,
-    QProgressBar,
-    QSizePolicy,
-    QVBoxLayout,
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
+from qtpy.QtCore import (
+    QThread,
+    QTimer,
+    Qt,
+    Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
+from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePolicy, QVBoxLayout
 
 from toolset.gui.common.widgets.progressbar import AnimatedProgressBar
-from utility.error_handling import (
-    format_exception_with_variables,
-    universal_simplify_exception,
-)
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 
 if TYPE_CHECKING:
     from multiprocessing import Process, Queue
@@ -43,23 +34,29 @@ class ProgressDialog(QDialog):
     def __init__(self, progress_queue: Queue, title: str = "Operation Progress"):
         super().__init__(None)
         self.progress_queue: Queue = progress_queue
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog  # pyright: ignore[reportGeneralTypeIssues]
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowMinMaxButtonsHint
+        )
         self.setWindowTitle(title)
         self.setLayout(QVBoxLayout())
 
-        self.statusLabel = QLabel("Initializing...", self)
-        self.bytesLabel = QLabel("")
-        self.timeLabel = QLabel("Time remaining: --/--")
-        self.progressBar = QProgressBar(self)
-        self.progressBar.setMaximum(100)
+        self.status_label: QLabel = QLabel("Initializing...", self)
+        self.bytes_label: QLabel = QLabel("")
+        self.time_label: QLabel = QLabel("Time remaining: --/--")
+        self.progress_bar: QProgressBar = QProgressBar(self)
+        self.progress_bar.setMaximum(100)
 
-        self.layout().addWidget(self.statusLabel)
-        self.layout().addWidget(self.bytesLabel)
-        self.layout().addWidget(self.progressBar)
-        self.layout().addWidget(self.timeLabel)
+        self.layout().addWidget(self.status_label)
+        self.layout().addWidget(self.bytes_label)
+        self.layout().addWidget(self.progress_bar)
+        self.layout().addWidget(self.time_label)
 
         # Timer to poll the queue for new progress updates
-        self.timer = QTimer()
+        self.timer: QTimer = QTimer()
         self.timer.timeout.connect(self.check_queue)
         self.timer.start(100)  # Check every 100 ms
         self.setFixedSize(420, 80)
@@ -70,23 +67,23 @@ class ProgressDialog(QDialog):
             if message["action"] == "update_progress":
                 # Handle progress updates
                 data: dict[str, Any] = message["data"]
-                downloaded = data["downloaded"]
                 total = data["total"]
+                downloaded = data["downloaded"]
                 progress = int((downloaded / total) * 100) if total else 0
-                self.progressBar.setValue(progress)
-                self.statusLabel.setText(f"Downloading... {progress}%")
-                time_remaining = data.get("time", self.timeLabel.text().replace("Time remaining: ", ""))
-                self.timeLabel.setText(f"Time remaining: {time_remaining}")
-                self.bytesLabel.setText(f"{human_readable_size(downloaded)} / {human_readable_size(total)}")
+                self.progress_bar.setValue(progress)
+                self.status_label.setText(f"Downloading... {progress}%")
+                time_remaining = data.get("time", self.time_label.text().replace("Time remaining: ", ""))
+                self.time_label.setText(f"Time remaining: {time_remaining}")
+                self.bytes_label.setText(f"{human_readable_size(downloaded)} / {human_readable_size(total)}")
             elif message["action"] == "update_status":
                 # Handle status text updates
                 text = message["text"]
-                self.statusLabel.setText(text)
+                self.status_label.setText(text)
             elif message["action"] == "shutdown":
                 self.close()
 
     def update_status(self, text: str):
-        self.statusLabel.setText(text)
+        self.status_label.setText(text)
 
     @staticmethod
     def monitor_and_terminate(process: Process, timeout: int = 5):
@@ -98,17 +95,17 @@ class ProgressDialog(QDialog):
 
 
 class AsyncLoader(QDialog, Generic[T]):
-    optionalFinishHook = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
-    optionalErrorHook = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    optional_finish_hook: Signal = Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    optional_error_hook: Signal = Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         parent: QWidget,
         title: str,
         task: Callable[..., T] | list[Callable[..., T]],
-        errorTitle: str | None = None,
+        error_title: str | None = None,
         *,
-        startImmediately: bool = True,
+        start_immediately: bool = True,
         realtime_progress: bool = False,
     ):
         """Initializes a progress dialog.
@@ -132,43 +129,43 @@ class AsyncLoader(QDialog, Generic[T]):
         """
         super().__init__(parent)
         self.setWindowFlags(
-            QtCore.Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
-            | QtCore.Qt.WindowType.WindowCloseButtonHint
-            | QtCore.Qt.WindowType.WindowStaysOnTopHint
-            | QtCore.Qt.WindowType.WindowMinMaxButtonsHint  # Enable minimize/maximize buttons
-            & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
+            Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.WindowMinMaxButtonsHint  # Enable minimize/maximize buttons
+            & ~Qt.WindowType.WindowContextHelpButtonHint
         )
         print("AsyncLoader.__init__: realtime_progress:", realtime_progress)
 
-        self._progressBar = AnimatedProgressBar(self)
-        self._progressBar.setMinimum(0)
+        self._progress_bar: AnimatedProgressBar = AnimatedProgressBar(self)
+        self._progress_bar.setMinimum(0)
         if isinstance(task, list):
-            self._progressBar.setMaximum(len(task))
+            self._progress_bar.setMaximum(len(task))
         else:
-            self._progressBar.setMaximum(1 if realtime_progress else 0)
-        self._progressBar.setTextVisible(realtime_progress or isinstance(task, list))
+            self._progress_bar.setMaximum(1 if realtime_progress else 0)
+        self._progress_bar.setTextVisible(realtime_progress or isinstance(task, list))
 
-        self._mainTaskText: QLabel = QLabel(self)
-        self._mainTaskText.setText("")
-        self._mainTaskText.setVisible(realtime_progress or isinstance(task, list))
+        self._main_task_text: QLabel = QLabel(self)
+        self._main_task_text.setText("")
+        self._main_task_text.setVisible(realtime_progress or isinstance(task, list))
 
-        self._subTaskText: QLabel = QLabel(self)
-        self._subTaskText.setText("")
-        self._subTaskText.setVisible(realtime_progress)
+        self._sub_task_text: QLabel = QLabel(self)
+        self._sub_task_text.setText("")
+        self._sub_task_text.setVisible(realtime_progress)
 
-        self._taskProgressText: QLabel = QLabel(self)
-        self._taskProgressText.setText("")
-        self._taskProgressText.setVisible(isinstance(task, list))
+        self._task_progress_text: QLabel = QLabel(self)
+        self._task_progress_text.setText("")
+        self._task_progress_text.setVisible(isinstance(task, list))
 
         self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self._mainTaskText)
-        self.layout().addWidget(self._progressBar)
-        self.layout().addWidget(self._subTaskText)
-        self.layout().addWidget(self._taskProgressText)
+        self.layout().addWidget(self._main_task_text)
+        self.layout().addWidget(self._progress_bar)
+        self.layout().addWidget(self._sub_task_text)
+        self.layout().addWidget(self._task_progress_text)
 
         self.setWindowTitle(title)
         self.setMinimumSize(260, 40)
-        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self.setStyleSheet("""
     QDialog {
         border-radius: 10px;
@@ -199,82 +196,82 @@ class AsyncLoader(QDialog, Generic[T]):
         margin: 1px;
     }
 """)
-        self._progressBar.setFixedHeight(20)  # Makes the progress bar taller
-        self._mainTaskText.setAlignment(Qt.AlignCenter)  # Centers the main task text
-        self._subTaskText.setAlignment(Qt.AlignCenter)  # Centers the sub task text
-        self._taskProgressText.setAlignment(Qt.AlignCenter)  # Centers the task progress text
+        self._progress_bar.setFixedHeight(20)  # Makes the progress bar taller
+        self._main_task_text.setAlignment(Qt.AlignCenter)  # Centers the main task text
+        self._sub_task_text.setAlignment(Qt.AlignCenter)  # Centers the sub task text
+        self._task_progress_text.setAlignment(Qt.AlignCenter)  # Centers the task progress text
 
         self.value: T | None = None  # type: ignore[assignment]
         self.error: Exception | None = None
         self.errors: list[Exception] = []
-        self.errorTitle: str | None = errorTitle
+        self.error_title: str | None = error_title
         self._realtime_progress: bool = realtime_progress
 
-        self._worker = AsyncWorker(self, task, realtime_progress=realtime_progress)
-        self._worker.successful.connect(self._onSuccessful)
-        self._worker.failed.connect(self._onFailed)
-        self._worker.completed.connect(self._onCompleted)
+        self._worker: AsyncWorker = AsyncWorker(self, task, realtime_progress=realtime_progress)
+        self._worker.successful.connect(self._on_successful)
+        self._worker.failed.connect(self._on_failed)
+        self._worker.completed.connect(self._on_completed)
         if realtime_progress or isinstance(task, list):
-            self._worker.progress.connect(self._onProgress)
-        if startImmediately:
-            self.startWorker()
+            self._worker.progress.connect(self._on_progress)
+        if start_immediately:
+            self.start_worker()
 
-    def startWorker(self):
+    def start_worker(self):
         self._worker.start()
 
-    def closeEvent(self, e: QCloseEvent):
+    def closeEvent(self, e: QCloseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         self._worker.terminate()
 
-    def _onSuccessful(self, result: Any):
+    def _on_successful(self, result: Any):
         self.value = result
-        self.optionalFinishHook.emit(result)
+        self.optional_finish_hook.emit(result)
 
-    def _onFailed(self, error: Exception):
-        print("AsyncLoader._onFailed")
+    def _on_failed(self, error: Exception):
+        print("AsyncLoader._on_failed")
         self.errors.append(error)
-        self.optionalErrorHook.emit(error)
+        self.optional_error_hook.emit(error)
         RobustLogger().error(str(error), exc_info=error)
         if len(self.errors) == 1:  # Keep the first error as the main error
             self.error = error
 
-    def _onCompleted(self):
-        print("_onCompleted")
+    def _on_completed(self):
+        print("_on_completed")
         if self.error is not None:
             self.reject()
-            self._showErrorDialog()
+            self._show_error_dialog()
         else:
             self.accept()
 
-    def _showErrorDialog(self):
-        print("AsyncLoader._showErrorDialog")
-        if self.errorTitle:
+    def _show_error_dialog(self):
+        print("AsyncLoader._show_error_dialog")
+        if self.error_title:
             error_msgs = ""
             for i, e in enumerate(self.errors):
                 this_err_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
                 error_msgs += f"<br>Error in task {i + 1}: {this_err_msg}"
             error_msgs += " "*700 + "<br>"*2
-            msgBox = QMessageBox(QMessageBox.Icon.Critical, self.errorTitle + " "*700, error_msgs)
-            msgBox.setDetailedText("\n\n".join(format_exception_with_variables(e) for e in self.errors))
-            msgBox.exec_()
+            msg_box = QMessageBox(QMessageBox.Icon.Critical, self.error_title + " "*700, error_msgs)
+            msg_box.setDetailedText("\n\n".join(format_exception_with_variables(e) for e in self.errors))
+            msg_box.exec()
 
-    def _onProgress(
+    def _on_progress(
         self,
         value: int | str,
         task_type: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"],
     ):
         if task_type == "increment":
             assert isinstance(value, int)
-            self._progressBar.setValue(self._progressBar.value() + value)
+            self._progress_bar.setValue(self._progress_bar.value() + value)
         elif task_type == "set_maximum":
             assert isinstance(value, int)
-            self._progressBar.setMaximum(value)
+            self._progress_bar.setMaximum(value)
         elif task_type == "update_maintask_text":
             assert isinstance(value, str)
-            self._mainTaskText.setText(value)
+            self._main_task_text.setText(value)
         elif task_type == "update_subtask_text":
             assert isinstance(value, str)
-            self._subTaskText.setText(value)
-        self._taskProgressText.setText(f"{self._progressBar.value()}/{self._progressBar.maximum()}")
+            self._sub_task_text.setText(value)
+        self._task_progress_text.setText(f"{self._progress_bar.value()}/{self._progress_bar.maximum()}")
         old_width = self.width()
         self.adjustSize()
         self.setMinimumSize(self.size())
@@ -284,11 +281,11 @@ class AsyncLoader(QDialog, Generic[T]):
             self.move(self.x() - width_change // 2, self.y())
 
 
-class AsyncWorker(QThread):
-    successful = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
-    failed = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
-    progress = QtCore.Signal(object, str)  # pyright: ignore[reportPrivateImportUsage]
-    completed = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+class AsyncWorker(QThread, Generic[T]):
+    successful: Signal = Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    failed: Signal = Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    progress: Signal = Signal(object, str)  # pyright: ignore[reportPrivateImportUsage]
+    completed: Signal = Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(
         self,
@@ -305,10 +302,6 @@ class AsyncWorker(QThread):
         self._fast_fail: bool = fast_fail
 
     def run(self):
-        use_profiler: bool = False # set to False to disable the profiler.
-        if use_profiler:
-            profiler = cProfile.Profile()
-            profiler.enable()
         result = None
         for task in self._tasks:
             if len(self._tasks) > 1:
@@ -324,9 +317,6 @@ class AsyncWorker(QThread):
             else:
                 self.successful.emit(result)
         self.completed.emit()
-        if use_profiler:
-            profiler.disable()
-            profiler.dump_stats(f"{uuid.uuid1().hex[:7]}_async_worker.pstat")
 
     def progress_callback(
         self,

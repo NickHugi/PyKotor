@@ -195,7 +195,7 @@ class QFileDialogExtended(QFileDialog):
                 view.clearSelection()
             menu = self.dispatcher.get_context_menu(view, pos)
             if menu:
-                menu.exec_(view.viewport().mapToGlobal(pos))
+                menu.exec(view.viewport().mapToGlobal(pos))
 
         self.ui.treeView.customContextMenuRequested.disconnect()
         self.ui.listView.customContextMenuRequested.disconnect()
@@ -211,7 +211,7 @@ class QFileDialogExtended(QFileDialog):
         error_msg.setInformativeText(str(error))
         error_msg.setDetailedText("".join(traceback.format_exception(type(error), error, None)))
         error_msg.setWindowTitle("Task Failed")
-        error_msg.exec_()
+        error_msg.exec()
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import (
@@ -27,7 +27,6 @@ from toolset.utils.window import add_window
 if TYPE_CHECKING:
     from pathlib import Path, PurePath
 
-    from qtpy.QtGui import QStandardItemModel
     from qtpy.QtWidgets import QPlainTextEdit
     from typing_extensions import Literal, Self
 
@@ -36,6 +35,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
     from pykotor.tools.path import CaseAwarePath
+    from toolset.gui.dialogs.inventory import ItemModel
 
 
 T = TypeVar("T")
@@ -105,7 +105,7 @@ class HTInstallation(Installation):
         super().__init__(path, progress_callback=progress_callback)
 
         self.name: str = name
-        self.cache_core_items: QStandardItemModel | None = None
+        self.cache_core_items: ItemModel | None = None
 
         self._tsl: bool | None = tsl
         self._cache2da: dict[str, TwoDA] = {}
@@ -247,11 +247,19 @@ class HTInstallation(Installation):
 
     @property
     def _streamwaves(self) -> list[FileResource]:
-        return self._get_cached_or_load("streamwaves", lambda: self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves"))))
+        return self._get_cached_or_load("streamwaves", lambda: self.load_resources_list(self._find_resource_folderpath(("streamwaves", "streamvoice")), recurse=True))
     @_streamwaves.setter
     def _streamwaves(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument
     def _load_streamwaves(self) -> list[FileResource]:
-        return self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves")))
+        return self.load_resources_list(self._find_resource_folderpath(("streamwaves", "streamvoice")), recurse=True)
+
+    @property
+    def _streamvoice(self) -> list[FileResource]:
+        return self._get_cached_or_load("streamvoice", lambda: self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves")), recurse=True))
+    @_streamvoice.setter
+    def _streamvoice(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument
+    def _load_streamvoice(self) -> list[FileResource]:
+        return self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves")), recurse=True)
 
     @property
     def _talktable(self) -> TalkTable:
@@ -272,15 +280,15 @@ class HTInstallation(Installation):
     @classmethod
     def from_base_instance(cls, installation: Installation) -> Self:
         """Create a new HTInstallation instance from an existing Installation instance."""
-        ht_installation = cast(cls, installation)
-
+        ht_installation = installation
+        ht_installation.__class__ = cls
+        assert isinstance(ht_installation, cls)
         ht_installation.name = f"NonHTInit_{installation.__class__.__name__}_{id(installation)}"
         ht_installation._tsl = installation.game().is_k2()  # noqa: SLF001  # pylint: disable=protected-access
         ht_installation.cache_core_items = None
         ht_installation._cache2da = {}  # noqa: SLF001  # pylint: disable=protected-access
         ht_installation._cache_tpc = {}  # noqa: SLF001  # pylint: disable=protected-access
 
-        ht_installation.__class__ = cls
         return ht_installation
 
     def setup_file_context_menu(
@@ -289,17 +297,6 @@ class HTInstallation(Installation):
         resref_type: list[ResourceType] | list[ResourceIdentifier],
         order: list[SearchLocation] | None = None,
     ):
-        """Set up a file context menu for the given widget.
-
-        This function sets up a context menu for a given widget (QPlainTextEdit, QLineEdit, or QComboBox)
-        to allow for quick access to file locations related to the widget's text.
-
-        Args:
-            widget (QPlainTextEdit | QLineEdit | QComboBox): The widget to create a context menu for.
-            resref_type (list[ResourceType] | list[ResourceIdentifier]): The type of resource to search for.
-            order (list[SearchLocation] | None): The order in which to search for resources.
-              Defaults to [SearchLocation.CHITIN, SearchLocation.OVERRIDE, SearchLocation.MODULES, SearchLocation.RIMS].
-        """
         from toolset.gui.dialogs.load_from_location_result import ResourceItems
 
         @Slot(QPoint)
@@ -318,7 +315,7 @@ class HTInstallation(Installation):
             if widget_text:
                 build_file_context_menu(root_menu, widget_text)
 
-            root_menu.exec_(widget.mapToGlobal(pos))
+            root_menu.exec(widget.mapToGlobal(pos))
 
         def build_file_context_menu(root_menu: QMenu, widgetText: str):
             """Build and populate a file context menu for the given widget text.
@@ -378,8 +375,9 @@ class HTInstallation(Installation):
     def _open_details(self, locations: list[LocationResult]):
         from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow
         selection_window = FileSelectionWindow(locations, self)
-        add_window(selection_window)  # ez way to get qt to call AddRef
+        selection_window.show()
         selection_window.activateWindow()
+        add_window(selection_window)
 
     @Slot(list)
     def handle_file_system_changes(self, changed_files: list[str]):
@@ -426,7 +424,7 @@ class HTInstallation(Installation):
             elif lower_texturepacks_path in lower_path:
                 self._clear_cache("texturepacks")
             else:
-                print(f"Unhandled file change: {path}")
+                RobustLogger().warning(f"Unhandled file change: '{path}'")
 
 
     # region Cache 2DA
@@ -543,28 +541,10 @@ class HTInstallation(Installation):
 
     def htClearCache2DA(self):
         self._cache2da = {}
-
     # endregion
 
     # region Cache TPC
     def ht_get_cache_tpc(self, resname: str) -> TPC | None:
-        """Gets cached TPC texture or loads and caches it.
-
-        Args:
-        ----
-            resname: Resource name as string
-
-        Returns:
-        -------
-            TPC: Loaded TPC texture or None
-
-        Processing Logic:
-        ----------------
-            - Check if texture is already cached in _cacheTpc dict
-            - If not cached, load texture from search locations
-            - Cache loaded texture in _cacheTpc dict
-            - Return cached texture or None if not found.
-        """
         if resname not in self._cache_tpc:
             tex = self.texture(
                 resname,
@@ -579,19 +559,6 @@ class HTInstallation(Installation):
         return self._cache_tpc.get(resname, None)
 
     def ht_batch_cache_tpc(self, names: list[str], *, reload: bool = False):
-        """Cache textures for batch queries.
-
-        Args:
-        ----
-            names: List of texture names to cache
-            reload: Reload textures from source if True
-
-        Processing Logic:
-        ----------------
-            - Check if textures need reloading from source
-            - Filter names not already in cache
-            - Loop through remaining names and cache textures from sources.
-        """
         queries: list[str] = (
             list(names)
             if reload
@@ -618,16 +585,6 @@ class HTInstallation(Installation):
     # endregion
 
     def get_item_icon_from_uti(self, uti: UTI) -> QPixmap:
-        """Gets the item icon from the UTI.
-
-        Args:
-        ----
-            uti (UTI): The UTI of the item
-
-        Returns:
-        -------
-            QPixmap: The icon pixmap for the item
-        """
         pixmap = QPixmap(":/images/inventory/unknown.png")
         baseitems: TwoDA | None = self.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
         if baseitems is None:
@@ -669,11 +626,10 @@ class HTInstallation(Installation):
         """Get the icon path based on base item, model variation, and texture variation."""
         baseitems = self.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
         if baseitems is None:
-            RobustLogger().error("Failed to retrieve `baseitems.2da` from your installation.")
+            RobustLogger().warning("Failed to retrieve `baseitems.2da` from your installation.")
             return "Unknown"
         try:
             itemClass = baseitems.get_cell(base_item, "itemclass")
-            print(f"Item class: '{itemClass}'")
         except Exception:  # noqa: BLE001  # pylint: disable=broad-exception-caught
             RobustLogger().exception(f"An exception occurred while getting cell '{base_item}' from `baseitems.2da`.")
             return "Unknown"
@@ -687,25 +643,6 @@ class HTInstallation(Installation):
         model_variation: int,
         texture_variation: int,
     ) -> QPixmap:
-        """Get item icon from base item and variations.
-
-        Args:
-        ----
-            base_item: int - Base item id
-            model_variation: int - Model variation
-            texture_variation: int - Texture variation
-
-        Returns:
-        -------
-            QPixmap - Item icon pixmap
-
-        Processing Logic:
-        ----------------
-            1. Get base item class from cache
-            2. Get texture resource name from item class and variation
-            3. Get texture from cache using resource name
-            4. Return icon pixmap from texture if found, else return default.
-        """
         pixmap = QPixmap(":/images/inventory/unknown.png")
         icon_path = self.get_item_icon_path(base_item, model_variation, texture_variation)
         print(f"Icon path: '{icon_path}'")
@@ -716,24 +653,8 @@ class HTInstallation(Installation):
         return pixmap
 
     def _get_icon(self, texture: TPC) -> QPixmap:
-        """Convert TPC texture to QPixmap.
-
-        Args:
-        ----
-            texture (TPC): The TPC texture to convert.
-
-        Returns:
-        -------
-            QPixmap: The converted QPixmap.
-
-        Processing Logic:
-        ----------------
-            1. Convert TPC texture to RGBA format
-            2. Create QImage from RGBA data
-            3. Return QPixmap transformed to show image correctly.
-        """
         width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
-        image = QImage(rgba, width, height, QImage.Format.Format_RGBA8888)
+        image = QImage(bytes(rgba), width, height, QImage.Format.Format_RGBA8888)
         return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
     @property

@@ -19,7 +19,7 @@ from qtpy.QtWidgets import (
 #from toolset.gui.dialogs.web_ide_selector import WebIDEManager
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.uic.pyqt5.editors.nss import Ui_MainWindow
+from toolset.uic.qtpy.editors.nss import Ui_MainWindow
 from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
@@ -421,7 +421,7 @@ class NSSEditor(Editor):
     def contextMenuEvent(self, event):
         menu = QMenu(self)
         menu.addAction("Add Snippet", self.add_snippet)
-        menu.exec_(event.globalPos())
+        menu.exec(event.globalPos())
 
 
 if __name__ == "__main__":
@@ -430,4 +430,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     editor = NSSEditor()
     editor.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

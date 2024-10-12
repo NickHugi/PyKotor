@@ -3,8 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from loggerplus import RobustLogger
 from qtpy.QtCore import Qt
-from qtpy.QtWidgets import QDialog, QMainWindow, QMessageBox, QWidget
+from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
 from pykotor.resource.type import ResourceType
 from toolset.gui.editors.mdl import MDLEditor
@@ -15,8 +16,9 @@ if TYPE_CHECKING:
     import os
 
     from qtpy.QtGui import QCloseEvent
-    from qtpy.QtWidgets import QMainWindow
+    from qtpy.QtWidgets import QDialog, QMainWindow
 
+    from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
     from toolset.gui.editor import Editor
 
@@ -24,47 +26,40 @@ TOOLSET_WINDOWS: list[QDialog | QMainWindow] = []
 """TODO: Remove this implementation, there's better ways to keep windows from being garbage collected."""
 
 unique_sentinel = object()
-def add_window(
-    window: QDialog | QMainWindow,
-    *,
-    show: bool = True,
-):
+
+
+def add_window(window: QDialog | QMainWindow):
     """Prevents Qt's garbage collection by keeping a reference to the window."""
-    # Save the original closeEvent method
     original_closeEvent = window.closeEvent
 
-    # Define a new closeEvent method that also calls the original
     def new_close_event(
         event: QCloseEvent | None = unique_sentinel,  # pyright: ignore[reportArgumentType]
         *args,
         **kwargs,
     ):
         from toolset.gui.editor import Editor
+
         if isinstance(window, Editor) and window._filepath is not None:  # noqa: SLF001
             add_recent_file(window._filepath)  # noqa: SLF001
         if window in TOOLSET_WINDOWS:
             TOOLSET_WINDOWS.remove(window)
-        # Call the original closeEvent
         if event is unique_sentinel:  # Make event arg optional just in case the class has the wrong definition.
             original_closeEvent(*args, **kwargs)
         else:
             original_closeEvent(event, *args, **kwargs)  # pyright: ignore[reportArgumentType]
 
-    # Override the widget's closeEvent with the new one
     window.closeEvent = new_close_event  # pyright: ignore[reportAttributeAccessIssue]
-
-    # Add the window to the global list and show it
     TOOLSET_WINDOWS.append(window)
-    if show:
-        if isinstance(window, QDialog):
-            window.exec_()
-        else:
-            window.show()
+
 
 def add_recent_file(file: Path):
     """Update the list of recent files."""
     settings = GlobalSettings()
-    recent_files: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.is_file()]
+    recent_files: list[str] = [
+        str(fp)
+        for fp in {Path(p) for p in settings.recentFiles}
+        if fp.is_file()
+    ]
     recent_files.insert(0, str(file))
     if len(recent_files) > 15:  # noqa: PLR2004
         recent_files.pop()
@@ -72,10 +67,7 @@ def add_recent_file(file: Path):
 
 
 def open_resource_editor(
-    filepath: os.PathLike | str,
-    resref: str,
-    restype: ResourceType,
-    data: bytes,
+    resource: FileResource,
     installation: HTInstallation | None = None,
     parent_window: QWidget | None = None,
     *,
@@ -88,10 +80,7 @@ def open_resource_editor(
 
     Args:
     ----
-        filepath (PathLike | str): Path to the resource.
-        resref (str): The ResRef.
-        restype (ResourceType): The resource type.
-        data (bytes): The resource data.
+        resource (FileResource): The resource to open an editor for.
         parent_window (QWidget | None): The parent window.
         installation (HTInstallation | None): The installation.
         gff_specialized (bool | None): Use the editor specific to the GFF-type file. If None, uses is configured in the settings.
@@ -131,31 +120,37 @@ def open_resource_editor(
     if gff_specialized is None:
         gff_specialized = GlobalSettings().gff_specializedEditors
 
-    editor = None
-    parent_window_widget = parent_window if isinstance(parent_window, QWidget) else None
+    editor: Editor | QMainWindow | None = None
+    parent_window_widget: QWidget | None = parent_window if isinstance(parent_window, QWidget) else None
     # don't send parentWindowWidget to the editors. This allows each editor to be treated as their own window.
+
+    try:
+        data: bytes = resource.data()
+    except Exception:  # noqa: BLE001
+        RobustLogger().exception("Exception occurred in open_selected_resource")
+        QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "An error occurred while attempting to read the data of the file.").exec()
+        return None, None
+    restype = resource.restype()
+    resname = resource.resname()
+    filepath = resource.filepath()
 
     if restype.target_type() is ResourceType.TwoDA:
         editor = TwoDAEditor(None, installation)
-
     if restype.target_type() is ResourceType.SSF:
         editor = SSFEditor(None, installation)
-
     if restype.target_type() is ResourceType.TLK:
         editor = TLKEditor(None, installation)
-
     if restype.target_type() is ResourceType.LTR:
         editor = LTREditor(None, installation)
-
     if restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
-
-    if restype.category in {"Images", "Textures"} and restype is not ResourceType.TXI:
+    if (
+        restype.category in {"Images", "Textures"}
+        and restype is not ResourceType.TXI
+    ):
         editor = TPCEditor(None, installation)
-
     if restype is ResourceType.NSS:
         editor = NSSEditor(None, installation)
-
     if restype is ResourceType.NCS:
         QMessageBox.warning(
             parent_window_widget,
@@ -267,10 +262,9 @@ def open_resource_editor(
 
     if editor is not None:
         try:
-            editor.load(filepath, resref, restype, data)
+            editor.load(filepath, resname, restype, data)
             editor.show()
             editor.activateWindow()
-
             add_window(editor)
 
         except Exception as e:

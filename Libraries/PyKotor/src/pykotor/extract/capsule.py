@@ -260,9 +260,6 @@ class LazyCapsule(FileResource):
             container.set_data(resname, restype, resdata)
             for resource in self.resources():
                 container.set_data(resource.resname(), resource.restype(), resource.data())
-            self._hash_task_running = True
-            self._file_hash = ""
-            self._hash_task_running = False
 
         if is_rim_file(self._filepath.name):
             container = RIM()
@@ -304,9 +301,6 @@ class LazyCapsule(FileResource):
                 if resource.resname().lower() == resname.lower() and resource.restype() is restype:
                     continue
                 container.set_data(resource.resname(), resource.restype(), resource.data())
-            self._hash_task_running = True
-            self._file_hash = ""
-            self._hash_task_running = False
 
         if is_rim_file(self._filepath.name):
             container = RIM()

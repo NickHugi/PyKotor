@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
@@ -52,38 +50,20 @@ class UTMEditor(Editor):
 
         self._utm: UTM = UTM()
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.utm import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.utm import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.utm import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.utm import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.utm import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setupInstallation(installation)
 
         self.new()
         self.adjustSize()
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Sets up signal connections for UI buttons."""
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
 
@@ -101,7 +81,7 @@ class UTMEditor(Editor):
             - Allows editing of the installation details in the UI.
         """
         self._installation = installation
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
 
     def load(
         self,
@@ -186,10 +166,10 @@ class UTMEditor(Editor):
 
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        if dialog.exec():
+            self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
@@ -224,5 +204,5 @@ class UTMEditor(Editor):
             hide_equipment=True,
             is_store=True,
         )
-        if inventoryEditor.exec_():
+        if inventoryEditor.exec():
             self._utm.inventory = inventoryEditor.inventory

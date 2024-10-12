@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtWidgets import QAction, QApplication, QWidget
 
@@ -34,25 +32,7 @@ class LocalizedStringLineEdit(QWidget):
         """
         super().__init__(parent)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.locstring_edit import (
-                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.locstring_edit import (
-                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.locstring_edit import (
-                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.locstring_edit import (
-                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.widgets.locstring_edit import Ui_Form
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
@@ -63,7 +43,7 @@ class LocalizedStringLineEdit(QWidget):
         self.ui.locstringText.mouseDoubleClickEvent = lambda a0: self.editLocstring()  # noqa: ARG005
         self.setToolTip("Double-click to edit this Localized String.<br><br><i>Right-click for more options</i>")
 
-    def setInstallation(self, installation: HTInstallation):
+    def set_installation(self, installation: HTInstallation):
         self._installation = installation
 
     def showContextMenu(self, pos: QtCore.QPoint):
@@ -77,7 +57,7 @@ class LocalizedStringLineEdit(QWidget):
         copy_action.triggered.connect(self.copyText)
         menu.addAction(copy_action)
 
-        menu.exec_(self.ui.locstringText.mapToGlobal(pos))
+        menu.exec(self.ui.locstringText.mapToGlobal(pos))
 
     def copyText(self):
         """Copies the current text to the clipboard."""
@@ -118,7 +98,7 @@ class LocalizedStringLineEdit(QWidget):
 
     def editLocstring(self):
         dialog = LocalizedStringDialog(self, self._installation, self._locstring)
-        if dialog.exec_():
+        if dialog.exec():
             self.setLocstring(dialog.locstring)
             self.editingFinished.emit()
 

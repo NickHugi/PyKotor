@@ -104,9 +104,9 @@ class CodeEditor(QPlainTextEdit):
         start_pos = cursor.selectionStart()
         end_pos = cursor.selectionEnd()
 
-        cursor.setPosition(start_pos)
+        cursor.set_position(start_pos)
         cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
-        cursor.setPosition(end_pos, QTextCursor.MoveMode.KeepAnchor)
+        cursor.set_position(end_pos, QTextCursor.MoveMode.KeepAnchor)
         cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
 
         selected_text = cursor.selectedText()
@@ -122,7 +122,7 @@ class CodeEditor(QPlainTextEdit):
             elif line.lstrip().startswith("//"):
                 lines[i] = line.replace("//", "", 1).lstrip()
 
-        cursor.removeSelectedText()
+        cursor.remove_selectedText()
         cursor.insertText("\n".join(lines))
         cursor.endEditBlock()
 
@@ -245,7 +245,7 @@ class CodeEditor(QPlainTextEdit):
         text = self.toPlainText()
         self.setPlainText(text[:index] + insert + text[index:])
         offset = len(insert) if offset is None else offset
-        cursor.setPosition(index + offset)
+        cursor.set_position(index + offset)
         self.setTextCursor(cursor)
 
     def on_text_changed(self):
@@ -307,7 +307,7 @@ class CodeEditor(QPlainTextEdit):
             action.triggered.connect(lambda checked, content=content: self.insertPlainText(content))
             snippet_menu.addAction(action)
         menu.addMenu(snippet_menu)
-        menu.exec_(event.globalPos())
+        menu.exec(event.globalPos())
 
     # Additional methods
     def show_auto_complete_menu(self):
@@ -399,7 +399,7 @@ class CodeEditor(QPlainTextEdit):
         replace_button.clicked.connect(lambda: do_replace(False))
         replace_all_button.clicked.connect(lambda: do_replace(True))
 
-        dialog.exec_()
+        dialog.exec()
 
     def on_outline_item_clicked(self, item: QTreeWidgetItem, column: int):
         obj: FunctionDefinition | None = item.data(0, Qt.ItemDataRole.UserRole)
@@ -407,7 +407,7 @@ class CodeEditor(QPlainTextEdit):
             RobustLogger().error(f"Outline item '{item.text(0)}' has no function definition")
             return
         cursor = self.textCursor()
-        cursor.setPosition(obj.line_num)
+        cursor.set_position(obj.line_num)
         self.setTextCursor(cursor)
         self.ensureCursorVisible()
 
@@ -417,7 +417,7 @@ class CodeEditor(QPlainTextEdit):
             return
         assert isinstance(obj, FunctionDefinition)
         cursor = self.textCursor()
-        cursor.setPosition(obj.line_num)
+        cursor.set_position(obj.line_num)
         self.setTextCursor(cursor)
         self.centerCursor()
 
@@ -450,7 +450,7 @@ class CodeEditor(QPlainTextEdit):
         goToDefinitionAction = QAction("Go to Definition", self)
         goToDefinitionAction.triggered.connect(self.go_to_definition)
         menu.addAction(goToDefinitionAction)
-        menu.exec_(self.mapToGlobal(pos))
+        menu.exec(self.mapToGlobal(pos))
 
     def go_to_definition(self):
         cursor = self.textCursor()
@@ -473,9 +473,9 @@ class CodeEditor(QPlainTextEdit):
         if cursor.hasSelection():
             start = cursor.selectionStart()
             end = cursor.selectionEnd()
-            cursor.setPosition(start)
+            cursor.set_position(start)
             cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
-            cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
+            cursor.set_position(end, QTextCursor.MoveMode.KeepAnchor)
             cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
         else:
             cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
@@ -518,7 +518,7 @@ class CodeEditor(QPlainTextEdit):
             cursor.movePosition(QTextCursor.MoveOperation.EndOfBlock, QTextCursor.MoveMode.KeepAnchor)
             cursor.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.KeepAnchor)
             text_to_move = cursor.selectedText()
-            cursor.removeSelectedText()
+            cursor.remove_selectedText()
             cursor.movePosition(QTextCursor.MoveOperation.Down)
             cursor.insertText(text_to_move)
         else:  # down
@@ -528,7 +528,7 @@ class CodeEditor(QPlainTextEdit):
             if not cursor.atEnd():
                 cursor.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.KeepAnchor)
             text_to_move = cursor.selectedText()
-            cursor.removeSelectedText()
+            cursor.remove_selectedText()
             cursor.movePosition(QTextCursor.MoveOperation.Up)
             cursor.movePosition(QTextCursor.MoveOperation.StartOfBlock)
             cursor.insertText(text_to_move)
@@ -542,7 +542,7 @@ class CodeEditor(QPlainTextEdit):
             cursor.select(cursor.WordUnderCursor)
             selected_text = cursor.selectedText()
             if selected_text in self.snippets:
-                cursor.removeSelectedText()
+                cursor.remove_selectedText()
                 cursor.insertText(self.snippets[selected_text]["content"])
             else:
                 super().keyPressEvent(event)

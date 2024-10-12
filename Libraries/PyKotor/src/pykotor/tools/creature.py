@@ -87,7 +87,7 @@ def get_body_model(
     else:
         print("appearance.2da: utc 'modeltype' is 'B'")
 
-        def lookupNoArmor() -> tuple[Literal["modela"], str, Literal["texaevil", "texa"], Literal["01"], str]:
+        def lookup_no_armor() -> tuple[Literal["modela"], str, Literal["texaevil", "texa"], Literal["01"], str]:
             model_column = "modela"
             body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model 'modela'{context_base}")
             tex_column = "texaevil" if utc.alignment <= 25 else "texa"
@@ -101,7 +101,7 @@ def get_body_model(
             armor_res_lookup = installation.resource(str(armor_resref), ResourceType.UTI)
             if armor_res_lookup is None:
                 RobustLogger().error(f"'{armor_resref}.uti' missing from installation{context_base}")
-                model_column, body_model, tex_column, tex_append, override_texture = lookupNoArmor()  # fallback
+                model_column, body_model, tex_column, tex_append, override_texture = lookup_no_armor()  # fallback
             else:
                 armor_uti = read_uti(armor_res_lookup.data)
                 RobustLogger().debug(f"baseitems.2da: get body row {armor_uti.base_item} for their armor")
@@ -118,7 +118,7 @@ def get_body_model(
                 body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model column{context_base}")
                 override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching texture column{context_base}")
         else:
-            model_column, body_model, tex_column, tex_append, override_texture = lookupNoArmor()
+            model_column, body_model, tex_column, tex_append, override_texture = lookup_no_armor()
 
         print(f"appearance.2da's texture column: '{tex_column}'")
         print(f"override_texture name: '{override_texture}'")
@@ -138,7 +138,7 @@ def get_body_model(
         body_model = utc_appearance_row.get_string("race", context=f"Fetching 'race' column{context_base}")
         print(f"body model name (from appearance.2da's 'race' column): '{body_model}'")
 
-    return body_model, override_texture
+    return body_model.strip(), override_texture and override_texture.strip()
 
 
 def get_weapon_models(
@@ -148,24 +148,6 @@ def get_weapon_models(
     appearance: TwoDA | None = None,
     baseitems: TwoDA | None = None,
 ) -> tuple[str | None, str | None]:  # sourcery skip: extract-duplicate-method
-    """Returns a tuple containing the right-hand weapon model and the left-hand weapon model (in that order).
-
-    If no weapon is equipped in a particular hand the value will return None.
-
-    If no value is specified for the appearance or baseitem parameters then they will be loaded from the given
-    installation.
-
-    Args:
-    ----
-        utc: UTC object of the target creature.
-        installation: The relevant installation.
-        appearance: The appearance.2da loaded into a TwoDA object.
-        baseitems: The baseitems.2da loaded into a TwoDA object.
-
-    Returns:
-    -------
-        Returns a tuple containing right-hand and left-hand weapon model names.
-    """
     if appearance is None:
         appearance_lookup = installation.resource("appearance", ResourceType.TwoDA)
         if not appearance_lookup:
@@ -179,16 +161,16 @@ def get_weapon_models(
             return None, None
         baseitems = read_2da(baseitems_lookup.data)
 
-    rhand_model: str | None = None
-    lhand_model: str | None = None
-
-    rhand_resname: str | None = str(utc.equipment[EquipmentSlot.RIGHT_HAND].resref) if EquipmentSlot.RIGHT_HAND in utc.equipment else None
-    lhand_resname: str | None = str(utc.equipment[EquipmentSlot.LEFT_HAND].resref) if EquipmentSlot.LEFT_HAND in utc.equipment else None
-
-    if rhand_resname:
-        rhand_model = _load_hand_uti(installation, rhand_resname, baseitems)
-    if lhand_resname:
-        lhand_model = _load_hand_uti(installation, lhand_resname, baseitems)
+    rhand_model: str | None = _load_hand_uti(
+        installation,
+        str(utc.equipment[EquipmentSlot.RIGHT_HAND].resref),
+        baseitems
+    ) if EquipmentSlot.RIGHT_HAND in utc.equipment else None
+    lhand_model: str | None = _load_hand_uti(
+        installation,
+        str(utc.equipment[EquipmentSlot.LEFT_HAND].resref),
+        baseitems
+    ) if EquipmentSlot.LEFT_HAND in utc.equipment else None
     return rhand_model, lhand_model
 
 
@@ -197,23 +179,6 @@ def _load_hand_uti(
     hand_resref: str,
     baseitems: TwoDA,
 ) -> str | None:
-    """Loads the hand UTI model variation from the base item row.
-
-    Args:
-    ----
-        installation: Installation - The installation object
-        hand_resref: str - The resref of the hand UTI
-        baseitems: TwoDA - The base items table
-    Returns:
-        default_model: str - The default model string with model variation substituted
-
-    Processing Logic:
-    ----------------
-        - The function reads the UTI data from the provided installation
-        - It looks up the default model string for the base item in the base items table
-        - It replaces the "001" placeholder in the default model with the zero padded model variation from the UTI
-        - The formatted default model is returned.
-    """
     hand_lookup = installation.resource(hand_resref, ResourceType.UTI)
     if not hand_lookup:
         RobustLogger().error(f"{hand_resref}.uti missing from installation.")
@@ -223,7 +188,7 @@ def _load_hand_uti(
     return default_model.replace(
         "001",
         str(hand_uti.model_variation).rjust(3, "0"),
-    )
+    ).strip()
 
 
 def get_head_model(
@@ -307,30 +272,17 @@ def get_mask_model(
     utc: UTC,
     installation: Installation,
 ) -> str | None:
-    """Returns the model for the mask a creature is wearing.
-
-    The value for the texture will return None if the creature does not have a mask equipped.
-
-    If no value is specified for the appearance or heads parameters then they will be loaded from the given
-    installation.
-
-    Args:
-    ----
-        utc: UTC object of the target creature.
-        installation: The relevant installation.
-
-    Returns:
-    -------
-        Returns a name of the mask model.
-    """
     model: str | None = None
 
-    headEquip = utc.equipment.get(EquipmentSlot.HEAD)
-    if headEquip is not None:
-        resref = headEquip.resref
+    head_equip = utc.equipment.get(EquipmentSlot.HEAD)
+    if head_equip is not None:
+        resref = head_equip.resref
         if not resref:
             return None
-        uti: UTI = read_uti(installation.resource(str(resref), ResourceType.UTI).data)
+        resource = installation.resource(str(resref), ResourceType.UTI)
+        if resource is None:
+            return None
+        uti: UTI = read_uti(resource.data)
         model = "I_Mask_" + str(uti.model_variation).rjust(3, "0")
 
-    return model
+    return model and model.strip()

@@ -58,5 +58,5 @@ class LongSpinBox(QAbstractSpinBox):
         except ValueError:
             return 0
 
-    def stepEnabled(self) -> QAbstractSpinBox.StepEnabled:
-        return self.StepUpEnabled | self.StepDownEnabled
+    def stepEnabled(self) -> QAbstractSpinBox.StepEnabledFlag:
+        return self.StepEnabledFlag.StepUpEnabled | self.StepEnabledFlag.StepDownEnabled

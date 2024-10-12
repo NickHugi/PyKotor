@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy.QtGui import QColor, QImage, QPixmap
 from qtpy.QtWidgets import QColorDialog
 
@@ -69,49 +67,31 @@ class AREEditor(Editor):
         self._minimap = None
         self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.are import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.are import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.are import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.are import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.are import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self.ui.dirtColor1Edit.allowAlpha = True
         self.ui.dirtColor2Edit.allowAlpha = True
         self.ui.dirtColor3Edit.allowAlpha = True
 
-        self.ui.minimapRenderer.defaultMaterialColor = QColor(0, 0, 255, 127)
-        self.ui.minimapRenderer.materialColors[SurfaceMaterial.NON_WALK] = QColor(255, 0, 0, 80)
-        self.ui.minimapRenderer.materialColors[SurfaceMaterial.NON_WALK_GRASS] = QColor(255, 0, 0, 80)
-        self.ui.minimapRenderer.materialColors[SurfaceMaterial.UNDEFINED] = QColor(255, 0, 0, 80)
-        self.ui.minimapRenderer.materialColors[SurfaceMaterial.OBSCURING] = QColor(255, 0, 0, 80)
-        self.ui.minimapRenderer.hideWalkmeshEdges = True
-        self.ui.minimapRenderer.highlightBoundaries = False
-        self.ui.minimapRenderer.highlightOnHover = False
+        self.ui.minimapRenderer.default_material_color = QColor(0, 0, 255, 127)
+        self.ui.minimapRenderer.material_colors[SurfaceMaterial.NON_WALK] = QColor(255, 0, 0, 80)
+        self.ui.minimapRenderer.material_colors[SurfaceMaterial.NON_WALK_GRASS] = QColor(255, 0, 0, 80)
+        self.ui.minimapRenderer.material_colors[SurfaceMaterial.UNDEFINED] = QColor(255, 0, 0, 80)
+        self.ui.minimapRenderer.material_colors[SurfaceMaterial.OBSCURING] = QColor(255, 0, 0, 80)
+        self.ui.minimapRenderer.hide_walkmesh_edges = True
+        self.ui.minimapRenderer.highlight_boundaries = False
+        self.ui.minimapRenderer.highlight_on_hover = False
 
         self.new()
 
-    def _setupSignals(self):
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+    def _setup_signals(self):
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
 
         self.ui.mapAxisSelect.currentIndexChanged.connect(self.redoMinimap)
         self.ui.mapWorldX1Spin.valueChanged.connect(self.redoMinimap)
@@ -134,12 +114,12 @@ class AREEditor(Editor):
             )
         )
 
-        self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onEnterSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onExitSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populate_combo_box(self.relevant_script_resnames)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         """Set up installation details.
 
         Args:
@@ -155,9 +135,9 @@ class AREEditor(Editor):
         """
         self._installation = installation
 
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
 
-        cameras: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_CAMERAS)
+        cameras: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_CAMERAS)
 
         self.ui.cameraStyleSelect.clear()
         self.ui.cameraStyleSelect.setContext(cameras, self._installation, HTInstallation.TwoDA_CAMERAS)
@@ -210,15 +190,15 @@ class AREEditor(Editor):
 
                 wok_results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(queries)
                 walkmeshes: list[BWM] = [read_bwm(result.data) for result in wok_results.values() if result]
-                self.ui.minimapRenderer.setWalkmeshes(walkmeshes)
+                self.ui.minimapRenderer.set_walkmeshes(walkmeshes)
 
             order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_GUI, SearchLocation.MODULES]
             self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resname}", order)
             if self._minimap is None:
                 print(f"Could not find texture 'lbl_map{self._resname}' required for minimap")
             else:
-                self.ui.minimapRenderer.setMinimap(are, self._minimap)
-                self.ui.minimapRenderer.centerCamera()
+                self.ui.minimapRenderer.set_minimap(are, self._minimap)
+                self.ui.minimapRenderer.center_camera()
 
         max_value: int = 100
 
@@ -287,10 +267,10 @@ class AREEditor(Editor):
         self.ui.dirtSize3Spin.setValue(are.dirty_size_3)
 
         # Scripts
-        self.ui.onEnterSelect.setComboBoxText(str(are.on_enter))
-        self.ui.onExitSelect.setComboBoxText(str(are.on_exit))
-        self.ui.onHeartbeatSelect.setComboBoxText(str(are.on_heartbeat))
-        self.ui.onUserDefinedSelect.setComboBoxText(str(are.on_user_defined))
+        self.ui.onEnterSelect.set_combo_box_text(str(are.on_enter))
+        self.ui.onExitSelect.set_combo_box_text(str(are.on_exit))
+        self.ui.onHeartbeatSelect.set_combo_box_text(str(are.on_heartbeat))
+        self.ui.onUserDefinedSelect.set_combo_box_text(str(are.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(are.comment)
@@ -399,9 +379,9 @@ class AREEditor(Editor):
     def redoMinimap(self):
         if self._minimap:
             are: ARE = self._buildARE()
-            self.ui.minimapRenderer.setMinimap(are, self._minimap)
+            self.ui.minimapRenderer.set_minimap(are, self._minimap)
 
-    def changeColor(self, colorSpin: LongSpinBox):
+    def change_color(self, color_spin: LongSpinBox):
         """Changes the color selection.
 
         Args:
@@ -414,11 +394,11 @@ class AREEditor(Editor):
             - Converts the selected QColor to a Color object
             - Sets the colorSpin value to the BGR integer of the selected color.
         """
-        qcolor: QColor = QColorDialog.getColor(QColor(colorSpin.value()))
+        qcolor: QColor = QColorDialog.getColor(QColor(color_spin.value()))
         color = Color.from_bgr_integer(qcolor.rgb())
-        colorSpin.setValue(color.bgr_integer())
+        color_spin.setValue(color.bgr_integer())
 
-    def redoColorImage(self, value: int, colorLabel: QLabel):
+    def redo_color_image(self, value: int, color_label: QLabel):
         """Redraws a color image based on a value.
 
         Args:
@@ -437,13 +417,13 @@ class AREEditor(Editor):
         color = Color.from_bgr_integer(value)
         r, g, b = int(color.r * 255), int(color.g * 255), int(color.b * 255)
         data = bytes([r, g, b] * 16 * 16)
-        pixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format_RGB888))
-        colorLabel.setPixmap(pixmap)
+        pixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format.Format_RGB888))
+        color_label.setPixmap(pixmap)
 
-    def changeName(self):
+    def change_name(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        if dialog.exec():
+            self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         self.ui.tagEdit.setText("newarea" if self._resname is None or self._resname == "" else self._resname)

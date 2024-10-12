@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice
 from qtpy.QtMultimedia import QMediaPlayer
@@ -56,56 +54,39 @@ class UTSEditor(Editor):
         self.player = QMediaPlayer(self)
         self.buffer = QBuffer(self)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.uts import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.uts import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.uts import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.uts import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.editors.uts import Ui_MainWindow
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setupInstallation(installation)
 
         self.new()
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Sets up signal connections for UI buttons and radio buttons.
 
         Processing Logic:
         ----------------
             - Connects addSoundButton click signal to addSound method
             - Connects removeSoundButton click signal to removeSound method
-            - Connects playSoundButton click signal to playSound method
+            - Connects playSoundButton click signal to play_sound method
             - Connects stopSoundButton click signal to player stop method
             - Connects moveUpButton and moveDownButton click signals to moveSoundUp and moveSoundDown methods
-            - Connects tagGenerateButton and resrefGenerateButton click signals to generateTag and generateResref methods
+            - Connects tagGenerateButton and resrefGenerateButton click signals to generate_tag and generateResref methods
             - Connects style radio buttons toggled signals to changeStyle method
             - Connects play random/specific/everywhere radio buttons toggled signals to changePlay method.
         """
         self.ui.addSoundButton.clicked.connect(self.addSound)
         self.ui.removeSoundButton.clicked.connect(self.removeSound)
-        self.ui.playSoundButton.clicked.connect(self.playSound)
+        self.ui.playSoundButton.clicked.connect(self.play_sound)
         self.ui.stopSoundButton.clicked.connect(self.player.stop)
         self.ui.moveUpButton.clicked.connect(self.moveSoundUp)
         self.ui.moveDownButton.clicked.connect(self.moveSoundDown)
 
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
 
         self.ui.styleOnceRadio.toggled.connect(self.changeStyle)
@@ -118,7 +99,7 @@ class UTSEditor(Editor):
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
 
     def load(
         self,
@@ -265,10 +246,10 @@ class UTSEditor(Editor):
 
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        if dialog.exec():
+            self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
@@ -309,7 +290,7 @@ class UTSEditor(Editor):
         elif self.ui.playEverywhereRadio.isChecked():
             _set_ui_play_groups(False)
 
-    def playSound(self):
+    def play_sound(self):
         self.player.stop()
 
         curItem = self.ui.soundList.currentItem()

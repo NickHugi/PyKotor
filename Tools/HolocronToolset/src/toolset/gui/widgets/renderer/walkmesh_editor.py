@@ -100,7 +100,7 @@ class LYTEditor(QWidget):
 
     def addRoom(self):
         dialog = RoomPropertiesDialog(self)
-        if dialog.exec_():
+        if dialog.exec():
             room = LYTRoom()
             room.position = dialog.position
             room.size = dialog.size
@@ -112,7 +112,7 @@ class LYTEditor(QWidget):
         if self.selected_element and isinstance(self.selected_element, QGraphicsRectItem):
             room = self.selected_element.data(0)
             dialog = RoomPropertiesDialog(self, room)
-            if dialog.exec_():
+            if dialog.exec():
                 old_room = LYTRoom()
                 old_room.position = room.position
                 old_room.size = room.size
@@ -136,7 +136,7 @@ class LYTEditor(QWidget):
             QMessageBox.warning(self, "Add Track", "At least two rooms are required to add a track.")
             return
         dialog = TrackPropertiesDialog(self, self.lyt.rooms)
-        if dialog.exec_():
+        if dialog.exec():
             track = LYTTrack()
             track.start_room = dialog.start_room
             track.end_room = dialog.end_room
@@ -147,7 +147,7 @@ class LYTEditor(QWidget):
         if self.selected_element and isinstance(self.selected_element, QGraphicsLineItem):
             track = self.selected_element.data(0)
             dialog = TrackPropertiesDialog(self, self.lyt.rooms, track)
-            if dialog.exec_():
+            if dialog.exec():
                 old_track = LYTTrack()
                 old_track.start_room = track.start_room
                 old_track.end_room = track.end_room
@@ -166,7 +166,7 @@ class LYTEditor(QWidget):
 
     def addObstacle(self):
         dialog = ObstaclePropertiesDialog(self)
-        if dialog.exec_():
+        if dialog.exec():
             obstacle = LYTObstacle()
             obstacle.position = dialog.position
             obstacle.radius = dialog.radius
@@ -177,7 +177,7 @@ class LYTEditor(QWidget):
         if self.selected_element and isinstance(self.selected_element, QGraphicsEllipseItem):
             obstacle = self.selected_element.data(0)
             dialog = ObstaclePropertiesDialog(self, obstacle)
-            if dialog.exec_():
+            if dialog.exec():
                 old_obstacle = LYTObstacle()
                 old_obstacle.position = obstacle.position
                 old_obstacle.radius = obstacle.radius
@@ -199,7 +199,7 @@ class LYTEditor(QWidget):
             QMessageBox.warning(self, "Add Door Hook", "At least one room is required to add a door hook.")
             return
         dialog = DoorHookPropertiesDialog(self, self.lyt.rooms)
-        if dialog.exec_():
+        if dialog.exec():
             doorhook = LYTDoorHook()
             doorhook.room = dialog.room
             doorhook.position = dialog.position
@@ -211,7 +211,7 @@ class LYTEditor(QWidget):
         if self.selected_element and isinstance(self.selected_element, QGraphicsRectItem):
             doorhook = self.selected_element.data(0)
             dialog = DoorHookPropertiesDialog(self, self.lyt.rooms, doorhook)
-            if dialog.exec_():
+            if dialog.exec():
                 old_doorhook = LYTDoorHook()
                 old_doorhook.room = doorhook.room
                 old_doorhook.position = doorhook.position
@@ -422,7 +422,7 @@ class LYTEditor(QWidget):
             if isinstance(element, (LYTRoom, LYTObstacle, LYTDoorHook)):
                 center = self.selected_element.boundingRect().center()
                 angle = math.atan2(delta.y(), delta.x())
-                self.selected_element.setRotation(math.degrees(angle))
+                self.selected_element.set_rotation(math.degrees(angle))
         self.transform_start = current_pos
 
     def endTransform(self):

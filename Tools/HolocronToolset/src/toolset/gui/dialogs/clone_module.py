@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QDialog, QMessageBox
@@ -55,28 +53,15 @@ class CloneModuleDialog(QDialog):
             - Loads available modules into the dropdown.
         """
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.WindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint))
+        self.setWindowFlags(
+            QtCore.Qt.Dialog  # pyright: ignore[reportArgumentType]
+            | QtCore.Qt.WindowCloseButtonHint
+            & ~QtCore.Qt.WindowContextHelpButtonHint
+            & ~QtCore.Qt.WindowMinMaxButtonsHint
+        )
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs import (
-                clone_module,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs import (
-                clone_module,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs import (
-                clone_module,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs import (
-                clone_module,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
-        self.ui = clone_module.Ui_Dialog()
+        from toolset.uic.qtpy.dialogs.clone_module import Ui_Dialog
+        self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self._active: HTInstallation = active
@@ -142,9 +127,9 @@ class CloneModuleDialog(QDialog):
                 "This may take a while",
                 "You have selected to create copies of the " "texture. This process may add a few extra minutes to the waiting time.",
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
-            ).exec_()
+            ).exec()
 
-        if not AsyncLoader(self, "Creating module", task, "Failed to create module").exec_():
+        if not AsyncLoader(self, "Creating module", task, "Failed to create module").exec():
             return
 
         QMessageBox(
@@ -152,7 +137,7 @@ class CloneModuleDialog(QDialog):
             "Clone Successful",
             f"You can now warp to the cloned module '{identifier}'.",
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
-        ).exec_()
+        ).exec()
 
     def loadModules(self):
         """Loads module options from installed modules.

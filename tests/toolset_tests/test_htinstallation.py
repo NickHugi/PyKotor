@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+"""These are the same tests as in test_installation.py, but using the HTInstallation class."""
 from __future__ import annotations
 
 from io import BytesIO
@@ -26,9 +28,11 @@ if __name__ == "__main__":
 from pykotor.common.language import LocalizedString
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.installation import SearchLocation
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
+
+from toolset.data.installation import HTInstallation
 
 K1_PATH: str | None = os.environ.get("K1_PATH")
 
@@ -37,15 +41,15 @@ K1_PATH: str | None = os.environ.get("K1_PATH")
     not K1_PATH or not CaseAwarePath(K1_PATH).joinpath("chitin.key").is_file(),
     "K1_PATH environment variable is not set or not found on disk.",
 )
-class TestInstallation(TestCase):
+class TestHTInstallation(TestCase):
     @classmethod
     def setUpClass(cls):
         assert K1_PATH
-        cls.installation = Installation(K1_PATH)  # type: ignore[attr-defined]
+        cls.installation: HTInstallation = HTInstallation(K1_PATH, "Test")  # type: ignore[attr-defined]
         # cls.installation.reload_all()
 
     def test_resource(self):
-        installation: Installation = self.installation  # type: ignore[attr-defined]
+        installation: HTInstallation = self.installation  # type: ignore[attr-defined]
 
         assert installation.resource("c_bantha", ResourceType.UTC, []) is None
         assert installation.resource("c_bantha", ResourceType.UTC) is not None
@@ -84,7 +88,7 @@ class TestInstallation(TestCase):
         assert resource.data is not None  # type: ignore
 
     def test_resources(self):
-        installation: Installation = self.installation  # type: ignore[attr-defined]
+        installation: HTInstallation = self.installation  # type: ignore[attr-defined]
 
         chitin_resources = [
             ResourceIdentifier.from_path("c_bantha.utc"),
@@ -161,7 +165,7 @@ class TestInstallation(TestCase):
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
 
     def test_location(self):
-        installation: Installation = self.installation  # type: ignore[attr-defined]
+        installation: HTInstallation = self.installation  # type: ignore[attr-defined]
 
         assert not installation.location("m13aa", ResourceType.ARE, [])
         assert installation.location("m13aa", ResourceType.ARE)
@@ -193,7 +197,7 @@ class TestInstallation(TestCase):
         assert not installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI])
 
     def test_locations(self):
-        installation: Installation = self.installation  # type: ignore[attr-defined]
+        installation: HTInstallation = self.installation  # type: ignore[attr-defined]
 
         chitin_resources = [
             ResourceIdentifier.from_path("c_bantha.utc"),
@@ -276,7 +280,7 @@ class TestInstallation(TestCase):
         assert len(arg0) == 2
 
     def test_texture(self):
-        installation: Installation = self.installation  # type: ignore[attr-defined]
+        installation: HTInstallation = self.installation  # type: ignore[attr-defined]
 
         assert installation.texture("m03ae_03a_lm4", [SearchLocation.CHITIN]) is not None
         assert installation.texture("x", [SearchLocation.CHITIN]) is None
@@ -294,7 +298,7 @@ class TestInstallation(TestCase):
         assert installation.texture("x", [SearchLocation.TEXTURES_GUI]) is None
 
     def test_textures(self):
-        installation: Installation = self.installation  # type: ignore[attr-defined]
+        installation: HTInstallation = self.installation  # type: ignore[attr-defined]
 
         chitin_textures = ["m03ae_03a_lm4", "x"]
         chitin_results = installation.textures(chitin_textures, [SearchLocation.CHITIN])
@@ -327,7 +331,7 @@ class TestInstallation(TestCase):
         assert len(gui_results) == 2
 
     def test_sounds(self):
-        installation: Installation = self.installation  # type: ignore[attr-defined]
+        installation: HTInstallation = self.installation  # type: ignore[attr-defined]
 
         chitin_sounds = ["as_an_dantext_01", "x"]
         chitin_results = installation.sounds(chitin_sounds, [SearchLocation.CHITIN])
@@ -356,7 +360,7 @@ class TestInstallation(TestCase):
 
     def test_string(self):
         """This test will fail on non-english versions of the game."""
-        installation: Installation = self.installation  # type: ignore[attr-defined]
+        installation: HTInstallation = self.installation  # type: ignore[attr-defined]
 
         locstring1 = LocalizedString.from_invalid()
         locstring2 = LocalizedString.from_english("Some text.")
@@ -368,7 +372,7 @@ class TestInstallation(TestCase):
 
     def test_strings(self):
         """This test will fail on non-english versions of the game."""
-        installation: Installation = self.installation  # type: ignore[attr-defined]
+        installation: HTInstallation = self.installation  # type: ignore[attr-defined]
 
         locstring1 = LocalizedString.from_invalid()
         locstring2 = LocalizedString.from_english("Some text.")
@@ -382,7 +386,7 @@ class TestInstallation(TestCase):
     def test_pickle_unpickle(self):
         """Test that an Installation object can be pickled and unpickled."""
         pickled_data = pickle.dumps(self.installation)
-        unpickled_installation = pickle.loads(pickled_data)
+        unpickled_installation: HTInstallation = pickle.loads(pickled_data)
         self.assertEqual(self.installation._path, unpickled_installation._path)
 
     def test_pickle_to_file(self):
@@ -390,14 +394,14 @@ class TestInstallation(TestCase):
         with BytesIO() as file:
             pickle.dump(self.installation, file)
             file.seek(0)
-            unpickled_installation = pickle.load(file)
+            unpickled_installation: HTInstallation = pickle.load(file)
             self.assertEqual(self.installation._path, unpickled_installation._path)
 
     def test_multiple_unpickle(self):
         """Test that multiple unpickling operations yield consistent results."""
         pickled_data = pickle.dumps(self.installation)
         for _ in range(3):
-            unpickled_installation = pickle.loads(pickled_data)
+            unpickled_installation: HTInstallation = pickle.loads(pickled_data)
             self.assertEqual(self.installation._path, unpickled_installation._path)
 
 

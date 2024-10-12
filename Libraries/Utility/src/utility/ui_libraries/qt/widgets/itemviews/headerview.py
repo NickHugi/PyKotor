@@ -126,4 +126,4 @@ if __name__ == "__main__":
     table.show()
 
     # Run the application
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

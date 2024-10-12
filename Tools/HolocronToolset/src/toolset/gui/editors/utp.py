@@ -4,8 +4,6 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from loggerplus import RobustLogger
 from qtpy.QtWidgets import QMessageBox, QSizePolicy
 
@@ -64,29 +62,12 @@ class UTPEditor(Editor):
         self._placeables2DA = installation.ht_get_cache_2da("placeables")
         self._utp = UTP()
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.utp import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.utp import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.utp import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.utp import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.editors.utp import Ui_MainWindow
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setupInstallation(installation)
 
@@ -94,12 +75,12 @@ class UTPEditor(Editor):
         self.new()
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Connect UI buttons to their respective methods.
 
         Processing Logic:
         ----------------
-            - Connect tagGenerateButton clicked signal to generateTag method
+            - Connect tagGenerateButton clicked signal to generate_tag method
             - Connect resrefGenerateButton clicked signal to generateResref method
             - Connect conversationModifyButton clicked signal to editConversation method
             - Connect inventoryButton clicked signal to openInventory method
@@ -107,7 +88,7 @@ class UTPEditor(Editor):
             - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
             - Connect actionShowPreview triggered signal to togglePreview method
         """
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
@@ -130,7 +111,7 @@ class UTPEditor(Editor):
             - Hides/shows TSL specific UI elements based on installation type
         """
         self._installation = installation
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
         self.ui.previewRenderer.installation = installation
 
         # Load required 2da files if they have not been loaded already
@@ -202,7 +183,7 @@ class UTPEditor(Editor):
         self.ui.tagEdit.setText(utp.tag)
         self.ui.resrefEdit.setText(str(utp.resref))
         self.ui.appearanceSelect.setCurrentIndex(utp.appearance_id)
-        self.ui.conversationEdit.setComboBoxText(str(utp.conversation))
+        self.ui.conversationEdit.set_combo_box_text(str(utp.conversation))
 
         # Advanced
         self.ui.hasInventoryCheckbox.setChecked(utp.has_inventory)
@@ -242,37 +223,37 @@ class UTPEditor(Editor):
             )
         )
 
-        self.ui.onClosedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDamagedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onEndConversationEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onOpenFailedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onInventoryEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onMeleeAttackEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onSpellEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onOpenEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onLockEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUnlockEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUsedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.conversationEdit.populateComboBox(sorted(res.resname() for res in self._installation.get_relevant_resources(ResourceType.DLG)))
+        self.ui.onClosedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDamagedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDeathEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onEndConversationEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onOpenFailedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onInventoryEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onMeleeAttackEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onSpellEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onOpenEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onLockEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUnlockEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUsedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.conversationEdit.populate_combo_box(sorted(res.resname() for res in self._installation.get_relevant_resources(ResourceType.DLG)))
 
         # Scripts
-        self.ui.onClosedEdit.setComboBoxText(str(utp.on_closed))
-        self.ui.onDamagedEdit.setComboBoxText(str(utp.on_damaged))
-        self.ui.onDeathEdit.setComboBoxText(str(utp.on_death))
-        self.ui.onEndConversationEdit.setComboBoxText(str(utp.on_end_dialog))
-        self.ui.onOpenFailedEdit.setComboBoxText(str(utp.on_open_failed))
-        self.ui.onHeartbeatSelect.setComboBoxText(str(utp.on_heartbeat))
-        self.ui.onInventoryEdit.setComboBoxText(str(utp.on_inventory))
-        self.ui.onMeleeAttackEdit.setComboBoxText(str(utp.on_melee_attack))
-        self.ui.onSpellEdit.setComboBoxText(str(utp.on_force_power))
-        self.ui.onOpenEdit.setComboBoxText(str(utp.on_open))
-        self.ui.onLockEdit.setComboBoxText(str(utp.on_lock))
-        self.ui.onUnlockEdit.setComboBoxText(str(utp.on_unlock))
-        self.ui.onUsedEdit.setComboBoxText(str(utp.on_used))
-        self.ui.onUserDefinedSelect.setComboBoxText(str(utp.on_user_defined))
+        self.ui.onClosedEdit.set_combo_box_text(str(utp.on_closed))
+        self.ui.onDamagedEdit.set_combo_box_text(str(utp.on_damaged))
+        self.ui.onDeathEdit.set_combo_box_text(str(utp.on_death))
+        self.ui.onEndConversationEdit.set_combo_box_text(str(utp.on_end_dialog))
+        self.ui.onOpenFailedEdit.set_combo_box_text(str(utp.on_open_failed))
+        self.ui.onHeartbeatSelect.set_combo_box_text(str(utp.on_heartbeat))
+        self.ui.onInventoryEdit.set_combo_box_text(str(utp.on_inventory))
+        self.ui.onMeleeAttackEdit.set_combo_box_text(str(utp.on_melee_attack))
+        self.ui.onSpellEdit.set_combo_box_text(str(utp.on_force_power))
+        self.ui.onOpenEdit.set_combo_box_text(str(utp.on_open))
+        self.ui.onLockEdit.set_combo_box_text(str(utp.on_lock))
+        self.ui.onUnlockEdit.set_combo_box_text(str(utp.on_unlock))
+        self.ui.onUsedEdit.set_combo_box_text(str(utp.on_used))
+        self.ui.onUserDefinedSelect.set_combo_box_text(str(utp.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utp.comment)
@@ -366,13 +347,13 @@ class UTPEditor(Editor):
 
     def changeName(self):
         if self._installation is None:
-            self.blinkWindow()
+            self.blink_window()
             return
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        if dialog.exec():
+            self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
@@ -389,12 +370,12 @@ class UTPEditor(Editor):
         data, filepath = None, None
 
         if not resname or not resname.strip():
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec()
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
         if search is None:
-            msgbox: int = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec_()
+            msgbox: int = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec()
             if QMessageBox.StandardButton.Yes == msgbox:
                 data = bytearray()
 
@@ -420,7 +401,7 @@ class UTPEditor(Editor):
             - Runs editor and updates inventory if changes were made.
         """
         if self._installation is None:
-            self.blinkWindow()
+            self.blink_window()
             return
         capsules: list[Capsule] = []
         with suppress(Exception):
@@ -439,7 +420,7 @@ class UTPEditor(Editor):
             droid=False,
             hide_equipment=True,
         )
-        if inventoryEditor.exec_():
+        if inventoryEditor.exec():
             self._utp.inventory = inventoryEditor.inventory
             self.updateItemCount()
 
@@ -476,7 +457,7 @@ class UTPEditor(Editor):
             - If not, clear out any existing model from the preview
         """
         if self._installation is None:
-            self.blinkWindow()
+            self.blink_window()
             return
 
         self.setMinimumSize(674, 457)

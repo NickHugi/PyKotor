@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import TYPE_CHECKING
+
+import qtpy
 
 from qtpy.QtCore import QAbstractTableModel, QModelIndex, Qt
 from qtpy.QtWidgets import QApplication, QPushButton, QTableWidget, QVBoxLayout, QWidget
@@ -19,7 +22,7 @@ class RobustTableWidget(QTableWidget, RobustTableView):
         parent: QWidget | None = None,
     ):
         QTableWidget.__init__(self, parent)
-        RobustTableView.__init__(self, parent)
+        RobustTableView.__init__(self, parent, do_qt_init=False)
 
     def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
         menu = super().build_context_menu(parent)
@@ -116,4 +119,4 @@ if __name__ == "__main__":
     main_window.resize(400, 300)
     main_window.show()
 
-    app.exec_()
+    app.exec()

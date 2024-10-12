@@ -10,8 +10,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtCore import QPointF, QRectF, QTimer, Qt
 from qtpy.QtGui import (
@@ -75,14 +73,14 @@ if TYPE_CHECKING:
 class IndoorMapBuilder(QMainWindow):
     def __init__(
         self,
-        parent: QWidget,
+        parent: QWidget | None,
         installation: HTInstallation | None = None,
     ):
         """Initialize indoor builder window.
 
         Args:
         ----
-            parent: QWidget - Parent widget
+            parent: QWidget | None - Parent widget or None
             installation: HTInstallation | None - Installation object or None
 
         Processing Logic:
@@ -101,35 +99,17 @@ class IndoorMapBuilder(QMainWindow):
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows.indoor_builder import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows.indoor_builder import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows.indoor_builder import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows.indoor_builder import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.windows.indoor_builder import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupSignals()
+        self._setup_signals()
         self._setupHotkeys()
         self._setupKits()
         self._refreshWindowTitle()
 
         self.ui.mapRenderer.setMap(self._map)
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Connect signals to slots.
 
         Args:
@@ -148,17 +128,17 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionNew.triggered.connect(self.new)
         self.ui.actionOpen.triggered.connect(self.open)
         self.ui.actionSave.triggered.connect(self.save)
-        self.ui.actionSaveAs.triggered.connect(self.saveAs)
+        self.ui.actionSaveAs.triggered.connect(self.save_as)
         self.ui.actionBuild.triggered.connect(self.buildMap)
-        self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec_())
-        self.ui.actionDeleteSelected.triggered.connect(self.deleteSelected)
+        self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec())
+        self.ui.actionDeleteSelected.triggered.connect(self.delete_selected)
         self.ui.actionDownloadKits.triggered.connect(self.openKitDownloader)
         self.ui.actionInstructions.triggered.connect(self.showHelpWindow)
 
         self.ui.mapRenderer.customContextMenuRequested.connect(self.onContextMenu)
         self.ui.mapRenderer.mouseMoved.connect(self.onMouseMoved)
         self.ui.mapRenderer.mousePressed.connect(self.onMousePressed)
-        self.ui.mapRenderer.mouseScrolled.connect(self.onMouseScrolled)
+        self.ui.mapRenderer.mouseScrolled.connect(self.on_mouse_scrolled)
         self.ui.mapRenderer.mouseDoubleClicked.connect(self.onMouseDoubleClicked)
 
     def _setupHotkeys(self):
@@ -185,7 +165,7 @@ class IndoorMapBuilder(QMainWindow):
             noKitPrompt.addButton(QMessageBox.StandardButton.No)
             noKitPrompt.setDefaultButton(QMessageBox.StandardButton.No)
 
-            if noKitPrompt.exec_() == QMessageBox.StandardButton.Yes:
+            if noKitPrompt.exec() == QMessageBox.StandardButton.Yes:
                 self.openKitDownloader()
 
         for kit in self._kits:
@@ -215,12 +195,12 @@ class IndoorMapBuilder(QMainWindow):
     def save(self):
         self._map.generateMinimap()
         if not self._filepath:
-            self.saveAs()
+            self.save_as()
         else:
             BinaryWriter.dump(self._filepath, self._map.write())
             self._refreshWindowTitle()
 
-    def saveAs(self):
+    def save_as(self):
         filepath, _ = QFileDialog.getSaveFileName(self, "Save Map", Path(self._filepath).name if self._filepath and self._filepath.strip() else "test.indoor", "Indoor Map File (*.indoor)")
         if filepath:
             BinaryWriter.dump(filepath, self._map.write())
@@ -254,10 +234,10 @@ class IndoorMapBuilder(QMainWindow):
                 self._filepath = filepath
                 self._refreshWindowTitle()
             except OSError as e:
-                QMessageBox(QMessageBox.Icon.Critical, "Failed to load file", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Failed to load file", str(universal_simplify_exception(e))).exec()
 
     def openKitDownloader(self):
-        KitDownloader(self).exec_()
+        KitDownloader(self).exec()
         self._setupKits()
 
     def buildMap(self):
@@ -269,10 +249,10 @@ class IndoorMapBuilder(QMainWindow):
         msg = f"You can warp to the game using the code 'warp {self._map.moduleId}'. "
         msg += f"Map files can be found in:\n{path}"
         loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
-        if loader.exec_():
-            QMessageBox(QMessageBox.Icon.Information, "Map built", msg).exec_()
+        if loader.exec():
+            QMessageBox(QMessageBox.Icon.Information, "Map built", msg).exec()
 
-    def deleteSelected(self):
+    def delete_selected(self):
         for room in self.ui.mapRenderer.selectedRooms():
             self._map.rooms.remove(room)
         self.ui.mapRenderer.clearSelectedRooms()
@@ -349,14 +329,14 @@ class IndoorMapBuilder(QMainWindow):
             - Rebuild room connections.
         """
         self._refreshStatusBar()
-        worldDelta: Vector2 = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
+        world_delta: Vector2 = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
         if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
             # LMB + CTRL
-            self.ui.mapRenderer.panCamera(-worldDelta.x, -worldDelta.y)
+            self.ui.mapRenderer.pan_camera(-world_delta.x, -world_delta.y)
         elif QtCore.Qt.MouseButton.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             # MMB + CTRL
-            self.ui.mapRenderer.rotateCamera(delta.x / 50)
+            self.ui.mapRenderer.rotate_camera(delta.x / 50)
         elif QtCore.Qt.MouseButton.LeftButton in buttons:
             # LMB
             rooms: list[IndoorMapRoom] = self.ui.mapRenderer.selectedRooms()
@@ -364,8 +344,8 @@ class IndoorMapBuilder(QMainWindow):
                 return
             active: IndoorMapRoom = rooms[-1]
             for room in rooms:
-                room.position.x += worldDelta.x
-                room.position.y += worldDelta.y
+                room.position.x += world_delta.x
+                room.position.y += world_delta.y
             for room in [room for room in self._map.rooms if room not in rooms]:
                 hook1, hook2 = self.ui.mapRenderer.getConnectedHooks(active, room)
                 if hook1 is not None:
@@ -411,10 +391,10 @@ class IndoorMapBuilder(QMainWindow):
                     self.ui.componentList.clearSelection()
                     self.ui.componentList.setCurrentItem(None)
             else:
-                clearExisting: bool = QtCore.Qt.Key_Shift not in keys
+                clear_existing: bool = QtCore.Qt.Key_Shift not in keys
                 room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
                 if room is not None:
-                    self.ui.mapRenderer.selectRoom(room, clearExisting=clearExisting)
+                    self.ui.mapRenderer.selectRoom(room, clear_existing=clear_existing)
                 else:
                     self.ui.mapRenderer.clearSelectedRooms()
 
@@ -452,7 +432,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer._cursorFlipX = False
         self.ui.mapRenderer._cursorFlipY = False
 
-    def onMouseScrolled(
+    def on_mouse_scrolled(
         self,
         delta: Vector2,
         buttons: set[int],
@@ -489,7 +469,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.keyReleaseEvent(e)
 
     def addConnectedToSelection(self, room: IndoorMapRoom):
-        self.ui.mapRenderer.selectRoom(room, clearExisting=False)
+        self.ui.mapRenderer.selectRoom(room, clear_existing=False)
         for hookIndex, _hook in enumerate(room.component.hooks):
             hook: IndoorMapRoom | None = room.hooks[hookIndex]
             if hook is not None and hook not in self.ui.mapRenderer.selectedRooms():
@@ -564,9 +544,9 @@ class IndoorMapRenderer(QWidget):
         self,
         room: IndoorMapRoom,
         *,
-        clearExisting: bool,
+        clear_existing: bool,
     ):
-        if clearExisting:
+        if clear_existing:
             self._selectedRooms.clear()
         if room in self._selectedRooms:
             self._selectedRooms.remove(room)
@@ -749,7 +729,7 @@ class IndoorMapRenderer(QWidget):
         self._camPosition.x = x
         self._camPosition.y = y
 
-    def panCamera(self, x: float, y: float):
+    def pan_camera(self, x: float, y: float):
         """Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the camera.
 
         Args:
@@ -778,7 +758,7 @@ class IndoorMapRenderer(QWidget):
         """
         self._camRotation = radians
 
-    def rotateCamera(self, radians: float):
+    def rotate_camera(self, radians: float):
         """Rotates the camera by the angle specified.
 
         Args:
@@ -904,9 +884,6 @@ class IndoorMapRenderer(QWidget):
             - Draws cursor if present
             - Highlights rooms under mouse or selected.
         """
-        screen: QPoint = self.mapFromGlobal(self.cursor().pos())
-        world: Vector3 = self.toWorldCoords(screen.x(), screen.y())  # FIXME: Unused??
-
         transform: QTransform = self._apply_transformation()
         painter = QPainter(self)
         painter.setBrush(QColor(0))
@@ -1042,25 +1019,7 @@ class KitDownloader(QDialog):
         super().__init__(parent)
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.indoor_downloader import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.indoor_downloader import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.indoor_downloader import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.indoor_downloader import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.dialogs.indoor_downloader import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
         self._setupDownloads()
@@ -1081,7 +1040,7 @@ class KitDownloader(QDialog):
             - Adds kit name and button to layout in group box
         """
         updateInfoData = get_remote_toolset_update_info(
-            useBetaChannel=GlobalSettings().useBetaChannel,
+            use_beta_channel=GlobalSettings().use_beta_channel,
         )
         try:
             if not isinstance(updateInfoData, dict):
@@ -1123,7 +1082,7 @@ class KitDownloader(QDialog):
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
             errMsgBox.setWindowIcon(self.windowIcon())
-            errMsgBox.exec_()
+            errMsgBox.exec()
 
     def _downloadButtonPressed(
         self,
@@ -1152,7 +1111,7 @@ class KitDownloader(QDialog):
                 button.setEnabled(True)
         else:
             loader = AsyncLoader(self, "Downloading Kit...", task, "Failed to download.")
-            if loader.exec_():
+            if loader.exec():
                 button.setText("Download Complete")
             else:
                 button.setText("Download Failed")

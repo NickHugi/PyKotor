@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy.QtGui import QColor, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import QMenu, QMessageBox, QShortcut, QTreeView
 
@@ -63,30 +61,12 @@ class JRLEditor(Editor):
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.jrl import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.jrl import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.jrl import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.jrl import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.jrl import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.categoryCommentEdit.setVisible(False)  # FIXME:
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setupInstallation(installation)
 
@@ -100,7 +80,7 @@ class JRLEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Setup signals for journal UI interactions.
 
         Args:
@@ -137,11 +117,11 @@ class JRLEditor(Editor):
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
-        self.ui.categoryNameEdit.setInstallation(installation)
+        self.ui.categoryNameEdit.set_installation(installation)
 
         planets: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLANETS)
         if planets is None:
-            QMessageBox(QMessageBox.Icon.Warning, "Missing 2DA", f"'{HTInstallation.TwoDA_PLANETS}.2da' is missing from your installation. Please reinstall your game, this should be in the read-only bifs.").exec_()
+            QMessageBox(QMessageBox.Icon.Warning, "Missing 2DA", f"'{HTInstallation.TwoDA_PLANETS}.2da' is missing from your installation. Please reinstall your game, this should be in the read-only bifs.").exec()
             return
 
         plot2DA: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLOT)
@@ -235,8 +215,8 @@ class JRLEditor(Editor):
     def changeQuestName(self):
         """Opens a LocalizedStringDialog for editing the name of the selected quest."""
         dialog = LocalizedStringDialog(self, self._installation, self.ui.categoryNameEdit.locstring())
-        if dialog.exec_():
-            self.ui.categoryNameEdit.setInstallation(self._installation)
+        if dialog.exec():
+            self.ui.categoryNameEdit.set_installation(self._installation)
             self.onValueUpdated()
             item: QStandardItem = self._get_item()
             quest: JRLQuest = item.data()
@@ -246,8 +226,8 @@ class JRLEditor(Editor):
     def changeEntryText(self):
         """Opens a LocalizedStringDialog for editing the text of the selected entry."""
         dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)
-        if dialog.exec_():
-            self._loadLocstring(self.ui.entryTextEdit, dialog.locstring)
+        if dialog.exec():
+            self._load_locstring(self.ui.entryTextEdit, dialog.locstring)
             self.onValueUpdated()
             item: QStandardItem = self._get_item()
             entry: JRLEntry = item.data()
@@ -378,7 +358,7 @@ class JRLEditor(Editor):
                 #self.ui.categoryCommentEdit.setPlainText(data.comment)
             elif isinstance(data, JRLEntry):
                 self.ui.questPages.setCurrentIndex(1)
-                self._loadLocstring(self.ui.entryTextEdit, data.text)
+                self._load_locstring(self.ui.entryTextEdit, data.text)
                 self.ui.entryEndCheck.setChecked(data.end)
                 self.ui.entryXpSpin.setValue(data.xp_percentage)
                 self.ui.entryIdSpin.setValue(data.entry_id)

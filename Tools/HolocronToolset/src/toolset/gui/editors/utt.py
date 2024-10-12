@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utt import UTT, dismantle_utt, read_utt
@@ -46,29 +44,11 @@ class UTTEditor(Editor):
         supported = [ResourceType.UTT, ResourceType.BTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.utt import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.utt import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.utt import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.utt import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.utt import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setupInstallation(installation)
 
@@ -76,8 +56,8 @@ class UTTEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self):
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+    def _setup_signals(self):
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
 
     def _setupInstallation(
@@ -85,7 +65,7 @@ class UTTEditor(Editor):
         installation: HTInstallation,
     ):
         self._installation = installation
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
 
         cursors: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_CURSORS)
         factions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
@@ -113,19 +93,19 @@ class UTTEditor(Editor):
             )
         )
 
-        self.ui.onClickEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onClickEdit.populate_combo_box(self.relevant_script_resnames)
         installation.setup_file_context_menu(self.ui.onClickEdit, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onDisarmEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDisarmEdit.populate_combo_box(self.relevant_script_resnames)
         installation.setup_file_context_menu(self.ui.onDisarmEdit, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onEnterSelect.populate_combo_box(self.relevant_script_resnames)
         installation.setup_file_context_menu(self.ui.onEnterSelect, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onExitSelect.populate_combo_box(self.relevant_script_resnames)
         installation.setup_file_context_menu(self.ui.onExitSelect, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onTrapTriggeredEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onTrapTriggeredEdit.populate_combo_box(self.relevant_script_resnames)
         installation.setup_file_context_menu(self.ui.onTrapTriggeredEdit, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populate_combo_box(self.relevant_script_resnames)
         installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populate_combo_box(self.relevant_script_resnames)
         installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NCS, ResourceType.NSS])
 
     def load(
@@ -183,13 +163,13 @@ class UTTEditor(Editor):
         self.ui.trapSelect.setCurrentIndex(utt.trap_type)
 
         # Scripts
-        self.ui.onClickEdit.setComboBoxText(str(utt.on_click))
-        self.ui.onDisarmEdit.setComboBoxText(str(utt.on_disarm))
-        self.ui.onEnterSelect.setComboBoxText(str(utt.on_enter))
-        self.ui.onExitSelect.setComboBoxText(str(utt.on_exit))
-        self.ui.onHeartbeatSelect.setComboBoxText(str(utt.on_heartbeat))
-        self.ui.onTrapTriggeredEdit.setComboBoxText(str(utt.on_trap_triggered))
-        self.ui.onUserDefinedSelect.setComboBoxText(str(utt.on_user_defined))
+        self.ui.onClickEdit.set_combo_box_text(str(utt.on_click))
+        self.ui.onDisarmEdit.set_combo_box_text(str(utt.on_disarm))
+        self.ui.onEnterSelect.set_combo_box_text(str(utt.on_enter))
+        self.ui.onExitSelect.set_combo_box_text(str(utt.on_exit))
+        self.ui.onHeartbeatSelect.set_combo_box_text(str(utt.on_heartbeat))
+        self.ui.onTrapTriggeredEdit.set_combo_box_text(str(utt.on_trap_triggered))
+        self.ui.onUserDefinedSelect.set_combo_box_text(str(utt.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utt.comment)
@@ -255,10 +235,10 @@ class UTTEditor(Editor):
 
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        if dialog.exec():
+            self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())

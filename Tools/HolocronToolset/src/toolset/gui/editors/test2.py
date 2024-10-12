@@ -176,7 +176,7 @@ def main():
     window = MainWindow(model)
     window.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 def create_complex_tree() -> DLG:
     # Create the DLG structure with entries and replies

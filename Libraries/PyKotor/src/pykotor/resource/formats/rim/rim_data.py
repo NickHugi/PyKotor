@@ -89,7 +89,12 @@ class RIM:
             data: The new resource data.
         """
         resource: RIMResource | None = next(
-            (resource for resource in self._resources if resource.resref == resname and resource.restype == restype),
+            (
+                resource
+                for resource in self._resources
+                if resource.resref == resname
+                and resource.restype == restype
+            ),
             None,
         )
         if resource is None:
@@ -151,6 +156,20 @@ class RIM:
             erf.set_data(str(resource.resref), resource.restype, resource.data)
         return erf
 
+    def calculate_resource_offsets(self) -> dict[RIMResource, int]:
+        from pykotor.resource.formats.rim.io_rim import RIMBinaryWriter
+        entry_count = len(self._resources)
+        offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
+        data_start = offset_to_keys + RIMBinaryWriter.KEY_ELEMENT_SIZE * entry_count
+
+        offsets = {}
+        offset = data_start
+        for resource in self._resources:
+            offsets[resource] = offset
+            offset += len(resource.data)
+
+        return offsets
+
     def __eq__(self, other):
         from pykotor.resource.formats.rim import RIM
         if not isinstance(other, (ERF, RIM)):
@@ -167,7 +186,7 @@ class RIMResource:
     ):
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
-        if isinstance(data, bytearray):  # FIXME: Something is passing bytearray here
+        if isinstance(data, bytearray):  # FIXME: Something is passing bytearray here. This breaks the __hash__ function.
             data = bytes(data)
         self.data: bytes = data
 

@@ -6,22 +6,19 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy.QtCore import QSortFilterProxyModel, Qt
-from qtpy.QtGui import QFontMetrics, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QApplication, QMenu, QMessageBox
+from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QAction, QApplication, QMessageBox
 
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import (
-    assert_with_variable_trace,
-    universal_simplify_exception,
-)
+from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
 
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QModelIndex, QPoint
+    from qtpy.QtCore import QModelIndex
     from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
@@ -51,52 +48,26 @@ class TwoDAEditor(Editor):
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.twoda import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.twoda import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.twoda import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.twoda import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.twoda import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
 
         self.ui.filterBox.setVisible(False)
 
         self.model = QStandardItemModel(self)
-        self.proxyModel = SortFilterProxyModel(self)
-        self.proxyModel.setSourceModel(self.model)
+        self.proxy_model = SortFilterProxyModel(self)
+        self.proxy_model.setSourceModel(self.model)
 
-        self.verticalHeaderOption: VerticalHeaderOption = VerticalHeaderOption.NONE
-        self.verticalHeaderColumn: str = ""
-        vertHeader = self.ui.twodaTable.verticalHeader()
-
-        # Add context menu to header
-        self.ui.twodaTable.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.ui.twodaTable.horizontalHeader().customContextMenuRequested.connect(self.showHeaderContextMenu)
-
-        self.autoResizeEnabled = True  # To track the state of auto-fit columns
-
-
-        self.model.itemChanged.connect(self.resetVerticalHeaders)
+        self.vertical_header_option: VerticalHeaderOption = VerticalHeaderOption.NONE
+        self.vertical_header_column: str = ""
+        vert_header = self.ui.twodaTable.verticalHeader()
+        self.model.itemChanged.connect(self.reset_vertical_headers)
 
         self.new()
-        if vertHeader is not None and "(Dark)" in GlobalSettings().selectedTheme:
-            vertHeader.setStyleSheet("""
+        if vert_header is not None and "(Dark)" in GlobalSettings().selectedTheme:
+            vert_header.setStyleSheet("""
                 QHeaderView::section {
                     color: rgba(255, 255, 255, 0.0);  /* Transparent text */
                     background-color: #333333;  /* Dark background */
@@ -147,37 +118,29 @@ class TwoDAEditor(Editor):
                 }
             """)
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Set up signal connections for UI actions and edits.
-
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            None: No return value.
 
         Processing Logic:
         ----------------
-            - Connect textEdited signal from filter edit to doFilter slot
-            - Connect triggered signal from toggle filter action to toggleFilter slot
-            - Connect triggered signal from copy action to copySelection slot
-            - Connect triggered signal from paste action to pasteSelection slot
+            - Connect textEdited signal from filter edit to do_filter slot
+            - Connect triggered signal from toggle filter action to toggle_filter slot
+            - Connect triggered signal from copy action to copy_selection slot
+            - Connect triggered signal from paste action to paste_selection slot
             - Connect triggered signal from insert row action to insertRow slot
             - Connect triggered signal from duplicate row action to duplicateRow slot
-            - Connect triggered signal from remove rows action to removeSelectedRows slot
+            - Connect triggered signal from remove rows action to remove_selectedRows slot
             - Connect triggered signal from redo row labels action to redoRowLabels slot
         """
-        self.ui.filterEdit.textEdited.connect(self.doFilter)
-        self.ui.actionToggleFilter.triggered.connect(self.toggleFilter)
-        self.ui.actionCopy.triggered.connect(self.copySelection)
-        self.ui.actionPaste.triggered.connect(self.pasteSelection)
+        self.ui.filterEdit.textEdited.connect(self.do_filter)
+        self.ui.actionToggleFilter.triggered.connect(self.toggle_filter)
+        self.ui.actionCopy.triggered.connect(self.copy_selection)
+        self.ui.actionPaste.triggered.connect(self.paste_selection)
 
-        self.ui.actionInsertRow.triggered.connect(self.insertRow)
-        self.ui.actionDuplicateRow.triggered.connect(self.duplicateRow)
-        self.ui.actionRemoveRows.triggered.connect(self.removeSelectedRows)
-        self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
+        self.ui.actionInsertRow.triggered.connect(self.insert_row)
+        self.ui.actionDuplicateRow.triggered.connect(self.duplicate_row)
+        self.ui.actionRemoveRows.triggered.connect(self.remove_selected_rows)
+        self.ui.actionRedoRowLabels.triggered.connect(self.redo_row_labels)
 
     def load(
         self,
@@ -207,14 +170,14 @@ class TwoDAEditor(Editor):
 
         # FIXME(th3w1zard1): Why set this here when it's already set in __init__...?
         self.model = QStandardItemModel(self)
-        self.proxyModel = SortFilterProxyModel(self)
+        self.proxy_model = SortFilterProxyModel(self)
 
         try:
             self._load_main(data)
         except ValueError as e:
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec_()
-            self.proxyModel.setSourceModel(self.model)
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec()
+            self.proxy_model.setSourceModel(self.model)
             self.new()
 
     def _load_main(self, data: bytes):
@@ -254,93 +217,29 @@ class TwoDAEditor(Editor):
         for i, row_items in enumerate(items):
             self.model.insertRow(i, row_items)
 
-        self.resetVerticalHeaders()
-        self.proxyModel.setSourceModel(self.model)
-        self.ui.twodaTable.setModel(self.proxyModel)  # type: ignore[arg-type]
-
-        # Reconstructing the row header setting menu
+        self.reset_vertical_headers()
+        self.proxy_model.setSourceModel(self.model)
+        self.ui.twodaTable.setModel(self.proxy_model)  # type: ignore[arg-type]
         self._reconstruct_menu(headers)
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
-        else:
-            self.resetColumnWidths()
 
     def _reconstruct_menu(self, headers):
         self.ui.menuSetRowHeader.clear()
         action = QAction("None", self)
-        action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.NONE))
+        action.triggered.connect(lambda: self.set_vertical_header_option(VerticalHeaderOption.NONE))
         self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
 
         action = QAction("Row Index", self)
-        action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_INDEX))
+        action.triggered.connect(lambda: self.set_vertical_header_option(VerticalHeaderOption.ROW_INDEX))
         self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
 
         action = QAction("Row Label", self)
-        action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_LABEL))
+        action.triggered.connect(lambda: self.set_vertical_header_option(VerticalHeaderOption.ROW_LABEL))
         self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
         self.ui.menuSetRowHeader.addSeparator()
         for header in headers[1:]:
             action = QAction(header, self)
-            action.triggered.connect(lambda _=None, h=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, h))
+            action.triggered.connect(lambda _=None, h=header: self.set_vertical_header_option(VerticalHeaderOption.CELL_VALUE, h))
             self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
-
-    def showHeaderContextMenu(self, position: QPoint):
-        menu = QMenu()
-
-        toggleAutoFitAction = QAction("Auto-fit Columns", self)
-        toggleAutoFitAction.setCheckable(True)
-        toggleAutoFitAction.setChecked(self.autoResizeEnabled)
-        toggleAutoFitAction.triggered.connect(self.toggleAutoFitColumns)
-        menu.addAction(toggleAutoFitAction)
-
-        toggleAlternateRowColorsAction = QAction("Toggle Alternate Row Colors", self)
-        toggleAlternateRowColorsAction.triggered.connect(self.toggleAlternateRowColors)
-        menu.addAction(toggleAlternateRowColorsAction)
-
-        menu.exec_(self.ui.twodaTable.horizontalHeader().mapToGlobal(position))
-
-    def toggleAlternateRowColors(self):
-        if self.ui.twodaTable.alternatingRowColors():
-            self.ui.twodaTable.setAlternatingRowColors(False)
-        else:
-            self.ui.twodaTable.setAlternatingRowColors(True)
-
-    def resetColumnWidths(self):
-        header = self.ui.twodaTable.horizontalHeader()
-        assert header is not None
-        for col in range(header.count()):
-            header.resizeSection(col, header.defaultSectionSize())
-
-    def autoFitColumns(self):
-        header = self.ui.twodaTable.horizontalHeader()
-        assert header is not None
-
-        # Resize columns to contents
-        self.ui.twodaTable.resizeColumnsToContents()
-
-        # Adjust each column's width to ensure the header text is fully visible
-        font_metrics = QFontMetrics(QApplication.font())
-
-        # Loop over each column and adjust based on header text width
-        for col in range(header.count()):
-            # Calculate the width required for the text in the header
-            header_text = header.model().headerData(col, Qt.Orientation.Horizontal)
-            text_width = font_metrics.horizontalAdvance(str(header_text)) + 10
-
-            # Ensure the column is wide enough for the header text
-            current_width = header.sectionSize(col)
-            new_width = max(current_width, text_width)
-            header.resizeSection(col, new_width)
-
-    def toggleAutoFitColumns(self):
-        self.autoResizeEnabled = not self.autoResizeEnabled
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
-        else:
-            self.resetColumnWidths()
-        header = self.ui.twodaTable.horizontalHeader()
-        assert header is not None
-        header.viewport().update()
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a 2D array from a table model.
@@ -368,7 +267,7 @@ class TwoDAEditor(Editor):
         data = bytearray()
         assert self._restype, assert_with_variable_trace(bool(self._restype), "self._restype must be valid.")
         write_2da(twoda, data, self._restype)
-        return data, b""
+        return bytes(data), b""
 
     def new(self):
         super().new()
@@ -376,7 +275,7 @@ class TwoDAEditor(Editor):
         self.model.clear()
         self.model.setRowCount(0)
 
-    def jumpToRow(self, row: int):
+    def jump_to_row(self, row: int):
         """Jumps to the specified row in the table.
 
         Args:
@@ -388,30 +287,30 @@ class TwoDAEditor(Editor):
             return
 
         # Select the row in the table view
-        index = self.proxyModel.mapFromSource(self.model.index(row, 0))
+        index = self.proxy_model.mapFromSource(self.model.index(row, 0))
         self.ui.twodaTable.setCurrentIndex(index)
-        self.ui.twodaTable.scrollTo(index, self.ui.twodaTable.EnsureVisible)  # type: ignore[arg-type]
+        self.ui.twodaTable.scrollTo(index, self.ui.twodaTable.ScrollHint.EnsureVisible)  # type: ignore[arg-type]
 
         # Optionally, select the entire row
         self.ui.twodaTable.selectRow(index.row())
 
-    def doFilter(
+    def do_filter(
         self,
         text: str,
     ):
-        self.proxyModel.setFilterFixedString(text)
+        self.proxy_model.setFilterFixedString(text)
 
-    def toggleFilter(self):
+    def toggle_filter(self):
         visible: bool = not self.ui.filterBox.isVisible()
         self.ui.filterBox.setVisible(visible)
         if visible:
-            self.doFilter(self.ui.filterEdit.text())
+            self.do_filter(self.ui.filterEdit.text())
             self.ui.filterEdit.setFocus()
             self.ui.filterEdit.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # type: ignore[arg-type]
         else:
-            self.doFilter("")
+            self.do_filter("")
 
-    def copySelection(self):
+    def copy_selection(self):
         """Copies the selected cells to the clipboard.
 
         Args:
@@ -434,7 +333,7 @@ class TwoDAEditor(Editor):
         for index in self.ui.twodaTable.selectedIndexes():
             if not index.isValid():
                 continue
-            mapped_index = self.proxyModel.mapToSource(index)  # type: ignore[arg-type]
+            mapped_index = self.proxy_model.mapToSource(index)  # type: ignore[arg-type]
 
             top = min([top, mapped_index.row()])
             bottom = max([bottom, mapped_index.row()])
@@ -452,7 +351,7 @@ class TwoDAEditor(Editor):
 
         QApplication.clipboard().setText(clipboard)
 
-    def pasteSelection(self):
+    def paste_selection(self):
         """Pastes the clipboard contents into the selected table cells.
 
         Args:
@@ -471,17 +370,17 @@ class TwoDAEditor(Editor):
                 - Increments the row.
         """
         rows: list[str] = QApplication.clipboard().text().split("\n")
-        selectedIndexes = self.ui.twodaTable.selectedIndexes()
-        if not selectedIndexes:
+        selected_indexes = self.ui.twodaTable.selectedIndexes()
+        if not selected_indexes:
             return
-        selectedIndex = self.ui.twodaTable.selectedIndexes()[0]
-        if not selectedIndex.isValid():
+        selected_index = self.ui.twodaTable.selectedIndexes()[0]
+        if not selected_index.isValid():
             return
 
-        topLeftIndex = self.proxyModel.mapToSource(selectedIndex)  # type: ignore[arg-type]
-        topLeftItem: QStandardItem | None = self.model.itemFromIndex(topLeftIndex)
+        top_left_index = self.proxy_model.mapToSource(selected_index)  # type: ignore[arg-type]
+        top_left_item: QStandardItem | None = self.model.itemFromIndex(top_left_index)
 
-        _top, left = y, x = topLeftItem.row(), topLeftItem.column()
+        _top, left = y, x = top_left_item.row(), top_left_item.column()
 
         for row in rows:
             for cell in row.split("\t"):
@@ -492,12 +391,8 @@ class TwoDAEditor(Editor):
             x = left
             y += 1
 
-    def insertRow(self):
+    def insert_row(self):
         """Inserts a new row at the end of the table.
-
-        Args:
-        ----
-            self: The table view object.
 
         Processing Logic:
         ----------------
@@ -507,22 +402,14 @@ class TwoDAEditor(Editor):
             - Makes the row index bold and changes its background color
             - Resets the vertical header labels.
         """
-        rowIndex: int = self.model.rowCount()
+        row_index: int = self.model.rowCount()
         self.model.appendRow([QStandardItem("") for _ in range(self.model.columnCount())])
-        self.setItemDisplayData(rowIndex)
+        self.set_item_display_data(row_index)
 
-    def duplicateRow(self):
+    def duplicate_row(self):
         """Duplicates the selected row in the table.
 
         Inserts a new row, copying values of the selected row, at the end of the table.
-
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            None: Does not return anything.
 
         Processing Logic:
         ----------------
@@ -534,50 +421,42 @@ class TwoDAEditor(Editor):
             - Resets the vertical headers of the table.
         """
         if self.ui.twodaTable.selectedIndexes():
-            copyRow: int = self.ui.twodaTable.selectedIndexes()[0].row()
+            copy_row: int = self.ui.twodaTable.selectedIndexes()[0].row()
 
-            rowIndex: int = self.model.rowCount()
-            self.model.appendRow([QStandardItem(self.model.item(copyRow, i)) for i in range(self.model.columnCount())])
-            self.setItemDisplayData(rowIndex)
+            row_index: int = self.model.rowCount()
+            self.model.appendRow([QStandardItem(self.model.item(copy_row, i)) for i in range(self.model.columnCount())])
+            self.set_item_display_data(row_index)
 
-    def setItemDisplayData(self, rowIndex: int):
+    def set_item_display_data(self, rowIndex: int):
         self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
         font = self.model.item(rowIndex, 0).font()
         font.setBold(True)
         self.model.item(rowIndex, 0).setFont(font)
         self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
-        self.resetVerticalHeaders()
+        self.reset_vertical_headers()
 
-    def removeSelectedRows(self):
+    def remove_selected_rows(self):
         """Removes the rows the user has selected."""
         rows: set[int] = {index.row() for index in self.ui.twodaTable.selectedIndexes()}
         for row in sorted(rows, reverse=True):
             self.model.removeRow(row)
 
-    def redoRowLabels(self):
+    def redo_row_labels(self):
         """Iterates through every row setting the row label to match the row index."""
         for i in range(self.model.rowCount()):
             self.model.item(i, 0).setText(str(i))
 
-    def setVerticalHeaderOption(
+    def set_vertical_header_option(
         self,
         option: VerticalHeaderOption,
         column: str | None = None,
     ):
-        self.verticalHeaderOption = option
-        self.verticalHeaderColumn = column or ""
-        self.resetVerticalHeaders()
+        self.vertical_header_option = option
+        self.vertical_header_column = column or ""
+        self.reset_vertical_headers()
 
-    def resetVerticalHeaders(self):
+    def reset_vertical_headers(self):
         """Resets the vertical headers of the two-dimensional table.
-
-        Args:
-        ----
-            self: The table widget object.
-
-        Returns:
-        -------
-            None: No value is returned.
 
         Processing Logic:
         ----------------
@@ -586,27 +465,27 @@ class TwoDAEditor(Editor):
             - Populate headers list with appropriate values
             - Set vertical header item for each row using headers list values
         """
-        vertHeader = self.ui.twodaTable.verticalHeader()
-        assert vertHeader is not None
+        vertical_header = self.ui.twodaTable.verticalHeader()
+        assert vertical_header is not None
         if GlobalSettings().selectedTheme in ("Native", "Fusion (Light)"):
-            vertHeader.setStyleSheet("")
+            vertical_header.setStyleSheet("")
         headers: list[str] = []
 
-        if self.verticalHeaderOption == VerticalHeaderOption.ROW_INDEX:
+        if self.vertical_header_option == VerticalHeaderOption.ROW_INDEX:
             headers = [str(i) for i in range(self.model.rowCount())]
-        elif self.verticalHeaderOption == VerticalHeaderOption.ROW_LABEL:
+        elif self.vertical_header_option == VerticalHeaderOption.ROW_LABEL:
             headers = [self.model.item(i, 0).text() for i in range(self.model.rowCount())]
-        elif self.verticalHeaderOption == VerticalHeaderOption.CELL_VALUE:
-            columnIndex: int = 0
+        elif self.vertical_header_option == VerticalHeaderOption.CELL_VALUE:
+            col_index: int = 0
             for i in range(self.model.columnCount()):
-                if self.model.horizontalHeaderItem(i).text() == self.verticalHeaderColumn:
-                    columnIndex = i
-            headers = [self.model.item(i, columnIndex).text() for i in range(self.model.rowCount())]
-        elif self.verticalHeaderOption == VerticalHeaderOption.NONE:
+                if self.model.horizontalHeaderItem(i).text() == self.vertical_header_column:
+                    col_index = i
+            headers = [self.model.item(i, col_index).text() for i in range(self.model.rowCount())]
+        elif self.vertical_header_option == VerticalHeaderOption.NONE:
             if GlobalSettings().selectedTheme in ("Native", "Fusion (Light)"):
-                vertHeader.setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
+                vertical_header.setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
             elif GlobalSettings().selectedTheme == "Fusion (Dark)":
-                vertHeader.setStyleSheet("""
+                vertical_header.setStyleSheet("""
                     QHeaderView::section {
                         color: rgba(255, 255, 255, 0.0);  /* Transparent text */
                         background-color: #333333;  /* Dark background */
@@ -667,17 +546,17 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
         self._filterString: str = ""
 
-    def filterAcceptsRow(
+    def filterAcceptsRow(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
-        sourceRow: int,
-        sourceParent: QModelIndex,
+        source_row: int,
+        source_parent: QModelIndex,
     ) -> bool:
         """Filters rows based on regular expression pattern match.
 
         Args:
         ----
-            sourceRow: Row number to check
-            sourceParent: Parent model of the row
+            source_row: Row number to check
+            source_parent: Parent model of the row
 
         Returns:
         -------
@@ -700,16 +579,16 @@ class SortFilterProxyModel(QSortFilterProxyModel):
 
         if not pattern:
             return True
-        caseInsensPattern = pattern.lower()
-        srcModel = self.sourceModel()
-        for i in range(srcModel.columnCount()):
-            index = srcModel.index(sourceRow, i, sourceParent)
+        case_insens_pattern = pattern.lower()
+        src_model = self.sourceModel()
+        for i in range(src_model.columnCount()):
+            index = src_model.index(source_row, i, source_parent)
             if not index.isValid():
                 continue
-            data: str = srcModel.data(index)
+            data: str = src_model.data(index)
             if data is None:
                 continue
-            if caseInsensPattern in data.lower():
+            if case_insens_pattern in data.lower():
                 return True
         return False
 

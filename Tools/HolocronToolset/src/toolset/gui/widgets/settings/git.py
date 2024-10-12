@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
 
 from pykotor.common.misc import Color
@@ -33,31 +31,13 @@ class GITWidget(SettingsWidget):
             - Loads UI from form
             - Sets alpha channel allowed for colour pickers
             - Connects reset buttons to methods
-            - Calls setupValues method.
+            - Calls setup_values method.
         """
         super().__init__(parent)
 
         self.settings: GITSettings = GITSettings()
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.settings.git import (
-                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.settings.git import (
-                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.settings.git import (
-                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.settings.git import (
-                Ui_Form,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.widgets.settings.git import Ui_Form
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
@@ -85,7 +65,7 @@ class GITWidget(SettingsWidget):
         self.ui.coloursResetButton.clicked.connect(self.resetColours)
         self.ui.controlsResetButton.clicked.connect(self.resetControls)
 
-        self.setupValues()
+        self.setup_values()
 
         # Install the event filter on all child widgets
         self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter(self)
@@ -99,7 +79,7 @@ class GITWidget(SettingsWidget):
         for bindEdit in [widget for widget in dir(self.ui) if "BindEdit" in widget]:
             self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
 
-    def setupValues(self):
+    def setup_values(self):
         self._setupColourValues()
         self._setupBindValues()
 

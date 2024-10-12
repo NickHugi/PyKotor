@@ -113,7 +113,7 @@ class ButtonDelegate(QStyledItemDelegate):
 
 
 def filterLineEditKeyPressEvent(self: QLineEdit, event: QKeyEvent, parentComboBox: FilterComboBox):
-    #print("filterLineEditKeyPressEvent, curText of main lineEdit: ", parentComboBox.lineEdit().text(), "key:", getQtKeyString(event.key()))
+    #print("filterLineEditKeyPressEvent, curText of main lineEdit: ", parentComboBox.lineEdit().text(), "key:", get_qt_key_string(event.key()))
     if event.key() in (Qt.Key_Backspace, Qt.Key_Delete):
         self.clear()
     else:
@@ -128,13 +128,13 @@ class CustomListView(QListView):
         self.button_text: str = ""
         self.button_callback: Callable[[str], Any]
 
-    def keyPressEvent(self, event: QKeyEvent):
+    def keyPressEvent(self, event: QKeyEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         if self.combobox.isPoppedUp:
             self.combobox.filterLineEdit.keyPressEvent(event)
         else:
             super().keyPressEvent(event)
 
-    def mousePressEvent(self, event: QMouseEvent):
+    def mousePressEvent(self, event: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         if not self.button_text:
             super().mousePressEvent(event)
             return
@@ -199,7 +199,7 @@ class FilterComboBox(QComboBox):
         self.setMinimumWidth(200)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
 
-    def setEditable(self, state: bool):  # noqa: FBT001
+    def setEditable(self, state: bool):  # noqa: FBT001  # pyright: ignore[reportIncompatibleMethodOverride]
         self._editable = state
         super().setEditable(state)
 
@@ -216,18 +216,18 @@ class FilterComboBox(QComboBox):
         line_edit.home(False)
         return line_edit
 
-    def setModel(self, model: QStringListModel | QStandardItemModel):
+    def setModel(self, model: QStringListModel | QStandardItemModel):  # pyright: ignore[reportIncompatibleMethodOverride]
         assert isinstance(model, (QStringListModel, QStandardItemModel))
         self.proxyModel.setSourceModel(model)
         self.sourceModel: QStringListModel | QStandardItemModel = model
 
-    def keyPressEvent(self, event: QKeyEvent):
+    def keyPressEvent(self, event: QKeyEvent):  # pyright: ignore[reportIncompatibleMethodOverride]  # noqa: ARG002
         if self.isPoppedUp:
             self.filterLineEdit.keyPressEvent(event)
         else:
             super().keyPressEvent(event)
 
-    def setComboBoxText(
+    def set_combo_box_text(
         self,
         text: str,
         *,
@@ -258,7 +258,7 @@ class FilterComboBox(QComboBox):
                 self.sourceModel.clear()
                 for item in self.items:
                     self.sourceModel.appendRow(QStandardItem(item))
-            self.setComboBoxText(self.origText)
+            self.set_combo_box_text(self.origText)
             self.itemsLoaded = True
 
         self.old_width = self.width()
@@ -291,7 +291,7 @@ class FilterComboBox(QComboBox):
         self.isPoppedUp = False
         self.resize(self.old_width, self.height())
 
-    def populateComboBox(self, items: Sequence[str]):
+    def populate_combo_box(self, items: Sequence[str]):
         self.items = list(items)
         self.itemsLoaded = False
 
@@ -321,7 +321,7 @@ class MainWindow(QMainWindow):
 
         # Create and populate the FilterComboBox
         self.comboBox = FilterComboBox()
-        self.comboBox.populateComboBox([f"Item {i}" for i in range(10)])
+        self.comboBox.populate_combo_box([f"Item {i}" for i in range(10)])
         layout.addWidget(self.comboBox)
 
         # Set the layout for the central widget
@@ -331,4 +331,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
     mainWindow.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

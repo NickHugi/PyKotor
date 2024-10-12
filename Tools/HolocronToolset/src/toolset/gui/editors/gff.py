@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtCore import QSortFilterProxyModel
 from qtpy.QtGui import QBrush, QColor, QFont, QStandardItem, QStandardItemModel
@@ -61,29 +59,11 @@ class GFFEditor(Editor):
         self._talktable: TalkTable | None = installation.talktable() if installation else None
         self._gff_content: GFFContent | None = None
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.gff import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.gff import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.gff import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.gff import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.gff import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
 
         self.ui.treeView.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)  # type: ignore[arg-type]
 
@@ -95,7 +75,7 @@ class GFFEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Sets up signals and connections for the GUI.
 
         Args:
@@ -144,7 +124,7 @@ class GFFEditor(Editor):
 
         self.ui.typeCombo.activated.connect(self.typeChanged)
 
-        QShortcut("Del", self).activated.connect(self.removeSelectedNodes)
+        QShortcut("Del", self).activated.connect(self.remove_selectedNodes)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads resource data from a file into the model.
@@ -801,7 +781,7 @@ class GFFEditor(Editor):
         newItem = self.insertNode(item, newLabel, GFFFieldType.Struct, newValue)
         set_spinbox(-1, 0xFFFFFFFF, newItem)
 
-    def removeNode(self, item: QStandardItem):
+    def remove_node(self, item: QStandardItem):
         """Remove a node from the tree model.
 
         Args:
@@ -810,12 +790,12 @@ class GFFEditor(Editor):
         """
         parentItem = item.parent()
         if parentItem is None:
-            QMessageBox(QMessageBox.Icon.Critical, "Invalid action attempted", "Cannot remove the top-level [ROOT] item.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Invalid action attempted", "Cannot remove the top-level [ROOT] item.").exec()
             return
         parentItem.removeRow(item.row())
         self.refreshItemText(item)
 
-    def removeSelectedNodes(self):
+    def remove_selectedNodes(self):
         """Removes selected nodes from the tree.
 
         Args:
@@ -827,13 +807,13 @@ class GFFEditor(Editor):
             - Loops through the selected indexes in the tree view.
             - Maps each proxy index to its corresponding source index.
             - Gets the item from the source model using the source index.
-            - Calls removeNode() to remove the item from the model.
+            - Calls remove_node() to remove the item from the model.
         """
         for proxyIndex in self.ui.treeView.selectedIndexes():
             sourceIndex = self.proxyModel.mapToSource(proxyIndex)
             item = self.model.itemFromIndex(sourceIndex)
             assert item is not None
-            self.removeNode(item)
+            self.remove_node(item)
 
     def requestContextMenu(self, point):
         """Generates context menu for tree view item at given point.
@@ -862,7 +842,7 @@ class GFFEditor(Editor):
             menu.addAction("Add Struct").triggered.connect(lambda: self.addNode(item))
         elif nested_type in {GFFFieldType.Struct, None}:
             self._build_context_menu_gff_struct(menu, item)
-        menu.addAction("Remove").triggered.connect(lambda: self.removeNode(item))
+        menu.addAction("Remove").triggered.connect(lambda: self.remove_node(item))
         menu.popup(self.ui.treeView.viewport().mapToGlobal(point))
 
     def _build_context_menu_gff_struct(self, menu: QMenu, item: QStandardItem):

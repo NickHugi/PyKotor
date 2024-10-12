@@ -121,9 +121,9 @@ skip_gitignore = true
 multi_line_output = 3
 
 [tool.pyright.defineConstant]
-PYQT5 = true
-PYSIDE2 = true
-PYQT6 = true
+PYQT5 = false
+PYSIDE2 = false
+PYQT6 = false
 PYSIDE6 = true
 
 [tool.yapf]

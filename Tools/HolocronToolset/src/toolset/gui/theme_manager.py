@@ -10,39 +10,12 @@ from qtpy.QtCore import (
     Slot,  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QColor, QPalette
-from qtpy.QtWidgets import (
-    QAction,
-    QApplication,
-    QMessageBox,
-)
+from qtpy.QtWidgets import QAction, QApplication, QMessageBox
 
 from toolset.gui.widgets.settings.misc import GlobalSettings
-from ui import stylesheet_resources  # noqa: F401  # pylint: disable=unused-import
-
-if qtpy.API_NAME == "PySide2":  # pylint: disable=ungrouped-imports
-    from toolset.rcc import (  # pylint: disable=unused-import
-        resources_rc_pyside2,  # noqa: PLC0415, F401  # pylint: disable=ungrouped-imports,unused-import
-    )
-elif qtpy.API_NAME == "PySide6":
-    from toolset.rcc import (  # pylint: disable=unused-import
-        resources_rc_pyside6,  # noqa: PLC0415, F401  # pylint: disable=ungrouped-imports,unused-import
-    )
-elif qtpy.API_NAME == "PyQt5":
-    from toolset.rcc import (  # pylint: disable=unused-import
-        resources_rc_pyqt5,  # noqa: PLC0415, F401  # pylint: disable=ungrouped-imports,unused-import
-    )
-elif qtpy.API_NAME == "PyQt6":
-    from toolset.rcc import (  # pylint: disable=unused-import
-        resources_rc_pyqt6,  # noqa: PLC0415, F401  # pylint: disable=ungrouped-imports,unused-import
-    )
-else:
-    raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import (
-        QCoreApplication,
-        Qt,  # pyright: ignore[reportPrivateImportUsage]
-    )
+    from qtpy.QtCore import QCoreApplication, Qt
     from qtpy.QtWidgets import QStyle
 
 
@@ -52,7 +25,7 @@ class ThemeManager:
 
     def __init__(self, original_style: str):
         """Initialize the theme manager."""
-        self.original_style = original_style
+        self.original_style: str = original_style
 
     @Slot(QApplication, str, object, object, bool)
     def apply_style(
@@ -61,6 +34,7 @@ class ThemeManager:
         sheet: str = "",
         style: str | None = None,
         palette: QPalette | None = None,
+        *,
         repaint_all_widgets: bool = True,
     ):
         app.setStyleSheet(sheet)
@@ -123,9 +97,9 @@ class ThemeManager:
             )
         elif GlobalSettings().selectedTheme == "QDarkStyle":
             try:
-                import qdarkstyle  # pyright: ignore[reportMissingTypeStubs]
+                import qdarkstyle  # pyright: ignore[reportMissingImports, reportMissingTypeStubs]
             except ImportError:
-                QMessageBox.critical(self, "Theme not found", "QDarkStyle is not installed in this environment.")
+                QMessageBox.critical(None, "Theme not found", "QDarkStyle is not installed in this environment.")
             else:
                 app.setStyle(self.original_style)
                 app.setPalette(standard_palette)
@@ -166,7 +140,7 @@ class ThemeManager:
             # palette = self.create_palette("#f0f0f0", "#1e1d23", "#000000", "#f68456", "#ec743f", "#ffffff")
         elif GlobalSettings().selectedTheme == "Breeze (Dark)":
             if qtpy.QT6:
-                QMessageBox(QMessageBox.Icon.Critical, "Breeze Unavailable", "Breeze is only supported on qt5 at this time.").exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Breeze Unavailable", "Breeze is only supported on qt5 at this time.").exec()
                 return
             sheet = self._get_file_stylesheet(":/dark/stylesheet.qss", app)
         else:

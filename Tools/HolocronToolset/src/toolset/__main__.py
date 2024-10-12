@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import asyncio
 import atexit
 import faulthandler
-import gc
 import importlib
 import multiprocessing
 import os
@@ -11,12 +11,14 @@ import pathlib
 import sys
 import tempfile
 
+from contextlib import suppress
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from types import TracebackType
 
     from qtpy.QtCore import QSettings, QThread
+
 
 
 def is_frozen() -> bool:
@@ -52,8 +54,8 @@ def on_app_crash(
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
 
-    This function should never be used in frozen code.
-    This function also ensures a user can run toolset/__main__.py directly.
+    It makes no sense to call this function in frozen code.
+    This function ensures a user can run toolset/__main__.py directly.
     """
 
     def update_sys_path(path: pathlib.Path):
@@ -122,19 +124,12 @@ def set_qt_api():
 
 
 def is_running_from_temp() -> bool:
-    """Check if the toolset is running from a temporary or zip directory.
-
-    Returns:
-        bool: True if the toolset is running from a temporary or zip directory, False otherwise.
-    """
-    app_path = pathlib.Path(sys.executable)
-    temp_dir = tempfile.gettempdir()
-    return str(app_path).startswith(temp_dir)
+    return str(pathlib.Path(sys.executable)).startswith(tempfile.gettempdir())
 
 
 def qt_cleanup():
     """Cleanup so we can exit."""
-    from loggerplus import RobustLogger
+    from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 
     from toolset.utils.window import TOOLSET_WINDOWS
     from utility.system.app_process.shutdown import terminate_child_processes
@@ -143,9 +138,8 @@ def qt_cleanup():
     for window in TOOLSET_WINDOWS:
         window.close()
         window.destroy()
+
     TOOLSET_WINDOWS.clear()
-    gc.collect()
-    print("terminating child processes")
     terminate_child_processes()
 
 
@@ -156,10 +150,7 @@ def last_resort_cleanup():
     """
     from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 
-    from utility.system.app_process.shutdown import (
-        gracefully_shutdown_threads,
-        start_shutdown_process,
-    )
+    from utility.system.app_process.shutdown import gracefully_shutdown_threads, start_shutdown_process
 
     RobustLogger().info("Fully shutting down Holocron Toolset...")
     gracefully_shutdown_threads()
@@ -210,14 +201,12 @@ def main_init():
         multiprocessing.freeze_support()
         if is_main_process:
             set_qt_api()
-        faulthandler.disable()
     else:
         fix_sys_and_cwd_path()
         fix_qt_env_var()
-        # DO NOT USE `faulthandler` IN THIS TOOLSET!!
-        # import faulthandler
-        # https://bugreports.qt.io/browse/PYSIDE-2359
-        # faulthandler.enable()
+    # Do not use `faulthandler.enable()` in the toolset!
+    # https://bugreports.qt.io/browse/PYSIDE-2359
+    faulthandler.disable()
 
 
 def setup_post_init_settings():
@@ -289,7 +278,9 @@ if __name__ == "__main__":
         from qtpy.QtGui import QIcon
         from qtpy.QtWidgets import QApplication, QMessageBox  # pylint: disable=no-name-in-module
 
+        from resources import resources_rc  # noqa: PLC0415, F401  # pylint: disable=ungrouped-imports,unused-import
         from toolset.config import CURRENT_VERSION
+        from ui import stylesheet_resources  # noqa: F401  # pylint: disable=unused-import
 
         _setup_pre_init_settings()
 
@@ -299,14 +290,12 @@ if __name__ == "__main__":
         app.setOrganizationDomain("github.com/NickHugi/PyKotor")
         app.setApplicationVersion(CURRENT_VERSION)
         app.setDesktopFileName("com.pykotor.toolset")
-        app.setWindowIcon(QIcon(":/images/icons/sith.ico"))
         app.setApplicationDisplayName("Holocron Toolset")
-        app.setQuitOnLastWindowClosed(True)
-        icon_path = ":/images/icons/sith.ico"
-        if QIcon(icon_path).isNull():
+        icon_path = ":/images/icons/sith.png"
+        icon = QIcon(icon_path)
+        if icon.isNull():
             RobustLogger().warning(f"Warning: Main application icon not found at '{icon_path}'")
         else:
-            icon = QIcon(icon_path)
             app.setWindowIcon(icon)
         main_gui_thread: QThread | None = app.thread()
         assert main_gui_thread is not None, "Main GUI thread should not be None"
@@ -317,12 +306,11 @@ if __name__ == "__main__":
         setup_toolset_default_env()
 
         if is_running_from_temp():
-            # Show error message using PyQt5's QMessageBox
-            msg_box = QMessageBox()
-            msg_box.setIcon(QMessageBox.Icon.Critical)
-            msg_box.setWindowTitle("Error")
-            msg_box.setText("This application cannot be run from within a zip or temporary directory.  Please extract it to a permanent location before running.")
-            msg_box.exec()
+            QMessageBox.critical(
+                None,
+                "Error",
+                "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running."
+            )
             sys.exit("Exiting: Application was run from a temporary or zip directory.")
 
         from toolset.gui.windows.main import ToolWindow
@@ -330,7 +318,9 @@ if __name__ == "__main__":
         tool_window = ToolWindow()
         tool_window.show()
         tool_window.update_manager.check_for_updates(silent=True)
-
+        with suppress(ImportError):
+            from qasync import QEventLoop  # pyright: ignore[reportMissingTypeStubs]
+            asyncio.set_event_loop(QEventLoop(app))
         sys.exit(app.exec())
 
     main_init()

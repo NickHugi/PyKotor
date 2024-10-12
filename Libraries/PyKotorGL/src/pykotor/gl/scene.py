@@ -1,17 +1,36 @@
 from __future__ import annotations
 
 import math
-import multiprocessing
+import threading
+import traceback
 
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
-from glm import mat4, vec3, vec4, quat
 
-from direct.showbase.ShowBase import ShowBase
-from panda3d.core import NodePath, GeomVertexFormat, GeomVertexData, Geom, GeomVertexWriter, GeomTriangles, GeomNode, Texture as PandaTexture
+from OpenGL.GL import glReadPixels
+from OpenGL.raw.GL.ARB.vertex_shader import GL_FLOAT
+from OpenGL.raw.GL.VERSION.GL_1_0 import (
+    GL_BACK,
+    GL_BLEND,
+    GL_COLOR_BUFFER_BIT,
+    GL_CULL_FACE,
+    GL_DEPTH_BUFFER_BIT,
+    GL_DEPTH_COMPONENT,
+    GL_DEPTH_TEST,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_SRC_ALPHA,
+    glBlendFunc,
+    glClear,
+    glClearColor,
+    glCullFace,
+    glDisable,
+    glEnable,
+)
+from OpenGL.raw.GL.VERSION.GL_1_2 import GL_BGRA, GL_UNSIGNED_INT_8_8_8_8
+from glm import mat4, quat, vec3, vec4
 from loggerplus import RobustLogger
 
 from pykotor.common.geometry import Vector3
@@ -19,7 +38,7 @@ from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
-from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model, RenderObject
+from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model
 from pykotor.gl.models.predefined_mdl import (
     CAMERA_MDL_DATA,
     CAMERA_MDX_DATA,
@@ -58,13 +77,14 @@ from utility.common.more_collections import CaseInsensitiveDict
 if TYPE_CHECKING:
     from collections.abc import Callable
     from concurrent.futures import Future
+    from multiprocessing import Queue
 
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.module import Module, ModulePieceResource, ModuleResource
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.extract.installation import Installation
-    from pykotor.gl.models.mdl import Model
+    from pykotor.gl.models.mdl import Model, Node
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.generics.git import GIT
@@ -78,7 +98,7 @@ SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocatio
 SEARCH_ORDER: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
-class Scene(ShowBase):
+class Scene:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
     def __init__(
@@ -87,25 +107,26 @@ class Scene(ShowBase):
         installation: Installation | None = None,
         module: Module | None = None,
     ):
-        super().__init__()
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().info(f"Start initialize Scene{module_id_part}")
 
-        self.executor: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=max(1, int(multiprocessing.cpu_count() / 2)))
+        glEnable(GL_DEPTH_TEST)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glCullFace(GL_BACK)
 
-        self.textures_data_queue: multiprocessing.Queue[tuple[str, TPC | None, bool]] = multiprocessing.Queue()
-        """Textures currently loading in a child process with ProcessPoolExecutor"""
-        self.pending_textures: set[str] = set()
-        """Textures currently on the queue. Only the main process should ever need access to this."""
+        self.executor = ThreadPoolExecutor(max_workers=4)
+        self.texture_data_futures = {}
+        self.textures_data_queue: dict[str, tuple[TPC | None, bool] | None] = {}  # This will hold the texture data loaded in the background
+        self.textures_data_lock: threading.Lock = threading.Lock()
+        self.model_data_futures = {}
+        self.models_data_queue: dict[str, Any] = {}
+        self.models_data_lock: threading.Lock = threading.Lock()
+
+        self.installation: Installation | None = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
         """Fully loaded textures."""
 
-        self.blank_texture: Texture = Texture.from_color(255, 0, 255)
-        self.blank_lightmap: Texture = Texture.from_color(0, 0, 0)
         self.textures["NULL"] = Texture.from_color()
-
-        self.models_data_queue: multiprocessing.Queue[tuple[str, Model]] = multiprocessing.Queue()
-        self.pending_models: set[str] = set()
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
 
         self.cursor: RenderObject = RenderObject("cursor")
@@ -116,6 +137,9 @@ class Scene(ShowBase):
         self.selection: list[RenderObject] = []
         self._module: Module | None = module
         self.camera: Camera = Camera()
+        self.cursor: RenderObject = RenderObject("cursor")
+
+        self.textures["NULL"] = Texture.from_color()
 
         self.git: GIT | None = None
         self.layout: LYT | None = None
@@ -153,16 +177,19 @@ class Scene(ShowBase):
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().debug(f"Completed pre-initialize Scene{module_id_part}")
 
-        # Set up Panda3D rendering
-        self.render.setShaderAuto()
-        self.taskMgr.add(self.update, "update")
-
     def set_installation(self, installation: Installation):
-        self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        def load_2da(name: str) -> TwoDA:
+            resource = installation.resource(name, ResourceType.TwoDA, SEARCH_ORDER_2DA)
+            if resource is None:
+                RobustLogger().warning(f"Could not load {name}.2da, using blank 2DA")
+                return TwoDA()
+            return read_2da(resource.data)
+
+        self.table_doors = load_2da("genericdoors")
+        self.table_placeables = load_2da("placeables")
+        self.table_creatures = load_2da("appearance")
+        self.table_heads = load_2da("heads")
+        self.table_baseitems = load_2da("baseitems")
 
     def get_creature_render_object(
         self,
@@ -191,7 +218,7 @@ class Scene(ShowBase):
             if utc is None:
                 utc = self._resource_from_gitinstance(instance, self.module.creature)
             if utc is None:
-                RobustLogger().error(f"Cannot getCreatureRenderObject of GITCreature instance '{instance.identifier()}', not found in mod/override.")
+                RobustLogger().warning(f"Could not get UTC for GITCreature instance '{instance.identifier()}', not found in mod/override.")
                 return RenderObject("unknown", data=instance)
 
             head_obj: RenderObject | None = None
@@ -217,8 +244,18 @@ class Scene(ShowBase):
                 appearance=self.table_creatures,
                 baseitems=self.table_baseitems,
             )
+            mask_model = creature.get_mask_model(
+                utc,
+                self.installation,
+            )
 
             obj = RenderObject(body_model, data=instance, override_texture=body_texture)
+
+            head_hook = self.model(body_model).find("headhook")
+            if head_model and head_hook:
+                head_obj = RenderObject(head_model, override_texture=head_texture)
+                head_obj.set_transform(head_hook.global_transform())
+                obj.children.append(head_obj)
 
             rhand_hook = self.model(body_model).find("rhand")
             if rhand_model and rhand_hook:
@@ -230,17 +267,10 @@ class Scene(ShowBase):
                 lhand_obj = RenderObject(lhand_model)
                 lhand_obj.set_transform(lhand_hook.global_transform())
                 obj.children.append(lhand_obj)
-
-            head_hook = self.model(body_model).find("headhook")
-            if head_model and head_hook:
-                head_obj = RenderObject(head_model, override_texture=head_texture)
-                head_obj.set_transform(head_hook.global_transform())
-                obj.children.append(head_obj)
             if head_hook is None:
                 mask_hook = self.model(body_model).find("gogglehook")
             elif head_model:
                 mask_hook = self.model(head_model).find("gogglehook")
-            mask_model = creature.get_mask_model(utc, self.installation)
             if mask_model and mask_hook:
                 mask_obj = RenderObject(mask_model)
                 mask_obj.set_transform(mask_hook.global_transform())
@@ -266,17 +296,29 @@ class Scene(ShowBase):
     def module(self, value: Module):
         self._module = value
 
-    def _get_git(self) -> GIT | None:
+    def _get_git(self) -> GIT:
         module_resource_git: ModuleResource[GIT] | None = self.module.git()
-        return self._resource_from_module(module_resource_git, "' is missing a GIT.")
+        result: GIT | None = self._resource_from_module(module_resource_git, "' is missing a GIT.")
+        if result is None:
+            RobustLogger().warning(f"Module '{self.module.root()}' is missing a GIT.")
+            return GIT()
+        return result
 
-    def _get_lyt(self) -> LYT | None:
+    def _get_lyt(self) -> LYT:
         layout_module_resource: ModuleResource[LYT] | None = self.module.layout()
-        return self._resource_from_module(layout_module_resource, "' is missing a LYT.")
+        result: LYT | None = self._resource_from_module(layout_module_resource, "' is missing a LYT.")
+        if result is None:
+            RobustLogger().warning(f"Module '{self.module.root()}' is missing a LYT.")
+            return LYT()
+        return result
 
-    def _get_ifo(self) -> IFO | None:
+    def _get_ifo(self) -> IFO:
         info_module_resource: ModuleResource[IFO] | None = self.module.info()
-        return self._resource_from_module(info_module_resource, "' is missing an IFO.")
+        result: IFO | None = self._resource_from_module(info_module_resource, "' is missing an IFO.")
+        if result is None:
+            RobustLogger().warning(f"Module '{self.module.root()}' is missing an IFO.")
+            return IFO()
+        return result
 
     def _resource_from_module(self, module_res: ModuleResource[T] | None, errpart: str) -> T | None:
         if module_res is None:
@@ -320,7 +362,6 @@ class Scene(ShowBase):
         if self.layout is None:
             self.layout = self._get_lyt()
 
-        assert self.git is not None, "GIT is not loaded"
         for identifier in self.clear_cache_buffer:
             for git_creature in self.git.creatures.copy():
                 if identifier.resname == git_creature.resref and identifier.restype is ResourceType.UTC:
@@ -451,15 +492,9 @@ class Scene(ShowBase):
                 -euler.x + math.pi / 2,
             )
 
-        # Detect if GIT still exists; if they do not then remove them from the render list
+        # Detect if GIT objects still exist; if they do not then remove them from the render list
         for obj in copy(self.objects):
             self._del_git_objects(obj, self.git, self.objects)
-
-    def _fetch2da(self, resname: str, installation: Installation) -> ResourceResult:
-        result = installation.resource(resname, ResourceType.TwoDA, SEARCH_ORDER_2DA)
-        if result is None:
-            raise RuntimeError(f"Cannot find '{resname}.2da' in the installation, required to render a Scene.")
-        return result
 
     @staticmethod
     def _del_git_objects(
@@ -496,6 +531,7 @@ class Scene(ShowBase):
             self._render_object(self.shader, obj, mat4())
 
         # Draw all instance types that lack a proper model
+        glEnable(GL_BLEND)
         self.plain_shader.use()
         self.plain_shader.set_matrix4("view", self.camera.view())
         self.plain_shader.set_matrix4("projection", self.camera.projection())
@@ -510,6 +546,7 @@ class Scene(ShowBase):
             obj.cube(self).draw(self.plain_shader, obj.transform())
 
         # Draw boundary for selected objects
+        glDisable(GL_CULL_FACE)
         self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.8))
         for obj in self.selection:
             obj.boundary(self).draw(self.plain_shader, obj.transform())
@@ -560,20 +597,46 @@ class Scene(ShowBase):
             self._render_object(shader, child, transform)
 
     def picker_render(self):
-        # Implement Panda3D-specific picker rendering here
-        pass
+        glClearColor(1.0, 1.0, 1.0, 1.0)  # Sets the clear color for the OpenGL color buffer to pure white
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # Clears the color and depth buffers. Clean slate for rendering.  # pyright: ignore[reportOperatorIssue]
+
+        if self.backface_culling:
+            glEnable(GL_CULL_FACE)  # Enables backface culling to improve rendering performance by ignoring back faces of polygons.
+        else:
+            glDisable(GL_CULL_FACE)  # Disables backface culling.
+
+        self.picker_shader.use()  # Activates the shader program for rendering.
+        self.picker_shader.set_matrix4("view", self.camera.view())  # Sets the view matrix for the shader.
+        self.picker_shader.set_matrix4("projection", self.camera.projection())  # Sets the projection matrix for the shader.
+        instances: list[RenderObject] = list(self.objects.values())
+        for obj in instances:
+            int_rgb: int = instances.index(obj)  # Gets the index of the object in the list and converts it to an integer.
+            r: int = int_rgb & 0xFF
+            g: int = (int_rgb >> 8) & 0xFF
+            b: int = (int_rgb >> 16) & 0xFF
+            color = vec3(r / 0xFF, g / 0xFF, b / 0xFF)
+            self.picker_shader.set_vector3("colorId", color)
+
+            self._picker_render_object(obj, mat4())
 
     def _picker_render_object(self, obj: RenderObject, transform: mat4):
-        # Implement Panda3D-specific object rendering for picker here
-        pass
+        if self.should_hide_obj(obj):
+            return
+
+        model: Model = self.model(obj.model)
+        model.draw(self.picker_shader, transform * obj.transform())
+        for child in obj.children:
+            self._picker_render_object(child, obj.transform())
 
     def pick(
         self,
         x: float,
         y: float,
     ) -> RenderObject | None:
-        # Implement Panda3D-specific picking here
-        return None
+        self.picker_render()
+        pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
+        instances = list(self.objects.values())
+        return instances[pixel] if pixel != 0xFFFFFF else None  # noqa: PLR2004
 
     def select(
         self,
@@ -597,89 +660,67 @@ class Scene(ShowBase):
         self.selection.append(actual_target)
 
     def screen_to_world(self, x: int, y: int) -> Vector3:
-        # Implement Panda3D-specific screen to world conversion here
-        return Vector3(0, 0, 0)
+        self._prepare_gl_and_shader()
+        group1: list[RenderObject] = [obj for obj in self.objects.values() if isinstance(obj.data, LYTRoom)]
+        for obj in group1:
+            self._render_object(self.shader, obj, mat4())
+
+        zpos = glReadPixels(x, self.camera.height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]  # type: ignore[]
+        cursor: vec3 = glm.unProject(
+            vec3(x, self.camera.height - y, zpos),
+            self.camera.view(),
+            self.camera.projection(),
+            vec4(0, 0, self.camera.width, self.camera.height),
+        )
+        return Vector3(cursor.x, cursor.y, cursor.z)
 
     def _prepare_gl_and_shader(self):
-        # This method is no longer needed with Panda3D
-        pass
+        glClearColor(0.5, 0.5, 1, 1.0)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore[]
+        if self.backface_culling:
+            glEnable(GL_CULL_FACE)
+        else:
+            glDisable(GL_CULL_FACE)
+        glDisable(GL_BLEND)
+        self.shader.use()
+        self.shader.set_matrix4("view", self.camera.view())
+        self.shader.set_matrix4("projection", self.camera.projection())
 
-    def load_model(self, name: str) -> Model | Future[tuple[str, Model]]:
-        """Load model data asynchronously. Currently unused."""
-        if name in self.models:
-            return self.models[name]
-        future: Future[tuple[str, Model]] = self.executor.submit(
-            self.fetch_model_data,
-            name,
-            self.installation,
-            self._module,
-        )
-        return future
-
-    @staticmethod
-    def fetch_model_data(
+    def load_texture(
+        self,
         name: str,
-        installation: Installation | None = None,
-        module: Module | None = None,
-    ) -> tuple[str, Model]:
-        RobustLogger().debug(f"(background task) Loading '{name}.mdl' into memory...")
-        mdl_data = EMPTY_MDL_DATA
-        mdx_data = EMPTY_MDX_DATA
+        *,
+        lightmap: bool = False,
+    ) -> Texture:
+        if name in self.textures:
+            return self.textures[name]
+        type_name = "lightmap" if lightmap else "texture"
+        tpc: TPC | None = None
+        try:
+            # Check the textures linked to the module first
+            if self._module is not None:
+                RobustLogger().debug(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
+                module_tex = self.module.texture(name)
+                if module_tex is not None:
+                    RobustLogger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
+                    tpc = module_tex.resource()
 
-        if name == "waypoint":
-            mdl_data = WAYPOINT_MDL_DATA
-            mdx_data = WAYPOINT_MDX_DATA
-        elif name == "sound":
-            mdl_data = SOUND_MDL_DATA
-            mdx_data = SOUND_MDX_DATA
-        elif name == "store":
-            mdl_data = STORE_MDL_DATA
-            mdx_data = STORE_MDX_DATA
-        elif name == "entry":
-            mdl_data = ENTRY_MDL_DATA
-            mdx_data = ENTRY_MDX_DATA
-        elif name == "encounter":
-            mdl_data = ENCOUNTER_MDL_DATA
-            mdx_data = ENCOUNTER_MDX_DATA
-        elif name == "trigger":
-            mdl_data = TRIGGER_MDL_DATA
-            mdx_data = TRIGGER_MDX_DATA
-        elif name == "camera":
-            mdl_data = CAMERA_MDL_DATA
-            mdx_data = CAMERA_MDX_DATA
-        elif name == "empty":
-            mdl_data = EMPTY_MDL_DATA
-            mdx_data = EMPTY_MDX_DATA
-        elif name == "cursor":
-            mdl_data = CURSOR_MDL_DATA
-            mdx_data = CURSOR_MDX_DATA
-        elif name == "unknown":
-            mdl_data = UNKNOWN_MDL_DATA
-            mdx_data = UNKNOWN_MDX_DATA
-        elif installation is not None:
-            mdl_search: ResourceResult | None = installation.resource(name, ResourceType.MDL, SEARCH_ORDER)
-            mdx_search: ResourceResult | None = installation.resource(name, ResourceType.MDX, SEARCH_ORDER)
-            if mdl_search is not None and mdx_search is not None and mdl_search.data:
-                mdl_data: bytes = mdl_search.data
-                mdx_data: bytes = mdx_search.data
-            try:
-                RobustLogger().debug(f"(background task) Parsing: '{name}.mdl'")
-                mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
-                mdx_reader = BinaryReader.from_bytes(mdx_data)
-                model = gl_load_stitched_model(mdl_reader, mdx_reader)
-            except Exception as e:  # noqa: BLE001
-                RobustLogger().warning(f"Error loading model '{name}'", exc_info=e)
-                model = gl_load_stitched_model(
-                    BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
-                    BinaryReader.from_bytes(EMPTY_MDX_DATA),
-                )
+            # Otherwise just search through all relevant game files
+            if tpc is None and self.installation is not None:
+                RobustLogger().debug(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
+                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+            if tpc is None:
+                RobustLogger().warning(f"MISSING {type_name.upper()}: '{name}'")
+        except Exception:  # noqa: BLE001
+            RobustLogger().warning(f"Could not load {type_name} '{name}'.")
 
-        RobustLogger().debug(f"(background task) Finished model '{name}.mdl'")
-        return (name, model)
+        blank = Texture.from_color(0, 0, 0) if lightmap else Texture.from_color(255, 0, 255)
+        self.textures[name] = blank if tpc is None else Texture.from_tpc(tpc)
+        return self.textures[name]
 
     def model(self, name: str) -> Model:
-        mdl_data = EMPTY_MDL_DATA
-        mdx_data = EMPTY_MDX_DATA
+        mdl_data: bytes = EMPTY_MDL_DATA
+        mdx_data: bytes = EMPTY_MDX_DATA
 
         if name not in self.models:
             if name == "waypoint":
@@ -717,15 +758,15 @@ class Scene(ShowBase):
                 mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
                 mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
                 if mdl_search is not None and mdx_search is not None:
-                    mdl_data: bytes = mdl_search.data
-                    mdx_data: bytes = mdx_search.data
+                    mdl_data = mdl_search.data
+                    mdx_data = mdx_search.data
 
             try:  # TODO(th3w1zard1): offload to another thread.
                 mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
                 mdx_reader = BinaryReader.from_bytes(mdx_data)
                 model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
-            except Exception as e:  # noqa: BLE001
-                RobustLogger().error(f"Error loading model '{name}'", exc_info=e)
+            except Exception:  # noqa: BLE001
+                RobustLogger().warning(f"Could not load model '{name}'.")
                 model = gl_load_stitched_model(
                     self,
                     BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
@@ -734,103 +775,6 @@ class Scene(ShowBase):
 
             self.models[name] = model
         return self.models[name]
-
-    def load_texture(
-        self,
-        name: str,
-        *,
-        is_lightmap: bool = False,
-    ) -> Texture | None:
-        RobustLogger().debug(f"Attempting to load texture: '{name}', lightmap: {is_lightmap}")
-        type_name = "lightmap" if is_lightmap else "texture"
-        if name in self.textures:
-            RobustLogger().debug(f"{type_name} '{name}' already loaded, returning cached version")
-            return self.textures[name]
-
-        blank: Texture = self.blank_lightmap if is_lightmap else self.blank_texture
-        if name in self.pending_textures:
-            RobustLogger().debug(f"{type_name} '{name}' is already pending, returning blank {type_name}.")
-            return blank  # Prevents submitting duplicates to the executor.
-
-        RobustLogger().debug(f"Submitting {type_name} '{name}' to loading queue")
-        self.pending_textures.add(name)
-        future = self.executor.submit(
-            self.fetch_texture_data,
-            name,
-            installation=self.installation,
-            module=self._module,
-            is_lightmap=is_lightmap,
-        )
-        future.add_done_callback(self._texture_loaded_callback)
-
-        RobustLogger().debug(f"Returning blank {type_name} for '{name}' while loading")
-        return blank
-
-    def _texture_loaded_callback(self, future: Future[tuple[str, TPC | None, bool]]):
-        type_name = "texture/lightmap"
-        name = "unknown"
-        try:
-            name, tpc, is_lightmap = future.result()
-            type_name = "lightmap" if is_lightmap else "texture"
-            RobustLogger().debug(f"Texture loading complete for {type_name} '{name}'")
-
-            if tpc is None:
-                RobustLogger().warning(f"Texture data was None for {type_name}: '{name}'")
-                self.textures[name] = self.blank_lightmap if is_lightmap else self.blank_texture
-                RobustLogger().debug(f"Using blank {type_name} for '{name}'")
-            else:
-                RobustLogger().debug(f"Creating Texture object from TPC for {type_name} '{name}'")
-                self.textures[name] = Texture.from_tpc(tpc)
-                RobustLogger().debug(f"{type_name} '{name}' successfully loaded and stored")
-        except Exception as e:  # noqa: BLE001
-            RobustLogger().exception(f"Exception in texture loading callback for {type_name} '{name}'", exc_info=e)
-        finally:
-            RobustLogger().debug(f"Removing {type_name} '{name}' from pending {type_name}s")
-            self.pending_textures.remove(name)
-
-    @staticmethod
-    def fetch_texture_data(
-        name: str,
-        installation: Installation | None = None,
-        module: Module | None = None,
-        is_lightmap: bool = False,  # noqa: FBT001, FBT002
-    ) -> tuple[str, TPC | None, bool]:
-        type_name = "lightmap" if is_lightmap else "texture"
-        RobustLogger().debug(f"Fetching {type_name} data for '{name}'")
-
-        tpc: TPC | None = None
-        try:
-            if module is not None:
-                RobustLogger().debug(f"Attempting to locate {type_name} '{name}' in module '{module.root()}'")
-                module_tex = module.texture(name)
-                if module_tex is not None:
-                    RobustLogger().debug(f"Loading {type_name} '{name}' from module '{module.root()}'")
-                    tpc = module_tex.resource()
-                    if tpc:
-                        RobustLogger().debug(f"Successfully loaded {type_name} '{name}' from module")
-                    else:
-                        RobustLogger().warning(f"Failed to load {type_name} '{name}' from module")
-
-            if installation is None:
-                RobustLogger().warning("An installation is required to load non-module textures.")
-            elif tpc is None:
-                RobustLogger().debug(f"Attempting to load {type_name} '{name}' from installation")
-                capsules: list[ModulePieceResource] = [] if module is None else module.capsules()
-                tpc = installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN], capsules=capsules)
-                if tpc:
-                    RobustLogger().debug(f"Successfully loaded {type_name} '{name}' from installation")
-                else:
-                    RobustLogger().warning(f"Failed to load {type_name} '{name}' from installation")
-        except Exception as e:  # noqa: BLE001
-            RobustLogger().exception(f"Exception thrown while loading {type_name} '{name}'", exc_info=e)
-            tpc = None  # Use a blank texture if an error occurs.
-
-        if tpc is None:
-            RobustLogger().error(f"MISSING {type_name.upper()}: '{name}'")
-        else:
-            RobustLogger().debug(f"Successfully fetched {type_name} data for '{name}'")
-
-        return name, tpc, is_lightmap
 
     def jump_to_entry_location(self):
         if self._module is None:
@@ -885,11 +829,7 @@ class RenderObject:
         return copy(self._position)
 
     def set_position(self, x: float, y: float, z: float):
-        if (
-            self._position.x == x
-            and self._position.y == y
-            and self._position.z == z
-        ):
+        if self._position.x == x and self._position.y == y and self._position.z == z:
             return
 
         self._position = vec3(x, y, z)
@@ -952,7 +892,11 @@ class RenderObject:
 
     def boundary(self, scene: Scene) -> Boundary | Empty:
         if self._boundary is None:
-            self._boundary = Empty(scene) if self.gen_boundary is None else self.gen_boundary()
+            self._boundary = (
+                Empty(scene)
+                if self.gen_boundary is None
+                else self.gen_boundary()
+            )
         return self._boundary
 
 
@@ -972,7 +916,9 @@ class Camera:
         self.width, self.height = width, height
 
     def set_position(self, position: Vector3 | vec3):
-        self.x, self.y, self.z = position
+        self.x = position.x
+        self.y = position.y
+        self.z = position.z
 
     def view(self) -> mat4:
         up = vec3(0, 0, 1)

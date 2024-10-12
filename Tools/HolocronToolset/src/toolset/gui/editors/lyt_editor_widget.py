@@ -636,7 +636,7 @@ class LYTEditorWidget(QWidget):
         info_box.setIcon(QMessageBox.Information)
         info_box.setText(message)
         info_box.setWindowTitle("Information")
-        info_box.exec_()
+        info_box.exec()
         RobustLogger().info(message)
 
     def updatePalette(self, palette: QPalette):
@@ -666,7 +666,7 @@ class LYTEditorWidget(QWidget):
             mime_data = QMimeData()
             mime_data.setText("LYT Component")
             drag.setMimeData(mime_data)
-            drag.exec_(Qt.CopyAction | Qt.MoveAction)
+            drag.exec(Qt.CopyAction | Qt.MoveAction)
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key_Delete:
@@ -760,7 +760,7 @@ class LYTEditorWidget(QWidget):
             layout.addWidget(result_label)
         layout.addWidget(QPushButton("Close", clicked=result_dialog.accept))
         result_dialog.setModal(False)
-        result_dialog.exec_()
+        result_dialog.exec()
 
     def resetLayout(self):
         self.main_splitter.setSizes([int(self.width() * 0.7), int(self.width() * 0.3)])
@@ -909,7 +909,7 @@ class LYTEditorWidget(QWidget):
             layout.addWidget(result_label)
         layout.addWidget(QPushButton("Close", clicked=result_dialog.accept))
         result_dialog.setModal(False)
-        result_dialog.exec_()
+        result_dialog.exec()
 
     def toggleLayerVisibility(self):
         self.lyt_editor.toggleLayerVisibility()  # FIXME: toggleLayerVisibility method does not exist.
@@ -972,7 +972,7 @@ class LYTEditorWidget(QWidget):
         if self.selected_room:
             # Open a dialog to edit room properties
             dialog = RoomPropertiesDialog(self.selected_room, self)  # FIXME: RoomPropertiesDialog does not exist.
-            if dialog.exec_():
+            if dialog.exec():
                 self.updateLYTPreview()
 
     def addTrack(self):
@@ -981,7 +981,7 @@ class LYTEditorWidget(QWidget):
             track.start_room = self.selected_room  # FIXME: start_room attribute does not exist.
             # Open a dialog to select end room and set other properties
             dialog = TrackPropertiesDialog(self.current_lyt.rooms, track, self)
-            if dialog.exec_():
+            if dialog.exec():
                 self.current_lyt.tracks.append(track)
                 self.updateLYTPreview()
 
@@ -989,7 +989,7 @@ class LYTEditorWidget(QWidget):
         obstacle = LYTObstacle()
         # Open a dialog to set obstacle properties
         dialog = ObstaclePropertiesDialog(obstacle, self)  # FIXME: ObstaclePropertiesDialog does not exist.
-        if dialog.exec_():
+        if dialog.exec():
             self.current_lyt.obstacles.append(obstacle)
             self.updateLYTPreview()
 
@@ -999,7 +999,7 @@ class LYTEditorWidget(QWidget):
             doorhook.room = self.selected_room
             # Open a dialog to set doorhook properties
             dialog = DoorhookPropertiesDialog(doorhook, self)  # FIXME: DoorhookPropertiesDialog does not exist.
-            if dialog.exec_():
+            if dialog.exec():
                 self.current_lyt.doorhooks.append(doorhook)
                 self.updateLYTPreview()
 

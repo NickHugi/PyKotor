@@ -4,7 +4,7 @@ from typing import Set, Tuple, Union
 
 from loggerplus import RobustLogger
 
-from toolset.utils.misc import getQtButtonString, getQtKeyString
+from toolset.utils.misc import get_qt_button_string, get_qt_key_string
 
 Bind = Tuple[Set[int], Union[Set[int], None]]
 
@@ -28,7 +28,7 @@ class ControlItem:
         buttons: set[int],  # Do NOT send None here!
         keys: set[int],
         *,
-        exactKeysAndButtons: bool = False,
+        exact_keys_and_buttons: bool = False,
         debugLog: bool = False,
     ) -> bool:
         """Handles the key/mouse events, determine if the conditions are met.
@@ -43,14 +43,14 @@ class ControlItem:
         -------
             bool: Whether the input is satisfied.
         """
-        mouseSatisfied = self.noButtons() or self.anyButtons() or (self.mouse == buttons if exactKeysAndButtons else self.mouse.issubset(buttons))
-        keysSatisfied = self.anyKeys() or (self.keys == keys if exactKeysAndButtons else self.keys.issubset(keys))
+        mouseSatisfied = self.noButtons() or self.anyButtons() or (self.mouse == buttons if exact_keys_and_buttons else self.mouse.issubset(buttons))
+        keysSatisfied = self.anyKeys() or (self.keys == keys if exact_keys_and_buttons else self.keys.issubset(keys))
 
         if mouseSatisfied and keysSatisfied:
             return True
 
         if debugLog:
-            RobustLogger.debug(f"Needed mouse: {[getQtButtonString(btn) for btn in iter(self.mouse)] if self.mouse is not None else 'None'}, user pressing {[getQtButtonString(btn) for btn in iter(buttons)]}. Satisfied? {mouseSatisfied} no_buttons? {self.noButtons()} any_buttons? {self.anyButtons()}")
-            RobustLogger.debug(f"Needed keys: {[getQtKeyString(key) for key in iter(self.keys)]}, user pressing {[getQtKeyString(key) for key in iter(keys)]} Satisfied? {keysSatisfied} any_keys? {self.anyKeys()} exactKeys? {exactKeysAndButtons}")
+            RobustLogger.debug(f"Needed mouse: {[get_qt_button_string(btn) for btn in iter(self.mouse)] if self.mouse is not None else 'None'}, user pressing {[get_qt_button_string(btn) for btn in iter(buttons)]}. Satisfied? {mouseSatisfied} no_buttons? {self.noButtons()} any_buttons? {self.anyButtons()}")
+            RobustLogger.debug(f"Needed keys: {[get_qt_key_string(key) for key in iter(self.keys)]}, user pressing {[get_qt_key_string(key) for key in iter(keys)]} Satisfied? {keysSatisfied} any_keys? {self.anyKeys()} exactKeys? {exact_keys_and_buttons}")
         return False
 

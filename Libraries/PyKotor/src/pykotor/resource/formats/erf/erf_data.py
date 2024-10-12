@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class ERFType(Enum):
-    """The type of ERF."""
+    """The type of ERF. More specifically, the first 4 bytes in the file header."""
 
     ERF = "ERF "
     MOD = "MOD "
@@ -180,6 +180,21 @@ class ERF:
         return set(self._resources) == set(other._resources)
 
 
+    def calculate_all_resource_offsets(self) -> dict[ERFResource, int]:
+        from pykotor.resource.formats.erf.io_erf import ERFBinaryWriter
+        entry_count = len(self._resources)
+        offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
+        offset_to_resources = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count
+        data_start = offset_to_resources + ERFBinaryWriter.RESOURCE_ELEMENT_SIZE * entry_count
+
+        offsets = {}
+        offset = data_start
+        for resource in self._resources:
+            offsets[resource] = offset
+            offset += len(resource.data)
+
+        return offsets
+
 class ERFResource:
     def __init__(
         self,
@@ -189,7 +204,7 @@ class ERFResource:
     ):
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
-        if isinstance(data, bytearray):  # FIXME: Something is passing bytearray here
+        if isinstance(data, bytearray):  # FIXME: Something is passing bytearray here, breaking __hash__.
             data = bytes(data)
         self.data: bytes = data
 

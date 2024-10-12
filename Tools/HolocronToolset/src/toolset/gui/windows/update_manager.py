@@ -45,7 +45,7 @@ class UpdateManager:
         silent: bool = False,
     ):
         with ProcessPoolExecutor() as executor:
-            if self.settings.useBetaChannel:
+            if self.settings.use_beta_channel:
                 edge_future = executor.submit(fetch_update_info, True, silent)
             master_future = executor.submit(fetch_update_info, False, silent)
 
@@ -81,7 +81,7 @@ class UpdateManager:
                     f"Unable to fetch latest version ({etype})",
                     f"Check if you are connected to the internet.\nError: {msg}",
                     QMessageBox.Ok,
-                ).exec_()
+                ).exec()
             return
         if isinstance(self.edge_info, Exception):
             RobustLogger().exception("Failed to fetch edge update info")
@@ -92,7 +92,7 @@ class UpdateManager:
                     f"Unable to fetch latest version ({etype})",
                     f"Check if you are connected to the internet.\nError: {msg}",
                     QMessageBox.Ok,
-                ).exec_()
+                ).exec()
             return
         remote_info, release_version_checked = self._determine_version_info(self.edge_info, self.master_info)
 
@@ -124,7 +124,7 @@ class UpdateManager:
     ) -> tuple[dict[str, Any], bool]:
         version_list: list[tuple[Literal["toolsetLatestVersion", "toolsetLatestBetaVersion"], Literal["master", "edge"], str]] = []
 
-        if self.settings.useBetaChannel:
+        if self.settings.use_beta_channel:
             version_list.append(("toolsetLatestVersion", "master", master_remote_info.get("toolsetLatestVersion", "")))
             version_list.append(("toolsetLatestVersion", "edge", edge_remote_info.get("toolsetLatestVersion", "")))
             version_list.append(("toolsetLatestBetaVersion", "master", master_remote_info.get("toolsetLatestBetaVersion", "")))
@@ -163,13 +163,13 @@ class UpdateManager:
 
             up_to_date_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
             up_to_date_msg_box.button(QMessageBox.Yes).setText("Choose Update")
-            result = up_to_date_msg_box.exec_()
+            result = up_to_date_msg_box.exec()
 
             if result == QMessageBox.Ok:
                 self.autoupdate_toolset(greatest_version, remote_info, is_release=release_version_checked)
             elif result == QMessageBox.Yes:
                 toolset_updater = UpdateDialog()
-                toolset_updater.exec_()
+                toolset_updater.exec()
             return
 
         beta_string: Literal["release ", "beta "] = "release " if release_version_checked else "beta "
@@ -186,13 +186,13 @@ class UpdateManager:
         new_version_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
         new_version_msg_box.button(QMessageBox.Yes).setText("Details")
         new_version_msg_box.button(QMessageBox.Abort).setText("Ignore")
-        response = new_version_msg_box.exec_()
+        response = new_version_msg_box.exec()
 
         if response == QMessageBox.Ok:
             self.autoupdate_toolset(greatest_version, remote_info, is_release=release_version_checked)
         elif response == QMessageBox.Yes:
             toolset_updater = UpdateDialog()
-            toolset_updater.exec_()
+            toolset_updater.exec()
 
     def autoupdate_toolset(
         self,
@@ -251,4 +251,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     update_manager = UpdateManager(silent=False)
     update_manager.check_for_updates()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

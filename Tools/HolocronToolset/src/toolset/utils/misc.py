@@ -140,7 +140,7 @@ def get_nums(string_input: str) -> list[int]:
     return nums
 
 
-def openLink(link: str):
+def open_link(link: str):
     url = QUrl(link)
     QDesktopServices.openUrl(url)
 
@@ -167,15 +167,15 @@ def getQtKey(obj: QtKey | T) -> QtKey | T:
         return obj
     return key_sequence[0] if key_sequence.count() > 0 else obj
 
-def getQtKeyString(key: QtKey | T) -> str:
+def get_qt_key_string(key: QtKey | T) -> str:
     result = getattr(key, "name", MODIFIER_KEY_NAMES.get(key, QKeySequence(key).toString()))  # type: ignore[arg-type]
     return result.decode(errors="replace") if isinstance(result, bytes) else result
 
-def getQtKeyStringLocalized(key: QtKey | str | int | bytes) -> str:
+def get_qt_key_string_localized(key: QtKey | str | int | bytes) -> str:
     return MODIFIER_KEY_NAMES.get(key, getattr(key, "name", QKeySequence(key).toString())).upper().strip().replace("KEY_", "").replace("CONTROL", "CTRL")  # type: ignore[arg-type]
 
 
-def getQtButtonString(button: QtMouse | int) -> str:
+def get_qt_button_string(button: QtMouse | int) -> str:
     # sourcery skip: assign-if-exp, reintroduce-else
     if isinstance(button, bytes):
         button = button.decode(errors="replace")
@@ -249,7 +249,7 @@ if __name__ == "__main__":  # quick test
     all_buttons = [getattr(QtMouse, button) for button in dir(QtMouse) if "Button" in button and button not in ("AllButtons", "NoButton")]
 
     for key in all_keys:
-        key_string = getQtKeyString(key)
+        key_string = get_qt_key_string(key)
         key_from_string = getQtKey(key_string)
         assert key is key_from_string, f"Key str mismatch: {key} == {key_from_string}"
         key_int = STRING_KEY_TO_INT[key_string]
@@ -257,7 +257,7 @@ if __name__ == "__main__":  # quick test
         assert key_from_string == key_from_int, f"Key int mismatch: {key_from_string} ({id(key_from_string)}) != {key_from_int} ({id(key_from_int)})"
 
     for button in all_buttons:
-        button_string = getQtButtonString(button)
+        button_string = get_qt_button_string(button)
         button_from_string = getQtMouseButton(button_string)
         assert button == button_from_string, f"Button str mismatch: {button} == {button_from_string}"
         button_int = BUTTON_TO_INT[button_from_string]

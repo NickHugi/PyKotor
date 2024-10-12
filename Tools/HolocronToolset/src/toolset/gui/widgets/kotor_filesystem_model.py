@@ -507,7 +507,7 @@ class ResourceFileSystemWidget(QWidget):
         if hasattr(m, "exec"):
             m.exec(self.fsTreeView.viewport().mapToGlobal(point))  # pyright: ignore[reportOptionalMemberAccess]
         elif hasattr(m, "exec_"):
-            m.exec_(self.fsTreeView.viewport().mapToGlobal(point))  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
+            m.exec(self.fsTreeView.viewport().mapToGlobal(point))  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
 
     def onHeaderContextMenu(self, point: QPoint):
         print(f"<SDM> [{self.__class__.__name__}.onHeaderContextMenu scope] point.x", point.x(), "y:", point.y())
@@ -522,7 +522,7 @@ class ResourceFileSystemWidget(QWidget):
         sh.setCheckable(True)  # pyright: ignore[reportOptionalMemberAccess]
         sh.setChecked(bool(self.fsModel.filter() & QDir.Filter.Hidden))  # pyright: ignore[reportOptionalMemberAccess]
         sh.triggered.connect(self.toggleHiddenFiles)  # pyright: ignore[reportOptionalMemberAccess]
-        self.fsTreeView.showHeaderContextMenu(point, m)
+        self.fsTreeView.show_header_context_menu(point, m)
 
     def fileSystemModelContextMenu(self, point: QPoint):
         sel_idx = self.fsTreeView.selectedIndexes()
@@ -566,7 +566,7 @@ class ResourceFileSystemWidget(QWidget):
         d = QDrag(self)
         d.setMimeData(self.fsModel.mimeData(self.fsTreeView.selectedIndexes()))
         if hasattr(d, "exec_"):
-            d.exec_(actions)  # pyright: ignore[reportAttributeAccessIssue]
+            d.exec(actions)  # pyright: ignore[reportAttributeAccessIssue]
         elif hasattr(d, "exec"):
             d.exec(actions)
 
@@ -971,4 +971,4 @@ if __name__ == "__main__":
 
     main_window.show()
 
-    sys.exit(app.exec_() if hasattr(app, "exec_") else app.exec())  # pyright: ignore[reportAttributeAccessIssue]
+    sys.exit(app.exec() if hasattr(app, "exec_") else app.exec())  # pyright: ignore[reportAttributeAccessIssue]

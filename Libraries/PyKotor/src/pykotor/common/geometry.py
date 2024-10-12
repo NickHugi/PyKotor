@@ -395,6 +395,9 @@ class Vector3:
         isclose_z = math.isclose(self.z, other.z)
         return isclose_x and isclose_y and isclose_z
 
+    def __hash__(self):
+        return hash((round(self.x, 9), round(self.y, 9), round(self.z, 9)))
+
     def __add__(
         self,
         other: Vector3,

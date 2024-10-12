@@ -106,4 +106,4 @@ if __name__ == "__main__":
     view.setModel(proxy)
     view.setSortingEnabled(True)
     view.show()
-    app.exec_()
+    app.exec()

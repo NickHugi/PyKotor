@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Iterator
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 
-from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
-from utility.misc import generate_hash
 
 if TYPE_CHECKING:
     import os
@@ -46,58 +43,13 @@ class FileResource:
         self.inside_capsule: bool = is_capsule_file(self._filepath)
         self.inside_bif: bool = is_bif_file(self._filepath)
 
-        self._file_hash: str = ""
-
         self._path_ident_obj: Path = (
             self._filepath / str(self._identifier)
             if self.inside_capsule or self.inside_bif
             else self._filepath
         )
 
-        self._sha256_hash: str = ""
         self._internal: bool = False
-        self._hash_task_running: bool = False
-
-    def __setattr__(self, name, value):
-        if (
-            hasattr(self, name)
-            and name not in {"_internal", "_hash_task_running"}
-            and not getattr(self, "_internal", True)
-            and not getattr(self, "_hash_task_running", True)
-        ):
-            msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {name!r}, {value!r})`"
-            raise RuntimeError(msg)
-
-        return super().__setattr__(name, value)
-
-    def __repr__(self):
-        return (
-            f"{self.__class__.__name__}("
-            f"resname='{self._resname}', "
-            f"restype={self._restype!r}, "
-            f"size={self._size}, "
-            f"offset={self._offset}, "
-            f"filepath={self._filepath!r}"
-            ")"
-        )
-
-    def __hash__(self):
-        return hash(self._path_ident_obj)
-
-    def __str__(self):
-        return str(self._identifier)
-
-    def __eq__(
-        self,
-        other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
-    ):
-        if self is other:
-            return True
-        if isinstance(other, ResourceIdentifier):
-            return self.identifier() == other
-        if isinstance(other, FileResource):
-            return True if self is other else self._path_ident_obj == other._path_ident_obj
-        return NotImplemented
 
     @classmethod
     def from_path(cls, path: os.PathLike | str) -> Self:
@@ -232,38 +184,56 @@ class FileResource:
         try:
             if reload:
                 self._index_resource()
-            with BinaryReader.from_file(self._filepath) as file:
+            with self._filepath.open("rb") as file:
                 file.seek(self._offset)
-                data: bytes = file.read_bytes(self._size)
-
-                if not self._hash_task_running:
-
-                    def background_task(res: FileResource, sentdata: bytes):
-                        res._hash_task_running = True  # noqa: SLF001
-                        res._file_hash = generate_hash(sentdata)  # noqa: SLF001
-                        res._hash_task_running = False  # noqa: SLF001
-
-                    with ThreadPoolExecutor(thread_name_prefix="FileResource_SHA1calc") as executor:
-                        executor.submit(background_task, self, data)
+                data: bytes = file.read(self._size)
             return data
         finally:
             self._internal = False
 
-    def get_sha1_hash(
-        self,
-        *,
-        reload: bool = False,
-    ) -> str:
-        """Returns a lowercase hex string sha1 hash. If FileResource doesn't exist this returns an empty str."""
-        if reload or not self._file_hash:
-            if not self._filepath.is_file():
-                return ""  # FileResource or the capsule doesn't exist on disk.
-            self._file_hash = generate_hash(self.data())
-        return self._file_hash
-
     def as_file_resource(self) -> Self:
         """For unifying use with LocationResult and ResourceResult."""
         return self
+
+    def __setattr__(self, name, value):
+        if (
+            hasattr(self, name)
+            and name not in {"_internal",}
+            and not getattr(self, "_internal", True)
+        ):
+            msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {name!r}, {value!r})`"
+            raise RuntimeError(msg)
+
+        return super().__setattr__(name, value)
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"resname='{self._resname}', "
+            f"restype={self._restype!r}, "
+            f"size={self._size}, "
+            f"offset={self._offset}, "
+            f"filepath={self._filepath!r}"
+            ")"
+        )
+
+    def __hash__(self):
+        return hash(self._path_ident_obj)
+
+    def __str__(self):
+        return str(self._identifier)
+
+    def __eq__(
+        self,
+        other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
+    ):
+        if self is other:
+            return True
+        if isinstance(other, ResourceIdentifier):
+            return self.identifier() == other
+        if isinstance(other, FileResource):
+            return True if self is other else self._path_ident_obj == other._path_ident_obj
+        return NotImplemented
 
 
 @dataclass

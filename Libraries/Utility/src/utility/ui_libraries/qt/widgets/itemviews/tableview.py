@@ -22,9 +22,11 @@ class RobustTableView(RobustAbstractItemView, QTableView):
         parent: QWidget | None = None,
         *,
         settings_name: str | None = None,
+        do_qt_init: bool = True,
     ):
         self.only_first_column_selectable: bool = True
-        QTableView.__init__(self, parent)
+        if do_qt_init:
+            QTableView.__init__(self, parent)
         RobustAbstractItemView.__init__(self, parent, settings_name=settings_name)
         self.original_stylesheet: str = self.styleSheet()
 
@@ -240,14 +242,14 @@ class RobustTableView(RobustAbstractItemView, QTableView):
         for column in range(model.columnCount()):
             self.resizeColumnToContents(column)
 
-    def setSelection(self, rect: QRect, command: QItemSelectionModel.SelectionFlags):
+    def setSelection(self, rect: QRect, command: QItemSelectionModel.SelectionFlags):  # pyright: ignore[reportIncompatibleMethodOverride]
         index = self.indexAt(rect.topLeft())
         if self.only_first_column_selectable and index.isValid() and index.column() == 0:
             super().setSelection(rect, command)
         else:
             self.clearSelection()
 
-    def mousePressEvent(self, event: QMouseEvent):
+    def mousePressEvent(self, event: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         index = self.indexAt(event.pos())
         if self.only_first_column_selectable and index.isValid() and index.column() == 0:
             super().mousePressEvent(event)
@@ -255,7 +257,7 @@ class RobustTableView(RobustAbstractItemView, QTableView):
             # Clear selection and reset the selection anchor
             self.clearSelection()
 
-    def mouseReleaseEvent(self, event: QMouseEvent):
+    def mouseReleaseEvent(self, event: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         index = self.indexAt(event.pos())
         if (
             self.only_first_column_selectable
@@ -359,4 +361,4 @@ if __name__ == "__main__":
     main_window.resize(400, 300)
     main_window.show()
 
-    app.exec_()
+    app.exec()

@@ -53,7 +53,7 @@ class ModuleEditorControls(ABC):
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
     @abstractmethod
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
+    def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
     @abstractmethod
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
@@ -325,7 +325,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
                 for effect in event.effects:
                     effect.apply(self, delta.x, delta.y)
 
-    def onMouseScrolled(
+    def on_mouse_scrolled(
         self,
         delta: Vector2,
         buttons: set[int],
@@ -854,7 +854,7 @@ class DCEffectSnapCameraToObject(DCEffect):
 
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
         if controls.renderer.scene.selection:
-            controls.renderer.snapCameraToPoint(controls.renderer.scene.selection[0].position(), self.distance)
+            controls.renderer.snap_camera_to_point(controls.renderer.scene.selection[0].position(), self.distance)
 
 
 # endregion

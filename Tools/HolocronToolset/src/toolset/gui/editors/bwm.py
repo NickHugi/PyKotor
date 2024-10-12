@@ -4,8 +4,6 @@ import struct
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
 from qtpy.QtWidgets import QListWidgetItem, QShortcut
@@ -60,29 +58,11 @@ class BWMEditor(Editor):
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.bwm import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.bwm import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.bwm import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.bwm import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.bwm import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
 
         self._bwm: BWM | None = None
 
@@ -92,7 +72,7 @@ class BWMEditor(Editor):
             color = Color.from_rgba_integer(intvalue)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
-        self.materialColors: dict[SurfaceMaterial, QColor] = {
+        self.material_colors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: intColorToQColor(moduleDesignerSettings.undefinedMaterialColour),
             SurfaceMaterial.OBSCURING: intColorToQColor(moduleDesignerSettings.obscuringMaterialColour),
             SurfaceMaterial.DIRT: intColorToQColor(moduleDesignerSettings.dirtMaterialColour),
@@ -115,17 +95,17 @@ class BWMEditor(Editor):
             SurfaceMaterial.NON_WALK_GRASS: intColorToQColor(moduleDesignerSettings.nonWalkGrassMaterialColour),
             SurfaceMaterial.TRIGGER: intColorToQColor(moduleDesignerSettings.nonWalkGrassMaterialColour),
         }
-        self.ui.renderArea.materialColors = self.materialColors
+        self.ui.renderArea.material_colors = self.material_colors
         self.rebuildMaterials()
 
         self.new()
 
-    def _setupSignals(self):
-        self.ui.renderArea.mouseMoved.connect(self.onMouseMoved)
-        self.ui.renderArea.mouseScrolled.connect(self.onMouseScrolled)
+    def _setup_signals(self) -> None:
+        self.ui.renderArea.sig_mouse_moved.connect(self.onMouseMoved)
+        self.ui.renderArea.sig_mouse_scrolled.connect(self.on_mouse_scrolled)
 
-        QShortcut("+", self).activated.connect(lambda: self.ui.renderArea.camera.setZoom(2))
-        QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.camera.setZoom(-2))
+        QShortcut("+", self).activated.connect(lambda: self.ui.renderArea.camera.set_zoom(2))
+        QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.camera.set_zoom(-2))
 
     def rebuildMaterials(self):
         """Rebuild the material list.
@@ -140,7 +120,7 @@ class BWMEditor(Editor):
             - Add item to material list.
         """
         self.ui.materialList.clear()
-        for material, color in self.materialColors.items():
+        for material, color in self.material_colors.items():
             image = QImage(struct.pack("BBB", color.red(), color.green(), color.blue()) * 16 * 16, 16, 16, QImage.Format_RGB888)
             icon = QIcon(QPixmap(image))
             text = material.name.replace("_", " ").title()
@@ -168,7 +148,7 @@ class BWMEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         self._bwm = read_bwm(data)
-        self.ui.renderArea.setWalkmeshes([self._bwm])
+        self.ui.renderArea.set_walkmeshes([self._bwm])
 
         def addTransItem(face, edge, transition):
             if transition is not None:
@@ -206,35 +186,36 @@ class BWMEditor(Editor):
             - Changes face material if left button pressed
             - Displays coordinates, face index in status bar.
         """
-        world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
-        worldData: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
+        world: Vector3 = self.ui.renderArea.to_world_coords(screen.x, screen.y)
+        worldData: Vector2 = self.ui.renderArea.to_world_delta
+        (delta.x, delta.y)
         assert self._bwm is not None
         face: BWMFace | None = self._bwm.faceAt(world.x, world.y)
 
         if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
-            self.ui.renderArea.doCursorLock(screen)
-            self.ui.renderArea.camera.nudgePosition(-worldData.x, -worldData.y)
+            self.ui.renderArea.do_cursor_lock(screen)
+            self.ui.renderArea.camera.nudge_position(-worldData.x, -worldData.y)
         elif QtCore.Qt.MouseButton.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
-            self.ui.renderArea.doCursorLock(screen)
-            self.ui.renderArea.camera.nudgeRotation(delta.x / 50)
+            self.ui.renderArea.do_cursor_lock(screen)
+            self.ui.renderArea.camera.nudge_rotation(delta.x / 50)
         elif QtCore.Qt.MouseButton.LeftButton in buttons and face is not None:  # face will be None if user is clicking on nothing/background.
             self.changeFaceMaterial(face)
 
         coordsText = f"x: {world.x:.2f}, {world.y:.2f}"
         faceText = f', face: {"None" if face is None else self._bwm.faces.index(face)}'
 
-        screen = self.ui.renderArea.toRenderCoords(world.x, world.y)
+        screen = self.ui.renderArea.to_render_coords(world.x, world.y)
         xy = f" || x: {screen.x:.2f}, " + f"y: {screen.y:.2f}, "
 
         self.statusBar().showMessage(coordsText + faceText + xy)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if not delta.y:
             return  # sometimes it'll be zero when holding middlemouse-down.
         if QtCore.Qt.Key_Control in keys:  # pyright: ignore[reportGeneralTypeIssues, attr-defined]
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoomFactor = calculate_zoom_strength(delta.y, sensSetting)
-            self.ui.renderArea.camera.nudgeZoom(zoomFactor)
+            self.ui.renderArea.camera.nudge_zoom(zoomFactor)
             self.ui.renderArea.update()  # Trigger a re-render
 
     def changeFaceMaterial(self, face: BWMFace):

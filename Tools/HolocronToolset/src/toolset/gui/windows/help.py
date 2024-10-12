@@ -3,8 +3,6 @@ from __future__ import annotations
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree as ElemTree
 
-import qtpy
-
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
 
@@ -48,28 +46,10 @@ class HelpWindow(QMainWindow):
 
         self.version: str | None = None
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows import (
-                help as toolset_help,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows import (
-                help as toolset_help,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows import (
-                help as toolset_help,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows import (
-                help as toolset_help,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.windows import help as toolset_help
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupSignals()
+        self._setup_signals()
         self._setupContents()
         self.startingPage: str | None = startingPage
 
@@ -84,7 +64,7 @@ class HelpWindow(QMainWindow):
             return
         self.displayFile(self.startingPage)
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         self.ui.contentsTree.clicked.connect(self.onContentsClicked)
 
     def _setupContents(self):
@@ -133,7 +113,7 @@ class HelpWindow(QMainWindow):
             self._setupContentsRecXML(item, child)
 
     def checkForUpdates(self):
-        remoteInfo = get_remote_toolset_update_info(useBetaChannel=GlobalSettings().useBetaChannel)
+        remoteInfo = get_remote_toolset_update_info(use_beta_channel=GlobalSettings().use_beta_channel)
         try:
             if not isinstance(remoteInfo, dict):
                 raise remoteInfo  # noqa: TRY301
@@ -159,7 +139,7 @@ class HelpWindow(QMainWindow):
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
             errMsgBox.setWindowIcon(self.windowIcon())
-            errMsgBox.exec_()
+            errMsgBox.exec()
         else:
             newHelpMsgBox = QMessageBox(
                 QMessageBox.Icon.Information,
@@ -171,14 +151,14 @@ class HelpWindow(QMainWindow):
             newHelpMsgBox.setWindowIcon(self.windowIcon())
             newHelpMsgBox.addButton(QMessageBox.StandardButton.Yes)
             newHelpMsgBox.addButton(QMessageBox.StandardButton.No)
-            user_response = newHelpMsgBox.exec_()
+            user_response = newHelpMsgBox.exec()
             if user_response == QMessageBox.StandardButton.Yes:
 
                 def task():
                     return self._downloadUpdate()
 
                 loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
-                if loader.exec_():
+                if loader.exec():
                     self._setupContents()
 
     def _downloadUpdate(self):
@@ -206,7 +186,7 @@ class HelpWindow(QMainWindow):
                 QMessageBox.Icon.Critical,
                 "Failed to open help file",
                 f"Could not access '{filepath}'.\n{universal_simplify_exception(e)}",
-            ).exec_()
+            ).exec()
 
     def onContentsClicked(self):
         if not self.ui.contentsTree.selectedItems():

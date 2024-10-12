@@ -255,7 +255,7 @@ class RibbonsWidget(QWidget):
 
     def show_set_default_columns_dialog(self):
         dialog = SetDefaultColumnsDialog(self)
-        dialog.exec_()
+        dialog.exec()
 
     def create_show_hide_group(self) -> QGroupBox:
         group = QGroupBox("Show/hide")
@@ -374,4 +374,4 @@ if __name__ == "__main__":
     window.setGeometry(100, 100, 1200, 200)
     window.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

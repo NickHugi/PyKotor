@@ -246,7 +246,7 @@ class NestedCapsuleItem(CapsuleItem, CapsuleChildItem):
 class FileSystemTreeView(QTreeView):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.autoResizeEnabled = True
+        self.auto_resize_enabled = True
         self.undo_stack = QUndoStack(self)
         h = self.header()
         h.setSectionsClickable(True)
@@ -283,7 +283,7 @@ class FileSystemTreeView(QTreeView):
 
     def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
-        if self.autoResizeEnabled:
+        if self.auto_resize_enabled:
             self.adjustColumnsToFit()
 
     def adjustColumnsToFit(self):
@@ -301,16 +301,16 @@ class FileSystemTreeView(QTreeView):
         for c in range(self.model().columnCount()):
             h.setSectionResizeMode(c, QHeaderView.ResizeToContents)
 
-    def autoFitColumns(self):
+    def auto_fit_columns(self):
         h = self.header()
         for c in range(h.count()):
             self.resizeColumnToContents(c)
 
-    def toggleAutoFitColumns(self):
-        self.autoResizeEnabled = not self.autoResizeEnabled
-        self.autoFitColumns() if self.autoResizeEnabled else self.resetColumnWidths()
+    def toggle_auto_fit_columns(self):
+        self.auto_resize_enabled = not self.auto_resize_enabled
+        self.auto_fit_columns() if self.auto_resize_enabled else self.reset_column_widths()
 
-    def resetColumnWidths(self):
+    def reset_column_widths(self):
         h = self.header()
         for c in range(h.count()):
             h.resizeSection(c, h.defaultSectionSize())
@@ -366,14 +366,14 @@ class FileSystemTreeView(QTreeView):
         sh.setCheckable(True)
         sh.setChecked(bool(self.model().filter() & QDir.Filter.Hidden))
         sh.triggered.connect(self.toggleHiddenFiles)
-        m.exec_(self.viewport().mapToGlobal(point))
+        m.exec(self.viewport().mapToGlobal(point))
 
     def onHeaderContextMenu(self, point: QPoint):
         m, h = QMenu(self), self.header()
         af = m.addAction("Auto Fit Columns")
         af.setCheckable(True)
-        af.setChecked(self.autoResizeEnabled)
-        af.triggered.connect(self.toggleAutoFitColumns)
+        af.setChecked(self.auto_resize_enabled)
+        af.triggered.connect(self.toggle_auto_fit_columns)
         td = m.addAction("Toggle Detailed View")
         td.setCheckable(True)
         td.setChecked(self.model()._detailed_view)  # noqa: SLF001
@@ -392,7 +392,7 @@ class FileSystemTreeView(QTreeView):
         sh.setCheckable(True)
         sh.setChecked(bool(self.model().filter() & QDir.Hidden))
         sh.triggered.connect(self.toggleHiddenFiles)
-        m.exec_(h.mapToGlobal(point))
+        m.exec(h.mapToGlobal(point))
 
     def fileSystemModelContextMenu(self, point: QPoint):
         sel_idx = self.selectedIndexes()
@@ -413,7 +413,7 @@ class FileSystemTreeView(QTreeView):
     def startDrag(self, actions: Qt.DropActions | Qt.DropAction):
         d = QDrag(self)
         d.setMimeData(self.model().mimeData(self.selectedIndexes()))
-        d.exec_(actions)
+        d.exec(actions)
 
     def dragEnterEvent(self, e: QDragEnterEvent):
         e.acceptProposedAction()
@@ -751,4 +751,4 @@ if __name__ == "__main__":
     main_window = MainWindow(base_path)
     main_window.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

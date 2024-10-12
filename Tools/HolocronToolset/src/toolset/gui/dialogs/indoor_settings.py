@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
-from qtpy import QtCore
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QDialog
 
 if TYPE_CHECKING:
@@ -37,30 +35,15 @@ class IndoorMapSettings(QDialog):
             - Sets initial skybox selection.
         """
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.WindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint))
+        self.setWindowFlags(
+            Qt.Dialog  # pyright: ignore[reportArgumentType]
+            | Qt.WindowCloseButtonHint & ~Qt.WindowContextHelpButtonHint
+        )
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.indoor_settings import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.indoor_settings import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.indoor_settings import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.indoor_settings import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.dialogs.indoor_settings import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
 
         self._indoorMap: IndoorMap = indoorMap
         self._kits: list[Kit] = kits
@@ -75,7 +58,7 @@ class IndoorMapSettings(QDialog):
                 self.ui.skyboxSelect.addItem(skybox, skybox)
         self.ui.skyboxSelect.setCurrentText(indoorMap.skybox)
 
-    def _setupSignals(self): ...
+    def _setup_signals(self): ...
 
     def accept(self):
         super().accept()

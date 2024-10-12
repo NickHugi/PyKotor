@@ -4,8 +4,6 @@ import io
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from PIL import Image, ImageOps
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QImage, QPixmap
@@ -49,36 +47,18 @@ class TPCEditor(Editor):
         supported: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.tpc import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.tpc import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.tpc import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.tpc import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.tpc import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
 
         self._tpc: TPC = TPC()
         self._tpc.set_single(256, 256, bytes(0 for _ in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
 
         self.new()
 
-    def _setupSignals(self): ...
+    def _setup_signals(self): ...
 
     def load(
         self,
@@ -145,7 +125,7 @@ class TPCEditor(Editor):
             self.setToolTip(f"{self._tpc.original_datatype_code.name} - {orig_format.name}")
         elif orig_format is not None:
             self.setToolTip(orig_format.name)
-        self.centerAndAdjustWindow()
+        self.center_and_adjust_window()
 
     def new(self):
         """Set texture image from TPC texture.

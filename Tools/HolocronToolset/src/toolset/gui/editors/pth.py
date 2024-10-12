@@ -5,8 +5,6 @@ import traceback
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
-import qtpy
-
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
 from qtpy.QtWidgets import (
@@ -51,42 +49,42 @@ if TYPE_CHECKING:
 
 class CustomStdout:
     def __init__(self, editor: PTHEditor):
-        self.prevStatusOut: str = ""
-        self.prevStatusErr: str = ""
-        self.mousePos = Vector2.from_null()  # Initialize with a default position
+        self.prev_status_out: str = ""
+        self.prev_status_error: str = ""
+        self.mouse_pos = Vector2.from_null()  # Initialize with a default position
         self.editor: PTHEditor = editor
 
         sbar = editor.statusBar()
         assert sbar is not None
-        self.editorStatusBar: QStatusBar = sbar
+        self.editor_status_bar: QStatusBar = sbar
 
     def write(self, text):  # Update status bar with stdout content
-        self.updateStatusBar(stdout=text)
+        self.update_status_bar(stdout=text)
 
     def flush(self):  # Required for compatibility
         ...
 
-    def updateStatusBar(
+    def update_status_bar(
         self,
         stdout: str = "",
         stderr: str = "",
     ):
         # Update stderr if provided
         if stderr:
-            self.prevStatusErr = stderr
+            self.prev_status_error = stderr
 
         # If a message is provided (e.g., from the decorator), use it as the last stdout
         if stdout:
-            self.prevStatusOut = stdout
+            self.prev_status_out = stdout
 
         # Construct the status text using last known values
-        left_status = str(self.mousePos)
-        center_status = str(self.prevStatusOut)
-        right_status = str(self.prevStatusErr)
-        self.editor.updateStatusBar(left_status, center_status, right_status)
+        left_status = str(self.mouse_pos)
+        center_status = str(self.prev_status_out)
+        right_status = str(self.prev_status_error)
+        self.editor.update_status_bar(left_status, center_status, right_status)
 
 
-def statusBarDecorator(func: Callable[..., Any]) -> Callable[..., Any]:
+def status_bar_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args, **kwargs):
         args = list(args)
         self: PTHEditor | PTHControlScheme = args.pop(0)
@@ -98,12 +96,12 @@ def statusBarDecorator(func: Callable[..., Any]) -> Callable[..., Any]:
 
         editor = self if isinstance(self, PTHEditor) else self.editor
         try:
-            editor.statusOut.updateStatusBar(func_call_repr)
+            editor.status_out.update_status_bar(func_call_repr)
             return func(self, *args, **kwargs)
         except Exception as e:
             traceback.print_exc()
             error_message = str(universal_simplify_exception(e))
-            editor.statusOut.updateStatusBar(stderr=error_message)  # Update the status bar with the error
+            editor.status_out.update_status_bar(stderr=error_message)  # Update the status bar with the error
             raise  # Re-raise the exception after logging it to the status bar
 
     return wrapper
@@ -135,32 +133,14 @@ class PTHEditor(Editor):
     ):
         supported: list[ResourceType] = [ResourceType.PTH]
         super().__init__(parent, "PTH Editor", "pth", supported, supported, installation)
-        self.setupStatusBar()
-        self.statusOut: CustomStdout = CustomStdout(self)
+        self.setup_status_bar()
+        self.status_out: CustomStdout = CustomStdout(self)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.pth import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.pth import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.pth import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.pth import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.pth import Ui_MainWindow
         self.ui: Ui_MainWindow = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
 
         self._pth: PTH = PTH()
         self._controls: PTHControlScheme = PTHControlScheme(self)
@@ -171,7 +151,7 @@ class PTHEditor(Editor):
             color: Color = Color.from_rgba_integer(num_color)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
-        self.materialColors: dict[SurfaceMaterial, QColor] = {
+        self.material_colors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: intColorToQColor(self.settings.undefinedMaterialColour),
             SurfaceMaterial.OBSCURING: intColorToQColor(self.settings.obscuringMaterialColour),
             SurfaceMaterial.DIRT: intColorToQColor(self.settings.dirtMaterialColour),
@@ -197,13 +177,13 @@ class PTHEditor(Editor):
         self.nameBuffer: dict[ResourceIdentifier, str] = {}
         self.tagBuffer: dict[ResourceIdentifier, str] = {}
 
-        self.ui.renderArea.materialColors = self.materialColors
-        self.ui.renderArea.hideWalkmeshEdges = True
-        self.ui.renderArea.highlightBoundaries = False
+        self.ui.renderArea.material_colors = self.material_colors
+        self.ui.renderArea.hide_walkmesh_edges = True
+        self.ui.renderArea.highlight_boundaries = False
 
         self.new()
 
-    def setupStatusBar(self):
+    def setup_status_bar(self):
         # Create labels for the different parts of the status message
         self.leftLabel = QLabel("Left Status")
         self.centerLabel = QLabel("Center Status")
@@ -231,7 +211,7 @@ class PTHEditor(Editor):
         # Set the widget to the status bar
         self.statusBar().addPermanentWidget(statusWidget, 1)
 
-    def updateStatusBar(
+    def update_status_bar(
         self,
         left_status: str = "",
         center_status: str = "",
@@ -239,12 +219,12 @@ class PTHEditor(Editor):
     ):
         # Update the text of each label
         try:
-            self._coreUpdateStatusBar(left_status, center_status, right_status)
+            self._core_update_status_bar(left_status, center_status, right_status)
         except RuntimeError:  # wrapped C/C++ object of type QLabel has been deleted
-            self.setupStatusBar()
-            self._coreUpdateStatusBar(left_status, center_status, right_status)
+            self.setup_status_bar()
+            self._core_update_status_bar(left_status, center_status, right_status)
 
-    def _coreUpdateStatusBar(
+    def _core_update_status_bar(
         self,
         left_status: str,
         center_status: str,
@@ -260,16 +240,16 @@ class PTHEditor(Editor):
     def mouseMoveEvent(self, event: QMouseEvent):
         super().mouseMoveEvent(event)
         point: QPoint = event.pos()
-        self.statusOut.mousePos = Vector2(point.x(), point.y())
-        self.statusOut.updateStatusBar()
+        self.status_out.mouse_pos = Vector2(point.x(), point.y())
+        self.status_out.update_status_bar()
 
-    def _setupSignals(self):
-        self.ui.renderArea.mousePressed.connect(self.onMousePressed)
-        self.ui.renderArea.mouseMoved.connect(self.onMouseMoved)
-        self.ui.renderArea.mouseScrolled.connect(self.onMouseScrolled)
-        self.ui.renderArea.mouseReleased.connect(self.onMouseReleased)
+    def _setup_signals(self):
+        self.ui.renderArea.sig_mouse_pressed.connect(self.onMousePressed)
+        self.ui.renderArea.sig_mouse_moved.connect(self.onMouseMoved)
+        self.ui.renderArea.sig_mouse_scrolled.connect(self.on_mouse_scrolled)
+        self.ui.renderArea.sig_mouse_released.connect(self.onMouseReleased)
         self.ui.renderArea.customContextMenuRequested.connect(self.onContextMenu)
-        self.ui.renderArea.keyPressed.connect(self.onKeyPressed)
+        self.ui.renderArea.sig_key_pressed.connect(self.onKeyPressed)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
@@ -280,16 +260,16 @@ class PTHEditor(Editor):
         if result:
             self.loadLayout(read_lyt(result.data))
         else:
-            BetterMessageBox("Layout not found", f"PTHEditor requires {resref}.lyt in order to load '{resref}.{restype}', but it could not be found.", icon=QMessageBox.Icon.Critical).exec_()
+            BetterMessageBox("Layout not found", f"PTHEditor requires {resref}.lyt in order to load '{resref}.{restype}', but it could not be found.", icon=QMessageBox.Icon.Critical).exec()
 
         pth: PTH = read_pth(data)
         self._loadPTH(pth)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def _loadPTH(self, pth: PTH):
         self._pth = pth
-        self.ui.renderArea.centerCamera()
-        self.ui.renderArea.setPth(pth)
+        self.ui.renderArea.center_camera()
+        self.ui.renderArea.set_pth(pth)
 
     def build(self) -> tuple[bytes, bytes]:
         return bytes_pth(self._pth), b""
@@ -298,11 +278,11 @@ class PTHEditor(Editor):
         super().new()
         self._loadPTH(PTH())
 
-    @statusBarDecorator
+    @status_bar_decorator
     def pth(self) -> PTH:
         return self._pth
 
-    @statusBarDecorator
+    @status_bar_decorator
     def loadLayout(self, layout: LYT):
         assert self._installation is not None
         walkmeshes: list[BWM] = []
@@ -314,111 +294,111 @@ class PTHEditor(Editor):
                     "loadLayout",
                     "BWM Found",
                     f"{findBWM.resname}.{findBWM.restype}",
-                    file=self.statusOut,
+                    file=self.status_out,
                 )
                 walkmeshes.append(read_bwm(findBWM.data))
 
-        self.ui.renderArea.setWalkmeshes(walkmeshes)
+        self.ui.renderArea.set_walkmeshes(walkmeshes)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def moveCameraToSelection(self):
-        instance: GITInstance | None = self.ui.renderArea.instanceSelection.last()
+        instance: GITInstance | None = self.ui.renderArea.instance_selection.last()
         if instance:
-            self.ui.renderArea.camera.setPosition(instance.position.x, instance.position.y)
+            self.ui.renderArea.camera.set_position(instance.position.x, instance.position.y)
 
-    @statusBarDecorator
-    def moveCamera(self, x: float, y: float):
-        self.ui.renderArea.camera.nudgePosition(x, y)
+    @status_bar_decorator
+    def move_camera(self, x: float, y: float):
+        self.ui.renderArea.camera.nudge_position(x, y)
 
-    @statusBarDecorator
-    def zoomCamera(self, amount: float):
-        self.ui.renderArea.camera.nudgeZoom(amount)
+    @status_bar_decorator
+    def zoom_camera(self, amount: float):
+        self.ui.renderArea.camera.nudge_zoom(amount)
 
-    @statusBarDecorator
-    def rotateCamera(self, angle: float):
-        self.ui.renderArea.camera.nudgeRotation(angle)
+    @status_bar_decorator
+    def rotate_camera(self, angle: float):
+        self.ui.renderArea.camera.nudge_rotation(angle)
 
-    @statusBarDecorator
-    def moveSelected(self, x: float, y: float):
-        for point in self.ui.renderArea.pathSelection.all():
+    @status_bar_decorator
+    def move_selected(self, x: float, y: float):
+        for point in self.ui.renderArea.path_selection.all():
             point.x = x
             point.y = y
 
-    @statusBarDecorator
-    def selectNodeUnderMouse(self):
-        if self.ui.renderArea.pathNodesUnderMouse():
-            toSelect: list[Vector2] = [self.ui.renderArea.pathNodesUnderMouse()[0]]
-            print("selectNodeUnderMouse", "toSelect:", toSelect)
-            self.ui.renderArea.pathSelection.select(toSelect)
+    @status_bar_decorator
+    def select_node_under_mouse(self):
+        if self.ui.renderArea.path_nodes_under_mouse():
+            to_select: list[Vector2] = [self.ui.renderArea.path_nodes_under_mouse()[0]]
+            print("select_node_under_mouse", "to_select:", to_select)
+            self.ui.renderArea.path_selection.select(to_select)
         else:
-            print("selectNodeUnderMouse", "clear():", file=self.statusOut)
-            self.ui.renderArea.pathSelection.clear()
+            print("select_node_under_mouse", "clear():", file=self.status_out)
+            self.ui.renderArea.path_selection.clear()
 
-    @statusBarDecorator
+    @status_bar_decorator
     def addNode(self, x: float, y: float):
         self._pth.add(x, y)
 
-    @statusBarDecorator
-    def removeNode(self, index: int):
+    @status_bar_decorator
+    def remove_node(self, index: int):
         self._pth.remove(index)
-        self.ui.renderArea.pathSelection.clear()
+        self.ui.renderArea.path_selection.clear()
 
-    @statusBarDecorator
+    @status_bar_decorator
     def removeEdge(self, source: int, target: int):
         self._pth.disconnect(source, target)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def addEdge(self, source: int, target: int):
         self._pth.connect(source, target)
 
-    @statusBarDecorator
-    def pointsUnderMouse(self) -> list[Vector2]:
-        return self.ui.renderArea.pathNodesUnderMouse()
+    @status_bar_decorator
+    def points_under_mouse(self) -> list[Vector2]:
+        return self.ui.renderArea.path_nodes_under_mouse()
 
-    @statusBarDecorator
-    def selectedNodes(self) -> list[Vector2]:
-        return self.ui.renderArea.pathSelection.all()
+    @status_bar_decorator
+    def selected_nodes(self) -> list[Vector2]:
+        return self.ui.renderArea.path_selection.all()
 
     # region Signal Callbacks
-    @statusBarDecorator
+    @status_bar_decorator
     def onContextMenu(self, point: QPoint):
-        globalPoint: QPoint = self.ui.renderArea.mapToGlobal(point)
-        world: Vector3 = self.ui.renderArea.toWorldCoords(point.x(), point.y())
-        self._controls.onRenderContextMenu(Vector2.from_vector3(world), globalPoint)
+        global_point: QPoint = self.ui.renderArea.mapToGlobal(point)
+        world: Vector3 = self.ui.renderArea.to_world_coords(point.x(), point.y())
+        self._controls.on_render_context_menu(Vector2.from_vector3(world), global_point)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
-        worldDelta: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
-        world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
-        self._controls.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
+        world_delta: Vector2 = self.ui.renderArea.to_world_delta(delta.x, delta.y)
+        world: Vector3 = self.ui.renderArea.to_world_coords(screen.x, screen.y)
+        self._controls.onMouseMoved(screen, delta, Vector2.from_vector3(world), world_delta, buttons, keys)
 
-    @statusBarDecorator
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        #print(f"onMouseScrolled(delta={delta!r})", file=self.stdout)
-        self._controls.onMouseScrolled(delta, buttons, keys)
+    @status_bar_decorator
+    def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+        #print(f"on_mouse_scrolled(delta={delta!r})", file=self.stdout)
+        self._controls.on_mouse_scrolled(delta, buttons, keys)
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         #print(f"onMousePressed(screen={screen!r})", file=self.stdout)
         self._controls.onMousePressed(screen, buttons, keys)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         #print("onMouseReleased", file=self.stdout)
         self._controls.onMouseReleased(Vector2(0, 0), buttons, keys)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def onKeyPressed(self, buttons: set[int], keys: set[int]):
         #print("onKeyPressed", file=self.stdout)
-        self._controls.onKeyboardPressed(buttons, keys)
+        self._controls.on_keyboard_pressed(buttons, keys)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def keyPressEvent(self, e: QKeyEvent):
         #print(f"keyPressEvent(e={e!r})", file=self.stdout)
         if e is None:
             return
         self.ui.renderArea.keyPressEvent(e)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def keyReleaseEvent(self, e: QKeyEvent):
         #print(f"keyReleaseEvent(e={e!r})", file=self.stdout)
         if e is None:
@@ -440,151 +420,151 @@ class PTHControlScheme:
         self.editor: PTHEditor = editor
         self.settings: GITSettings = GITSettings()
 
-    @statusBarDecorator
+    @status_bar_decorator
     def mouseMoveEvent(self, event: QMouseEvent):
         point: QPoint = event.pos()
-        self.editor.statusOut.mousePos = Vector2(point.x(), point.y())
+        self.editor.status_out.mouse_pos = Vector2(point.x(), point.y())
 
-    @statusBarDecorator
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        if self.zoomCamera.satisfied(buttons, keys):
+    @status_bar_decorator
+    def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+        if self.zoom_camera.satisfied(buttons, keys):
             if not delta.y:
                 return  # sometimes it'll be zero when holding middlemouse-down.
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
-            #RobustLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
-            self.editor.zoomCamera(zoom_factor)
+            #RobustLogger.debug(f"on_mouse_scrolled zoom_camera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
+            self.editor.zoom_camera(zoom_factor)
 
-    @statusBarDecorator
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: set[int], keys: set[int]):
-        self.editor.statusOut.mousePos = screen
-        shouldPanCamera = self.panCamera.satisfied(buttons, keys)
-        shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
-        if shouldPanCamera or shouldRotateCamera:
-            self.editor.ui.renderArea.doCursorLock(screen)
+    @status_bar_decorator
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, world_delta: Vector2, buttons: set[int], keys: set[int]):
+        self.editor.status_out.mouse_pos = screen
+        shouldPanCamera = self.pan_camera.satisfied(buttons, keys)
+        shouldrotate_camera = self.rotate_camera.satisfied(buttons, keys)
+        if shouldPanCamera or shouldrotate_camera:
+            self.editor.ui.renderArea.do_cursor_lock(screen)
         if shouldPanCamera:
             moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
-            #RobustLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
-            self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
-        if shouldRotateCamera:
+            #RobustLogger.debug(f"on_mouse_scrolled move_camera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+            self.editor.move_camera(-world_delta.x * moveSens, -world_delta.y * moveSens)
+        if shouldrotate_camera:
             delta_magnitude = abs(screenDelta.x)
             direction = -1 if screenDelta.x < 0 else 1 if screenDelta.x > 0 else 0
             rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
             rotateAmount = delta_magnitude * rotateSens * direction
-            #RobustLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
-            self.editor.rotateCamera(rotateAmount)
-        if self.moveSelected.satisfied(buttons, keys):
-            self.editor.moveSelected(world.x, world.y)
+            #RobustLogger.debug(f"on_mouse_scrolled rotate_camera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+            self.editor.rotate_camera(rotateAmount)
+        if self.move_selected.satisfied(buttons, keys):
+            self.editor.move_selected(world.x, world.y)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        if self.selectUnderneath.satisfied(buttons, keys):
-            self.editor.selectNodeUnderMouse()
+        if self.select_underneath.satisfied(buttons, keys):
+            self.editor.select_node_under_mouse()
 
-    @statusBarDecorator
+    @status_bar_decorator
     def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
-    @statusBarDecorator
-    def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
-        if self.deleteSelected.satisfied(buttons, keys):
+    @status_bar_decorator
+    def on_keyboard_pressed(self, buttons: set[int], keys: set[int]):
+        if self.delete_selected.satisfied(buttons, keys):
             node = None
             try:
-                node = self.editor.pth().find(self.editor.pointsUnderMouse()[0])
+                node = self.editor.pth().find(self.editor.points_under_mouse()[0])
             except Exception:
                 with suppress(Exception):
-                    node = self.editor.pth().find(self.editor.selectedNodes()[0])
+                    node = self.editor.pth().find(self.editor.selected_nodes()[0])
             if node is None:
                 return
-            self.editor.removeNode(node)
+            self.editor.remove_node(node)
 
-    @statusBarDecorator
+    @status_bar_decorator
     def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
 
-    @statusBarDecorator
-    def onRenderContextMenu(self, world: Vector2, screen: QPoint):
-        pointsUnderMouse: list[Vector2] = self.editor.pointsUnderMouse()
-        selectedNodes: list[Vector2] = self.editor.selectedNodes()
+    @status_bar_decorator
+    def on_render_context_menu(self, world: Vector2, screen: QPoint):
+        points_under_mouse: list[Vector2] = self.editor.points_under_mouse()
+        selected_nodes: list[Vector2] = self.editor.selected_nodes()
 
-        underMouseIndex: int | None = None
-        if pointsUnderMouse and pointsUnderMouse[0]:
-            for point in pointsUnderMouse:
+        under_mouse_index: int | None = None
+        if points_under_mouse and points_under_mouse[0]:
+            for point in points_under_mouse:
                 with suppress(ValueError, IndexError):
-                    underMouseIndex = self.editor.pth().find(point)
-                    if underMouseIndex is not None:
+                    under_mouse_index = self.editor.pth().find(point)
+                    if under_mouse_index is not None:
                         break
-        selectedIndex: int | None = None
-        if selectedNodes and selectedNodes[0]:
-            for selected in selectedNodes:
+        selected_index: int | None = None
+        if selected_nodes and selected_nodes[0]:
+            for selected in selected_nodes:
                 with suppress(ValueError, IndexError):
-                    selectedIndex = self.editor.pth().find(selected)
-                    if selectedIndex is not None:
+                    selected_index = self.editor.pth().find(selected)
+                    if selected_index is not None:
                         break
         print(
-            f"selectedIndex:{selectedIndex}",
-            f"underMouseIndex:{underMouseIndex}",
-            f"onRenderContextMenu(world={world!r}, screen={screen!r})",
-            file=self.editor.statusOut,
+            f"selected_index:{selected_index}",
+            f"under_mouse_index:{under_mouse_index}",
+            f"on_render_context_menu(world={world!r}, screen={screen!r})",
+            file=self.editor.status_out,
         )
 
         menu = QMenu(self.editor)
         menu.addAction("Add Node").triggered.connect(lambda _=None: self.editor.addNode(world.x, world.y))
-        menu.addAction("Copy XY coords").triggered.connect(lambda: QApplication.clipboard().setText(str(self.editor.statusOut.mousePos)))
-        if underMouseIndex is not None:
-            menu.addAction("Remove Node").triggered.connect(lambda _=None: self.editor.removeNode(underMouseIndex))
+        menu.addAction("Copy XY coords").triggered.connect(lambda: QApplication.clipboard().setText(str(self.editor.status_out.mouse_pos)))
+        if under_mouse_index is not None:
+            menu.addAction("Remove Node").triggered.connect(lambda _=None: self.editor.remove_node(under_mouse_index))
 
         menu.addSeparator()
 
-        if underMouseIndex is not None and selectedIndex is not None:
-            menu.addAction("Add Edge").triggered.connect(lambda _=None: self.editor.addEdge(selectedIndex, underMouseIndex))
-            menu.addAction("Remove Edge").triggered.connect(lambda _=None: self.editor.removeEdge(selectedIndex, underMouseIndex))
+        if under_mouse_index is not None and selected_index is not None:
+            menu.addAction("Add Edge").triggered.connect(lambda _=None: self.editor.addEdge(selected_index, under_mouse_index))
+            menu.addAction("Remove Edge").triggered.connect(lambda _=None: self.editor.removeEdge(selected_index, under_mouse_index))
 
         menu.popup(screen)
 
     # Use @property decorators to allow Users to change their settings without restarting the editor.
     @property
-    def panCamera(self) -> ControlItem:
+    def pan_camera(self) -> ControlItem:
         return ControlItem(self.settings.moveCameraBind)
 
-    @panCamera.setter
-    def panCamera(self, value):
+    @pan_camera.setter
+    def pan_camera(self, value):
         ...
 
     @property
-    def rotateCamera(self) -> ControlItem:
+    def rotate_camera(self) -> ControlItem:
         return ControlItem(self.settings.rotateCameraBind)
 
-    @rotateCamera.setter
-    def rotateCamera(self, value):
+    @rotate_camera.setter
+    def rotate_camera(self, value):
         ...
 
     @property
-    def zoomCamera(self) -> ControlItem:
+    def zoom_camera(self) -> ControlItem:
         return ControlItem(self.settings.zoomCameraBind)
 
-    @zoomCamera.setter
-    def zoomCamera(self, value):
+    @zoom_camera.setter
+    def zoom_camera(self, value):
         ...
 
     @property
-    def moveSelected(self) -> ControlItem:
+    def move_selected(self) -> ControlItem:
         return ControlItem(self.settings.moveSelectedBind)
 
-    @moveSelected.setter
-    def moveSelected(self, value):
+    @move_selected.setter
+    def move_selected(self, value):
         ...
 
     @property
-    def selectUnderneath(self) -> ControlItem:
+    def select_underneath(self) -> ControlItem:
         return ControlItem(self.settings.selectUnderneathBind)
 
-    @selectUnderneath.setter
-    def selectUnderneath(self, value):
+    @select_underneath.setter
+    def select_underneath(self, value):
         ...
 
     @property
-    def deleteSelected(self) -> ControlItem:
+    def delete_selected(self) -> ControlItem:
         return ControlItem(self.settings.deleteSelectedBind)
 
-    @deleteSelected.setter
-    def deleteSelected(self, value):
+    @delete_selected.setter
+    def delete_selected(self, value):
         ...

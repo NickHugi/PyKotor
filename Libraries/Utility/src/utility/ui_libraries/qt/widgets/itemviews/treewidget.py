@@ -145,7 +145,7 @@ if __name__ == "__main__":
     # Add a button to show context menu
     def show_context_menu():
         menu = tree_widget.build_context_menu()
-        menu.exec_(tree_widget.mapToGlobal(tree_widget.rect().center()))
+        menu.exec(tree_widget.mapToGlobal(tree_widget.rect().center()))
 
     context_menu_button = QPushButton("Show Context Menu")
     context_menu_button.clicked.connect(show_context_menu)
@@ -155,4 +155,4 @@ if __name__ == "__main__":
     window.setWindowTitle("RobustTreeWidget Test")
     window.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

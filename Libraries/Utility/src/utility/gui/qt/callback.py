@@ -321,7 +321,7 @@ class BetterMessageBox(QtWidgets.QDialog):
         self.applyStylesheet()
 
     def exec_(self):
-        result = super().exec_()
+        result = super().exec()
         for button in self.buttons:
             if button.isChecked():
                 self.result_button = MessageBoxButton.from_qpushbutton(button).as_standardbutton()
@@ -368,10 +368,10 @@ class QtUserCommunication(UserCommunication):
         return text if ok and text else ""
 
     def print(self, *args: str):
-        BetterMessageBox("Print Message", "    ".join(args), parent=self.widget).exec_()
+        BetterMessageBox("Print Message", "    ".join(args), parent=self.widget).exec()
 
     def messagebox(self, title: str, message: str):
-        BetterMessageBox(title, message, parent=self.widget).exec_()
+        BetterMessageBox(title, message, parent=self.widget).exec()
 
     def askquestion(self, title: str, message: str) -> bool:
         response: QMessageBox.StandardButton = QMessageBox.question(
@@ -383,7 +383,7 @@ class QtUserCommunication(UserCommunication):
         return response == QMessageBox.Yes
 
     def error(self, title: str, message: str):
-        BetterMessageBox(title, message, icon=QMessageBox.Icon.Critical, parent=self.widget).exec_()
+        BetterMessageBox(title, message, icon=QMessageBox.Icon.Critical, parent=self.widget).exec()
 
     def update_response(
         self,
@@ -415,7 +415,7 @@ if __name__ == "__main__":
             continue
         print(f"first test: adding button {button.text()}")
         buttons |= button.get()
-    result = QMessageBox(QMessageBox.Information, "Test title", "Test message", buttons).exec_()
+    result = QMessageBox(QMessageBox.Information, "Test title", "Test message", buttons).exec()
     print(f"first test: You pressed button '{MessageBoxButton(result).text()}'")
 
 
@@ -435,7 +435,7 @@ if __name__ == "__main__":
         icon=QtWidgets.QStyle.SP_TrashIcon,
         buttons=QMessageBox.Ok | QMessageBox.Yes | QMessageBox.Cancel,
     )
-    result = bmb.exec_()
+    result = bmb.exec()
 
     # Retrieve the result button
     result_button = bmb.result_button

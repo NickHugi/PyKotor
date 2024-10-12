@@ -3,10 +3,8 @@ from __future__ import annotations
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
-import qtpy
-
-from loggerplus import RobustLogger
-from qtpy import QtCore
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QDialog, QFileDialog, QListWidgetItem
 
 from pykotor.common.module import Module
@@ -33,45 +31,33 @@ class SelectModuleDialog(QDialog):
             - Sets up filtering of module list.
         """
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.WindowMinMaxButtonsHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+        )
 
         self._installation: HTInstallation = installation
 
         self.module: str = ""
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.select_module import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.select_module import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.select_module import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.select_module import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.dialogs.select_module import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.openButton.clicked.connect(self.confirm)
         self.ui.cancelButton.clicked.connect(self.reject)
         self.ui.browseButton.clicked.connect(self.browse)
-        self.ui.moduleList.currentRowChanged.connect(self.onRowChanged)
+        self.ui.moduleList.currentRowChanged.connect(self.on_row_changed)
         self.ui.moduleList.doubleClicked.connect(self.confirm)
         self.ui.moduleList.itemDoubleClicked.connect(self.confirm)
-        self.ui.filterEdit.textEdited.connect(self.onFilterEdited)
+        self.ui.filterEdit.textEdited.connect(self.on_filter_edited)
 
-        self._buildModuleList()
+        self._build_module_list()
 
-    def _buildModuleList(self):
+    def _build_module_list(self):
         """Builds a list of installed modules
         Args:
             self: The class instance
@@ -84,17 +70,22 @@ class SelectModuleDialog(QDialog):
         - If not already listed, adds to list widget with name and root in brackets
         - Sets root as item data for later retrieval.
         """
-        moduleNames = self._installation.module_names()
-        listedModules = set()
+        module_names = self._installation.module_names()
+        listed_modules = set()
 
         for module in self._installation.modules_list():
-            lowerModuleFileName = str(PurePath(module).with_stem(Module.find_root(module))).lower()
-            if lowerModuleFileName in listedModules:
+            casefold_module_file_name = str(
+                PurePath(module).with_name(
+                    Module.find_root(module)
+                    + PurePath(module).suffix
+                )
+            ).casefold().strip()
+            if casefold_module_file_name in listed_modules:
                 continue
-            listedModules.add(lowerModuleFileName)
+            listed_modules.add(casefold_module_file_name)
 
-            item = QListWidgetItem(f"{moduleNames[module]}  [{lowerModuleFileName}]")
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, lowerModuleFileName)
+            item = QListWidgetItem(f"{module_names[module]}  [{casefold_module_file_name}]")
+            item.setData(Qt.ItemDataRole.UserRole, casefold_module_file_name)
             self.ui.moduleList.addItem(item)  # pyright: ignore[reportCallIssue]
 
     def browse(self):
@@ -119,17 +110,17 @@ class SelectModuleDialog(QDialog):
         - Gets the currently selected module from the module list widget
         - Calls accept to close the dialog and apply changes.
         """
-        curItem = self.ui.moduleList.currentItem()
-        if curItem is None:
+        cur_item = self.ui.moduleList.currentItem()
+        if cur_item is None:
             RobustLogger().warning("currentItem() returned None in SelectModuleDialog.confirm()")
             return
-        self.module = curItem.data(QtCore.Qt.ItemDataRole.UserRole)
+        self.module = cur_item.data(Qt.ItemDataRole.UserRole)
         self.accept()
 
-    def onRowChanged(self):
+    def on_row_changed(self):
         self.ui.openButton.setEnabled(self.ui.moduleList.currentItem() is not None)
 
-    def onFilterEdited(self):
+    def on_filter_edited(self):
         """Filter modules based on filter text
         Args:
             self: The class instance

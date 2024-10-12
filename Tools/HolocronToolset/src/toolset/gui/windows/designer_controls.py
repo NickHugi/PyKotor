@@ -17,33 +17,20 @@ elif qtpy.API_NAME in ("PyQt6", "PySide6"):
 else:
     raise ValueError(f"Invalid QT_API: '{qtpy.API_NAME}'")
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import Qt
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
-from pykotor.resource.generics.git import (
-    GITCamera,
-    GITCreature,
-    GITDoor,
-    GITPlaceable,
-    GITStore,
-    GITWaypoint,
-)
+from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint
 from toolset.data.misc import ControlItem
-from toolset.gui.editors.git import (
-    DuplicateCommand,
-    _GeometryMode,
-    _InstanceMode,
-    calculate_zoom_strength,
-)
+from toolset.gui.editors.git import DuplicateCommand, _GeometryMode, _InstanceMode, calculate_zoom_strength
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.utils.misc import BUTTON_TO_INT
 
 if TYPE_CHECKING:
-    from ui.module import ModuleRenderer
-
     from pykotor.resource.generics.git import GITInstance
     from toolset.gui.editors.git import _SpawnMode
+    from toolset.gui.widgets.renderer.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
     from toolset.gui.windows.module_designer import ModuleDesigner
 
@@ -56,56 +43,56 @@ class ModuleDesignerControls3d:
         if self.renderer._scene is not None:  # noqa: SLF001
             self.renderer._scene.show_cursor = True  # noqa: SLF001
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        if self.zoomCamera.satisfied(buttons, keys):
+    def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+        if self.zoom_camera.satisfied(buttons, keys):
             strength = self.settings.zoomCameraSensitivity3d / 10000
             self.renderer.scene.camera.distance += -delta.y * strength
-        elif self.moveZCamera.satisfied(buttons, keys):
+        elif self.move_z_camera.satisfied(buttons, keys):
             strength = self.settings.moveCameraSensitivity3d / 10000
             self.renderer.scene.camera.z -= -delta.y * strength
 
-    def onMouseMoved(
+    def on_mouse_moved(
         self,
         screen: Vector2,
-        screenDelta: Vector2,
+        screen_delta: Vector2,
         world: Vector3,
         buttons: set[int],
         keys: set[int],
     ):
         # Handle mouse-specific cursor lock and plane movement
-        moveXyCameraSatisfied = self.moveXYCamera.satisfied(buttons, keys)
-        moveCameraPlaneSatisfied = self.moveCameraPlane.satisfied(buttons, keys)
-        rotateCameraSatisfied = self.rotateCamera.satisfied(buttons, keys)
-        zoomCameraSatisfied = self.zoomCameraMM.satisfied(buttons, keys)
-        if moveXyCameraSatisfied or moveCameraPlaneSatisfied or rotateCameraSatisfied or zoomCameraSatisfied:
-            self.editor.doCursorLock(mutableScreen=screen, centerMouse=False, doRotations=False)
-            moveStrength = self.settings.moveCameraSensitivity3d / 1000
-            if moveXyCameraSatisfied:
-                forward = -screenDelta.y * self.renderer.scene.camera.forward()
-                sideward = screenDelta.x * self.renderer.scene.camera.sideward()
-                self.renderer.scene.camera.x -= (forward.x + sideward.x) * moveStrength
-                self.renderer.scene.camera.y -= (forward.y + sideward.y) * moveStrength
-            if moveCameraPlaneSatisfied:  # sourcery skip: extract-method
-                upward = screenDelta.y * self.renderer.scene.camera.upward(ignore_xy=False)
-                sideward = screenDelta.x * self.renderer.scene.camera.sideward()
-                self.renderer.scene.camera.z -= (upward.z + sideward.z) * moveStrength
-                self.renderer.scene.camera.y -= (upward.y + sideward.y) * moveStrength
-                self.renderer.scene.camera.x -= (upward.x + sideward.x) * moveStrength
-            rotateStrength = self.settings.moveCameraSensitivity3d / 10000
-            if rotateCameraSatisfied:
-                self.renderer.rotateCamera(-screenDelta.x * rotateStrength, screenDelta.y * rotateStrength, clampRotations=True)
-            if zoomCameraSatisfied:
-                self.renderer.scene.camera.distance -= screenDelta.y * rotateStrength
+        move_xy_camera_satisfied = self.move_xy_camera.satisfied(buttons, keys)
+        move_camera_plane_satisfied = self.move_camera_plane.satisfied(buttons, keys)
+        rotate_camera_satisfied = self.rotate_camera.satisfied(buttons, keys)
+        zoom_camera_satisfied = self.zoom_camera_mm.satisfied(buttons, keys)
+        if move_xy_camera_satisfied or move_camera_plane_satisfied or rotate_camera_satisfied or zoom_camera_satisfied:
+            self.editor.do_cursor_lock(mutable_screen=screen, center_mouse=False, do_rotations=False)
+            move_strength = self.settings.moveCameraSensitivity3d / 1000
+            if move_xy_camera_satisfied:
+                forward = -screen_delta.y * self.renderer.scene.camera.forward()
+                sideward = screen_delta.x * self.renderer.scene.camera.sideward()
+                self.renderer.scene.camera.x -= (forward.x + sideward.x) * move_strength
+                self.renderer.scene.camera.y -= (forward.y + sideward.y) * move_strength
+            if move_camera_plane_satisfied:  # sourcery skip: extract-method
+                upward = screen_delta.y * self.renderer.scene.camera.upward(ignore_xy=False)
+                sideward = screen_delta.x * self.renderer.scene.camera.sideward()
+                self.renderer.scene.camera.z -= (upward.z + sideward.z) * move_strength
+                self.renderer.scene.camera.y -= (upward.y + sideward.y) * move_strength
+                self.renderer.scene.camera.x -= (upward.x + sideward.x) * move_strength
+            rotate_strength = self.settings.moveCameraSensitivity3d / 10000
+            if rotate_camera_satisfied:
+                self.renderer.rotate_camera(-screen_delta.x * rotate_strength, screen_delta.y * rotate_strength, clamp_rotations=True)
+            if zoom_camera_satisfied:
+                self.renderer.scene.camera.distance -= screen_delta.y * rotate_strength
 
         # Handle movement of selected instances.
         if self.editor.ui.lockInstancesCheck.isChecked():
             return
-        if self.moveXYSelected.satisfied(buttons, keys):
+        if self.move_xy_selected.satisfied(buttons, keys):
 
-            if not self.editor.isDragMoving:
-                self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
-                self.editor.isDragMoving = True
-            for instance in self.editor.selectedInstances:
+            if not self.editor.is_drag_moving:
+                self.editor.initial_positions = {instance: instance.position for instance in self.editor.selected_instances}
+                self.editor.is_drag_moving = True
+            for instance in self.editor.selected_instances:
                 scene = self.renderer.scene
                 assert scene is not None
 
@@ -114,441 +101,330 @@ class ModuleDesignerControls3d:
                 z = instance.position.z if isinstance(instance, GITCamera) else scene.cursor.position().z
                 instance.position = Vector3(x, y, z)
 
-        if self.moveZSelected.satisfied(buttons, keys):
+        if self.move_z_selected.satisfied(buttons, keys):
             if self.editor.ui.lockInstancesCheck.isChecked():
                 return
-            if not self.editor.isDragMoving:
-                self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
-                self.editor.isDragMoving = True
-            for instance in self.editor.selectedInstances:
-                instance.position.z -= screenDelta.y / 40
+            if not self.editor.is_drag_moving:
+                self.editor.initial_positions = {instance: instance.position for instance in self.editor.selected_instances}
+                self.editor.is_drag_moving = True
+            for instance in self.editor.selected_instances:
+                instance.position.z -= screen_delta.y / 40
 
-        if self.rotateSelected.satisfied(buttons, keys):
+        if self.rotate_selected.satisfied(buttons, keys):
             if self.editor.ui.lockInstancesCheck.isChecked():
                 return
-            if not self.editor.isDragRotating:
-                self.editor.isDragRotating = True
-                self.editor.log.debug("rotateSelected instance in 3d")
-                for instance in self.editor.selectedInstances:
+            if not self.editor.is_drag_rotating:
+                self.editor.is_drag_rotating = True
+                for instance in self.editor.selected_instances:
                     if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                         continue  # doesn't support rotations.
-                    self.editor.initialRotations[instance] = Vector4(*instance.orientation) if isinstance(instance, GITCamera) else instance.bearing
-                self.editor.log.debug("3d rotate set isDragRotating")
-            self.editor.rotateSelected(screenDelta.x, screenDelta.y)
+                    self.editor.initial_rotations[instance] = Vector4(*instance.orientation) if isinstance(instance, GITCamera) else instance.bearing
+            self.editor.rotate_selected(screen_delta.x, screen_delta.y)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        if self.selectUnderneath.satisfied(buttons, keys):
-            self.renderer.doSelect = True  # auto-selects the instance under the mouse in the paint loop, and implicitly sets this back to False
+    def on_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+        if self.select_underneath.satisfied(buttons, keys):
+            self.renderer.do_select = True  # auto-selects the instance under the mouse in the paint loop, and implicitly sets this back to False
 
         scene = self.renderer.scene
         assert scene is not None
         if (
-            self.duplicateSelected.satisfied(buttons, keys)
-            and self.editor.selectedInstances
+            self.duplicate_selected.satisfied(buttons, keys)
+            and self.editor.selected_instances
         ):
-            self._duplicateSelectedInstance()
-        if self.openContextMenu.satisfied(buttons, keys):
+            self._duplicate_selected_instance()
+        if self.open_context_menu.satisfied(buttons, keys):
             world = Vector3(*scene.cursor.position())
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
+            self.editor.on_context_menu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
-    def onMouseReleased(
+    def on_mouse_released(
         self,
         screen: Vector2,
         buttons: set[int],
         keys: set[int],
     ):
-        self.editor.handleUndoRedoFromLongActionFinished()
+        self.editor.handle_undo_redo_from_long_action_finished()
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        self.editor.handleUndoRedoFromLongActionFinished()
+    def on_keyboard_released(self, buttons: set[int], keys: set[int]):
+        self.editor.handle_undo_redo_from_long_action_finished()
 
-    def _duplicateSelectedInstance(self):  # TODO(th3w1zard1): Seems the code throughout is designed for multi-selections, yet nothing uses it. Probably disabled due to a bug or planned for later.
-        instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
+    def _duplicate_selected_instance(self):  # TODO(th3w1zard1): Seems the code throughout is designed for multi-selections, yet nothing uses it. Probably disabled due to a bug or planned for later.
+        instance: GITInstance = deepcopy(self.editor.selected_instances[-1])
         if isinstance(instance, GITCamera):
             instance.camera_id = self.editor._module.git().resource().next_camera_id()
         self.editor.log.info(f"Duplicating {instance!r}")
-        self.editor.undoStack.push(DuplicateCommand(self.editor._module.git().resource(), [instance], self.editor))  # noqa: SLF001
+        self.editor.undo_stack.push(DuplicateCommand(self.editor._module.git().resource(), [instance], self.editor))  # noqa: SLF001
         vect3 = self.renderer.scene.cursor.position()
         instance.position = Vector3(vect3.x, vect3.y, vect3.z)
         #self.editor.git().add(instance)  # Handled by the undoStack above.
-        self.editor.rebuildInstanceList()
-        self.editor.setSelection([instance])
+        self.editor.rebuild_instance_list()
+        self.editor.set_selection([instance])
 
-    def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
+    def on_keyboard_pressed(self, buttons: set[int], keys: set[int]):
         scene = self.renderer.scene
         assert scene is not None
 
-        if self.toggleFreeCam.satisfied(buttons, keys):
+        if self.toggle_free_cam.satisfied(buttons, keys):
             current_time = time.time()
             if current_time - self.editor.last_free_cam_time > 0.5:  # 0.5 seconds delay, prevents spamming
-                self.editor.toggleFreeCam()
+                self.editor.toggle_free_cam()
                 self.editor.last_free_cam_time = current_time  # Update the last toggle time
             return
 
         # Check camera movement keys
         move_camera_keys = {
-            "selected": self.moveCameraToSelected.satisfied(buttons, keys),
-            "cursor": self.moveCameraToCursor.satisfied(buttons, keys),
-            "entry": self.moveCameraToEntryPoint.satisfied(buttons, keys)
+            "selected": self.move_camera_to_selected.satisfied(buttons, keys),
+            "cursor": self.move_camera_to_cursor.satisfied(buttons, keys),
+            "entry": self.move_camera_to_entry_point.satisfied(buttons, keys)
         }
         if any(move_camera_keys.values()):
             if move_camera_keys["selected"]:
-                instance = next(iter(self.editor.selectedInstances), None)
+                instance = next(iter(self.editor.selected_instances), None)
                 if instance is not None:
-                    self.renderer.snapCameraToPoint(instance.position)
+                    self.renderer.snap_camera_to_point(instance.position)
             elif move_camera_keys["cursor"]:
                 scene.camera.set_position(scene.cursor.position())
             elif move_camera_keys["entry"]:
-                self.editor.snapCameraToEntryLocation()
+                self.editor.snap_camera_to_entry_location()
             return
-        if self.deleteSelected.satisfied(buttons, keys):
-            self.editor.deleteSelected()
+        if self.delete_selected.satisfied(buttons, keys):
+            self.editor.delete_selected()
             return
-        if self.duplicateSelected.satisfied(buttons, keys):
-            self._duplicateSelectedInstance()
+        if self.duplicate_selected.satisfied(buttons, keys):
+            self._duplicate_selected_instance()
             return
-        if self.toggleInstanceLock.satisfied(buttons, keys):
+        if self.toggle_instance_lock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
     @property
-    def moveXYCamera(self):
+    def move_xy_camera(self):
         return ControlItem(self.settings.moveCameraXY3dBind)
-    @moveXYCamera.setter
-    def moveXYCamera(self, value): ...
 
     @property
-    def moveZCamera(self):
+    def move_z_camera(self):
         return ControlItem(self.settings.moveCameraZ3dBind)
-    @moveZCamera.setter
-    def moveZCamera(self, value): ...
 
     @property
-    def moveCameraPlane(self):
+    def move_camera_plane(self):
         return ControlItem(self.settings.moveCameraPlane3dBind)
-    @moveCameraPlane.setter
-    def moveCameraPlane(self, value): ...
 
     @property
-    def rotateCamera(self):
+    def rotate_camera(self):
         return ControlItem(self.settings.rotateCamera3dBind)
-    @rotateCamera.setter
-    def rotateCamera(self, value): ...
 
     @property
-    def zoomCamera(self):
+    def zoom_camera(self):
         return ControlItem(self.settings.zoomCamera3dBind)
-    @zoomCamera.setter
-    def zoomCamera(self, value): ...
 
     @property
-    def zoomCameraMM(self):
+    def zoom_camera_mm(self):
         return ControlItem(self.settings.zoomCameraMM3dBind)
-    @zoomCameraMM.setter
-    def zoomCameraMM(self, value): ...
 
     @property
-    def rotateSelected(self):
+    def rotate_selected(self):
         return ControlItem(self.settings.rotateSelected3dBind)
-    @rotateSelected.setter
-    def rotateSelected(self, value): ...
 
     @property
-    def moveXYSelected(self):
+    def move_xy_selected(self):
         return ControlItem(self.settings.moveSelectedXY3dBind)
-    @moveXYSelected.setter
-    def moveXYSelected(self, value): ...
 
     @property
-    def moveZSelected(self):
+    def move_z_selected(self):
         return ControlItem(self.settings.moveSelectedZ3dBind)
-    @moveZSelected.setter
-    def moveZSelected(self, value): ...
 
     @property
-    def selectUnderneath(self):
+    def select_underneath(self):
         return ControlItem(self.settings.selectObject3dBind)
-    @selectUnderneath.setter
-    def selectUnderneath(self, value): ...
 
     @property
-    def moveCameraToSelected(self):
+    def move_camera_to_selected(self):
         return ControlItem(self.settings.moveCameraToSelected3dBind)
-    @moveCameraToSelected.setter
-    def moveCameraToSelected(self, value): ...
 
     @property
-    def moveCameraToCursor(self):
+    def move_camera_to_cursor(self):
         return ControlItem(self.settings.moveCameraToCursor3dBind)
-    @moveCameraToCursor.setter
-    def moveCameraToCursor(self, value): ...
 
     @property
-    def moveCameraToEntryPoint(self):
+    def move_camera_to_entry_point(self):
         return ControlItem(self.settings.moveCameraToEntryPoint3dBind)
-    @moveCameraToEntryPoint.setter
-    def moveCameraToEntryPoint(self, value): ...
 
     @property
-    def toggleFreeCam(self):
+    def toggle_free_cam(self):
         return ControlItem(self.settings.toggleFreeCam3dBind)
-    @toggleFreeCam.setter
-    def toggleFreeCam(self, value): ...
 
     @property
-    def deleteSelected(self):
+    def delete_selected(self):
         return ControlItem(self.settings.deleteObject3dBind)
-    @deleteSelected.setter
-    def deleteSelected(self, value): ...
 
     @property
-    def duplicateSelected(self):
+    def duplicate_selected(self):
         return ControlItem(self.settings.duplicateObject3dBind)
-    @duplicateSelected.setter
-    def duplicateSelected(self, value): ...
 
     @property
-    def openContextMenu(self):
+    def open_context_menu(self):
         return ControlItem((set(), {BUTTON_TO_INT[Qt.MouseButton.RightButton]}))
-    @openContextMenu.setter
-    def openContextMenu(self, value): ...
 
     @property
-    def rotateCameraLeft(self):
+    def rotate_camera_left(self):
         return ControlItem(self.settings.rotateCameraLeft3dBind)
-    @rotateCameraLeft.setter
-    def rotateCameraLeft(self, value): ...
 
     @property
-    def rotateCameraRight(self):
+    def rotate_camera_right(self):
         return ControlItem(self.settings.rotateCameraRight3dBind)
-    @rotateCameraRight.setter
-    def rotateCameraRight(self, value): ...
 
     @property
-    def rotateCameraUp(self):
+    def rotate_camera_up(self):
         return ControlItem(self.settings.rotateCameraUp3dBind)
-    @rotateCameraUp.setter
-    def rotateCameraUp(self, value): ...
 
     @property
-    def rotateCameraDown(self):
+    def rotate_camera_down(self):
         return ControlItem(self.settings.rotateCameraDown3dBind)
-    @rotateCameraDown.setter
-    def rotateCameraDown(self, value): ...
 
     @property
-    def moveCameraUp(self):
+    def move_camera_up(self):
         return ControlItem(self.settings.moveCameraUp3dBind)
-    @moveCameraUp.setter
-    def moveCameraUp(self, value): ...
 
     @property
-    def moveCameraDown(self):
+    def move_camera_down(self):
         return ControlItem(self.settings.moveCameraDown3dBind)
-    @moveCameraDown.setter
-    def moveCameraDown(self, value): ...
 
     @property
-    def moveCameraForward(self):
+    def move_camera_forward(self):
         return ControlItem(self.settings.moveCameraForward3dBind)
-    @moveCameraForward.setter
-    def moveCameraForward(self, value): ...
 
     @property
-    def moveCameraBackward(self):
+    def move_camera_backward(self):
         return ControlItem(self.settings.moveCameraBackward3dBind)
 
-    @moveCameraBackward.setter
-    def moveCameraBackward(self, value): ...
     @property
-    def moveCameraLeft(self):
+    def move_camera_left(self):
         return ControlItem(self.settings.moveCameraLeft3dBind)
 
-    @moveCameraLeft.setter
-    def moveCameraLeft(self, value): ...
-
     @property
-    def moveCameraRight(self):
+    def move_camera_right(self):
         return ControlItem(self.settings.moveCameraRight3dBind)
-    @moveCameraRight.setter
-    def moveCameraRight(self, value): ...
 
     @property
-    def zoomCameraIn(self):
+    def zoom_camera_in(self):
         return ControlItem(self.settings.zoomCameraIn3dBind)
 
-    @zoomCameraIn.setter
-    def zoomCameraIn(self, value): ...
     @property
-    def zoomCameraOut(self):
+    def zoom_camera_out(self):
         return ControlItem(self.settings.zoomCameraOut3dBind)
 
-    @zoomCameraOut.setter
-    def zoomCameraOut(self, value): ...
-
     @property
-    def toggleInstanceLock(self):
+    def toggle_instance_lock(self):
         return ControlItem(self.settings.toggleLockInstancesBind)
-    @toggleInstanceLock.setter
-    def toggleInstanceLock(self, value): ...
 
     @property
-    def speedBoostControl(self):
+    def speed_boost_control(self):
         return ControlItem(self.settings.speedBoostCamera3dBind)
-    @speedBoostControl.setter
-    def speedBoostControl(self, value): ...
 
     @property
     def settings(self) -> ModuleDesignerSettings:
         return ModuleDesignerSettings()
-    @settings.setter
-    def settings(self, value): ...
 
     @property
-    def lytGridSize(self):
+    def lyt_grid_size(self):
         return self.settings.lytGridSize
-    @lytGridSize.setter
-    def lytGridSize(self, value):
-        self.settings.lytGridSize = value
-        if hasattr(self.editor, "lytEditor"):
-            self.editor.lytEditor.setGridSize(value)
 
     @property
-    def lytSnapToGrid(self):
+    def lyt_snap_to_grid(self):
         return self.settings.lytSnapToGrid
-    @lytSnapToGrid.setter
-    def lytSnapToGrid(self, value):
-        self.settings.lytSnapToGrid = value
-        if hasattr(self.editor, "lytEditor"):
-            self.editor.lytEditor.setSnapToGrid(value)
 
     @property
-    def lytShowGrid(self):
+    def lyt_show_grid(self):
         return self.settings.lytShowGrid
-    @lytShowGrid.setter
-    def settings(self, value): ...
 
 
 class ModuleDesignerControlsFreeCam:
     def __init__(self, editor: ModuleDesigner, renderer: ModuleRenderer):
         self.editor: ModuleDesigner = editor
         self.renderer: ModuleRenderer = renderer
-        self.renderer.keysDown().clear()
+        self.renderer.keys_down().clear()
         self.controls3d_distance = self.renderer.scene.camera.distance
         self.renderer.scene.camera.distance = 0
         self.renderer.setCursor(QtCore.Qt.CursorShape.BlankCursor)
         self.renderer.scene.show_cursor = False
 
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
+    def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):  # noqa: PLR0913
-        self.editor.doCursorLock(screen)
+    def on_mouse_moved(self, screen: Vector2, screen_delta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):  # noqa: PLR0913
+        self.editor.do_cursor_lock(screen)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         ...
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
+    def on_mouse_released(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
-    def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
+    def on_keyboard_pressed(self, buttons: set[int], keys: set[int]):
         current_time = time.time()
-        if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 0.5):  # 0.5 seconds delay, prevents spamming
+        if self.toggle_free_cam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 0.5):  # 0.5 seconds delay, prevents spamming
             #self.renderer.scene.camera.distance = self.controls3d_distance
-            self.editor.toggleFreeCam()
+            self.editor.toggle_free_cam()
             self.editor.last_free_cam_time = current_time  # Update the last toggle time
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
+    def on_keyboard_released(self, buttons: set[int], keys: set[int]): ...
 
     @property
-    def toggleFreeCam(self):
+    def toggle_free_cam(self):
         return ControlItem(self.settings.toggleFreeCam3dBind)
-    @toggleFreeCam.setter
-    def toggleFreeCam(self, value): ...
 
     @property
-    def moveCameraUp(self):
+    def move_camera_up(self):
         return ControlItem(self.settings.moveCameraUpFcBind)
-    @moveCameraUp.setter
-    def moveCameraUp(self, value): ...
 
     @property
-    def moveCameraDown(self):
+    def move_camera_down(self):
         return ControlItem(self.settings.moveCameraDownFcBind)
-    @moveCameraDown.setter
-    def moveCameraDown(self, value): ...
 
     @property
-    def moveCameraForward(self):
+    def move_camera_forward(self):
         return ControlItem(self.settings.moveCameraForwardFcBind)
-    @moveCameraForward.setter
-    def moveCameraForward(self, value): ...
 
     @property
-    def moveCameraBackward(self):
+    def move_camera_backward(self):
         return ControlItem(self.settings.moveCameraBackwardFcBind)
-    @moveCameraBackward.setter
-    def moveCameraBackward(self, value): ...
 
     @property
-    def moveCameraLeft(self):
+    def move_camera_left(self):
         return ControlItem(self.settings.moveCameraLeftFcBind)
-    @moveCameraLeft.setter
-    def moveCameraLeft(self, value): ...
 
     @property
-    def moveCameraRight(self):
+    def move_camera_right(self):
         return ControlItem(self.settings.moveCameraRightFcBind)
-    @moveCameraRight.setter
-    def moveCameraRight(self, value): ...
 
     @property
-    def rotateCameraLeft(self):
+    def rotate_camera_left(self):
         return ControlItem(self.settings.rotateCameraLeftFcBind)
-    @rotateCameraLeft.setter
-    def rotateCameraLeft(self, value): ...
 
     @property
-    def rotateCameraRight(self):
+    def rotate_camera_right(self):
         return ControlItem(self.settings.rotateCameraRightFcBind)
-    @rotateCameraRight.setter
-    def rotateCameraRight(self, value): ...
 
     @property
-    def rotateCameraUp(self):
+    def rotate_camera_up(self):
         return ControlItem(self.settings.rotateCameraUpFcBind)
-    @rotateCameraUp.setter
-    def rotateCameraUp(self, value): ...
 
     @property
-    def rotateCameraDown(self):
+    def rotate_camera_down(self):
         return ControlItem(self.settings.rotateCameraDownFcBind)
-    @rotateCameraDown.setter
-    def rotateCameraDown(self, value): ...
 
     @property
-    def zoomCameraIn(self):
+    def zoom_camera_in(self):
         return ControlItem(self.settings.zoomCameraInFcBind)
 
-    @zoomCameraIn.setter
-    def zoomCameraIn(self, value): ...
     @property
-    def zoomCameraOut(self):
+    def zoom_camera_out(self):
         return ControlItem(self.settings.zoomCameraOutFcBind)
 
-    @zoomCameraOut.setter
-    def zoomCameraOut(self, value): ...
-
     @property
-    def speedBoostControl(self):
+    def speed_boost_control(self):
         return ControlItem(self.settings.speedBoostCameraFcBind)
-    @speedBoostControl.setter
-    def speedBoostControl(self, value): ...
 
     @property
     def settings(self) -> ModuleDesignerSettings:
         return ModuleDesignerSettings()
-    @settings.setter
-    def settings(self, value): ...
 
 
 class ModuleDesignerControls2d:
@@ -558,185 +434,154 @@ class ModuleDesignerControls2d:
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self._mode: _InstanceMode | _GeometryMode | _SpawnMode
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        if self.zoomCamera.satisfied(buttons, keys):
+    def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+        if self.zoom_camera.satisfied(buttons, keys):
             if not delta.y:
                 return
-            sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
-            zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
-            self.renderer.camera.nudgeZoom(zoom_factor)
+            sens_setting = ModuleDesignerSettings().zoomCameraSensitivity2d
+            zoom_factor = calculate_zoom_strength(delta.y, sens_setting)
+            self.renderer.camera.nudge_zoom(zoom_factor)
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: set[int], keys: set[int]):
-        shouldMoveCamera = self.moveCamera.satisfied(buttons, keys)
-        shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
-        adjustedWorldDelta = worldDelta
-        if shouldMoveCamera or shouldRotateCamera:
-            self.renderer.doCursorLock(screen)
-            adjustedWorldDelta = Vector2(-worldDelta.x, -worldDelta.y)
-        if shouldMoveCamera:
+    def on_mouse_moved(self, screen: Vector2, screen_delta: Vector2, world: Vector2, world_delta: Vector2, buttons: set[int], keys: set[int]):
+        should_move_camera = self.move_camera.satisfied(buttons, keys)
+        should_rotate_camera = self.rotate_camera.satisfied(buttons, keys)
+        adjusted_world_delta = world_delta
+        if should_move_camera or should_rotate_camera:
+            self.renderer.do_cursor_lock(screen)
+            adjusted_world_delta = Vector2(-world_delta.x, -world_delta.y)
+        if should_move_camera:
             strength = self.settings.moveCameraSensitivity2d / 100
-            self.renderer.camera.nudgePosition(-worldDelta.x * strength, -worldDelta.y * strength)
-        if shouldRotateCamera:
+            self.renderer.camera.nudge_position(-world_delta.x * strength, -world_delta.y * strength)
+        if should_rotate_camera:
             strength = self.settings.rotateCameraSensitivity2d / 100 / 50
-            self.renderer.camera.nudgeRotation(screenDelta.x * strength)
+            self.renderer.camera.nudge_rotation(screen_delta.x * strength)
 
         if self.editor.ui.lockInstancesCheck.isChecked():
             return
-        if self.moveSelected.satisfied(buttons, keys):
+        if self.move_selected.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                RobustLogger().debug("Move geometry point %s, %s", worldDelta.x, worldDelta.y)
-                self._mode.moveSelected(adjustedWorldDelta.x, adjustedWorldDelta.y)
+                RobustLogger().debug("Move geometry point %s, %s", world_delta.x, world_delta.y)
+                self._mode.move_selected(adjusted_world_delta.x, adjusted_world_delta.y)
                 return
 
-            # handle undo/redo for moveSelected.
-            if not self.editor.isDragMoving:
-                RobustLogger().debug("moveSelected instance in 2d")
-                self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
-                self.editor.isDragMoving = True
-            self.editor.moveSelected(adjustedWorldDelta.x, adjustedWorldDelta.y, noUndoStack=True, noZCoord=True)
+            # handle undo/redo for move_selected.
+            if not self.editor.is_drag_moving:
+                RobustLogger().debug("move_selected instance in 2d")
+                self.editor.initial_positions = {instance: instance.position for instance in self.editor.selected_instances}
+                self.editor.is_drag_moving = True
+            self.editor.move_selected(adjusted_world_delta.x, adjusted_world_delta.y, no_undo_stack=True, no_z_coord=True)
 
-        if self.rotateSelected.satisfied(buttons, keys) and isinstance(self._mode, _InstanceMode):
-            if not self.editor.isDragRotating:
-                self.editor.isDragRotating = True
+        if self.rotate_selected.satisfied(buttons, keys) and isinstance(self._mode, _InstanceMode):
+            if not self.editor.is_drag_rotating:
+                self.editor.is_drag_rotating = True
                 self.editor.log.debug("rotateSelected instance in 2d")
-                selection: list[GITInstance] = self.editor.selectedInstances  # noqa: SLF001
+                selection: list[GITInstance] = self.editor.selected_instances  # noqa: SLF001
                 for instance in selection:
                     if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                         continue  # doesn't support rotations.
-                    self.editor.initialRotations[instance] = Vector4(*instance.orientation) if isinstance(instance, GITCamera) else instance.bearing
-            self._mode.rotateSelectedToPoint(world.x, world.y)
+                    self.editor.initial_rotations[instance] = (
+                        Vector4(*instance.orientation)
+                        if isinstance(instance, GITCamera)
+                        else instance.bearing
+                    )
+            self._mode.rotate_selected_to_point(world.x, world.y)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
+    def on_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+        world: Vector3 = self.renderer.to_world_coords(screen.x, screen.y)
         if (
-            self.duplicateSelected.satisfied(buttons, keys)
-            and self.editor.selectedInstances
+            self.duplicate_selected.satisfied(buttons, keys)
+            and self.editor.selected_instances
             and isinstance(self._mode, _InstanceMode)
         ):
-            self._mode.duplicateSelected(world)
-        if self.openContextMenu.satisfied(buttons, keys):
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))), isFlatRendererCall=True)
+            self._mode.duplicate_selected(world)
+        if self.open_context_menu.satisfied(buttons, keys):
+            self.editor.on_context_menu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
-        if self.selectUnderneath.satisfied(buttons, keys):
+        if self.select_underneath.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                RobustLogger().debug("selectUnderneathGeometry?")
-                self._mode.selectUnderneath()
-            elif self.renderer.instancesUnderMouse():
-                RobustLogger().debug("onMousePressed, selectUnderneath found one or more instances under mouse.")
-                self.editor.setSelection([self.renderer.instancesUnderMouse()[-1]])
+                RobustLogger().debug("select_underneath_geometry?")
+                self._mode.select_underneath()
+            elif self.renderer.instances_under_mouse():
+                RobustLogger().debug("on_mouse_pressed, select_underneath found one or more instances under mouse.")
+                self.editor.set_selection([self.renderer.instances_under_mouse()[-1]])
             else:
-                RobustLogger().debug("onMousePressed, selectUnderneath did not find any instances.")
-                self.editor.setSelection([])
+                RobustLogger().debug("on_mouse_pressed, select_underneath did not find any instances.")
+                self.editor.set_selection([])
 
-    def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
-        if self.deleteSelected.satisfied(buttons, keys):
+    def on_keyboard_pressed(self, buttons: set[int], keys: set[int]):
+        if self.delete_selected.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                self._mode.deleteSelected()
+                self._mode.delete_selected()
             else:
-                self.editor.deleteSelected()
+                self.editor.delete_selected()
             return
 
-        if self.snapCameraToSelected.satisfied(buttons, keys):
-            for instance in self.editor.selectedInstances:
-                self.renderer.snapCameraToPoint(instance.position)
+        if self.snap_camera_to_selected.satisfied(buttons, keys):
+            for instance in self.editor.selected_instances:
+                self.renderer.snap_camera_to_point(instance.position)
                 break
 
-        if self.toggleInstanceLock.satisfied(buttons, keys):
+        if self.toggle_instance_lock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        self.editor.handleUndoRedoFromLongActionFinished()
+    def on_mouse_released(self, screen: Vector2, buttons: set[int], keys: set[int]):
+        self.editor.handle_undo_redo_from_long_action_finished()
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        self.editor.handleUndoRedoFromLongActionFinished()
+    def on_keyboard_released(self, buttons: set[int], keys: set[int]):
+        self.editor.handle_undo_redo_from_long_action_finished()
 
     @property
-    def moveCamera(self):
+    def move_camera(self):
         return ControlItem(self.settings.moveCamera2dBind)
 
-    @moveCamera.setter
-    def moveCamera(self, value): ...
-
     @property
-    def rotateCamera(self):
+    def rotate_camera(self):
         return ControlItem(self.settings.rotateCamera2dBind)
-    @rotateCamera.setter
-    def rotateCamera(self, value): ...
 
     @property
-    def zoomCamera(self):
+    def zoom_camera(self):
         return ControlItem(self.settings.zoomCamera2dBind)
-    @zoomCamera.setter
-    def zoomCamera(self, value): ...
 
     @property
-    def rotateSelected(self):
+    def rotate_selected(self):
         return ControlItem(self.settings.rotateObject2dBind)
-    @rotateSelected.setter
-    def rotateSelected(self, value): ...
 
     @property
-    def moveSelected(self):
+    def move_selected(self):
         return ControlItem(self.settings.moveObject2dBind)
-    @moveSelected.setter
-    def moveSelected(self, value): ...
 
     @property
-    def selectUnderneath(self):
+    def select_underneath(self):
         return ControlItem(self.settings.selectObject2dBind)
-    @selectUnderneath.setter
-    def selectUnderneath(self, value): ...
 
     @property
-    def deleteSelected(self):
+    def delete_selected(self):
         return ControlItem(self.settings.deleteObject2dBind)
-    @deleteSelected.setter
-    def deleteSelected(self, value): ...
 
     @property
-    def duplicateSelected(self):
+    def duplicate_selected(self):
         return ControlItem(self.settings.duplicateObject2dBind)
-    @duplicateSelected.setter
-    def duplicateSelected(self, value): ...
 
     @property
-    def snapCameraToSelected(self):
+    def snap_camera_to_selected(self):
         return ControlItem(self.settings.moveCameraToSelected2dBind)
-    @snapCameraToSelected.setter
-    def snapCameraToSelected(self, value): ...
 
     @property
-    def openContextMenu(self):
+    def open_context_menu(self):
         return ControlItem((set(), {Qt.MouseButton.RightButton}))
-    @openContextMenu.setter
-    def openContextMenu(self, value): ...
 
     @property
-    def toggleInstanceLock(self):
+    def toggle_instance_lock(self):
         return ControlItem(self.settings.toggleLockInstancesBind)
-    @toggleInstanceLock.setter
-    def toggleInstanceLock(self, value): ...
 
     @property
-    def lytGridSize(self):
+    def lyt_grid_size(self):
         return self.settings.lytGridSize
-    @lytGridSize.setter
-    def lytGridSize(self, value):
-        self.settings.lytGridSize = value
-        if hasattr(self.editor, "lytEditor"):
-            self.editor.lytEditor.setGridSize(value)
 
     @property
-    def lytSnapToGrid(self):
+    def lyt_snap_to_grid(self):
         return self.settings.lytSnapToGrid
-    @lytSnapToGrid.setter
-    def lytSnapToGrid(self, value):
-        self.settings.lytSnapToGrid = value
-        if hasattr(self.editor, "lytEditor"):
-            self.editor.lytEditor.setSnapToGrid(value)
 
     @property
-    def lytShowGrid(self):
+    def lyt_show_grid(self):
         return self.settings.lytShowGrid
-    @lytShowGrid.setter
-    def lytShowGrid(self, value): ...

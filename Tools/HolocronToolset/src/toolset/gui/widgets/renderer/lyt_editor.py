@@ -477,20 +477,20 @@ class LYTEditor(QWidget):
             self.update()
 
     def handleMousePress(self, e: QMouseEvent):
-        self.mousePos = Vector2(e.x(), e.y())
-        self.mousePrev = self.mousePos
+        self.mouse_pos = Vector2(e.x(), e.y())
+        self.mousePrev = self.mouse_pos
         self.mouseDown.add(e.button())
 
         if e.button() == Qt.MouseButton.LeftButton:
             if self.isPlacingDoorHook:
-                self.placeDoorHook(self.mousePos)
+                self.placeDoorHook(self.mouse_pos)
                 self.isPlacingDoorHook = False
             else:
-                self.selectLYTElement(self.mousePos)
+                self.selectLYTElement(self.mouse_pos)
                 self.isDragging = True
         elif e.button() == Qt.MouseButton.RightButton:
             if self.selectedRoom:
-                self.selectedRoomRotationPoint = self.mousePos
+                self.selectedRoomRotationPoint = self.mouse_pos
                 self.isRotating = True
             elif self.selectedTrack:
                 self.isDragging = True
@@ -506,16 +506,16 @@ class LYTEditor(QWidget):
         self.selectedRoomRotationPoint = None
 
     def handleMouseMove(self, e: QMouseEvent):
-        self.mousePos = Vector2(e.x(), e.y())
+        self.mouse_pos = Vector2(e.x(), e.y())
 
         if self.isDragging:
-            self.dragLYTElement(self.mousePos)
+            self.dragLYTElement(self.mouse_pos)
         elif self.isResizing:
-            self.resizeSelectedRoom(self.mousePos)
+            self.resizeSelectedRoom(self.mouse_pos)
         elif self.isRotating:
-            self.rotateSelectedRoom(self.mousePos)
+            self.rotateSelectedRoom(self.mouse_pos)
 
-    def selectLYTElement(self, mousePos: Vector2):
+    def selectLYTElement(self, mouse_pos: Vector2):
         # Check for room selection
         for room in self.lyt.rooms:
             rect = QRect(
@@ -524,7 +524,7 @@ class LYTEditor(QWidget):
                 int(room.size.x),  # FIXME: size attribute does not exist.
                 int(room.size.y),  # FIXME: size attribute does not exist.
             )
-            if rect.contains(QPoint(int(mousePos.x), int(mousePos.y))):
+            if rect.contains(QPoint(int(mouse_pos.x), int(mouse_pos.y))):
                 self.selectedRoom = room
                 self.selectedTrack = None
                 self.selectedObstacle = None
@@ -536,7 +536,7 @@ class LYTEditor(QWidget):
             start = QPoint(int(track.start.x), int(track.start.y))  # FIXME: start and end attributes do not exist.
             end = QPoint(int(track.end.x), int(track.end.y))  # FIXME: start and end attributes do not exist.
             line = QLine(start, end)
-            if line.ptDistanceToPoint(QPoint(int(mousePos.x), int(mousePos.y))) <= 5:  # FIXME: ptDistanceToPoint method does not exist.
+            if line.ptDistanceToPoint(QPoint(int(mouse_pos.x), int(mouse_pos.y))) <= 5:  # FIXME: ptDistanceToPoint method does not exist.
                 self.selectedRoom = None
                 self.selectedTrack = track
                 self.selectedObstacle = None
@@ -547,7 +547,7 @@ class LYTEditor(QWidget):
         for obstacle in self.lyt.obstacles:
             center = QPoint(int(obstacle.position.x), int(obstacle.position.y))
             radius = obstacle.radius  # FIXME: radius attribute does not exist.
-            if QPoint(int(mousePos.x), int(mousePos.y)).distanceToPoint(center) <= radius:  # FIXME: distanceToPoint method does not exist.
+            if QPoint(int(mouse_pos.x), int(mouse_pos.y)).distanceToPoint(center) <= radius:  # FIXME: distanceToPoint method does not exist.
                 self.selectedRoom = None
                 self.selectedTrack = None
                 self.selectedObstacle = obstacle
@@ -557,7 +557,7 @@ class LYTEditor(QWidget):
         # Check for doorhook selection
         for doorhook in self.lyt.doorhooks:
             center = QPoint(int(doorhook.position.x), int(doorhook.position.y))
-            if QRect(center.x() - 2, center.y() - 2, 4, 4).contains(QPoint(int(mousePos.x), int(mousePos.y))):
+            if QRect(center.x() - 2, center.y() - 2, 4, 4).contains(QPoint(int(mouse_pos.x), int(mouse_pos.y))):
                 self.selectedRoom = None
                 self.selectedTrack = None
                 self.selectedObstacle = None
@@ -570,9 +570,9 @@ class LYTEditor(QWidget):
         self.selectedObstacle = None
         self.selectedDoorHook = None
 
-    def dragLYTElement(self, mousePos: Vector2):
-        delta = mousePos - self.mousePrev
-        self.mousePrev = mousePos
+    def dragLYTElement(self, mouse_pos: Vector2):
+        delta = mouse_pos - self.mousePrev
+        self.mousePrev = mouse_pos
 
         if self.selectedRoom:
             self.moveRoom(self.selectedRoom, delta)
@@ -608,12 +608,12 @@ class LYTEditor(QWidget):
         newPosition = Vector3(doorhook.position.x + delta.x, doorhook.position.y + delta.y, doorhook.position.z)
         self.roomMoved.emit(doorhook, newPosition)
 
-    def resizeSelectedRoom(self, mousePos: Vector2):
+    def resizeSelectedRoom(self, mouse_pos: Vector2):
         if self.selectedRoom is None or self.selectedRoomResizeCorner is None:
             return
 
-        delta = mousePos - self.mousePrev
-        self.mousePrev = mousePos
+        delta = mouse_pos - self.mousePrev
+        self.mousePrev = mouse_pos
 
         # Calculate new size based on resize corner
         newSize = Vector2(self.selectedRoom.size.x, self.selectedRoom.size.y)  # FIXME: size attribute does not exist.
@@ -642,12 +642,12 @@ class LYTEditor(QWidget):
         self.roomResized.emit(self.selectedRoom, newSize)
         self.update()
 
-    def rotateSelectedRoom(self, mousePos: Vector2):
+    def rotateSelectedRoom(self, mouse_pos: Vector2):
         if self.selectedRoom is None or self.selectedRoomRotationPoint is None:
             return
 
-        delta = mousePos - self.mousePrev
-        self.mousePrev = mousePos
+        delta = mouse_pos - self.mousePrev
+        self.mousePrev = mouse_pos
 
         # Calculate rotation angle
         angle = math.degrees(math.atan2(delta.y, delta.x))
@@ -656,8 +656,8 @@ class LYTEditor(QWidget):
         self.roomRotated.emit(self.selectedRoom, angle)
         self.update()
 
-    def placeDoorHook(self, mousePos: Vector2):
-        doorhook = LYTDoorHook(Vector3(mousePos.x, mousePos.y, 0))  # FIXME: arguments missing for door, room, orientation
+    def placeDoorHook(self, mouse_pos: Vector2):
+        doorhook = LYTDoorHook(Vector3(mouse_pos.x, mouse_pos.y, 0))  # FIXME: arguments missing for door, room, orientation
         self.doorHookPlaced.emit(doorhook)
         self.update()
 
@@ -856,18 +856,18 @@ class LYTEditor(QWidget):
         self.isPlacingDoorHook = True
         self.selectedRoom = room
 
-    def placeDoorHook(self, mousePos: Vector2):
+    def placeDoorHook(self, mouse_pos: Vector2):
         """Check if the mouse position is on the edge of the selected room."""
         room = self.selectedRoom
         tolerance = 5  # pixels
 
         if (
-            abs(mousePos.x - room.position.x) < tolerance
-            or abs(mousePos.x - (room.position.x + room.size.x)) < tolerance  # FIXME: size attribute does not exist.
-            or abs(mousePos.y - room.position.y) < tolerance
-            or abs(mousePos.y - (room.position.y + room.size.y)) < tolerance  # FIXME: size attribute does not exist.
+            abs(mouse_pos.x - room.position.x) < tolerance
+            or abs(mouse_pos.x - (room.position.x + room.size.x)) < tolerance  # FIXME: size attribute does not exist.
+            or abs(mouse_pos.y - room.position.y) < tolerance
+            or abs(mouse_pos.y - (room.position.y + room.size.y)) < tolerance  # FIXME: size attribute does not exist.
         ):
-            doorhook = LYTDoorHook(Vector3(mousePos.x, mousePos.y, 0))  # FIXME: arguments missing for door, room, orientation
+            doorhook = LYTDoorHook(Vector3(mouse_pos.x, mouse_pos.y, 0))  # FIXME: arguments missing for door, room, orientation
             self.lyt.doorhooks.append(doorhook)
             self.doorHookPlaced.emit(doorhook)
             self.update()
@@ -880,7 +880,7 @@ class LYTEditor(QWidget):
             )
         return point
 
-    def getRoomResizeCorner(self, mousePos: Vector2) -> Optional[int]:
+    def getRoomResizeCorner(self, mouse_pos: Vector2) -> Optional[int]:
         if self.selectedRoom is None:
             return None
 
@@ -895,21 +895,21 @@ class LYTEditor(QWidget):
         for i in range(8):
             x = rect.x() + (i % 2) * rect.width()
             y = rect.y() + (i // 2) * rect.height()
-            if QRect(x - handleSize // 2, y - handleSize // 2, handleSize, handleSize).contains(QPoint(int(mousePos.x), int(mousePos.y))):
+            if QRect(x - handleSize // 2, y - handleSize // 2, handleSize, handleSize).contains(QPoint(int(mouse_pos.x), int(mouse_pos.y))):
                 return i
 
         return None
 
-    def resizeRoom(self, mousePos: Vector2):
+    def resizeRoom(self, mouse_pos: Vector2):
         if self.selectedRoom is None:
             return
 
-        self.selectedRoomResizeCorner = self.getRoomResizeCorner(mousePos)
+        self.selectedRoomResizeCorner = self.getRoomResizeCorner(mouse_pos)
         if self.selectedRoomResizeCorner is not None:
             self.isResizing = True
-            self.mousePrev = mousePos
+            self.mousePrev = mouse_pos
 
-    def getRoomRotationPoint(self, mousePos: Vector2) -> Optional[Vector2]:
+    def getRoomRotationPoint(self, mouse_pos: Vector2) -> Optional[Vector2]:
         if self.selectedRoom is None:
             return None
 
@@ -921,19 +921,19 @@ class LYTEditor(QWidget):
         )
 
         # Check if mouse is within the room
-        if rect.contains(QPoint(int(mousePos.x), int(mousePos.y))):
-            return mousePos
+        if rect.contains(QPoint(int(mouse_pos.x), int(mouse_pos.y))):
+            return mouse_pos
 
         return None
 
-    def rotateRoom(self, mousePos: Vector2):
+    def rotateRoom(self, mouse_pos: Vector2):
         if self.selectedRoom is None:
             return
 
-        self.selectedRoomRotationPoint = self.getRoomRotationPoint(mousePos)
+        self.selectedRoomRotationPoint = self.getRoomRotationPoint(mouse_pos)
         if self.selectedRoomRotationPoint is not None:
             self.isRotating = True
-            self.mousePrev = mousePos
+            self.mousePrev = mouse_pos
 
     def setGridSize(self, gridSize: int):
         self.gridSize = gridSize
@@ -975,11 +975,11 @@ class LYTEditor(QWidget):
         self.selectedWalkmeshFace = None
         self.update()
 
-    def handleWalkmeshEdit(self, mousePos: Vector2):
+    def handleWalkmeshEdit(self, mouse_pos: Vector2):
         if not self.isEditingWalkmesh or not self.walkmesh:
             return
 
-        clickedFace = self.getWalkmeshFaceAt(mousePos)
+        clickedFace = self.getWalkmeshFaceAt(mouse_pos)
 
         if clickedFace:
             if self.selectedWalkmeshFace == clickedFace:

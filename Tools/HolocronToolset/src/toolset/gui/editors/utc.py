@@ -4,8 +4,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING, Sequence
 
-import qtpy
-
 from loggerplus import RobustLogger
 from qtpy.QtCore import QSettings, Qt
 from qtpy.QtGui import QImage, QPixmap, QTransform
@@ -83,31 +81,14 @@ class UTCEditor(Editor):
         self._utc: UTC = UTC()
         self.setMinimumSize(0, 0)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.utc import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.utc import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.utc import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.utc import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.editors.utc import Ui_MainWindow
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.resize(798, 553)
-        self._setupMenus()
+        self._setup_menus()
         self._setupInstallation(installation)
-        self._setupSignals()
+        self._setup_signals()
         self._installation: HTInstallation
 
         self.ui.actionSaveUnusedFields.setChecked(self.settings.saveUnusedFields)
@@ -151,7 +132,7 @@ class UTCEditor(Editor):
 
             fileMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
 
-        contextMenu.exec_(self.ui.portraitPicture.mapToGlobal(position))  # pyright: ignore[reportCallIssue, reportArgumentType]  # type: ignore[call-overload]
+        contextMenu.exec(self.ui.portraitPicture.mapToGlobal(position))  # pyright: ignore[reportCallIssue, reportArgumentType]  # type: ignore[call-overload]
 
     def _getPortraitResRef(self) -> str:
         index = self.ui.portraitSelect.currentIndex()
@@ -187,7 +168,7 @@ class UTCEditor(Editor):
         assert clipboard is not None, f"`clipboard = QApplication.clipboard()` {clipboard.__class__.__name__}: {clipboard}"
         clipboard.setText(text)
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Connect signals to slots.
 
         Processing Logic:
@@ -200,7 +181,7 @@ class UTCEditor(Editor):
         self.ui.firstnameRandomButton.setToolTip("Utilize the game's LTR randomizers to generate a unique name.")
         self.ui.lastnameRandomButton.clicked.connect(self.randomizeLastname)
         self.ui.lastnameRandomButton.setToolTip("Utilize the game's LTR randomizers to generate a unique name.")
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.alignmentSlider.valueChanged.connect(lambda: self.portraitChanged(self.ui.portraitSelect.currentIndex()))
         self.ui.portraitSelect.currentIndexChanged.connect(self.portraitChanged)
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
@@ -234,8 +215,8 @@ class UTCEditor(Editor):
         self._installation = installation
 
         self.ui.previewRenderer.installation = installation
-        self.ui.firstnameEdit.setInstallation(installation)
-        self.ui.lastnameEdit.setInstallation(installation)
+        self.ui.firstnameEdit.set_installation(installation)
+        self.ui.lastnameEdit.set_installation(installation)
 
         # Load required 2da files if they have not been loaded already
         required: list[str] = [
@@ -401,7 +382,7 @@ class UTCEditor(Editor):
         self.ui.resrefEdit.setText(str(utc.resref))
         self.ui.appearanceSelect.setCurrentIndex(utc.appearance_id)
         self.ui.soundsetSelect.setCurrentIndex(utc.soundset_id)
-        self.ui.conversationEdit.setComboBoxText(str(utc.conversation))
+        self.ui.conversationEdit.set_combo_box_text(str(utc.conversation))
         self.ui.portraitSelect.setCurrentIndex(utc.portrait_id)
 
         # Advanced
@@ -494,37 +475,37 @@ class UTCEditor(Editor):
                 item.setCheckState(Qt.CheckState.Checked)
         self.relevant_script_resnames = sorted(iter({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.NCS, self._filepath)}))
 
-        self.ui.conversationEdit.populateComboBox(sorted(iter({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.DLG, self._filepath)})))
+        self.ui.conversationEdit.populate_combo_box(sorted(iter({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.DLG, self._filepath)})))
         self._installation.setup_file_context_menu(self.ui.conversationEdit, [ResourceType.DLG])
 
-        self.ui.onBlockedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onAttackedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onNoticeEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onConversationEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDamagedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onEndRoundEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onEndConversationEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDisturbedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onSpawnEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onSpellCastEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onBlockedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onAttackedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onNoticeEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onConversationEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDamagedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDeathEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onEndRoundEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onEndConversationEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDisturbedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onSpawnEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onSpellCastEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populate_combo_box(self.relevant_script_resnames)
 
         # Scripts
-        self.ui.onBlockedEdit.setComboBoxText(str(utc.on_blocked))
-        self.ui.onAttackedEdit.setComboBoxText(str(utc.on_attacked))
-        self.ui.onNoticeEdit.setComboBoxText(str(utc.on_notice))
-        self.ui.onConversationEdit.setComboBoxText(str(utc.on_dialog))
-        self.ui.onDamagedEdit.setComboBoxText(str(utc.on_damaged))
-        self.ui.onDeathEdit.setComboBoxText(str(utc.on_death))
-        self.ui.onEndRoundEdit.setComboBoxText(str(utc.on_end_round))
-        self.ui.onEndConversationEdit.setComboBoxText(str(utc.on_end_dialog))
-        self.ui.onDisturbedEdit.setComboBoxText(str(utc.on_disturbed))
-        self.ui.onHeartbeatSelect.setComboBoxText(str(utc.on_heartbeat))
-        self.ui.onSpawnEdit.setComboBoxText(str(utc.on_spawn))
-        self.ui.onSpellCastEdit.setComboBoxText(str(utc.on_spell))
-        self.ui.onUserDefinedSelect.setComboBoxText(str(utc.on_user_defined))
+        self.ui.onBlockedEdit.set_combo_box_text(str(utc.on_blocked))
+        self.ui.onAttackedEdit.set_combo_box_text(str(utc.on_attacked))
+        self.ui.onNoticeEdit.set_combo_box_text(str(utc.on_notice))
+        self.ui.onConversationEdit.set_combo_box_text(str(utc.on_dialog))
+        self.ui.onDamagedEdit.set_combo_box_text(str(utc.on_damaged))
+        self.ui.onDeathEdit.set_combo_box_text(str(utc.on_death))
+        self.ui.onEndRoundEdit.set_combo_box_text(str(utc.on_end_round))
+        self.ui.onEndConversationEdit.set_combo_box_text(str(utc.on_end_dialog))
+        self.ui.onDisturbedEdit.set_combo_box_text(str(utc.on_disturbed))
+        self.ui.onHeartbeatSelect.set_combo_box_text(str(utc.on_heartbeat))
+        self.ui.onSpawnEdit.set_combo_box_text(str(utc.on_spawn))
+        self.ui.onSpellCastEdit.set_combo_box_text(str(utc.on_spell))
+        self.ui.onUserDefinedSelect.set_combo_box_text(str(utc.on_user_defined))
 
         # Comments
         self.ui.comments.setPlainText(utc.comment)
@@ -672,7 +653,7 @@ class UTCEditor(Editor):
         locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.lastnameEdit.setLocstring(locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def portraitChanged(self, _actual_combo_index: int):
@@ -754,7 +735,7 @@ class UTCEditor(Editor):
         data: bytes | None = None
 
         if not resname:
-            QMessageBox(QMessageBox.Icon.Critical, "Invalid Dialog Reference", "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Invalid Dialog Reference", "Conversation field cannot be blank.").exec()
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
@@ -765,7 +746,7 @@ class UTCEditor(Editor):
                     "DLG file not found",
                     "Do you wish to create a new dialog in the 'Override' folder?",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                ).exec_()
+                ).exec()
                 == QMessageBox.StandardButton.Yes
             ):
                 data = bytearray()
@@ -814,7 +795,7 @@ class UTCEditor(Editor):
             self._utc.equipment,
             droid=droid,
         )
-        if inventoryEditor.exec_():
+        if inventoryEditor.exec():
             self._utc.inventory = inventoryEditor.inventory
             self._utc.equipment = inventoryEditor.equipment
             self.updateItemCount()

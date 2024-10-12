@@ -9,7 +9,7 @@ from typing import Any
 
 import requests
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtWidgets import QMessageBox
 
 from utility.error_handling import universal_simplify_exception
@@ -89,19 +89,19 @@ def get_remote_toolset_update_info(
         json_data_match = re.search(r"<---JSON_START--->\s*\#\s*(.*?)\s*\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
         if not json_data_match:
-            raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")
+            raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
         json_str = json_data_match[1]
-        remoteInfo = json.loads(json_str)
-        if not isinstance(remoteInfo, dict):
-            raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")
-    except Exception as e:
-        errMsg = str(universal_simplify_exception(e))
+        remote_info = json.loads(json_str)
+        if not isinstance(remote_info, dict):
+            raise TypeError(f"Expected remote_info to be a dict, instead got type {remote_info.__class__.__name__}")  # noqa: TRY301
+    except Exception as e:  # noqa: BLE001
+        err_msg = str(universal_simplify_exception(e))
         result = silent or QMessageBox.question(
             None,
             "Error occurred fetching update information.",
             (
                 "An error occurred while fetching the latest toolset information.<br><br>"
-                + errMsg.replace("\n", "<br>")
+                + err_msg.replace("\n", "<br>")
                 + "<br><br>"
                 + "Would you like to check against the local database instead?"
             ),
@@ -110,8 +110,8 @@ def get_remote_toolset_update_info(
         )
         if result not in {QMessageBox.StandardButton.Yes, True}:
             return e
-        remoteInfo = LOCAL_PROGRAM_INFO
-    return remoteInfo
+        remote_info = LOCAL_PROGRAM_INFO
+    return remote_info
 
 
 def is_remote_version_newer(local_version: str, remote_version: str) -> bool | None:

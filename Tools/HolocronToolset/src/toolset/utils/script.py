@@ -338,7 +338,7 @@ def handle_permission_error(
         msg,
     )
     longMsgBoxErr.setIcon(QMessageBox.Icon.Warning)
-    longMsgBoxErr.exec_()
+    longMsgBoxErr.exec()
 
 
 def _prompt_user_for_compiler_option() -> int:
@@ -362,4 +362,4 @@ def _prompt_user_for_compiler_option() -> int:
     msgBox.button(QMessageBox.StandardButton.No).setText("nwnnsscomp.exe")  # type: ignore[union-attr]
     msgBox.button(QMessageBox.StandardButton.Abort).setText("Cancel")  # type: ignore[union-attr]
 
-    return msgBox.exec_()
+    return msgBox.exec()

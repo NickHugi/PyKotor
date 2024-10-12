@@ -5,8 +5,6 @@ import uuid
 
 from typing import Any
 
-import qtpy
-
 from loggerplus import RobustLogger, get_log_directory
 from qtpy import QtCore
 from qtpy.QtCore import QSettings
@@ -41,52 +39,20 @@ class InstallationsWidget(QWidget):
         self.installationsModel: QStandardItemModel = QStandardItemModel()
         self.settings = GlobalSettings()
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.settings import (
-                installations,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.settings import (
-                installations,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.settings import (
-                installations,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.settings import (
-                installations,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
-        self.ui = installations.Ui_Form()
+        from toolset.uic.qtpy.widgets.settings.installations import Ui_Form
+        self.ui = Ui_Form()
         self.ui.setupUi(self)
-        self.setupValues()
-        self.setupSignals()
+        self.setup_values()
+        self.setup_signals()
 
-    def setupValues(self):
-        """Sets up installation values in the model.
-
-        Args:
-        ----
-            self: The class instance
-
-        Processing Logic:
-        ----------------
-            - Clears existing items from the installations model
-            - Loops through installations from settings
-            - Creates a QStandardItem for each installation
-            - Sets data like path and tsl on the item
-            - Appends the item to the installations model.
-        """
+    def setup_values(self):
         self.installationsModel.clear()
         for installation in self.settings.installations().values():
             item = QStandardItem(installation.name)
             item.setData({"path": installation.path, "tsl": installation.tsl})
             self.installationsModel.appendRow(item)
 
-    def setupSignals(self):
+    def setup_signals(self):
         """Set up signal connections for installation management UI.
 
         Args:
@@ -103,12 +69,12 @@ class InstallationsWidget(QWidget):
         """
         self.ui.pathList.setModel(self.installationsModel)
 
-        self.ui.addPathButton.clicked.connect(self.addNewInstallation)
-        self.ui.removePathButton.clicked.connect(self.removeSelectedInstallation)
-        self.ui.pathNameEdit.textEdited.connect(self.updateInstallation)
-        self.ui.pathDirEdit.textEdited.connect(self.updateInstallation)
-        self.ui.pathTslCheckbox.stateChanged.connect(self.updateInstallation)
-        self.ui.pathList.selectionModel().selectionChanged.connect(self.installationSelected)
+        self.ui.addPathButton.clicked.connect(self.add_new_installation)
+        self.ui.removePathButton.clicked.connect(self.remove_selected_installation)
+        self.ui.pathNameEdit.textEdited.connect(self.update_installation)
+        self.ui.pathDirEdit.textEdited.connect(self.update_installation)
+        self.ui.pathTslCheckbox.stateChanged.connect(self.update_installation)
+        self.ui.pathList.selectionModel().selectionChanged.connect(self.installation_selected)
 
     def save(self):
         installations: dict[str, dict[str, str]] = {}
@@ -121,13 +87,13 @@ class InstallationsWidget(QWidget):
 
         self.settings.settings.setValue("installations", installations)
 
-    def addNewInstallation(self):
+    def add_new_installation(self):
         item = QStandardItem("New")
         item.setData({"path": "", "tsl": False})
         self.installationsModel.appendRow(item)
         self.edited.emit()
 
-    def removeSelectedInstallation(self):
+    def remove_selected_installation(self):
         if len(self.ui.pathList.selectedIndexes()) > 0:
             index = self.ui.pathList.selectedIndexes()[0]
             item = self.installationsModel.itemFromIndex(index)
@@ -137,7 +103,7 @@ class InstallationsWidget(QWidget):
         if len(self.ui.pathList.selectedIndexes()) == 0:
             self.ui.pathFrame.setEnabled(False)
 
-    def updateInstallation(self):
+    def update_installation(self):
         index = self.ui.pathList.selectedIndexes()[0]
         item = self.installationsModel.itemFromIndex(index)
 
@@ -150,7 +116,7 @@ class InstallationsWidget(QWidget):
 
         self.edited.emit()
 
-    def installationSelected(self):
+    def installation_selected(self):
         if len(self.ui.pathList.selectedIndexes()) > 0:
             self.ui.pathFrame.setEnabled(True)
 
@@ -222,17 +188,6 @@ class GlobalSettings(Settings):
         super().__init__("Global")
 
     def installations(self) -> dict[str, InstallationConfig]:
-        """Finds and records KotOR installation paths.
-
-        Args:
-        ----
-            self: The class instance
-
-        Returns:
-        -------
-            dict: A dictionary of InstallationConfig objects keyed by installation name
-
-        """
         installations: dict[str, dict[str, Any]] = self.settings.value("installations")
         if installations is None:
             installations = {}
@@ -259,24 +214,19 @@ class GlobalSettings(Settings):
         for game, paths in find_kotor_paths_from_default().items():
             for path in filter(CaseAwarePath.is_dir, paths):
                 RobustLogger().info(f"Autodetected game {game!r} path {path}")
-                if path in existing_paths:  # If the path is already recorded, skip to the next one
+                if path in existing_paths:
                     continue
-
                 game_name = "KotOR" if game.is_k1() else "TSL"
-                base_game_name = game_name  # Save the base name for potential duplicates
-
-                # Increment the counter if the game name already exists, indicating a duplicate
+                base_game_name = game_name
                 while game_name in installations:
                     counters[game] += 1
                     game_name = f"{base_game_name} ({counters[game]})"
-
-                # Add the new installation under the unique game_name
                 installations[game_name] = {
                     "name": game_name,
                     "path": str(path),
                     "tsl": game.is_k2(),
                 }
-                existing_paths.add(path)  # Add the new path to the set of existing paths
+                existing_paths.add(path)
         self.firstTime = False
 
     # region Strings
@@ -330,8 +280,8 @@ class GlobalSettings(Settings):
         "attemptKeepOldGFFFields",
         False,
     )
-    useBetaChannel = Settings.addSetting(
-        "useBetaChannel",
+    use_beta_channel = Settings.addSetting(
+        "use_beta_channel",
         True,
     )
     firstTime = Settings.addSetting(
@@ -369,4 +319,5 @@ class GlobalSettings(Settings):
     # endregion
 
 
-class NoConfigurationSetError(Exception): ...
+class NoConfigurationSetError(Exception):
+    ...

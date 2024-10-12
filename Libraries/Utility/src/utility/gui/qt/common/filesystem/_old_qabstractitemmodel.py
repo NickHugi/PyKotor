@@ -274,7 +274,7 @@ class FilePasteCommand(QUndoCommand):
 
 class FileSystemTreeView(RobustTreeView):
     def __init__(self, parent: QWidget | None = None):
-        self.autoResizeEnabled: bool = True
+        self.auto_resize_enabled: bool = True
         super().__init__(parent, use_columns=True)
         self.setSortingEnabled(True)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -300,7 +300,7 @@ class FileSystemTreeView(RobustTreeView):
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
-        if self.autoResizeEnabled:
+        if self.auto_resize_enabled:
             self.adjustColumnsToFit()
 
     def adjustColumnsToFit(self):
@@ -330,21 +330,21 @@ class FileSystemTreeView(RobustTreeView):
         for col in range(self.model().columnCount()):
             header.setSectionResizeMode(col, QHeaderView.ResizeToContents)
 
-    def autoFitColumns(self):
+    def auto_fit_columns(self):
         header = self.header()
         assert header is not None
         for col in range(header.count()):
             self.resizeColumnToContents(col)
 
-    def toggleAutoFitColumns(self):
-        self.autoResizeEnabled = not self.autoResizeEnabled
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
+    def toggle_auto_fit_columns(self):
+        self.auto_resize_enabled = not self.auto_resize_enabled
+        if self.auto_resize_enabled:
+            self.auto_fit_columns()
             self.adjustColumnsToFit()
         else:
-            self.resetColumnWidths()
+            self.reset_column_widths()
 
-    def resetColumnWidths(self):
+    def reset_column_widths(self):
         header = self.header()
         assert header is not None
         for col in range(header.count()):
@@ -432,7 +432,7 @@ class FileSystemTreeView(RobustTreeView):
         show_hidden_files_action.triggered.connect(self.toggleHiddenFiles)
 
         viewport = self.viewport()
-        menu.exec_(viewport.mapToGlobal(point))
+        menu.exec(viewport.mapToGlobal(point))
 
     def onHeaderContextMenu(self, point: QPoint):
         menu = QMenu(self)
@@ -440,8 +440,8 @@ class FileSystemTreeView(RobustTreeView):
         # Auto Fit Columns option
         auto_fit_columns_action = menu.addAction("Auto Fit Columns")
         auto_fit_columns_action.setCheckable(True)
-        auto_fit_columns_action.setChecked(self.autoResizeEnabled)
-        auto_fit_columns_action.triggered.connect(self.toggleAutoFitColumns)
+        auto_fit_columns_action.setChecked(self.auto_resize_enabled)
+        auto_fit_columns_action.triggered.connect(self.toggle_auto_fit_columns)
 
         alternate_row_colors_action = menu.addAction("Show in Groups")
         alternate_row_colors_action.setCheckable(True)
@@ -463,7 +463,7 @@ class FileSystemTreeView(RobustTreeView):
         show_hidden_files_action.setChecked(bool(self.model().filter() & QDir.Hidden))
         show_hidden_files_action.triggered.connect(self.toggleHiddenFiles)
 
-        menu.exec_(header.mapToGlobal(point))
+        menu.exec(header.mapToGlobal(point))
 
     def fileSystemModelContextMenu(self, point: QPoint):
         selected_indexes = self.selectedIndexes()
@@ -499,7 +499,7 @@ class FileSystemTreeView(RobustTreeView):
         drag = QDrag(self)
         mime_data = self.model().mimeData(self.selectedIndexes())
         drag.setMimeData(mime_data)
-        drag.exec_(supportedActions)
+        drag.exec(supportedActions)
 
     def dragEnterEvent(self, event: Qt.DropActions | Qt.DropAction):
         event.acceptProposedAction()
@@ -819,4 +819,4 @@ if __name__ == "__main__":
     main_window = MainWindow(base_path)
     main_window.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

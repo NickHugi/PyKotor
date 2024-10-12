@@ -2,18 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
-from qtpy.QtWidgets import (
-    QAbstractSpinBox,
-    QComboBox,
-    QDoubleSpinBox,
-    QGroupBox,
-    QSlider,
-    QSpinBox,
-    QWidget,
-)
+from qtpy.QtWidgets import QAbstractSpinBox, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 from toolset.gui.common.filters import NoScrollEventFilter
 from toolset.gui.widgets.settings.installations import GlobalSettings
@@ -30,28 +20,10 @@ class MiscWidget(QWidget):
 
         self.settings = GlobalSettings()
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.settings import (
-                misc,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.settings import (
-                misc,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.settings import (
-                misc,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.settings import (
-                misc,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
-        self.ui = misc.Ui_Form()
+        from toolset.uic.qtpy.widgets.settings.misc import Ui_Form
+        self.ui = Ui_Form()
         self.ui.setupUi(self)
-        self.setupValues()
+        self.setup_values()
 
         # Install the event filter on all child widgets
         self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter(self)
@@ -77,8 +49,8 @@ class MiscWidget(QWidget):
             #    RobustLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
             self.installEventFilters(widget, event_filter, include_types)
 
-    def setupValues(self):
-        self.ui.useBetaChannel.setChecked(self.settings.useBetaChannel)
+    def setup_values(self):
+        self.ui.useBetaChannel.setChecked(self.settings.use_beta_channel)
         self.ui.profileToolset.setChecked(self.settings.profileToolset)
         self.ui.attemptKeepOldGFFFields.setChecked(self.settings.attemptKeepOldGFFFields)
         self.ui.saveRimCheck.setChecked(not self.settings.disableRIMSaving)
@@ -94,7 +66,7 @@ class MiscWidget(QWidget):
         self.ui.nssCompEdit.setText(self.settings.nssCompilerPath)
 
     def save(self):
-        self.settings.useBetaChannel = self.ui.useBetaChannel.isChecked()
+        self.settings.use_beta_channel = self.ui.useBetaChannel.isChecked()
         self.settings.profileToolset = self.ui.profileToolset.isChecked()
         self.settings.attemptKeepOldGFFFields = self.ui.attemptKeepOldGFFFields.isChecked()
         self.settings.disableRIMSaving = not self.ui.saveRimCheck.isChecked()

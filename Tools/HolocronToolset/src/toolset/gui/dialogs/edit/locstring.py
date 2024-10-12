@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
-from qtpy import QtCore
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QDialog
 
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -20,40 +18,28 @@ if TYPE_CHECKING:
 class LocalizedStringDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, locstring: LocalizedString):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowMinMaxButtonsHint
+        )
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.locstring import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.locstring import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.locstring import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.locstring import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.dialogs.locstring import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
         self.ui.stringrefNoneButton.setToolTip("Override the TLK with a custom entry.")
         self.ui.stringrefNewButton.setToolTip("Create a new entry in the TLK.")
         self.setWindowTitle(f"{installation.talktable().language().name.title()} - {installation.name} - Localized String Editor")
 
-        self.ui.stringrefSpin.valueChanged.connect(self.stringrefChanged)
-        self.ui.stringrefNewButton.clicked.connect(self.newTlkString)
-        self.ui.stringrefNoneButton.clicked.connect(self.noTlkString)
-        self.ui.maleRadio.clicked.connect(self.substringChanged)
-        self.ui.femaleRadio.clicked.connect(self.substringChanged)
-        self.ui.languageSelect.currentIndexChanged.connect(self.substringChanged)
-        self.ui.stringEdit.textChanged.connect(self.stringEdited)
+        self.ui.stringrefSpin.valueChanged.connect(self.stringref_changed)
+        self.ui.stringrefNewButton.clicked.connect(self.new_tlk_string)
+        self.ui.stringrefNoneButton.clicked.connect(self.no_tlk_string)
+        self.ui.maleRadio.clicked.connect(self.substring_changed)
+        self.ui.femaleRadio.clicked.connect(self.substring_changed)
+        self.ui.languageSelect.currentIndexChanged.connect(self.substring_changed)
+        self.ui.stringEdit.textChanged.connect(self.string_edited)
 
         self._installation = installation
         self.locstring = LocalizedString.from_dict(locstring.to_dict())  # Deepcopy the object, we don't trust the `deepcopy` function though.
@@ -72,7 +58,7 @@ class LocalizedStringDialog(QDialog):
     def reject(self):
         super().reject()
 
-    def stringrefChanged(self, stringref: int):
+    def stringref_changed(self, stringref: int):
         self.ui.substringFrame.setVisible(stringref == -1)
         self.locstring.stringref = stringref
 
@@ -81,13 +67,13 @@ class LocalizedStringDialog(QDialog):
         else:
             self.ui.stringEdit.setPlainText(self._installation.talktable().string(stringref))
 
-    def newTlkString(self):
+    def new_tlk_string(self):
         self.ui.stringrefSpin.setValue(self._installation.talktable().size())
 
-    def noTlkString(self):
+    def no_tlk_string(self):
         self.ui.stringrefSpin.setValue(-1)
 
-    def substringChanged(self):
+    def substring_changed(self):
         self._update_text()
 
     def _update_text(self):
@@ -96,7 +82,7 @@ class LocalizedStringDialog(QDialog):
         text = self.locstring.get(language, gender) or ""
         self.ui.stringEdit.setPlainText(text)
 
-    def stringEdited(self):
+    def string_edited(self):
         if self.locstring.stringref == -1:
             language = Language(self.ui.languageSelect.currentIndex())
             gender = Gender(int(self.ui.femaleRadio.isChecked()))

@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from loggerplus import RobustLogger
-from qtpy.QtCore import Qt
-from qtpy.QtWidgets import QAbstractItemView, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QPushButton, QVBoxLayout
+from typing import TYPE_CHECKING
+
+from qtpy.QtCore import QTimer, Qt
+from qtpy.QtWidgets import QAbstractItemView, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QVBoxLayout
+
+if TYPE_CHECKING:
+    from qtpy.QtWidgets import QWidget
 
 
 class SetDefaultColumnsDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setWindowTitle("Set Default Columns")
         self.setMinimumSize(400, 500)
@@ -16,32 +20,23 @@ class SetDefaultColumnsDialog(QDialog):
         # Folder type selection
         folder_type_layout = QHBoxLayout()
         folder_type_layout.addWidget(QLabel("Folder type:"))
-        self.folder_type_combo = QComboBox()
+        self.folder_type_combo: QComboBox = QComboBox()
         self.folder_type_combo.addItem("General")
         folder_type_layout.addWidget(self.folder_type_combo)
         layout.addLayout(folder_type_layout)
 
         # Columns list
-        self.columns_list = QListWidget()
-        self.columns_list.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.columns_list: QListWidget = QListWidget()
+        self.columns_list.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        self.columns_list.setAcceptDrops(True)
+        self.columns_list.setDragEnabled(True)
+        self.columns_list.setDropIndicatorShown(True)
+        self.columns_list.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.populate_columns()
         layout.addWidget(self.columns_list)
 
-        # Move buttons
-        move_buttons_layout = QVBoxLayout()
-        self.move_up_button = QPushButton("Move Up")
-        self.move_down_button = QPushButton("Move Down")
-        move_buttons_layout.addWidget(self.move_up_button)
-        move_buttons_layout.addWidget(self.move_down_button)
-        move_buttons_layout.addStretch()
-
-        columns_layout = QHBoxLayout()
-        columns_layout.addWidget(self.columns_list)
-        columns_layout.addLayout(move_buttons_layout)
-        layout.addLayout(columns_layout)
-
         # Description
-        self.description_label = QLabel("Description: File name")
+        self.description_label: QLabel = QLabel("Description: File name")
         layout.addWidget(self.description_label)
 
         # OK and Cancel buttons
@@ -51,9 +46,7 @@ class SetDefaultColumnsDialog(QDialog):
         layout.addWidget(button_box)
 
         # Connect signals
-        self.move_up_button.clicked.connect(self.move_item_up)
-        self.move_down_button.clicked.connect(self.move_item_down)
-        self.columns_list.itemSelectionChanged.connect(self.update_description)
+        self.columns_list.itemClicked.connect(self.update_description)
 
     def populate_columns(self):
         columns = [
@@ -68,48 +61,36 @@ class SetDefaultColumnsDialog(QDialog):
             "Period", "Producer"
         ]
         for column in columns:
-            item = QListWidgetItem(column, self.columns_list, Qt.ItemFlag.ItemIsUserCheckable)
+            item = QListWidgetItem(column, self.columns_list, QListWidgetItem.ItemType.UserType)
             item.setCheckState(Qt.CheckState.Unchecked)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsDragEnabled)
             self.columns_list.addItem(item)
 
-    def move_item_up(self):
-        current_row = self.columns_list.currentRow()
-        if current_row <= 0:
-            RobustLogger().warning(f"Current row {current_row} is less than or equal to 0")
-            return
-        item: QListWidgetItem | None = self.columns_list.takeItem(current_row)
-        if item is None:
-            RobustLogger().warning(f"Item at row {current_row} is None")
-            return
-        self.columns_list.insertItem(current_row - 1, item)
-        self.columns_list.setCurrentRow(current_row - 1)
-
-    def move_item_down(self):
-        current_row = self.columns_list.currentRow()
-        if current_row >= self.columns_list.count() - 1:
-            RobustLogger().warning(f"Current row {current_row} is greater than or equal to {self.columns_list.count() - 1}")
-            return
-        item: QListWidgetItem | None = self.columns_list.takeItem(current_row)
-        if item is None:
-            RobustLogger().warning(f"Item at row {current_row} is None")
-            return
-        self.columns_list.insertItem(current_row + 1, item)
-        self.columns_list.setCurrentRow(current_row + 1)
-
-    def update_description(self):
-        selected_items = self.columns_list.selectedItems()
-        if selected_items:
-            self.description_label.setText(f"Description: {selected_items[0].text()}")
-        else:
-            self.description_label.setText("Description: ")
+    def update_description(self, item: QListWidgetItem):
+        self.description_label.setText(f"Description: {item.text()}")
 
     def get_selected_columns(self) -> list[str]:
-        return [
-            item.text()
-            for item in (
-                self.columns_list.item(i)
-                for i in range(self.columns_list.count())
-            )
-            if item is not None
-            and item.checkState() == Qt.CheckState.Checked
-        ]
+        selected_columns: list[str] = []
+        for i in range(self.columns_list.count()):
+            item: QListWidgetItem | None = self.columns_list.item(i)
+            if (
+                item is not None
+                and item.checkState() == Qt.CheckState.Checked
+            ):
+                selected_columns.append(item.text())
+        return selected_columns
+
+if __name__ == "__main__":
+    import sys
+
+    from qtpy.QtWidgets import QApplication
+
+    app = QApplication(sys.argv)
+    dialog = SetDefaultColumnsDialog()
+    def on_accepted(*args, **kwargs):
+        selected_columns = dialog.get_selected_columns()
+        print("Selected columns:", selected_columns)
+        QTimer.singleShot(0, app.quit)
+    dialog.accepted.connect(on_accepted)
+    dialog.show()
+    sys.exit(app.exec())

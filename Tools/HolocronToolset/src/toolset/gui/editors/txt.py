@@ -4,8 +4,6 @@ import os
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy.QtWidgets import QPlainTextEdit
 
 from pykotor.resource.type import ResourceType
@@ -46,33 +44,15 @@ class TXTEditor(Editor):
 
         self._wordWrap: bool = False
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.txt import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.txt import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.txt import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.txt import (
-                Ui_MainWindow,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.txt import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
 
         self.new()
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         self.ui.actionWord_Wrap.triggered.connect(self.toggleWordWrap)
 
     def load(

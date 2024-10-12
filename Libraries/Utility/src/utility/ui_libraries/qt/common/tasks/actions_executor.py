@@ -378,4 +378,4 @@ if __name__ == "__main__":
     timer.start(100)
 
     print("Starting event loop...")
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

@@ -81,7 +81,7 @@ class FileSaveHandler(Generic[T]):
             dialog = QFileDialog(self.parent, "Save File", str(identifier), "Files (*.*)")
             dialog.setAcceptMode(QFileDialog.AcceptSave)
             dialog.setOption(QFileDialog.DontConfirmOverwrite)
-            response = dialog.exec_()
+            response = dialog.exec()
             if response == QFileDialog.Accepted:
                 filepath_str = dialog.selectedFiles()[0]
                 if not filepath_str or not filepath_str.strip():
@@ -214,7 +214,7 @@ class FileSaveHandler(Generic[T]):
         noButton.setText("Auto-Rename")
         msgBox.setDefaultButton(QMessageBox.StandardButton.Abort)
         msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
-        return msgBox.exec_()
+        return msgBox.exec()
 
     def _handle_failed_extractions(
         self,
@@ -230,4 +230,4 @@ class FileSaveHandler(Generic[T]):
         )
         msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
         msgBox.setDetailedText(detailed_info)
-        msgBox.exec_()
+        msgBox.exec()

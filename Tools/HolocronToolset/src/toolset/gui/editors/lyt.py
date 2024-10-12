@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy.QtCore import QSize, Qt
 from qtpy.QtGui import QBrush, QColor, QPainter, QPen, QTransform
 from qtpy.QtWidgets import (
@@ -47,20 +45,10 @@ class LYTEditor(Editor):
         supported: list[ResourceType] = [ResourceType.LYT]
         super().__init__(parent, "LYT Editor", "lyt", supported, supported, installation)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.lyt import Ui_LYTEditor
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.lyt import Ui_LYTEditor
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.lyt import Ui_LYTEditor
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.lyt import Ui_LYTEditor
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.lyt import Ui_LYTEditor
         self.ui: Ui_LYTEditor = Ui_LYTEditor()
         self.ui.setupUi(self)
-        self._setupMenus()
+        self._setup_menus()
 
         self._lyt: LYT = LYT()
         self._controls: LYTControlScheme = LYTControlScheme(self)
@@ -69,7 +57,7 @@ class LYTEditor(Editor):
         self.scene = QGraphicsScene(self)
         self.ui.graphicsView.setScene(self.scene)
 
-        self.materialColors: dict[SurfaceMaterial, QColor] = self._setupMaterialColors()
+        self.material_colors: dict[SurfaceMaterial, QColor] = self._setupMaterialColors()
 
         self._setupConnections()
         self._setupGraphicsView()
@@ -262,49 +250,49 @@ class LYTControlScheme:
         self.settings: LYTEditorSettings = LYTEditorSettings()
 
     @property
-    def panCamera(self) -> ControlItem:
+    def pan_camera(self) -> ControlItem:
         return ControlItem(self.settings.moveCameraBind)
 
-    @panCamera.setter
-    def panCamera(self, value):
+    @pan_camera.setter
+    def pan_camera(self, value):
         self.settings.moveCameraBind = value
 
     @property
-    def rotateCamera(self) -> ControlItem:
+    def rotate_camera(self) -> ControlItem:
         return ControlItem(self.settings.rotateCameraBind)
 
-    @rotateCamera.setter
-    def rotateCamera(self, value):
+    @rotate_camera.setter
+    def rotate_camera(self, value):
         self.settings.rotateCameraBind = value
 
     @property
-    def zoomCamera(self) -> ControlItem:
+    def zoom_camera(self) -> ControlItem:
         return ControlItem(self.settings.zoomCameraBind)
 
-    @zoomCamera.setter
-    def zoomCamera(self, value):
+    @zoom_camera.setter
+    def zoom_camera(self, value):
         self.settings.zoomCameraBind = value
 
     @property
-    def moveSelected(self) -> ControlItem:
+    def move_selected(self) -> ControlItem:
         return ControlItem(self.settings.moveSelectedBind)
 
-    @moveSelected.setter
-    def moveSelected(self, value):
+    @move_selected.setter
+    def move_selected(self, value):
         self.settings.moveSelectedBind = value
 
     @property
-    def selectUnderneath(self) -> ControlItem:
+    def select_underneath(self) -> ControlItem:
         return ControlItem(self.settings.selectUnderneathBind)
 
-    @selectUnderneath.setter
-    def selectUnderneath(self, value):
+    @select_underneath.setter
+    def select_underneath(self, value):
         self.settings.selectUnderneathBind = value
 
     @property
-    def deleteSelected(self) -> ControlItem:
+    def delete_selected(self) -> ControlItem:
         return ControlItem(self.settings.deleteSelectedBind)
 
-    @deleteSelected.setter
-    def deleteSelected(self, value):
+    @delete_selected.setter
+    def delete_selected(self, value):
         self.settings.deleteSelectedBind = value

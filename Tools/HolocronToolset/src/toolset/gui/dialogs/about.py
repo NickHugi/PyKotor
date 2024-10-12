@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtWidgets import QDialog
 
@@ -32,26 +30,8 @@ class About(QDialog):
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
 
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs import (
-                about,  # pylint: disable=C0415  # noqa: PLC0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs import (
-                about,  # pylint: disable=C0415  # noqa: PLC0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs import (
-                about,  # pylint: disable=C0415  # noqa: PLC0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs import (
-                about,  # pylint: disable=C0415  # noqa: PLC0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
-        self.ui = about.Ui_Dialog()
+        from toolset.uic.qtpy.dialogs.about import Ui_Dialog
+        self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.closeButton.clicked.connect(self.close)

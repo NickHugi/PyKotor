@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import atexit
-import faulthandler
 import os
 import pathlib
 import platform
@@ -13,8 +12,9 @@ import tempfile
 from collections import OrderedDict
 from contextlib import suppress
 from datetime import datetime
+from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Set, cast
+from typing import TYPE_CHECKING, Any, List, Set, cast
 
 import qtpy
 import send2trash
@@ -41,11 +41,6 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-if qtpy.API_NAME in ("PyQt6", "PySide6"):
-    ...
-else:
-    from qtpy.QtWidgets import QDesktopWidget
-
 if __name__ == "__main__":
     with suppress(Exception):
         def update_sys_path(path: pathlib.Path):
@@ -67,10 +62,7 @@ if __name__ == "__main__":
         toolset_path = file_absolute_path.parents[3] / "toolset"
         if toolset_path.exists():
             update_sys_path(toolset_path.parent)
-            if __name__ == "__main__":
-                os.chdir(toolset_path)
-
-from pathlib import Path
+            os.chdir(toolset_path)
 
 from loggerplus import RobustLogger
 
@@ -266,7 +258,7 @@ class CustomItem:
         return menu_dict
 
     def run_context_menu(self, position: QPoint) -> QAction:
-        return self.build_menu().exec_(self.viewport().mapToGlobal(position))  # noqa: RET504
+        return self.build_menu().exec(self.viewport().mapToGlobal(position))  # noqa: RET504
 
 
 class FileItems(CustomItem):
@@ -304,7 +296,7 @@ class FileItems(CustomItem):
         reply.setDefaultButton(default_button)  # pyright: ignore[reportArgumentType, reportCallIssue]
         if detailedMsg:
             reply.setDetailedText(detailedMsg.strip())
-        return reply.exec_()
+        return reply.exec()
 
     def selected_files_exist(
         self,
@@ -332,10 +324,10 @@ class FileItems(CustomItem):
         openFolderAction = self.create_action(menu_dict, "Open Containing Folder", lambda: self.do_file_action(self._open_containing_folder, "Open Containing Folder"))
         saveSelectedAction = self.create_action(menu_dict, "Save selected files to...", lambda: self.do_file_action(self._save_files, "Save As..."))
         renameAction = self.create_action(menu_dict, "Rename", lambda: self.do_file_action(self._rename_file, "Rename file.", confirmation=True))
-        sendToTrash = self.create_action(menu_dict, "Delete (to Recycle Bin)", lambda: self.do_file_action(self._sendToRecycleBin, "Send to Recycle Bin"))
+        sendToTrash = self.create_action(menu_dict, "Delete (to Recycle Bin)", lambda: self.do_file_action(self._send_to_recycle_bin, "Send to Recycle Bin"))
         deleteAction = self.create_action(menu_dict, "Delete (no way to undelete!)", lambda: self.do_file_action(self._delete_files_permanently, "Delete PERMANENTLY", confirmation=True))
 
-        file_paths_exist = all(Path(tableItem.filepath).safe_exists() for tableItem in {*selected})
+        file_paths_exist = all(Path(tableItem.filepath).exists() for tableItem in {*selected})
         inside_bif = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_bif for item in selected)
         inside_capsule = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_capsule for item in selected)
 
@@ -462,16 +454,16 @@ class FileItems(CustomItem):
         file_path: Path,
         tableItem: FileTableWidgetItem,
     ):
-        if platform.system() in ["Windows", "Darwin"]:  # Windows and macOS
+        if platform.system() in ("Windows", "Darwin"):  # Windows and macOS
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(file_path)))
-        else:  # Linux and other Unix-like
+        else:
             subprocess.call(["xdg-open", str(file_path)], shell=False)  # noqa: S607, S603
 
 
     def _show_properties(
         self,
         file_path: Path,
-        tableItem: FileTableWidgetItem,
+        table_item: FileTableWidgetItem,
     ):
         if platform.system() != "Windows":
             return
@@ -510,7 +502,7 @@ class FileItems(CustomItem):
         sei.nShow = 1
         ShellExecuteEx(ctypes.byref(sei))
 
-    def _sendToRecycleBin(
+    def _send_to_recycle_bin(
         self,
         file_path: Path,
         tableItem: FileTableWidgetItem,
@@ -592,7 +584,7 @@ class FileItems(CustomItem):
         )
         separator="-"*80
         missingMsgBox.setDetailedText(f"\n{separator}\n".join(str(path) for path in missing_files))
-        missingMsgBox.exec_()
+        missingMsgBox.exec()
 
     def _show_errored_results(
         self,
@@ -610,7 +602,7 @@ class FileItems(CustomItem):
         separator = "-"*80
         detailed_text = f"\n{separator}\n".join(f"{path}: {e}" for path, e in error_files.items())
         errMsgBox.setDetailedText(detailed_text)
-        errMsgBox.exec_()
+        errMsgBox.exec()
 
 
 class ResourceItems(FileItems):
@@ -747,7 +739,7 @@ class ResourceItems(FileItems):
                 menu.addAction("Open with Editor").triggered.connect(lambda: self.open_selected_resource(resources, installation))  # TODO(th3w1zard1): disable when file doesn't exist.
         return menu
 
-    def reorderMenuItems(self, menu: QMenu):
+    def reorder_menu_items(self, menu: QMenu):
         actions: list[QAction] = menu.actions()
         action_sort_order: list[tuple[int, QAction]] = []
 
@@ -781,9 +773,9 @@ class ResourceItems(FileItems):
         menu: QMenu | None = None,
     ) -> QAction:
         resources: set[FileResource] = {tableItem.resource for tableItem in self.selectedItems()}
-        menu: QMenu = self.build_menu(menu)
-        self.reorderMenuItems(menu)
-        executed_action = menu.exec_(self.viewport().mapToGlobal(position))
+        menu = self.build_menu(menu)
+        self.reorder_menu_items(menu)
+        executed_action = menu.exec(self.viewport().mapToGlobal(position))
         if executed_action is None:
             return executed_action
         self.handle_post_run_actions(executed_action, resources)
@@ -875,13 +867,7 @@ class ResourceItems(FileItems):
     ):
         RobustLogger().debug(f"open_selected_resource resources: {resources!r} installation: {installation!r} gff_specialized: {gff_specialized}")
         for resource in resources:
-            try:
-                data: bytes = resource.data()
-            except Exception:  # noqa: BLE001
-                RobustLogger().error("Exception occurred in open_selected_resource", exc_info=True)
-                QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "File no longer exists, might have been deleted.").exec_()
-                return
-            open_resource_editor(resource.filepath(), resource.resname(), resource.restype(), data, installation, gff_specialized=gff_specialized)
+            open_resource_editor(resource, installation, gff_specialized=gff_specialized)
 
 
 class CustomTableWidget(CustomItem, QTableWidget):
@@ -889,15 +875,10 @@ class CustomTableWidget(CustomItem, QTableWidget):
         selection = self.selectedIndexes()
         if not selection:
             return
-        rows = sorted(index.row() for index in selection)
-        columns = sorted(index.column() for index in selection)
-        row_count = rows[-1] - rows[0] + 1
-        column_count = columns[-1] - columns[0] + 1
-        table_text = [[""] * column_count for _ in range(row_count)]
+        rows, columns = sorted(index.row() for index in selection), sorted(index.column() for index in selection)
+        table_text = [[""] * (columns[-1] - columns[0] + 1) for _ in range(rows[-1] - rows[0] + 1)]
         for index in selection:
-            row = index.row() - rows[0]
-            column = index.column() - columns[0]
-            table_text[row][column] = index.data()
+            table_text[index.row() - rows[0]][index.column() - columns[0]] = index.data()
         clipboard_text = "\n".join("\t".join(row) for row in table_text)
         QApplication.clipboard().setText(clipboard_text)
 
@@ -945,12 +926,12 @@ class CustomTableWidget(CustomItem, QTableWidget):
         raise ValueError(f"Column name '{column_name}' does not exist in this view.")
 
 class FileTableWidget(FileItems, CustomTableWidget):
-    def selectedItems(self) -> list[FileTableWidgetItem]:
-        return QTableWidget.selectedItems(self)
+    def selectedItems(self) -> list[FileTableWidgetItem]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        return cast(List[FileTableWidgetItem], QTableWidget.selectedItems(self))
 
 class ResourceTableWidget(FileTableWidget, ResourceItems):
-    def selectedItems(self) -> list[ResourceTableWidgetItem]:
-        return QTableWidget.selectedItems(self)
+    def selectedItems(self) -> list[ResourceTableWidgetItem]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        return cast(List[ResourceTableWidgetItem], QTableWidget.selectedItems(self))
 
 
 class FileSelectionWindow(QMainWindow):
@@ -1001,16 +982,15 @@ class FileSelectionWindow(QMainWindow):
         self.resource_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.resource_table.customContextMenuRequested.connect(lambda x: self.resource_table.run_context_menu(x, self.installation))
 
-    def centerAndAdjustWindow(self):
+    def center_and_adjust_window(self):
         screen = QApplication.primaryScreen().geometry()
-        new_x = (screen.width() - self.width()) // 2
-        new_y = (screen.height() - self.height()) // 2
-        new_x = max(0, min(new_x, screen.width() - self.width()))
-        new_y = max(0, min(new_y, screen.height() - self.height()))
-        self.move(new_x, new_y)
+        self.move(
+            max(0, min((screen.width() - self.width()) // 2, screen.width() - self.width())),
+            max(0, min((screen.height() - self.height()) // 2, screen.height() - self.height())),
+        )
 
     def update_table_headers(self):
-        headers = ["File Name", "File Path", "Offset", "Size"]
+        headers: list[str] = ["File Name", "File Path", "Offset", "Size"]
         if self.detailed_stat_attributes:
             for header in self.detailed_stat_attributes:
                 if header in headers:
@@ -1027,10 +1007,15 @@ class FileSelectionWindow(QMainWindow):
         width = self.resource_table.verticalHeader().width() + 4  # 4 for the frame
         for i in range(self.resource_table.columnCount()):
             width += self.resource_table.columnWidth(i)
-        width = min(width, QDesktopWidget().availableGeometry().width())
+        if qtpy.QT5:
+            from qtpy.QtGui import QDesktopWidget
+            width = min(width, QDesktopWidget().availableGeometry().width())
+        elif qtpy.QT6:
+            from qtpy.QtGui import QGuiApplication
+            QGuiApplication.primaryScreen().availableGeometry().width()
         height = self.height()  # keep the current height
         self.resize(width, height)
-        self.centerAndAdjustWindow()
+        self.center_and_adjust_window()
 
     def create_table_item(
         self,
@@ -1152,7 +1137,7 @@ class FileSelectionWindow(QMainWindow):
             else:
                 self.detailed_stat_attributes = []
             self._init_table()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Exception", f"An error occurred: {e}")
             self.detailed_checkbox.setChecked(False)
 
@@ -1177,7 +1162,6 @@ class FileSelectionWindow(QMainWindow):
 
 if __name__ == "__main__":
     from toolset.__main__ import on_app_crash
-    faulthandler.enable(file=sys.stderr, all_threads=True)
     sys.excepthook = on_app_crash
     app = QApplication([])
     resname, restype = ResourceIdentifier.from_path("dan14_juhani.utc").unpack()
@@ -1196,4 +1180,4 @@ if __name__ == "__main__":
     HTInstallation.from_base_instance(installation)
     window.show()
     window.activateWindow()
-    app.exec_()
+    app.exec()

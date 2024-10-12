@@ -77,7 +77,7 @@ class SettingsWidget(QWidget):
 
     def save(self):
         for bindName, bind_widget in self.binds.items():
-            bind = self.validateBind(bindName, bind_widget.getMouseAndKeyBinds())
+            bind = self.validateBind(bindName, bind_widget.get_mouse_and_key_binds())
             setattr(self.settings, bindName, bind)
         for colourName, color_widget in self.colours.items():
             color_value = color_widget.color().rgba_integer()
@@ -85,7 +85,7 @@ class SettingsWidget(QWidget):
 
     def _registerBind(self, widget: SetBindWidget, bindName: str):
         bind = self.validateBind(bindName, getattr(self.settings, bindName))
-        widget.setMouseAndKeyBinds(bind)
+        widget.set_mouse_and_key_binds(bind)
         self.binds[bindName] = widget
 
     def _registerColour(self, widget: ColorEdit, colourName: str):

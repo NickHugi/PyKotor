@@ -6,10 +6,10 @@ from loggerplus import RobustLogger
 from qtpy.QtCore import QSettings, Qt
 
 from toolset.utils.misc import (
-    getQtButtonString,
     getQtKey,
-    getQtKeyString,
     getQtMouseButton,
+    get_qt_button_string,
+    get_qt_key_string,
 )
 
 
@@ -81,9 +81,9 @@ class SettingsProperty(property, Generic[T]):
     def serialize_value(self, value: T) -> KT:  # noqa: PLR0911
         """Recursively serializes values, including Qt.Key and nested structures, for serialization."""
         if isinstance(value, Qt.Key):
-            return ["Qt.Key", getQtKeyString(value)]
+            return ["Qt.Key", get_qt_key_string(value)]
         if isinstance(value, Qt.MouseButton):
-            return ["Qt.MouseButton", getQtButtonString(value)]
+            return ["Qt.MouseButton", get_qt_button_string(value)]
         if isinstance(value, set):
             return ["set", [self.serialize_value(item) for item in value]]
         if isinstance(value, tuple):

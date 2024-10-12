@@ -281,13 +281,13 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
 
     def resize_all_columns_to_fit(self):
         header: QHeaderView = self.header()
-        assert header is not None, "Header is None in autoFitColumns"
+        assert header is not None, "Header is None in auto_fit_columns"
         for col in range(header.count()):
             self.resizeColumnToContents(col)
 
     def reset_column_widths(self):
         header: QHeaderView = self.header()
-        assert header is not None, "Header is None in resetColumnWidths"
+        assert header is not None, "Header is None in reset_column_widths"
         for col in range(header.count()):
             header.resizeSection(col, header.defaultSectionSize())
 
@@ -463,4 +463,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

@@ -82,17 +82,7 @@ class HolocronToolset(SpyderPluginV2):
     def _disassemble_tool_window(self):
 
         # Import the appropriate Ui_MainWindow based on the Qt bindings
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows.main import Ui_MainWindow
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows.main import Ui_MainWindow
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows.main import Ui_MainWindow
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows.main import Ui_MainWindow
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.windows.main import Ui_MainWindow
         orig_ui = Ui_MainWindow()
         orig_ui.setupUi(self)
 

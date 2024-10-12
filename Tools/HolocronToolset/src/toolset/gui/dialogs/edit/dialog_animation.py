@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
-from qtpy import QtCore
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QDialog
 
 from pykotor.resource.generics.dlg import DLGAnimation
@@ -19,40 +17,28 @@ class EditAnimationDialog(QDialog):
         self,
         parent: QWidget,
         installation: HTInstallation,
-        animationArg: DLGAnimation | None = None,
+        animation_arg: DLGAnimation | None = None,
     ):
-        animation: DLGAnimation = DLGAnimation() if animationArg is None else animationArg
+        animation: DLGAnimation = DLGAnimation() if animation_arg is None else animation_arg
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowMinMaxButtonsHint
+        )
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.edit_animation import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.edit_animation import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.edit_animation import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.edit_animation import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.dialogs.edit_animation import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
-        animList = installation.ht_get_cache_2da(HTInstallation.TwoDA_DIALOG_ANIMS)
-        assert animList is not None
-        self.ui.animationSelect.setItems(animList.get_column("name"), sortAlphabetically=True, cleanupStrings=True, ignoreBlanks=True)
+        anim_list = installation.ht_get_cache_2da(HTInstallation.TwoDA_DIALOG_ANIMS)
+        assert anim_list is not None
+        self.ui.animationSelect.setItems(anim_list.get_column("name"), sortAlphabetically=True, cleanupStrings=True, ignoreBlanks=True)
 
         self.ui.animationSelect.setCurrentIndex(animation.animation_id)
-        self.ui.animationSelect.setContext(animList, installation, HTInstallation.TwoDA_DIALOG_ANIMS)
+        self.ui.animationSelect.setContext(anim_list, installation, HTInstallation.TwoDA_DIALOG_ANIMS)
         self.ui.participantEdit.setText(animation.participant)
 
     def animation(self) -> DLGAnimation:
