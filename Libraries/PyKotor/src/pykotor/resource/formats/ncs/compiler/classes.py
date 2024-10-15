@@ -2,28 +2,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.script import DataType
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 from pykotor.tools.path import CaseAwarePath
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.common.script import ScriptConstant, ScriptFunction
-
-
-class NSSError(ValueError):
-    """Base class for all errors in the NSS parser/compiler."""
-class NSSParserError(NSSError):
-    """An error occurred in the NSS parser."""
-class CompileError(NSSError):
-    """An error occurred during compilation."""
-class EntryPointError(CompileError):
-    """An error occurred when trying to find the entry point of the script."""
-class MissingIncludeError(CompileError):
-    """An error occurred when trying to include a file that does not exist."""
 
 
 def get_logical_equality_instruction(
@@ -36,6 +24,15 @@ def get_logical_equality_instruction(
         return NCSInstructionType.EQUALFF
     msg = f"Tried an unsupported comparison between '{type1}' '{type2}'."
     raise CompileError(msg)
+
+
+class CompileError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class EntryPointError(CompileError): ...
+class MissingIncludeError(CompileError): ...
 
 
 class TopLevelObject(ABC):
@@ -93,10 +90,7 @@ class GlobalVariableDeclaration(TopLevelObject):
             ncs.add(NCSInstructionType.RSADDF)
             ncs.add(NCSInstructionType.RSADDF)
         elif self.data_type.builtin == DataType.STRUCT:
-            if self.data_type._struct is None:  # noqa: SLF001
-                msg = "Struct type is None."
-                raise CompileError(msg)
-            root.struct_map[self.data_type._struct].initialize(ncs, root)  # noqa: SLF001
+            root.struct_map[self.data_type._struct].initialize(ncs, root)
         elif self.data_type.builtin == DataType.VOID:
             msg = "Cannot declare a variable of void type."
             raise CompileError(msg)
@@ -280,7 +274,7 @@ class CodeRoot:
         if library_lookup:
             if not isinstance(library_lookup, list):
                 library_lookup = [library_lookup]
-            self.library_lookup = [Path(item) for item in library_lookup]
+            self.library_lookup = [Path.pathify(item) for item in library_lookup]
 
         self.function_map: dict[str, FunctionReference] = {}
         self._global_scope: list[ScopedValue] = []
@@ -384,17 +378,10 @@ class CodeRoot:
         # If some optional parameters were not specified, add the defaults to the arguments list
         while len(definition.parameters) > len(args_list):
             param_index = len(args_list)
-            default_value = definition.parameters[param_index].default
-            if default_value is not None:
-                args_list.append(default_value)
-            else:
-                break  # Stop if we encounter a non-optional parameter
+            args_list.append(definition.parameters[param_index].default)
 
         offset = 0
         for param, arg in zip(definition.parameters, args_list):
-            if arg is None:
-                msg = f"Required argument '{param.identifier}' missing in call to '{name}'."
-                raise CompileError(msg)
             arg_datatype: DynamicDataType = arg.compile(ncs, self, block)
             offset += arg_datatype.size(self)
             block.temp_stack += arg_datatype.size(self)
@@ -560,51 +547,29 @@ class FunctionForwardDeclaration(TopLevelObject):
         )
 
 
-class FunctionSignature:
+class FunctionDefinition(TopLevelObject):
+    # TODO: split definition into signature + block?
     def __init__(
         self,
         return_type: DynamicDataType,
         identifier: Identifier,
         parameters: list[FunctionDefinitionParam],
+        block: CodeBlock,
     ):
         self.return_type: DynamicDataType = return_type
         self.identifier: Identifier = identifier
         self.parameters: list[FunctionDefinitionParam] = parameters
-
-    def is_matching(self, other: FunctionSignature) -> bool:
-        if self.return_type != other.return_type:
-            return False
-        if len(self.parameters) != len(other.parameters):
-            return False
-        return all(
-            these_parameters.data_type == other.parameters[i].data_type
-            for i, these_parameters in enumerate(self.parameters)
-        )
-
-class FunctionDefinition(TopLevelObject):
-    def __init__(
-        self,
-        signature: FunctionSignature,
-        block: CodeBlock,
-        line_num: int,
-    ):
-        self.signature: FunctionSignature = signature
         self.block: CodeBlock = block
-        self.line_num: int = line_num
 
-        for param in signature.parameters:
+        for param in parameters:
             block.add_scoped(param.identifier, param.data_type)
 
-    @property
-    def return_type(self) -> DynamicDataType:
-        return self.signature.return_type
-
     def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
-        name = self.signature.identifier.label
+        name = self.identifier.label
 
         # Make sure all default parameters appear after the required parameters
         previous_is_default = False
-        for param in self.signature.parameters:
+        for param in self.parameters:
             is_default = param.default is not None
             if previous_is_default and not is_default:
                 msg = "Function parameter without a default value can't follow one with a default value."
@@ -612,7 +577,7 @@ class FunctionDefinition(TopLevelObject):
             previous_is_default = is_default
 
         # Make sure params are all constant values
-        for param in self.signature.parameters:
+        for param in self.parameters:
             if isinstance(param.default, IdentifierExpression) and not param.default.is_constant(root):
                 msg = f"Non-constant default value specified for function prototype parameter '{param.identifier}'."
                 raise CompileError(msg)
@@ -648,7 +613,7 @@ class FunctionDefinition(TopLevelObject):
             3. Compiles the function body into the temporary block
             4. Inserts the compiled code after the forward declaration in the original block
         """
-        if not self.signature.is_matching(root.function_map[name].definition.signature):
+        if not self.is_matching_signature(root.function_map[name].definition):
             msg = f"Prototype of function '{name}' does not match definition."
             raise CompileError(msg)
 
@@ -660,6 +625,20 @@ class FunctionDefinition(TopLevelObject):
 
         stub_index: int = ncs.instructions.index(root.function_map[name].instruction)
         ncs.instructions[stub_index + 1 : stub_index + 1] = temp.instructions
+
+    def is_matching_signature(self, prototype: FunctionForwardDeclaration | FunctionDefinition) -> bool:
+        if self.return_type != prototype.return_type:
+            return False
+        if len(self.parameters) != len(prototype.parameters):
+            return False
+        return all(
+            these_parameters.data_type == prototype.parameters[i].data_type
+            for i, these_parameters in enumerate(self.parameters)
+        )
+        # TODO: nwnnsscomp compiles fine when default values do not match
+        #       - how to handle? need some kind of warning system maybe.
+        # if self.parameters[i].default != prototype.parameters[i].default:
+        #     retrn False
 
 
 class FunctionDefinitionParam:
@@ -701,7 +680,7 @@ class IncludeScript(TopLevelObject):
     def _get_script(self, root: CodeRoot) -> str:
         for folder in root.library_lookup:
             filepath: Path = folder / f"{self.file.value}.nss"
-            if filepath.is_file():
+            if filepath.safe_isfile():
                 source: str = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break
         else:

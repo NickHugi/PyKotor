@@ -30,6 +30,7 @@ class SettingsDialog(QDialog):
             & ~Qt.WindowType.WindowContextHelpButtonHint
         )
 
+        self._is_resetting: bool = False
         self.installation_edited: bool = False
 
         from toolset.uic.qtpy.dialogs import settings
@@ -85,24 +86,27 @@ class SettingsDialog(QDialog):
             self,
             "Reset All Settings",
             "Are you sure you want to reset all settings to their default values? This action cannot be undone.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             GlobalSettings().settings.clear()
-            GlobalSettings().firstTime = True
             QMessageBox.information(
                 self,
                 "Settings Reset",
                 "All settings have been cleared and reset to their default values."
             )
+            self._is_resetting = True
+            self.close()
 
     def on_installation_edited(self):
         self.installation_edited = True
 
     def accept(self):
         super().accept()
+        if self._is_resetting:
+            return
 
         self.ui.miscWidget.save()
         self.ui.gitEditorWidget.save()

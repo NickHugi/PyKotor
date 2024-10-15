@@ -95,8 +95,8 @@ class ModuleRenderer(QOpenGLWidget):
         self.loop_interval: int = 33  # ms, approx 30 FPS
 
         self._render_time: int = 0
-        self._keys_down: set[int] = set()
-        self._mouse_down: set[int] = set()
+        self._keys_down: set[Qt.Key] = set()
+        self._mouse_down: set[Qt.MouseButton] = set()
         self._mouse_prev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
         self._mouse_press_time: datetime = datetime.now(tz=timezone.utc).astimezone()
 
@@ -312,10 +312,10 @@ class ModuleRenderer(QOpenGLWidget):
         self._keys_down.clear()
 
     # region Accessors
-    def keys_down(self) -> set[int]:
+    def keys_down(self) -> set[Qt.Key]:
         return copy(self._keys_down)
 
-    def mouse_down(self) -> set[int]:
+    def mouse_down(self) -> set[Qt.MouseButton]:
         return copy(self._mouse_down)
 
     # endregion

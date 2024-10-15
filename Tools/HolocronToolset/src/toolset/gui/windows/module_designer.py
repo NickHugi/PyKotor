@@ -11,7 +11,20 @@ import qtpy
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import QPoint, QTimer, Qt
 from qtpy.QtGui import QColor, QCursor, QIcon, QPixmap
-from qtpy.QtWidgets import QAction, QApplication, QHBoxLayout, QLabel, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QStatusBar, QTreeWidgetItem, QVBoxLayout, QWidget
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QListWidgetItem,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QStatusBar,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -54,11 +67,10 @@ if TYPE_CHECKING:
     from pykotor.resource.generics.git import GIT
     from pykotor.resource.generics.ifo import IFO
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
-    from toolset.utils.misc import QtKey, QtMouse
 
-if qtpy.API_NAME in ("PyQt5", "PySide2"):
+if qtpy.QT5:
     from qtpy.QtWidgets import QUndoStack
-elif qtpy.API_NAME in ("PyQt6", "PySide6"):
+elif qtpy.QT6:
     from qtpy.QtGui import QUndoStack
 else:
     raise ValueError(f"Invalid QT_API: '{qtpy.API_NAME}'")
@@ -161,24 +173,13 @@ class ModuleDesigner(QMainWindow):
         self.last_free_cam_time: float = 0.0  # Initialize the last toggle time
 
         def int_color_to_qcolor(int_value: int) -> QColor:
-            """Converts an integer color value to a QColor object.
-
-            Args:
-            ----
-                intvalue: Integer color value.
-
-            Returns:
-            -------
-                QColor: QColor object representing the color
-
-            Processing Logic:
-            ----------------
-                - Extract RGBA components from integer color value using Color.from_rgba_integer()
-                - Multiply each component by 255 to convert to QColor expected value range of 0-255
-                - Pass converted values to QColor constructor to return QColor object.
-            """
             color = Color.from_rgba_integer(int_value)
-            return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
+            return QColor(
+                int(color.r * 255),
+                int(color.g * 255),
+                int(color.b * 255),
+                int(color.a * 255),
+            )
 
         self.material_colors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: int_color_to_qcolor(self.settings.undefinedMaterialColour),
@@ -312,7 +313,7 @@ class ModuleDesigner(QMainWindow):
         self.custom_status_bar_container.setLayout(self.custom_status_bar_layout)
         self.custom_status_bar.addPermanentWidget(self.custom_status_bar_container)
 
-    def update_status_bar(self, mouse_pos: QPoint | Vector2, buttons: set[int], keys: set[int], renderer: WalkmeshRenderer | ModuleRenderer):
+    def update_status_bar(self, mouse_pos: QPoint | Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key], renderer: WalkmeshRenderer | ModuleRenderer):
         norm_mouse_pos = Vector2(mouse_pos.x(), mouse_pos.y()) if isinstance(mouse_pos, QPoint) else mouse_pos
         world_pos_3d = None
 
@@ -328,13 +329,13 @@ class ModuleDesigner(QMainWindow):
             worldPos = renderer.to_world_coords(norm_mouse_pos.x, norm_mouse_pos.y)
             self.mouse_pos_label.setText(f"Mouse Coords: {worldPos.y:.2f}")
 
-        def sort_with_modifiers(items: set[int], get_string_func: Callable[[Any], str], qt_enum_type: Literal["QtKey", "QtMouse"]) -> Sequence[QtKey | QtMouse | int]:
-            modifiers = [item for item in items if item in MODIFIER_KEY_NAMES] if qt_enum_type == "QtKey" else []
-            normal = [item for item in items if item not in MODIFIER_KEY_NAMES] if qt_enum_type == "QtKey" else list(items)
+        def sort_with_modifiers(items: set[Qt.MouseButton] | set[Qt.Key], get_string_func: Callable[[Any], str], qt_enum_type: Literal["Qt.Key", "Qt.MouseButton"]) -> Sequence[Qt.Key | Qt.MouseButton | int]:  # noqa: E501
+            modifiers = [item for item in items if item in MODIFIER_KEY_NAMES] if qt_enum_type == "Qt.Key" else []
+            normal = [item for item in items if item not in MODIFIER_KEY_NAMES] if qt_enum_type == "Qt.Key" else list(items)
             return sorted(modifiers, key=get_string_func) + sorted(normal, key=get_string_func)
 
-        sorted_buttons = sort_with_modifiers(buttons, get_qt_button_string, "QtMouse")
-        sorted_keys = sort_with_modifiers(keys, get_qt_key_string, "QtKey")
+        sorted_buttons = sort_with_modifiers(buttons, get_qt_button_string, "Qt.MouseButton")
+        sorted_keys = sort_with_modifiers(keys, get_qt_key_string, "Qt.Key")
 
         self.buttons_keys_pressed_label.setText(f"Keys/Buttons: {'+'.join(map(get_qt_key_string, sorted_keys))} {'+'.join(map(get_qt_button_string, sorted_buttons))}")
 
@@ -973,7 +974,7 @@ class ModuleDesigner(QMainWindow):
         instance_mode = _InstanceMode.__new__(_InstanceMode)
         # HACK:
         instance_mode.delete_selected = self.delete_selected
-        instance_mode.edit_selected_instance = self.edit_instance
+        instance_mode.edit_selected_instance = self.edit_instance  # type: ignore[method-assign]
         instance_mode.build_list = self.rebuild_instance_list
         instance_mode.update_visibility = self.update_toggles
         instance_mode.select_underneath = lambda: self.set_selection(self.ui.flatRenderer.instances_under_mouse())
@@ -1052,15 +1053,15 @@ class ModuleDesigner(QMainWindow):
 
         menu.addAction("Find in Instance List").triggered.connect(jump_to_instance_list_action)
 
-    def on_3d_mouse_moved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
+    def on_3d_mouse_moved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self.update_status_bar(screen, buttons, keys, self.ui.mainRenderer)
         self._controls3d.on_mouse_moved(screen, screenDelta, world, buttons, keys)
 
-    def on_3d_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+    def on_3d_mouse_scrolled(self, delta: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self.update_status_bar(QCursor.pos(), buttons, keys, self.ui.mainRenderer)
         self._controls3d.on_mouse_scrolled(delta, buttons, keys)
 
-    def on_3d_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_3d_mouse_pressed(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self.update_status_bar(screen, buttons, keys, self.ui.mainRenderer)
         self._controls3d.on_mouse_pressed(screen, buttons, keys)
 
@@ -1090,15 +1091,15 @@ class ModuleDesigner(QMainWindow):
 
             renderer.rotate_camera(yaw_delta * strength, -pitch_delta * strength, clamp_rotations=clamp)
 
-    def on_3d_mouse_released(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_3d_mouse_released(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self.update_status_bar(screen, buttons, keys, self.ui.mainRenderer)
         self._controls3d.on_mouse_released(screen, buttons, keys)
 
-    def on_3d_keyboard_released(self, buttons: set[int], keys: set[int]):
+    def on_3d_keyboard_released(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self.update_status_bar(QCursor.pos(), buttons, keys, self.ui.mainRenderer)
         self._controls3d.on_keyboard_released(buttons, keys)
 
-    def on_3d_keyboard_pressed(self, buttons: set[int], keys: set[int]):
+    def on_3d_keyboard_pressed(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self.update_status_bar(QCursor.pos(), buttons, keys, self.ui.mainRenderer)
         self._controls3d.on_keyboard_pressed(buttons, keys)
 
@@ -1186,34 +1187,34 @@ class ModuleDesigner(QMainWindow):
         self.show()
         self.activateWindow()
 
-    def on_2d_mouse_moved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
+    def on_2d_mouse_moved(self, screen: Vector2, delta: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         # self.log.debug("on2dMouseMoved, screen: %s, delta: %s, buttons: %s, keys: %s", screen, delta, buttons, keys)
         world_delta: Vector2 = self.ui.flatRenderer.to_world_delta(delta.x, delta.y)
         world: Vector3 = self.ui.flatRenderer.to_world_coords(screen.x, screen.y)
         self._controls2d.on_mouse_moved(screen, delta, Vector2.from_vector3(world), world_delta, buttons, keys)
         self.update_status_bar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
 
-    def on_2d_mouse_released(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_2d_mouse_released(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         # self.log.debug("on_2d_mouse_released, screen: %s, buttons: %s, keys: %s", screen, buttons, keys)
         self._controls2d.on_mouse_released(screen, buttons, keys)
         self.update_status_bar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
 
-    def on_2d_keyboard_pressed(self, buttons: set[int], keys: set[int]):
+    def on_2d_keyboard_pressed(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         # self.log.debug("on_2d_keyboard_pressed, buttons: %s, keys: %s", buttons, keys)
         self._controls2d.on_keyboard_pressed(buttons, keys)
         self.update_status_bar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
 
-    def on_2d_keyboard_released(self, buttons: set[int], keys: set[int]):
+    def on_2d_keyboard_released(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         # self.log.debug("on_2d_keyboard_released, buttons: %s, keys: %s", buttons, keys)
         self._controls2d.on_keyboard_released(buttons, keys)
         self.update_status_bar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
 
-    def on_2d_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+    def on_2d_mouse_scrolled(self, delta: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         # self.log.debug("on_2d_mouse_scrolled, delta: %s, buttons: %s, keys: %s", delta, buttons, keys)
         self.update_status_bar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
         self._controls2d.on_mouse_scrolled(delta, buttons, keys)
 
-    def on_2d_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_2d_mouse_pressed(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         # self.log.debug("on_2d_mouse_pressed, screen: %s, buttons: %s, keys: %s", screen, buttons, keys)
         self._controls2d.on_mouse_pressed(screen, buttons, keys)
         self.update_status_bar(screen, buttons, keys, self.ui.flatRenderer)
@@ -1261,7 +1262,7 @@ class ModuleDesigner(QMainWindow):
         }
 
         # Determine last frame time to determine the delta modifiers
-        cur_time = time.time()
+        cur_time = time.perf_counter()
         time_since_last_frame = cur_time - self.last_frame_time
         self.last_frame_time = cur_time
 
@@ -1285,13 +1286,19 @@ class ModuleDesigner(QMainWindow):
         buttons = self.ui.mainRenderer.mouse_down()
         if self._controls3d.speed_boost_control.satisfied(buttons, keys, exact_keys_and_buttons=False):
             move_units_delta = (
-                (self.settings.boostedFlyCameraSpeedFC) if isinstance(self._controls3d, ModuleDesignerControlsFreeCam) else (self.settings.boostedMoveCameraSensitivity3d)
+                (self.settings.boostedFlyCameraSpeedFC)
+                if isinstance(self._controls3d, ModuleDesignerControlsFreeCam)
+                else (self.settings.boostedMoveCameraSensitivity3d)
             )
         else:
-            move_units_delta = (self.settings.flyCameraSpeedFC) if isinstance(self._controls3d, ModuleDesignerControlsFreeCam) else (self.settings.moveCameraSensitivity3d)
+            move_units_delta = (
+                self.settings.flyCameraSpeedFC
+                if isinstance(self._controls3d, ModuleDesignerControlsFreeCam)
+                else self.settings.moveCameraSensitivity3d
+            )
 
         move_units_delta /= 500  # normalize
-        move_units_delta *= time_since_last_frame * self.best_frame_rate  # apply modifier based on user's fps
+        move_units_delta *= self.best_frame_rate * time_since_last_frame  # apply modifier based on user's fps
 
         # Zoom camera based on inputs
         if movement_keys["in"]:

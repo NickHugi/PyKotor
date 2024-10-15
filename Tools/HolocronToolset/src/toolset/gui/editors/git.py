@@ -15,9 +15,15 @@ from qtpy.QtCore import (
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QColor, QIcon, QKeySequence
-from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox, QUndoCommand
+from qtpy.QtWidgets import (
+    QDialog,
+    QListWidgetItem,
+    QMenu,
+    QMessageBox,
+    QUndoCommand,  # pyright: ignore[reportPrivateImportUsage]
+)
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
+from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
@@ -48,7 +54,6 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QCloseEvent, QKeyEvent
     from qtpy.QtWidgets import QCheckBox, QListWidget, QWidget
 
-    from pykotor.common.geometry import Vector4
     from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.bwm import BWM
     from pykotor.resource.formats.lyt import LYT
@@ -56,10 +61,10 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
     from toolset.gui.windows.module_designer import ModuleDesigner
 
-if qtpy.QT6:
-    from qtpy.QtGui import QUndoStack
-else:
+if qtpy.QT5:
     from qtpy.QtWidgets import QUndoStack
+elif qtpy.QT6:
+    from qtpy.QtGui import QUndoStack
 
 class MoveCommand(QUndoCommand):
     def __init__(
@@ -99,15 +104,19 @@ class RotateCommand(QUndoCommand):
     def undo(self):
         RobustLogger().debug(f"Undo rotation: {self.instance.identifier()} (NEW {self.new_orientation} --> {self.old_orientation})")
         if isinstance(self.instance, GITCamera):
+            assert isinstance(self.old_orientation, Vector4)
             self.instance.orientation = self.old_orientation
         else:
+            assert isinstance(self.old_orientation, float)
             self.instance.bearing = self.old_orientation
 
     def redo(self):
         RobustLogger().debug(f"Redo rotation: {self.instance.identifier()} ({self.old_orientation} --> NEW {self.new_orientation})")
         if isinstance(self.instance, GITCamera):
+            assert isinstance(self.new_orientation, Vector4)
             self.instance.orientation = self.new_orientation
         else:
+            assert isinstance(self.new_orientation, float)
             self.instance.bearing = self.new_orientation
 
 
@@ -358,18 +367,6 @@ class GITEditor(Editor):
         self.ui.actionRedo.setShortcut(QKeySequence("Ctrl+Shift+Z"))  # type: ignore[arg-type]
 
     def _setup_signals(self):
-        """Connect signals to UI elements.
-
-        Args:
-        ----
-            self: The class instance
-
-        Processing Logic:
-        ----------------
-            - Connect mouse/key events to handlers
-            - Connect checkbox toggles to visibility updater
-            - Connect menu options to label settings changes.
-        """
         self.ui.renderArea.sig_mouse_pressed.connect(self.on_mouse_pressed)
         self.ui.renderArea.sig_mouse_moved.connect(self.on_mouse_moved)
         self.ui.renderArea.sig_mouse_scrolled.connect(self.on_mouse_scrolled)
@@ -392,15 +389,15 @@ class GITEditor(Editor):
         self.ui.viewCameraCheck.toggled.connect(self.update_visibility)
         self.ui.viewStoreCheck.toggled.connect(self.update_visibility)
 
-        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewCreatureCheck)  # noqa: ARG005
-        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewPlaceableCheck)  # noqa: ARG005
-        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewDoorCheck)  # noqa: ARG005
-        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewSoundCheck)  # noqa: ARG005
-        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewTriggerCheck)  # noqa: ARG005
-        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewEncounterCheck)  # noqa: ARG005
-        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewWaypointCheck)  # noqa: ARG005
-        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewCameraCheck)  # noqa: ARG005
-        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewStoreCheck)  # noqa: ARG005
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewCreatureCheck)  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewPlaceableCheck)  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
+        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewDoorCheck)  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
+        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewSoundCheck)  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
+        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewTriggerCheck)  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewEncounterCheck)  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewWaypointCheck)  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
+        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewCameraCheck)  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
+        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda a0: self.on_instance_visibility_double_click(self.ui.viewStoreCheck)  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
 
         # Undo/Redo
         self.ui.actionUndo.triggered.connect(lambda: print("Undo signal") or self._controls.undo_stack.undo())
@@ -498,20 +495,6 @@ class GITEditor(Editor):
         self._loadGIT(git)
 
     def _loadGIT(self, git: GIT):
-        """Load a GIT instance.
-
-        Args:
-        ----
-            git: The GIT instance to load
-
-        Processing Logic:
-        ----------------
-            - Load the provided GIT instance into the application
-            - Set the GIT instance on the render area
-            - Center the camera on the render area
-            - Create an InstanceMode for interaction based on the loaded GIT and installation
-            - Update the visibility of UI elements.
-        """
         self._git = git
         self.ui.renderArea.set_git(self._git)
         self.ui.renderArea.center_camera()
@@ -625,23 +608,6 @@ class GITEditor(Editor):
         return self.name_buffer[resid]
 
     def get_instance_external_tag(self, instance: GITInstance) -> str | None:
-        """Gets external tag for the given instance.
-
-        Args:
-        ----
-            instance: The instance to get tag for
-
-        Returns:
-        -------
-            tag: The external tag associated with the instance or None
-
-        Processing Logic:
-        ----------------
-            - Get resource identifier from instance
-            - Check if tag is already cached for this identifier
-            - If not cached, call installation to get resource and extract tag from resource data
-            - Cache tag in buffer and return cached tag.
-        """
         res_ident: ResourceIdentifier | None = instance.identifier()
         assert res_ident is not None, f"resid cannot be None in get_instance_external_tag({instance!r})"
         if res_ident not in self.tag_buffer:
@@ -721,37 +687,22 @@ class GITEditor(Editor):
         assert item is not None, f"item cannot be None in {self!r}.onItemContextMenu({point!r})"
         self._mode.open_list_context_menu(item, global_point)
 
-    def on_mouse_moved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
-        """Handle mouse movement event.
-
-        Args:
-        ----
-            screen: Vector2: Mouse position on screen
-            delta: Vector2: Mouse movement since last event
-            buttons: set[int]: Currently pressed mouse buttons
-            keys: set[int]: Currently pressed keyboard keys
-
-        Processing Logic:
-        ----------------
-            - Convert mouse position and movement to world coordinates
-            - Pass mouse event to controls handler
-            - Update status bar with world mouse position.
-        """
+    def on_mouse_moved(self, screen: Vector2, delta: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         world_delta: Vector2 = self.ui.renderArea.to_world_delta(delta.x, delta.y)
         world: Vector3 = self.ui.renderArea.to_world_coords(screen.x, screen.y)
         self._controls.on_mouse_moved(screen, delta, Vector2.from_vector3(world), world_delta, buttons, keys)
         self._mode.update_status_bar(Vector2.from_vector3(world))
 
-    def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_scrolled(self, delta: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self._controls.on_mouse_scrolled(delta, buttons, keys)
 
-    def on_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_pressed(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self._controls.on_mouse_pressed(screen, buttons, keys)
 
-    def on_mouse_released(self, buttons: set[int], keys: set[int]):
+    def on_mouse_released(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self._controls.on_mouse_released(Vector2(0, 0), buttons, keys)
 
-    def on_key_pressed(self, buttons: set[int], keys: set[int]):
+    def on_key_pressed(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self._controls.on_keyboard_pressed(buttons, keys)
 
     def keyPressEvent(self, e: QKeyEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -778,7 +729,7 @@ class _Mode(ABC):
         self.renderer2d = editor.ui.renderArea if isinstance(editor, GITEditor) else editor.ui.flatRenderer
 
     def list_widget(self) -> QListWidget:
-        return self._ui.listWidget if isinstance(self._editor, GITEditor) else self._ui.instanceList
+        return self._ui.listWidget if isinstance(self._editor, GITEditor) else self._ui.instanceList  # pyright: ignore[reportAttributeAccessIssue]
 
     @abstractmethod
     def on_item_selection_changed(self, item: QListWidgetItem): ...
@@ -892,16 +843,6 @@ class _InstanceMode(_Mode):
             self.build_list()
 
     def edit_selected_instance_resource(self):
-        """Edits the selected instance resource.
-
-        Processing Logic:
-        ----------------
-            - Gets the selected instance from the render area
-            - Gets the resource name and type from the instance
-            - Searches installation locations for the resource file path
-            - Checks if the path contains "override" or is in the module root
-            - Opens the resource editor with the file if a path is found.
-        """
         selection: list[GITInstance] = self.renderer2d.instance_selection.all()
 
         if not selection:
@@ -926,10 +867,10 @@ class _InstanceMode(_Mode):
                 loc_module_root = self._installation.get_module_root(loc.filepath.name.lower())
                 loc_is_dot_mod = loc.filepath.suffix.lower() == ".mod"
                 if loc_module_root != module_root:
-                    RobustLogger.debug(f"Removing location '{loc.filepath}' (not in our module '{module_root}')")
+                    RobustLogger().debug(f"Removing location '{loc.filepath}' (not in our module '{module_root}')")
                     search.pop(i)
                 elif loc_is_dot_mod != edited_file_from_dot_mod:
-                    RobustLogger.debug(f"Removing location '{loc.filepath}' due to rim/mod check")
+                    RobustLogger().debug(f"Removing location '{loc.filepath}' due to rim/mod check")
                     search.pop(i)
         if len(search) > 1:
             selection_window = FileSelectionWindow(search, self._installation)
@@ -937,14 +878,7 @@ class _InstanceMode(_Mode):
             selection_window.activateWindow()
             add_window(selection_window)
         elif search:
-            resource = search[0].as_file_resource()
-            open_resource_editor(
-                resource.filepath(),
-                resource.resname(),
-                resource.restype(),
-                resource.data(),
-                self._installation
-            )
+            open_resource_editor(search[0].as_file_resource(), self._installation)
 
     def edit_selected_instance_geometry(self):
         if self.renderer2d.instance_selection.last():
@@ -960,7 +894,7 @@ class _InstanceMode(_Mode):
     def add_instance(self, instance: GITInstance):
         if open_instance_dialog(self._editor, instance, self._installation):
             self._git.add(instance)
-            undo_stack = self._editor._controls.undo_stack if isinstance(self._editor, GITEditor) else self._editor.undoStack  # noqa: SLF001
+            undo_stack = self._editor._controls.undo_stack if isinstance(self._editor, GITEditor) else self._editor.undo_stack  # noqa: SLF001
             undo_stack.push(InsertCommand(self._git, instance, self._editor))
             self.build_list()
 
@@ -1001,10 +935,10 @@ class _InstanceMode(_Mode):
         assert file_menu is not None
 
         if isinstance(self._editor, GITEditor):
-            valid_filepaths = [self._editor._filepath]
+            valid_filepaths = [self._editor._filepath]  # noqa: SLF001
         else:
             assert self._editor._module is not None  # noqa: SLF001
-            valid_filepaths = [res.filepath() for res in self._editor._module.get_capsules() if res is not None]
+            valid_filepaths = [res.filepath() for res in self._editor._module.get_capsules() if res is not None]  # noqa: SLF001
 
         override_path = self._installation.override_path()
         # Iterate over each location to create submenus
@@ -1019,10 +953,7 @@ class _InstanceMode(_Mode):
             loc_menu: QMenu = file_menu.addMenu(str(display_path))
             ResourceItems(resources=[result]).build_menu(loc_menu)
         def more_info():
-            selection_window = FileSelectionWindow(
-                locations,
-                self._installation,
-            )
+            selection_window = FileSelectionWindow(locations, self._installation)
             selection_window.show()
             selection_window.activateWindow()
             add_window(selection_window)
@@ -1031,15 +962,6 @@ class _InstanceMode(_Mode):
         return menu
 
     def set_list_item_label(self, item: QListWidgetItem, instance: GITInstance):
-        """Sets the label text of a QListWidget item for a game instance.
-
-        Args:
-        ----
-            item (QListWidgetItem): The list widget item
-            instance (GITInstance): The game instance
-
-        Sets the item data and tooltip, determines the label text based on instance type and editor settings, sets the item text and font if label not found.
-        """
         item.setData(Qt.ItemDataRole.UserRole, instance)
         item.setToolTip(self.get_instance_tooltip(instance))
 
@@ -1111,10 +1033,7 @@ class _InstanceMode(_Mode):
         self.build_list()
 
     def on_item_selection_changed(self, item: QListWidgetItem):
-        if item is None:
-            self.set_selection([])
-        else:
-            self.set_selection([item.data(Qt.ItemDataRole.UserRole)])
+        self.set_selection([] if item is None else [item.data(Qt.ItemDataRole.UserRole)])
 
     def update_status_bar(self, world: Vector2):
         if self.renderer2d.instances_under_mouse() and self.renderer2d.instances_under_mouse()[-1] is not None:
@@ -1156,7 +1075,9 @@ class _InstanceMode(_Mode):
     def _get_render_context_menu(self, world: Vector2, menu: QMenu):
         under_mouse: list[GITInstance] = self.renderer2d.instances_under_mouse()
         if not self.renderer2d.instance_selection.isEmpty():
-            self.add_instance_actions_to_menu(self.renderer2d.instance_selection.last(), menu)
+            last = self.renderer2d.instance_selection.last()
+            assert last is not None
+            self.add_instance_actions_to_menu(last, menu)
         else:
             self.add_insert_actions_to_menu(menu, world)
         if under_mouse:
@@ -1307,7 +1228,6 @@ class _InstanceMode(_Mode):
                 instance.rotate(yaw - current_angle, 0, 0)
             elif isinstance(instance, (GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                 instance.rotate(-yaw + current_angle, 0, 0)
-
     # endregion
 
 
@@ -1415,7 +1335,6 @@ class _GeometryMode(_Mode):
 
     def rotate_selected_to_point(self, x: float, y: float):
         ...
-
     # endregion
 
 
@@ -1439,14 +1358,13 @@ class GITControlScheme:
         self.editor: GITEditor = editor
         self.settings: GITSettings = GITSettings()
 
-        # Undo/Redo support setup.
         self.undo_stack: QUndoStack = QUndoStack(self.editor)
         self.initial_positions: dict[GITInstance, Vector3] = {}
         self.initial_rotations: dict[GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint, Vector4 | float] = {}
         self.is_drag_moving: bool = False
         self.is_drag_rotating: bool = False
 
-    def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_scrolled(self, delta: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         if self.zoom_camera.satisfied(buttons, keys):
             if not delta.y:
                 return  # sometimes it'll be zero when holding middlemouse-down.
@@ -1461,27 +1379,9 @@ class GITControlScheme:
         screen_delta: Vector2,
         world: Vector2,
         world_delta: Vector2,
-        buttons: set[int],
-        keys: set[int],
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
     ):
-        """Handles mouse movement events in the editor.
-
-        Args:
-        ----
-            screen: Vector2 - Mouse position on screen in pixels
-            screen_delta: Vector2 - Mouse movement since last event in pixels
-            world: Vector2 - Mouse position in world space
-            world_delta: Vector2 - Mouse movement since last event in world space
-            buttons: set[int] - Currently pressed mouse buttons
-            keys: set[int] - Currently pressed keyboard keys
-
-        Processing Logic:
-        ----------------
-            - Checks if pan camera condition is satisfied and moves camera accordingly
-            - Checks if rotate camera condition is satisfied and rotates camera
-            - Checks if move selected condition is satisfied and moves selected object
-            - Checks if rotate selected to point condition is satisfied and rotates selected object to point.
-        """
         # sourcery skip: extract-duplicate-method, remove-redundant-if, split-or-ifs
         should_pan_camera = self.pan_camera.satisfied(buttons, keys)
         should_rotate_camera = self.rotate_camera.satisfied(buttons, keys)
@@ -1545,7 +1445,7 @@ class GITControlScheme:
 
             # Reset for the next drag operation
             self.initial_positions.clear()
-            RobustLogger().debug("No longer drag moving GITControlScheme")
+            #RobustLogger().debug("No longer drag moving GITControlScheme")
             self.is_drag_moving = False
 
         if self.is_drag_rotating:
@@ -1561,20 +1461,20 @@ class GITControlScheme:
 
             # Reset for the next drag operation
             self.initial_rotations.clear()
-            RobustLogger().debug("No longer drag rotating GITControlScheme")
+            #RobustLogger().debug("No longer drag rotating GITControlScheme")
             self.is_drag_rotating = False
 
-    def on_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_pressed(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         if self.duplicate_selected.satisfied(buttons, keys):
             position = self.editor.ui.renderArea.to_world_coords(screen.x, screen.y)
             self.editor.duplicate_selected(position)
         if self.select_underneath.satisfied(buttons, keys):
             self.editor.select_underneath()
 
-    def on_mouse_released(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_released(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self.handle_undo_redo_from_long_action_finished()
 
-    def on_keyboard_pressed(self, buttons: set[int], keys: set[int]):
+    def on_keyboard_pressed(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         if self.delete_selected.satisfied(buttons, keys):
             if isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
                 selection: list[GITInstance] = self.editor._mode.renderer2d.instance_selection.all()  # noqa: SLF001
@@ -1585,7 +1485,7 @@ class GITControlScheme:
         if self.toggle_instance_lock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def on_keyboard_released(self, buttons: set[int], keys: set[int]):
+    def on_keyboard_released(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         self.handle_undo_redo_from_long_action_finished()
 
     # Use @property decorators to allow Users to change their settings without restarting the editor.

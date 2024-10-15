@@ -7,20 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, ClassVar
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor, QFont, QGuiApplication
-from qtpy.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QDialog,
-    QFontDialog,
-    QHBoxLayout,
-    QLabel,
-    QMenu,
-    QMessageBox,
-    QPushButton,
-    QSpinBox,
-    QTableWidgetItem,
-    QToolTip,
-)
+from qtpy.QtWidgets import QApplication, QCheckBox, QDialog, QFontDialog, QHBoxLayout, QLabel, QMenu, QMessageBox, QPushButton, QSpinBox, QTableWidgetItem, QToolTip
 
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
@@ -28,7 +15,7 @@ from toolset.gui.widgets.settings.env_vars import ENV_VARS, EnvVariableDialog
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import (
-        QAction,
+        QAction,  # pyright: ignore[reportPrivateImportUsage]
         QWidget,
     )
 
@@ -67,7 +54,7 @@ class ApplicationSettingsWidget(SettingsWidget):
         font_string = self.settings.settings.value("GlobalFont", "")
         if font_string:
             font = QFont()
-            font.fromString(font_string)
+            font.fromString(str(font_string))
             QApplication.setFont(font)
             self.ui.currentFontLabel.setText(f"Current Font: {font.family()}, {font.pointSize()} pt")
         else:
@@ -77,6 +64,7 @@ class ApplicationSettingsWidget(SettingsWidget):
         """Open QFontDialog to select a font."""
         current_font = QApplication.font()
         font, ok = QFontDialog.getFont(current_font, self)
+        assert isinstance(font, QFont), f"expected {type(font).__name__} to be QFont"
         if ok:
             QApplication.setFont(font)
             self.settings.settings.setValue("GlobalFont", font.toString())
@@ -111,11 +99,12 @@ class ApplicationSettingsWidget(SettingsWidget):
             cur_setting_val = self.settings.settings.value(name, setting.getter(), setting.setting_type)
             if setting.setting_type is bool:
                 checkbox = QCheckBox(name.replace("_", " "))
-                checkbox.setChecked(cur_setting_val)
+                checkbox.setChecked(bool(cur_setting_val))
                 checkbox.stateChanged.connect(lambda state, name=name: self.settings.settings.setValue(name, bool(state)))
                 misc_layout.addWidget(checkbox)  # pyright: ignore[reportCallIssue, reportArgumentType]
 
             elif setting.setting_type is int:
+                assert isinstance(cur_setting_val, int), f"expected {type(cur_setting_val).__name__} to be int"
                 spinbox = QSpinBox()
                 spinbox.setRange(0, 10000)  # Adjust the range as necessary
                 spinbox.setValue(cur_setting_val)
@@ -184,7 +173,7 @@ class ApplicationSettingsWidget(SettingsWidget):
         """Add a new environment variable."""
         dialog = EnvVariableDialog(self)
 
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             key, value = dialog.get_data()
             if not key or not value:
                 return
@@ -224,7 +213,7 @@ class ApplicationSettingsWidget(SettingsWidget):
         dialog = EnvVariableDialog(self)
         dialog.set_data(old_key, old_value)
 
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             new_key, new_value = dialog.get_data()
             if not new_key or not new_value:
                 return
@@ -271,11 +260,11 @@ class ApplicationSettingsWidget(SettingsWidget):
             self.settings.settings.setValue(name, default_value)
             if isinstance(default_value, bool):
                 checkbox = self.findChild(QCheckBox, name)
-                if checkbox:
+                if isinstance(checkbox, QCheckBox):
                     checkbox.setChecked(default_value)
             elif isinstance(default_value, int):
                 spinbox = self.findChild(QSpinBox, name)
-                if spinbox:
+                if isinstance(spinbox, QSpinBox):
                     spinbox.setValue(default_value)
         self._setup_attributes()
         self.settings.settings.remove("GlobalFont")
@@ -308,7 +297,11 @@ class ApplicationSettings(Settings):
     app_env_variables = Settings.addSetting(
         "EnvironmentVariables",
         {
-            "QT_MULTIMEDIA_PREFERRED_PLUGINS": os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation") if os.name == "nt" else "",
+            "QT_MULTIMEDIA_PREFERRED_PLUGINS": (
+                os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation")
+                if os.name == "nt"
+                else ""
+            )
         }
     )
 
@@ -335,134 +328,266 @@ class ApplicationSettings(Settings):
     # Note: if you see hasattr, means it is only available on certain apis (i.e. pyqt5 vs pyqt6 vs pyside6 vs pyside2)
     AA_ImmediateWidgetCreation = Settings.addSetting(
         "AA_ImmediateWidgetCreation",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_ImmediateWidgetCreation) if hasattr(Qt.ApplicationAttribute, "AA_ImmediateWidgetCreation") else True,
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_ImmediateWidgetCreation)
+            if hasattr(Qt.ApplicationAttribute, "AA_ImmediateWidgetCreation")
+            else True
+        ),
     )
     AA_MSWindowsUseDirect3DByDefault = Settings.addSetting(
         "AA_MSWindowsUseDirect3DByDefault",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_MSWindowsUseDirect3DByDefault) if hasattr(Qt.ApplicationAttribute, "AA_MSWindowsUseDirect3DByDefault") else False,  # noqa: E501
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_MSWindowsUseDirect3DByDefault)
+            if hasattr(Qt.ApplicationAttribute, "AA_MSWindowsUseDirect3DByDefault")
+            else False
+        ),
     )
     AA_DontShowIconsInMenus = Settings.addSetting(
         "AA_DontShowIconsInMenus",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus)
+            if hasattr(Qt.ApplicationAttribute, "AA_DontShowIconsInMenus")
+            else False
+        ),
     )
     AA_NativeWindows = Settings.addSetting(
         "AA_NativeWindows",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_NativeWindows),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_NativeWindows)
+            if hasattr(Qt.ApplicationAttribute, "AA_NativeWindows")
+            else False
+        ),
     )
     AA_DontCreateNativeWidgetSiblings = Settings.addSetting(
         "AA_DontCreateNativeWidgetSiblings",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontCreateNativeWidgetSiblings),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontCreateNativeWidgetSiblings)
+            if hasattr(Qt.ApplicationAttribute, "AA_DontCreateNativeWidgetSiblings")
+            else False
+        ),
     )
     AA_MacPluginApplication = Settings.addSetting(
         "AA_MacPluginApplication",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_MacPluginApplication) if hasattr(Qt.ApplicationAttribute, "AA_MSWindowsUseDirect3DByDefault") else False,
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_MacPluginApplication)
+            if hasattr(Qt.ApplicationAttribute, "AA_MacPluginApplication")
+            else False
+        ),
     )
     AA_DontUseNativeMenuBar = Settings.addSetting(
         "AA_DontUseNativeMenuBar",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontUseNativeMenuBar),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontUseNativeMenuBar)
+            if hasattr(Qt.ApplicationAttribute, "AA_DontUseNativeMenuBar")
+            else False
+        ),
     )
     AA_MacDontSwapCtrlAndMeta = Settings.addSetting(
         "AA_MacDontSwapCtrlAndMeta",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_MacDontSwapCtrlAndMeta),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_MacDontSwapCtrlAndMeta)
+            if hasattr(Qt.ApplicationAttribute, "AA_MacDontSwapCtrlAndMeta")
+            else False
+        ),
     )
     AA_X11InitThreads = Settings.addSetting(
         "AA_X11InitThreads",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_X11InitThreads) if hasattr(Qt.ApplicationAttribute, "AA_X11InitThreads") else False,
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_X11InitThreads)
+            if hasattr(Qt.ApplicationAttribute, "AA_X11InitThreads")
+            else False
+        ),
     )
     AA_Use96Dpi = Settings.addSetting(
         "AA_Use96Dpi",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_Use96Dpi),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_Use96Dpi)
+            if hasattr(Qt.ApplicationAttribute, "AA_Use96Dpi")
+            else False
+        ),
     )
     AA_SynthesizeTouchForUnhandledMouseEvents = Settings.addSetting(
         "AA_SynthesizeTouchForUnhandledMouseEvents",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_SynthesizeTouchForUnhandledMouseEvents),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_SynthesizeTouchForUnhandledMouseEvents)
+            if hasattr(Qt.ApplicationAttribute, "AA_SynthesizeTouchForUnhandledMouseEvents")
+            else False
+        ),
     )
     AA_SynthesizeMouseForUnhandledTouchEvents = Settings.addSetting(
         "AA_SynthesizeMouseForUnhandledTouchEvents",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_SynthesizeMouseForUnhandledTouchEvents),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_SynthesizeMouseForUnhandledTouchEvents)
+            if hasattr(Qt.ApplicationAttribute, "AA_SynthesizeMouseForUnhandledTouchEvents")
+            else False
+        ),
     )
     AA_UseHighDpiPixmaps = Settings.addSetting(
         "AA_UseHighDpiPixmaps",
-        True, #QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+            if hasattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps")
+            else True
+        ),
     )
     AA_ForceRasterWidgets = Settings.addSetting(
         "AA_ForceRasterWidgets",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets)
+            if hasattr(Qt.ApplicationAttribute, "AA_ForceRasterWidgets")
+            else False
+        ),
     )
     AA_UseDesktopOpenGL = Settings.addSetting(
         "AA_UseDesktopOpenGL",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseDesktopOpenGL),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseDesktopOpenGL)
+            if hasattr(Qt.ApplicationAttribute, "AA_UseDesktopOpenGL")
+            else False
+        ),
     )
     AA_UseOpenGLES = Settings.addSetting(
         "AA_UseOpenGLES",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseOpenGLES),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseOpenGLES)
+            if hasattr(Qt.ApplicationAttribute, "AA_UseOpenGLES")
+            else False
+        ),
     )
     AA_UseSoftwareOpenGL = Settings.addSetting(
         "AA_UseSoftwareOpenGL",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseSoftwareOpenGL),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseSoftwareOpenGL)
+            if hasattr(Qt.ApplicationAttribute, "AA_UseSoftwareOpenGL")
+            else False
+        ),
     )
     AA_ShareOpenGLContexts = Settings.addSetting(
         "AA_ShareOpenGLContexts",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+            if hasattr(Qt.ApplicationAttribute, "AA_ShareOpenGLContexts")
+            else False
+        ),
     )
     AA_SetPalette = Settings.addSetting(
         "AA_SetPalette",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_SetPalette),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_SetPalette)
+            if hasattr(Qt.ApplicationAttribute, "AA_SetPalette")
+            else False
+        ),
     )
     AA_EnableHighDpiScaling = Settings.addSetting(
         "AA_EnableHighDpiScaling",
-        True,  # QApplication.testAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
+            if hasattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling")
+            else True
+        ),
     )
     AA_DisableHighDpiScaling = Settings.addSetting(
         "AA_DisableHighDpiScaling",
-        False, # QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling)
+            if hasattr(Qt.ApplicationAttribute, "AA_DisableHighDpiScaling")
+            else False
+        ),
     )
     AA_PluginApplication = Settings.addSetting(
         "AA_PluginApplication",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_PluginApplication),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_PluginApplication)
+            if hasattr(Qt.ApplicationAttribute, "AA_PluginApplication")
+            else False
+        ),
     )
     AA_UseStyleSheetPropagationInWidgetStyles = Settings.addSetting(
         "AA_UseStyleSheetPropagationInWidgetStyles",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseStyleSheetPropagationInWidgetStyles),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseStyleSheetPropagationInWidgetStyles)
+            if hasattr(Qt.ApplicationAttribute, "AA_UseStyleSheetPropagationInWidgetStyles")
+            else False
+        ),
     )
     AA_DontUseNativeDialogs = Settings.addSetting(
         "AA_DontUseNativeDialogs",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontUseNativeDialogs),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontUseNativeDialogs)
+            if hasattr(Qt.ApplicationAttribute, "AA_DontUseNativeDialogs")
+            else False
+        ),
     )
     AA_SynthesizeMouseForUnhandledTabletEvents = Settings.addSetting(
         "AA_SynthesizeMouseForUnhandledTabletEvents",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_SynthesizeMouseForUnhandledTabletEvents),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_SynthesizeMouseForUnhandledTabletEvents)
+            if hasattr(Qt.ApplicationAttribute, "AA_SynthesizeMouseForUnhandledTabletEvents")
+            else False
+        ),
     )
     AA_CompressHighFrequencyEvents = Settings.addSetting(
         "AA_CompressHighFrequencyEvents",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_CompressHighFrequencyEvents),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_CompressHighFrequencyEvents)
+            if hasattr(Qt.ApplicationAttribute, "AA_CompressHighFrequencyEvents")
+            else False
+        ),
     )
     AA_DontCheckOpenGLContextThreadAffinity = Settings.addSetting(
         "AA_DontCheckOpenGLContextThreadAffinity",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontCheckOpenGLContextThreadAffinity),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontCheckOpenGLContextThreadAffinity)
+            if hasattr(Qt.ApplicationAttribute, "AA_DontCheckOpenGLContextThreadAffinity")
+            else False
+        ),
     )
     AA_DisableShaderDiskCache = Settings.addSetting(
         "AA_DisableShaderDiskCache",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableShaderDiskCache),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableShaderDiskCache)
+            if hasattr(Qt.ApplicationAttribute, "AA_DisableShaderDiskCache")
+            else False
+        ),
     )
     AA_DontShowShortcutsInContextMenus = Settings.addSetting(
         "AA_DontShowShortcutsInContextMenus",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontShowShortcutsInContextMenus),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontShowShortcutsInContextMenus)
+            if hasattr(Qt.ApplicationAttribute, "AA_DontShowShortcutsInContextMenus")
+            else False
+        ),
     )
     AA_CompressTabletEvents = Settings.addSetting(
         "AA_CompressTabletEvents",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_CompressTabletEvents),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_CompressTabletEvents)
+            if hasattr(Qt.ApplicationAttribute, "AA_CompressTabletEvents")
+            else False
+        ),
     )
     AA_DisableWindowContextHelpButton = Settings.addSetting(
         "AA_DisableWindowContextHelpButton",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableWindowContextHelpButton) if hasattr(Qt.ApplicationAttribute, "AA_DisableWindowContextHelpButton") else False,  # noqa: E501
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableWindowContextHelpButton)
+            if hasattr(Qt.ApplicationAttribute, "AA_DisableWindowContextHelpButton")
+            else False
+        ),
     )
     AA_DisableSessionManager = Settings.addSetting(
         "AA_DisableSessionManager",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableSessionManager),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableSessionManager)
+            if hasattr(Qt.ApplicationAttribute, "AA_DisableSessionManager")
+            else False
+        ),
     )
     AA_DisableNativeVirtualKeyboard = Settings.addSetting(
         "AA_DisableNativeVirtualKeyboard",
-        QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableNativeVirtualKeyboard),
+        (
+            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableNativeVirtualKeyboard)
+            if hasattr(Qt.ApplicationAttribute, "AA_DisableNativeVirtualKeyboard")
+            else False
+        ),
     )
     # endregion

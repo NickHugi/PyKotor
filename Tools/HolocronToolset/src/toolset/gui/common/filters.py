@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import uuid
-
 from abc import abstractmethod
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
@@ -38,9 +36,9 @@ class RobustSortFilterProxyModel(TemplateFilterProxyModel):
         if self.sort_states[column] == 0:
             self.reset_sort()
         elif self.sort_states[column] == 1:
-            self.sort(column, Qt.AscendingOrder)
+            self.sort(column, Qt.SortOrder.AscendingOrder)
         elif self.sort_states[column] == 2:  # noqa: PLR2004
-            self.sort(column, Qt.DescendingOrder)
+            self.sort(column, Qt.SortOrder.DescendingOrder)
 
     def reset_sort(self):
         self.sort(-1)  # Reset sorting
@@ -91,11 +89,8 @@ class NoScrollEventFilter(QObject):
         if parent_widget is None:
             RobustLogger().warning("NoScrollEventFilter has nothing to do, please provide a widget to process (parent_widget was somehow None here)", stack_info=True)
         for widget in parent_widget.findChildren(QWidget):
-            try:
-                if not widget.objectName():
-                    widget.setObjectName(widget.__class__.__name__ + uuid.uuid4().hex[6:])
-            except Exception:  # noqa: BLE001
-                RobustLogger().exception(f"Failed to set a temporary object name on {widget}")
+            if not isinstance(widget, QWidget):
+                continue
             if isinstance(widget, tuple(include_types)):
                 #RobustLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
                 widget.installEventFilter(self)
@@ -108,7 +103,7 @@ class HoverEventFilter(QObject):
     def __init__(self, debugKey: Qt.Key | None = None):
         super().__init__()
         self.current_widget: QObject | None = None
-        self.debugKey: Qt.Key = Qt.Key_Pause if debugKey is None else debugKey
+        self.debugKey: Qt.Key = Qt.Key.Key_Pause if debugKey is None else debugKey
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # pyright: ignore[reportIncompatibleMethodOverride]
         if event.type() == QEvent.Type.HoverEnter:

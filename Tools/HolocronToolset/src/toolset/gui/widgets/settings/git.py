@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from qtpy import QtCore
+from qtpy.QtCore import Qt
 
 from pykotor.common.misc import Color
 from toolset.data.settings import Settings
 from toolset.gui.common.filters import NoScrollEventFilter
 from toolset.gui.widgets.settings.base import SettingsWidget
-from toolset.utils.misc import QtKey, QtMouse
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
@@ -231,38 +231,38 @@ class GITSettings(Settings):
     # region Binds (Controls)
     moveCameraBind = Settings.addSetting(
         "moveCameraBind",
-        ({QtKey.Key_Control}, {QtMouse.LeftButton}),
+        ({Qt.Key.Key_Control}, {Qt.MouseButton.LeftButton}),
     )
     rotateCameraBind = Settings.addSetting(
         "rotateCameraBind",
-        ({QtKey.Key_Control}, {QtMouse.MiddleButton}),
+        ({Qt.Key.Key_Control}, {Qt.MouseButton.MiddleButton}),
     )
     zoomCameraBind = Settings.addSetting(
         "zoomCameraBind",
-        ({QtKey.Key_Control}, set()),
+        ({Qt.Key.Key_Control}, set()),
     )
     rotateSelectedToPointBind = Settings.addSetting(
         "rotateSelectedToPointBind",
-        (set(), {QtMouse.MiddleButton}),
+        (set(), {Qt.MouseButton.MiddleButton}),
     )
     moveSelectedBind = Settings.addSetting(
         "moveSelectedBind",
-        (set(), {QtMouse.LeftButton}),
+        (set(), {Qt.MouseButton.LeftButton}),
     )
     selectUnderneathBind = Settings.addSetting(
         "selectUnderneathBind",
-        (set(), {QtMouse.LeftButton}),
+        (set(), {Qt.MouseButton.LeftButton}),
     )
     deleteSelectedBind = Settings.addSetting(
         "deleteSelectedBind",
-        ({QtKey.Key_Delete}, None),
+        ({Qt.Key.Key_Delete}, None),
     )
     duplicateSelectedBind = Settings.addSetting(
         "duplicateSelectedBind",
-        ({QtKey.Key_Alt}, {QtMouse.LeftButton}),
+        ({Qt.Key.Key_Alt}, {Qt.MouseButton.LeftButton}),
     )
     toggleLockInstancesBind = Settings.addSetting(
         "toggleLockInstancesBind",
-        ({QtKey.Key_L}, set()),
+        ({Qt.Key.Key_L}, set()),
     )
     # endregion

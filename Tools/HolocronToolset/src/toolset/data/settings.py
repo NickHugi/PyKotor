@@ -5,12 +5,7 @@ from typing import Any, Generic, TypeVar
 from loggerplus import RobustLogger
 from qtpy.QtCore import QSettings, Qt
 
-from toolset.utils.misc import (
-    getQtKey,
-    getQtMouseButton,
-    get_qt_button_string,
-    get_qt_key_string,
-)
+from toolset.utils.misc import getQtKey, getQtMouseButton, get_qt_button_string, get_qt_key_string
 
 
 class QtTypeWrapper:
