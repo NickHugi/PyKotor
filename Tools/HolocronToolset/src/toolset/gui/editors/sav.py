@@ -33,7 +33,7 @@ class SAVEditor(Editor):
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self._jrl: JRL = JRL()
         self._model: QStandardItemModel = QStandardItemModel(self)
@@ -43,7 +43,7 @@ class SAVEditor(Editor):
     def _setup_signals(self):
         QShortcut("Del", self).activated.connect(self.onDeleteShortcut)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         self._installation = installation
 
         planets: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLANETS)

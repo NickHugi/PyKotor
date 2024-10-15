@@ -74,7 +74,6 @@ from toolset.utils.window import add_window, open_resource_editor
 from utility.error_handling import universal_simplify_exception
 from utility.misc import is_debug_mode
 from utility.tricks import debug_reload_pymodules
-from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 
 if TYPE_CHECKING:
     from qtpy import QtGui
@@ -172,24 +171,19 @@ class ToolWindow(QMainWindow):
         self.ui.verticalLayoutRightPanel.insertWidget(2, self.erf_editor_button)  # pyright: ignore[reportArgumentType]
         self.erf_editor_button.hide()
         modules_resource_list = self.ui.modulesWidget.ui
-        modules_section_combo: FilterComboBox = cast(FilterComboBox, modules_resource_list.sectionCombo)  # type: ignore[]
-        modules_section_combo.__class__ = FilterComboBox
-        modules_section_combo.__init__(init=False)
-        modules_section_combo.setEditable(False)
+        modules_section_combo = modules_resource_list.sectionCombo  # type: ignore[]
         refresh_button: QPushButton = modules_resource_list.refreshButton  # type: ignore[attr-defined]
         designer_button: QPushButton = self.ui.specialActionButton  # type: ignore[attr-defined]
         modules_resource_list.horizontalLayout_2.removeWidget(modules_section_combo)  # type: ignore[arg-type]
         modules_resource_list.horizontalLayout_2.removeWidget(refresh_button)  # type: ignore[arg-type]
         modules_resource_list.verticalLayout.removeItem(modules_resource_list.horizontalLayout_2)  # type: ignore[arg-type]
-        modules_section_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
-        modules_section_combo.setMinimumWidth(250)
         refresh_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
         designer_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
-        stack_button_layout = QVBoxLayout()
+        stack_button_layout: QVBoxLayout = QVBoxLayout()
         stack_button_layout.setSpacing(1)
         stack_button_layout.addWidget(refresh_button)  # type: ignore[arg-type]
         stack_button_layout.addWidget(designer_button)  # type: ignore[arg-type]
-        top_layout = QHBoxLayout()
+        top_layout: QHBoxLayout = QHBoxLayout()
         top_layout.addWidget(modules_section_combo)  # type: ignore[arg-type]
         top_layout.addLayout(stack_button_layout)
         self.ui.verticalLayoutModulesTab.insertLayout(0, top_layout)  # type: ignore[attributeAccessIssue]
@@ -230,12 +224,7 @@ class ToolWindow(QMainWindow):
                 self.active.module_path() / self.ui.modulesWidget.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole),
             )
 
-            icon_path = ":/images/icons/sith.png"
-            if not QPixmap(icon_path).isNull():
-                RobustLogger().debug(f"Module Designer window Icon loaded successfully from {icon_path}")
-                designer_ui.setWindowIcon(QIcon(QPixmap(icon_path)))
-            else:
-                RobustLogger().debug(f"Failed to load Module Designer window icon from {icon_path}")
+            designer_ui.setWindowIcon(cast(QApplication, QApplication.instance()).windowIcon())
             add_window(designer_ui)
             return designer_ui
 
@@ -348,10 +337,6 @@ class ToolWindow(QMainWindow):
     def on_module_changed(self, new_module_file: str):
         self.on_module_reload(new_module_file)
 
-    @Slot(bool)
-    def on_module_refresh(self, reload: bool = True):  # noqa: FBT001, FBT002
-        self.refresh_module_list(reload=reload)
-
     @Slot(str)
     def on_module_reload(self, module_file: str):
         assert self.active is not None, "No active installation selected"
@@ -376,6 +361,10 @@ class ToolWindow(QMainWindow):
             self.active.reload_module(changed_file)
             if self.ui.modulesWidget.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole) == changed_file:
                 self.on_module_reload(changed_file)
+
+    @Slot()
+    def on_module_refresh(self):  # noqa: FBT001, FBT002
+        self.refresh_module_list()
 
     @Slot(str)
     def on_savepath_changed(self, new_save_dir: str):

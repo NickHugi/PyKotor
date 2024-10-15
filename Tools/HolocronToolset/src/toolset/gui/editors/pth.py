@@ -248,7 +248,7 @@ class PTHEditor(Editor):
         self.ui.renderArea.sig_mouse_moved.connect(self.onMouseMoved)
         self.ui.renderArea.sig_mouse_scrolled.connect(self.on_mouse_scrolled)
         self.ui.renderArea.sig_mouse_released.connect(self.onMouseReleased)
-        self.ui.renderArea.customContextMenuRequested.connect(self.onContextMenu)
+        self.ui.renderArea.customContextMenuRequested.connect(self.on_context_menu)
         self.ui.renderArea.sig_key_pressed.connect(self.onKeyPressed)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
@@ -361,7 +361,7 @@ class PTHEditor(Editor):
 
     # region Signal Callbacks
     @status_bar_decorator
-    def onContextMenu(self, point: QPoint):
+    def on_context_menu(self, point: QPoint):
         global_point: QPoint = self.ui.renderArea.mapToGlobal(point)
         world: Vector3 = self.ui.renderArea.to_world_coords(point.x(), point.y())
         self._controls.on_render_context_menu(Vector2.from_vector3(world), global_point)

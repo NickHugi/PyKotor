@@ -12,7 +12,12 @@ from qtpy.QtCore import (
     Slot,  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QImage, QPixmap, QTransform
-from qtpy.QtWidgets import QAction, QComboBox, QLineEdit, QMenu
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QComboBox,
+    QLineEdit,
+    QMenu,
+)
 
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, ResourceIdentifier
@@ -50,49 +55,49 @@ class HTInstallation(Installation):
     Ideally we want all IO to be non-blocking and asynchronous, and load resources as they are needed in the processpoolexecutor.
     """
 
-    TwoDA_PORTRAITS: str = "portraits"
-    TwoDA_APPEARANCES: str = "appearance"
-    TwoDA_SUBRACES: str = "subrace"
-    TwoDA_SPEEDS: str = "creaturespeed"
-    TwoDA_SOUNDSETS: str = "soundset"
-    TwoDA_FACTIONS: str = "repute"
-    TwoDA_GENDERS: str = "gender"
-    TwoDA_PERCEPTIONS: str = "ranges"
-    TwoDA_CLASSES: str = "classes"
-    TwoDA_FEATS: str = "feat"
-    TwoDA_POWERS: str = "spells"
-    TwoDA_BASEITEMS: str = "baseitems"
-    TwoDA_PLACEABLES: str = "placeables"
-    TwoDA_DOORS: str = "genericdoors"
-    TwoDA_CURSORS: str = "cursors"
-    TwoDA_TRAPS: str = "traps"
-    TwoDA_RACES: str = "racialtypes"
-    TwoDA_SKILLS: str = "skills"
-    TwoDA_UPGRADES: str = "upgrade"
-    TwoDA_ENC_DIFFICULTIES: str = "encdifficulty"
-    TwoDA_ITEM_PROPERTIES: str = "itempropdef"
-    TwoDA_IPRP_PARAMTABLE: str = "iprp_paramtable"
-    TwoDA_IPRP_COSTTABLE: str = "iprp_costtable"
-    TwoDA_IPRP_ABILITIES: str = "iprp_abilities"
-    TwoDA_IPRP_ALIGNGRP: str = "iprp_aligngrp"
-    TwoDA_IPRP_COMBATDAM: str = "iprp_combatdam"
-    TwoDA_IPRP_DAMAGETYPE: str = "iprp_damagetype"
-    TwoDA_IPRP_PROTECTION: str = "iprp_protection"
-    TwoDA_IPRP_ACMODTYPE: str = "iprp_acmodtype"
-    TwoDA_IPRP_IMMUNITY: str = "iprp_immunity"
-    TwoDA_IPRP_SAVEELEMENT: str = "iprp_saveelement"
-    TwoDA_IPRP_SAVINGTHROW: str = "iprp_savingthrow"
-    TwoDA_IPRP_ONHIT: str = "iprp_onhit"
-    TwoDA_IPRP_AMMOTYPE: str = "iprp_ammotype"
-    TwoDA_IPRP_MONSTERHIT: str = "iprp_mosterhit"
-    TwoDA_IPRP_WALK: str = "iprp_walk"
-    TwoDA_EMOTIONS: str = "emotion"
-    TwoDA_EXPRESSIONS: str = "facialanim"
-    TwoDA_VIDEO_EFFECTS: str = "videoeffects"
-    TwoDA_DIALOG_ANIMS: str = "dialoganimations"
-    TwoDA_PLANETS: str = "planetary"
-    TwoDA_PLOT: str = "plot"
-    TwoDA_CAMERAS: str = "camerastyle"
+    TwoDA_PORTRAITS: Literal["portraits"] = "portraits"
+    TwoDA_APPEARANCES: Literal["appearance"] = "appearance"
+    TwoDA_SUBRACES: Literal["subrace"] = "subrace"
+    TwoDA_SPEEDS: Literal["creaturespeed"] = "creaturespeed"
+    TwoDA_SOUNDSETS: Literal["soundset"] = "soundset"
+    TwoDA_FACTIONS: Literal["repute"] = "repute"
+    TwoDA_GENDERS: Literal["gender"] = "gender"
+    TwoDA_PERCEPTIONS: Literal["ranges"] = "ranges"
+    TwoDA_CLASSES: Literal["classes"] = "classes"
+    TwoDA_FEATS: Literal["feat"] = "feat"
+    TwoDA_POWERS: Literal["spells"] = "spells"
+    TwoDA_BASEITEMS: Literal["baseitems"] = "baseitems"
+    TwoDA_PLACEABLES: Literal["placeables"] = "placeables"
+    TwoDA_DOORS: Literal["genericdoors"] = "genericdoors"
+    TwoDA_CURSORS: Literal["cursors"] = "cursors"
+    TwoDA_TRAPS: Literal["traps"] = "traps"
+    TwoDA_RACES: Literal["racialtypes"] = "racialtypes"
+    TwoDA_SKILLS: Literal["skills"] = "skills"
+    TwoDA_UPGRADES: Literal["upgrade"] = "upgrade"
+    TwoDA_ENC_DIFFICULTIES: Literal["encdifficulty"] = "encdifficulty"
+    TwoDA_ITEM_PROPERTIES: Literal["itempropdef"] = "itempropdef"
+    TwoDA_IPRP_PARAMTABLE: Literal["iprp_paramtable"] = "iprp_paramtable"
+    TwoDA_IPRP_COSTTABLE: Literal["iprp_costtable"] = "iprp_costtable"
+    TwoDA_IPRP_ABILITIES: Literal["iprp_abilities"] = "iprp_abilities"
+    TwoDA_IPRP_ALIGNGRP: Literal["iprp_aligngrp"] = "iprp_aligngrp"
+    TwoDA_IPRP_COMBATDAM: Literal["iprp_combatdam"] = "iprp_combatdam"
+    TwoDA_IPRP_DAMAGETYPE: Literal["iprp_damagetype"] = "iprp_damagetype"
+    TwoDA_IPRP_PROTECTION: Literal["iprp_protection"] = "iprp_protection"
+    TwoDA_IPRP_ACMODTYPE: Literal["iprp_acmodtype"] = "iprp_acmodtype"
+    TwoDA_IPRP_IMMUNITY: Literal["iprp_immunity"] = "iprp_immunity"
+    TwoDA_IPRP_SAVEELEMENT: Literal["iprp_saveelement"] = "iprp_saveelement"
+    TwoDA_IPRP_SAVINGTHROW: Literal["iprp_savingthrow"] = "iprp_savingthrow"
+    TwoDA_IPRP_ONHIT: Literal["iprp_onhit"] = "iprp_onhit"
+    TwoDA_IPRP_AMMOTYPE: Literal["iprp_ammotype"] = "iprp_ammotype"
+    TwoDA_IPRP_MONSTERHIT: Literal["iprp_mosterhit"] = "iprp_mosterhit"
+    TwoDA_IPRP_WALK: Literal["iprp_walk"] = "iprp_walk"
+    TwoDA_EMOTIONS: Literal["emotion"] = "emotion"
+    TwoDA_EXPRESSIONS: Literal["facialanim"] = "facialanim"
+    TwoDA_VIDEO_EFFECTS: Literal["videoeffects"] = "videoeffects"
+    TwoDA_DIALOG_ANIMS: Literal["dialoganimations"] = "dialoganimations"
+    TwoDA_PLANETS: Literal["planetary"] = "planetary"
+    TwoDA_PLOT: Literal["plot"] = "plot"
+    TwoDA_CAMERAS: Literal["camerastyle"] = "camerastyle"
 
     def __init__(
         self,
@@ -112,16 +117,16 @@ class HTInstallation(Installation):
         self._cache_tpc: dict[str, TPC] = {}
 
         # New cache dictionaries
-        self._cache_chitin: list[FileResource] | None = None
-        self._cache_lips: dict[str, list[FileResource]] | None = None
-        self._cache_modules: dict[str, list[FileResource]] | None = None
-        self._cache_override: dict[str, list[FileResource]] | None = None
-        self._cache_rims: dict[str, list[FileResource]] | None = None
-        self._cache_saves: dict[Path, dict[Path, list[FileResource]]] | None = None
-        self._cache_streammusic: list[FileResource] | None = None
-        self._cache_streamsounds: list[FileResource] | None = None
-        self._cache_streamwaves: list[FileResource] | None = None
-        self._cache_texturepacks: dict[str, list[FileResource]] | None = None
+        self._cache_chitin: list[FileResource] = []
+        self._cache_lips: dict[str, list[FileResource]] = {}
+        self._cache_modules: dict[str, list[FileResource]] = {}
+        self._cache_override: dict[str, list[FileResource]] = {}
+        self._cache_rims: dict[str, list[FileResource]] = {}
+        self._cache_saves: dict[Path, dict[Path, list[FileResource]]] = {}
+        self._cache_streammusic: list[FileResource] = []
+        self._cache_streamsounds: list[FileResource] = []
+        self._cache_streamwaves: list[FileResource] = []
+        self._cache_texturepacks: dict[str, list[FileResource]] = {}
 
     def _clear_cache(self, cache_name: str):
         """Clear a specific cache and print a debug message."""
@@ -143,7 +148,7 @@ class HTInstallation(Installation):
         """Get data from cache or load it if not present."""
         cache_attr = f"_cache_{cache_name}"
         cached_data: Any | None = getattr(self, cache_attr, None)
-        if cached_data is None:
+        if not cached_data:
             cached_data = load_method()
             setattr(self, cache_attr, cached_data)
         return cached_data
@@ -302,7 +307,7 @@ class HTInstallation(Installation):
         @Slot(QPoint)
         def extend_context_menu(pos: QPoint):
             root_menu = QMenu(widget) if isinstance(widget, QComboBox) else widget.createStandardContextMenu()
-            widget_text = (
+            widget_text: str = (
                 widget.currentText().strip()
                 if isinstance(widget, QComboBox)
                 else (
@@ -312,9 +317,7 @@ class HTInstallation(Installation):
                 ).strip()
             )
 
-            if widget_text:
-                build_file_context_menu(root_menu, widget_text)
-
+            build_file_context_menu(root_menu, widget_text)
             root_menu.exec(widget.mapToGlobal(pos))
 
         def build_file_context_menu(root_menu: QMenu, widgetText: str):
@@ -352,8 +355,9 @@ class HTInstallation(Installation):
             if flat_locations:
                 for location in flat_locations:
                     display_path = location.filepath.relative_to(self.path())
-                    if location.as_file_resource().inside_bif:
-                        display_path /= location.as_file_resource().filename()
+                    file_resource = location.as_file_resource()
+                    if file_resource.inside_bif:
+                        display_path /= file_resource.filename()
                     location_menu = file_menu.addMenu(str(display_path))
                     ResourceItems(resources=[location]).build_menu(location_menu, self)
 
@@ -629,15 +633,15 @@ class HTInstallation(Installation):
             RobustLogger().warning("Failed to retrieve `baseitems.2da` from your installation.")
             return "Unknown"
         try:
-            itemClass = baseitems.get_cell(base_item, "itemclass")
+            item_class = baseitems.get_cell(base_item, "itemclass")
         except Exception:  # noqa: BLE001  # pylint: disable=broad-exception-caught
             RobustLogger().exception(f"An exception occurred while getting cell '{base_item}' from `baseitems.2da`.")
             return "Unknown"
         else:
             variation = model_variation if model_variation != 0 else texture_variation
-            return f"i{itemClass}_{str(variation).rjust(3, '0')}"
+            return f"i{item_class}_{str(variation).rjust(3, '0')}"
 
-    def getItemIcon(
+    def get_item_icon(
         self,
         base_item: int,
         model_variation: int,

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import threading
-import traceback
 
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
@@ -76,22 +75,21 @@ from utility.common.more_collections import CaseInsensitiveDict
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from concurrent.futures import Future
-    from multiprocessing import Queue
 
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.module import Module, ModulePieceResource, ModuleResource
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.extract.installation import Installation
-    from pykotor.gl.models.mdl import Model, Node
-    from pykotor.resource.formats.lyt import LYT
+    from pykotor.gl.models.mdl import Model
     from pykotor.resource.formats.tpc import TPC
-    from pykotor.resource.generics.git import GIT
-    from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.utc import UTC
 
 from typing import TYPE_CHECKING
+
+from pykotor.resource.formats.lyt import LYT
+from pykotor.resource.generics.git import GIT
+from pykotor.resource.generics.ifo import IFO
 
 T = TypeVar("T")
 SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]

@@ -140,7 +140,7 @@ class AREEditor(Editor):
         cameras: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_CAMERAS)
 
         self.ui.cameraStyleSelect.clear()
-        self.ui.cameraStyleSelect.setContext(cameras, self._installation, HTInstallation.TwoDA_CAMERAS)
+        self.ui.cameraStyleSelect.set_context(cameras, self._installation, HTInstallation.TwoDA_CAMERAS)
         for label in cameras.get_column("name"):
             self.ui.cameraStyleSelect.addItem(label.title())
 

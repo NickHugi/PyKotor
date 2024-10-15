@@ -67,7 +67,7 @@ class UTDEditor(Editor):
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self.update3dPreview()
         self.new()
@@ -83,19 +83,19 @@ class UTDEditor(Editor):
         Processing Logic:
         ----------------
             - Connect tagGenerateButton click signal to generate_tag method
-            - Connect resrefGenerateButton click signal to generateResref method
+            - Connect resrefGenerateButton click signal to generate_resref method
             - Connect conversationModifyButton click signal to editConversation method
             - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
             - Connect actionShowPreview triggered signal to togglePreview method.
         """
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
 
         self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
         self.ui.actionShowPreview.triggered.connect(self.togglePreview)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         """Sets up the installation for editing.
 
         Args:
@@ -120,11 +120,11 @@ class UTDEditor(Editor):
         appearances: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_DOORS)
         factions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
 
-        self.ui.appearanceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_DOORS)
-        self.ui.factionSelect.setContext(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
+        self.ui.appearanceSelect.set_context(appearances, self._installation, HTInstallation.TwoDA_DOORS)
+        self.ui.factionSelect.set_context(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
 
-        self.ui.appearanceSelect.setItems(appearances.get_column("label"))
-        self.ui.factionSelect.setItems(factions.get_column("label"))
+        self.ui.appearanceSelect.set_items(appearances.get_column("label"))
+        self.ui.factionSelect.set_items(factions.get_column("label"))
 
         self.handleWidgetWithTSL(self.ui.notBlastableCheckbox, installation)
         self.handleWidgetWithTSL(self.ui.difficultyModSpin, installation)
@@ -328,17 +328,17 @@ class UTDEditor(Editor):
         super().new()
         self._loadUTD(UTD())
 
-    def changeName(self):
+    def change_name(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generate_tag(self):
         if not self.ui.resrefEdit.text():
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname:
             self.ui.resrefEdit.setText(self._resname)
         else:

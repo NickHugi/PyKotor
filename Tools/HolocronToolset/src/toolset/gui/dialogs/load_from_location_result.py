@@ -14,7 +14,7 @@ from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, List, Set, cast
+from typing import TYPE_CHECKING, Any, Callable, List, Set, cast
 
 import qtpy
 import send2trash
@@ -82,7 +82,7 @@ from utility.misc import is_float, is_int
 from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Sequence
 
     from qtpy.QtCore import QPoint
 
@@ -612,7 +612,8 @@ class ResourceItems(FileItems):
         resources: Sequence[FileResource | ResourceResult | LocationResult] | None = None,
         **kwargs,
     ):
-        self.viewport: Callable = kwargs.pop("viewport", None)
+        if "viewport" in kwargs:
+            self.viewport = cast(Callable, kwargs.pop("viewport"))
         self.resources: list[FileResource] = []
         if resources is not None:
             self._unify_resources(resources)

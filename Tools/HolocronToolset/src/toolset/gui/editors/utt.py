@@ -50,7 +50,7 @@ class UTTEditor(Editor):
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self._utt: UTT = UTT()
 
@@ -58,9 +58,9 @@ class UTTEditor(Editor):
 
     def _setup_signals(self):
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
 
-    def _setupInstallation(
+    def _setup_installation(
         self,
         installation: HTInstallation,
     ):
@@ -72,15 +72,15 @@ class UTTEditor(Editor):
         traps: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_TRAPS)
 
         if cursors:
-            self.ui.cursorSelect.setContext(cursors, installation, HTInstallation.TwoDA_CURSORS)
+            self.ui.cursorSelect.set_context(cursors, installation, HTInstallation.TwoDA_CURSORS)
         if factions:
-            self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+            self.ui.factionSelect.set_context(factions, installation, HTInstallation.TwoDA_FACTIONS)
         if traps:
-            self.ui.trapSelect.setContext(traps, installation, HTInstallation.TwoDA_TRAPS)
+            self.ui.trapSelect.set_context(traps, installation, HTInstallation.TwoDA_TRAPS)
 
-        self.ui.cursorSelect.setItems(cursors.get_column("label"))
-        self.ui.factionSelect.setItems(factions.get_column("label"))
-        self.ui.trapSelect.setItems(traps.get_column("label"))
+        self.ui.cursorSelect.set_items(cursors.get_column("label"))
+        self.ui.factionSelect.set_items(factions.get_column("label"))
+        self.ui.trapSelect.set_items(traps.get_column("label"))
 
         self.relevant_script_resnames = sorted(
             iter(
@@ -233,17 +233,17 @@ class UTTEditor(Editor):
         super().new()
         self._loadUTT(UTT())
 
-    def changeName(self):
+    def change_name(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generate_tag(self):
         if not self.ui.resrefEdit.text():
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname:
             self.ui.resrefEdit.setText(self._resname)
         else:

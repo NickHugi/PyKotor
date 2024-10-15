@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from loggerplus import RobustLogger
 from qtpy.QtCore import Qt
-from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
+from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox, QWidget
 
 from pykotor.resource.type import ResourceType
-from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
 
@@ -18,7 +17,6 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QDialog, QMainWindow
 
-    from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
     from toolset.gui.editor import Editor
 
@@ -66,30 +64,75 @@ def add_recent_file(file: Path):
     settings.recentFiles = recent_files
 
 
+import os
+
+from functools import singledispatch
+
+from pykotor.extract.file import FileResource
+
+
+@singledispatch
 def open_resource_editor(
+    resource_or_path: FileResource | os.PathLike | str,
+    installation: HTInstallation | None = None,
+    parent_window: QWidget | None = None,
+    *,
+    gff_specialized: bool | None = None,
+    resname: str | None = None,
+    restype: ResourceType | None = None,
+    data: bytes | None = None,
+) -> tuple[os.PathLike | str | None, Editor | QMainWindow | None]:
+    raise NotImplementedError("Unsupported input type")
+
+@open_resource_editor.register(FileResource)
+def _(
     resource: FileResource,
     installation: HTInstallation | None = None,
     parent_window: QWidget | None = None,
     *,
     gff_specialized: bool | None = None,
-) -> tuple[os.PathLike | str, Editor | QMainWindow] | tuple[None, None]:
-    """Opens an editor for the specified resource.
+    **kwargs
+) -> tuple[os.PathLike | str | None, Editor | QMainWindow | None]:
+    # Implementation for FileResource
+    return _open_resource_editor_impl(
+        resource=resource,
+        installation=installation,
+        parent_window=parent_window,
+        gff_specialized=gff_specialized
+    )
 
-    If the user settings have the editor set to inbuilt it will return
-    the editor, otherwise it returns None.
+@open_resource_editor.register(str)
+@open_resource_editor.register(os.PathLike)
+def _(  # noqa: PLR0913
+    path: os.PathLike | str,
+    resname: str,
+    restype: ResourceType,
+    data: bytes,
+    installation: HTInstallation | None = None,
+    parent_window: QWidget | None = None,
+    *,
+    gff_specialized: bool | None = None,
+) -> tuple[os.PathLike | str | None, Editor | QMainWindow | None]:
+    return _open_resource_editor_impl(
+        filepath=path,
+        resname=resname,
+        restype=restype,
+        data=data,
+        installation=installation,
+        parent_window=parent_window,
+        gff_specialized=gff_specialized
+    )
 
-    Args:
-    ----
-        resource (FileResource): The resource to open an editor for.
-        parent_window (QWidget | None): The parent window.
-        installation (HTInstallation | None): The installation.
-        gff_specialized (bool | None): Use the editor specific to the GFF-type file. If None, uses is configured in the settings.
-
-    Returns:
-    -------
-        Either the Editor object if using an internal editor, the filepath if using a external editor or None if
-        no editor was successfully opened.
-    """
+def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
+    resource: FileResource | None = None,
+    filepath: os.PathLike | str | None = None,
+    resname: str | None = None,
+    restype: ResourceType | None = None,
+    data: bytes | None = None,
+    installation: HTInstallation | None = None,
+    parent_window: QWidget | None = None,
+    gff_specialized: bool | None = None,
+) -> tuple[os.PathLike | str | None, Editor | QMainWindow | None]:
     # To avoid circular imports, these need to be placed within the function
     from toolset.gui.editors.are import AREEditor  # noqa: PLC0415
     from toolset.gui.editors.bwm import BWMEditor  # noqa: PLC0415
@@ -99,6 +142,7 @@ def open_resource_editor(
     from toolset.gui.editors.git import GITEditor  # noqa: PLC0415
     from toolset.gui.editors.jrl import JRLEditor  # noqa: PLC0415
     from toolset.gui.editors.ltr import LTREditor  # noqa: PLC0415
+    from toolset.gui.editors.mdl import MDLEditor
     from toolset.gui.editors.nss import NSSEditor  # noqa: PLC0415
     from toolset.gui.editors.pth import PTHEditor  # noqa: PLC0415
     from toolset.gui.editors.ssf import SSFEditor  # noqa: PLC0415
@@ -115,24 +159,28 @@ def open_resource_editor(
     from toolset.gui.editors.uts import UTSEditor  # noqa: PLC0415
     from toolset.gui.editors.utt import UTTEditor  # noqa: PLC0415
     from toolset.gui.editors.utw import UTWEditor  # noqa: PLC0415
-    from toolset.gui.windows.audio_player import AudioPlayer  # noqa: PLC0415
+    from toolset.gui.windows.audio_player import AudioPlayer  # noqa: PLC0415  # noqa: PLC0415
 
     if gff_specialized is None:
         gff_specialized = GlobalSettings().gff_specializedEditors
 
     editor: Editor | QMainWindow | None = None
     parent_window_widget: QWidget | None = parent_window if isinstance(parent_window, QWidget) else None
-    # don't send parentWindowWidget to the editors. This allows each editor to be treated as their own window.
 
-    try:
-        data: bytes = resource.data()
-    except Exception:  # noqa: BLE001
-        RobustLogger().exception("Exception occurred in open_selected_resource")
-        QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "An error occurred while attempting to read the data of the file.").exec()
-        return None, None
-    restype = resource.restype()
-    resname = resource.resname()
-    filepath = resource.filepath()
+    if resource:
+        try:
+            data = resource.data()
+        except Exception:  # noqa: BLE001
+            RobustLogger().exception("Exception occurred in open_selected_resource")
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "An error occurred while attempting to read the data of the file.").exec()
+            return None, None
+        restype = resource.restype()
+        resname = resource.resname()
+        filepath = resource.filepath()
+    elif filepath and resname and restype and data is not None:
+        ...
+    else:
+        raise ValueError("Invalid input combination")
 
     if restype.target_type() is ResourceType.TwoDA:
         editor = TwoDAEditor(None, installation)
@@ -245,8 +293,8 @@ def open_resource_editor(
 
     if restype.category == "Audio":
         editor = AudioPlayer(None)
-        if parent_window_widget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
-            editor.setWindowIcon(parent_window_widget.windowIcon())
+        app = cast(QApplication, QApplication.instance())
+        editor.setWindowIcon(app.windowIcon())
 
     if restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM):
         editor = ERFEditor(None, installation)

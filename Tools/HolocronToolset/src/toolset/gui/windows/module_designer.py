@@ -979,13 +979,13 @@ class ModuleDesigner(QMainWindow):
         instance_mode.select_underneath = lambda: self.set_selection(self.ui.flatRenderer.instances_under_mouse())
         instance_mode.__init__(self, self._installation, self.git())
         # self._controls2d._mode.rotateSelectedToPoint = self.rotateSelected
-        self._controls2d._mode = instance_mode
+        self._controls2d._mode = instance_mode  # noqa: SLF001
 
     def enter_geometry_mode(self):
-        self._controls2d._mode = _GeometryMode(self, self._installation, self.git(), hide_others=False)
+        self._controls2d._mode = _GeometryMode(self, self._installation, self.git(), hide_others=False)  # noqa: SLF001
 
     def enter_spawn_mode(self):
-        # TODO
+        # TODO(NickHugi):
         self._controls2d._mode = _SpawnMode(self, self._installation, self.git())  # noqa: SLF001
 
     def on_resource_tree_context_menu(self, point: QPoint):

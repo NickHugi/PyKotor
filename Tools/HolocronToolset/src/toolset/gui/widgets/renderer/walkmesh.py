@@ -385,8 +385,8 @@ class WalkmeshRenderer(QWidget):
             retBool = not self.hide_waypoints
         return retBool
 
-    def instance_pixmap(self, instance: GITInstance) -> QPixmap | None:
-        retPixmap: QPixmap | None = None
+    def instance_pixmap(self, instance: GITInstance) -> QPixmap:
+        retPixmap: QPixmap = QPixmap()
         if isinstance(instance, GITCamera):
             retPixmap = self._pixmap_camera
         if isinstance(instance, GITCreature):

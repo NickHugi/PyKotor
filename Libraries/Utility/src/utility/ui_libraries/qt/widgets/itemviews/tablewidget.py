@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from typing import TYPE_CHECKING
-
-import qtpy
 
 from qtpy.QtCore import QAbstractTableModel, QModelIndex, Qt
 from qtpy.QtWidgets import QApplication, QPushButton, QTableWidget, QVBoxLayout, QWidget

@@ -195,7 +195,7 @@
    <customwidget>
      <class>RobustTableView</class>
      <extends>QTableView</extends>
-    <header location="global">utility.ui_libraries.qt.widgets.itemviews.treeview</header>
+    <header location="global">utility.ui_libraries.qt.widgets.itemviews.tableview</header>
    </customwidget>
 </customwidgets>
 <resources/>

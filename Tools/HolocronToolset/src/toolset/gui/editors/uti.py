@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
-from loggerplus import RobustLogger
-from qtpy import QtCore
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QPixmap
 from qtpy.QtWidgets import (
-    QAction,
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
     QApplication,
     QDialog,
     QListWidgetItem,
     QMenu,
-    QShortcut,
+    QShortcut,  # pyright: ignore[reportPrivateImportUsage]
     QTreeWidgetItem,
 )
 
@@ -24,21 +23,18 @@ from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.dialogs.load_from_location_result import (
-    FileSelectionWindow,
-    ResourceItems,
-)
+from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
 from toolset.utils.window import add_window
 
 if TYPE_CHECKING:
-
     import os
 
+    from qtpy.QtCore import QPoint
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
-    from pykotor.extract.file import LocationResult
+    from pykotor.extract.file import FileResource, LocationResult, ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
@@ -67,15 +63,15 @@ class UTIEditor(Editor):
         self._setup_signals()
         self._installation: HTInstallation
 
-        self._setupInstallation(installation)
+        self._setup_installation(installation)
         self.ui.descEdit.set_installation(installation)
 
         self.setMinimumSize(700, 350)
 
-        QShortcut("Del", self).activated.connect(self.onDelShortcut)
+        QShortcut("Del", self).activated.connect(self.on_del_shortcut)
 
         self.ui.iconLabel.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
-        self.ui.iconLabel.customContextMenuRequested.connect(self._iconLabelContextMenu)
+        self.ui.iconLabel.customContextMenuRequested.connect(self._icon_label_context_menu)
 
         self.new()
 
@@ -83,36 +79,22 @@ class UTIEditor(Editor):
         """Set up signal connections for UI elements."""
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.tagGenerateButton.setToolTip("Reset this custom tag so it matches the resref")
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
-        self.ui.editPropertyButton.clicked.connect(self.editSelectedProperty)
-        self.ui.removePropertyButton.clicked.connect(self.remove_selectedProperty)
-        self.ui.addPropertyButton.clicked.connect(self.addSelectedProperty)
-        self.ui.availablePropertyList.doubleClicked.connect(self.onAvailablePropertyListDoubleClicked)
-        self.ui.assignedPropertiesList.doubleClicked.connect(self.onAssignedPropertyListDoubleClicked)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
+        self.ui.editPropertyButton.clicked.connect(self.edit_selected_property)
+        self.ui.removePropertyButton.clicked.connect(self.remove_selected_property)
+        self.ui.addPropertyButton.clicked.connect(self.add_selected_property)
+        self.ui.availablePropertyList.doubleClicked.connect(self.on_available_property_list_double_clicked)
+        self.ui.assignedPropertiesList.doubleClicked.connect(self.on_assigned_property_list_double_clicked)
 
-        self.ui.modelVarSpin.valueChanged.connect(self.onUpdateIcon)
-        self.ui.bodyVarSpin.valueChanged.connect(self.onUpdateIcon)
-        self.ui.textureVarSpin.valueChanged.connect(self.onUpdateIcon)
-        self.ui.baseSelect.currentIndexChanged.connect(self.onUpdateIcon)
+        self.ui.modelVarSpin.valueChanged.connect(self.on_update_icon)
+        self.ui.bodyVarSpin.valueChanged.connect(self.on_update_icon)
+        self.ui.textureVarSpin.valueChanged.connect(self.on_update_icon)
+        self.ui.baseSelect.currentIndexChanged.connect(self.on_update_icon)
 
-    def _setupInstallation(
+    def _setup_installation(
         self,
         installation: HTInstallation,
     ):
-        """Sets up the installation for editing.
-
-        Args:
-        ----
-            installation (HTInstallation): The installation to set up.
-
-        Processing Logic:
-        ----------------
-            - Sets the installation property on the UI
-            - Loads required 2DAs into the installation cache
-            - Populates base item select from baseitems 2DA
-            - Populates available properties list from item properties 2DA
-            - Adds subproperties from subtype 2DAs to their parent properties.
-        """
         self._installation = installation
         self.ui.nameEdit.set_installation(installation)
         self.ui.descEdit.set_installation(installation)
@@ -121,36 +103,36 @@ class UTIEditor(Editor):
         installation.ht_batch_cache_2da(required)
 
         baseitems: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
-        itemProperties: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        item_properties: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_ITEM_PROPERTIES)
         self.ui.baseSelect.clear()
         if baseitems is None:
             RobustLogger().error("Failed to retrieve BASEITEMS 2DA.")
         else:
-            self.ui.baseSelect.setItems(baseitems.get_column("label"))
-            self.ui.baseSelect.setContext(baseitems, installation, HTInstallation.TwoDA_BASEITEMS)
+            self.ui.baseSelect.set_items(baseitems.get_column("label"))
+            self.ui.baseSelect.set_context(baseitems, installation, HTInstallation.TwoDA_BASEITEMS)
 
         self.ui.availablePropertyList.clear()
-        if itemProperties is not None:
-            for i in range(itemProperties.get_height()):
-                propName = UTIEditor.propertyName(installation, i)
-                item = QTreeWidgetItem([propName])
+        if item_properties is not None:
+            for i in range(item_properties.get_height()):
+                prop_name = UTIEditor.property_name(installation, i)
+                item = QTreeWidgetItem([prop_name])
                 self.ui.availablePropertyList.addTopLevelItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
-                subtypeResname = itemProperties.get_cell(i, "subtyperesref")
-                if not subtypeResname:
+                subtype_resname = item_properties.get_cell(i, "subtyperesref")
+                if not subtype_resname:
                     item.setData(0, Qt.ItemDataRole.UserRole, i)
                     item.setData(0, Qt.ItemDataRole.UserRole + 1, i)
                     continue
 
-                subtype = installation.ht_get_cache_2da(subtypeResname)
+                subtype = installation.ht_get_cache_2da(subtype_resname)
                 if subtype is None:
-                    RobustLogger().warning(f"Failed to retrieve subtype '{subtypeResname}' for property name '{propName}' at index {i}. Skipping...")
+                    RobustLogger().warning(f"Failed to retrieve subtype '{subtype_resname}' for property name '{prop_name}' at index {i}. Skipping...")
                     continue
 
                 for j in range(subtype.get_height()):
-                    if subtypeResname == "spells":
+                    if subtype_resname == "spells":
                         print("   ", j)
-                    name = UTIEditor.subpropertyName(installation, i, j)
+                    name = UTIEditor.subproperty_name(installation, i, j)
                     if not name or not name.strip():  # possible HACK: this fixes a bug where there'd be a bunch of blank entries.
                         continue
                     child = QTreeWidgetItem([name])
@@ -171,16 +153,6 @@ class UTIEditor(Editor):
         self._loadUTI(uti)
 
     def _loadUTI(self, uti: UTI):
-        """Loads a UTI object into the UI.
-
-        Args:
-        ----
-            uti: UTI - The UTI object to load
-
-        Loads UTI data:
-            - Loads basic UTI data like name, description etc into corresponding UI elements.
-            - Loads properties and comments from UTI object into UI lists and text editors.
-        """
         self._uti = uti
 
         # Basic
@@ -201,26 +173,16 @@ class UTIEditor(Editor):
 
         # Properties
         self.ui.assignedPropertiesList.clear()
-        for utiProperty in uti.properties:
-            text = self.propertySummary(utiProperty)
+        for uti_property in uti.properties:
+            text = self.property_summary(uti_property)
             item = QListWidgetItem(text)
-            item.setData(Qt.ItemDataRole.UserRole, utiProperty)
+            item.setData(Qt.ItemDataRole.UserRole, uti_property)
             self.ui.assignedPropertiesList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
         # Comments
         self.ui.commentsEdit.setPlainText(uti.comment)
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds a UTI object from UI input.
-
-        Args:
-        ----
-            self: The object instance
-
-        Returns:
-        -------
-            tuple[bytes, bytes]: Byte data and empty string
-        """
         uti: UTI = deepcopy(self._uti)
 
         # Basic
@@ -259,96 +221,82 @@ class UTIEditor(Editor):
         super().new()
         self._loadUTI(UTI())
 
-    def changeName(self):
+    def change_name(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if not dialog.exec():
             return
         self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
-    def changeDesc(self):
+    def change_desc(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring())
         if not dialog.exec():
             return
         self._load_locstring(self.ui.descEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
     def generate_tag(self):
-        resrefText = self.ui.resrefEdit.text()
-        if not resrefText or not resrefText.strip():
-            self.generateResref()
+        resref_text = self.ui.resrefEdit.text()
+        if not resref_text or not resref_text.strip():
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname and self._resname.strip():
             self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_itm_000")
 
-    def editSelectedProperty(self):
+    def edit_selected_property(self):
         if not self.ui.assignedPropertiesList.selectedItems():
             return
-        utiProperty: UTIProperty = self.ui.assignedPropertiesList.selectedItems()[0].data(Qt.ItemDataRole.UserRole)
-        dialog = PropertyEditor(self._installation, utiProperty)
+        uti_property: UTIProperty = self.ui.assignedPropertiesList.selectedItems()[0].data(Qt.ItemDataRole.UserRole)
+        dialog = PropertyEditor(self._installation, uti_property)
         if not dialog.exec():
             return
-        self.ui.assignedPropertiesList.selectedItems()[0].setData(Qt.ItemDataRole.UserRole, dialog.utiProperty())
-        self.ui.assignedPropertiesList.selectedItems()[0].setText(self.propertySummary(dialog.utiProperty()))
+        self.ui.assignedPropertiesList.selectedItems()[0].setData(Qt.ItemDataRole.UserRole, dialog.uti_property())
+        self.ui.assignedPropertiesList.selectedItems()[0].setText(self.property_summary(dialog.uti_property()))
 
-    def addSelectedProperty(self):
+    def add_selected_property(self):
         if not self.ui.availablePropertyList.selectedItems():
             return
         item = self.ui.availablePropertyList.selectedItems()[0]
-        propertyId = item.data(0, Qt.ItemDataRole.UserRole)
-        if propertyId is None:
+        property_id = item.data(0, Qt.ItemDataRole.UserRole)
+        if property_id is None:
             return
-        subtypeId = item.data(0, Qt.ItemDataRole.UserRole + 1)
-        self._add_property_main(propertyId, subtypeId)
+        subtype_id = item.data(0, Qt.ItemDataRole.UserRole + 1)
+        self._add_property_main(property_id, subtype_id)
 
     def _add_property_main(
         self,
         propertyId: int,
         subtypeId: int,
     ):
-        """Adds a property to an item.
-
-        Args:
-        ----
-            propertyId: The id of the property to add.
-            subtypeId: The subtype id of the item.
-
-        Processing Logic:
-        ----------------
-            - Gets the item properties table from the installation.
-            - Creates a UTIProperty object and populates it with data from the table.
-            - Adds a summary of the property to the assigned properties list widget.
-            - Sets the UTIProperty as user data on the list item.
-        """
         itemprops: TwoDA | None = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_ITEM_PROPERTIES)
         if itemprops is None:
             return
 
-        utiProperty = UTIProperty()
-        utiProperty.property_name = propertyId
-        utiProperty.subtype = subtypeId
-        utiProperty.cost_table = itemprops.get_row(propertyId).get_integer("costtableresref", 255)
-        utiProperty.cost_value = 0
-        utiProperty.param1 = itemprops.get_row(propertyId).get_integer("param1resref", 255)
-        utiProperty.param1_value = 0
-        utiProperty.chance_appear = 100
+        uti_property = UTIProperty()
+        uti_property.property_name = propertyId
+        uti_property.subtype = subtypeId
+        uti_property.cost_table = itemprops.get_row(propertyId).get_integer("costtableresref", 255)
+        uti_property.cost_value = 0
+        uti_property.param1 = itemprops.get_row(propertyId).get_integer("param1resref", 255)
+        uti_property.param1_value = 0
+        uti_property.chance_appear = 100
 
-        text: str = self.propertySummary(utiProperty)
+        text: str = self.property_summary(uti_property)
         item = QListWidgetItem(text)
-        item.setData(Qt.ItemDataRole.UserRole, utiProperty)
+        item.setData(Qt.ItemDataRole.UserRole, uti_property)
         self.ui.assignedPropertiesList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
-    def remove_selectedProperty(self):
+    def remove_selected_property(self):
         if not self.ui.assignedPropertiesList.selectedItems():
             return
         index = self.ui.assignedPropertiesList.selectedIndexes()[0]
         self.ui.assignedPropertiesList.takeItem(index.row())
 
-    def propertySummary(
+    def property_summary(
         self,
-        utiProperty: UTIProperty,
+        uti_property: UTIProperty,
     ) -> str:  # sourcery skip: assign-if-exp, reintroduce-else
         """Retrieve the property, subproperty and cost names from the UTIEditor.
 
@@ -357,81 +305,81 @@ class UTIEditor(Editor):
             - It returns a formatted string combining the retrieved names.
             - If a cost or subproperty is not present, it is omitted from the returned string.
         """
-        propName: str = UTIEditor.propertyName(self._installation, utiProperty.property_name)
-        subpropName: str | None = UTIEditor.subpropertyName(self._installation, utiProperty.property_name, utiProperty.subtype)
-        costName: str | None = UTIEditor.costName(self._installation, utiProperty.cost_table, utiProperty.cost_value)
+        prop_name: str = UTIEditor.property_name(self._installation, uti_property.property_name)
+        subprop_name: str | None = UTIEditor.subproperty_name(self._installation, uti_property.property_name, uti_property.subtype)
+        cost_name: str | None = UTIEditor.cost_name(self._installation, uti_property.cost_table, uti_property.cost_value)
 
-        if costName and subpropName:
-            return f"{propName}: {subpropName} [{costName}]"
-        if subpropName:
-            return f"{propName}: {subpropName}"
-        if costName:
-            return f"{propName}: [{costName}]"
-        return f"{propName}"
+        if cost_name and subprop_name:
+            return f"{prop_name}: {subprop_name} [{cost_name}]"
+        if subprop_name:
+            return f"{prop_name}: {subprop_name}"
+        if cost_name:
+            return f"{prop_name}: [{cost_name}]"
+        return f"{prop_name}"
 
-    def _generateIconTooltip(self, *, asHtml: bool = False) -> str:  # sourcery skip: lift-return-into-if
+    def _generate_icon_tooltip(self, *, asHtml: bool = False) -> str:  # sourcery skip: lift-return-into-if
         """Generates a detailed tooltip for the iconLabel."""
-        baseItem = self.ui.baseSelect.currentIndex()
-        modelVariation = self.ui.modelVarSpin.value()
-        textureVariation = self.ui.textureVarSpin.value()
+        base_item = self.ui.baseSelect.currentIndex()
+        model_variation = self.ui.modelVarSpin.value()
+        texture_variation = self.ui.textureVarSpin.value()
 
         assert self._installation is not None
-        baseItemName = self._installation.get_item_base_name(baseItem)
-        modelVarName = self._installation.get_model_var_name(modelVariation)
-        textureVarName = self._installation.get_texture_var_name(textureVariation)
-        iconPath = self._installation.get_item_icon_path(baseItem, modelVariation, textureVariation)
+        base_item_name = self._installation.get_item_base_name(base_item)
+        model_var_name = self._installation.get_model_var_name(model_variation)
+        texture_var_name = self._installation.get_texture_var_name(texture_variation)
+        icon_path = self._installation.get_item_icon_path(base_item, model_variation, texture_variation)
 
         if asHtml:
             tooltip = (
-                f"<b>Base Item:</b> {baseItemName} (ID: {baseItem})<br>"
-                f"<b>Model Variation:</b> {modelVarName} (ID: {modelVariation})<br>"
-                f"<b>Texture Variation:</b> {textureVarName} (ID: {textureVariation})<br>"
-                f"<b>Icon Name:</b> {iconPath}"
+                f"<b>Base Item:</b> {base_item_name} (ID: {base_item})<br>"
+                f"<b>Model Variation:</b> {model_var_name} (ID: {model_variation})<br>"
+                f"<b>Texture Variation:</b> {texture_var_name} (ID: {texture_variation})<br>"
+                f"<b>Icon Name:</b> {icon_path}"
             )
         else:
             tooltip = (
-                f"Base Item: {baseItemName} (ID: {baseItem})\n"
-                f"Model Variation: {modelVarName} (ID: {modelVariation})\n"
-                f"Texture Variation: {textureVarName} (ID: {textureVariation})\n"
-                f"Icon Name: {iconPath}"
+                f"Base Item: {base_item_name} (ID: {base_item})\n"
+                f"Model Variation: {model_var_name} (ID: {model_variation})\n"
+                f"Texture Variation: {texture_var_name} (ID: {texture_variation})\n"
+                f"Icon Name: {icon_path}"
             )
         return tooltip
 
-    def _iconLabelContextMenu(self, position):
-        contextMenu = QMenu(self)
-        copyMenu = QMenu("Copy..")
+    def _icon_label_context_menu(self, position: QPoint):
+        context_menu = QMenu(self)
+        copy_menu = QMenu("Copy..")
 
-        baseItem = self.ui.baseSelect.currentIndex()
-        modelVariation = self.ui.modelVarSpin.value()
-        textureVariation = self.ui.textureVarSpin.value()
-        iconPath = self._installation.get_item_icon_path(baseItem, modelVariation, textureVariation)
+        base_item = self.ui.baseSelect.currentIndex()
+        model_variation = self.ui.modelVarSpin.value()
+        texture_variation = self.ui.textureVarSpin.value()
+        icon_path = self._installation.get_item_icon_path(base_item, model_variation, texture_variation)
 
-        summaryItemIconAction = QAction("Icon Summary", self)
-        summaryItemIconAction.triggered.connect(lambda: self._copyIconTooltip())
+        summary_item_icon_action = QAction("Icon Summary", self)
+        summary_item_icon_action.triggered.connect(lambda: self._copy_icon_tooltip())
 
-        copyBaseItemAction = QAction(f"Base Item: {baseItem}", self)
-        copyBaseItemAction.triggered.connect(lambda: self._copyToClipboard(f"{baseItem}"))
+        copy_base_item_action = QAction(f"Base Item: {base_item}", self)
+        copy_base_item_action.triggered.connect(lambda: self._copy_to_clipboard(f"{base_item}"))
 
-        copyModelVariationAction = QAction(f"Model Variation: {modelVariation}", self)
-        copyModelVariationAction.triggered.connect(lambda: self._copyToClipboard(f"{modelVariation}"))
+        copy_model_variation_action = QAction(f"Model Variation: {model_variation}", self)
+        copy_model_variation_action.triggered.connect(lambda: self._copy_to_clipboard(f"{model_variation}"))
 
-        copyTextureVariationAction = QAction(f"Texture Variation: {textureVariation}", self)
-        copyTextureVariationAction.triggered.connect(lambda: self._copyToClipboard(f"{textureVariation}"))
+        copy_texture_variation_action = QAction(f"Texture Variation: {texture_variation}", self)
+        copy_texture_variation_action.triggered.connect(lambda: self._copy_to_clipboard(f"{texture_variation}"))
 
-        copyIconPathAction = QAction(f"Icon Name: '{iconPath}'", self)
-        copyIconPathAction.triggered.connect(lambda: self._copyToClipboard(f"{iconPath}"))
+        copy_icon_path_action = QAction(f"Icon Name: '{icon_path}'", self)
+        copy_icon_path_action.triggered.connect(lambda: self._copy_to_clipboard(f"{icon_path}"))
 
-        copyMenu.addAction(summaryItemIconAction)
-        copyMenu.addSeparator()
-        copyMenu.addAction(copyBaseItemAction)
-        copyMenu.addAction(copyModelVariationAction)
-        copyMenu.addAction(copyTextureVariationAction)
-        copyMenu.addAction(copyIconPathAction)
+        copy_menu.addAction(summary_item_icon_action)
+        copy_menu.addSeparator()
+        copy_menu.addAction(copy_base_item_action)
+        copy_menu.addAction(copy_model_variation_action)
+        copy_menu.addAction(copy_texture_variation_action)
+        copy_menu.addAction(copy_icon_path_action)
 
-        fileMenu = contextMenu.addMenu("File...")
-        assert fileMenu is not None
+        file_menu = context_menu.addMenu("File...")
+        assert file_menu is not None
         locations = self._installation.locations(
-            ([iconPath], [ResourceType.TGA, ResourceType.TPC]),
+            ([icon_path], [ResourceType.TGA, ResourceType.TPC]),
             order=[
                 SearchLocation.OVERRIDE,
                 SearchLocation.TEXTURES_GUI,
@@ -440,58 +388,58 @@ class UTIEditor(Editor):
                 SearchLocation.TEXTURES_TPC
             ]
         )
-        flatLocations = [item for sublist in locations.values() for item in sublist]
-        if flatLocations:
-            for location in flatLocations:
-                displayPathStr = str(location.filepath.relative_to(self._installation.path()))
-                locMenu = fileMenu.addMenu(displayPathStr)
-                resourceMenuBuilder = ResourceItems(resources=[location])
-                resourceMenuBuilder.build_menu(locMenu)
+        flat_locations = [item for sublist in locations.values() for item in sublist]
+        if flat_locations:
+            for location in flat_locations:
+                display_path_str = str(location.filepath.relative_to(self._installation.path()))
+                loc_menu = file_menu.addMenu(display_path_str)
+                resource_menu_builder = ResourceItems(resources=[location])
+                resource_menu_builder.build_menu(loc_menu)
 
-            fileMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
+            file_menu.addAction("Details...").triggered.connect(lambda: self._open_details(flat_locations))
 
-        contextMenu.addMenu(copyMenu)
-        contextMenu.exec(self.ui.iconLabel.mapToGlobal(position))  # pyright: ignore[reportArgumentType]
+        context_menu.addMenu(copy_menu)
+        context_menu.exec(self.ui.iconLabel.mapToGlobal(position))  # pyright: ignore[reportArgumentType]
 
-    def _openDetails(self, locations: list[LocationResult]):
-        selectionWindow = FileSelectionWindow(locations, self._installation)
-        selectionWindow.show()
-        selectionWindow.activateWindow()
-        add_window(selectionWindow)
+    def _open_details(self, locations: Sequence[FileResource | ResourceResult | LocationResult]):
+        selection_window = FileSelectionWindow(locations, self._installation)
+        selection_window.show()
+        selection_window.activateWindow()
+        add_window(selection_window)
 
-    def _copyIconTooltip(self):
-        tooltipText = self._generateIconTooltip(asHtml=False)
-        self._copyToClipboard(tooltipText)
+    def _copy_icon_tooltip(self):
+        tooltipText = self._generate_icon_tooltip(asHtml=False)
+        self._copy_to_clipboard(tooltipText)
 
-    def _copyToClipboard(self, text: str):
+    def _copy_to_clipboard(self, text: str):
         clipboard = QApplication.clipboard()
         clipboard.setText(text)
 
-    def onUpdateIcon(self, *args, **kwargs):
-        baseItem: int = self.ui.baseSelect.currentIndex()
-        modelVariation: int = self.ui.modelVarSpin.value()
-        textureVariation: int = self.ui.textureVarSpin.value()
-        pixmap = self._installation.getItemIcon(baseItem, modelVariation, textureVariation)
+    def on_update_icon(self, *args, **kwargs):
+        base_item: int = self.ui.baseSelect.currentIndex()
+        model_variation: int = self.ui.modelVarSpin.value()
+        texture_variation: int = self.ui.textureVarSpin.value()
+        pixmap = self._installation.get_item_icon(base_item, model_variation, texture_variation)
         self.ui.iconLabel.setPixmap(QPixmap(pixmap))  # pyright: ignore[reportArgumentType]
         # Update the tooltip whenever the icon changes
-        self.ui.iconLabel.setToolTip(self._generateIconTooltip(asHtml=True))
+        self.ui.iconLabel.setToolTip(self._generate_icon_tooltip(asHtml=True))
 
-    def onAvailablePropertyListDoubleClicked(self):
+    def on_available_property_list_double_clicked(self):
         for item in self.ui.availablePropertyList.selectedItems():
             if item.childCount() != 0:
                 continue
-            self.addSelectedProperty()
+            self.add_selected_property()
 
-    def onAssignedPropertyListDoubleClicked(self):
-        self.editSelectedProperty()
+    def on_assigned_property_list_double_clicked(self):
+        self.edit_selected_property()
 
-    def onDelShortcut(self):
+    def on_del_shortcut(self):
         if not self.ui.assignedPropertiesList.hasFocus():
             return
-        self.remove_selectedProperty()
+        self.remove_selected_property()
 
     @staticmethod
-    def propertyName(
+    def property_name(
         installation: HTInstallation,
         prop: int,
     ) -> str:
@@ -506,50 +454,38 @@ class UTIEditor(Editor):
         return installation.talktable().string(stringref)
 
     @staticmethod
-    def subpropertyName(
+    def subproperty_name(
         installation: HTInstallation,
         prop: int,
         subprop: int,
     ) -> None | str:
-        """Gets the name of a subproperty of an item property.
-
-        Args:
-        ----
-            installation: HTInstallation - The installation object
-            prop: int - The property index
-            subprop: int - The subproperty index.
-
-        Returns:
-        -------
-            string - The name of the subproperty
-        """
         properties: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_ITEM_PROPERTIES)
         if properties is None:
             RobustLogger().error("Failed to retrieve ITEM_PROPERTIES 2DA.")
             return None
-        subtypeResname: str | None = properties.get_cell(prop, "subtyperesref")
-        if not subtypeResname:
-            RobustLogger().error(f"Failed to retrieve subtypeResname for property {prop}.")
+        subtype_resname: str | None = properties.get_cell(prop, "subtyperesref")
+        if not subtype_resname:
+            RobustLogger().error(f"Failed to retrieve subtype_resname for property {prop}.")
             return None
-        subproperties: TwoDA | None = installation.ht_get_cache_2da(subtypeResname)
+        subproperties: TwoDA | None = installation.ht_get_cache_2da(subtype_resname)
         if subproperties is None:
             return None
-        headerStrref: Literal["name", "string_ref"] = "name" if "name" in subproperties.get_headers() else "string_ref"
-        nameStrref: int | None = subproperties.get_row(subprop).get_integer(headerStrref)
-        return subproperties.get_cell(subprop, "label") if nameStrref is None else installation.talktable().string(nameStrref)
+        header_strref: Literal["name", "string_ref"] = "name" if "name" in subproperties.get_headers() else "string_ref"
+        name_strref: int | None = subproperties.get_row(subprop).get_integer(header_strref)
+        return subproperties.get_cell(subprop, "label") if name_strref is None else installation.talktable().string(name_strref)
 
     @staticmethod
-    def costName(
+    def cost_name(
         installation: HTInstallation,
         cost: int,
         value: int,
     ) -> str | None:
-        costtableList: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_COSTTABLE)
-        if costtableList is None:
+        cost_table_list: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_COSTTABLE)
+        if cost_table_list is None:
             RobustLogger().error("Failed to retrieve IPRP_COSTTABLE 2DA.")
             return None
 
-        costtable_name: str | None = costtableList.get_cell(cost, "name")
+        costtable_name: str | None = cost_table_list.get_cell(cost, "name")
         if costtable_name is None:
             RobustLogger().error(f"Failed to retrieve costtable 'name' for cost '{cost}'.")
             return None
@@ -568,7 +504,7 @@ class UTIEditor(Editor):
         return None
 
     @staticmethod
-    def paramName(
+    def param_name(
         installation: HTInstallation,
         paramtable: int,
         param: int,
@@ -624,63 +560,55 @@ class PropertyEditor(QDialog):
     def __init__(
         self,
         installation: HTInstallation,
-        utiProperty: UTIProperty,
+        uti_property: UTIProperty,
     ):
-        """Initializes the UTI property editor dialog.
-
-        Args:
-        ----
-            installation: {HTInstallation object}: The installation object
-            utiProperty: {UTIProperty object}: The UTI property object
-
-        Processing Logic:
-        ----------------
-            - Connects UI elements to callback functions
-            - Populates cost and parameter lists from installation data
-            - Populates upgrade dropdown from installation data
-            - Sets initial values of textboxes from utiProperty.
-        """
         super().__init__()
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowMinimizeButtonHint
+        )
 
         from toolset.uic.qtpy.dialogs.property import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
-        self.ui.costSelectButton.clicked.connect(self.selectCost)
-        self.ui.parameterSelectButton.clicked.connect(self.selectParam)
-        self.ui.costList.doubleClicked.connect(self.selectCost)
-        self.ui.parameterList.doubleClicked.connect(self.selectParam)
+        self.ui.costSelectButton.clicked.connect(self.select_cost)
+        self.ui.parameterSelectButton.clicked.connect(self.select_param)
+        self.ui.costList.doubleClicked.connect(self.select_cost)
+        self.ui.parameterList.doubleClicked.connect(self.select_param)
 
         self._installation = installation
-        self._utiProperty: UTIProperty = utiProperty
+        self._uti_property: UTIProperty = uti_property
 
-        costtableList = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_COSTTABLE)  # noqa: F841
-        if costtableList is None:
+        cost_table_list = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_COSTTABLE)  # noqa: F841
+        if cost_table_list is None:
             RobustLogger().warning("Failed to get IPRP_COSTTABLE")
             return
-        if utiProperty.cost_table != 0xFF:  # noqa: PLR2004
-            costtable = installation.ht_get_cache_2da(costtableList.get_cell(utiProperty.cost_table, "name"))
+        if uti_property.cost_table != 0xFF:  # noqa: PLR2004
+            costtable = installation.ht_get_cache_2da(cost_table_list.get_cell(uti_property.cost_table, "name"))
             if costtable is None:
-                RobustLogger().warning(f"Failed to get costtable for name: {costtableList.get_cell(utiProperty.cost_table, 'name')}")
+                RobustLogger().warning(f"Failed to get costtable for name: {cost_table_list.get_cell(uti_property.cost_table, 'name')}")
                 return
             for i in range(costtable.get_height()):
-                costName = UTIEditor.costName(installation, utiProperty.cost_table, i)
-                if not costName:
-                    RobustLogger().warning(f"No costName at index {i}")
-                item = QListWidgetItem(costName)
+                cost_name = UTIEditor.cost_name(installation, uti_property.cost_table, i)
+                if not cost_name:
+                    RobustLogger().warning(f"No cost_name at index {i}")
+                item = QListWidgetItem(cost_name)
                 item.setData(Qt.ItemDataRole.UserRole, i)
                 self.ui.costList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
-        if utiProperty.param1 != 0xFF:  # noqa: PLR2004
-            paramList = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_PARAMTABLE)
-            if paramList is None:
+        if uti_property.param1 != 0xFF:  # noqa: PLR2004
+            param_list = installation.ht_get_cache_2da(HTInstallation.TwoDA_IPRP_PARAMTABLE)
+            if param_list is None:
                 RobustLogger().warning("Failed to get IPRP_PARAMTABLE")
                 return
 
-            paramtable_resref = paramList.get_cell(utiProperty.param1, "tableresref")
+            paramtable_resref = param_list.get_cell(uti_property.param1, "tableresref")
             if paramtable_resref is None:
-                RobustLogger().warning(f"No tableresref found for param1: {utiProperty.param1}")
+                RobustLogger().warning(f"No tableresref found for param1: {uti_property.param1}")
                 return
 
             paramtable = installation.ht_get_cache_2da(paramtable_resref)
@@ -689,10 +617,10 @@ class PropertyEditor(QDialog):
                 return
 
             for i in range(paramtable.get_height()):
-                paramName = UTIEditor.paramName(installation, utiProperty.param1, i)
-                if not paramName:
-                    RobustLogger().warning(f"No paramName at index {i}")
-                item = QListWidgetItem(paramName)
+                param_name = UTIEditor.param_name(installation, uti_property.param1, i)
+                if not param_name:
+                    RobustLogger().warning(f"No param_name at index {i}")
+                item = QListWidgetItem(param_name)
                 item.setData(Qt.ItemDataRole.UserRole, i)
                 self.ui.parameterList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
@@ -705,48 +633,45 @@ class PropertyEditor(QDialog):
         else:
             upgrade_items = []
 
-        self.ui.upgradeSelect.setItems(
-            upgrade_items,
-            cleanupStrings=False
-        )
-        self.ui.upgradeSelect.setContext(upgrades, installation, HTInstallation.TwoDA_UPGRADES)
-        if utiProperty.upgrade_type is not None:
-            self.ui.upgradeSelect.setCurrentIndex(utiProperty.upgrade_type + 1)
+        self.ui.upgradeSelect.set_items(upgrade_items, cleanup_strings=False)
+        self.ui.upgradeSelect.set_context(upgrades, installation, HTInstallation.TwoDA_UPGRADES)
+        if uti_property.upgrade_type is not None:
+            self.ui.upgradeSelect.setCurrentIndex(uti_property.upgrade_type + 1)
 
-        self.reloadTextboxes()
+        self.reload_textboxes()
 
-    def reloadTextboxes(self):
+    def reload_textboxes(self):
         """Reloads textboxes with property names."""
-        propertyName: str = UTIEditor.propertyName(self._installation, self._utiProperty.property_name)
-        self.ui.propertyEdit.setText(propertyName or "")
+        property_name: str = UTIEditor.property_name(self._installation, self._uti_property.property_name)
+        self.ui.propertyEdit.setText(property_name or "")
 
-        subpropertyName: str | None = UTIEditor.subpropertyName(self._installation, self._utiProperty.property_name, self._utiProperty.subtype)
-        self.ui.subpropertyEdit.setText(subpropertyName or "")
+        subproperty_name: str | None = UTIEditor.subproperty_name(self._installation, self._uti_property.property_name, self._uti_property.subtype)
+        self.ui.subpropertyEdit.setText(subproperty_name or "")
 
-        costName: str | None = UTIEditor.costName(self._installation, self._utiProperty.cost_table, self._utiProperty.cost_value)
-        self.ui.costEdit.setText(costName or "")
+        cost_name: str | None = UTIEditor.cost_name(self._installation, self._uti_property.cost_table, self._uti_property.cost_value)
+        self.ui.costEdit.setText(cost_name or "")
 
-        paramName: str | None = UTIEditor.paramName(self._installation, self._utiProperty.param1, self._utiProperty.param1_value)
-        self.ui.parameterEdit.setText(paramName or "")
+        param_name: str | None = UTIEditor.param_name(self._installation, self._uti_property.param1, self._uti_property.param1_value)
+        self.ui.parameterEdit.setText(param_name or "")
 
-    def selectCost(self):
+    def select_cost(self):
         cur_item: QListWidgetItem | None = self.ui.costList.currentItem()  # pyright: ignore[reportAssignmentType]
         if not cur_item:
             return
 
-        self._utiProperty.cost_value = cur_item.data(Qt.ItemDataRole.UserRole)
-        self.reloadTextboxes()
+        self._uti_property.cost_value = cur_item.data(Qt.ItemDataRole.UserRole)
+        self.reload_textboxes()
 
-    def selectParam(self):
+    def select_param(self):
         cur_item: QListWidgetItem | None = self.ui.parameterList.currentItem()  # pyright: ignore[reportAssignmentType]
         if not cur_item:
             return
 
-        self._utiProperty.param1_value = cur_item.data(Qt.ItemDataRole.UserRole)
-        self.reloadTextboxes()
+        self._uti_property.param1_value = cur_item.data(Qt.ItemDataRole.UserRole)
+        self.reload_textboxes()
 
-    def utiProperty(self) -> UTIProperty:
-        self._utiProperty.upgrade_type = self.ui.upgradeSelect.currentIndex() - 1
+    def uti_property(self) -> UTIProperty:
+        self._uti_property.upgrade_type = self.ui.upgradeSelect.currentIndex() - 1
         if self.ui.upgradeSelect.currentIndex() == 0:
-            self._utiProperty.upgrade_type = None
-        return self._utiProperty
+            self._uti_property.upgrade_type = None
+        return self._uti_property

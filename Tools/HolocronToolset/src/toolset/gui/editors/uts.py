@@ -61,7 +61,7 @@ class UTSEditor(Editor):
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self.new()
 
@@ -75,7 +75,7 @@ class UTSEditor(Editor):
             - Connects playSoundButton click signal to play_sound method
             - Connects stopSoundButton click signal to player stop method
             - Connects moveUpButton and moveDownButton click signals to moveSoundUp and moveSoundDown methods
-            - Connects tagGenerateButton and resrefGenerateButton click signals to generate_tag and generateResref methods
+            - Connects tagGenerateButton and resrefGenerateButton click signals to generate_tag and generate_resref methods
             - Connects style radio buttons toggled signals to changeStyle method
             - Connects play random/specific/everywhere radio buttons toggled signals to changePlay method.
         """
@@ -87,7 +87,7 @@ class UTSEditor(Editor):
         self.ui.moveDownButton.clicked.connect(self.moveSoundDown)
 
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
 
         self.ui.styleOnceRadio.toggled.connect(self.changeStyle)
         self.ui.styleSeamlessRadio.toggled.connect(self.changeStyle)
@@ -97,7 +97,7 @@ class UTSEditor(Editor):
         self.ui.playSpecificRadio.toggled.connect(self.changePlay)
         self.ui.playEverywhereRadio.toggled.connect(self.changePlay)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         self._installation = installation
         self.ui.nameEdit.set_installation(installation)
 
@@ -244,17 +244,17 @@ class UTSEditor(Editor):
         super().new()
         self._loadUTS(UTS())
 
-    def changeName(self):
+    def change_name(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generate_tag(self):
         if self.ui.resrefEdit.text() == "":
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname is not None and self._resname != "":
             self.ui.resrefEdit.setText(self._resname)
         else:

@@ -2540,7 +2540,7 @@ class DLGEditor(Editor):
         self._setup_signals()
         self._setup_menus()
         if installation:
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self.dialog_references = None
         self.reference_history: list[tuple[list[weakref.ref[DLGLink]], str]] = []
@@ -3564,10 +3564,10 @@ Should return 1 or 0, representing a boolean.
         super().new()
         self._loadDLG(DLG())
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         """Sets up the installation for the UI."""
         self._installation = installation
-        print("<SDM> [_setupInstallation scope] self._installation: ", self._installation)
+        print("<SDM> [_setup_installation scope] self._installation: ", self._installation)
 
         installation.setup_file_context_menu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
         if installation.game().is_k1():
@@ -3601,36 +3601,36 @@ Should return 1 or 0, representing a boolean.
         if videoEffects:
             self.ui.cameraEffectSelect.clear()
             self.ui.cameraEffectSelect.setPlaceholderText("[Unset]")
-            self.ui.cameraEffectSelect.setItems(
+            self.ui.cameraEffectSelect.set_items(
                 [label.replace("VIDEO_EFFECT_", "").replace("_", " ").title() for label in videoEffects.get_column("label")],
-                cleanupStrings=False,
-                ignoreBlanks=True,
+                cleanup_strings=False,
+                ignore_blanks=True,
             )
-            self.ui.cameraEffectSelect.setContext(videoEffects, installation, HTInstallation.TwoDA_VIDEO_EFFECTS)
+            self.ui.cameraEffectSelect.set_context(videoEffects, installation, HTInstallation.TwoDA_VIDEO_EFFECTS)
 
         plot2DA: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLOT)
         if plot2DA:
             self.ui.plotIndexCombo.clear()
             self.ui.plotIndexCombo.addItem("[None]", -1)
-            self.ui.plotIndexCombo.setItems(
+            self.ui.plotIndexCombo.set_items(
                 [cell.title() for cell in plot2DA.get_column("label")],
-                cleanupStrings=True,
+                cleanup_strings=True,
             )
-            self.ui.plotIndexCombo.setContext(plot2DA, installation, HTInstallation.TwoDA_PLOT)
+            self.ui.plotIndexCombo.set_context(plot2DA, installation, HTInstallation.TwoDA_PLOT)
 
     def _setupTSLEmotionsAndExpressions(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection."""
         emotions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_EMOTIONS)
         if emotions:
             self.ui.emotionSelect.clear()
-            self.ui.emotionSelect.setItems(emotions.get_column("label"))
-            self.ui.emotionSelect.setContext(emotions, installation, HTInstallation.TwoDA_EMOTIONS)
+            self.ui.emotionSelect.set_items(emotions.get_column("label"))
+            self.ui.emotionSelect.set_context(emotions, installation, HTInstallation.TwoDA_EMOTIONS)
 
         expressions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_EXPRESSIONS)
         if expressions:
             self.ui.expressionSelect.clear()
-            self.ui.expressionSelect.setItems(expressions.get_column("label"))
-            self.ui.expressionSelect.setContext(expressions, installation, HTInstallation.TwoDA_EXPRESSIONS)
+            self.ui.expressionSelect.set_items(expressions.get_column("label"))
+            self.ui.expressionSelect.set_context(expressions, installation, HTInstallation.TwoDA_EXPRESSIONS)
 
         installation.setup_file_context_menu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setup_file_context_menu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])

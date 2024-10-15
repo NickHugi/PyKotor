@@ -69,7 +69,7 @@ class UTPEditor(Editor):
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self.update3dPreview()
         self.new()
@@ -81,7 +81,7 @@ class UTPEditor(Editor):
         Processing Logic:
         ----------------
             - Connect tagGenerateButton clicked signal to generate_tag method
-            - Connect resrefGenerateButton clicked signal to generateResref method
+            - Connect resrefGenerateButton clicked signal to generate_resref method
             - Connect conversationModifyButton clicked signal to editConversation method
             - Connect inventoryButton clicked signal to openInventory method
 
@@ -89,14 +89,14 @@ class UTPEditor(Editor):
             - Connect actionShowPreview triggered signal to togglePreview method
         """
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
 
         self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
         self.ui.actionShowPreview.triggered.connect(self.togglePreview)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         """Sets up the installation for editing.
 
         Args:
@@ -121,11 +121,11 @@ class UTPEditor(Editor):
         appearances: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLACEABLES)
         factions: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
 
-        self.ui.appearanceSelect.setContext(appearances, installation, HTInstallation.TwoDA_PLACEABLES)
-        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+        self.ui.appearanceSelect.set_context(appearances, installation, HTInstallation.TwoDA_PLACEABLES)
+        self.ui.factionSelect.set_context(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
-        self.ui.appearanceSelect.setItems(appearances.get_column("label"))
-        self.ui.factionSelect.setItems(factions.get_column("label"))
+        self.ui.appearanceSelect.set_items(appearances.get_column("label"))
+        self.ui.factionSelect.set_items(factions.get_column("label"))
 
         self.ui.notBlastableCheckbox.setVisible(installation.tsl)
         self.ui.difficultyModSpin.setVisible(installation.tsl)
@@ -345,7 +345,7 @@ class UTPEditor(Editor):
     def updateItemCount(self):
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utp.inventory)}")
 
-    def changeName(self):
+    def change_name(self):
         if self._installation is None:
             self.blink_window()
             return
@@ -355,10 +355,10 @@ class UTPEditor(Editor):
 
     def generate_tag(self):
         if not self.ui.resrefEdit.text():
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname is not None and self._resname != "":
             self.ui.resrefEdit.setText(self._resname)
         else:

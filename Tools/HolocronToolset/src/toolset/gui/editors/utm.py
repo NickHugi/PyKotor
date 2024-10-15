@@ -56,7 +56,7 @@ class UTMEditor(Editor):
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self.new()
         self.adjustSize()
@@ -64,10 +64,10 @@ class UTMEditor(Editor):
     def _setup_signals(self):
         """Sets up signal connections for UI buttons."""
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         """Sets up the installation for editing.
 
         Args:
@@ -164,17 +164,17 @@ class UTMEditor(Editor):
         super().new()
         self._loadUTM(UTM())
 
-    def changeName(self):
+    def change_name(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generate_tag(self):
         if not self.ui.resrefEdit.text():
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname:
             self.ui.resrefEdit.setText(self._resname)
         else:

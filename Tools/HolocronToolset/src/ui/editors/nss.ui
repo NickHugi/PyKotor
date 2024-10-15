@@ -6,36 +6,29 @@
             <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>1280</width>
-                <height>720</height>
+                <width>1180</width>
+                <height>690</height>
             </rect>
         </property>
         <property name="windowTitle">
             <string>Advanced NSS Editor</string>
         </property>
         <widget class="QWidget" name="centralwidget">
-            <layout class="QVBoxLayout" name="verticalLayout">
+            <layout class="QVBoxLayout" name="vboxlytCentralWidget" stretch="0,0,1,0,0">
                 <item>
-                    <layout class="QHBoxLayout" name="middleTopHorizLyt" stretch="0,1,1">
+                    <layout class="QHBoxLayout" name="middleTopHorizLyt">
                         <item>
                             <spacer name="horizontalSpacer">
                                 <property name="orientation">
-                                    <enum>Qt::Orientation::Horizontal</enum>
+                                    <enum>Orientation.Horizontal</enum>
                                 </property>
                                 <property name="sizeHint" stdset="0">
                                     <size>
-                                        <width>320</width>
+                                        <width>40</width>
                                         <height>20</height>
                                     </size>
                                 </property>
                             </spacer>
-                        </item>
-                        <item alignment="Qt::AlignmentFlag::AlignHCenter">
-                            <widget class="QLabel" name="labelGameSelector">
-                                <property name="text">
-                                    <string>Choose a Game</string>
-                                </property>
-                            </widget>
                         </item>
                         <item>
                             <widget class="QComboBox" name="gameSelector">
@@ -67,160 +60,224 @@
                     </layout>
                 </item>
                 <item>
-                    <widget class="QLineEdit" name="searchBar">
-                        <property name="placeholderText">
-                            <string>Search...</string>
+                    <spacer name="verticalSpacer">
+                        <property name="orientation">
+                            <enum>Orientation.Vertical</enum>
                         </property>
-                    </widget>
+                        <property name="sizeHint" stdset="0">
+                            <size>
+                                <width>20</width>
+                                <height>40</height>
+                            </size>
+                        </property>
+                    </spacer>
                 </item>
                 <item>
-                    <widget class="QSplitter" name="mainSplitter">
+                    <widget class="QTabWidget" name="editorTabs">
                         <property name="sizePolicy">
                             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                                 <horstretch>0</horstretch>
                                 <verstretch>0</verstretch>
                             </sizepolicy>
                         </property>
-                        <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
+                        <property name="font">
+                            <font>
+                                <stylestrategy>NoAntialias</stylestrategy>
+                            </font>
                         </property>
-                        <widget class="QWidget" name="leftPanel">
-                            <layout class="QVBoxLayout" name="leftPanelLayout">
+                        <property name="acceptDrops">
+                            <bool>true</bool>
+                        </property>
+                        <property name="whatsThis">
+                            <string>Main Code Area</string>
+                        </property>
+                        <property name="tabsClosable">
+                            <bool>true</bool>
+                        </property>
+                        <property name="movable">
+                            <bool>true</bool>
+                        </property>
+                        <widget class="QWidget" name="tab">
+                            <attribute name="title">
+                                <string>Untitled</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout_6">
                                 <item>
-                                    <widget class="QTabWidget" name="fileExplorerTabs">
-                                        <property name="tabPosition">
-                                            <enum>QTabWidget::North</enum>
+                                    <widget class="QLineEdit" name="searchBar">
+                                        <property name="placeholderText">
+                                            <string>Search...</string>
                                         </property>
-                                        <widget class="QWidget" name="fileExplorerTab">
-                                            <attribute name="title">
-                                                <string>File Explorer</string>
-                                            </attribute>
-                                            <layout class="QVBoxLayout" name="fileExplorerLayout">
-                                                <item>
-                                                    <widget class="QLineEdit" name="fileExplorerPath">
-                                                        <property name="placeholderText">
-                                                            <string>Path</string>
-                                                        </property>
-                                                    </widget>
-                                                </item>
-                                                <item>
-                                                    <widget class="QTreeView" name="fileExplorerTree"/>
-                                                </item>
-                                            </layout>
-                                        </widget>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="CodeEditor" name="codeEdit" />
+                                </item>
+                            </layout>
+                        </widget>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QTabWidget" name="panelTabs">
+                        <property name="font">
+                            <font>
+                                <family>Segoe UI</family>
+                                <pointsize>10</pointsize>
+                            </font>
+                        </property>
+                        <property name="currentIndex">
+                            <number>2</number>
+                        </property>
+                        <property name="movable">
+                            <bool>true</bool>
+                        </property>
+                        <property name="tabBarAutoHide">
+                            <bool>true</bool>
+                        </property>
+                        <widget class="QWidget" name="outputTab">
+                            <attribute name="title">
+                                <string>Output</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="vertLytPanelTabs">
+                                <item>
+                                    <widget class="QPlainTextEdit" name="outputEdit">
+                                        <property name="font">
+                                            <font>
+                                                <family>Lucida Console</family>
+                                                <pointsize>10</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="cursor" stdset="0">
+                                            <cursorShape>IBeamCursor</cursorShape>
+                                        </property>
+                                        <property name="whatsThis">
+                                            <string>Output Window for the NWScript Editor</string>
+                                        </property>
+                                        <property name="tabChangesFocus">
+                                            <bool>true</bool>
+                                        </property>
+                                        <property name="readOnly">
+                                            <bool>true</bool>
+                                        </property>
+                                        <property name="placeholderText">
+                                            <string>Important errors and logs will appear here.</string>
+                                        </property>
                                     </widget>
                                 </item>
                             </layout>
                         </widget>
-                        <widget class="QSplitter" name="rightSplitter">
-                            <property name="orientation">
-                                <enum>Qt::Vertical</enum>
-                            </property>
-                            <widget class="QWidget" name="editorWidget">
-                                <layout class="QVBoxLayout" name="editorLayout">
-                                    <item>
-                        <widget class="QStackedWidget" name="editorStack">
-                            <widget class="NSSCodeEditor" name="nativeEditor"/>
-                            <widget class="WebViewEditor" name="webEditor"/>
+                        <widget class="QWidget" name="terminalTab">
+                            <attribute name="title">
+                                <string>Terminal</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout_13">
+                                <item>
+                                    <widget class="QWidget" name="terminalWidget" native="true">
+                                        <property name="minimumSize">
+                                            <size>
+                                                <width>0</width>
+                                                <height>100</height>
+                                            </size>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
                         </widget>
-                    </item>
-                    <item>
-                        <widget class="QPushButton" name="toggleEditorButton">
-                            <property name="text">
-                                <string>Toggle Web IDE</string>
-                            </property>
+                        <widget class="QWidget" name="debugTab">
+                            <attribute name="title">
+                                <string>Debug</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout_12">
+                                <item>
+                                    <widget class="QTableWidget" name="debugTable">
+                                        <column>
+                                            <property name="text">
+                                                <string>Variable</string>
+                                            </property>
+                                        </column>
+                                        <column>
+                                            <property name="text">
+                                                <string>Value</string>
+                                            </property>
+                                        </column>
+                                        <column>
+                                            <property name="text">
+                                                <string>Type</string>
+                                            </property>
+                                        </column>
+                                    </widget>
+                                </item>
+                            </layout>
                         </widget>
-                    </item>
-                </layout>
-            </widget>
-            <widget class="QWidget" name="editorTabsWidget">
-                <layout class="QVBoxLayout" name="editorTabsLayout">
-                    <item>
-                                        <widget class="QTabWidget" name="editorTabs">
-                                            <property name="sizePolicy">
-                                                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                                                    <horstretch>0</horstretch>
-                                                    <verstretch>0</verstretch>
-                                                </sizepolicy>
+                        <widget class="QWidget" name="findResultsTab">
+                            <attribute name="title">
+                                <string>Find Results</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout_11">
+                                <item>
+                                    <widget class="QTreeWidget" name="findResultsTree">
+                                        <column>
+                                            <property name="text">
+                                                <string>File</string>
                                             </property>
-                                            <property name="acceptDrops">
-                                                <bool>true</bool>
+                                        </column>
+                                        <column>
+                                            <property name="text">
+                                                <string>Line</string>
                                             </property>
-                                            <property name="tabsClosable">
-                                                <bool>true</bool>
+                                        </column>
+                                        <column>
+                                            <property name="text">
+                                                <string>Content</string>
                                             </property>
-                                            <property name="movable">
-                                                <bool>true</bool>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item>
-                                        <widget class="QWidget" name="searchReplaceWidget" native="true">
-                                            <layout class="QHBoxLayout" name="searchReplaceLayout">
-                                                <item>
-                                                    <widget class="QLineEdit" name="searchLineEdit">
-                                                        <property name="placeholderText">
-                                                            <string>Search...</string>
-                                                        </property>
-                                                    </widget>
-                                                </item>
-                                                <item>
-                                                    <widget class="QLineEdit" name="replaceLineEdit">
-                                                        <property name="placeholderText">
-                                                            <string>Replace...</string>
-                                                        </property>
-                                                    </widget>
-                                                </item>
-                                            </layout>
-                                        </widget>
-                                    </item>
-                                </layout>
-                            </widget>
-                            <widget class="QTabWidget" name="bottomTabs">
-                                <property name="tabPosition">
-                                    <enum>QTabWidget::South</enum>
-                                </property>
-                                <widget class="QWidget" name="outputTab">
-                                    <attribute name="title">
-                                        <string>Output</string>
-                                    </attribute>
-                                    <layout class="QVBoxLayout" name="outputLayout">
+                                        </column>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </widget>
+                        <widget class="QWidget" name="outlineTab">
+                            <attribute name="title">
+                                <string>Outline</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout_4">
+                                <item>
+                                    <widget class="QTreeWidget" name="outlineView" />
+                                </item>
+                            </layout>
+                        </widget>
+                        <widget class="QWidget" name="learnTab">
+                            <attribute name="title">
+                                <string>Constants</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="vertLytLearnTab">
+                                <item>
+                                    <layout class="QHBoxLayout" name="horizontalLayout_5">
                                         <item>
-                                            <widget class="QPlainTextEdit" name="outputEdit">
-                                                <property name="readOnly">
-                                                    <bool>true</bool>
+                                            <widget class="QLineEdit" name="functionSearchEdit">
+                                                <property name="placeholderText">
+                                                    <string>Search functions...</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QLineEdit" name="constantSearchEdit">
+                                                <property name="placeholderText">
+                                                    <string>Search constants...</string>
                                                 </property>
                                             </widget>
                                         </item>
                                     </layout>
-                                </widget>
-                                <widget class="QWidget" name="problemsTab">
-                                    <attribute name="title">
-                                        <string>Problems</string>
-                                    </attribute>
-                                    <layout class="QVBoxLayout" name="problemsLayout">
+                                </item>
+                                <item>
+                                    <layout class="QHBoxLayout" name="horizontalLayout">
                                         <item>
-                                            <widget class="QTreeWidget" name="problemsTree">
-                                                <column>
-                                                    <property name="text">
-                                                        <string>Description</string>
-                                                    </property>
-                                                </column>
-                                                <column>
-                                                    <property name="text">
-                                                        <string>File</string>
-                                                    </property>
-                                                </column>
-                                                <column>
-                                                    <property name="text">
-                                                        <string>Line</string>
-                                                    </property>
-                                                </column>
-                                            </widget>
+                                            <widget class="QListWidget" name="functionList" />
+                                        </item>
+                                        <item>
+                                            <widget class="QListWidget" name="constantList" />
                                         </item>
                                     </layout>
-                                </widget>
-                            </widget>
+                                </item>
+                            </layout>
                         </widget>
                     </widget>
                 </item>
@@ -237,7 +294,43 @@
             </layout>
         </widget>
         <widget class="QStatusBar" name="statusbar" />
-        <widget class="QToolBar" name="toolBar" />
+        <widget class="QDockWidget" name="fileExplorerDock">
+            <property name="windowTitle">
+                <string>File Explorer</string>
+            </property>
+            <attribute name="dockWidgetArea">
+                <number>1</number>
+            </attribute>
+            <widget class="QWidget" name="fileExplorerContents">
+                <layout class="QVBoxLayout" name="fileExplorerLayout">
+                    <item>
+                        <widget class="QLineEdit" name="lineEdit">
+                            <property name="placeholderText">
+                                <string>Address Bar</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="RobustTreeView" name="fileExplorerView">
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QLineEdit" name="fileSearchEdit">
+                            <property name="placeholderText">
+                                <string>Search files...</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="refreshFileExplorerButton">
+                            <property name="text">
+                                <string>Refresh</string>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
+            </widget>
+        </widget>
         <widget class="QDockWidget" name="bookmarksDock">
             <property name="acceptDrops">
                 <bool>true</bool>
@@ -336,8 +429,8 @@
                 <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>1280</width>
-                    <height>21</height>
+                    <width>1180</width>
+                    <height>22</height>
                 </rect>
             </property>
             <widget class="QMenu" name="menuFile">
@@ -356,7 +449,6 @@
                 <addaction name="actionCompile" />
                 <addaction name="actionRun" />
                 <addaction name="separator" />
-                <addaction name="actionDownloadVanillaSource" />
                 <addaction name="actionPrint" />
                 <addaction name="separator" />
                 <addaction name="actionExit" />
@@ -407,6 +499,19 @@
                 <addaction name="actionAnalyze_Code" />
                 <addaction name="separator" />
             </widget>
+            <widget class="QMenu" name="menuDebug">
+                <property name="title">
+                    <string>Debug</string>
+                </property>
+                <addaction name="actionStart_Debugging" />
+                <addaction name="actionStop_Debugging" />
+                <addaction name="actionStep_Over" />
+                <addaction name="actionStep_Into" />
+                <addaction name="actionStep_Out" />
+                <addaction name="separator" />
+                <addaction name="actionToggle_Breakpoint" />
+                <addaction name="actionClear_All_Breakpoints" />
+            </widget>
             <widget class="QMenu" name="menuHelp">
                 <property name="title">
                     <string>Help</string>
@@ -421,6 +526,7 @@
             <addaction name="menuEdit" />
             <addaction name="menuView" />
             <addaction name="menuTools" />
+            <addaction name="menuDebug" />
             <addaction name="menuHelp" />
         </widget>
         <action name="actionNew">
@@ -842,22 +948,19 @@
                 <string>TSL</string>
             </property>
         </action>
-        <action name="actionDownloadVanillaSource">
-            <property name="text">
-                <string>Download from Vanilla Source Repo</string>
-            </property>
-            <property name="toolTip">
-                <string>Download script from the vanilla source repository</string>
-            </property>
-        </action>
     </widget>
-    <resources />
-    <connections />
     <customwidgets>
         <customwidget>
-            <class>NSSCodeEditor</class>
+            <class>RobustTreeView</class>
+            <extends>QTreeView</extends>
+            <header location="global">utility.ui_libraries.qt.widgets.itemviews.treeview</header>
+        </customwidget>
+        <customwidget>
+            <class>CodeEditor</class>
             <extends>QPlainTextEdit</extends>
-            <header>toolset.gui.common.widgets.code_editor</header>
+            <header location="global">toolset.gui.common.widgets.code_editor</header>
         </customwidget>
     </customwidgets>
+    <resources />
+    <connections />
 </ui>

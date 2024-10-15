@@ -5,9 +5,8 @@ import json
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from loggerplus import RobustLogger
-from qtpy.QtCore import QRect, QSettings, QSize, QStringListModel, QUrl, Qt, Signal
+from qtpy.QtCore import QRect, QSettings, QSize, QStringListModel, Qt, Signal
 from qtpy.QtGui import QColor, QPainter, QPalette, QTextCursor, QTextFormat
-from qtpy.QtWebEngineCore import QWebEngineHttpRequest
 from qtpy.QtWidgets import (
     QAction,
     QCompleter,
@@ -31,18 +30,7 @@ from utility.ui_libraries.qt.widgets.itemviews.treewidget import RobustTreeWidge
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
-    from qtpy.QtGui import (
-        QContextMenuEvent,
-        QDragEnterEvent,
-        QDropEvent,
-        QFocusEvent,
-        QKeyEvent,
-        QMoveEvent,
-        QPaintEvent,
-        QResizeEvent,
-        QTextBlock,
-        QTextDocument,
-    )
+    from qtpy.QtGui import QContextMenuEvent, QDragEnterEvent, QDropEvent, QFocusEvent, QKeyEvent, QMoveEvent, QPaintEvent, QResizeEvent, QTextBlock, QTextDocument
     from qtpy.QtWidgets import QTreeWidgetItem
     from typing_extensions import Literal, Self  # noqa: F401
 
@@ -104,9 +92,9 @@ class CodeEditor(QPlainTextEdit):
         start_pos = cursor.selectionStart()
         end_pos = cursor.selectionEnd()
 
-        cursor.set_position(start_pos)
+        cursor.setPosition(start_pos)
         cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
-        cursor.set_position(end_pos, QTextCursor.MoveMode.KeepAnchor)
+        cursor.setPosition(end_pos, QTextCursor.MoveMode.KeepAnchor)
         cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
 
         selected_text = cursor.selectedText()
@@ -122,7 +110,7 @@ class CodeEditor(QPlainTextEdit):
             elif line.lstrip().startswith("//"):
                 lines[i] = line.replace("//", "", 1).lstrip()
 
-        cursor.remove_selectedText()
+        cursor.removeSelectedText()
         cursor.insertText("\n".join(lines))
         cursor.endEditBlock()
 
@@ -245,7 +233,7 @@ class CodeEditor(QPlainTextEdit):
         text = self.toPlainText()
         self.setPlainText(text[:index] + insert + text[index:])
         offset = len(insert) if offset is None else offset
-        cursor.set_position(index + offset)
+        cursor.setPosition(index + offset)
         self.setTextCursor(cursor)
 
     def on_text_changed(self):
@@ -407,7 +395,7 @@ class CodeEditor(QPlainTextEdit):
             RobustLogger().error(f"Outline item '{item.text(0)}' has no function definition")
             return
         cursor = self.textCursor()
-        cursor.set_position(obj.line_num)
+        cursor.setPosition(obj.line_num)
         self.setTextCursor(cursor)
         self.ensureCursorVisible()
 
@@ -417,7 +405,7 @@ class CodeEditor(QPlainTextEdit):
             return
         assert isinstance(obj, FunctionDefinition)
         cursor = self.textCursor()
-        cursor.set_position(obj.line_num)
+        cursor.setPosition(obj.line_num)
         self.setTextCursor(cursor)
         self.centerCursor()
 
@@ -473,9 +461,9 @@ class CodeEditor(QPlainTextEdit):
         if cursor.hasSelection():
             start = cursor.selectionStart()
             end = cursor.selectionEnd()
-            cursor.set_position(start)
+            cursor.setPosition(start)
             cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
-            cursor.set_position(end, QTextCursor.MoveMode.KeepAnchor)
+            cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
             cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
         else:
             cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
@@ -518,7 +506,7 @@ class CodeEditor(QPlainTextEdit):
             cursor.movePosition(QTextCursor.MoveOperation.EndOfBlock, QTextCursor.MoveMode.KeepAnchor)
             cursor.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.KeepAnchor)
             text_to_move = cursor.selectedText()
-            cursor.remove_selectedText()
+            cursor.removeSelectedText()
             cursor.movePosition(QTextCursor.MoveOperation.Down)
             cursor.insertText(text_to_move)
         else:  # down
@@ -528,7 +516,7 @@ class CodeEditor(QPlainTextEdit):
             if not cursor.atEnd():
                 cursor.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.KeepAnchor)
             text_to_move = cursor.selectedText()
-            cursor.remove_selectedText()
+            cursor.removeSelectedText()
             cursor.movePosition(QTextCursor.MoveOperation.Up)
             cursor.movePosition(QTextCursor.MoveOperation.StartOfBlock)
             cursor.insertText(text_to_move)
@@ -542,7 +530,7 @@ class CodeEditor(QPlainTextEdit):
             cursor.select(cursor.WordUnderCursor)
             selected_text = cursor.selectedText()
             if selected_text in self.snippets:
-                cursor.remove_selectedText()
+                cursor.removeSelectedText()
                 cursor.insertText(self.snippets[selected_text]["content"])
             else:
                 super().keyPressEvent(event)
@@ -663,6 +651,9 @@ class WebViewEditor(QWidget):
             layout.addWidget(label)
 
     def load_url(self, url: str):
+        from qtpy.QtCore import QUrl
+        from qtpy.QtWebEngineCore import QWebEngineHttpRequest
+
         if self.web_view:
             get_request = QWebEngineHttpRequest(QUrl(url), QWebEngineHttpRequest.Method.Get)
             self.web_view.load(get_request)

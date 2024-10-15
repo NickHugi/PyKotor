@@ -49,9 +49,9 @@ class RobustSortFilterProxyModel(TemplateFilterProxyModel):
 
     def get_sort_value(self, index: QModelIndex) -> Any:
         """Return the sort value based on the column."""
-        srcModel = self.sourceModel()
+        srcModel = self.source_model()
         assert isinstance(srcModel, QStandardItemModel)
-        return self.sourceModel().data(index)
+        return self.source_model().data(index)
 
     def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
         left_data = self.get_sort_value(left)

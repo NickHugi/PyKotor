@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 from qtpy import QtCore
+from qtpy.QtCore import Qt
 from qtpy.QtGui import QPainter, QPalette, QPen
 from qtpy.QtWidgets import QAction, QComboBox, QMenu, QMessageBox
 
@@ -28,11 +29,11 @@ class ComboBox2DA(QComboBox):
         super().__init__(parent)
 
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.onContextMenu)
-        self.currentIndexChanged.connect(self.onCurrentIndexChanged)
+        self.customContextMenuRequested.connect(self.on_context_menu)
+        self.currentIndexChanged.connect(self.on_current_index_changed)
         self.setToolTip("<i>Right click for more options</i>")
 
-        self._sortAlphabetically: bool = False
+        self._sort_alphabetically: bool = False
         self._this2DA: TwoDA | None = None
         self._installation: HTInstallation | None = None
         self._resname: str | None = None
@@ -42,10 +43,10 @@ class ComboBox2DA(QComboBox):
         if super().currentIndex() == -1:
             painter = QPainter(self)
             # Fetch the text color from the palette
-            text_color = self.palette().color(QPalette.Text)
+            text_color = self.palette().color(QPalette.ColorRole.Text)
             painter.setPen(QPen(text_color))
             text_rect = self.rect().adjusted(2, 0, 0, 0)
-            painter.drawText(text_rect, QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft, self.placeholderText())
+            painter.drawText(text_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, self.placeholderText())
             painter.end()
 
     def currentIndex(self) -> int:
@@ -112,93 +113,93 @@ class ComboBox2DA(QComboBox):
 
     def addItems(self, texts: list[str]):
         """Raises NotImplementedError because bulk adding items without specifying row indices is not supported."""
-        msg = "Bulk adding items using addItems is not supported. Use setItems to add multiple items with proper row indices."
+        msg = "Bulk adding items using addItems is not supported. Use set_items to add multiple items with proper row indices."
         raise NotImplementedError(msg)
 
     def insertItems(self, index: int, texts: list[str]):
         """Raises NotImplementedError because bulk inserting items without specifying row indices is not supported."""
-        msg = "Bulk inserting items using insertItems is not supported. Use setItems to insert multiple items with proper row indices."
+        msg = "Bulk inserting items using insertItems is not supported. Use set_items to insert multiple items with proper row indices."
         raise NotImplementedError(msg)
 
-    def onCurrentIndexChanged(self, index: int):
-        self.updateToolTip()
+    def on_current_index_changed(self, index: int):
+        self.update_tool_tip()
 
-    def onContextMenu(self, point: QPoint):
+    def on_context_menu(self, point: QPoint):
         menu = QMenu(self)
         if (
             self._installation is not None
             and self._resname is not None
             and self._this2DA is not None
         ):
-            menu.addAction(f"Open '{self._resname}.2da' in 2DAEditor").triggered.connect(self.openIn2DAEditor)
-        menu.addAction("Set Modded Value").triggered.connect(self.openModdedValueDialog)
-        toggleSortAction = QAction("Toggle Sorting", self)
-        toggleSortAction.setCheckable(True)
-        toggleSortAction.setChecked(self._sortAlphabetically)
-        toggleSortAction.triggered.connect(self.toggleSort)
-        menu.addAction(toggleSortAction)
+            menu.addAction(f"Open '{self._resname}.2da' in 2DAEditor").triggered.connect(self.open_in_2da_editor)
+        menu.addAction("Set Modded Value").triggered.connect(self.open_modded_value_dialog)
+        toggle_sort_action = QAction("Toggle Sorting", self)
+        toggle_sort_action.setCheckable(True)
+        toggle_sort_action.setChecked(self._sort_alphabetically)
+        toggle_sort_action.triggered.connect(self.toggle_sort)
+        menu.addAction(toggle_sort_action)
         menu.popup(self.mapToGlobal(point))
 
-    def setItems(
+    def set_items(
         self,
         values: Iterable[str],
         *,
-        sortAlphabetically: bool = True,
-        cleanupStrings: bool = True,
-        ignoreBlanks: bool = False,
+        sort_alphabetically: bool = True,
+        cleanup_strings: bool = True,
+        ignore_blanks: bool = False,
     ):
-        self._sortAlphabetically = sortAlphabetically
+        self._sort_alphabetically = sort_alphabetically
         self.clear()
 
         for index, text in enumerate(values):
             assert isinstance(text, str), f"text '{text}' ({text.__class__.__name__}) is not a str"
             new_text: str = text
-            if cleanupStrings:
+            if cleanup_strings:
                 new_text = text.replace("TRAP_", "")
                 new_text = text.replace("GENDER_", "")
                 new_text = text.replace("_", " ")
-            if not ignoreBlanks or new_text and new_text.strip():
+            if not ignore_blanks or new_text and new_text.strip():
                 self.addItem(new_text, index)
 
-        self.enableSort() if self._sortAlphabetically else self.disableSort()
+        self.enable_sort() if self._sort_alphabetically else self.disable_sort()
 
-    def updateToolTip(self):
-        rowIndexDisplay = (f"<b>Row Index:</b> {self.currentIndex()}<br>" if self.currentIndex() != -1 else "")
+    def update_tool_tip(self):
+        row_index_display = (f"<b>Row Index:</b> {self.currentIndex()}<br>" if self.currentIndex() != -1 else "")
         if self._resname and self._this2DA:
             tooltip_text = (
                 f"<b>Filename:</b> {self._resname}.2da<br>"
-                f"{rowIndexDisplay}<br><i>Right-click for more options.</i>"
+                f"{row_index_display}<br><i>Right-click for more options.</i>"
             )
         else:
             tooltip_text = (
-                f"{rowIndexDisplay}<br><i>Right-click for more options.</i>"
+                f"{row_index_display}<br><i>Right-click for more options.</i>"
             )
         self.setToolTip(tooltip_text)
 
-    def setContext(self, data: TwoDA | None, install: HTInstallation, resname: str):
+    def set_context(self, data: TwoDA | None, install: HTInstallation, resname: str):
         if data is not None:
             self._this2DA = data
         self._installation = install
         self._resname = resname
 
-    def toggleSort(self):
-        self.disableSort() if self._sortAlphabetically else self.enableSort()
+    def toggle_sort(self):
+        self.disable_sort() if self._sort_alphabetically else self.enable_sort()
 
-    def enableSort(self):  # sourcery skip: class-extract-method
+    def enable_sort(self):  # sourcery skip: class-extract-method
         """Sorts the combobox alphabetically. This is a custom method."""
-        self._sortAlphabetically = True
+        self._sort_alphabetically = True
         model: QStandardItemModel = self.model()
         model.setSortRole(_REAL_2DA_TEXT_ROLE)
         model.sort(0)
 
-    def disableSort(self):
+    def disable_sort(self):
         """Sorts the combobox by row index. This is a custom method."""
-        self._sortAlphabetically = False
+        self._sort_alphabetically = False
         model: QStandardItemModel = self.model()
         model.setSortRole(_ROW_INDEX_DATA_ROLE)
         model.sort(0)
 
-    def openIn2DAEditor(self):
+    def open_in_2da_editor(self):
         if (
             self._installation is None
             or self._resname is None
@@ -216,14 +217,15 @@ class ComboBox2DA(QComboBox):
         except (ValueError, OSError) as e:
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec()
-            editor.proxyModel.setSourceModel(editor.model)
-            editor.new()
+            return
         else:
             editor.jump_to_row(self.currentIndex())
         editor.setWindowTitle(f"{self._resname}.2da - 2DAEditor({self._installation.name})")
         add_window(editor)
+        editor.show()
+        editor.activateWindow()
 
-    def openModdedValueDialog(self):
+    def open_modded_value_dialog(self):
         """Opens a dialog where the player can manually set the index into the 2DA file."""
         dialog = ModdedValueSpinboxDialog(self)
         if dialog.exec():

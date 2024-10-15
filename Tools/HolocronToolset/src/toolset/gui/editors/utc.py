@@ -87,7 +87,7 @@ class UTCEditor(Editor):
         self.ui.setupUi(self)
         self.resize(798, 553)
         self._setup_menus()
-        self._setupInstallation(installation)
+        self._setup_installation(installation)
         self._setup_signals()
         self._installation: HTInstallation
 
@@ -130,7 +130,7 @@ class UTCEditor(Editor):
                 resourceMenuBuilder = ResourceItems(resources=[location])
                 resourceMenuBuilder.build_menu(locMenu)
 
-            fileMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
+            fileMenu.addAction("Details...").triggered.connect(lambda: self._open_details(flatLocations))
 
         contextMenu.exec(self.ui.portraitPicture.mapToGlobal(position))  # pyright: ignore[reportCallIssue, reportArgumentType]  # type: ignore[call-overload]
 
@@ -150,12 +150,12 @@ class UTCEditor(Editor):
             result = portraits.get_cell(index, "baseresrefvvve")
         return result
 
-    def _openDetails(self, locations: list[LocationResult]):
+    def _open_details(self, locations: list[LocationResult]):
         """Opens a details window for the given resource locations."""
-        selectionWindow = FileSelectionWindow(locations, self._installation)
-        selectionWindow.show()
-        selectionWindow.activateWindow()
-        add_window(selectionWindow)
+        selection_window = FileSelectionWindow(locations, self._installation)
+        selection_window.show()
+        selection_window.activateWindow()
+        add_window(selection_window)
 
     def _copyPortraitTooltip(self):
         tooltipText = self._generatePortraitTooltip(asHtml=False)
@@ -163,7 +163,7 @@ class UTCEditor(Editor):
         assert clipboard is not None, f"`clipboard = QApplication.clipboard()` {clipboard.__class__.__name__}: {clipboard}"
         clipboard.setText(tooltipText)
 
-    def _copyToClipboard(self, text: str):
+    def _copy_to_clipboard(self, text: str):
         clipboard = QApplication.clipboard()
         assert clipboard is not None, f"`clipboard = QApplication.clipboard()` {clipboard.__class__.__name__}: {clipboard}"
         clipboard.setText(text)
@@ -198,7 +198,7 @@ class UTCEditor(Editor):
         self.ui.actionAlwaysSaveK2Fields.triggered.connect(lambda: setattr(self.settings, "alwaysSaveK2Fields", self.ui.actionAlwaysSaveK2Fields.isChecked()))
         self.ui.actionShowPreview.triggered.connect(self.togglePreview)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         """Sets up the installation for character creation.
 
         Args:
@@ -246,47 +246,47 @@ class UTCEditor(Editor):
         races = installation.ht_get_cache_2da(HTInstallation.TwoDA_RACES)
 
         if appearances is not None:
-            self.ui.appearanceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_APPEARANCES)
-            self.ui.appearanceSelect.setItems(appearances.get_column("label"))
+            self.ui.appearanceSelect.set_context(appearances, self._installation, HTInstallation.TwoDA_APPEARANCES)
+            self.ui.appearanceSelect.set_items(appearances.get_column("label"))
 
         if soundsets is not None:
-            self.ui.soundsetSelect.setContext(soundsets, self._installation, HTInstallation.TwoDA_SOUNDSETS)
-            self.ui.soundsetSelect.setItems(soundsets.get_column("label"))
+            self.ui.soundsetSelect.set_context(soundsets, self._installation, HTInstallation.TwoDA_SOUNDSETS)
+            self.ui.soundsetSelect.set_items(soundsets.get_column("label"))
 
         if portraits is not None:
-            self.ui.portraitSelect.setContext(portraits, self._installation, HTInstallation.TwoDA_PORTRAITS)
-            self.ui.portraitSelect.setItems(portraits.get_column("baseresref"))
+            self.ui.portraitSelect.set_context(portraits, self._installation, HTInstallation.TwoDA_PORTRAITS)
+            self.ui.portraitSelect.set_items(portraits.get_column("baseresref"))
 
         if subraces is not None:
-            self.ui.subraceSelect.setContext(subraces, self._installation, HTInstallation.TwoDA_SUBRACES)
-            self.ui.subraceSelect.setItems(subraces.get_column("label"))
+            self.ui.subraceSelect.set_context(subraces, self._installation, HTInstallation.TwoDA_SUBRACES)
+            self.ui.subraceSelect.set_items(subraces.get_column("label"))
 
         if speeds is not None:
-            self.ui.speedSelect.setContext(speeds, self._installation, HTInstallation.TwoDA_SPEEDS)
-            self.ui.speedSelect.setItems(speeds.get_column("label"))
+            self.ui.speedSelect.set_context(speeds, self._installation, HTInstallation.TwoDA_SPEEDS)
+            self.ui.speedSelect.set_items(speeds.get_column("label"))
 
         if factions is not None:
-            self.ui.factionSelect.setContext(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
-            self.ui.factionSelect.setItems(factions.get_column("label"))
+            self.ui.factionSelect.set_context(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
+            self.ui.factionSelect.set_items(factions.get_column("label"))
 
         if genders is not None:
-            self.ui.genderSelect.setContext(genders, self._installation, HTInstallation.TwoDA_GENDERS)
-            self.ui.genderSelect.setItems([label.replace("_", " ").title().replace("Gender ", "") for label in genders.get_column("constant")])
+            self.ui.genderSelect.set_context(genders, self._installation, HTInstallation.TwoDA_GENDERS)
+            self.ui.genderSelect.set_items([label.replace("_", " ").title().replace("Gender ", "") for label in genders.get_column("constant")])
 
         if perceptions is not None:
-            self.ui.perceptionSelect.setContext(perceptions, self._installation, HTInstallation.TwoDA_PERCEPTIONS)
-            self.ui.perceptionSelect.setItems(perceptions.get_column("label"))
+            self.ui.perceptionSelect.set_context(perceptions, self._installation, HTInstallation.TwoDA_PERCEPTIONS)
+            self.ui.perceptionSelect.set_items(perceptions.get_column("label"))
 
         if classes is not None:  # sourcery skip: extract-method
-            self.ui.class1Select.setContext(classes, self._installation, HTInstallation.TwoDA_CLASSES)
-            self.ui.class1Select.setItems(classes.get_column("label"))
+            self.ui.class1Select.set_context(classes, self._installation, HTInstallation.TwoDA_CLASSES)
+            self.ui.class1Select.set_items(classes.get_column("label"))
 
-            self.ui.class2Select.setContext(classes, self._installation, HTInstallation.TwoDA_CLASSES)
+            self.ui.class2Select.set_context(classes, self._installation, HTInstallation.TwoDA_CLASSES)
             self.ui.class2Select.clear()
             self.ui.class2Select.setPlaceholderText("[Unset]")
             for label in classes.get_column("label"):  # pyright: ignore[reportArgumentType]
                 self.ui.class2Select.addItem(label)
-        self.ui.raceSelect.setContext(races, self._installation, HTInstallation.TwoDA_RACES)
+        self.ui.raceSelect.set_context(races, self._installation, HTInstallation.TwoDA_RACES)
 
         self.ui.raceSelect.clear()
         self.ui.raceSelect.addItem("Droid", 5)

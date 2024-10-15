@@ -68,7 +68,7 @@ class JRLEditor(Editor):
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self._jrl: JRL = JRL()
         self._model: QStandardItemModel = QStandardItemModel(self)
@@ -115,7 +115,7 @@ class JRLEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.onDeleteShortcut)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         self._installation = installation
         self.ui.categoryNameEdit.set_installation(installation)
 
@@ -128,18 +128,18 @@ class JRLEditor(Editor):
         if plot2DA:
             self.ui.categoryPlotSelect.clear()
             self.ui.categoryPlotSelect.setPlaceholderText("[Unset]")
-            self.ui.categoryPlotSelect.setItems(
+            self.ui.categoryPlotSelect.set_items(
                 [cell.title() for cell in plot2DA.get_column("label")],
-                cleanupStrings=True,
+                cleanup_strings=True,
             )
-            self.ui.categoryPlotSelect.setContext(plot2DA, installation, HTInstallation.TwoDA_PLOT)
+            self.ui.categoryPlotSelect.set_context(plot2DA, installation, HTInstallation.TwoDA_PLOT)
 
         self.ui.categoryPlanetSelect.clear()
         self.ui.categoryPlanetSelect.setPlaceholderText("[Unset]")
         for row in planets:
             text = self._installation.talktable().string(row.get_integer("name", 0)) or row.get_string("label").replace("_", " ").title()
             self.ui.categoryPlanetSelect.addItem(text)
-        self.ui.categoryPlanetSelect.setContext(planets, self._installation, HTInstallation.TwoDA_PLANETS)
+        self.ui.categoryPlanetSelect.set_context(planets, self._installation, HTInstallation.TwoDA_PLANETS)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load quest data from a file.

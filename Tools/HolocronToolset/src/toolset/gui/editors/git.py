@@ -1378,10 +1378,10 @@ class _GeometryMode(_Mode):
         menu.addAction("Finish Editing").triggered.connect(self._editor.enter_instance_mode)
 
     def open_list_context_menu(self, item: QListWidgetItem, screen: QPoint):
-        pass
+        ...
 
     def update_visibility(self):
-        pass
+        ...
 
     def select_underneath(self):
         under_mouse: list[GeomPoint] = self.renderer2d.geom_points_under_mouse()
@@ -1419,7 +1419,12 @@ class _GeometryMode(_Mode):
     # endregion
 
 
-class _SpawnMode(_Mode): ...
+class _SpawnMode(_Mode):
+    def on_item_selection_changed(self, item: QListWidgetItem):
+        ...
+
+    def on_filter_edited(self, text: str):
+        ...
 
 
 def calculate_zoom_strength(delta_y: float, sens_setting: int) -> float:

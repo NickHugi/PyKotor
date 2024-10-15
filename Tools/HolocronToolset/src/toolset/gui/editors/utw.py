@@ -45,7 +45,7 @@ class UTWEditor(Editor):
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self._utw = UTW()
 
@@ -53,10 +53,10 @@ class UTWEditor(Editor):
 
     def _setup_signals(self):
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
         self.ui.noteChangeButton.clicked.connect(self.changeNote)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         self._installation = installation
         self.ui.nameEdit.set_installation(installation)
 
@@ -136,7 +136,7 @@ class UTWEditor(Editor):
         super().new()
         self._loadUTW(UTW())
 
-    def changeName(self):
+    def change_name(self):
         assert self._installation is not None
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
@@ -153,10 +153,10 @@ class UTWEditor(Editor):
 
     def generate_tag(self):
         if not self.ui.resrefEdit.text():
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname:
             self.ui.resrefEdit.setText(self._resname)
         else:

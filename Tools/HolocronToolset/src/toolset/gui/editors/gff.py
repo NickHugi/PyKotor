@@ -93,9 +93,9 @@ class GFFEditor(Editor):
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 
         self.model: QStandardItemModel = QStandardItemModel(self)
-        self.proxyModel: QSortFilterProxyModel = GFFSortFilterProxyModel(self)
-        self.proxyModel.setSourceModel(self.model)
-        self.ui.treeView.setModel(self.proxyModel)  # type: ignore[arg-type]
+        self.proxy_model: QSortFilterProxyModel = GFFSortFilterProxyModel(self)
+        self.proxy_model.setSourceModel(self.model)
+        self.ui.treeView.setModel(self.proxy_model)  # type: ignore[arg-type]
 
         selectionModel = self.ui.treeView.selectionModel()
         assert selectionModel is not None
@@ -159,7 +159,7 @@ class GFFEditor(Editor):
         self._load_struct(rootNode, gff.root)
 
         sourceIndex = self.model.indexFromItem(rootNode)
-        proxyIndex = self.proxyModel.mapFromSource(sourceIndex)
+        proxyIndex = self.proxy_model.mapFromSource(sourceIndex)
         self.ui.treeView.expand(proxyIndex)  # type: ignore[arg-type]
 
     def _load_struct(self, node: QStandardItem, gffStruct: GFFStruct):
@@ -361,7 +361,7 @@ class GFFEditor(Editor):
             - Loads the selected item into the UI.
         """
         for proxyIndex in selected.indexes():
-            sourceIndex = self.proxyModel.mapToSource(proxyIndex)
+            sourceIndex = self.proxy_model.mapToSource(proxyIndex)
             treeItem = self.model.itemFromIndex(sourceIndex)
             assert treeItem is not None
             self.loadItem(treeItem)
@@ -494,7 +494,7 @@ class GFFEditor(Editor):
             return
 
         proxyIndex = selectedIndices[0]
-        sourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        sourceIndex = self.proxy_model.mapToSource(proxyIndex)
         item: QStandardItem = self.model.itemFromIndex(sourceIndex)
         item_type = cast(GFFFieldType, item.data(_TYPE_NODE_ROLE))
 
@@ -561,7 +561,7 @@ class GFFEditor(Editor):
 
             language, gender = LocalizedString.substring_pair(item.data(_ID_SUBSTRING_ROLE))
             proxyIndex: QModelIndex = self.ui.treeView.selectedIndexes()[0]  # type: ignore[arg-type]
-            treeSourceIndex = self.proxyModel.mapToSource(proxyIndex)
+            treeSourceIndex = self.proxy_model.mapToSource(proxyIndex)
             treeItem = self.model.itemFromIndex(treeSourceIndex)
             locstring: LocalizedString = treeItem.data(_VALUE_NODE_ROLE)
             locstring.set_data(language, gender, text)
@@ -597,7 +597,7 @@ class GFFEditor(Editor):
         self.ui.substringList.addItem(item)  # type: ignore[arg-type]
 
         proxyIndex: QModelIndex = self.ui.treeView.selectedIndexes()[0]  # type: ignore[arg-type]
-        treeSourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        treeSourceIndex = self.proxy_model.mapToSource(proxyIndex)
         treeItem = self.model.itemFromIndex(treeSourceIndex)
         locstring: LocalizedString = treeItem.data(_VALUE_NODE_ROLE)
         locstring.set_data(language, gender, "")
@@ -629,7 +629,7 @@ class GFFEditor(Editor):
                 self.ui.substringList.takeItem(i)
 
         proxyIndex: QModelIndex = self.ui.treeView.selectedIndexes()[0]  # type: ignore[arg-type]
-        treeSourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        treeSourceIndex = self.proxy_model.mapToSource(proxyIndex)
         treeItem = self.model.itemFromIndex(treeSourceIndex)
         locstring: LocalizedString = treeItem.data(_VALUE_NODE_ROLE)
         locstring.remove(language, gender)
@@ -692,7 +692,7 @@ class GFFEditor(Editor):
         """
         ftype = GFFFieldType(ftypeId)
         proxyIndex = self.ui.treeView.selectedIndexes()[0]
-        sourceIndex = self.proxyModel.mapToSource(proxyIndex)  # type: ignore[arg-type]
+        sourceIndex = self.proxy_model.mapToSource(proxyIndex)  # type: ignore[arg-type]
         item = self.model.itemFromIndex(sourceIndex)
         item.setData(ftype, _TYPE_NODE_ROLE)
 
@@ -810,7 +810,7 @@ class GFFEditor(Editor):
             - Calls remove_node() to remove the item from the model.
         """
         for proxyIndex in self.ui.treeView.selectedIndexes():
-            sourceIndex = self.proxyModel.mapToSource(proxyIndex)
+            sourceIndex = self.proxy_model.mapToSource(proxyIndex)
             item = self.model.itemFromIndex(sourceIndex)
             assert item is not None
             self.remove_node(item)
@@ -831,7 +831,7 @@ class GFFEditor(Editor):
             - Pops up menu at point.
         """
         proxyIndex = self.ui.treeView.indexAt(point)
-        sourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        sourceIndex = self.proxy_model.mapToSource(proxyIndex)
         item = self.model.itemFromIndex(sourceIndex)
         if item is None:
             return

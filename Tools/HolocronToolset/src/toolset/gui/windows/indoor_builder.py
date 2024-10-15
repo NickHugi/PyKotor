@@ -135,7 +135,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionDownloadKits.triggered.connect(self.openKitDownloader)
         self.ui.actionInstructions.triggered.connect(self.showHelpWindow)
 
-        self.ui.mapRenderer.customContextMenuRequested.connect(self.onContextMenu)
+        self.ui.mapRenderer.customContextMenuRequested.connect(self.on_context_menu)
         self.ui.mapRenderer.mouseMoved.connect(self.onMouseMoved)
         self.ui.mapRenderer.mousePressed.connect(self.onMousePressed)
         self.ui.mapRenderer.mouseScrolled.connect(self.on_mouse_scrolled)
@@ -454,7 +454,7 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.mapRenderer.clearSelectedRooms()
             self.addConnectedToSelection(room)
 
-    def onContextMenu(self, point: QPoint):
+    def on_context_menu(self, point: QPoint):
         world: Vector3 = self.ui.mapRenderer.toWorldCoords(point.x(), point.y())
         menu = QMenu(self)
 

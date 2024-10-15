@@ -169,10 +169,10 @@ class FilterComboBox(QComboBox):
             self.setCompleter(None)  # type: ignore[arg-type]
             self.lineEdit().setValidator(None)  # type: ignore[arg-type]
 
-        self.proxyModel: FilterProxyModel = FilterProxyModel(self)
+        self.proxy_model: FilterProxyModel = FilterProxyModel(self)
         self.sourceModel = QStringListModel(self) if init else self.model()
         self.setModel(self.sourceModel)
-        super().setModel(self.proxyModel)
+        super().setModel(self.proxy_model)
 
         self.items: list[str] = []
         self.itemsLoaded: bool = False
@@ -218,7 +218,7 @@ class FilterComboBox(QComboBox):
 
     def setModel(self, model: QStringListModel | QStandardItemModel):  # pyright: ignore[reportIncompatibleMethodOverride]
         assert isinstance(model, (QStringListModel, QStandardItemModel))
-        self.proxyModel.setSourceModel(model)
+        self.proxy_model.setSourceModel(model)
         self.sourceModel: QStringListModel | QStandardItemModel = model
 
     def keyPressEvent(self, event: QKeyEvent):  # pyright: ignore[reportIncompatibleMethodOverride]  # noqa: ARG002
@@ -296,7 +296,7 @@ class FilterComboBox(QComboBox):
         self.itemsLoaded = False
 
     def filter_items(self, text):
-        self.proxyModel.setFilterText(text)
+        self.proxy_model.setFilterText(text)
 
     def set_button_delegate(self, button_text: str, button_callback: Callable[[str], Any]):
         listview = self.view()

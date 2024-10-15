@@ -108,7 +108,7 @@ exclude = '''
 include = ["*.py"]
 exclude = ["**/node_modules/**", "**/__pycache__/**", "**/build/**", "**/dist/**", "**/venv/**", "**/__pycache__/**"]
 reportMissingImports = true
-reportMissingTypeStubs = true
+reportMissingTypeStubs = false
 pythonVersion = "3.8"
 analyzeUnannotatedFunctions = true
 deprecateTypingAliases = false
@@ -121,10 +121,10 @@ skip_gitignore = true
 multi_line_output = 3
 
 [tool.pyright.defineConstant]
-PYQT5 = false
+PYQT5 = true
 PYSIDE2 = false
 PYQT6 = false
-PYSIDE6 = true
+PYSIDE6 = false
 
 [tool.yapf]
 column_limit = 175

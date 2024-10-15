@@ -7,7 +7,11 @@ import qtpy
 
 from qtpy.QtCore import QSortFilterProxyModel, Qt
 from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QApplication, QMessageBox
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QApplication,
+    QMessageBox,
+)
 
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
@@ -19,7 +23,7 @@ if TYPE_CHECKING:
     import os
 
     from qtpy.QtCore import QModelIndex
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtWidgets import QHeaderView, QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -30,20 +34,6 @@ class TwoDAEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
     ):
-        """Initializes the 2DA editor.
-
-        Args:
-        ----
-            parent: QWidget: The parent widget
-            installation: HTInstallation: The installation
-
-        Processing Logic:
-        ----------------
-            - Sets supported resource types
-            - Initializes UI elements
-            - Connects model change signals
-            - Sets default empty model.
-        """
         supported: list[ResourceType] = [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)
@@ -56,14 +46,14 @@ class TwoDAEditor(Editor):
 
         self.ui.filterBox.setVisible(False)
 
-        self.model = QStandardItemModel(self)
-        self.proxy_model = SortFilterProxyModel(self)
-        self.proxy_model.setSourceModel(self.model)
+        self.source_model: QStandardItemModel = QStandardItemModel(self)
+        self.proxy_model: SortFilterProxyModel = SortFilterProxyModel(self)
+        self.proxy_model.setSourceModel(self.source_model)
 
         self.vertical_header_option: VerticalHeaderOption = VerticalHeaderOption.NONE
         self.vertical_header_column: str = ""
-        vert_header = self.ui.twodaTable.verticalHeader()
-        self.model.itemChanged.connect(self.reset_vertical_headers)
+        vert_header: QHeaderView | None = self.ui.twodaTable.verticalHeader()
+        self.source_model.itemChanged.connect(self.reset_vertical_headers)
 
         self.new()
         if vert_header is not None and "(Dark)" in GlobalSettings().selectedTheme:
@@ -119,19 +109,6 @@ class TwoDAEditor(Editor):
             """)
 
     def _setup_signals(self):
-        """Set up signal connections for UI actions and edits.
-
-        Processing Logic:
-        ----------------
-            - Connect textEdited signal from filter edit to do_filter slot
-            - Connect triggered signal from toggle filter action to toggle_filter slot
-            - Connect triggered signal from copy action to copy_selection slot
-            - Connect triggered signal from paste action to paste_selection slot
-            - Connect triggered signal from insert row action to insertRow slot
-            - Connect triggered signal from duplicate row action to duplicateRow slot
-            - Connect triggered signal from remove rows action to remove_selectedRows slot
-            - Connect triggered signal from redo row labels action to redoRowLabels slot
-        """
         self.ui.filterEdit.textEdited.connect(self.do_filter)
         self.ui.actionToggleFilter.triggered.connect(self.toggle_filter)
         self.ui.actionCopy.triggered.connect(self.copy_selection)
@@ -149,27 +126,10 @@ class TwoDAEditor(Editor):
         restype: ResourceType,
         data: bytes,
     ):
-        """Loads data from a file into the model.
-
-        Args:
-        ----
-            filepath: The path to the file to load from.
-            resref: The resource reference.
-            restype: The resource type.
-            data: The raw file data.
-
-        Processing Logic:
-        ----------------
-            - Parses the raw file data and populates the model
-            - Sets up a proxy model for sorting and filtering
-            - Catches any errors during loading and displays a message
-            - Sets the proxy model as the view model if loading fails
-            - Resets to a new empty state if loading fails
-        """
         super().load(filepath, resref, restype, data)
 
         # FIXME(th3w1zard1): Why set this here when it's already set in __init__...?
-        self.model = QStandardItemModel(self)
+        self.source_model = QStandardItemModel(self)
         self.proxy_model = SortFilterProxyModel(self)
 
         try:
@@ -177,28 +137,14 @@ class TwoDAEditor(Editor):
         except ValueError as e:
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec()
-            self.proxy_model.setSourceModel(self.model)
+            self.proxy_model.setSourceModel(self.source_model)
             self.new()
 
     def _load_main(self, data: bytes):
-        """Loads data from a 2DA file into the main table.
-
-        Args:
-        ----
-            data: The 2DA data to load
-
-        Processing Logic:
-        ----------------
-            1. Reads the 2DA data
-            2. Sets up the model with headers
-            3. Loops through rows and inserts data
-            4. Configures vertical header menu
-            5. Sets up sorting proxy model.
-        """
         twoda: TwoDA = read_2da(data)
         headers: list[str] = ["", *twoda.get_headers()]
-        self.model.setColumnCount(len(headers))
-        self.model.setHorizontalHeaderLabels(headers)
+        self.source_model.setColumnCount(len(headers))
+        self.source_model.setHorizontalHeaderLabels(headers)
 
         # Disconnect the model to improve performance during updates (especially for appearance.2da)
         self.ui.twodaTable.setModel(None)  # type: ignore[arg-type]
@@ -215,10 +161,10 @@ class TwoDAEditor(Editor):
             items.append(row_items)
 
         for i, row_items in enumerate(items):
-            self.model.insertRow(i, row_items)
+            self.source_model.insertRow(i, row_items)
 
         self.reset_vertical_headers()
-        self.proxy_model.setSourceModel(self.model)
+        self.proxy_model.setSourceModel(self.source_model)
         self.ui.twodaTable.setModel(self.proxy_model)  # type: ignore[arg-type]
         self._reconstruct_menu(headers)
 
@@ -242,27 +188,16 @@ class TwoDAEditor(Editor):
             self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds a 2D array from a table model.
-
-        Args:
-        ----
-            self: The object instance
-            model: The table model to convert
-
-        Returns:
-        -------
-            tuple[bytes, bytes]: A tuple containing the 2DA data and an unused empty bytes placeholder.
-        """
         twoda = TwoDA()
 
-        for i in range(self.model.columnCount())[1:]:
-            twoda.add_column(self.model.horizontalHeaderItem(i).text())
+        for i in range(self.source_model.columnCount())[1:]:
+            twoda.add_column(self.source_model.horizontalHeaderItem(i).text())
 
-        for i in range(self.model.rowCount()):
+        for i in range(self.source_model.rowCount()):
             twoda.add_row()
-            twoda.set_label(i, self.model.item(i, 0).text())
+            twoda.set_label(i, self.source_model.item(i, 0).text())
             for j, header in enumerate(twoda.get_headers()):
-                twoda.set_cell(i, header, self.model.item(i, j + 1).text())
+                twoda.set_cell(i, header, self.source_model.item(i, j + 1).text())
 
         data = bytearray()
         assert self._restype, assert_with_variable_trace(bool(self._restype), "self._restype must be valid.")
@@ -272,26 +207,16 @@ class TwoDAEditor(Editor):
     def new(self):
         super().new()
 
-        self.model.clear()
-        self.model.setRowCount(0)
+        self.source_model.clear()
+        self.source_model.setRowCount(0)
 
     def jump_to_row(self, row: int):
-        """Jumps to the specified row in the table.
-
-        Args:
-        ----
-            row: The row index to jump to.
-        """
-        if row < 0 or row >= self.model.rowCount():
+        if row < 0 or row >= self.source_model.rowCount():
             QMessageBox.warning(self, "Invalid Row", f"Row {row} is out of range.")
             return
-
-        # Select the row in the table view
-        index = self.proxy_model.mapFromSource(self.model.index(row, 0))
+        index: QModelIndex = self.proxy_model.mapFromSource(self.source_model.index(row, 0))
         self.ui.twodaTable.setCurrentIndex(index)
         self.ui.twodaTable.scrollTo(index, self.ui.twodaTable.ScrollHint.EnsureVisible)  # type: ignore[arg-type]
-
-        # Optionally, select the entire row
         self.ui.twodaTable.selectRow(index.row())
 
     def do_filter(
@@ -311,23 +236,9 @@ class TwoDAEditor(Editor):
             self.do_filter("")
 
     def copy_selection(self):
-        """Copies the selected cells to the clipboard.
-
-        Args:
-        ----
-            self: The object instance.
-
-        Processing Logic:
-        ----------------
-            - Gets the top, bottom, left, and right indices of the selected cells.
-            - Loops through the selected indices and maps them to the source model.
-            - Updates the top, bottom, left, and right indices.
-            - Loops through the indices range and builds a string with the cell texts separated by tabs.
-            - Copies the string to the clipboard.
-        """
-        top = self.model.rowCount()
+        top = self.source_model.rowCount()
         bottom = -1
-        left = self.model.columnCount()
+        left = self.source_model.columnCount()
         right = -1
 
         for index in self.ui.twodaTable.selectedIndexes():
@@ -343,7 +254,7 @@ class TwoDAEditor(Editor):
         clipboard: str = ""
         for j in range(top, bottom + 1):
             for i in range(left, right + 1):
-                clipboard += self.model.item(j, i).text()
+                clipboard += self.source_model.item(j, i).text()
                 if i != right:
                     clipboard += "\t"
             if j != bottom:
@@ -352,23 +263,6 @@ class TwoDAEditor(Editor):
         QApplication.clipboard().setText(clipboard)
 
     def paste_selection(self):
-        """Pastes the clipboard contents into the selected table cells.
-
-        Args:
-        ----
-            self: The object instance
-
-        Processing Logic:
-        ----------------
-            - Splits the clipboard contents into rows separated by newlines
-            - Gets the top left selected cell index and item
-            - Loops through each row
-                - Loops through each cell in the row separated by tabs
-                - Sets the text of the model item at the current row and column
-                - Increments the column
-                - Resets column to the left column after each row
-                - Increments the row.
-        """
         rows: list[str] = QApplication.clipboard().text().split("\n")
         selected_indexes = self.ui.twodaTable.selectedIndexes()
         if not selected_indexes:
@@ -378,13 +272,13 @@ class TwoDAEditor(Editor):
             return
 
         top_left_index = self.proxy_model.mapToSource(selected_index)  # type: ignore[arg-type]
-        top_left_item: QStandardItem | None = self.model.itemFromIndex(top_left_index)
+        top_left_item: QStandardItem | None = self.source_model.itemFromIndex(top_left_index)
 
         _top, left = y, x = top_left_item.row(), top_left_item.column()
 
         for row in rows:
             for cell in row.split("\t"):
-                item: QStandardItem | None = self.model.item(y, x)
+                item: QStandardItem | None = self.source_model.item(y, x)
                 if item:
                     item.setText(cell)
                 x += 1
@@ -392,59 +286,36 @@ class TwoDAEditor(Editor):
             y += 1
 
     def insert_row(self):
-        """Inserts a new row at the end of the table.
-
-        Processing Logic:
-        ----------------
-            - Gets the current row count from the model
-            - Appends a new empty row to the model
-            - Sets the item in the first column to the row index
-            - Makes the row index bold and changes its background color
-            - Resets the vertical header labels.
-        """
-        row_index: int = self.model.rowCount()
-        self.model.appendRow([QStandardItem("") for _ in range(self.model.columnCount())])
+        row_index: int = self.source_model.rowCount()
+        self.source_model.appendRow([QStandardItem("") for _ in range(self.source_model.columnCount())])
         self.set_item_display_data(row_index)
 
     def duplicate_row(self):
-        """Duplicates the selected row in the table.
-
-        Inserts a new row, copying values of the selected row, at the end of the table.
-
-        Processing Logic:
-        ----------------
-            - It checks if a row is selected in the table.
-            - Gets the index of the selected row.
-            - Increases the row count of the model by 1.
-            - Appends a new row with the items copied from the selected row.
-            - Sets the item of the first column of new row to the row index in bold font and changed background.
-            - Resets the vertical headers of the table.
-        """
         if self.ui.twodaTable.selectedIndexes():
             copy_row: int = self.ui.twodaTable.selectedIndexes()[0].row()
 
-            row_index: int = self.model.rowCount()
-            self.model.appendRow([QStandardItem(self.model.item(copy_row, i)) for i in range(self.model.columnCount())])
+            row_index: int = self.source_model.rowCount()
+            self.source_model.appendRow([QStandardItem(self.source_model.item(copy_row, i)) for i in range(self.source_model.columnCount())])
             self.set_item_display_data(row_index)
 
     def set_item_display_data(self, rowIndex: int):
-        self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
-        font = self.model.item(rowIndex, 0).font()
+        self.source_model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
+        font = self.source_model.item(rowIndex, 0).font()
         font.setBold(True)
-        self.model.item(rowIndex, 0).setFont(font)
-        self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
+        self.source_model.item(rowIndex, 0).setFont(font)
+        self.source_model.item(rowIndex, 0).setBackground(self.palette().midlight())
         self.reset_vertical_headers()
 
     def remove_selected_rows(self):
         """Removes the rows the user has selected."""
         rows: set[int] = {index.row() for index in self.ui.twodaTable.selectedIndexes()}
         for row in sorted(rows, reverse=True):
-            self.model.removeRow(row)
+            self.source_model.removeRow(row)
 
     def redo_row_labels(self):
         """Iterates through every row setting the row label to match the row index."""
-        for i in range(self.model.rowCount()):
-            self.model.item(i, 0).setText(str(i))
+        for i in range(self.source_model.rowCount()):
+            self.source_model.item(i, 0).setText(str(i))
 
     def set_vertical_header_option(
         self,
@@ -456,15 +327,6 @@ class TwoDAEditor(Editor):
         self.reset_vertical_headers()
 
     def reset_vertical_headers(self):
-        """Resets the vertical headers of the two-dimensional table.
-
-        Processing Logic:
-        ----------------
-            - Clear existing vertical header styling
-            - Determine header values based on vertical header option
-            - Populate headers list with appropriate values
-            - Set vertical header item for each row using headers list values
-        """
         vertical_header = self.ui.twodaTable.verticalHeader()
         assert vertical_header is not None
         if GlobalSettings().selectedTheme in ("Native", "Fusion (Light)"):
@@ -472,15 +334,15 @@ class TwoDAEditor(Editor):
         headers: list[str] = []
 
         if self.vertical_header_option == VerticalHeaderOption.ROW_INDEX:
-            headers = [str(i) for i in range(self.model.rowCount())]
+            headers = [str(i) for i in range(self.source_model.rowCount())]
         elif self.vertical_header_option == VerticalHeaderOption.ROW_LABEL:
-            headers = [self.model.item(i, 0).text() for i in range(self.model.rowCount())]
+            headers = [self.source_model.item(i, 0).text() for i in range(self.source_model.rowCount())]
         elif self.vertical_header_option == VerticalHeaderOption.CELL_VALUE:
             col_index: int = 0
-            for i in range(self.model.columnCount()):
-                if self.model.horizontalHeaderItem(i).text() == self.vertical_header_column:
+            for i in range(self.source_model.columnCount()):
+                if self.source_model.horizontalHeaderItem(i).text() == self.vertical_header_column:
                     col_index = i
-            headers = [self.model.item(i, col_index).text() for i in range(self.model.rowCount())]
+            headers = [self.source_model.item(i, col_index).text() for i in range(self.source_model.rowCount())]
         elif self.vertical_header_option == VerticalHeaderOption.NONE:
             if GlobalSettings().selectedTheme in ("Native", "Fusion (Light)"):
                 vertical_header.setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
@@ -535,10 +397,10 @@ class TwoDAEditor(Editor):
                         border: 1px solid #333333;
                     }
                 """)
-            headers = ["⯈" for _ in range(self.model.rowCount())]
+            headers = ["⯈" for _ in range(self.source_model.rowCount())]
 
-        for i in range(self.model.rowCount()):
-            self.model.setVerticalHeaderItem(i, QStandardItem(headers[i]))
+        for i in range(self.source_model.rowCount()):
+            self.source_model.setVerticalHeaderItem(i, QStandardItem(headers[i]))
 
 
 class SortFilterProxyModel(QSortFilterProxyModel):
@@ -551,27 +413,6 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         source_row: int,
         source_parent: QModelIndex,
     ) -> bool:
-        """Filters rows based on regular expression pattern match.
-
-        Args:
-        ----
-            source_row: Row number to check
-            source_parent: Parent model of the row
-
-        Returns:
-        -------
-            True: If row matches filter pattern
-            False: If row does not match filter pattern
-
-        Processing Logic:
-        ----------------
-            - Get regular expression pattern from filter
-            - If pattern is empty, always return True
-            - Iterate through each column of the row
-            - Check if cell data contains pattern using lower case comparison
-            - If any cell matches, return True
-        - If no cells match, return False
-        """
         if qtpy.QT5:
             pattern = self.filterRegExp().pattern()
         else:

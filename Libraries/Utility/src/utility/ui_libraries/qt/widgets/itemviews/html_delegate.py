@@ -123,7 +123,7 @@ class HTMLDelegate(QStyledItemDelegate):
 
             if bottom_badge_info:
                 radius = icon_width_total // 2
-                center_y = y_offset + icon_width_total + icon_spacing + radius if y_offset else option.rect.top() + icon_spacing + radius
+                center_y = y_offset + icon_width_total + icon_spacing + radius if icons else option.rect.top() + icon_spacing + radius
                 if painter:
                     self.draw_badge(painter, QPoint(option.rect.left() + radius, center_y), radius, bottom_badge_info["text_callable"]())
 

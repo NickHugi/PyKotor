@@ -35,10 +35,10 @@ class EditAnimationDialog(QDialog):
 
         anim_list = installation.ht_get_cache_2da(HTInstallation.TwoDA_DIALOG_ANIMS)
         assert anim_list is not None
-        self.ui.animationSelect.setItems(anim_list.get_column("name"), sortAlphabetically=True, cleanupStrings=True, ignoreBlanks=True)
+        self.ui.animationSelect.set_items(anim_list.get_column("name"), sort_alphabetically=True, cleanup_strings=True, ignore_blanks=True)
 
         self.ui.animationSelect.setCurrentIndex(animation.animation_id)
-        self.ui.animationSelect.setContext(anim_list, installation, HTInstallation.TwoDA_DIALOG_ANIMS)
+        self.ui.animationSelect.set_context(anim_list, installation, HTInstallation.TwoDA_DIALOG_ANIMS)
         self.ui.participantEdit.setText(animation.participant)
 
     def animation(self) -> DLGAnimation:

@@ -53,7 +53,7 @@ class UTEEditor(Editor):
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self._ute: UTE = UTE()
 
@@ -65,20 +65,20 @@ class UTEEditor(Editor):
         Processing Logic:
         ----------------
             - Connects the tagGenerateButton clicked signal to generate_tag handler
-            - Connects the resrefGenerateButton clicked signal to generateResref handler
+            - Connects the resrefGenerateButton clicked signal to generate_resref handler
             - Connects the infiniteRespawnCheckbox stateChanged signal to setInfiniteRespawn handler
             - Connects the spawnSelect currentIndexChanged signal to setContinuous handler
             - Connects the addCreatureButton clicked signal to addCreature handler
             - Connects the removeCreatureButton clicked signal to remove_selectedCreature handler.
         """
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
         self.ui.infiniteRespawnCheckbox.stateChanged.connect(self.setInfiniteRespawn)
         self.ui.spawnSelect.currentIndexChanged.connect(self.setContinuous)
         self.ui.addCreatureButton.clicked.connect(self.addCreature)
         self.ui.removeCreatureButton.clicked.connect(self.remove_selectedCreature)
 
-    def _setupInstallation(
+    def _setup_installation(
         self,
         installation: HTInstallation,
     ):
@@ -100,13 +100,13 @@ class UTEEditor(Editor):
 
         difficulties: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_ENC_DIFFICULTIES)
         self.ui.difficultySelect.clear()
-        self.ui.difficultySelect.setItems(difficulties.get_column("label"))
-        self.ui.difficultySelect.setContext(difficulties, installation, HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        self.ui.difficultySelect.set_items(difficulties.get_column("label"))
+        self.ui.difficultySelect.set_context(difficulties, installation, HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
         factions: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
         self.ui.factionSelect.clear()
-        self.ui.factionSelect.setItems(factions.get_column("label"))
-        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+        self.ui.factionSelect.set_items(factions.get_column("label"))
+        self.ui.factionSelect.set_context(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
         self._installation.setup_file_context_menu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setup_file_context_menu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
@@ -278,17 +278,17 @@ class UTEEditor(Editor):
         super().new()
         self._loadUTE(UTE())
 
-    def changeName(self):
+    def change_name(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generate_tag(self):
         if not self.ui.resrefEdit.text():
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname:
             self.ui.resrefEdit.setText(self._resname)
         else:
