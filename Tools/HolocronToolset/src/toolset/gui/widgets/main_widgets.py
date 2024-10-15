@@ -16,7 +16,6 @@ import qtpy
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import (
     QFileInfo,
-    QPoint,
     QSortFilterProxyModel,
     QTimer,
     Qt,
@@ -35,8 +34,12 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
 
-    from qtpy.QtCore import QEvent, QModelIndex, QObject
-    from qtpy.QtGui import QEnterEvent, QMouseEvent, QResizeEvent, QShowEvent
+    from qtpy.QtCore import (
+        QModelIndex,
+        QObject,
+        QPoint,  # pyright: ignore[reportPrivateImportUsage]
+    )
+    from qtpy.QtGui import QMouseEvent, QResizeEvent, QShowEvent
     from qtpy.QtWidgets import QScrollBar
 
     from pykotor.tools.path import CaseAwarePath
@@ -58,12 +61,6 @@ class ResourceStandardItem(QStandardItem):
     """A standard item for a resource."""
 
     def __init__(self, *args: Any, resource: FileResource, **kwargs: Any):
-        """Initialize the resource standard item.
-
-        Args:
-        ----
-            resource (FileResource): The resource to display.
-        """
         super().__init__(*args, **kwargs)
         self.resource: FileResource = resource
 
@@ -94,10 +91,6 @@ class ResourceList(MainWindowList):
         super().__init__(parent)
         from toolset.uic.qtpy.widgets.resource_list import Ui_Form
         self.tooltip_text: str = ""
-        self.tooltip_pos: QPoint = QPoint(0, 0)
-        self.flattened: bool = False
-        self.auto_resize_enabled: bool = True
-        self.expanded_state: bool = False
         self.original_items: list[tuple[QStandardItem, list[list[QStandardItem]]]] = []
 
         self.ui = Ui_Form()
@@ -106,32 +99,23 @@ class ResourceList(MainWindowList):
 
         self.modules_model: ResourceModel = ResourceModel()
         self.modules_model.proxy_model().setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        self.ui.resourceTree.setModel(self.modules_model.proxy_model())  # pyright: ignore[reportArgumentType]
-        self.ui.resourceTree.sortByColumn(0, Qt.SortOrder.AscendingOrder)  # pyright: ignore[reportArgumentType]
+        self.ui.resourceTree.setModel(self.modules_model.proxy_model())
+        self.ui.resourceTree.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         self.section_model: QStandardItemModel = QStandardItemModel()
-        self.ui.sectionCombo.setModel(self.section_model)  # pyright: ignore[reportArgumentType]
+        self.ui.sectionCombo.setModel(self.section_model)
 
         # Connect the header context menu request signal
-        tree_view_header: QHeaderView | None = self.ui.resourceTree.header()  # pyright: ignore[reportAssignmentType]
+        tree_view_header: QHeaderView | None = self.ui.resourceTree.header()
         assert tree_view_header is not None
         tree_view_header.setSectionsClickable(True)
         tree_view_header.setSortIndicatorShown(True)
-        tree_view_header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
-        tree_view_header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # pyright: ignore[reportArgumentType]
-
-        self.tooltip_timer = QTimer(self)
-        self.tooltip_timer.setSingleShot(True)
-        self.tooltip_timer.timeout.connect(self.show_tooltip)
+        tree_view_header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        tree_view_header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
     def _clear_modules_model(self):
         self.modules_model.clear()
         self.modules_model.setColumnCount(2)
         self.modules_model.setHorizontalHeaderLabels(["ResRef", "Type"])
-
-    def show_tooltip(self):
-        """Show the tooltip, which represents the filepath of the resource."""
-        print(self.tooltip_text)
-        QToolTip.showText(QCursor.pos(), self.tooltip_text, self.ui.resourceTree)  # pyright: ignore[reportArgumentType]
 
     def setup_signals(self):
         """Set up the signals for the resource list."""
@@ -173,7 +157,7 @@ class ResourceList(MainWindowList):
         *,
         clear_existing: bool = True,
     ):
-        """Adds and removes FileResources from the modules model.
+        """Adds and removes FileResources from the model.
 
         Args:
         ----
@@ -202,12 +186,6 @@ class ResourceList(MainWindowList):
         self,
         sections: list[QStandardItem],
     ):
-        """Set the sections for the resource list.
-
-        Args:
-        ----
-            sections (list[QStandardItem]): The sections to set.
-        """
         self.section_model.clear()
         for section in sections:
             self.section_model.insertRow(self.section_model.rowCount(), section)
@@ -216,12 +194,6 @@ class ResourceList(MainWindowList):
         self,
         resource: FileResource,
     ):
-        """Set the selection of a resource in the resource list.
-
-        Args:
-        ----
-            resource (FileResource): The resource to select.
-        """
         model: QStandardItemModel = cast(QSortFilterProxyModel, self.ui.resourceTree.model()).sourceModel()  # type: ignore[attribute-access]
         if not isinstance(model, ResourceModel):
             RobustLogger().warning("Could not find model for resource list")
@@ -241,12 +213,6 @@ class ResourceList(MainWindowList):
                 QTimer.singleShot(0, lambda index=item_index, item=item: select(item.parent().index(), index))
 
     def selected_resources(self) -> list[FileResource]:
-        """Get the selected resources from the resource list.
-
-        Returns:
-        ----
-            The resources selected by the user in the resource list.
-        """
         return self.modules_model.resource_from_indexes(self.ui.resourceTree.selectedIndexes())  # pyright: ignore[reportArgumentType]
 
     def on_filter_string_updated(self):
@@ -269,12 +235,6 @@ class ResourceList(MainWindowList):
         self.sig_request_refresh.emit()
 
     def on_resource_context_menu(self, point: QPoint):
-        """Handle the resource context menu event.
-
-        Args:
-        ----
-            point (QPoint): The position of the context menu.
-        """
         resources: list[FileResource] = self.selected_resources()
         if not resources:
             return
@@ -290,18 +250,6 @@ class ResourceList(MainWindowList):
     def on_resource_double_clicked(self):
         self.sig_request_open_resource.emit(self.selected_resources(), None)
 
-    def enterEvent(self, event: QEnterEvent):  # pylint: disable=invalid-name  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Stop the tooltip timer and hide the tooltip when the mouse enters the widget."""
-        self.tooltip_timer.stop()
-        QToolTip.hideText()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event: QEvent):  # pylint: disable=invalid-name  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Stop the tooltip timer and hide the tooltip when the mouse leaves the widget."""
-        self.tooltip_timer.stop()
-        QToolTip.hideText()
-        super().leaveEvent(event)
-
     def mouseMoveEvent(self, event: QMouseEvent):  # pylint: disable=invalid-name  # pyright: ignore[reportIncompatibleMethodOverride]
         """Show the tooltip when the mouse moves over a resource."""
         index = self.ui.resourceTree.indexAt(event.pos())  # type: ignore[arg-type]
@@ -312,27 +260,12 @@ class ResourceList(MainWindowList):
                 cast(QSortFilterProxyModel, self.ui.resourceTree.model()).sourceModel(),
             ).itemFromIndex(model_index)
             if isinstance(item, ResourceStandardItem):
-                self.tooltip_text = str(item.resource.filepath())
-                self.tooltip_pos = event.globalPos()
-                self.tooltip_timer.start(1100)
+                QToolTip.showText(QCursor.pos(), str(item.resource.filepath()), self.ui.resourceTree)
             else:
-                self.tooltip_timer.stop()
                 QToolTip.hideText()
         else:
-            self.tooltip_timer.stop()
             QToolTip.hideText()
         super().mouseMoveEvent(event)
-
-    def resizeEvent(self, event):  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Handle the resize event for the resource list."""
-        super().resizeEvent(event)
-        self.ui.resourceTree.setColumnWidth(1, 10)
-        self.ui.resourceTree.setColumnWidth(0, self.ui.resourceTree.width() - 80)
-        header: QHeaderView | None = self.ui.resourceTree.header()  # pyright: ignore[reportAssignmentType]
-        if header is None:
-            RobustLogger().warning("Could not find header for resource list")
-            return
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # type: ignore[arg-type]
 
 
 class ResourceProxyModel(QSortFilterProxyModel):
@@ -676,6 +609,8 @@ class TextureList(MainWindowList):
         print(f"Section changed to: '{new_section_name}'")
         self.textures_proxy_model.setSourceModel(self.texture_source_models[new_section_name])
         self.sig_section_changed.emit(new_section_name)
+        if not self.isVisible():
+            return
         self.on_reload_clicked()  # FIXME: models are forgetting their items' icons for some reason.
 
     def on_filter_string_updated(self):

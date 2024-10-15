@@ -23,7 +23,17 @@ from qtpy.QtCore import (
     Slot,  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QIcon, QPixmap, QStandardItem
-from qtpy.QtWidgets import QAction, QApplication, QFileDialog, QHBoxLayout, QMainWindow, QMessageBox, QPushButton, QSizePolicy, QVBoxLayout
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QApplication,
+    QFileDialog,
+    QHBoxLayout,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+)
 
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
@@ -214,21 +224,20 @@ class ToolWindow(QMainWindow):
         self.sig_installation_changed.connect(self.ui.savesWidget.set_installation)
         self.ui.resourceTabs.currentChanged.connect(self.on_tab_changed)
 
-        def open_module_designer() -> ModuleDesigner | None:
+        def open_module_designer(*args) -> ModuleDesigner | None:
             """Open the module designer."""
             assert self.active is not None
 
-            designer_ui = ModuleDesigner(
+            designer_window = ModuleDesigner(
                 None,
                 self.active,
                 self.active.module_path() / self.ui.modulesWidget.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole),
             )
 
-            designer_ui.setWindowIcon(cast(QApplication, QApplication.instance()).windowIcon())
-            add_window(designer_ui)
-            return designer_ui
+            designer_window.setWindowIcon(cast(QApplication, QApplication.instance()).windowIcon())
+            add_window(designer_window)
 
-        self.ui.specialActionButton.clicked.connect(lambda *args: open_module_designer() and None or None)
+        self.ui.specialActionButton.clicked.connect(open_module_designer)
 
         self.ui.overrideWidget.sig_section_changed.connect(self.on_override_changed)
         self.ui.overrideWidget.sig_request_reload.connect(self.on_override_reload)
@@ -342,13 +351,18 @@ class ToolWindow(QMainWindow):
         assert self.active is not None, "No active installation selected"
         if not module_file or not module_file.strip():
             return
+        RobustLogger().info(f"Reloading module '{module_file}'")
         resources: list[FileResource] = self.active.module_resources(module_file)
         module_file_name = PurePath(module_file).name
-        if self.settings.joinRIMsTogether and ((is_rim_file(module_file) or is_erf_file(module_file)) and not module_file_name.lower().endswith(("_s.rim", "_dlg.erf"))):
+        if self.settings.joinRIMsTogether and (
+            (is_rim_file(module_file) or is_erf_file(module_file))
+            and not module_file_name.lower().endswith(("_s.rim", "_dlg.erf"))
+        ):
             resources.extend(self.active.module_resources(f"{PurePath(module_file).stem}_s.rim"))
             if self.active.game().is_k2():
                 resources.extend(self.active.module_resources(f"{PurePath(module_file).stem}_dlg.erf"))
 
+        RobustLogger().info(f"Setting {len(resources)} resources for module '{module_file}'")
         self.active.reload_module(module_file)
         self.ui.modulesWidget.set_resources(resources)
 
@@ -356,7 +370,7 @@ class ToolWindow(QMainWindow):
     def on_module_file_updated(self, changed_file: str, event_type: str):
         assert self.active is not None, "No active installation selected"
         if event_type == "deleted":
-            self.on_module_refresh()
+            self.refresh_module_list()
         else:
             self.active.reload_module(changed_file)
             if self.ui.modulesWidget.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole) == changed_file:
@@ -410,14 +424,16 @@ class ToolWindow(QMainWindow):
                     )
 
     def on_save_reload(self, save_dir: str):
+        RobustLogger().info(f"Reloading save directory '{save_dir}'")
         self.on_savepath_changed(save_dir)
 
     def on_save_refresh(self):
+        RobustLogger().info("Refreshing save list")
         self.refresh_saves_list()
 
     def on_override_file_updated(self, changed_file: str, event_type: str):
         if event_type == "deleted":
-            self.on_override_refresh()
+            self.refresh_override_list(reload=True)
         else:
             self.on_override_reload(changed_file)
 
@@ -444,7 +460,6 @@ class ToolWindow(QMainWindow):
         self.ui.overrideWidget.set_resources(self.active.override_resources(str(rel_folderpath) if rel_folderpath.name else None))
 
     def on_override_refresh(self):
-        assert self.active is not None, "No active installation selected"
         self.refresh_override_list(reload=True)
 
     def on_textures_changed(self, texturepackName: str):
@@ -480,41 +495,7 @@ class ToolWindow(QMainWindow):
             return
 
         active: HTInstallation | None = self.installations.get(name)
-        if active is not None:
-            self.active = active
-
-        else:
-            loader: AsyncLoader | None = None
-            if not GlobalSettings().load_entire_installation:
-                self.active = HTInstallation(CaseAwarePath(path), name, tsl=tsl)
-            else:
-
-                def load_task() -> HTInstallation:
-                    progress_callback = None  # pyright: ignore[reportAssignmentType]
-                    if loader is not None and loader._realtime_progress:  # noqa: SLF001
-
-                        def progress_callback(  # pylint: disable=function-redefined
-                            data: int | str,
-                            mtype: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"],
-                        ):
-                            assert loader is not None
-                            loader._worker.progress.emit(data, mtype)  # noqa: SLF001
-
-                    new_active: HTInstallation = HTInstallation(CaseAwarePath(path), name, tsl=tsl, progress_callback=progress_callback)
-                    return new_active
-
-                loader = AsyncLoader(
-                    self,
-                    "Loading Installation",
-                    load_task,
-                    "Failed to load installation",
-                    realtime_progress=True,  # Enable/Disable progress bar information globally here.
-                )
-                if not loader.exec():
-                    self.ui.gameCombo.setCurrentIndex(prev_index)
-                    return
-                assert loader.value is not None
-                self.active = loader.value
+        self.active = HTInstallation(CaseAwarePath(path), name, tsl=tsl) if active is None else active
 
         # KEEP UI CODE IN MAIN THREAD!
         self.ui.resourceTabs.setEnabled(True)
@@ -530,7 +511,7 @@ class ToolWindow(QMainWindow):
             ret_tuple: tuple[list[QStandardItem] | None, ...] = (
                 self._get_modules_list(reload=False),
                 self._get_override_list(reload=False),
-                self._get_texture_pack_list(reload=False),
+                self._get_texture_pack_list(),
             )
             return ret_tuple
 
@@ -539,7 +520,7 @@ class ToolWindow(QMainWindow):
             RobustLogger().error("prepare_loader.exec() failed.")
             self.ui.gameCombo.setCurrentIndex(prev_index)
             return
-        assert prepare_loader.value
+        assert prepare_loader.value is not None
         assert self.active is not None
 
         # Any issues past this point must call self.unsetInstallation()
@@ -554,8 +535,8 @@ class ToolWindow(QMainWindow):
             self.ui.overrideWidget.ui.sectionCombo.setVisible(self.active.tsl)
             self.ui.overrideWidget.ui.refreshButton.setVisible(self.active.tsl)
             self.ui.texturesWidget.set_sections(texture_items)
-            self.refresh_core_list(reload=True)
-            self.refresh_saves_list(reload=True)
+            self.refresh_core_list(reload=False)
+            self.refresh_saves_list(reload=False)
         except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
             RobustLogger().exception("Failed to initialize the installation")
             QMessageBox(
@@ -651,7 +632,7 @@ class ToolWindow(QMainWindow):
             else:
                 if restype:
                     continue
-                RobustLogger().debug(f"Not processing dragged-in item '{filepath}'. Invalid resource")
+                RobustLogger().debug(f"Not processing dragged-in item '{filepath}'. Unsupported restype.")
         e.accept()
 
     def dropEvent(self, e: QtGui.QDropEvent | None):  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -661,7 +642,7 @@ class ToolWindow(QMainWindow):
             filepath: str = url.toLocalFile()
             resname, restype = ResourceIdentifier.from_path(filepath).unpack()
             if not restype:
-                RobustLogger().debug(f"Not loading dropped file '{filepath}'. Invalid resource")
+                RobustLogger().debug(f"Not loading dropped file '{filepath}'. Unsupported restype.")
                 continue
             resource = FileResource(resname, restype, os.path.getsize(filepath), 0x0, filepath)  # noqa: PTH202
             open_resource_editor(resource, self.active, self, gff_specialized=GlobalSettings().gff_specializedEditors)
@@ -745,9 +726,9 @@ class ToolWindow(QMainWindow):
                 QMessageBox.Icon.Question,
                 "Reload the installations?",
                 "You appear to have made changes to your installations, would you like to reload?",
-                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
-            ).exec() == QMessageBox.Yes
+            ).exec() == QMessageBox.StandardButton.Yes
         ):
             self.reload_settings()
 
@@ -786,7 +767,7 @@ class ToolWindow(QMainWindow):
         file_searcher_dialog = FileSearcher(self, self.installations)
         file_searcher_dialog.setModal(False)  # Make the dialog non-modal
         file_searcher_dialog.show()  # Show the dialog without blocking
-        file_searcher_dialog.fileResults.connect(self.handle_search_completed)
+        file_searcher_dialog.file_results.connect(self.handle_search_completed)
         add_window(file_searcher_dialog)
 
     @Slot()
@@ -947,6 +928,7 @@ class ToolWindow(QMainWindow):
         module_items: list[QStandardItem] | None = None,
     ):
         """Refreshes the list of modules in the modulesCombo combobox."""
+        RobustLogger().info("Refreshing module list")
         module_items = [] if module_items is None else module_items
         action: Literal["Reload", "Refresh"] = "Reload" if reload else "Refresh"
         if not module_items:
@@ -1005,15 +987,13 @@ class ToolWindow(QMainWindow):
                 # Some users may choose to have their RIM files for the same module merged into a single option for the
                 # dropdown menu.
                 lower_module_name = module_name.lower()
-                # FIXME(th3w1zard1): Looks like I broke the joinRIMsTogether setting at some point.
-                # Uncommenting this prevents their resources from showing up in the toolset at all.
-                # if self.settings.joinRIMsTogether:
-                #    if lower_module_name.endswith("_s.rim"):
-                #        continue
-                #    if self.active.game().is_k2() and lower_module_name.endswith("_dlg.erf"):
-                #        continue
+                if self.settings.joinRIMsTogether:
+                    if lower_module_name.endswith("_s.rim"):
+                        continue
+                    if self.active.game().is_k2() and lower_module_name.endswith("_dlg.erf"):
+                        continue
 
-                area_text: str = area_names.get(module_name, "<module is missing area data!>")
+                area_text: str = area_names.get(module_name, "<Missing ARE>")
                 item = QStandardItem(f"{area_text} [{module_name}]")
                 item.setData(f"{area_text}\n{module_name}", Qt.ItemDataRole.DisplayRole)
                 item.setData(module_name, Qt.ItemDataRole.UserRole)  # Set area name
@@ -1058,25 +1038,14 @@ class ToolWindow(QMainWindow):
         override_items = self._get_override_list(reload=reload)
         self.ui.overrideWidget.set_sections(override_items)
 
-    def _get_texture_pack_list(self, *, reload: bool = True) -> list[QStandardItem] | None:
+    def _get_texture_pack_list(self) -> list[QStandardItem] | None:
         assert self.active is not None, "No installation set. This should never happen!"
-        if reload:
-            self.active.load_textures()
-
         texture_pack_list: list[QStandardItem] = []
         for texturepack in self.active.texturepacks_list():
             section = QStandardItem(str(texturepack))
             section.setData(texturepack, QtCore.Qt.ItemDataRole.UserRole)
             texture_pack_list.append(section)
         return texture_pack_list
-
-    def refresh_texture_pack_list(self, *, reload: bool = True):
-        """Refreshes the list of texture packs in the texturePackCombo combobox."""
-        texture_pack_list: list[QStandardItem] | None = self._get_texture_pack_list(reload=reload)
-        if texture_pack_list is None:
-            RobustLogger().error("texture_pack_list was somehow None in refreshTexturePackList(reload=%s)", reload, stack_info=True)
-            return
-        self.ui.texturesWidget.set_sections(texture_pack_list)
 
     def refresh_saves_list(self, *, reload: bool = True):
         assert self.active is not None, "No installation set, this should never happen!"

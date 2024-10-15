@@ -34,6 +34,7 @@ from utility.common.more_collections import CaseInsensitiveDict
 if TYPE_CHECKING:
     from typing_extensions import Literal
 
+    from pykotor.extract.capsule import LazyCapsule
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -1127,7 +1128,7 @@ class Installation:
         queries: list[ResourceIdentifier] | set[ResourceIdentifier],
         order: list[SearchLocation] | None = None,
         *,
-        capsules: Sequence[Capsule] | None = None,
+        capsules: Sequence[LazyCapsule] | None = None,
         folders: list[Path] | None = None,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
         """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found.
