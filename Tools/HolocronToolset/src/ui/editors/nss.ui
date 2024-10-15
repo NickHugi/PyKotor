@@ -73,211 +73,214 @@
                     </spacer>
                 </item>
                 <item>
-                    <widget class="QTabWidget" name="editorTabs">
-                        <property name="sizePolicy">
-                            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                                <horstretch>0</horstretch>
-                                <verstretch>0</verstretch>
-                            </sizepolicy>
+                    <widget class="QSplitter" name="mainSplitter">
+                        <property name="orientation">
+                            <enum>Qt::Vertical</enum>
                         </property>
-                        <property name="font">
-                            <font>
-                                <stylestrategy>NoAntialias</stylestrategy>
-                            </font>
-                        </property>
-                        <property name="acceptDrops">
-                            <bool>true</bool>
-                        </property>
-                        <property name="whatsThis">
-                            <string>Main Code Area</string>
-                        </property>
-                        <property name="tabsClosable">
-                            <bool>true</bool>
-                        </property>
-                        <property name="movable">
-                            <bool>true</bool>
-                        </property>
-                        <widget class="QWidget" name="tab">
-                            <attribute name="title">
-                                <string>Untitled</string>
-                            </attribute>
-                            <layout class="QVBoxLayout" name="verticalLayout_6">
-                                <item>
-                                    <widget class="QLineEdit" name="searchBar">
-                                        <property name="placeholderText">
-                                            <string>Search...</string>
-                                        </property>
-                                    </widget>
-                                </item>
-                                <item>
-                                    <widget class="CodeEditor" name="codeEdit" />
-                                </item>
-                            </layout>
-                        </widget>
-                    </widget>
-                </item>
-                <item>
-                    <widget class="QTabWidget" name="panelTabs">
-                        <property name="font">
-                            <font>
-                                <family>Segoe UI</family>
-                                <pointsize>10</pointsize>
-                            </font>
-                        </property>
-                        <property name="currentIndex">
-                            <number>2</number>
-                        </property>
-                        <property name="movable">
-                            <bool>true</bool>
-                        </property>
-                        <property name="tabBarAutoHide">
-                            <bool>true</bool>
-                        </property>
-                        <widget class="QWidget" name="outputTab">
-                            <attribute name="title">
-                                <string>Output</string>
-                            </attribute>
-                            <layout class="QVBoxLayout" name="vertLytPanelTabs">
-                                <item>
-                                    <widget class="QPlainTextEdit" name="outputEdit">
-                                        <property name="font">
-                                            <font>
-                                                <family>Lucida Console</family>
-                                                <pointsize>10</pointsize>
-                                            </font>
-                                        </property>
-                                        <property name="cursor" stdset="0">
-                                            <cursorShape>IBeamCursor</cursorShape>
-                                        </property>
-                                        <property name="whatsThis">
-                                            <string>Output Window for the NWScript Editor</string>
-                                        </property>
-                                        <property name="tabChangesFocus">
-                                            <bool>true</bool>
-                                        </property>
-                                        <property name="readOnly">
-                                            <bool>true</bool>
-                                        </property>
-                                        <property name="placeholderText">
-                                            <string>Important errors and logs will appear here.</string>
-                                        </property>
-                                    </widget>
-                                </item>
-                            </layout>
-                        </widget>
-                        <widget class="QWidget" name="terminalTab">
-                            <attribute name="title">
-                                <string>Terminal</string>
-                            </attribute>
-                            <layout class="QVBoxLayout" name="verticalLayout_13">
-                                <item>
-                                    <widget class="QWidget" name="terminalWidget" native="true">
-                                        <property name="minimumSize">
-                                            <size>
-                                                <width>0</width>
-                                                <height>100</height>
-                                            </size>
-                                        </property>
-                                    </widget>
-                                </item>
-                            </layout>
-                        </widget>
-                        <widget class="QWidget" name="debugTab">
-                            <attribute name="title">
-                                <string>Debug</string>
-                            </attribute>
-                            <layout class="QVBoxLayout" name="verticalLayout_12">
-                                <item>
-                                    <widget class="QTableWidget" name="debugTable">
-                                        <column>
-                                            <property name="text">
-                                                <string>Variable</string>
+                        <widget class="QTabWidget" name="editorTabs">
+                            <property name="sizePolicy">
+                                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                                    <horstretch>0</horstretch>
+                                    <verstretch>0</verstretch>
+                                </sizepolicy>
+                            </property>
+                            <property name="font">
+                                <font>
+                                    <stylestrategy>NoAntialias</stylestrategy>
+                                </font>
+                            </property>
+                            <property name="acceptDrops">
+                                <bool>true</bool>
+                            </property>
+                            <property name="whatsThis">
+                                <string>Main Code Area</string>
+                            </property>
+                            <property name="tabsClosable">
+                                <bool>true</bool>
+                            </property>
+                            <property name="movable">
+                                <bool>true</bool>
+                            </property>
+                            <widget class="QWidget" name="tab">
+                                <attribute name="title">
+                                    <string>Untitled</string>
+                                </attribute>
+                                <layout class="QVBoxLayout" name="verticalLayout_6">
+                                    <item>
+                                        <widget class="QLineEdit" name="searchBar">
+                                            <property name="placeholderText">
+                                                <string>Search...</string>
                                             </property>
-                                        </column>
-                                        <column>
-                                            <property name="text">
-                                                <string>Value</string>
-                                            </property>
-                                        </column>
-                                        <column>
-                                            <property name="text">
-                                                <string>Type</string>
-                                            </property>
-                                        </column>
-                                    </widget>
-                                </item>
-                            </layout>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="CodeEditor" name="codeEdit" />
+                                    </item>
+                                </layout>
+                            </widget>
                         </widget>
-                        <widget class="QWidget" name="findResultsTab">
-                            <attribute name="title">
-                                <string>Find Results</string>
-                            </attribute>
-                            <layout class="QVBoxLayout" name="verticalLayout_11">
-                                <item>
-                                    <widget class="QTreeWidget" name="findResultsTree">
-                                        <column>
-                                            <property name="text">
-                                                <string>File</string>
+                        <widget class="QTabWidget" name="panelTabs">
+                            <property name="font">
+                                <font>
+                                    <family>Segoe UI</family>
+                                    <pointsize>10</pointsize>
+                                </font>
+                            </property>
+                            <property name="currentIndex">
+                                <number>2</number>
+                            </property>
+                            <property name="movable">
+                                <bool>true</bool>
+                            </property>
+                            <property name="tabBarAutoHide">
+                                <bool>true</bool>
+                            </property>
+                            <widget class="QWidget" name="outputTab">
+                                <attribute name="title">
+                                    <string>Output</string>
+                                </attribute>
+                                <layout class="QVBoxLayout" name="vertLytPanelTabs">
+                                    <item>
+                                        <widget class="QPlainTextEdit" name="outputEdit">
+                                            <property name="font">
+                                                <font>
+                                                    <family>Lucida Console</family>
+                                                    <pointsize>10</pointsize>
+                                                </font>
                                             </property>
-                                        </column>
-                                        <column>
-                                            <property name="text">
-                                                <string>Line</string>
+                                            <property name="cursor" stdset="0">
+                                                <cursorShape>IBeamCursor</cursorShape>
                                             </property>
-                                        </column>
-                                        <column>
-                                            <property name="text">
-                                                <string>Content</string>
+                                            <property name="whatsThis">
+                                                <string>Output Window for the NWScript Editor</string>
                                             </property>
-                                        </column>
-                                    </widget>
-                                </item>
-                            </layout>
-                        </widget>
-                        <widget class="QWidget" name="outlineTab">
-                            <attribute name="title">
-                                <string>Outline</string>
-                            </attribute>
-                            <layout class="QVBoxLayout" name="verticalLayout_4">
-                                <item>
-                                    <widget class="QTreeWidget" name="outlineView" />
-                                </item>
-                            </layout>
-                        </widget>
-                        <widget class="QWidget" name="learnTab">
-                            <attribute name="title">
-                                <string>Constants</string>
-                            </attribute>
-                            <layout class="QVBoxLayout" name="vertLytLearnTab">
-                                <item>
-                                    <layout class="QHBoxLayout" name="horizontalLayout_5">
-                                        <item>
-                                            <widget class="QLineEdit" name="functionSearchEdit">
-                                                <property name="placeholderText">
-                                                    <string>Search functions...</string>
+                                            <property name="tabChangesFocus">
+                                                <bool>true</bool>
+                                            </property>
+                                            <property name="readOnly">
+                                                <bool>true</bool>
+                                            </property>
+                                            <property name="placeholderText">
+                                                <string>Important errors and logs will appear here.</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                            <widget class="QWidget" name="terminalTab">
+                                <attribute name="title">
+                                    <string>Terminal</string>
+                                </attribute>
+                                <layout class="QVBoxLayout" name="verticalLayout_13">
+                                    <item>
+                                        <widget class="QWidget" name="terminalWidget" native="true">
+                                            <property name="minimumSize">
+                                                <size>
+                                                    <width>0</width>
+                                                    <height>100</height>
+                                                </size>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                            <widget class="QWidget" name="debugTab">
+                                <attribute name="title">
+                                    <string>Debug</string>
+                                </attribute>
+                                <layout class="QVBoxLayout" name="verticalLayout_12">
+                                    <item>
+                                        <widget class="QTableWidget" name="debugTable">
+                                            <column>
+                                                <property name="text">
+                                                    <string>Variable</string>
                                                 </property>
-                                            </widget>
-                                        </item>
-                                        <item>
-                                            <widget class="QLineEdit" name="constantSearchEdit">
-                                                <property name="placeholderText">
-                                                    <string>Search constants...</string>
+                                            </column>
+                                            <column>
+                                                <property name="text">
+                                                    <string>Value</string>
                                                 </property>
-                                            </widget>
-                                        </item>
-                                    </layout>
-                                </item>
-                                <item>
-                                    <layout class="QHBoxLayout" name="horizontalLayout">
-                                        <item>
-                                            <widget class="QListWidget" name="functionList" />
-                                        </item>
-                                        <item>
-                                            <widget class="QListWidget" name="constantList" />
-                                        </item>
-                                    </layout>
-                                </item>
-                            </layout>
+                                            </column>
+                                            <column>
+                                                <property name="text">
+                                                    <string>Type</string>
+                                                </property>
+                                            </column>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                            <widget class="QWidget" name="findResultsTab">
+                                <attribute name="title">
+                                    <string>Find Results</string>
+                                </attribute>
+                                <layout class="QVBoxLayout" name="verticalLayout_11">
+                                    <item>
+                                        <widget class="QTreeWidget" name="findResultsTree">
+                                            <column>
+                                                <property name="text">
+                                                    <string>File</string>
+                                                </property>
+                                            </column>
+                                            <column>
+                                                <property name="text">
+                                                    <string>Line</string>
+                                                </property>
+                                            </column>
+                                            <column>
+                                                <property name="text">
+                                                    <string>Content</string>
+                                                </property>
+                                            </column>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                            <widget class="QWidget" name="outlineTab">
+                                <attribute name="title">
+                                    <string>Outline</string>
+                                </attribute>
+                                <layout class="QVBoxLayout" name="verticalLayout_4">
+                                    <item>
+                                        <widget class="QTreeWidget" name="outlineView" />
+                                    </item>
+                                </layout>
+                            </widget>
+                            <widget class="QWidget" name="learnTab">
+                                <attribute name="title">
+                                    <string>Constants</string>
+                                </attribute>
+                                <layout class="QVBoxLayout" name="vertLytLearnTab">
+                                    <item>
+                                        <layout class="QHBoxLayout" name="horizontalLayout_5">
+                                            <item>
+                                                <widget class="QLineEdit" name="functionSearchEdit">
+                                                    <property name="placeholderText">
+                                                        <string>Search functions...</string>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                            <item>
+                                                <widget class="QLineEdit" name="constantSearchEdit">
+                                                    <property name="placeholderText">
+                                                        <string>Search constants...</string>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                        </layout>
+                                    </item>
+                                    <item>
+                                        <layout class="QHBoxLayout" name="horizontalLayout">
+                                            <item>
+                                                <widget class="QListWidget" name="functionList" />
+                                            </item>
+                                            <item>
+                                                <widget class="QListWidget" name="constantList" />
+                                            </item>
+                                        </layout>
+                                    </item>
+                                </layout>
+                            </widget>
                         </widget>
                     </widget>
                 </item>

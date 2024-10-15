@@ -517,9 +517,9 @@ class Editor(QMainWindow):
         except Exception as e:  # noqa: BLE001
             self.blink_window()
             RobustLogger().critical("Failed to write to file", exc_info=True)
-            msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", str(universal_simplify_exception(e)).replace("\n", "<br>"))
-            msgBox.setDetailedText(format_exception_with_variables(e))
-            msgBox.exec()
+            msg_box = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", str(universal_simplify_exception(e)).replace("\n", "<br>"))
+            msg_box.setDetailedText(format_exception_with_variables(e))
+            msg_box.exec()
         else:
             self.setWindowModified(False)  # Set modified to False after successful save
 
@@ -603,7 +603,7 @@ class Editor(QMainWindow):
         rim.set_data(self._resname, self._restype, data)
 
         write_rim(rim, self._filepath)
-        self.sig_saved_file.emit(str(self._filepath), self._resname, self._restype, data)
+        self.sig_saved_file.emit(str(self._filepath), self._resname, self._restype, bytes(data))
 
         if self._installation is not None:
             self._installation.reload_module(self._filepath.name)
@@ -660,7 +660,7 @@ class Editor(QMainWindow):
         print(f"All nested capsules saved, finally saving physical file '{self._filepath}'")
         assert this_erf_or_rim is not None, "this_erf_or_rim is None somehow? This should be impossible."
         write_erf(this_erf_or_rim, self._filepath) if isinstance(this_erf_or_rim, ERF) else write_rim(this_erf_or_rim, self._filepath)
-        self.sig_saved_file.emit(str(self._filepath), self._resname, self._restype, data)
+        self.sig_saved_file.emit(str(self._filepath), self._resname, self._restype, bytes(data))
 
     def _save_ends_with_erf(self, data: bytes, data_ext: bytes):
         """Saves data to an ERF/MOD file with the given extension.
@@ -704,7 +704,7 @@ class Editor(QMainWindow):
         erf.set_data(self._resname, self._restype, data)
 
         write_erf(erf, self._filepath)
-        self.sig_saved_file.emit(str(self._filepath), self._resname, self._restype, data)
+        self.sig_saved_file.emit(str(self._filepath), self._resname, self._restype, bytes(data))
         if self._installation is not None and self._filepath.parent == self._installation.module_path():
             self._installation.reload_module(self._filepath.name)
 
@@ -713,7 +713,7 @@ class Editor(QMainWindow):
         self._filepath.write_bytes(data)
         if self._restype is ResourceType.MDL:
             self._filepath.with_suffix(".mdx").write_bytes(data_ext)
-        self.sig_saved_file.emit(self._filepath, self._resname, self._restype, data)
+        self.sig_saved_file.emit(str(self._filepath), self._resname, self._restype, bytes(data))
 
     def open(self):
         filepath_str, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._open_filter, "")

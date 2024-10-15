@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.script import DataType
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 from pykotor.tools.path import CaseAwarePath
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.common.script import ScriptConstant, ScriptFunction
@@ -90,7 +90,8 @@ class GlobalVariableDeclaration(TopLevelObject):
             ncs.add(NCSInstructionType.RSADDF)
             ncs.add(NCSInstructionType.RSADDF)
         elif self.data_type.builtin == DataType.STRUCT:
-            root.struct_map[self.data_type._struct].initialize(ncs, root)
+            assert self.data_type._struct is not None  # noqa: SLF001
+            root.struct_map[self.data_type._struct].initialize(ncs, root)  # noqa: SLF001
         elif self.data_type.builtin == DataType.VOID:
             msg = "Cannot declare a variable of void type."
             raise CompileError(msg)
@@ -210,7 +211,7 @@ class Struct:
             member.initialize(ncs, root)
 
     def size(self, root: CodeRoot) -> int:
-        return sum(member.size(root) for member in self.members)  # TODO: One-time calculation in __init__
+        return sum(member.size(root) for member in self.members)  # TODO(NickHugi): One-time calculation in __init__
 
     def child_offset(self, root: CodeRoot, identifier: Identifier) -> int:
         """Returns the relative offset to the specified member inside the struct."""
@@ -274,7 +275,7 @@ class CodeRoot:
         if library_lookup:
             if not isinstance(library_lookup, list):
                 library_lookup = [library_lookup]
-            self.library_lookup = [Path.pathify(item) for item in library_lookup]
+            self.library_lookup = [Path(item) for item in library_lookup]
 
         self.function_map: dict[str, FunctionReference] = {}
         self._global_scope: list[ScopedValue] = []
@@ -351,7 +352,7 @@ class CodeRoot:
             ncs.add(NCSInstructionType.RSADDS, args=[])
         elif definition.return_type == DynamicDataType.VECTOR:
             msg = "Cannot define a function that returns Vector yet"
-            raise NotImplementedError(msg)  # TODO
+            raise NotImplementedError(msg)  # TODO(NickHugi):
         elif definition.return_type == DynamicDataType.OBJECT:
             ncs.add(NCSInstructionType.RSADDO, args=[])
         elif definition.return_type == DynamicDataType.TALENT:
@@ -366,7 +367,7 @@ class CodeRoot:
             ...
         else:
             msg = "Trying to return unsupported type?"
-            raise NotImplementedError(msg)  # TODO
+            raise NotImplementedError(msg)  # TODO(NickHugi):
 
         required_params = [param for param in definition.parameters if param.default is None]
 
@@ -548,18 +549,20 @@ class FunctionForwardDeclaration(TopLevelObject):
 
 
 class FunctionDefinition(TopLevelObject):
-    # TODO: split definition into signature + block?
+    # TODO(NickHugi): split definition into signature + block?
     def __init__(
         self,
         return_type: DynamicDataType,
         identifier: Identifier,
         parameters: list[FunctionDefinitionParam],
         block: CodeBlock,
+        line_num: int,
     ):
         self.return_type: DynamicDataType = return_type
         self.identifier: Identifier = identifier
         self.parameters: list[FunctionDefinitionParam] = parameters
         self.block: CodeBlock = block
+        self.line_num: int = line_num
 
         for param in parameters:
             block.add_scoped(param.identifier, param.data_type)
@@ -635,7 +638,7 @@ class FunctionDefinition(TopLevelObject):
             these_parameters.data_type == prototype.parameters[i].data_type
             for i, these_parameters in enumerate(self.parameters)
         )
-        # TODO: nwnnsscomp compiles fine when default values do not match
+        # TODO(NickHugi): nwnnsscomp compiles fine when default values do not match
         #       - how to handle? need some kind of warning system maybe.
         # if self.parameters[i].default != prototype.parameters[i].default:
         #     retrn False
@@ -680,7 +683,7 @@ class IncludeScript(TopLevelObject):
     def _get_script(self, root: CodeRoot) -> str:
         for folder in root.library_lookup:
             filepath: Path = folder / f"{self.file.value}.nss"
-            if filepath.safe_isfile():
+            if filepath.is_file():
                 source: str = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break
         else:
@@ -1102,7 +1105,7 @@ class UnaryOperatorExpression(Expression):
                 ncs.add(x.instruction)
                 break
         else:
-            msg = f"Cannot negate {type1.name.lower()}"
+            msg = f"Cannot negate {type1.builtin.name.lower()}"
             raise CompileError(msg)
 
         block.temp_stack -= 4
@@ -1121,7 +1124,7 @@ class LogicalNotExpression(Expression):
         if type1 == DynamicDataType.INT:
             ncs.add(NCSInstructionType.NOTI)
         else:
-            msg = f"Cannot get the logical NOT of {type1.name.lower()}"
+            msg = f"Cannot get the logical NOT of {type1.builtin.name.lower()}"
             raise CompileError(msg)
 
         block.temp_stack -= 4
@@ -1140,7 +1143,7 @@ class BitwiseNotExpression(Expression):
         if type1 == DynamicDataType.INT:
             ncs.add(NCSInstructionType.COMPI)
         else:
-            msg = f"Cannot get one's complement of {type1.name.lower()}"
+            msg = f"Cannot get one's complement of {type1.builtin.name.lower()}"
             raise CompileError(msg)
 
         block.temp_stack -= 4
@@ -1464,7 +1467,8 @@ class VariableDeclarator:
             ncs.add(NCSInstructionType.RSADDF)
             ncs.add(NCSInstructionType.RSADDF)
         elif data_type.builtin == DataType.STRUCT:
-            root.struct_map[data_type._struct].initialize(ncs, root)
+            assert data_type._struct is not None  # noqa: SLF001
+            root.struct_map[data_type._struct].initialize(ncs, root)  # noqa: SLF001
         elif data_type.builtin == DataType.VOID:
             msg = "Cannot declare a variable of void type."
             raise CompileError(msg)
@@ -1888,7 +1892,7 @@ class SwitchStatement(Statement):
         break_instruction: NCSInstruction | None,
         continue_instruction: NCSInstruction | None,
     ):
-        self.real_block._parent = block
+        self.real_block._parent = block  # noqa: SLF001
         block.mark_break_scope()
 
         block = self.real_block
@@ -2027,7 +2031,8 @@ class DynamicDataType:
 
     def size(self, root: CodeRoot) -> int:
         if self.builtin == DataType.STRUCT:
-            return root.struct_map[self._struct].size(root)
+            assert self._struct is not None
+            return root.struct_map[self._struct].size(root)  # noqa: SLF001
         return self.builtin.size()
 
 

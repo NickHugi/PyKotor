@@ -13,13 +13,13 @@ from qtpy.QtGui import QTextCursor
 from qtpy.QtWidgets import (
     QCompleter,
     QDialog,
-    QFileSystemModel,
+    QFileSystemModel,  # pyright: ignore[reportPrivateImportUsage]
     QInputDialog,
     QLabel,
     QLineEdit,
     QListWidgetItem,
     QMessageBox,
-    QShortcut,
+    QShortcut,  # pyright: ignore[reportPrivateImportUsage]
     QTabBar,
     QTextEdit,
     QToolTip,
@@ -102,7 +102,7 @@ class NSSEditor(Editor):
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
         from toolset.uic.qtpy.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
@@ -197,7 +197,7 @@ class NSSEditor(Editor):
 
     def load_bookmarks(self):
         settings = QSettings()
-        bookmarks = json.loads(settings.value("bookmarks", "[]"))
+        bookmarks = json.loads(settings.value("bookmarks", "[]"))  # type: ignore[arg-type]
         for bookmark in bookmarks:
             item = QTreeWidgetItem(self.ui.bookmarkTree)  # pyright: ignore[reportCallIssue, reportArgumentType]
             item.setText(0, str(bookmark["line"]))
@@ -369,7 +369,7 @@ class NSSEditor(Editor):
 
         # Add output tab
         self.outputTab: QWidget = QWidget()
-        self.ui.editorTabs.addTab(self.ui.outputTab, "Output")  # pyright: ignore[reportCallIssue, reportArgumentType]
+        self.ui.panelTabs.addTab(self.ui.outputTab, "Output")  # pyright: ignore[reportCallIssue, reportArgumentType]
         self.outputTextEdit: QTextEdit = QTextEdit(self.ui.outputTab)  # pyright: ignore[reportCallIssue, reportArgumentType]
         self.outputTextEdit.setReadOnly(True)
         self.outputLayout: QVBoxLayout = QVBoxLayout(self.ui.outputTab)  # pyright: ignore[reportCallIssue, reportArgumentType]
@@ -384,6 +384,7 @@ class NSSEditor(Editor):
             padding: 2px;
         """)
         self.errorBadge.hide()
+        self._setup_shortcuts()
 
     def _setup_error_reporting(self):
         self.error_count: int = 0
@@ -547,9 +548,13 @@ class NSSEditor(Editor):
             # after the with statement, self._restype is returned to NSS.
         """
         if saved_file_callback:
-            saved_connection = self.savedFile.connect(saved_file_callback)
+            saved_connection = self.sig_saved_file.connect(saved_file_callback)
         else:
             saved_connection = None
+        assert self._filepath is not None
+        assert self._resname is not None
+        assert self._restype is not None
+        assert self._revert is not None
         context = NSSEditor.SavedContext(
             self._filepath,
             self._resname,
@@ -618,18 +623,18 @@ class NSSEditor(Editor):
             QMessageBox.Icon.Question,
             "Decompile or Download",
             f"Would you like to decompile this script, or download it from <a href='{self.sourcerepo_url}'>Vanilla Source Repository</a>?",
-            buttons=QMessageBox.Yes | QMessageBox.Ok | QMessageBox.Cancel,
+            buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel,
         )
-        box.setDefaultButton(QMessageBox.Cancel)
-        box.button(QMessageBox.Yes).setText("Decompile")
-        box.button(QMessageBox.Ok).setText("Download")
+        box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        box.button(QMessageBox.StandardButton.Yes).setText("Decompile")
+        box.button(QMessageBox.StandardButton.Ok).setText("Download")
         choice = box.exec_()
         print(f"User chose '{choice}' in the decompile/download messagebox.")
 
-        if choice == QMessageBox.Yes:
+        if choice == QMessageBox.StandardButton.Yes:
             assert self._installation is not None, "Installation not set, cannot determine path"
             source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
-        elif choice == QMessageBox.Ok:
+        elif choice == QMessageBox.StandardButton.Ok:
             source = self._download_and_load_remote_script(resname)
         else:
             return
@@ -712,7 +717,7 @@ class NSSEditor(Editor):
 
     def show_auto_complete_menu(self):
         """Show the auto-complete menu."""
-        self.completer.setCompletionPrefix(self.ui.codeEdit.textUnderCursor())
+        self.completer.setCompletionPrefix(self.ui.codeEdit.text_under_cursor())
         if self.completer.completionCount() > 0:
             rect = self.ui.codeEdit.cursorRect()
             rect.setWidth(self.completer.popup().sizeHintForColumn(0) + self.completer.popup().verticalScrollBar().sizeHint().width())
@@ -782,10 +787,10 @@ class NSSEditor(Editor):
         for obj in ast.objects:
             if isinstance(obj, FunctionDefinition):
                 item = QTreeWidgetItem(self.ui.outlineView)  # pyright: ignore[reportCallIssue, reportArgumentType]
-                item.setText(0, f"Function: {obj.signature.identifier}")
+                item.setText(0, f"Function: {obj.identifier}")
                 item.setData(0, Qt.ItemDataRole.UserRole, obj)
 
-                for param in obj.signature.parameters:
+                for param in obj.parameters:
                     param_item = QTreeWidgetItem(item)
                     param_item.setText(0, f"Param: {param.identifier}")
 
@@ -829,7 +834,7 @@ class NSSEditor(Editor):
         QShortcut("Ctrl+/", self).activated.connect(self.ui.codeEdit.toggle_comment)  # Toggle comment
 
         # Add new shortcuts for bookmarks and snippets
-        QShortcut("Ctrl+B", self).activated.connect(self.ui.codeEdit.add_bookmark)
+        QShortcut("Ctrl+B", self).activated.connect(self.add_bookmark)
         QShortcut("Ctrl+Shift+B", self).activated.connect(lambda: self.ui.bookmarksDock.setVisible(not self.ui.bookmarksDock.isVisible()))
         QShortcut("Ctrl+K", self).activated.connect(lambda: self.ui.snippetsDock.setVisible(not self.ui.snippetsDock.isVisible()))
 

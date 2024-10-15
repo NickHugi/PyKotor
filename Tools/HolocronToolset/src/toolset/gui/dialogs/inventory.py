@@ -14,7 +14,17 @@ from qtpy.QtCore import (
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QDialog, QFrame, QMenu, QProgressBar, QTableWidget, QTableWidgetItem, QTreeView, QVBoxLayout
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QDialog,
+    QFrame,
+    QMenu,
+    QProgressBar,
+    QTableWidget,
+    QTableWidgetItem,
+    QTreeView,
+    QVBoxLayout,
+)
 
 from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
 from pykotor.common.stream import BinaryReader
@@ -32,7 +42,11 @@ if TYPE_CHECKING:
 
     from typing import Sequence
 
-    from qtpy.QtCore import QModelIndex, QPoint
+    from qtpy.QtCore import (
+        QAbstractItemModel,  # pyright: ignore[reportPrivateImportUsage]
+        QModelIndex,
+        QPoint,
+    )
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
     from qtpy.QtWidgets import QLabel, QWidget
 
@@ -94,7 +108,9 @@ class InventoryEditor(QDialog):
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
             | Qt.WindowType.WindowCloseButtonHint
-            | Qt.WindowType.WindowStaysOnTopHint & ~Qt.WindowType.WindowContextHelpButtonHint & ~Qt.WindowType.WindowMinimizeButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowMinimizeButtonHint
         )
         from toolset.uic.qtpy.dialogs.inventory import Ui_Dialog
 
@@ -395,6 +411,7 @@ class InventoryEditor(QDialog):
 
         menu.addSeparator()
         menu.addAction("Set Item ResRef").triggered.connect(lambda: self.prompt_set_item_resref_dialog(widget))
+        assert isinstance(widget, DropFrame), f"Expected DropFrame widget, got {type(widget).__name__}"
         menu.exec(widget.mapToGlobal(point))
 
     def prompt_set_item_resref_dialog(self, widget: DropFrame):
@@ -502,11 +519,14 @@ class DropFrame(ItemContainer, QFrame):
             - Check if item's slots match the target slot
             - Accept the drag move event if slots match.
         """
-        if not isinstance(event.source(), QTreeView):
+        src_object = event.source()
+        if not isinstance(src_object, QTreeView):
             return
-        tree: QTreeView = event.source()
-        proxy_model: QSortFilterProxyModel = tree.model()
-        model: ItemModel = proxy_model.sourceModel()
+        tree: QTreeView = src_object
+        proxy_model: QAbstractItemModel = tree.model()
+        assert isinstance(proxy_model, QSortFilterProxyModel), f"Expected QSortFilterProxyModel, got {type(proxy_model).__name__}"
+        model: QAbstractItemModel = proxy_model.sourceModel()
+        assert isinstance(model, ItemModel), f"Expected ItemModel, got {type(model).__name__}"
         src_index = proxy_model.mapToSource(tree.selectedIndexes()[0])
         item: QStandardItem | None = model.itemFromIndex(src_index)
         if not item.data(_SLOTS_ROLE) & self.slot.value:
@@ -531,18 +551,22 @@ class DropFrame(ItemContainer, QFrame):
             - Sets the new item on the widget
             - Emits a signal with the new item details.
         """
-        if isinstance(event.source(), QTreeView):
-            event.setDropAction(Qt.DropAction.CopyAction)
+        src_object = event.source()
+        if not isinstance(src_object, QTreeView):
+            return
+        event.setDropAction(Qt.DropAction.CopyAction)
 
-            tree: QTreeView | None = event.source()  # type: ignore[]
-            proxy_model: QSortFilterProxyModel = tree.model()
-            index = proxy_model.mapToSource(tree.selectedIndexes()[0])
-            model: ItemModel | None = proxy_model.sourceModel()
-            item: QStandardItem | None = model.itemFromIndex(index)
-            if item.data(_SLOTS_ROLE) & self.slot.value:
-                event.accept()
-                self.set_item(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
-                self.sig_item_dropped.emit(self.filepath, self.resname, self.name)
+        tree: QTreeView = src_object
+        proxy_model: QAbstractItemModel = tree.model()
+        assert isinstance(proxy_model, QSortFilterProxyModel), f"Expected QSortFilterProxyModel, got {type(proxy_model).__name__}"
+        model: QAbstractItemModel = proxy_model.sourceModel()
+        assert isinstance(model, ItemModel), f"Expected ItemModel, got {type(model).__name__}"
+        index = proxy_model.mapToSource(tree.selectedIndexes()[0])
+        item: QStandardItem | None = model.itemFromIndex(index)
+        if item.data(_SLOTS_ROLE) & self.slot.value:
+            event.accept()
+            self.set_item(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), droppable=False, infinite=False)
+            self.sig_item_dropped.emit(self.filepath, self.resname, self.name)
 
     def remove_item(self):
         ItemContainer.remove_item(self)
@@ -612,8 +636,10 @@ class InventoryTable(QTableWidget):
             tree = event.source()
             if not isinstance(tree, QTreeView):
                 return
-            proxy_model: QSortFilterProxyModel = tree.model()
-            model: ItemModel = proxy_model.sourceModel()
+            proxy_model: QAbstractItemModel = tree.model()
+            assert isinstance(proxy_model, QSortFilterProxyModel), f"Expected QSortFilterProxyModel, got {type(proxy_model).__name__}"
+            model: QAbstractItemModel = proxy_model.sourceModel()
+            assert isinstance(model, ItemModel), f"Expected ItemModel, got {type(model).__name__}"
             index: QModelIndex = proxy_model.mapToSource(tree.selectedIndexes()[0])
             item: QStandardItem = model.itemFromIndex(index)
             event.accept()
@@ -623,7 +649,7 @@ class InventoryTable(QTableWidget):
             icon_item: QTableWidgetItem = self._set_uti(uti)
             name_item = QTableWidgetItem(item.text())
             name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
-            resname_item = InventoryTableResnameItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
+            resname_item = InventoryTableResnameItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), droppable=False, infinite=False)
             self._set_row(rowID, icon_item, resname_item, name_item)
 
     def _set_row(
@@ -744,7 +770,9 @@ class ItemBuilderDialog(QDialog):
         super().__init__(parent)
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
-            | Qt.WindowType.WindowCloseButtonHint & ~Qt.WindowType.WindowContextHelpButtonHint & ~Qt.WindowType.WindowMinMaxButtonsHint
+            | Qt.WindowType.WindowCloseButtonHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowMinMaxButtonsHint
         )
 
         self._progress_bar: QProgressBar = QProgressBar(self)
@@ -762,7 +790,7 @@ class ItemBuilderDialog(QDialog):
         self.override_model: ItemModel = ItemModel(parent)
         self._tlk: TLK = read_tlk(CaseAwarePath(installation.path(), "dialog.tlk"))
         self._installation: HTInstallation = installation
-        self._capsules: list[Capsule] = capsules
+        self._capsules: list[LazyCapsule] = capsules
 
         self._worker: ItemBuilderWorker = ItemBuilderWorker(installation, capsules)
         self._worker.sig_uti_loaded.connect(self.on_uti_loaded)
@@ -850,10 +878,10 @@ class ItemBuilderWorker(QThread):
     sig_uti_loaded: Signal = Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
     sig_finished: Signal = Signal()  # pyright: ignore[reportPrivateImportUsage]
 
-    def __init__(self, installation: HTInstallation, capsules: list[Capsule]):
+    def __init__(self, installation: HTInstallation, capsules: list[LazyCapsule]):
         super().__init__()
         self._installation: HTInstallation = installation
-        self._capsules: list[Capsule] = capsules
+        self._capsules: list[LazyCapsule] = capsules
 
     def run(self):
         """Runs the resource loading process.

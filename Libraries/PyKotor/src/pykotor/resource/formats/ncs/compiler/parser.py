@@ -187,7 +187,7 @@ class NssParser:
         """
         function_definition : data_type IDENTIFIER '(' function_definition_params ')' '{' code_block '}'
         """  # noqa: D200, D400, D212, D415
-        p[0] = FunctionDefinition(p[1], p[2], p[4], p[7])
+        p[0] = FunctionDefinition(p[1], p[2], p[4], p[7], p.lineno(1))
 
     def p_function_definition_params(self, p):
         """
