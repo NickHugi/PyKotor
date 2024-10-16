@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+
+from functools import singledispatch
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -7,12 +10,12 @@ from loggerplus import RobustLogger
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox, QWidget
 
+from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
-    import os
 
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QDialog, QMainWindow
@@ -23,7 +26,7 @@ if TYPE_CHECKING:
 TOOLSET_WINDOWS: list[QDialog | QMainWindow] = []
 """TODO: Remove this implementation, there's better ways to keep windows from being garbage collected."""
 
-unique_sentinel = object()
+_UNIQUE_SENTINEL = object()
 
 
 def add_window(window: QDialog | QMainWindow):
@@ -31,7 +34,7 @@ def add_window(window: QDialog | QMainWindow):
     original_closeEvent = window.closeEvent
 
     def new_close_event(
-        event: QCloseEvent | None = unique_sentinel,  # pyright: ignore[reportArgumentType]
+        event: QCloseEvent | None = _UNIQUE_SENTINEL,  # pyright: ignore[reportArgumentType]
         *args,
         **kwargs,
     ):
@@ -41,7 +44,7 @@ def add_window(window: QDialog | QMainWindow):
             add_recent_file(window._filepath)  # noqa: SLF001
         if window in TOOLSET_WINDOWS:
             TOOLSET_WINDOWS.remove(window)
-        if event is unique_sentinel:  # Make event arg optional just in case the class has the wrong definition.
+        if event is _UNIQUE_SENTINEL:  # Make event arg optional just in case the class has the wrong definition.
             original_closeEvent(*args, **kwargs)
         else:
             original_closeEvent(event, *args, **kwargs)  # pyright: ignore[reportArgumentType]
@@ -64,15 +67,8 @@ def add_recent_file(file: Path):
     settings.recentFiles = recent_files
 
 
-import os
-
-from functools import singledispatch
-
-from pykotor.extract.file import FileResource
-
-
 @singledispatch
-def open_resource_editor(
+def open_resource_editor(  # noqa: PLR0913
     resource_or_path: FileResource | os.PathLike | str,
     installation: HTInstallation | None = None,
     parent_window: QWidget | None = None,
@@ -177,7 +173,13 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
         restype = resource.restype()
         resname = resource.resname()
         filepath = resource.filepath()
-    elif filepath and resname and restype and data is not None:
+    elif (
+        resname
+        and resname.strip()
+        and restype
+        and data is not None
+        and filepath
+    ):
         ...
     else:
         raise ValueError("Invalid input combination")

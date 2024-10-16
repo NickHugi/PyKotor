@@ -4,12 +4,12 @@ import os
 
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import QEventLoop, Qt
-from PyQt6.QtGui import QColor, QFont
-from PyQt6.QtWidgets import QDialog, QFileDialog, QFontDialog
+from qtpy.QtCore import QEventLoop, Qt
+from qtpy.QtGui import QColor, QFont
+from qtpy.QtWidgets import QDialog, QFileDialog, QFontDialog
 
 from utility.system.win32.com.interfaces import COMDLG_FILTERSPEC, IShellItem
-from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qplatformdialoghelper import (
+from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qplatformdialoghelper import (
     QFileDialogPlatformHelper,
     QPlatformColorDialogHelper,
     QPlatformDialogHelper,
@@ -18,7 +18,7 @@ from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qplatformdialoghelper 
 )
 
 if TYPE_CHECKING:
-    from PyQt6.QtCore import QAbstractProxyModel, QObject, QUrl
+    from qtpy.QtCore import QAbstractProxyModel, QObject, QUrl
 
 try:
     from comtypes.client import CreateObject
@@ -164,7 +164,7 @@ class WindowsFileDialogHelper(QFileDialogPlatformHelper):
             return QPlatformDialogHelper.DialogCode.Accepted
         return QPlatformDialogHelper.DialogCode.Rejected
 
-    def show(self, parent_window_flags: Qt.WindowFlags, parent_window_state: Qt.WindowState, parent: QObject | None):
+    def show(self, parent_window_flags: Qt.WindowType, parent_window_state: Qt.WindowState, parent: QObject | None):
         hwnd: int | None = self._get_hwnd_from_parent(parent)
         self.show_dialog(hwnd)
 
@@ -266,7 +266,7 @@ class QWindowsFileDialogHelper(QWindowsDialogHelperBase, QPlatformFileDialogHelp
             return QPlatformDialogHelper.DialogCode.Accepted
         return QPlatformDialogHelper.DialogCode.Rejected
 
-    def show(self, parent_window_flags: Qt.WindowFlags, parent_window_state: Qt.WindowState, parent: QObject | None):
+    def show(self, parent_window_flags: Qt.WindowType, parent_window_state: Qt.WindowState, parent: QObject | None):
         if not self.m_fileDialog:
             self.m_fileDialog = QFileDialog(parent)
         self._applyOptions()
@@ -300,13 +300,13 @@ class QWindowsFileDialogHelper(QWindowsDialogHelperBase, QPlatformFileDialogHelp
     def setFilter(self):
         if self.m_fileDialog:
             filters: list[str] = []
-            for name_filter in self._options.nameFilters():
+            for name_filter in self.m_options.nameFilters():
                 description, extensions = name_filter.split("(")
                 extensions = extensions.strip(")").replace("*", "")
                 filters.append(f"{description.strip()} ({extensions})")
             self.m_fileDialog.setNameFilters(filters)
 
-    def selectNameFilter(self, filter: str):
+    def selectNameFilter(self, filter: str):  # noqa: A002
         if self.m_fileDialog:
             self.m_fileDialog.selectNameFilter(filter)
         self.m_selectedNameFilter = filter
@@ -316,7 +316,7 @@ class QWindowsFileDialogHelper(QWindowsDialogHelperBase, QPlatformFileDialogHelp
             return self.m_fileDialog.selectedNameFilter()
         return self.m_selectedNameFilter
 
-    def selectMimeTypeFilter(self, filter: str):
+    def selectMimeTypeFilter(self, filter: str):  # noqa: A002
         if self.m_fileDialog:
             self.m_fileDialog.selectMimeTypeFilter(filter)
 
@@ -326,7 +326,7 @@ class QWindowsFileDialogHelper(QWindowsDialogHelperBase, QPlatformFileDialogHelp
         return ""
 
     def isSupportedUrl(self, url: str) -> bool:
-        from PyQt6.QtCore import QUrl
+        from qtpy.QtCore import QUrl
         parsed_url = QUrl(url)
         return parsed_url.isValid() and parsed_url.scheme() in ["file", ""]
 

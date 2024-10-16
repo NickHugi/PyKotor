@@ -52,7 +52,7 @@ from batchpatcher.translate.language_translator import TranslationOption, Transl
 from pykotor.common.alien_sounds import ALIEN_SOUNDS
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule, LazyCapsule
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation
@@ -606,7 +606,7 @@ def patch_and_save_noncapsule(
             txi_file = resource.filepath().with_suffix(".txi")
             if txi_file.is_file():
                 print("Embedding TXI information...")
-                data: bytes = BinaryReader.load_file(txi_file)
+                data: bytes = txi_file.read_bytes()
                 txi_text: str = decode_bytes_with_fallbacks(data)
                 patched_data.txi = txi_text
         else:

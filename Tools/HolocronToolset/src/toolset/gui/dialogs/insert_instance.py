@@ -9,7 +9,7 @@ from qtpy.QtGui import QBrush, QPalette
 from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QMessageBox
 
 from pykotor.common.misc import ResRef
-from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.generics.utc import UTC, bytes_utc, read_utc
@@ -251,7 +251,7 @@ class InsertInstanceDialog(QDialog):
                         elif is_bif_file(resource.filepath().name):
                             mdx_data = self._installation.resource(resource.resname(), ResourceType.MDX).data
                         else:
-                            mdx_data = BinaryReader.load_file(resource.filepath().with_suffix(".mdx"))
+                            mdx_data = resource.filepath().with_suffix(".mdx").read_bytes()
                     elif resource.restype() is ResourceType.MDX:
                         mdx_data = data
                         if is_any_erf_type_file(resource.filepath().name):
@@ -263,7 +263,7 @@ class InsertInstanceDialog(QDialog):
                         elif is_bif_file(resource.filepath().name):
                             mdl_data = self._installation.resource(resource.resname(), ResourceType.MDL).data
                         else:
-                            mdl_data = BinaryReader.load_file(resource.filepath().with_suffix(".mdl"))
+                            mdl_data = resource.filepath().with_suffix(".mdl").read_bytes()
 
                     if mdl_data is not None and mdx_data is not None:
                         self.ui.previewRenderer.setModel(mdl_data, mdx_data)

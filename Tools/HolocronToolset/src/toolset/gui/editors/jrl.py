@@ -3,17 +3,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from qtpy.QtGui import QColor, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QMenu, QMessageBox, QShortcut, QTreeView
+from qtpy.QtWidgets import (
+    QMenu,
+    QMessageBox,
+    QShortcut,  # pyright: ignore[reportPrivateImportUsage]
+    QTreeView,
+)
 
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.jrl import (
-    JRL,
-    JRLEntry,
-    JRLQuest,
-    JRLQuestPriority,
-    dismantle_jrl,
-    read_jrl,
-)
+from pykotor.resource.generics.jrl import JRL, JRLEntry, JRLQuest, JRLQuestPriority, dismantle_jrl, read_jrl
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
@@ -59,12 +57,15 @@ class JRLEditor(Editor):
         """
         supported: list[ResourceType] = [ResourceType.JRL]
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
-        self.resize(400, 250)
 
         from toolset.uic.qtpy.editors.jrl import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.ui.categoryCommentEdit.setVisible(False)  # FIXME:
+        self.ui.journalTree.setModel(self._model)
+        self.ui.journalTree.setSelectionMode(QTreeView.SelectionMode.SingleSelection)
+        self.ui.splitter.setSizes([99999999, 1])
+        self.resize(400, 250)
+
         self._setup_menus()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
@@ -73,47 +74,28 @@ class JRLEditor(Editor):
         self._jrl: JRL = JRL()
         self._model: QStandardItemModel = QStandardItemModel(self)
 
-        self.ui.journalTree.setModel(self._model)
-
-        # Make the bottom panel take as little space possible
-        self.ui.splitter.setSizes([99999999, 1])
-
         self.new()
 
     def _setup_signals(self):
-        """Setup signals for journal UI interactions.
+        self.ui.journalTree.selectionChanged = self.on_selection_changed  # type: ignore[assignment]
+        self.ui.journalTree.customContextMenuRequested.connect(self.on_context_menu_requested)
 
-        Args:
-        ----
-            self: {The class instance}: The class instance
-
-        Processing Logic:
-        ----------------
-            - Connect selectionChanged signal on journal tree to onSelectionChanged handler
-            - Connect customContextMenuRequested signal on journal tree to onContextMenuRequested handler
-            - Connect doubleClicked signal on entry text edit to changeEntryText handler
-            - Connect various editingFinished and activated signals on category/entry fields to onValueUpdated handler to only trigger on user interaction
-            - Connect "Del" keyboard shortcut to onDeleteShortcut handler.
-        """
-        self.ui.journalTree.selectionChanged = self.onSelectionChanged
-        self.ui.journalTree.customContextMenuRequested.connect(self.onContextMenuRequested)
-
-        self.ui.entryTextEdit.doubleClicked.connect(self.changeEntryText)
+        self.ui.entryTextEdit.doubleClicked.connect(self.change_entry_text)
 
         # Make sure all these signals are excusively fired through user interaction NOT when values change
         # programmatically, otherwise values bleed into other items when onSelectionChanged() fires.
-        self.ui.categoryNameEdit.editingFinished.connect(self.onValueUpdated)
-        self.ui.categoryTag.editingFinished.connect(self.onValueUpdated)
-        self.ui.categoryPlotSelect.currentIndexChanged.connect(self.onValueUpdated)
-        self.ui.categoryPlanetSelect.activated.connect(self.onValueUpdated)
-        self.ui.categoryPrioritySelect.activated.connect(self.onValueUpdated)
-        self.ui.categoryCommentEdit.keyReleased.connect(self.onValueUpdated)
-        self.ui.entryIdSpin.editingFinished.connect(self.onValueUpdated)
-        self.ui.entryXpSpin.editingFinished.connect(self.onValueUpdated)
+        self.ui.categoryNameEdit.editingFinished.connect(self.on_value_updated)
+        self.ui.categoryTag.editingFinished.connect(self.on_value_updated)
+        self.ui.categoryPlotSelect.currentIndexChanged.connect(self.on_value_updated)
+        self.ui.categoryPlanetSelect.activated.connect(self.on_value_updated)
+        self.ui.categoryPrioritySelect.activated.connect(self.on_value_updated)
+        self.ui.categoryCommentEdit.keyReleased.connect(self.on_value_updated)
+        self.ui.entryIdSpin.editingFinished.connect(self.on_value_updated)
+        self.ui.entryXpSpin.editingFinished.connect(self.on_value_updated)
         self.ui.entryXpSpin.setToolTip("The game multiplies the value set here by 1000 to calculate actual XP to award.")
-        self.ui.entryEndCheck.clicked.connect(self.onValueUpdated)
+        self.ui.entryEndCheck.clicked.connect(self.on_value_updated)
 
-        QShortcut("Del", self).activated.connect(self.onDeleteShortcut)
+        QShortcut("Del", self).activated.connect(self.on_delete_shortcut)
 
     def _setup_installation(self, installation: HTInstallation):
         self._installation = installation
@@ -170,16 +152,16 @@ class JRLEditor(Editor):
 
         self._model.clear()
         for quest in self._jrl.quests:
-            questItem = QStandardItem()
-            questItem.setData(quest)
-            self.refreshQuestItem(questItem)
-            self._model.appendRow(questItem)
+            quest_item = QStandardItem()
+            quest_item.setData(quest)
+            self.refresh_quest_item(quest_item)
+            self._model.appendRow(quest_item)
 
             for entry in quest.entries:
-                entryItem = QStandardItem()
-                entryItem.setData(entry)
-                self.refreshEntryItem(entryItem)
-                questItem.appendRow(entryItem)
+                entry_item = QStandardItem()
+                entry_item.setData(entry)
+                self.refresh_entry_item(entry_item)
+                quest_item.appendRow(entry_item)
 
     def build(self) -> tuple[bytes, bytes]:
         data = bytearray()
@@ -191,7 +173,7 @@ class JRLEditor(Editor):
         self._jrl = JRL()
         self._model.clear()
 
-    def refreshEntryItem(self, entryItem: QStandardItem):
+    def refresh_entry_item(self, entryItem: QStandardItem):
         """Updates the specified item's (storing entry data) text.
 
         Args:
@@ -202,7 +184,7 @@ class JRLEditor(Editor):
         entryItem.setForeground(QColor(0x880000 if entryItem.data().end else 0x000000))
         entryItem.setText(text)
 
-    def refreshQuestItem(self, questItem: QStandardItem):
+    def refresh_quest_item(self, questItem: QStandardItem):
         """Updates the specified item's (storing quest data) text.
 
         Args:
@@ -212,29 +194,29 @@ class JRLEditor(Editor):
         text: str = self._installation.string(questItem.data().name, "[Unnamed]")
         questItem.setText(text)
 
-    def changeQuestName(self):
+    def change_quest_name(self):
         """Opens a LocalizedStringDialog for editing the name of the selected quest."""
         dialog = LocalizedStringDialog(self, self._installation, self.ui.categoryNameEdit.locstring())
         if dialog.exec():
             self.ui.categoryNameEdit.set_installation(self._installation)
-            self.onValueUpdated()
+            self.on_value_updated()
             item: QStandardItem = self._get_item()
             quest: JRLQuest = item.data()
             quest.name = dialog.locstring
-            self.refreshQuestItem(item)
+            self.refresh_quest_item(item)
 
-    def changeEntryText(self):
+    def change_entry_text(self):
         """Opens a LocalizedStringDialog for editing the text of the selected entry."""
         dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)
         if dialog.exec():
             self._load_locstring(self.ui.entryTextEdit, dialog.locstring)
-            self.onValueUpdated()
+            self.on_value_updated()
             item: QStandardItem = self._get_item()
             entry: JRLEntry = item.data()
             entry.text = dialog.locstring
-            self.refreshEntryItem(item)
+            self.refresh_entry_item(item)
 
-    def removeQuest(self, questItem: QStandardItem):
+    def remove_quest(self, questItem: QStandardItem):
         """Removes a quest from the journal.
 
         Args:
@@ -245,7 +227,7 @@ class JRLEditor(Editor):
         self._model.removeRow(questItem.row())
         self._jrl.quests.remove(quest)
 
-    def removeEntry(self, entryItem: QStandardItem):
+    def remove_entry(self, entryItem: QStandardItem):
         """Removes an entry from the journal.
 
         Args:
@@ -259,7 +241,7 @@ class JRLEditor(Editor):
                 quest.entries.remove(entry)
                 break
 
-    def addEntry(self, questItem: QStandardItem, newEntry: JRLEntry):
+    def add_entry(self, quest_item: QStandardItem, newEntry: JRLEntry):
         """Adds a entry to a quest in the journal.
 
         Args:
@@ -267,27 +249,27 @@ class JRLEditor(Editor):
             questItem: The item in the tree that stores the quest.
             newEntry: The entry to add into the quest.
         """
-        entryItem = QStandardItem()
-        entryItem.setData(newEntry)
-        self.refreshEntryItem(entryItem)
-        questItem.appendRow(entryItem)
-        quest: JRLQuest = questItem.data()
+        entry_item = QStandardItem()
+        entry_item.setData(newEntry)
+        self.refresh_entry_item(entry_item)
+        quest_item.appendRow(entry_item)
+        quest: JRLQuest = quest_item.data()
         quest.entries.append(newEntry)
 
-    def addQuest(self, newQuest: JRLQuest):
+    def add_quest(self, newQuest: JRLQuest):
         """Adds a quest to the journal.
 
         Args:
         ----
             newQuest: The new quest to be added in.
         """
-        questItem = QStandardItem()
-        questItem.setData(newQuest)
-        self.refreshQuestItem(questItem)
-        self._model.appendRow(questItem)
+        quest_item = QStandardItem()
+        quest_item.setData(newQuest)
+        self.refresh_quest_item(quest_item)
+        self._model.appendRow(quest_item)
         self._jrl.quests.append(newQuest)
 
-    def onValueUpdated(self, *args, **kwargs):
+    def on_value_updated(self, *args, **kwargs):
         """Updates the selected item in the journal tree when values change.
 
         This method should be connected to all the widgets that store data related quest or entry text (besides the
@@ -320,9 +302,9 @@ class JRLEditor(Editor):
             data.end = self.ui.entryEndCheck.isChecked()
             data.xp_percentage = self.ui.entryXpSpin.value()
             data.entry_id = self.ui.entryIdSpin.value()
-            self.refreshEntryItem(item)
+            self.refresh_entry_item(item)
 
-    def onSelectionChanged(self, selection: QItemSelection, deselected: QItemSelection):
+    def on_selection_changed(self, selection: QItemSelection, deselected: QItemSelection):
         """Updates UI on journal tree selection change.
 
         This method should be connected to a signal that emits when selection changes for the journalTree widget. It
@@ -350,7 +332,7 @@ class JRLEditor(Editor):
             data = item.data()
             if isinstance(data, JRLQuest):  # sourcery skip: extract-method
                 self.ui.questPages.setCurrentIndex(0)
-                self.ui.categoryNameEdit.setLocstring(data.name)
+                self.ui.categoryNameEdit.set_locstring(data.name)
                 self.ui.categoryTag.setText(data.tag)
                 self.ui.categoryPlotSelect.setCurrentIndex(data.plot_index)
                 self.ui.categoryPlanetSelect.setCurrentIndex(data.planet_id + 1)
@@ -366,7 +348,7 @@ class JRLEditor(Editor):
         self.ui.categoryCommentEdit.blockSignals(False)
         self.ui.entryTextEdit.blockSignals(False)
 
-    def onContextMenuRequested(self, point: QPoint):
+    def on_context_menu_requested(self, point: QPoint):
         """Handle context menu requests for the journal tree widget.
 
         This method should be connected to the customContextMenuRequested of the journalTree object. This will popup the
@@ -395,19 +377,19 @@ class JRLEditor(Editor):
             data = item.data()
 
             if isinstance(data, JRLQuest):
-                menu.addAction("Add Entry").triggered.connect(lambda: self.addEntry(item, JRLEntry()))
-                menu.addAction("Remove Quest").triggered.connect(lambda: self.removeQuest(item))
+                menu.addAction("Add Entry").triggered.connect(lambda: self.add_entry(item, JRLEntry()))
+                menu.addAction("Remove Quest").triggered.connect(lambda: self.remove_quest(item))
                 # it's not easy to right click without selecting an item - add the 'addQuest' action here as well.
                 menu.addSeparator()
-                menu.addAction("Add Quest").triggered.connect(lambda: self.addQuest(JRLQuest()))
+                menu.addAction("Add Quest").triggered.connect(lambda: self.add_quest(JRLQuest()))
             elif isinstance(data, JRLEntry):
-                menu.addAction("Remove Entry").triggered.connect(lambda: self.removeEntry(item))
+                menu.addAction("Remove Entry").triggered.connect(lambda: self.remove_entry(item))
         else:
-            menu.addAction("Add Quest").triggered.connect(lambda: self.addQuest(JRLQuest()))
+            menu.addAction("Add Quest").triggered.connect(lambda: self.add_quest(JRLQuest()))
 
         menu.popup(self.ui.journalTree.viewport().mapToGlobal(point))
 
-    def onDeleteShortcut(self):
+    def on_delete_shortcut(self):
         """Deletes selected shortcut from journal tree.
 
         This method should be connected to the activated signal of a QShortcut. The method will delete the selected
@@ -427,11 +409,11 @@ class JRLEditor(Editor):
         if self.ui.journalTree.selectedIndexes():
             item = self._get_item()
             if item.parent() is None:  # ie. root item, therefore quest
-                self.removeQuest(item)
+                self.remove_quest(item)
             else:  # child item, therefore entry
-                self.removeEntry(item)
+                self.remove_entry(item)
 
-    def _get_item(self):
+    def _get_item(self) -> QStandardItem:
         index = self.ui.journalTree.selectedIndexes()[0]
         result = self._model.itemFromIndex(index)
         assert result is not None, f"Could not find journalTree index '{index}'"

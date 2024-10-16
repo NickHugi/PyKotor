@@ -1517,12 +1517,12 @@ class MDLBinaryReader:
                 for _ in range(row_count)
             ]
 
-        controller = MDLController()
-        controller.controller_type = bin_controller.type_id
-        controller.rows = [
+        controller_type = bin_controller.type_id
+        rows = [
             MDLControllerRow(time_keys[i], data[i])
             for i in range(row_count)
         ]
+        controller = MDLController(MDLControllerType(controller_type), rows)
         return controller
 
 

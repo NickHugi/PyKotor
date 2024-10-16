@@ -4,6 +4,8 @@ import json
 
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
+import qtpy
+
 from loggerplus import RobustLogger
 from qtpy.QtCore import (
     QRect,
@@ -13,23 +15,27 @@ from qtpy.QtCore import (
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
-from qtpy.QtGui import QColor, QPainter, QPalette, QTextCharFormat, QTextCursor, QTextFormat
+from qtpy.QtGui import QColor, QKeySequence, QPainter, QPalette, QTextCharFormat, QTextCursor, QTextDocument, QTextFormat
 from qtpy.QtWidgets import (
-    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QCheckBox,
     QCompleter,
     QDialog,
     QHBoxLayout,
     QInputDialog,
     QLabel,
     QLineEdit,
-    QMenu,
+    QMessageBox,
     QPlainTextEdit,
     QPushButton,
-    QSplitter,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
+
+if qtpy.QT5:
+    from qtpy.QtCore import QRegExp
+elif qtpy.QT6:
+    from qtpy.QtCore import QRegularExpression
 
 from pykotor.resource.formats.ncs.compiler.classes import FunctionDefinition
 from toolset.gui.widgets.settings.installations import GlobalSettings
@@ -37,28 +43,31 @@ from utility.ui_libraries.qt.widgets.itemviews.treewidget import RobustTreeWidge
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
-    from qtpy.QtGui import QContextMenuEvent, QDragEnterEvent, QDropEvent, QFocusEvent, QKeyEvent, QMoveEvent, QPaintEvent, QResizeEvent, QTextBlock, QTextDocument
-    from qtpy.QtWidgets import QTreeWidgetItem
+    from qtpy.QtGui import QDragEnterEvent, QDropEvent, QFocusEvent, QFont, QFontMetrics, QKeyEvent, QMoveEvent, QPaintEvent, QResizeEvent, QTextBlock
+    from qtpy.QtWidgets import QScrollBar, QTreeWidgetItem
     from typing_extensions import Literal, Self  # noqa: F401
+
 
 
 class CodeEditor(QPlainTextEdit):
     """CodeEditor shows the line numbers on the side of the text editor and highlights the row the cursor is on.
 
-    Ported from the C++ code at: https://doc.qt.io/qt-5/qtwidgets-widgets-codeeditor-example.html
+    Adapted from the C++ code at: https://doc.qt.io/qt-5/qtwidgets-widgets-codeeditor-example.html
     """
 
-    snippet_added: ClassVar[Signal] = Signal(str, str)  # name, content
-    snippet_removed: ClassVar[Signal] = Signal(int)  # index
-    snippet_insert_requested: ClassVar[Signal] = Signal(str)  # content
-    snippets_load_requested: ClassVar[Signal] = Signal()
-    snippets_save_requested: ClassVar[Signal] = Signal(list)  # list of dicts
+    sig_snippet_added: ClassVar[Signal] = Signal(str, str)  # name, content
+    sig_snippet_removed: ClassVar[Signal] = Signal(int)  # index
+    sig_snippet_insert_requested: ClassVar[Signal] = Signal(str)  # content
+    sig_snippets_load_requested: ClassVar[Signal] = Signal()
+    sig_snippets_save_requested: ClassVar[Signal] = Signal(list)  # list of dicts
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
         self._line_number_area: LineNumberArea = LineNumberArea(self)
 
         self._length: int = len(self.toPlainText())
+
+        self.find_dialog: QDialog | None = None
 
         self.blockCountChanged.connect(self._update_line_number_area_width)
         self.updateRequest.connect(self._update_line_number_area)
@@ -89,24 +98,22 @@ class CodeEditor(QPlainTextEdit):
         self.update_completer_model()
 
         self.modified_lines: set[int] = set()
-        self.git_added_lines: set[int] = set()
-        self.git_modified_lines: set[int] = set()
 
     def toggle_comment(self):
         """Toggle comment for the current line or selected lines."""
-        cursor = self.textCursor()
-        start_pos = cursor.selectionStart()
-        end_pos = cursor.selectionEnd()
+        cursor: QTextCursor = self.textCursor()
+        start_pos: int = cursor.selectionStart()
+        end_pos: int = cursor.selectionEnd()
 
         cursor.setPosition(start_pos)
         cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
         cursor.setPosition(end_pos, QTextCursor.MoveMode.KeepAnchor)
         cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
 
-        selected_text = cursor.selectedText()
-        lines = selected_text.split("\u2029")  # Unicode line separator
+        selected_text: str = cursor.selectedText()
+        lines: list[str] = selected_text.split("\u2029")  # Unicode line separator
 
-        comment_out = any(not line.lstrip().startswith("//") for line in lines if line.strip())
+        comment_out: bool = any(not line.lstrip().startswith("//") for line in lines if line.strip())
 
         cursor.beginEditBlock()
         for i, line in enumerate(lines):
@@ -123,13 +130,13 @@ class CodeEditor(QPlainTextEdit):
         self.setTextCursor(cursor)
 
     def update_completer_model(self):
-        words = set()
-        doc = self.document()
+        words: set[str] = set()
+        doc: QTextDocument = self.document()
         for i in range(doc.blockCount()):
-            block = doc.findBlockByNumber(i)
+            block: QTextBlock = doc.findBlockByNumber(i)
             words.update(block.text().split())
 
-        model = QStringListModel(list(words))
+        model: QStringListModel = QStringListModel(list(words))
         self.completer.setModel(model)
 
     def line_number_area_paint_event(self, e: QPaintEvent):
@@ -139,7 +146,7 @@ class CodeEditor(QPlainTextEdit):
         ----
             e (QPaintEvent): Paint event
         """
-        painter = QPainter(self._line_number_area)
+        painter: QPainter = QPainter(self._line_number_area)
         painter.fillRect(e.rect(), self.palette().color(QPalette.ColorRole.AlternateBase))
 
         block: QTextBlock = self.firstVisibleBlock()
@@ -147,27 +154,21 @@ class CodeEditor(QPlainTextEdit):
         top: float = self.blockBoundingGeometry(block).translated(self.contentOffset()).top()
         bottom: float = top + self.blockBoundingRect(block).height()
 
-        font_metrics = self.fontMetrics()
-        line_number_area_width = self._line_number_area.width()
-        font_height = font_metrics.height()
+        font_metrics: QFontMetrics = self.fontMetrics()
+        line_number_area_width: int = self._line_number_area.width()
+        font_height: int = font_metrics.height()
 
-        text_color = self.palette().color(QPalette.ColorRole.Text)
+        text_color: QColor = self.palette().color(QPalette.ColorRole.Text)
         painter.setPen(text_color)
 
         while block.isValid() and top <= e.rect().bottom():
             if block.isVisible() and bottom >= e.rect().top():
-                number = str(block_number + 1)
+                number: str = str(block_number + 1)
                 painter.drawText(0, int(top), line_number_area_width, font_height, Qt.AlignmentFlag.AlignRight, number)
 
                 # Draw modification indicator
                 if block_number in self.modified_lines:
                     painter.fillRect(0, int(top), 2, font_height, QColor(0, 0, 255))
-
-                # Draw git indicators
-                if block_number in self.git_added_lines:
-                    painter.fillRect(0, int(top), 2, font_height, QColor(0, 255, 0))
-                elif block_number in self.git_modified_lines:
-                    painter.fillRect(0, int(top), 2, font_height, QColor(255, 165, 0))
 
             block = block.next()
             top = bottom
@@ -185,12 +186,12 @@ class CodeEditor(QPlainTextEdit):
         -------
             int: The width in pixels needed to display line numbers.
         """
-        digits = 1
+        digits: int = 1
         maximum: int = max(1, self.blockCount())
         while maximum >= 10:  # noqa: PLR2004
             maximum //= 10
             digits += 1
-        space = 3 + self.fontMetrics().horizontalAdvance("9") * digits
+        space: int = 3 + self.fontMetrics().horizontalAdvance("9") * digits
         return space
 
     def resizeEvent(self, e: QResizeEvent):
@@ -200,7 +201,7 @@ class CodeEditor(QPlainTextEdit):
 
     def _update_line_number_area_width(
         self,
-        newBlockCount: int,
+        new_block_count: int,
     ):
         self.setViewportMargins(self.line_number_area_width(), 0, 0, 0)
 
@@ -211,28 +212,30 @@ class CodeEditor(QPlainTextEdit):
         ----
             self: The text editor widget
         """
-        extraSelections: list[QTextEdit.ExtraSelection] = []
+        extra_selections: list[QTextEdit.ExtraSelection] = []
 
         if not self.isReadOnly():
             selection = QTextEdit.ExtraSelection()
-            lineColor = QColor(255, 255, 220)
-            selection.format = QTextCharFormat()  # Initialize format
-            selection.format.setBackground(lineColor)
-            selection.format.setProperty(QTextFormat.Property.FullWidthSelection, True)
-            selection.cursor = self.textCursor()
-            selection.cursor.clearSelection()
-            extraSelections.append(selection)
+            line_color: QColor = QColor(255, 255, 220)
+            if not hasattr(selection, "format"):
+                selection.format = QTextCharFormat()  # type: ignore[attr-value]
+            selection.format.setBackground(line_color)  # type: ignore[attr-value]
+            selection.format.setProperty(QTextFormat.Property.FullWidthSelection, True)  # type: ignore[attr-value]
+            if not hasattr(selection, "cursor"):
+                selection.cursor = self.textCursor()  # type: ignore[attr-value]
+            selection.cursor.clearSelection()  # type: ignore[attr-value]
+            extra_selections.append(selection)
 
-        self.setExtraSelections(extraSelections)
+        self.setExtraSelections(extra_selections)
 
     def insert_text_at_cursor(
         self,
         insert: str,
         offset: int | None = None,
     ):
-        cursor = self.textCursor()
-        index = cursor.position()
-        text = self.toPlainText()
+        cursor: QTextCursor = self.textCursor()
+        index: int = cursor.position()
+        text: str = self.toPlainText()
         self.setPlainText(text[:index] + insert + text[index:])
         offset = len(insert) if offset is None else offset
         cursor.setPosition(index + offset)
@@ -243,18 +246,18 @@ class CodeEditor(QPlainTextEdit):
         insertion: bool = self._length < len(self.toPlainText())
 
         if insertion:
-            index = self.textCursor().position()
-            inserted = self.toPlainText()[index - 1 : index]
-            text = self.toPlainText()[:index]
+            index: int = self.textCursor().position()
+            inserted: str = self.toPlainText()[index - 1 : index]
+            text: str = self.toPlainText()[:index]
 
-            startBrace = text.count("{")
-            endBrace = text.count("}")
-            indent = startBrace - endBrace
+            start_brace: int = text.count("{")
+            end_brace: int = text.count("}")
+            indent: int = start_brace - end_brace
 
             if inserted == "\n" and indent > 0:
                 from toolset.gui.editors.nss import NSSEditor
 
-                space = " " * NSSEditor.TAB_SIZE if NSSEditor.TAB_AS_SPACE else "\t"
+                space: str = " " * NSSEditor.TAB_SIZE if NSSEditor.TAB_AS_SPACE else "\t"
                 self.insertPlainText(space * indent)
 
         self._length = len(self.toPlainText())
@@ -288,17 +291,6 @@ class CodeEditor(QPlainTextEdit):
             bookmarks.append({"line": item.data(0, Qt.ItemDataRole.UserRole), "description": item.text(1)})
         QSettings().setValue("bookmarks", json.dumps(bookmarks))
 
-    def contextMenuEvent(self, event: QContextMenuEvent):
-        """Override context menu to show snippet options."""
-        menu = self.createStandardContextMenu()
-        snippet_menu = QMenu("Snippets", self)
-        for trigger, content in self.snippets.items():
-            action = QAction(trigger, self)
-            action.triggered.connect(lambda _checked, content=content: self.insertPlainText(content))
-            snippet_menu.addAction(action)
-        menu.addMenu(snippet_menu)
-        menu.exec(event.globalPos())
-
     # Additional methods
     def show_auto_complete_menu(self):
         self.completer.setCompletionPrefix(self.text_under_cursor())
@@ -306,6 +298,7 @@ class CodeEditor(QPlainTextEdit):
             rect = self.cursorRect()
             rect.setWidth(self.completer.popup().sizeHintForColumn(0) + self.completer.popup().verticalScrollBar().sizeHint().width())
             self.completer.complete(rect)
+            self.completer.popup().setCurrentIndex(self.completer.completionModel().index(0, 0))
 
     def text_under_cursor(self) -> str:
         tc: QTextCursor = self.textCursor()
@@ -313,8 +306,8 @@ class CodeEditor(QPlainTextEdit):
         return tc.selectedText()
 
     def insert_completion(self, completion: str):
-        tc = self.textCursor()
-        extra = len(completion) - len(self.completer.completionPrefix())
+        tc: QTextCursor = self.textCursor()
+        extra: int = len(completion) - len(self.completer.completionPrefix())
         tc.movePosition(QTextCursor.MoveOperation.Left)
         tc.movePosition(QTextCursor.MoveOperation.EndOfWord)
         tc.insertText(completion[-extra:])
@@ -322,7 +315,7 @@ class CodeEditor(QPlainTextEdit):
 
     def scroll_horizontally(self, steps: int = 1):
         """Scroll the code editor horizontally."""
-        scrollbar = self.horizontalScrollBar()
+        scrollbar: QScrollBar = self.horizontalScrollBar()
         scrollbar.setValue(scrollbar.value() + steps * scrollbar.singleStep())
 
     def undo(self):
@@ -333,80 +326,146 @@ class CodeEditor(QPlainTextEdit):
         """Redo the last undone action in the code editor."""
         self.redo()
 
-    def replace(self):
+    def find_and_replace_dialog(self):
         """Open a dialog to replace text in the code editor."""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Replace")
-        layout = QVBoxLayout()
+        if self.find_dialog is not None:
+            self.find_dialog.show()
+            self.find_dialog.activateWindow()
+            self.find_dialog.raise_()
+            return
+        self.find_dialog = QDialog(self)
+        self.find_dialog.setWindowFlags(
+            Qt.WindowType.Dialog
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
+        self.find_dialog.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.find_dialog.setWindowTitle("Find and Replace")
+        layout = QVBoxLayout(self.find_dialog)
+
+        self.find_dialog.setStyleSheet("""
+            QDialog, QWidget {
+                background-color: palette(window);
+                color: palette(windowText);
+            }
+            QLabel, QCheckBox {
+                color: palette(windowText);
+            }
+            QLineEdit {
+                background-color: palette(base);
+                color: palette(text);
+                border: 1px solid palette(mid);
+                padding: 5px;
+                border-radius: 3px;
+            }
+            QPushButton {
+                background-color: palette(button);
+                color: palette(buttonText);
+                border: 1px solid palette(mid);
+                padding: 5px 10px;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: palette(light);
+            }
+            QPushButton:pressed {
+                background-color: palette(dark);
+            }
+        """)
 
         find_layout = QHBoxLayout()
-        find_layout.addWidget(QLabel("Find:"))
-        find_edit = QLineEdit()
-        find_layout.addWidget(find_edit)
+        find_label = QLabel("Find:")
+        self.find_edit: QLineEdit = QLineEdit()
+        find_layout.addWidget(find_label)
+        find_layout.addWidget(self.find_edit)
         layout.addLayout(find_layout)
 
         replace_layout = QHBoxLayout()
-        replace_layout.addWidget(QLabel("Replace:"))
-        replace_edit = QLineEdit()
-        replace_layout.addWidget(replace_edit)
+        replace_label = QLabel("Replace:")
+        self.replace_edit: QLineEdit = QLineEdit()
+        replace_layout.addWidget(replace_label)
+        replace_layout.addWidget(self.replace_edit)
         layout.addLayout(replace_layout)
 
+        options_layout = QHBoxLayout()
+        self.case_sensitive: QCheckBox = QCheckBox("Case sensitive")
+        self.whole_words: QCheckBox = QCheckBox("Whole words")
+        self.regex: QCheckBox = QCheckBox("Regular expression")
+        options_layout.addWidget(self.case_sensitive)
+        options_layout.addWidget(self.whole_words)
+        options_layout.addWidget(self.regex)
+        layout.addLayout(options_layout)
+
         button_layout = QHBoxLayout()
+        find_button = QPushButton("Find")
         replace_button = QPushButton("Replace")
         replace_all_button = QPushButton("Replace All")
+        button_layout.addWidget(find_button)
         button_layout.addWidget(replace_button)
         button_layout.addWidget(replace_all_button)
         layout.addLayout(button_layout)
 
-        dialog.setLayout(layout)
-        splitter = QSplitter(self)
-        splitter.setOrientation(Qt.Orientation.Vertical)
-        splitter.setSizes([400, 100])
-        layout.addWidget(splitter)
+        find_button.clicked.connect(self.find_next)
+        replace_button.clicked.connect(self.replace_next)
+        replace_all_button.clicked.connect(self.replace_all)
 
-        def do_replace(all_occurrences: bool = False):  # noqa: FBT001, FBT002
-            find_text = find_edit.text()
-            replace_text = replace_edit.text()
-            cursor = self.textCursor()
+        self.find_dialog.setMinimumWidth(400)
+        self.find_dialog.show()
 
-            if all_occurrences:
-                cursor.beginEditBlock()
-                cursor.movePosition(QTextCursor.MoveOperation.Start)
-                while cursor.hasSelection() or cursor.movePosition(QTextCursor.MoveOperation.NextWord):
-                    cursor.select(QTextCursor.SelectionType.WordUnderCursor)
-                    if cursor.selectedText() == find_text:
-                        cursor.insertText(replace_text)
-                cursor.endEditBlock()
-            elif cursor.hasSelection() and cursor.selectedText() == find_text:
-                cursor.insertText(replace_text)
-            else:
-                cursor = self.document().find(find_text, cursor)
-                if not cursor.isNull():
-                    cursor.insertText(replace_text)
+    def find_next(self):
+        flags = QTextDocument.FindFlag.FindWholeWords
+        flags &= ~QTextDocument.FindFlag.FindWholeWords
+        if self.case_sensitive.isChecked():
+            flags |= QTextDocument.FindFlag.FindCaseSensitively
+        if self.whole_words.isChecked():
+            flags |= QTextDocument.FindFlag.FindWholeWords
 
-            self.setTextCursor(cursor)
+        find_text = self.find_edit.text()
+        if self.regex.isChecked():
+            find_text = QRegExp(find_text) if qtpy.QT5 else QRegularExpression(find_text)
 
-        replace_button.clicked.connect(lambda: do_replace(False))
-        replace_all_button.clicked.connect(lambda: do_replace(True))
+        cursor: QTextCursor = self.textCursor()
+        new_cursor: QTextCursor = self.document().find(find_text, cursor, flags)  # pyright: ignore[reportArgumentType, reportCallIssue]
+        if not new_cursor.isNull():
+            self.setTextCursor(new_cursor)
+        else:
+            QMessageBox.information(self, "Find", "Text not found")
 
-        dialog.exec()
+    def replace_next(self):
+        cursor: QTextCursor = self.textCursor()
+        if cursor.hasSelection():
+            cursor.insertText(self.replace_edit.text())
+        self.find_next()
+
+    def replace_all(self):
+        cursor: QTextCursor = self.textCursor()
+        cursor.beginEditBlock()
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+        count: int = 0
+        while True:
+            self.find_next()
+            if not self.textCursor().hasSelection():
+                break
+            self.textCursor().insertText(self.replace_edit.text())
+            count += 1
+        cursor.endEditBlock()
+        QMessageBox.information(self, "Replace All", f"Replaced {count} occurrences")
 
     def on_outline_item_clicked(self, item: QTreeWidgetItem, column: int):
         obj: FunctionDefinition | None = item.data(0, Qt.ItemDataRole.UserRole)
         if obj is None:
             RobustLogger().error(f"Outline item '{item.text(0)}' has no function definition")
             return
-        cursor = self.textCursor()
+        cursor: QTextCursor = self.textCursor()
         cursor.setPosition(obj.line_num)
         self.setTextCursor(cursor)
         self.ensureCursorVisible()
 
     def on_outline_item_double_clicked(self, item: QTreeWidgetItem, column: int):
-        obj = item.data(0, Qt.ItemDataRole.UserRole)
+        obj: FunctionDefinition | None = item.data(0, Qt.ItemDataRole.UserRole)
         if obj is None:
             return
         assert isinstance(obj, FunctionDefinition)
-        cursor = self.textCursor()
+        cursor: QTextCursor = self.textCursor()
         cursor.setPosition(obj.line_num)
         self.setTextCursor(cursor)
         self.centerCursor()
@@ -415,71 +474,33 @@ class CodeEditor(QPlainTextEdit):
         line, ok = QInputDialog.getInt(self, "Go to Line", "Enter line number:", 1, step=1)
         if not ok:
             return
-        block = self.document().findBlockByLineNumber(line - 1)
+        block: QTextBlock = self.document().findBlockByLineNumber(line - 1)
         if block.isValid():
-            cursor = QTextCursor(block)
+            cursor: QTextCursor = QTextCursor(block)
             self.setTextCursor(cursor)
             self.centerCursor()
-
-    def search(self):
-        from toolset.gui.editors.nss import NSSEditor
-
-        search_text = cast(NSSEditor, self.parent()).ui.searchBar.text()
-        if not search_text:
-            return
-
-        document = self.document()
-        cursor = document.find(search_text, self.textCursor())
-        if cursor.isNull():
-            cursor = document.find(search_text, 0)
-        if not cursor.isNull():
-            self.setTextCursor(cursor)
-
-    def show_context_menu(self, pos: QPoint):
-        menu = self.createStandardContextMenu()
-        go_to_definition_action = QAction("Go to Definition", self)
-        go_to_definition_action.triggered.connect(self.go_to_definition)
-        menu.addAction(go_to_definition_action)
-        menu.exec(self.mapToGlobal(pos))
-
-    def go_to_definition(self):
-        cursor = self.textCursor()
-        word = cursor.selectedText()
-        if not word:
-            cursor.select(QTextCursor.SelectionType.WordUnderCursor)
-            word = cursor.selectedText()
-
-        if word:
-            from toolset.gui.editors.nss import NSSEditor
-
-            for obj in cast(NSSEditor, self.parent()).ui.outlineView.findItems(word, Qt.MatchFlag.MatchRecursive):  # pyright: ignore[reportArgumentType]
-                if obj.data(0, Qt.ItemDataRole.UserRole):
-                    self.on_outline_item_double_clicked(obj, 0)  # pyright: ignore[reportArgumentType]
-                    break
 
     def duplicate_line(self):
         """Duplicate the current line or selected lines."""
         cursor: QTextCursor = self.textCursor()
         if cursor.hasSelection():
-            start = cursor.selectionStart()
-            end = cursor.selectionEnd()
-            cursor.setPosition(start)
+            cursor.setPosition(cursor.selectionStart())
             cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
-            cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
+            cursor.setPosition(cursor.selectionEnd(), QTextCursor.MoveMode.KeepAnchor)
             cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
         else:
             cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
             cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
 
-        text = cursor.selectedText()
+        text: str = cursor.selectedText()
         cursor.movePosition(QTextCursor.MoveOperation.EndOfLine)
         cursor.insertText("\n" + text)
         self.setTextCursor(cursor)
 
     def change_text_size(self, increase: bool = True):  # noqa: FBT001, FBT002
         """Change the font size of the code editor."""
-        font = self.font()
-        size = font.pointSize()
+        font: QFont = self.font()
+        size: int = font.pointSize()
         if increase:
             size += 1
         else:
@@ -492,8 +513,8 @@ class CodeEditor(QPlainTextEdit):
         cursor: QTextCursor = self.textCursor()
         document: QTextDocument = self.document()
 
-        start_block = document.findBlock(cursor.selectionStart())
-        end_block = document.findBlock(cursor.selectionEnd())
+        start_block: QTextBlock = document.findBlock(cursor.selectionStart())
+        end_block: QTextBlock = document.findBlock(cursor.selectionEnd())
 
         if direction == "up" and start_block.blockNumber() == 0:
             return
@@ -539,8 +560,7 @@ class CodeEditor(QPlainTextEdit):
         elif (
             self.completer
             and self.completer.popup().isVisible()
-            and event.key()
-            in (
+            and event.key() in (
                 Qt.Key.Key_Enter,
                 Qt.Key.Key_Return,
                 Qt.Key.Key_Escape,
@@ -548,18 +568,19 @@ class CodeEditor(QPlainTextEdit):
                 Qt.Key.Key_Backtab,
             )
         ):
-            event.ignore()
+            self.insert_completion(self.completer.currentCompletion())
+            self.completer.popup().hide()
             return
 
         super().keyPressEvent(event)
 
-        ctrl_or_shift = event.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
+        ctrl_or_shift: Qt.KeyboardModifier = event.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
         if self.completer is None or (bool(ctrl_or_shift) and len(event.text()) == 0):
             return
 
-        eow = "~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="
-        has_modifier = (event.modifiers() != Qt.KeyboardModifier.NoModifier) and not bool(ctrl_or_shift)
-        completion_prefix = self.text_under_cursor()
+        eow: str = "~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="
+        has_modifier: bool = (event.modifiers() != Qt.KeyboardModifier.NoModifier) and not bool(ctrl_or_shift)
+        completion_prefix: str = self.text_under_cursor()
 
         if (
             has_modifier
@@ -574,7 +595,7 @@ class CodeEditor(QPlainTextEdit):
             self.completer.setCompletionPrefix(completion_prefix)
             self.completer.popup().setCurrentIndex(self.completer.completionModel().index(0, 0))
 
-        cr = self.cursorRect()
+        cr: QRect = self.cursorRect()
         cr.setWidth(self.completer.popup().sizeHintForColumn(0) + self.completer.popup().verticalScrollBar().sizeHint().width())
         self.completer.complete(cr)
 
@@ -582,15 +603,6 @@ class CodeEditor(QPlainTextEdit):
         if self.completer:
             self.completer.setWidget(self)
         super().focusInEvent(event)
-
-    def set_modified_lines(self, lines: list[int]):
-        self.modified_lines: set[int] = set(lines)
-        self._line_number_area.update()
-
-    def set_git_lines(self, added_lines: list[int], modified_lines: list[int]):
-        self.git_added_lines: set[int] = set(added_lines)
-        self.git_modified_lines: set[int] = set(modified_lines)
-        self._line_number_area.update()
 
 
 class LineNumberArea(QWidget):
@@ -601,7 +613,7 @@ class LineNumberArea(QWidget):
     def sizeHint(self) -> QSize:
         return QSize(self._editor.line_number_area_width(), 0)
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QPaintEvent):
         self._editor.line_number_area_paint_event(event)
 
 
@@ -644,7 +656,7 @@ class WebViewEditor(QWidget):
         try:
             from qtpy.QtWebEngineWidgets import QWebEngineView  # pyright: ignore[reportPrivateImportUsage]
 
-            self.web_view = QWebEngineView(self)
+            self.web_view: QWebEngineView = QWebEngineView(self)
             layout.addWidget(self.web_view)
         except ImportError:
             label = QLabel("WebEngine not available. Please install QtWebEngine.", self)

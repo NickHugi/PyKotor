@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple, cast
 
 import qtpy
@@ -27,7 +28,6 @@ from qtpy.QtWidgets import (
 )
 
 from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tlk import read_tlk
@@ -314,7 +314,7 @@ class InventoryEditor(QDialog):
             uti = read_uti(bif_result.data)
             name = self._installation.string(uti.name, "[No Name]")
         else:
-            uti = read_uti(BinaryReader.load_file(filepath))
+            uti = read_uti(Path(filepath).read_bytes())
         return str(filepath), name, uti
 
     def set_equipment(

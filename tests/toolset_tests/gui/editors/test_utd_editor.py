@@ -16,8 +16,10 @@ except (ImportError, ModuleNotFoundError):
 absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
-if getattr(sys, "frozen", False) is False:
-
+if (
+    __name__ == "__main__"
+    and getattr(sys, "frozen", False) is False
+):
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -81,7 +83,7 @@ class UTDEditorTest(TestCase):
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "naldoor001.utd"
 
-        data = BinaryReader.load_file(filepath)
+        data = filepath.read_bytes()
         old = read_gff(data)
         self.editor.load(filepath, "naldoor001", ResourceType.UTD, data)
 

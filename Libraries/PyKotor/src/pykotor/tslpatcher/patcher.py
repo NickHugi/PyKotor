@@ -93,7 +93,7 @@ class ModInstaller:
         if self._config is not None:
             return self._config
 
-        ini_file_bytes: bytes = BinaryReader.load_file(self.changes_ini_path)
+        ini_file_bytes: bytes = self.changes_ini_path.read_bytes()
         ini_text: str
         try:
             ini_text = decode_bytes_with_fallbacks(ini_file_bytes)

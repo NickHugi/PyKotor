@@ -111,7 +111,7 @@ class UTMEditor(Editor):
         self._utm = utm
 
         # Basic
-        self.ui.nameEdit.setLocstring(utm.name)
+        self.ui.nameEdit.set_locstring(utm.name)
         self.ui.tagEdit.setText(utm.tag)
         self.ui.resrefEdit.setText(str(utm.resref))
         self.ui.idSpin.setValue(utm.id)

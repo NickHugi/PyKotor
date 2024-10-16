@@ -16,8 +16,10 @@ except (ImportError, ModuleNotFoundError):
 absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
-if getattr(sys, "frozen", False) is False:
-
+if (
+    __name__ == "__main__"
+    and getattr(sys, "frozen", False) is False
+):
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -41,7 +43,6 @@ if getattr(sys, "frozen", False) is False:
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
-from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.resource.type import ResourceType
 
@@ -79,7 +80,7 @@ class TLKEditorTest(TestCase):
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "../toolset_tests/files/dialog.tlk"
 
-        data = BinaryReader.load_file(filepath)
+        data = filepath.read_bytes()
         old = read_tlk(data)
         self.editor.load(filepath, "dialog", ResourceType.TLK, data)
 

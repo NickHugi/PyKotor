@@ -178,7 +178,7 @@ class UTDEditor(Editor):
         self._utd = utd
 
         # Basic
-        self.ui.nameEdit.setLocstring(utd.name)
+        self.ui.nameEdit.set_locstring(utd.name)
         self.ui.tagEdit.setText(utd.tag)
         self.ui.resrefEdit.setText(str(utd.resref))
         self.ui.appearanceSelect.setCurrentIndex(utd.appearance_id)

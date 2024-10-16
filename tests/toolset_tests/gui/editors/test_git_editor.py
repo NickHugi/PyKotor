@@ -14,8 +14,10 @@ except (ImportError, ModuleNotFoundError):
 
 TESTS_FILES_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "tests") / "files"
 
-
-if getattr(sys, "frozen", False) is False:
+if (
+    __name__ == "__main__"
+    and getattr(sys, "frozen", False) is False
+):
     pykotor_path = pathlib.Path(__file__).parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         working_dir = str(pykotor_path.parent)
@@ -85,7 +87,7 @@ class GITEditorTest(TestCase):
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "zio001.git"
 
-        data = BinaryReader.load_file(filepath)
+        data = filepath.read_bytes()
         old = read_gff(data)
         self.editor.load(filepath, "zio001", ResourceType.GIT, data)
 

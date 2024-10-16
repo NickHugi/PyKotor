@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Collection, NoReturn
+from typing import TYPE_CHECKING, Collection, List, NoReturn, cast
 
 from ply import yacc
 
@@ -58,8 +58,6 @@ from pykotor.resource.formats.ncs.compiler.classes import (
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 if TYPE_CHECKING:
-    from ply.lex import LexToken
-
     from pykotor.common.script import ScriptConstant, ScriptFunction
     from pykotor.resource.formats.ncs.compiler.classes import Expression
 
@@ -93,7 +91,7 @@ class NssParser:
     tokens: list[str] = NssLexer.tokens
     literals: list[str] = NssLexer.literals
 
-    precedence = (
+    precedence: tuple[tuple[str, ...], ...] = (
         ("left", "OR"),
         ("left", "AND"),
         ("left", "BITWISE_OR"),
@@ -108,18 +106,19 @@ class NssParser:
         ("left", "INCREMENT", "DECREMENT"),
     )
 
-    def p_error(self, p: LexToken) -> NoReturn:
+    def p_error(self, p) -> NoReturn:
         msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"
         raise CompileError(msg)
 
-    def p_code_root(self, p: LexToken):
+    def p_code_root(self, p):
         """
         code_root : code_root code_root_object
                   |
         """  # noqa: D205, D415, D400, D212
         if len(p) == 3:
-            p[1].objects.append(p[2])
-            p[0] = p[1]
+            code_root = cast(CodeRoot, p[1])
+            code_root.objects.append(p[2])
+            p[0] = code_root
         else:
             p[0] = CodeRoot(
                 constants=self.constants, functions=self.functions, library_lookup=self.library_lookup, library=self.library
@@ -147,8 +146,8 @@ class NssParser:
         struct_members : struct_members struct_member
                        |
         """  # noqa: D415, D400, D212, D205
-        if len(p) == 3:
-            p[1].append(p[2])
+        if len(p) == 3:  # noqa: PLR2004
+            cast(List, p[1]).append(p[2])
             p[0] = p[1]
         else:
             p[0] = []
@@ -187,7 +186,15 @@ class NssParser:
         """
         function_definition : data_type IDENTIFIER '(' function_definition_params ')' '{' code_block '}'
         """  # noqa: D200, D400, D212, D415
-        p[0] = FunctionDefinition(p[1], p[2], p[4], p[7], p.lineno(1))
+        rtype = p[1]
+        name = p[2]
+        params = p[4]
+        block = p[7]
+        assert isinstance(rtype, DynamicDataType), f"Expected DynamicDataType, got {rtype}"
+        assert isinstance(name, Identifier), f"Expected Identifier, got {name}"
+        assert isinstance(params, list), f"Expected list[FunctionDefinitionParam], got {params}"
+        assert isinstance(block, CodeBlock), f"Expected CodeBlock, got {block}"
+        p[0] = FunctionDefinition(rtype, name, params, block, p.lineno(2))
 
     def p_function_definition_params(self, p):
         """
@@ -196,7 +203,7 @@ class NssParser:
                                    |
         """  # noqa: D400, D212, D415, D205
         if len(p) == 4:
-            p[1].append(p[3])
+            cast(List, p[1]).append(p[3])
             p[0] = p[1]
         elif len(p) == 2:
             p[0] = [p[1]]

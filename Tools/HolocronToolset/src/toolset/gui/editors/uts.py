@@ -131,7 +131,7 @@ class UTSEditor(Editor):
         self._uts = uts
 
         # Basic
-        self.ui.nameEdit.setLocstring(uts.name)
+        self.ui.nameEdit.set_locstring(uts.name)
         self.ui.tagEdit.setText(uts.tag)
         self.ui.resrefEdit.setText(str(uts.resref))
         self.ui.volumeSlider.setValue(uts.volume)

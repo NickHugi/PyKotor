@@ -4,8 +4,8 @@ import sys
 
 from pathlib import Path
 
-from PySide2.QtGui import QGuiApplication
-from PySide2.QtQml import QQmlApplicationEngine
+from qtpy.QtGui import QGuiApplication
+from qtpy.QtQml import QQmlApplicationEngine
 
 if __name__ == "__main__":
     app = QGuiApplication(sys.argv)

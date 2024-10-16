@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from PyQt5.QtCore import Qt
+from qtpy.QtCore import Qt
 
 if TYPE_CHECKING:
     from utility.ui_libraries.qt.filesystem.common.untested.pyfilesystemmodel import PyFileSystemNode

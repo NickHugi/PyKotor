@@ -179,7 +179,7 @@ class UTPEditor(Editor):
         self._utp: UTP = utp
 
         # Basic
-        self.ui.nameEdit.setLocstring(utp.name)
+        self.ui.nameEdit.set_locstring(utp.name)
         self.ui.tagEdit.setText(utp.tag)
         self.ui.resrefEdit.setText(str(utp.resref))
         self.ui.appearanceSelect.setCurrentIndex(utp.appearance_id)

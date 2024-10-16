@@ -7,7 +7,6 @@ from qtpy import API_NAME
 from qtpy.QtCore import QUrl, Qt
 from qtpy.QtGui import QDesktopServices, QKeySequence
 
-from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.rim import read_rim
 from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
@@ -225,16 +224,16 @@ def getResourceFromFile(
         - Returns the resource data or None.
     """
     data: bytes | None = None
-    c_filepath = Path(filepath)
+    r_filepath = Path(filepath)
 
-    if is_any_erf_type_file(c_filepath.name):
+    if is_any_erf_type_file(r_filepath.name):
         erf: ERF = read_erf(filepath)
         data = erf.get(resname, restype)
-    elif is_rim_file(c_filepath.name):
+    elif is_rim_file(r_filepath.name):
         rim: RIM = read_rim(filepath)
         data = rim.get(resname, restype)
     else:
-        data = BinaryReader.load_file(filepath)
+        data = r_filepath.read_bytes()
 
     if data is None:
         msg = "Could not find resource in RIM/ERF"

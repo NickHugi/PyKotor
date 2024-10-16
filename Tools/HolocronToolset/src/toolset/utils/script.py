@@ -10,7 +10,7 @@ from loggerplus import RobustLogger
 from qtpy.QtWidgets import QFileDialog, QMessageBox
 
 from pykotor.common.misc import Game
-from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.compilers import (
@@ -48,7 +48,7 @@ class NoOpRegistrySpoofer:
         log.debug(f"NoOpRegistrySpoofer.__exit__({exc_type}, {exc_val}, {exc_tb})")
 
 
-def decompileScript(
+def ht_decompile_script(
     compiled_bytes: bytes,
     installation_path: Path,
     *,
@@ -96,7 +96,7 @@ def decompileScript(
 
     tempscript_filestem = f"tempscript_{uuid.uuid1().hex[:7]}"
     tempCompiledPath = extract_path / f"{tempscript_filestem}.ncs"
-    tempDecompiledPath = extract_path / f"{tempscript_filestem}_decompiled.txt"
+    temp_decompiled_path = extract_path / f"{tempscript_filestem}_decompiled.txt"
     BinaryWriter.dump(tempCompiledPath, compiled_bytes)
 
     gameEnum: Game = Game.K2 if tsl else Game.K1
@@ -113,18 +113,18 @@ def decompileScript(
         reg_spoofer = NoOpRegistrySpoofer()
     try:
         with reg_spoofer:
-            stdout, stderr = extCompiler.decompile_script(tempCompiledPath, tempDecompiledPath, gameEnum)
+            stdout, stderr = extCompiler.decompile_script(tempCompiledPath, temp_decompiled_path, gameEnum)
     except PermissionError as e:
         handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
         # Attempt to decompile anyway.
-        stdout, stderr = extCompiler.decompile_script(tempCompiledPath, tempDecompiledPath, gameEnum)
+        stdout, stderr = extCompiler.decompile_script(tempCompiledPath, temp_decompiled_path, gameEnum)
     except Exception:
         log.exception("Exception in extCompiler.decompile_script() call.")
         raise
     log.debug("stdout: %s\nstderr: %s", stdout, stderr)
     if stderr:
         raise ValueError(stderr)  # noqa: TRY301
-    return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
+    return temp_decompiled_path.read_text(encoding="windows-1252")
 
 def setupExtractPath() -> Path:
     global_settings = GlobalSettings()
@@ -138,7 +138,7 @@ def setupExtractPath() -> Path:
             raise NoConfigurationSetError(msg)
     return extract_path
 
-def compileScript(
+def ht_compile_script(
     source: str,
     installation_path: Path,
     *,
@@ -169,17 +169,17 @@ def compileScript(
     global_settings = GlobalSettings()
     extract_path = setupExtractPath()
 
-    returnValue: int | None = None
+    return_value: int | None = None
     if os.name == "nt":
-        returnValue = _prompt_user_for_compiler_option()
+        return_value = _prompt_user_for_compiler_option()
 
-    if os.name == "posix" or returnValue == QMessageBox.StandardButton.Yes:
+    if os.name == "posix" or return_value == QMessageBox.StandardButton.Yes:
         log.debug("user chose Yes, compiling with builtin")
         return bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1, library_lookup=[extract_path]))
-    if returnValue == QMessageBox.StandardButton.No:
+    if return_value == QMessageBox.StandardButton.No:
         log.debug("user chose No, compiling with nwnnsscomp")
         return _execute_nwnnsscomp_compile(global_settings, extract_path, source, installation_path, tsl=tsl)
-    if returnValue is not None:  # user cancelled
+    if return_value is not None:  # user cancelled
         log.debug("user exited")
         return None
 
@@ -224,7 +224,7 @@ def _prompt_additional_include_dirs(
             new_include_script_path = extract_path / file.name
 
             log.info("Copying include script '%s' to '%s'", file, new_include_script_path)
-            BinaryWriter.dump(new_include_script_path, BinaryReader.load_file(file))
+            new_include_script_path.write_bytes(file.read_bytes())
 
         stdout, stderr = extCompiler.compile_script(tempSourcePath, tempCompiledPath, gameEnum)
         log.debug("stdout: %s\nstderr: %s", stdout, stderr)
@@ -253,7 +253,7 @@ def _execute_nwnnsscomp_compile(
     tempscript_filestem = f"tempscript_{uuid.uuid1().hex[:7]}"
     tempSourcePath = extract_path / f"{tempscript_filestem}.nss"
     tempCompiledPath = extract_path / f"{tempscript_filestem}.ncs"
-    BinaryWriter.dump(tempSourcePath, source.encode())
+    tempSourcePath.write_text(source)
 
     gameEnum: Game = Game.K2 if tsl else Game.K1
     extCompiler = ExternalNCSCompiler(global_settings.nssCompilerPath)
@@ -311,7 +311,7 @@ def _execute_nwnnsscomp_compile(
     if not tempCompiledPath.is_file():
         import errno
         raise FileNotFoundError(errno.ENOENT, "Could not find the temp compiled script!", str(tempCompiledPath))  # noqa: TRY003, EM102
-    return BinaryReader.load_file(tempCompiledPath)
+    return tempCompiledPath.read_bytes()
 
 
 def handle_permission_error(

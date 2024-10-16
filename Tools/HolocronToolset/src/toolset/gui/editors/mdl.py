@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from qtpy.QtWidgets import QMessageBox
 
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.mdl.mdl_auto import read_mdl, write_mdl
@@ -85,7 +84,7 @@ class MDLEditor(Editor):
         if restype is ResourceType.MDL:
             mdl_data = data
             if c_filepath.suffix.lower() == ".mdl":
-                mdx_data = BinaryReader.load_file(c_filepath.with_suffix(".mdx"))
+                mdx_data = c_filepath.with_suffix(".mdx").read_bytes()
             elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)
                 mdx_data = erf.get(resref, ResourceType.MDX)
@@ -97,7 +96,7 @@ class MDLEditor(Editor):
         elif restype is ResourceType.MDX:
             mdx_data = data
             if c_filepath.suffix.lower() == ".mdx":
-                mdl_data = BinaryReader.load_file(c_filepath.with_suffix(".mdl"))
+                mdl_data = c_filepath.with_suffix(".mdl").read_bytes()
             elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)
                 mdl_data = erf.get(resref, ResourceType.MDL)

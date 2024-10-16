@@ -4,6 +4,7 @@ import math
 import os
 import time
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Sequence, cast
 
 import qtpy
@@ -38,7 +39,6 @@ from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from pykotor.tools.misc import is_mod_file
-from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
@@ -54,7 +54,6 @@ from toolset.utils.window import open_resource_editor
 from utility.error_handling import safe_repr
 
 if TYPE_CHECKING:
-    from pathlib import Path
 
     from glm import vec3
     from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
@@ -92,7 +91,7 @@ def run_module_designer(
     designer_ui = ModuleDesigner(
         None,
         HTInstallation(active_path, active_name, tsl=active_tsl),
-        CaseAwarePath(module_path) if module_path is not None else None,
+        Path(module_path) if module_path is not None else None,
     )
     # Standardized resource path format
     icon_path = ":/images/icons/sith.png"
@@ -527,7 +526,7 @@ class ModuleDesigner(QMainWindow):
             editor.sig_saved_file.connect(lambda: self._on_saved_resource(resource))
 
     def copy_resource_to_override(self, resource: ModuleResource):
-        location: CaseAwarePath = self._installation.override_path() / f"{resource.identifier()}"
+        location = self._installation.override_path() / f"{resource.identifier()}"
         data = resource.data()
         if data is None:
             RobustLogger().error(f"Cannot find resource {resource.identifier()} anywhere to copy to Override. Locations: {resource.locations()}")
@@ -1039,7 +1038,7 @@ class ModuleDesigner(QMainWindow):
             location_action.triggered.connect(lambda _=None, loc=location: self.activate_resource_file(data, loc))
             if location == data.active():
                 location_action.setEnabled(False)
-            if os.path.commonpath([str(location), str(self._installation.override_path())]) == str(self._installation.override_path()):
+            if os.path.commonpath([str(location.absolute()), str(self._installation.override_path())]) == str(self._installation.override_path()):
                 copy_to_override_action.setEnabled(False)
             menu.addAction(location_action)
 

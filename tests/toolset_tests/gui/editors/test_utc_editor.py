@@ -14,8 +14,10 @@ except (ImportError, ModuleNotFoundError):
 
 TESTS_FILES_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "tests") / "files"
 
-if getattr(sys, "frozen", False) is False:
-
+if (
+    __name__ == "__main__"
+    and getattr(sys, "frozen", False) is False
+):
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir not in sys.path:
@@ -77,7 +79,7 @@ class UTCEditorTest(TestCase):
     def test_save_and_load(self):  # sourcery skip: class-extract-method
         filepath = TESTS_FILES_PATH / "../toolset_tests/files/p_hk47.utc"
 
-        data = BinaryReader.load_file(filepath)
+        data = filepath.read_bytes()
         old = read_gff(data)
         self.editor.load(filepath, "p_hk47", ResourceType.UTC, data)
 
@@ -90,7 +92,7 @@ class UTCEditorTest(TestCase):
     def test_save_and_load_validate(self):
         filepath = TESTS_FILES_PATH / "test.utc"
 
-        data = BinaryReader.load_file(filepath)
+        data = filepath.read_bytes()
         old = read_gff(data)
         self.editor.load(filepath, "p_hk47", ResourceType.UTC, data)
 

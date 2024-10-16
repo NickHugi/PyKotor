@@ -7,7 +7,10 @@ from abc import abstractmethod
 from enum import Flag
 from typing import TYPE_CHECKING
 
-from qtpy.QtCore import QObject, Signal
+from qtpy.QtCore import (
+    QObject,
+    Signal,  # pyright: ignore[reportPrivateImportUsage]
+)
 from qtpy.QtGui import QColor, QFont
 from qtpy.QtWidgets import QFileDialog, QMessageBox, QStyle
 
@@ -27,14 +30,14 @@ class QPlatformDialogHelper(QObject):
         new_cls: type[Self] = cls
         if cls is QPlatformDialogHelper:
             if sys.platform == ("win32", "cygwin"):
-                from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qwindowsdialoghelpers import QWindowsDialogHelper
-                new_cls = QWindowsDialogHelper
+                from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qwindowsdialoghelpers import QWindowsDialogHelper
+                new_cls = QWindowsDialogHelper  # type: ignore[misc]
             elif sys.platform == "linux":
-                from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qlinuxdialoghelpers import LinuxFileDialogHelper
-                new_cls = LinuxFileDialogHelper
+                from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qlinuxdialoghelpers import LinuxFileDialogHelper
+                new_cls = LinuxFileDialogHelper  # type: ignore[misc]
             elif sys.platform == "darwin":
-                from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qmacdialoghelpers import QMacDialogHelper
-                new_cls = QMacDialogHelper
+                from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qmacdialoghelpers import QMacDialogHelper
+                new_cls = QMacDialogHelper  # type: ignore[misc]
             raise NotImplementedError(f"No dialog helper implemented for {sys.platform}")
         return super().__new__(new_cls)
 
@@ -58,7 +61,7 @@ class QPlatformDialogHelper(QObject):
     def isSupportedUrl(self, url: QUrl) -> bool:
         return url.isLocalFile()
 
-    def setOptions(self, options: QFileDialog.Options) -> None:
+    def setOptions(self, options: QFileDialog.Option) -> None:
         self._private.options = options
     def testOption(self, option: QFileDialog.Option) -> bool:
         return self._private.options & option
@@ -105,7 +108,7 @@ class QPlatformFileDialogHelper(QPlatformDialogHelper if TYPE_CHECKING else QObj
 
     FileMode = QFileDialog.FileMode.AnyFile
     AcceptMode = QFileDialog.AcceptMode.AcceptOpen
-    Option = QFileDialog.Options(0)
+    Option = QFileDialog.Option.ReadOnly & ~QFileDialog.Option.ReadOnly
 
     fileSelected = Signal(str)
     filesSelected = Signal(list)
@@ -190,7 +193,7 @@ class QPlatformMessageDialogHelper(QPlatformDialogHelper):
     clickedButton = Signal(int)  # Signal emitted when a button is clicked, passing the button's ID
 
     @abstractmethod
-    def setButtons(self, buttons: StandardButtons):
+    def setButtons(self, buttons: QMessageBox.StandardButton):
         """Set the standard buttons to be displayed in the dialog.
 
         :param buttons: A combination of StandardButtons flags
@@ -198,7 +201,7 @@ class QPlatformMessageDialogHelper(QPlatformDialogHelper):
         ...
 
     @abstractmethod
-    def buttons(self) -> StandardButtons:
+    def buttons(self) -> QMessageBox.StandardButton:
         """Get the current standard buttons set for the dialog.
 
         :return: The current StandardButtons flags
@@ -206,7 +209,7 @@ class QPlatformMessageDialogHelper(QPlatformDialogHelper):
         ...
 
     @abstractmethod
-    def setButtonText(self, button: StandardButton, text: str):
+    def setButtonText(self, button: QMessageBox.StandardButton, text: str):
         """Set custom text for a standard button.
 
         :param button: The StandardButton to modify
@@ -215,7 +218,7 @@ class QPlatformMessageDialogHelper(QPlatformDialogHelper):
         ...
 
     @abstractmethod
-    def buttonText(self, button: StandardButton) -> str:
+    def buttonText(self, button: QMessageBox.StandardButton) -> str:
         """Get the current text of a standard button.
 
         :param button: The StandardButton to query

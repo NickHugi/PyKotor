@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qplatformdialoghelper import QFileDialogPlatformHelper
+from qtpy.QtWidgets import QFileDialog
+
+from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qplatformdialoghelper import QFileDialogPlatformHelper
 
 
 class LinuxFileDialogHelper(QFileDialogPlatformHelper):
@@ -14,11 +16,11 @@ class LinuxFileDialogHelper(QFileDialogPlatformHelper):
             print("GTK is not available. Make sure you have the required dependencies installed.")
             return False
 
-        if self._options.acceptMode() == AcceptMode.AcceptOpen:
+        if self._options.acceptMode() == QFileDialog.AcceptMode.AcceptOpen:
             dialog = Gtk.FileChooserDialog(
                 title="Open File",
                 action=Gtk.FileChooserAction.OPEN
-                if self._options.fileMode() != FileMode.Directory
+                if self._options.fileMode() != QFileDialog.FileMode.Directory
                 else Gtk.FileChooserAction.SELECT_FOLDER,
             )
             dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
@@ -29,7 +31,7 @@ class LinuxFileDialogHelper(QFileDialogPlatformHelper):
             dialog.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
 
         dialog.set_current_folder(self._current_directory)
-        dialog.set_select_multiple(self._options.fileMode() == FileMode.ExistingFiles)
+        dialog.set_select_multiple(self._options.fileMode() == QFileDialog.FileMode.ExistingFiles)
 
         response = dialog.run()
         if response == Gtk.ResponseType.OK:

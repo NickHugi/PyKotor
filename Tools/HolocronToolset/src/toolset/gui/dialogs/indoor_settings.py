@@ -48,7 +48,7 @@ class IndoorMapSettings(QDialog):
         self._indoorMap: IndoorMap = indoorMap
         self._kits: list[Kit] = kits
 
-        self.ui.nameEdit.setLocstring(indoorMap.name)
+        self.ui.nameEdit.set_locstring(indoorMap.name)
         self.ui.colorEdit.setColor(indoorMap.lighting)
         self.ui.warpCodeEdit.setText(indoorMap.moduleId)
 

@@ -141,7 +141,7 @@ class UTTEditor(Editor):
         self._utt = utt
 
         # Basic
-        self.ui.nameEdit.setLocstring(utt.name)
+        self.ui.nameEdit.set_locstring(utt.name)
         self.ui.tagEdit.setText(utt.tag)
         self.ui.resrefEdit.setText(str(utt.resref))
         self.ui.cursorSelect.setCurrentIndex(utt.cursor_id)

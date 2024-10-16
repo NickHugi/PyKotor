@@ -129,11 +129,11 @@ QMatrix = object
 try:
     from qtpy.QtGui import QMatrix
 except ImportError:
-    from PySide2.QtGui import QMatrix  # noqa: F401
+    from qtpy.QtGui import QMatrix  # noqa: F401
 if qtpy.API_NAME == "PySide2":
-    from PySide2.QtCore import QJsonArray, QJsonValue  # noqa: F401
+    from qtpy.QtCore import QJsonArray, QJsonValue  # noqa: F401
 elif qtpy.API_NAME == "PySide6":
-    from PySide6.QtCore import QJsonArray, QJsonValue  # noqa: F401, TCH002
+    from qtpy.QtCore import QJsonArray, QJsonValue  # noqa: F401, TCH002
 
 if TYPE_CHECKING:
     from datetime import date, datetime, time

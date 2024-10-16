@@ -561,7 +561,7 @@ class TaskStatusWidget(QWidget):
 if __name__ == "__main__":
     import sys
 
-    from PyQt6.QtWidgets import QApplication
+    from qtpy.QtWidgets import QApplication
 
     from utility.ui_libraries.qt.filesystem.file_browser.file_system_executor import FileActionsExecutor
 

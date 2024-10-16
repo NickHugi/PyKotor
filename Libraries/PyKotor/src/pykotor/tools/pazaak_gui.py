@@ -4,11 +4,11 @@ import sys
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QColor, QFont, QLinearGradient, QPainter, QPixmap
-from PyQt5.QtMultimedia import QSound
-from PyQt5.QtWidgets import QApplication, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QTextEdit, QVBoxLayout, QWidget
 from playpazaak import CardType, PazaakGame, PazaakInterface, PazaakSideCard
+from qtpy.QtCore import QTimer, Qt
+from qtpy.QtGui import QColor, QFont, QLinearGradient, QPainter, QPixmap
+from qtpy.QtMultimedia import QSound
+from qtpy.QtWidgets import QApplication, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QTextEdit, QVBoxLayout, QWidget
 
 if TYPE_CHECKING:
     from playpazaak import Player

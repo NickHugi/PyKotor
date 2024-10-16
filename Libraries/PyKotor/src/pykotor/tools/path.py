@@ -210,7 +210,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         to_path = os.path.normpath(other)
 
         # Get common prefix
-        common_prefix = os.path.commonpath([from_path, to_path])
+        common_prefix = os.path.commonpath([os.path.abspath(from_path), os.path.abspath(to_path)])  # noqa: PTH100
 
         # Calculate relative path
         from_parts = from_path.split(os.sep)  # noqa: PTH206

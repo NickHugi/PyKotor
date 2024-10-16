@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any, Collection, Generic, TypeVar, TypedDict, 
 from loggerplus import RobustLogger
 
 from pykotor.common.misc import ResRef
-from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
@@ -1554,7 +1553,7 @@ class ModuleResource(Generic[T]):
                 return None
             return resource.data
 
-        return BinaryReader.load_file(active_path)
+        return active_path.read_bytes()
 
     def resource(self) -> T | None:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
@@ -1614,7 +1613,7 @@ class ModuleResource(Generic[T]):
                 self._resource_obj = conversions.get(self._restype, lambda _: None)(resource.data)
 
             else:
-                data = BinaryReader.load_file(active_path)
+                data = active_path.read_bytes()
                 self._resource_obj = conversions.get(self._restype, lambda _: None)(data)
 
         return self._resource_obj
@@ -1645,7 +1644,7 @@ class ModuleResource(Generic[T]):
             ResourceType.WOK: write_bwm,
         }
         result: bytearray = bytearray()
-        conversions.get(self._restype, lambda _: None)(self._resource_obj, result)
+        conversions.get(self._restype, lambda _a, _b: b"")(self._resource_obj, result)
         return bytes(result)
 
     def add_locations(self, filepaths: Iterable[Path]):
@@ -1687,11 +1686,11 @@ class ModuleResource(Generic[T]):
                 self._locations.append(r_filepath)
             self._active = r_filepath
         if self._active is None:
-            RobustLogger().warning("Cannot activate module resource '%s': No locations found.", self.identifier())
+            RobustLogger().warning(f"Cannot activate module resource '{self.identifier()}': No locations found.")
         else:
             other_locations_available = len(self._locations)-1
             other_locations_available_display = f" ({other_locations_available} other locations available)" if other_locations_available else ""
-            RobustLogger().debug("Activating module resource '%s' at filepath '%s'%s", self.identifier(), self._active, other_locations_available_display)
+            RobustLogger().debug(f"Activating module resource '{self.identifier()}' at filepath '{self._active}'{other_locations_available_display}")
         return self._active
 
     def unload(self):
@@ -1790,14 +1789,17 @@ class ModuleResource(Generic[T]):
             write_rim(rim, active_path)
 
         else:
-            BinaryWriter.dump(active_path, conversions.get(self._restype, lambda _: None)(self.resource()))
+            data = conversions.get(self._restype, lambda _: b"")(self.resource())
+            if not data:
+                raise ValueError(f"No conversion available for resource type {self._restype}")
+            active_path.write_bytes(data)
 
-    def _create_anew_in_override(self) -> CaseAwarePath:
+    def _create_anew_in_override(self) -> Path:
         bytedata = self.to_bytes()
         if bytedata is None:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self._installation.override_path().joinpath(self.filename()))
 
-        RobustLogger().warning("Saving ModuleResource '%s' to the Override folder as it does not have any other paths available...", self.identifier())
+        RobustLogger().warning(f"Saving ModuleResource '{self.identifier()}' to the Override folder as it does not have any other paths available...")
         result = self._installation.override_path().joinpath(self.filename())
         with result.open("wb") as f:
             f.write(bytedata)

@@ -26,7 +26,6 @@ from typing import TYPE_CHECKING
 
 from pathlib import Path
 
-from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCSBinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
 
@@ -43,6 +42,8 @@ class TestNCS(TestCase):
         self.validate_io(ncs)
 
         user_profile_path = os.environ.get("USERPROFILE")
+        if not user_profile_path:
+            raise ValueError("USERPROFILE environment variable not set")
         file_path = Path(user_profile_path, "Documents", "ext", "output.ncs")
 
         write_ncs(ncs, file_path)
@@ -53,7 +54,7 @@ class TestNCS(TestCase):
     def validate_io(self, ncs: NCS):
         assert len(ncs.instructions) == 8
 
-        assert BinaryReader.load_file(BINARY_TEST_FILE) == bytes_ncs(ncs)
+        assert Path(BINARY_TEST_FILE).read_bytes() == bytes_ncs(ncs)
 
 
 if __name__ == "__main__":

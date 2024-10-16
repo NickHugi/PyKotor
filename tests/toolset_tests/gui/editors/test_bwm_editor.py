@@ -15,8 +15,10 @@ except (ImportError, ModuleNotFoundError):
 absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
-if getattr(sys, "frozen", False) is False:
-
+if (
+    __name__ == "__main__"
+    and getattr(sys, "frozen", False) is False
+):
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -40,7 +42,6 @@ if getattr(sys, "frozen", False) is False:
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.bwm.bwm_auto import read_bwm
 from pykotor.resource.type import ResourceType
@@ -80,7 +81,7 @@ class BWMEditorTest(TestCase):
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "zio006j.wok"
 
-        data = BinaryReader.load_file(filepath)
+        data = filepath.read_bytes()
         old = read_bwm(data)
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         self.editor.load(filepath, "zio006j", ResourceType.WOK, data)

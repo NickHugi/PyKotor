@@ -86,7 +86,6 @@ from holopatcher.config import (  # noqa: E402
     remoteVersionNewer,
 )
 from pykotor.common.misc import Game  # noqa: E402
-from pykotor.common.stream import BinaryReader  # noqa: E402
 from pykotor.extract.file import ResourceIdentifier  # noqa: E402
 from pykotor.tools.encoding import decode_bytes_with_fallbacks  # noqa: E402
 from pykotor.tools.path import (  # noqa: E402
@@ -1038,11 +1037,11 @@ class HoloPatcher(toga.App):
                 return
 
             if info_rte_path.is_file():
-                data: bytes = BinaryReader.load_file(info_rte_path)
+                data: bytes = info_rte_path.read_bytes()
                 rtf_text: str = decode_bytes_with_fallbacks(data, errors="replace")
                 self.load_rte_content(rtf_text)
             elif info_rtf_path.is_file():
-                data = BinaryReader.load_file(info_rtf_path)
+                data = info_rtf_path.read_bytes()
                 rtf_text = decode_bytes_with_fallbacks(data, errors="replace")
                 self.load_rtf_content(rtf_text)
                 # self.load_rtf_file(info_rtf_path)

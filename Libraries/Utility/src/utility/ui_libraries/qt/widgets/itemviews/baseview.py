@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import qtpy
 
-from PyQt5.QtWidgets import QWhatsThis
 from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QLocale, QMargins, QMetaType, QRect, QSize, Qt
@@ -34,6 +33,7 @@ from qtpy.QtWidgets import (
     QTextEdit,
     QTimeEdit,
     QVBoxLayout,
+    QWhatsThis,
     QWidget,
 )
 

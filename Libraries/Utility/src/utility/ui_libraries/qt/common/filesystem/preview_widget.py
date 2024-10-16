@@ -9,7 +9,7 @@ from qtpy.QtGui import QImage, QPixmap
 from qtpy.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 if TYPE_CHECKING:
-    from PyQt6.QtGui import QIcon
+    from qtpy.QtGui import QIcon
 
 
 class PreviewWidget(QWidget):

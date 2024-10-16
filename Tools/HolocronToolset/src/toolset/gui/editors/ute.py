@@ -155,7 +155,7 @@ class UTEEditor(Editor):
         self._ute = ute
 
         # Basic
-        self.ui.nameEdit.setLocstring(ute.name)
+        self.ui.nameEdit.set_locstring(ute.name)
         self.ui.tagEdit.setText(ute.tag)
         self.ui.resrefEdit.setText(str(ute.resref))
         self.ui.difficultySelect.setCurrentIndex(ute.difficulty_id)

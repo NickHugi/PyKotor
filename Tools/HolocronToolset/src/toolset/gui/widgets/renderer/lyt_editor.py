@@ -52,9 +52,9 @@ if TYPE_CHECKING:
 
 from typing import Any, Dict, Optional
 
-from PyQt5.QtCore import pyqtSignal as Signal
-from PyQt5.QtWidgets import QUndoStack, QWidget
-from PyQt5.uic import loadUi
+from qtpy.QtCore import pyqtSignal as Signal
+from qtpy.QtWidgets import QUndoStack, QWidget
+from qtpy.uic import loadUi
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace

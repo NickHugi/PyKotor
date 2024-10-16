@@ -30,7 +30,7 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from toolset.utils.window import add_window
 
 if TYPE_CHECKING:
-    from pathlib import Path, PurePath
+    from pathlib import Path
 
     from qtpy.QtWidgets import QPlainTextEdit
     from typing_extensions import Literal, Self
@@ -39,7 +39,6 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
-    from pykotor.tools.path import CaseAwarePath
     from toolset.gui.dialogs.inventory import ItemModel
 
 
@@ -171,7 +170,7 @@ class HTInstallation(Installation):
     @_chitin.setter
     def _chitin(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument
     def _load_chitin(self) -> list[FileResource]:
-        chitin_path: CaseAwarePath = self._path / "chitin.key"
+        chitin_path: Path = self._path / "chitin.key"
         return list(Chitin(key_path=chitin_path)) if chitin_path.is_file() else []
 
     @property
@@ -458,7 +457,7 @@ class HTInstallation(Installation):
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 
-    def get_relevant_resources(self, restype: ResourceType, src_filepath: PurePath | None = None) -> set[FileResource]:
+    def get_relevant_resources(self, restype: ResourceType, src_filepath: Path | None = None) -> set[FileResource]:
         """Get relevant resources for a given resource type and source filepath.
 
         This function retrieves relevant resources based on the specified resource type
@@ -493,14 +492,14 @@ class HTInstallation(Installation):
             if res.restype() is restype
         }
 
-        if os.path.commonpath([src_filepath, self.module_path()]) == self.module_path():
+        if os.path.commonpath([src_filepath.absolute(), self.module_path()]) == self.module_path():
             relevant_resources.update(
                 res
                 for cap in Module.find_capsules(self, src_filepath.name, strict=True)
                 for res in cap
                 if res.restype() is restype
             )
-        elif os.path.commonpath([src_filepath, self.override_path()]) == self.override_path():
+        elif os.path.commonpath([src_filepath.absolute(), self.override_path()]) == self.override_path():
             relevant_resources.update(
                 res
                 for reslist in self._modules.values()

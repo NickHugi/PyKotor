@@ -203,7 +203,7 @@ class AREEditor(Editor):
         max_value: int = 100
 
         # Basic
-        self.ui.nameEdit.setLocstring(are.name)
+        self.ui.nameEdit.set_locstring(are.name)
         self.ui.tagEdit.setText(are.tag)
         self.ui.cameraStyleSelect.setCurrentIndex(are.camera_style)
         self.ui.envmapEdit.setText(str(are.default_envmap))

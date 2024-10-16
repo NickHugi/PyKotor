@@ -33,7 +33,7 @@ from qtpy.QtWidgets import (
 )
 
 from pykotor.common.geometry import Vector2, Vector3
-from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.common.stream import BinaryWriter
 from toolset.config import get_remote_toolset_update_info, is_remote_version_newer
 from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
@@ -227,9 +227,9 @@ class IndoorMapBuilder(QMainWindow):
             - Shows an error message on failure.
         """
         filepath, _ = QFileDialog.getOpenFileName(self, "Open Map", "", "Indoor Map File (*.indoor)")
-        if filepath:
+        if filepath and str(filepath).strip():
             try:
-                self._map.load(BinaryReader.load_file(filepath), self._kits)
+                self._map.load(Path(filepath).read_bytes(), self._kits)
                 self._map.rebuildRoomConnections()
                 self._filepath = filepath
                 self._refreshWindowTitle()
@@ -1054,7 +1054,7 @@ class KitDownloader(QDialog):
                     button.setEnabled(True)
                     localKitDict = None
                     try:
-                        localKitDict = json.loads(BinaryReader.load_file(kitPath))
+                        localKitDict = json.loads(kitPath.read_text())
                     except Exception as e:  # noqa: BLE001
                         print(universal_simplify_exception(e), "\n in _setupDownloads for kit update check")
                         button.setText("Missing JSON - click to redownload.")

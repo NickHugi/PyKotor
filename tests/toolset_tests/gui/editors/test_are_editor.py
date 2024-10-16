@@ -41,7 +41,6 @@ if getattr(sys, "frozen", False) is False:
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.resource.type import ResourceType
@@ -80,7 +79,7 @@ class AREEditorTest(TestCase):
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "tat001.are"
 
-        data = BinaryReader.load_file(filepath)
+        data = filepath.read_bytes()
         old = read_gff(data)
         self.editor.load(filepath, "tat001", ResourceType.ARE, data)
 

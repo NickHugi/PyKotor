@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import io
 import json
 import multiprocessing
+import traceback
 
 from contextlib import contextmanager
 from operator import attrgetter
@@ -9,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generator, NamedTuple
 
 from loggerplus import RobustLogger, get_log_directory
 from qtpy.QtCore import QSettings, QStringListModel, Qt
-from qtpy.QtGui import QTextCursor
+from qtpy.QtGui import QKeySequence, QTextCursor
 from qtpy.QtWidgets import (
     QCompleter,
     QDialog,
@@ -18,13 +20,14 @@ from qtpy.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidgetItem,
-    QMessageBox,
-    QShortcut,  # pyright: ignore[reportPrivateImportUsage]
+    QMenu,
+    QMessageBox,  # pyright: ignore[reportPrivateImportUsage]
     QTabBar,
     QTextEdit,
     QToolTip,
     QTreeWidgetItem,
     QVBoxLayout,
+    QWidget,
 )
 
 if __name__ == "__main__":
@@ -37,14 +40,10 @@ if __name__ == "__main__":
         if path_str not in sys.path:
             sys.path.append(path_str)
 
-    here = Path(__file__).parent
-    some_path = here.parent.parent.parent
-    update_path(some_path)
+    update_path(Path(__file__).parent.parent.parent.parent)
 
 
-from qtpy.QtWidgets import QWidget
-
-from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import FileResource
 from pykotor.resource.formats.ncs.compiler.classes import FunctionDefinition, GlobalVariableDeclaration, StructDefinition
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
@@ -56,7 +55,8 @@ from toolset.gui.common.widgets.syntax_highlighter import SyntaxHighlighter
 from toolset.gui.dialogs.github_selector import GitHubFileSelector
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
-from toolset.utils.script import compileScript, decompileScript
+from toolset.utils.script import ht_compile_script, ht_decompile_script
+from toolset.utils.window import open_resource_editor
 from utility.error_handling import universal_simplify_exception
 from utility.misc import is_debug_mode
 from utility.system.path import Path, PurePath
@@ -65,9 +65,17 @@ from utility.updater.github import download_github_file
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtGui import QMouseEvent, QWheelEvent
+    from types import TracebackType
+
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import (
+        QAction,  # pyright: ignore[reportPrivateImportUsage]
+        QMouseEvent,
+        QWheelEvent,
+    )
 
     from pykotor.common.script import ScriptConstant, ScriptFunction
+    from pykotor.resource.formats.ncs.compiler.classes import CodeRoot
     from toolset.data.installation import HTInstallation
 
 
@@ -128,7 +136,6 @@ class NSSEditor(Editor):
         self._update_game_specific_data()
         self._setup_file_explorer()
         self._setup_bookmarks()
-        self._setup_stylesheets()
 
         self.new()
 
@@ -144,16 +151,16 @@ class NSSEditor(Editor):
         line_number = cursor.blockNumber() + 1
         default_description = f"Bookmark at line {line_number}"
 
-        item = QTreeWidgetItem(self.ui.bookmarkTree)  # pyright: ignore[reportCallIssue, reportArgumentType]
+        item = QTreeWidgetItem(self.ui.bookmarkTree)
         item.setText(0, str(line_number))
         item.setText(1, default_description)
         item.setData(0, Qt.ItemDataRole.UserRole, line_number)
 
-        self.ui.bookmarkTree.setCurrentItem(item)  # pyright: ignore[reportCallIssue, reportArgumentType]
-        self.ui.bookmarkTree.editItem(item, 1)  # pyright: ignore[reportCallIssue, reportArgumentType]
+        self.ui.bookmarkTree.setCurrentItem(item)
+        self.ui.bookmarkTree.editItem(item, 1)
 
         # Select the entire text in the editable field
-        editor = self.ui.bookmarkTree.itemWidget(item, 1)  # pyright: ignore[reportCallIssue, reportArgumentType]
+        editor = self.ui.bookmarkTree.itemWidget(item, 1)
         if isinstance(editor, QLineEdit):
             editor.selectAll()
 
@@ -165,8 +172,8 @@ class NSSEditor(Editor):
             return
         for item in selected_items:
             if item is None:
-                    continue
-            index = self.ui.bookmarkTree.indexOfTopLevelItem(item)  # pyright: ignore[reportCallIssue, reportArgumentType]
+                continue
+            index = self.ui.bookmarkTree.indexOfTopLevelItem(item)
             self.ui.bookmarkTree.takeTopLevelItem(index)
         self._save_bookmarks()
 
@@ -199,7 +206,7 @@ class NSSEditor(Editor):
         settings = QSettings()
         bookmarks = json.loads(settings.value("bookmarks", "[]"))  # type: ignore[arg-type]
         for bookmark in bookmarks:
-            item = QTreeWidgetItem(self.ui.bookmarkTree)  # pyright: ignore[reportCallIssue, reportArgumentType]
+            item = QTreeWidgetItem(self.ui.bookmarkTree)
             item.setText(0, str(bookmark["line"]))
             item.setText(1, bookmark["description"])
             item.setData(0, Qt.ItemDataRole.UserRole, bookmark["line"])
@@ -210,7 +217,7 @@ class NSSEditor(Editor):
     def _save_snippets(self):
         snippets = []
         for i in range(self.ui.snippetList.count()):
-            item = self.ui.snippetList.item(i)  # pyright: ignore[reportCallIssue, reportArgumentType]
+            item = self.ui.snippetList.item(i)
             snippets.append(
                 {
                     "name": "" if item is None else item.text(),
@@ -229,14 +236,14 @@ class NSSEditor(Editor):
             return
         item = QListWidgetItem(name)
         item.setData(Qt.ItemDataRole.UserRole, content)
-        self.ui.snippetList.addItem(item)  # pyright: ignore[reportCallIssue, reportArgumentType]
+        self.ui.snippetList.addItem(item)
         self._save_snippets()
 
     def on_remove_snippet(self):
         current_item = self.ui.snippetList.currentItem()
         if not current_item:
             return
-        self.ui.snippetList.takeItem(self.ui.snippetList.row(current_item))  # pyright: ignore[reportCallIssue, reportArgumentType]
+        self.ui.snippetList.takeItem(self.ui.snippetList.row(current_item))
         self._save_snippets()
 
     def insert_snippet(self, item: QListWidgetItem):
@@ -244,71 +251,6 @@ class NSSEditor(Editor):
         cursor = self.ui.codeEdit.textCursor()
         cursor.insertText(content)
         self._save_snippets()
-
-    def _setup_stylesheets(self):
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: palette(window);
-                color: palette(windowText);
-            }
-            QeditorTabs::pane {
-                border: none;
-                background-color: palette(base);
-            }
-            QTabBar::tab {
-                background-color: palette(dark);
-                color: palette(text);
-                padding: 8px 12px;
-                border: none;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-            }
-            QTabBar::tab:selected {
-                background-color: palette(base);
-                color: palette(text);
-            }
-            QTreeView {
-                background-color: palette(base);
-                color: palette(text);
-                border: none;
-            }
-            QTreeView::item {
-                padding: 4px;
-            }
-            QTreeView::item:selected {
-                background-color: palette(highlight);
-                color: palette(highlightedText);
-            }
-            QLineEdit, QTextEdit {
-                background-color: palette(base);
-                color: palette(text);
-                border: 1px solid palette(mid);
-                padding: 2px;
-            }
-            QPushButton {
-                background-color: palette(button);
-                color: palette(buttonText);
-                border: 1px solid palette(mid);
-                padding: 4px 8px;
-                border-radius: 2px;
-            }
-            QPushButton:hover {
-                background-color: palette(light);
-            }
-            QScrollBar:vertical {
-                border: none;
-                background-color: palette(base);
-                width: 14px;
-                margin: 0px 0px 0px 0px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: palette(mid);
-                min-height: 20px;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
-            }
-        """)
 
     def _setupUI(self):
         # Snippets
@@ -344,70 +286,84 @@ class NSSEditor(Editor):
                 color: palette(highlightedText);
             }
         """)
-
-        self.ui.searchBar.setPlaceholderText("Search...")
-        self.ui.searchBar.returnPressed.connect(self.ui.codeEdit.search)
         self.ui.codeEdit.textChanged.connect(self.ui.codeEdit.on_text_changed)
         self.ui.codeEdit.textChanged.connect(self._update_outline)
         if self._is_tsl:
-            self.ui.actionK1.setChecked(False)  # pyright: ignore[reportCallIssue,reportArgumentType]
-            self.ui.actionTSL.setChecked(True)  # pyright: ignore[reportCallIssue,reportArgumentType]
+            self.ui.actionK1.setChecked(False)
+            self.ui.actionTSL.setChecked(True)
         else:
-            self.ui.actionK1.setChecked(True)  # pyright: ignore[reportCallIssue,reportArgumentType]
-            self.ui.actionTSL.setChecked(False)  # pyright: ignore[reportCallIssue,reportArgumentType]
+            self.ui.actionK1.setChecked(True)
+            self.ui.actionTSL.setChecked(False)
         self.ui.actionK1.triggered.connect(self._on_game_changed)
         self.ui.actionTSL.triggered.connect(self._on_game_changed)
+
+        self.ui.mainSplitter.setSizes([999999, 1])
 
         self.completer: QCompleter = QCompleter(self)
         self.completer.setWidget(self.ui.codeEdit)
         self.completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
         self.completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.completer.setWrapAround(False)
+
         self.ui.codeEdit.setMouseTracking(True)
         self.ui.codeEdit.mouseMoveEvent = self._show_hover_documentation
         self.ui.codeEdit.textChanged.connect(self._update_outline)
 
         # Add output tab
         self.outputTab: QWidget = QWidget()
-        self.ui.panelTabs.addTab(self.ui.outputTab, "Output")  # pyright: ignore[reportCallIssue, reportArgumentType]
-        self.outputTextEdit: QTextEdit = QTextEdit(self.ui.outputTab)  # pyright: ignore[reportCallIssue, reportArgumentType]
-        self.outputTextEdit.setReadOnly(True)
-        self.outputLayout: QVBoxLayout = QVBoxLayout(self.ui.outputTab)  # pyright: ignore[reportCallIssue, reportArgumentType]
-        self.outputLayout.addWidget(self.outputTextEdit)
+        self.ui.panelTabs.addTab(self.ui.outputTab, "Output")
+        self.output_text_edit: QTextEdit = QTextEdit(self.ui.outputTab)
+        self.output_text_edit.setReadOnly(True)
+        self.outputLayout: QVBoxLayout = QVBoxLayout(self.ui.outputTab)
+        self.outputLayout.addWidget(self.output_text_edit)
 
         # Add error badge
-        self.errorBadge: QLabel = QLabel(self)
-        self.errorBadge.setStyleSheet("""
+        self.error_badge: QLabel = QLabel(self)
+        self.error_badge.setStyleSheet("""
             background-color: red;
             color: white;
             border-radius: 10px;
             padding: 2px;
         """)
-        self.errorBadge.hide()
+        self.error_badge.hide()
         self._setup_shortcuts()
 
     def _setup_error_reporting(self):
         self.error_count: int = 0
-        tab_bar: QTabBar = self.ui.editorTabs.tabBar()  # pyright: ignore[reportCallIssue, reportAssignmentType]
+        tab_bar: QTabBar = self.ui.panelTabs.tabBar()  # pyright: ignore[reportCallIssue, reportAssignmentType]
         if tab_bar is None:
             return
         tab_bar.setTabButton(
-            self.ui.editorTabs.indexOf(self.ui.outputTab),  # pyright: ignore[reportCallIssue, reportArgumentType]
-            QTabBar.ButtonPosition.RightSide,  # pyright: ignore[reportCallIssue, reportArgumentType]
-            QLabel() if self.errorBadge is None else self.errorBadge  # pyright: ignore[reportCallIssue, reportArgumentType]
+            self.ui.panelTabs.indexOf(self.ui.outputTab),
+            QTabBar.ButtonPosition.RightSide,
+            QLabel() if self.error_badge is None else self.error_badge,
         )
+        self.error_stream: io.StringIO = io.StringIO()
+        sys.stderr = self.error_stream
+
+    def handle_exception(
+        self,
+        exc_type: type[BaseException],
+        exc_value: BaseException,
+        exc_traceback: TracebackType | None,
+    ):
+        tb_list: list[str] = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        self.report_error("".join(tb_list))
 
     def report_error(self, error_message: str):
         self.error_count += 1
-        self.errorBadge.setText(str(self.error_count))
-        self.errorBadge.show()
-        self.outputTextEdit.append(f"Error: {error_message}")
-        self.ui.editorTabs.setCurrentWidget(self.ui.outputTab)  # pyright: ignore[reportCallIssue, reportArgumentType]
+        self.error_badge.setText(str(self.error_count))
+        self.error_badge.show()
+        self.output_text_edit.append(f"Error: {error_message}")
+        self.ui.panelTabs.setCurrentWidget(self.ui.outputTab)
+        self.output_text_edit.append(self.error_stream.getvalue())
+        self.error_stream.truncate(0)
+        self.error_stream.seek(0)
 
     def clear_errors(self):
         self.error_count = 0
-        self.errorBadge.hide()
-        self.outputTextEdit.clear()
+        self.error_badge.hide()
+        self.output_text_edit.clear()
 
     def _on_game_changed(self, index: int):
         self._is_tsl = index == 1
@@ -415,10 +371,11 @@ class NSSEditor(Editor):
 
     def _update_game_specific_data(self):
         # Update constants and functions based on the selected game
-        # DO NOT TAKE THESE OUT OF A TYPE CHECKING BLOCK!!! These are so large they straight up crashed my IDE.
+        # Don't take these out of a type checking block. These are so large they'll lag out your language server in your IDE.
         if not TYPE_CHECKING:
             from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
             from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
+
             self.constants[:] = sorted(TSL_CONSTANTS if self._is_tsl else KOTOR_CONSTANTS, key=attrgetter("name"))
             self.functions[:] = sorted(TSL_FUNCTIONS if self._is_tsl else KOTOR_FUNCTIONS, key=attrgetter("name"))
             self.library = (TSL_LIBRARY if self._is_tsl else KOTOR_LIBRARY).copy()
@@ -440,7 +397,7 @@ class NSSEditor(Editor):
             item = QListWidgetItem(function.name)
             item.setData(Qt.ItemDataRole.UserRole, function)
             try:
-                self.ui.functionList.addItem(item)  # pyright: ignore[reportCallIssue, reportArgumentType]
+                self.ui.functionList.addItem(item)
             except RuntimeError:  # wrapped C/C++ object of type 'QListWidget' has been deleted
                 RobustLogger().warning("Failed to add function to list", exc_info=True)
                 has_error = True
@@ -449,40 +406,142 @@ class NSSEditor(Editor):
             item = QListWidgetItem(constant.name)
             item.setData(Qt.ItemDataRole.UserRole, constant)
             try:
-                self.ui.constantList.addItem(item)  # pyright: ignore[reportCallIssue, reportArgumentType]
+                self.ui.constantList.addItem(item)
             except RuntimeError:  # wrapped C/C++ object of type 'QListWidget' has been deleted
                 RobustLogger().warning("Failed to add constant to list", exc_info=True)
                 has_error = True
 
         if has_error:
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to update lists", "Failed to update the function or constant lists.").exec_()
+            QMessageBox(
+                QMessageBox.Icon.Critical,
+                "Failed to update lists",
+                "Failed to update the function or constant lists.",
+            ).exec_()
 
         self._update_completer_model(self.constants, self.functions)
         self._highlighter.update_rules(is_tsl=self._is_tsl)
 
     def _setup_signals(self):
-        """Sets up signals and slots for the GUI.
-
-        Args:
-        ----
-            self: The class instance.
-        """
         self.ui.actionCompile.triggered.connect(self.compile_current_script)
         self.ui.constantList.doubleClicked.connect(self.insert_selected_constant)
         self.ui.functionList.doubleClicked.connect(self.insert_selected_function)
         self.ui.functionSearchEdit.textChanged.connect(self.on_function_search)
         self.ui.constantSearchEdit.textChanged.connect(self.on_constant_search)
+        self.ui.codeEdit.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.codeEdit.customContextMenuRequested.connect(self.editor_context_menu)
         self.ui.codeEdit.textChanged.connect(self.ui.codeEdit.on_text_changed)
-        self.ui.codeEdit.customContextMenuRequested.connect(self.ui.codeEdit.show_context_menu)
+
+    def editor_context_menu(self, pos: QPoint):
+        menu: QMenu = self.ui.codeEdit.createStandardContextMenu()
+
+        # Navigation
+        menu.addSeparator()
+        action_go_to_definition: QAction = menu.addAction("Go to Definition")
+        action_go_to_definition.setShortcut(Qt.Key.Key_F12)
+        action_go_to_definition.triggered.connect(self.go_to_definition)
+        menu.addSeparator()
+
+        # Snippets
+        snippet_menu = QMenu("Snippets", self)
+        for trigger, content in self.ui.codeEdit.snippets.items():
+            snippet_menu.addAction(trigger).triggered.connect(lambda _checked, content=content: self.ui.codeEdit.insertPlainText(content))
+        snippet_menu.addAction("Add Snippet").triggered.connect(self.on_add_snippet)
+        snippet_menu.addAction("Remove Snippet").triggered.connect(self.on_remove_snippet)
+        menu.addMenu(snippet_menu)
+
+        # Editing
+        menu.addSeparator()
+        action_add_bookmark: QAction = menu.addAction("Add Bookmark")
+        action_add_bookmark.setShortcut(QKeySequence("Ctrl+B"))
+        action_add_bookmark.triggered.connect(self.add_bookmark)
+
+        action_duplicate_line: QAction = menu.addAction("Duplicate Line")
+        action_duplicate_line.setShortcut(QKeySequence("Ctrl+D"))
+        action_duplicate_line.triggered.connect(self.ui.codeEdit.duplicate_line)
+
+        action_toggle_comment: QAction = menu.addAction("Toggle Comment")
+        action_toggle_comment.setShortcut(QKeySequence("Ctrl+/"))
+        action_toggle_comment.triggered.connect(self.ui.codeEdit.toggle_comment)
+        action_insert_constant: QAction = menu.addAction("Insert Constant")
+        action_insert_constant.setShortcut(QKeySequence("Ctrl+Shift+I"))
+        action_insert_constant.triggered.connect(self.insert_selected_constant)
+        action_insert_function: QAction = menu.addAction("Insert Function")
+        action_insert_function.setShortcut(QKeySequence("Ctrl+Shift+F"))
+        action_insert_function.triggered.connect(self.insert_selected_function)
+
+        # Line Movement
+        move_line_menu: QMenu = menu.addMenu("Move Line")
+        action_move_line_up: QAction = move_line_menu.addAction("Up")
+        action_move_line_up.setShortcut(QKeySequence("Ctrl+Shift+Up"))
+        action_move_line_up.triggered.connect(lambda: self.ui.codeEdit.move_line_up_or_down("up"))
+        action_move_line_down: QAction = move_line_menu.addAction("Down")
+        action_move_line_down.setShortcut(QKeySequence("Ctrl+Shift+Down"))
+        action_move_line_down.triggered.connect(lambda: self.ui.codeEdit.move_line_up_or_down("down"))
+
+        # Auto-complete
+        action_show_auto_complete_menu: QAction = menu.addAction("Show Auto-Complete Menu")
+        action_show_auto_complete_menu.setShortcut(QKeySequence("Ctrl+Space"))
+        action_show_auto_complete_menu.triggered.connect(self.ui.codeEdit.show_auto_complete_menu)
+
+        # View
+        menu.addSeparator()
+        change_text_size_menu: QMenu = menu.addMenu("Text Size")
+        action_increase_text_size: QAction = change_text_size_menu.addAction("Increase")
+        action_increase_text_size.setShortcut(QKeySequence("Ctrl++"))
+        action_increase_text_size.triggered.connect(lambda: self.ui.codeEdit.change_text_size(increase=True))
+        action_decrease_text_size: QAction = change_text_size_menu.addAction("Decrease")
+        action_decrease_text_size.setShortcut(QKeySequence("Ctrl+-"))
+        action_decrease_text_size.triggered.connect(lambda: self.ui.codeEdit.change_text_size(increase=False))
+
+        menu.exec(self.ui.codeEdit.mapToGlobal(pos))
+
+    def go_to_definition(self):
+        cursor: QTextCursor = self.ui.codeEdit.textCursor()
+        word: str = cursor.selectedText()
+        if not word or not word.strip():
+            cursor.select(QTextCursor.SelectionType.WordUnderCursor)
+            word = cursor.selectedText()
+
+        if not word or not word.strip():
+            return
+
+        for obj in self.ui.outlineView.findItems(word, Qt.MatchFlag.MatchRecursive):  # pyright: ignore[reportArgumentType]
+            if not obj.data(0, Qt.ItemDataRole.UserRole):
+                continue
+            self.ui.codeEdit.on_outline_item_double_clicked(obj, 0)  # pyright: ignore[reportArgumentType]
+            break
 
     def _setup_file_explorer(self):
-        self.file_system_model: QFileSystemModel = QFileSystemModel()
+        self.file_system_model = QFileSystemModel()
         self.file_system_model.setRootPath("")
         self.ui.fileExplorerView.setModel(self.file_system_model)
         self.ui.fileExplorerView.setRootIndex(self.file_system_model.index(""))
-        self.ui.fileExplorerView.hideColumn(1)  # Hide size column
-        self.ui.fileExplorerView.hideColumn(2)  # Hide type column
-        self.ui.fileExplorerView.hideColumn(3)  # Hide date modified column
+        self.ui.fileExplorerView.hideColumn(1)
+        self.ui.fileExplorerView.hideColumn(2)
+        self.ui.fileExplorerView.hideColumn(3)
+        self.ui.fileExplorerView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.fileExplorerView.customContextMenuRequested.connect(self._show_file_explorer_context_menu)
+        self.ui.fileExplorerView.doubleClicked.connect(self._open_file_from_explorer)
+
+        if self._filepath:
+            index = self.file_system_model.index(str(self._filepath))
+            self.ui.fileExplorerView.setCurrentIndex(index)
+            self.ui.fileExplorerView.scrollTo(index)
+            self.ui.fileExplorerView.expand(index.parent())
+
+    def _show_file_explorer_context_menu(self, position):
+        index = self.ui.fileExplorerView.indexAt(position)
+        if not index.isValid():
+            return
+
+        menu = QMenu()
+        menu.addAction("Open").triggered.connect(lambda: self._open_file_from_explorer(index))
+        menu.exec_(self.ui.fileExplorerView.viewport().mapToGlobal(position))
+
+    def _open_file_from_explorer(self, index):
+        file_path = self.file_system_model.filePath(index)
+        fileres = FileResource.from_path(file_path)
+        open_resource_editor(fileres)
 
     def _update_completer_model(self, constants: list[ScriptConstant], functions: list[ScriptFunction]):
         completer_list: list[str] = [*(const.name for const in constants), *(func.name for func in functions)]
@@ -521,6 +580,7 @@ class NSSEditor(Editor):
 
     class SavedContext(NamedTuple):
         """A context that can be saved and restored by _snapshotResTypeContext."""
+
         filepath: Path
         resname: str
         restype: ResourceType
@@ -615,8 +675,7 @@ class NSSEditor(Editor):
         QMessageBox(QMessageBox.Icon.Critical, err_msg, str(universal_simplify_exception(e))).exec_()
         if is_debug_mode():
             raise e
-        result = True
-        return result
+        return True
 
     def _handle_user_ncs(self, data: bytes, resname: str) -> None:
         box = QMessageBox(
@@ -633,7 +692,7 @@ class NSSEditor(Editor):
 
         if choice == QMessageBox.StandardButton.Yes:
             assert self._installation is not None, "Installation not set, cannot determine path"
-            source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
+            source = ht_decompile_script(data, self._installation.path(), tsl=self._installation.tsl)
         elif choice == QMessageBox.StandardButton.Ok:
             source = self._download_and_load_remote_script(resname)
         else:
@@ -653,9 +712,7 @@ class NSSEditor(Editor):
         if not local_path.exists():
             raise ValueError(f"Failed to download the script: '{local_path}' did not exist after download completed.")  # noqa: TRY301
 
-        result = BinaryReader.load_file(local_path).decode(encoding="windows-1252")
-
-        return result
+        return local_path.read_text(encoding="windows-1252")
 
     def build(self) -> tuple[bytes | None, bytes]:
         if self._restype is not ResourceType.NCS:
@@ -663,7 +720,7 @@ class NSSEditor(Editor):
 
         self._logger.debug(f"Compiling script '{self._resname}.{self._restype.extension}' from the NSSEditor...")
         assert self._installation is not None, "Installation not set, cannot determine path"
-        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.path(), tsl=self._installation.tsl)
+        compiled_bytes: bytes | None = ht_compile_script(self.ui.codeEdit.toPlainText(), self._installation.path(), tsl=self._installation.tsl)
         if compiled_bytes is None:
             self._logger.debug(f"User cancelled the compilation of '{self._resname}.{self._restype.extension}'.")
             return None, b""
@@ -704,7 +761,7 @@ class NSSEditor(Editor):
         restype: ResourceType,
         data: bytes,
     ):
-        """Shows a messagebox after compileCurrentScript successfully saves an NCS resource."""
+        """Shows a messagebox after compile_current_script successfully saves an NCS resource."""
         savePath = Path(filepath)
         if is_any_erf_type_file(savePath.name) or is_rim_file(savePath.name):
             # Format as /full/path/to/file.mod/resname.ncs
@@ -724,26 +781,22 @@ class NSSEditor(Editor):
             self.completer.complete(rect)
 
     def insert_selected_constant(self):
-        if self.ui.constantList.selectedItems():
-            constant: ScriptConstant = self.ui.constantList.selectedItems()[0].data(Qt.ItemDataRole.UserRole)
+        selected_items: list[QListWidgetItem] = self.ui.constantList.selectedItems()
+        if selected_items:
+            constant: ScriptConstant = selected_items[0].data(Qt.ItemDataRole.UserRole)
             insert = f"{constant.name} = {constant.value}"
             self.ui.codeEdit.insert_text_at_cursor(insert)
 
     def insert_selected_function(self):
-        if self.ui.functionList.selectedItems():
-            function: ScriptFunction = self.ui.functionList.selectedItems()[0].data(Qt.ItemDataRole.UserRole)
+        selected_items: list[QListWidgetItem] = self.ui.functionList.selectedItems()
+        if selected_items:
+            function: ScriptFunction = selected_items[0].data(Qt.ItemDataRole.UserRole)
             insert = f"{function.name}()"
             self.ui.codeEdit.insert_text_at_cursor(insert, insert.index("(") + 1)
 
-    def on_insert_shortcut(self):
-        if self.ui.editorTabs.currentIndex() == 0:
-            self.insert_selected_function()
-        elif self.ui.editorTabs.currentIndex() == 1:
-            self.insert_selected_constant()
-
     def on_function_search(self):
         string = self.ui.functionSearchEdit.text()
-        if not string:
+        if not string or not string.strip():
             return
         lower_string = string.lower()
         for i in range(self.ui.functionList.count()):
@@ -754,7 +807,7 @@ class NSSEditor(Editor):
 
     def on_constant_search(self):
         string = self.ui.constantSearchEdit.text()
-        if not string:
+        if not string or not string.strip():
             return
         lower_string = string.lower()
         for i in range(self.ui.constantList.count()):
@@ -777,16 +830,14 @@ class NSSEditor(Editor):
             #            debug=is_debug_mode(),
         )
 
-        try:
-            ast = parser.parser.parse(text, lexer=lexer.lexer)
-            self._populate_outline(ast)
-        except Exception:
-            self._logger.exception(f"Failed to update outline for text '{text}'")
+        ast: CodeRoot = parser.parser.parse(text, lexer=lexer.lexer)
+        self._populate_outline(ast)
+        self.ui.outlineView.expandAll()
 
-    def _populate_outline(self, ast):
+    def _populate_outline(self, ast: CodeRoot):
         for obj in ast.objects:
             if isinstance(obj, FunctionDefinition):
-                item = QTreeWidgetItem(self.ui.outlineView)  # pyright: ignore[reportCallIssue, reportArgumentType]
+                item = QTreeWidgetItem(self.ui.outlineView)
                 item.setText(0, f"Function: {obj.identifier}")
                 item.setData(0, Qt.ItemDataRole.UserRole, obj)
 
@@ -795,7 +846,7 @@ class NSSEditor(Editor):
                     param_item.setText(0, f"Param: {param.identifier}")
 
             elif isinstance(obj, StructDefinition):
-                item = QTreeWidgetItem(self.ui.outlineView)  # pyright: ignore[reportCallIssue, reportArgumentType]
+                item = QTreeWidgetItem(self.ui.outlineView)
                 item.setText(0, f"Struct: {obj.identifier}")
                 item.setData(0, Qt.ItemDataRole.UserRole, obj)
 
@@ -804,39 +855,33 @@ class NSSEditor(Editor):
                     member_item.setText(0, f"Member: {member.identifier}")
 
             elif isinstance(obj, GlobalVariableDeclaration):
-                item = QTreeWidgetItem(self.ui.outlineView)  # pyright: ignore[reportCallIssue, reportArgumentType]
+                item = QTreeWidgetItem(self.ui.outlineView)
                 item.setText(0, f"Global: {obj.identifier}")
                 item.setData(0, Qt.ItemDataRole.UserRole, obj)
 
     def _setup_shortcuts(self):
-        QShortcut("Ctrl+F5", self).activated.connect(self.compile_current_script)
-        QShortcut("Ctrl+I", self).activated.connect(self.on_insert_shortcut)
-        QShortcut("Ctrl+Shift+I", self).activated.connect(self.insert_selected_constant)
-        QShortcut("Ctrl+Shift+F", self).activated.connect(self.insert_selected_function)
-        QShortcut("Ctrl+Shift+N", self).activated.connect(self.new)
-        QShortcut("Ctrl+Shift+O", self).activated.connect(self.open)
-        QShortcut("Ctrl+S", self).activated.connect(self.save)
-        QShortcut("Ctrl+Shift+S", self).activated.connect(self.save_as)
-        QShortcut("Ctrl+Shift+W", self).activated.connect(self.close)
-        QShortcut("Ctrl+Shift+Z", self).activated.connect(self.ui.codeEdit.undo)  # QUndoCommand
-        QShortcut("Ctrl+Y", self).activated.connect(self.ui.codeEdit.redo)  # QRedoCommand
-        QShortcut("Ctrl+G", self).activated.connect(self.ui.codeEdit.go_to_line)
-        QShortcut("Ctrl+F", self).activated.connect(self.ui.codeEdit.find)  # QTextDocument.find
-
-        # Should show how many matches there are. If the user is not already at the line, the replacement should not happen until the jump first happens.
-        QShortcut("Ctrl+H", self).activated.connect(self.ui.codeEdit.replace)
-
-        QShortcut("Ctrl+D", self).activated.connect(self.ui.codeEdit.duplicate_line)  # Duplicate line
-        QShortcut("Ctrl+Scroll Up/Down", self).activated.connect(self.ui.codeEdit.change_text_size)  # Change text size
-        QShortcut("Shift+Scroll Up/Down", self).activated.connect(self.ui.codeEdit.scroll_horizontally)  # Scroll horizontally
-        QShortcut("Ctrl+Shift+Up/Down", self).activated.connect(self.ui.codeEdit.move_line_up_or_down)  # Move line up or down
-        QShortcut("Ctrl+Space", self).activated.connect(self.show_auto_complete_menu)  # Show auto-complete menu
-        QShortcut("Ctrl+/", self).activated.connect(self.ui.codeEdit.toggle_comment)  # Toggle comment
+        self.ui.actionCompile.setShortcut(Qt.Key.Key_F5)
+        self.ui.actionCompile.triggered.connect(self.compile_current_script)
+        self.ui.actionNew.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_N))
+        self.ui.actionNew.triggered.connect(self.new)
+        self.ui.actionOpen.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_O))
+        self.ui.actionOpen.triggered.connect(self.open)
+        self.ui.actionSave.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_S))
+        self.ui.actionSave_As.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_Shift, Qt.Key.Key_S))
+        self.ui.actionClose.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_W))
 
         # Add new shortcuts for bookmarks and snippets
-        QShortcut("Ctrl+B", self).activated.connect(self.add_bookmark)
-        QShortcut("Ctrl+Shift+B", self).activated.connect(lambda: self.ui.bookmarksDock.setVisible(not self.ui.bookmarksDock.isVisible()))
-        QShortcut("Ctrl+K", self).activated.connect(lambda: self.ui.snippetsDock.setVisible(not self.ui.snippetsDock.isVisible()))
+        self.ui.actionReset_Zoom.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_0))
+        self.ui.actionUndo.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_Z))
+        self.ui.actionUndo.triggered.connect(self.ui.codeEdit.undo)  # QUndoCommand
+        self.ui.actionRedo.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_Y))
+        self.ui.actionRedo.triggered.connect(self.ui.codeEdit.redo)  # QRedoCommand
+        self.ui.actionGo_to_Line.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_G))
+        self.ui.actionGo_to_Line.triggered.connect(self.ui.codeEdit.go_to_line)
+        self.ui.actionFind.setShortcut(QKeySequence(Qt.Key.Key_Control + Qt.Key.Key_F))
+        self.ui.actionFind.triggered.connect(self.ui.codeEdit.find_and_replace_dialog)
+        self.ui.actionReplace.setShortcut(QKeySequence(Qt.Key.Key_Control, Qt.Key.Key_H))
+        self.ui.actionReplace.triggered.connect(self.ui.codeEdit.find_and_replace_dialog)
 
     def wheelEvent(self, event: QWheelEvent):
         if event.modifiers() == Qt.KeyboardModifier.ControlModifier:

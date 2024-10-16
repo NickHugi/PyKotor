@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, NamedTuple
 from qtpy.QtGui import QImage
 
 from pykotor.common.geometry import Vector3
-from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.generics.utd import read_utd
 from toolset.utils.misc import get_nums
@@ -93,35 +92,35 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
     if not kits_path.is_dir():
         kits_path.mkdir(parents=True)
     for file in (file for file in kits_path.iterdir() if file.suffix.lower() == ".json"):
-        kit_json = json.loads(BinaryReader.load_file(file))
+        kit_json = json.loads(file.read_bytes())
         kit = Kit(kit_json["name"])
         kit_identifier = kit_json["id"]
 
         always_path = kits_path / file.stem / "always"
         if always_path.is_dir():
             for always_file in always_path.iterdir():
-                kit.always[always_file] = BinaryReader.load_file(always_file)
+                kit.always[always_file] = always_file.read_bytes()
 
         textures_path = kits_path / file.stem / "textures"
         for texture_file in (file for file in textures_path.iterdir() if file.suffix.lower() == ".tga"):
             texture = texture_file.stem.upper()
-            kit.textures[texture] = BinaryReader.load_file(textures_path / f"{texture}.tga")
+            kit.textures[texture] = texture_file.read_bytes()
             txi_path = textures_path / f"{texture}.txi"
-            kit.txis[texture] = BinaryReader.load_file(txi_path) if txi_path.is_file() else b""
+            kit.txis[texture] = txi_path.read_bytes() if txi_path.is_file() else b""
 
         lightmaps_path = kits_path / file.stem / "lightmaps"
         for lightmap_file in (file for file in lightmaps_path.iterdir() if file.suffix.lower() == ".tga"):
             lightmap = lightmap_file.stem.upper()
-            kit.lightmaps[lightmap] = BinaryReader.load_file(lightmaps_path / f"{lightmap}.tga")
+            kit.lightmaps[lightmap] = lightmap_file.read_bytes()
             txi_path = lightmaps_path / f"{lightmap_file.stem}.txi"
-            kit.txis[lightmap] = BinaryReader.load_file(txi_path) if txi_path.is_file() else b""
+            kit.txis[lightmap] = txi_path.read_bytes() if txi_path.is_file() else b""
 
         skyboxes_path = kits_path / file.stem / "skyboxes"
         if skyboxes_path.is_dir():
-            for skybox_resref_str in (file.stem.upper() for file in skyboxes_path.safe_iterdir() if file.suffix.lower() == ".mdl"):
+            for skybox_resref_str in (file.stem.upper() for file in skyboxes_path.iterdir() if file.suffix.lower() == ".mdl"):
                 mdl_path = skyboxes_path / f"{skybox_resref_str}.mdl"
                 mdx_path = skyboxes_path / f"{skybox_resref_str}.mdx"
-                mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)
+                mdl, mdx = mdl_path.read_bytes(), mdx_path.read_bytes()
                 kit.skyboxes[skybox_resref_str] = MDLMDXTuple(mdl, mdx)
 
         doorway_path = kits_path / file.stem / "doorway"
@@ -129,7 +128,7 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
             for padding_id in (file.stem for file in doorway_path.iterdir() if file.suffix.lower() == ".mdl"):
                 mdl_path = doorway_path / f"{padding_id}.mdl"
                 mdx_path = doorway_path / f"{padding_id}.mdx"
-                mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)
+                mdl, mdx = mdl_path.read_bytes(), mdx_path.read_bytes()
                 door_id = get_nums(padding_id)[0]
                 padding_size = get_nums(padding_id)[1]
 
@@ -157,8 +156,8 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
             image = QImage(str(kits_path / kit_identifier / f"{component_identifier}.png")).mirrored()
 
             bwm = read_bwm(kits_path / kit_identifier / f"{component_identifier}.wok")
-            mdl = BinaryReader.load_file(kits_path / kit_identifier / f"{component_identifier}.mdl")
-            mdx = BinaryReader.load_file(kits_path / kit_identifier / f"{component_identifier}.mdx")
+            mdl = (kits_path / str(kit_identifier) / f"{component_identifier}.mdl").read_bytes()
+            mdx = (kits_path / str(kit_identifier) / f"{component_identifier}.mdx").read_bytes()
             component = KitComponent(kit, name, image, bwm, mdl, mdx)
 
             for hook_json in component_json["doorhooks"]:

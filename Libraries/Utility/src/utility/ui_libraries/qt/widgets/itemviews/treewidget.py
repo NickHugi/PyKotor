@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QMainWindow
-from qtpy.QtWidgets import QTreeWidget, QTreeWidgetItem
+from qtpy.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem
 
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 

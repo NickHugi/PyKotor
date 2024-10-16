@@ -376,8 +376,8 @@ class UTCEditor(Editor):
         self.ui.previewRenderer.setCreature(utc)
 
         # Basic
-        self.ui.firstnameEdit.setLocstring(utc.first_name)
-        self.ui.lastnameEdit.setLocstring(utc.last_name)
+        self.ui.firstnameEdit.set_locstring(utc.first_name)
+        self.ui.lastnameEdit.set_locstring(utc.last_name)
         self.ui.tagEdit.setText(utc.tag)
         self.ui.resrefEdit.setText(str(utc.resref))
         self.ui.appearanceSelect.setCurrentIndex(utc.appearance_id)
@@ -644,14 +644,14 @@ class UTCEditor(Editor):
         ltr: LTR = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
-        self.ui.firstnameEdit.setLocstring(locstring)
+        self.ui.firstnameEdit.set_locstring(locstring)
 
     def randomizeLastname(self):
         locstring: LocalizedString = self.ui.lastnameEdit.locstring()
         ltr: LTR = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
-        self.ui.lastnameEdit.setLocstring(locstring)
+        self.ui.lastnameEdit.set_locstring(locstring)
 
     def generate_tag(self):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())

@@ -54,9 +54,8 @@ if TYPE_CHECKING:
 
     from types import TracebackType
 
-    from PyQt5.QtGui import QDragMoveEvent, QResizeEvent
     from qtpy.QtCore import QModelIndex, QPoint
-    from qtpy.QtGui import QDragEnterEvent, QDropEvent
+    from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent, QResizeEvent
     from qtpy.QtWidgets import QWidget
 
 

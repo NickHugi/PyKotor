@@ -11,32 +11,90 @@
             </rect>
         </property>
         <property name="windowTitle">
-            <string>Advanced NSS Editor</string>
+            <string>NSS Editor</string>
+        </property>
+        <property name="styleSheet">
+            <string notr="true">
+                QMainWindow {
+                background-color: palette(window);
+                color: palette(windowText);
+                }
+                QeditorTabs::pane {
+                border: none;
+                background-color: palette(base);
+                }
+                QTabBar::tab {
+                background-color: palette(dark);
+                color: palette(text);
+                padding: 8px 12px;
+                border: none;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                }
+                QTabBar::tab:selected {
+                background-color: palette(base);
+                color: palette(text);
+                }
+                QLineEdit, QTextEdit {
+                background-color: palette(base);
+                color: palette(text);
+                border: 1px solid palette(mid);
+                padding: 2px;
+                }
+                QPushButton {
+                background-color: palette(button);
+                color: palette(buttonText);
+                border: 1px solid palette(mid);
+                padding: 4px 8px;
+                border-radius: 2px;
+                }
+                QPushButton:hover {
+                background-color: palette(light);
+                }
+                QScrollBar:vertical {
+                border: none;
+                background-color: palette(base);
+                width: 14px;
+                margin: 0px 0px 0px 0px;
+                }
+                QScrollBar::handle:vertical {
+                background-color: palette(mid);
+                min-height: 20px;
+                }
+                QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+                }</string>
         </property>
         <widget class="QWidget" name="centralwidget">
-            <layout class="QVBoxLayout" name="vboxlytCentralWidget" stretch="0,0,1,0,0">
+            <layout class="QVBoxLayout" name="vboxlytCentralWidget" stretch="0,0">
                 <item>
-                    <layout class="QHBoxLayout" name="middleTopHorizLyt">
+                    <layout class="QHBoxLayout" name="middleTopHorizLyt" stretch="1,0">
                         <item>
-                            <spacer name="horizontalSpacer">
-                                <property name="orientation">
-                                    <enum>Orientation.Horizontal</enum>
+                            <widget class="QLabel" name="label">
+                                <property name="sizePolicy">
+                                    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                                        <horstretch>0</horstretch>
+                                        <verstretch>0</verstretch>
+                                    </sizepolicy>
                                 </property>
-                                <property name="sizeHint" stdset="0">
-                                    <size>
-                                        <width>40</width>
-                                        <height>20</height>
-                                    </size>
+                                <property name="text">
+                                    <string>Installation Type:</string>
                                 </property>
-                            </spacer>
+                            </widget>
                         </item>
                         <item>
                             <widget class="QComboBox" name="gameSelector">
                                 <property name="sizePolicy">
-                                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
                                         <horstretch>0</horstretch>
                                         <verstretch>0</verstretch>
                                     </sizepolicy>
+                                </property>
+                                <property name="minimumSize">
+                                    <size>
+                                        <width>200</width>
+                                        <height>0</height>
+                                    </size>
                                 </property>
                                 <property name="toolTip">
                                     <string>This determines what constants to use for your IDE and
@@ -60,65 +118,11 @@
                     </layout>
                 </item>
                 <item>
-                    <spacer name="verticalSpacer">
-                        <property name="orientation">
+                    <widget class="QSplitter" name="mainSplitter">
+                        <property name="Orientation">
                             <enum>Orientation.Vertical</enum>
                         </property>
-                        <property name="sizeHint" stdset="0">
-                            <size>
-                                <width>20</width>
-                                <height>40</height>
-                            </size>
-                        </property>
-                    </spacer>
-                </item>
-                <item>
-                    <widget class="QSplitter" name="mainSplitter">
-                        <property name="orientation">
-                            <enum>Qt::Vertical</enum>
-                        </property>
-                        <widget class="QTabWidget" name="editorTabs">
-                            <property name="sizePolicy">
-                                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                                    <horstretch>0</horstretch>
-                                    <verstretch>0</verstretch>
-                                </sizepolicy>
-                            </property>
-                            <property name="font">
-                                <font>
-                                    <stylestrategy>NoAntialias</stylestrategy>
-                                </font>
-                            </property>
-                            <property name="acceptDrops">
-                                <bool>true</bool>
-                            </property>
-                            <property name="whatsThis">
-                                <string>Main Code Area</string>
-                            </property>
-                            <property name="tabsClosable">
-                                <bool>true</bool>
-                            </property>
-                            <property name="movable">
-                                <bool>true</bool>
-                            </property>
-                            <widget class="QWidget" name="tab">
-                                <attribute name="title">
-                                    <string>Untitled</string>
-                                </attribute>
-                                <layout class="QVBoxLayout" name="verticalLayout_6">
-                                    <item>
-                                        <widget class="QLineEdit" name="searchBar">
-                                            <property name="placeholderText">
-                                                <string>Search...</string>
-                                            </property>
-                                        </widget>
-                                    </item>
-                                    <item>
-                                        <widget class="CodeEditor" name="codeEdit" />
-                                    </item>
-                                </layout>
-                            </widget>
-                        </widget>
+                        <widget class="CodeEditor" name="codeEdit" />
                         <widget class="QTabWidget" name="panelTabs">
                             <property name="font">
                                 <font>
@@ -242,7 +246,13 @@
                                 </attribute>
                                 <layout class="QVBoxLayout" name="verticalLayout_4">
                                     <item>
-                                        <widget class="QTreeWidget" name="outlineView" />
+                                        <widget class="QTreeWidget" name="outlineView">
+                                            <column>
+                                                <property name="text">
+                                                    <string notr="true">1</string>
+                                                </property>
+                                            </column>
+                                        </widget>
                                     </item>
                                 </layout>
                             </widget>
@@ -284,16 +294,6 @@
                         </widget>
                     </widget>
                 </item>
-                <item>
-                    <widget class="QProgressBar" name="progressBar">
-                        <property name="maximum">
-                            <number>1</number>
-                        </property>
-                        <property name="textVisible">
-                            <bool>false</bool>
-                        </property>
-                    </widget>
-                </item>
             </layout>
         </widget>
         <widget class="QStatusBar" name="statusbar" />
@@ -315,6 +315,20 @@
                     </item>
                     <item>
                         <widget class="RobustTreeView" name="fileExplorerView">
+                            <property name="styleSheet">
+                                <string notr="true">QTreeView {
+                                    background-color: palette(base);
+                                    color: palette(text);
+                                    border: none;
+                                    }
+                                    QTreeView::item {
+                                    padding: 4px;
+                                    }
+                                    QTreeView::item:selected {
+                                    background-color: palette(highlight);
+                                    color: palette(highlightedText);
+                                    }</string>
+                            </property>
                         </widget>
                     </item>
                     <item>

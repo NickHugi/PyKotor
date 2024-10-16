@@ -17,7 +17,6 @@ from qtpy.QtGui import QKeySequence, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import QAction, QFileDialog, QInputDialog, QLineEdit, QMenu, QMessageBox
 
 from pykotor.common.misc import ResRef
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
@@ -359,7 +358,7 @@ class ERFEditor(Editor):
             c_filepath = Path(filepath)
             try:
                 resref, restype = ResourceIdentifier.from_path(c_filepath).validate().unpack()
-                data = BinaryReader.load_file(c_filepath)
+                data = c_filepath.read_bytes()
                 resource = ERFResource(ResRef(resref), restype, data)
 
                 resref_item = QStandardItem(str(resource.resref))
@@ -450,7 +449,7 @@ class ERFEditor(Editor):
             ).exec()
             return
         self._has_changes = False
-        data: bytes = BinaryReader.load_file(self._filepath)
+        data: bytes = self._filepath.read_bytes()
         self.load(self._filepath, self._resname, self._restype, data)
 
     def on_selection_changed(self):

@@ -156,8 +156,8 @@ class UTIEditor(Editor):
         self._uti = uti
 
         # Basic
-        self.ui.nameEdit.setLocstring(uti.name)
-        self.ui.descEdit.setLocstring(uti.description)
+        self.ui.nameEdit.set_locstring(uti.name)
+        self.ui.descEdit.set_locstring(uti.description)
         self.ui.tagEdit.setText(uti.tag)
         self.ui.resrefEdit.setText(str(uti.resref))
         self.ui.baseSelect.setCurrentIndex(uti.base_item)

@@ -12,7 +12,6 @@ from qtpy.QtCore import QPoint
 from qtpy.QtGui import QKeySequence
 
 from pykotor.common.geometry import Vector3
-from pykotor.common.stream import BinaryReader
 from pykotor.gl.scene import Camera
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.system.path import Path
@@ -232,7 +231,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         self.keyReleaseEvents = []
 
         r_filepath = Path(filepath)
-        data = BinaryReader.load_file(r_filepath)
+        data = r_filepath.read_bytes()
         rootJSON = json.loads(jsmin(decode_bytes_with_fallbacks(data)))
 
         self.name = rootJSON["name"]

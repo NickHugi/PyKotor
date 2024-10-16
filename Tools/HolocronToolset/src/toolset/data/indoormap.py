@@ -5,6 +5,7 @@ import json
 import math
 
 from copy import copy, deepcopy
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from qtpy import QtCore
@@ -13,7 +14,6 @@ from qtpy.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, ResRef
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm import bytes_bwm
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
@@ -554,7 +554,7 @@ class IndoorMap:
             - Loads the appropriate load screen TGA file based on installation type
             - Sets the loaded TGA as load screen data for the module.
         """
-        loadTga: bytes = BinaryReader.load_file("./kits/load_k2.tga") if installation.tsl else BinaryReader.load_file("./kits/load_k1.tga")
+        loadTga: bytes = Path("./kits/load_k2.tga" if installation.tsl else "./kits/load_k1.tga").read_bytes()
         self.mod.set_data(f"load_{self.moduleId}", ResourceType.TGA, loadTga)
 
     def set_area_attributes(

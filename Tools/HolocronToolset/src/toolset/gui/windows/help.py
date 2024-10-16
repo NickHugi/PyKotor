@@ -22,7 +22,6 @@ from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
-from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.config import get_remote_toolset_update_info, is_remote_version_newer
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -50,24 +49,24 @@ class HelpWindow(QMainWindow):
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_signals()
-        self._setupContents()
-        self.startingPage: str | None = startingPage
+        self._setup_contents()
+        self.starting_page: str | None = startingPage
 
     def showEvent(self, a0: QShowEvent):
         super().showEvent(a0)
         self.ui.textDisplay.setSearchPaths(["./help"])
 
         if self.ENABLE_UPDATES:
-            self.checkForUpdates()
+            self.check_for_updates()
 
-        if self.startingPage is None:
+        if self.starting_page is None:
             return
-        self.displayFile(self.startingPage)
+        self.display_file(self.starting_page)
 
     def _setup_signals(self):
-        self.ui.contentsTree.clicked.connect(self.onContentsClicked)
+        self.ui.contentsTree.clicked.connect(self.on_contents_clicked)
 
-    def _setupContents(self):
+    def _setup_contents(self):
         self.ui.contentsTree.clear()
 
         try:
@@ -75,17 +74,17 @@ class HelpWindow(QMainWindow):
             root = tree.getroot()
 
             self.version = str(root.get("version", "0.0"))
-            self._setupContentsRecXML(None, root)
+            self._setup_contents_rec_xml(None, root)
 
             # Old JSON code:
-            # text = BinaryReader.load_file("./help/contents.xml")
+            # text = Path("./help/contents.xml").read_text()
             # data = json.loads(text)
             # self.version = data["version"]
             # self._setupContentsRecJSON(None, data)
-        except Exception:
+        except Exception:  # noqa: BLE001
             RobustLogger().debug("Suppressed error in HelpWindow._setupContents", exc_info=True)
 
-    def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict[str, Any]):
+    def _setup_contents_rec_json(self, parent: QTreeWidgetItem | None, data: dict[str, Any]):
         addItem: Callable[[QTreeWidgetItem], None] = (  # type: ignore[arg-type]
             self.ui.contentsTree.addTopLevelItem
             if parent is None
@@ -97,9 +96,9 @@ class HelpWindow(QMainWindow):
             item = QTreeWidgetItem([title])
             item.setData(0, QtCore.Qt.ItemDataRole.UserRole, structure[title]["filename"])
             addItem(item)
-            self._setupContentsRecJSON(item, structure[title])
+            self._setup_contents_rec_json(item, structure[title])
 
-    def _setupContentsRecXML(self, parent: QTreeWidgetItem | None, element: ElemTree.Element):
+    def _setup_contents_rec_xml(self, parent: QTreeWidgetItem | None, element: ElemTree.Element):
         addItem: Callable[[QTreeWidgetItem], None] = (  # type: ignore[arg-type]
             self.ui.contentsTree.addTopLevelItem
             if parent is None
@@ -110,9 +109,9 @@ class HelpWindow(QMainWindow):
             item = QTreeWidgetItem([child.get("name", "")])
             item.setData(0, QtCore.Qt.ItemDataRole.UserRole, child.get("file"))
             addItem(item)
-            self._setupContentsRecXML(item, child)
+            self._setup_contents_rec_xml(item, child)
 
-    def checkForUpdates(self):
+    def check_for_updates(self):
         remoteInfo = get_remote_toolset_update_info(use_beta_channel=GlobalSettings().use_beta_channel)
         try:
             if not isinstance(remoteInfo, dict):
@@ -155,13 +154,13 @@ class HelpWindow(QMainWindow):
             if user_response == QMessageBox.StandardButton.Yes:
 
                 def task():
-                    return self._downloadUpdate()
+                    return self._download_update()
 
                 loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
                 if loader.exec():
-                    self._setupContents()
+                    self._setup_contents()
 
-    def _downloadUpdate(self):
+    def _download_update(self):
         help_path = Path("./help").resolve()
         help_path.mkdir(parents=True, exist_ok=True)
         help_zip_path = Path("./help.zip").resolve()
@@ -175,10 +174,10 @@ class HelpWindow(QMainWindow):
         if is_frozen():
             help_zip_path.unlink()
 
-    def displayFile(self, filepath: os.PathLike | str):
+    def display_file(self, filepath: os.PathLike | str):
         filepath = Path(filepath)
         try:
-            text: str = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
+            text: str = decode_bytes_with_fallbacks(filepath.read_bytes())
             html: str = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.suffix.lower() == ".md" else text
             self.ui.textDisplay.setHtml(html)
         except OSError as e:
@@ -188,7 +187,7 @@ class HelpWindow(QMainWindow):
                 f"Could not access '{filepath}'.\n{universal_simplify_exception(e)}",
             ).exec()
 
-    def onContentsClicked(self):
+    def on_contents_clicked(self):
         if not self.ui.contentsTree.selectedItems():
             return
         item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]  # type: ignore[arg-type]
@@ -197,4 +196,4 @@ class HelpWindow(QMainWindow):
             help_path = Path("./help").resolve()
             file_path = Path(help_path, filename)
             self.ui.textDisplay.setSearchPaths([str(help_path), str(file_path.parent)])
-            self.displayFile(file_path)
+            self.display_file(file_path)

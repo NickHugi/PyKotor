@@ -2,27 +2,25 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QPoint, QRect, QSize, Qt
-from PyQt5.QtWidgets import (
-    QApplication,
-    QLabel,
-    QLayout,
-    QMainWindow,
-    QSizePolicy,
-    QWidget,
-)
+from qtpy.QtCore import QPoint, QRect, QSize, Qt
 from qtpy.QtGui import QColor, QPalette
 from qtpy.QtWidgets import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QDateEdit,
+    QLabel,
+    QLayout,
     QLineEdit,
+    QMainWindow,
     QProgressBar,
     QPushButton,
     QRadioButton,
     QScrollArea,
+    QSizePolicy,
     QSlider,
     QSpinBox,
+    QWidget,
 )
 
 if TYPE_CHECKING:

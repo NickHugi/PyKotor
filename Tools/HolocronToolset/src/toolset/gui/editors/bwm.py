@@ -4,7 +4,7 @@ import struct
 
 from typing import TYPE_CHECKING
 
-from qtpy import QtCore
+from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
 from qtpy.QtWidgets import QListWidgetItem, QShortcut
 
@@ -14,7 +14,6 @@ from pykotor.resource.formats.bwm import read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
-from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
@@ -25,14 +24,14 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.bwm import BWM, BWMFace
     from toolset.data.installation import HTInstallation
 
-_TRANS_FACE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1  # type: ignore[attr-defined]
-_TRANS_EDGE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2  # type: ignore[attr-defined]
+_TRANS_FACE_ROLE = Qt.ItemDataRole.UserRole + 1  # type: ignore[attr-defined]
+_TRANS_EDGE_ROLE = Qt.ItemDataRole.UserRole + 2  # type: ignore[attr-defined]
 
 
-def calculate_zoom_strength(delta_y: float, sensSetting: int) -> float:
+def calculate_zoom_strength(delta_y: float, sens_setting: int) -> float:
     m = 0.00202
     b = 1
-    factor_in = (m * sensSetting + b)
+    factor_in = (m * sens_setting + b)
     return 1 / abs(factor_in) if delta_y < 0 else abs(factor_in)
 
 
@@ -68,46 +67,46 @@ class BWMEditor(Editor):
 
         moduleDesignerSettings = ModuleDesignerSettings()
 
-        def intColorToQColor(intvalue: int) -> QColor:
+        def int_to_qcolor(intvalue: int) -> QColor:
             color = Color.from_rgba_integer(intvalue)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
         self.material_colors: dict[SurfaceMaterial, QColor] = {
-            SurfaceMaterial.UNDEFINED: intColorToQColor(moduleDesignerSettings.undefinedMaterialColour),
-            SurfaceMaterial.OBSCURING: intColorToQColor(moduleDesignerSettings.obscuringMaterialColour),
-            SurfaceMaterial.DIRT: intColorToQColor(moduleDesignerSettings.dirtMaterialColour),
-            SurfaceMaterial.GRASS: intColorToQColor(moduleDesignerSettings.grassMaterialColour),
-            SurfaceMaterial.STONE: intColorToQColor(moduleDesignerSettings.stoneMaterialColour),
-            SurfaceMaterial.WOOD: intColorToQColor(moduleDesignerSettings.woodMaterialColour),
-            SurfaceMaterial.WATER: intColorToQColor(moduleDesignerSettings.waterMaterialColour),
-            SurfaceMaterial.NON_WALK: intColorToQColor(moduleDesignerSettings.nonWalkMaterialColour),
-            SurfaceMaterial.TRANSPARENT: intColorToQColor(moduleDesignerSettings.transparentMaterialColour),
-            SurfaceMaterial.CARPET: intColorToQColor(moduleDesignerSettings.carpetMaterialColour),
-            SurfaceMaterial.METAL: intColorToQColor(moduleDesignerSettings.metalMaterialColour),
-            SurfaceMaterial.PUDDLES: intColorToQColor(moduleDesignerSettings.puddlesMaterialColour),
-            SurfaceMaterial.SWAMP: intColorToQColor(moduleDesignerSettings.swampMaterialColour),
-            SurfaceMaterial.MUD: intColorToQColor(moduleDesignerSettings.mudMaterialColour),
-            SurfaceMaterial.LEAVES: intColorToQColor(moduleDesignerSettings.leavesMaterialColour),
-            SurfaceMaterial.LAVA: intColorToQColor(moduleDesignerSettings.lavaMaterialColour),
-            SurfaceMaterial.BOTTOMLESS_PIT: intColorToQColor(moduleDesignerSettings.bottomlessPitMaterialColour),
-            SurfaceMaterial.DEEP_WATER: intColorToQColor(moduleDesignerSettings.deepWaterMaterialColour),
-            SurfaceMaterial.DOOR: intColorToQColor(moduleDesignerSettings.doorMaterialColour),
-            SurfaceMaterial.NON_WALK_GRASS: intColorToQColor(moduleDesignerSettings.nonWalkGrassMaterialColour),
-            SurfaceMaterial.TRIGGER: intColorToQColor(moduleDesignerSettings.nonWalkGrassMaterialColour),
+            SurfaceMaterial.UNDEFINED: int_to_qcolor(moduleDesignerSettings.undefinedMaterialColour),
+            SurfaceMaterial.OBSCURING: int_to_qcolor(moduleDesignerSettings.obscuringMaterialColour),
+            SurfaceMaterial.DIRT: int_to_qcolor(moduleDesignerSettings.dirtMaterialColour),
+            SurfaceMaterial.GRASS: int_to_qcolor(moduleDesignerSettings.grassMaterialColour),
+            SurfaceMaterial.STONE: int_to_qcolor(moduleDesignerSettings.stoneMaterialColour),
+            SurfaceMaterial.WOOD: int_to_qcolor(moduleDesignerSettings.woodMaterialColour),
+            SurfaceMaterial.WATER: int_to_qcolor(moduleDesignerSettings.waterMaterialColour),
+            SurfaceMaterial.NON_WALK: int_to_qcolor(moduleDesignerSettings.nonWalkMaterialColour),
+            SurfaceMaterial.TRANSPARENT: int_to_qcolor(moduleDesignerSettings.transparentMaterialColour),
+            SurfaceMaterial.CARPET: int_to_qcolor(moduleDesignerSettings.carpetMaterialColour),
+            SurfaceMaterial.METAL: int_to_qcolor(moduleDesignerSettings.metalMaterialColour),
+            SurfaceMaterial.PUDDLES: int_to_qcolor(moduleDesignerSettings.puddlesMaterialColour),
+            SurfaceMaterial.SWAMP: int_to_qcolor(moduleDesignerSettings.swampMaterialColour),
+            SurfaceMaterial.MUD: int_to_qcolor(moduleDesignerSettings.mudMaterialColour),
+            SurfaceMaterial.LEAVES: int_to_qcolor(moduleDesignerSettings.leavesMaterialColour),
+            SurfaceMaterial.LAVA: int_to_qcolor(moduleDesignerSettings.lavaMaterialColour),
+            SurfaceMaterial.BOTTOMLESS_PIT: int_to_qcolor(moduleDesignerSettings.bottomlessPitMaterialColour),
+            SurfaceMaterial.DEEP_WATER: int_to_qcolor(moduleDesignerSettings.deepWaterMaterialColour),
+            SurfaceMaterial.DOOR: int_to_qcolor(moduleDesignerSettings.doorMaterialColour),
+            SurfaceMaterial.NON_WALK_GRASS: int_to_qcolor(moduleDesignerSettings.nonWalkGrassMaterialColour),
+            SurfaceMaterial.TRIGGER: int_to_qcolor(moduleDesignerSettings.nonWalkGrassMaterialColour),
         }
         self.ui.renderArea.material_colors = self.material_colors
-        self.rebuildMaterials()
+        self.rebuild_materials()
 
         self.new()
 
     def _setup_signals(self) -> None:
-        self.ui.renderArea.sig_mouse_moved.connect(self.onMouseMoved)
+        self.ui.renderArea.sig_mouse_moved.connect(self.on_mouse_moved)
         self.ui.renderArea.sig_mouse_scrolled.connect(self.on_mouse_scrolled)
 
         QShortcut("+", self).activated.connect(lambda: self.ui.renderArea.camera.set_zoom(2))
         QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.camera.set_zoom(-2))
 
-    def rebuildMaterials(self):
+    def rebuild_materials(self):
         """Rebuild the material list.
 
         Processing Logic:
@@ -121,11 +120,11 @@ class BWMEditor(Editor):
         """
         self.ui.materialList.clear()
         for material, color in self.material_colors.items():
-            image = QImage(struct.pack("BBB", color.red(), color.green(), color.blue()) * 16 * 16, 16, 16, QImage.Format_RGB888)
+            image = QImage(struct.pack("BBB", color.red(), color.green(), color.blue()) * 16 * 16, 16, 16, QImage.Format.Format_RGB888)
             icon = QIcon(QPixmap(image))
             text = material.name.replace("_", " ").title()
             item = QListWidgetItem(icon, text)
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, material)  # type: ignore[attr-defined]
+            item.setData(Qt.ItemDataRole.UserRole, material)  # type: ignore[attr-defined]
             self.ui.materialList.addItem(item)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
@@ -150,7 +149,7 @@ class BWMEditor(Editor):
         self._bwm = read_bwm(data)
         self.ui.renderArea.set_walkmeshes([self._bwm])
 
-        def addTransItem(face, edge, transition):
+        def add_trans_item(face: BWMFace, edge: int, transition: int | None):
             if transition is not None:
                 item = QListWidgetItem(f"Transition to: {transition}")
                 item.setData(_TRANS_FACE_ROLE, face)
@@ -159,17 +158,17 @@ class BWMEditor(Editor):
 
         self.ui.transList.clear()
         for face in self._bwm.faces:
-            addTransItem(face, 1, face.trans1)
-            addTransItem(face, 2, face.trans2)
-            addTransItem(face, 3, face.trans3)
+            add_trans_item(face, 1, face.trans1)
+            add_trans_item(face, 2, face.trans2)
+            add_trans_item(face, 3, face.trans3)
 
     def build(self) -> tuple[bytes, bytes]:
+        assert self._bwm is not None
         data = bytearray()
-        assert self._bwm is not None, assert_with_variable_trace(self._bwm is not None)
         write_bwm(self._bwm, data)
         return bytes(data), b""
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_moved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
         """Handles mouse movement events in the viewer.
 
         Args:
@@ -187,38 +186,38 @@ class BWMEditor(Editor):
             - Displays coordinates, face index in status bar.
         """
         world: Vector3 = self.ui.renderArea.to_world_coords(screen.x, screen.y)
-        worldData: Vector2 = self.ui.renderArea.to_world_delta
-        (delta.x, delta.y)
+        world_data: Vector2 = self.ui.renderArea.to_world_delta(delta.x, delta.y)
         assert self._bwm is not None
         face: BWMFace | None = self._bwm.faceAt(world.x, world.y)
 
-        if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+        if Qt.MouseButton.LeftButton in buttons and Qt.Key.Key_Control in keys:  # type: ignore[attr-defined]
             self.ui.renderArea.do_cursor_lock(screen)
-            self.ui.renderArea.camera.nudge_position(-worldData.x, -worldData.y)
-        elif QtCore.Qt.MouseButton.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+            self.ui.renderArea.camera.nudge_position(-world_data.x, -world_data.y)
+        elif Qt.MouseButton.MiddleButton in buttons and Qt.Key.Key_Control in keys:  # type: ignore[attr-defined]
             self.ui.renderArea.do_cursor_lock(screen)
             self.ui.renderArea.camera.nudge_rotation(delta.x / 50)
-        elif QtCore.Qt.MouseButton.LeftButton in buttons and face is not None:  # face will be None if user is clicking on nothing/background.
-            self.changeFaceMaterial(face)
+        elif Qt.MouseButton.LeftButton in buttons and face is not None:  # face will be None if user is clicking on nothing/background.
+            self.change_face_material(face)
 
-        coordsText = f"x: {world.x:.2f}, {world.y:.2f}"
-        faceText = f', face: {"None" if face is None else self._bwm.faces.index(face)}'
+        coords_text = f"x: {world.x:.2f}, {world.y:.2f}"
+        face_text = f', face: {"None" if face is None else self._bwm.faces.index(face)}'
 
         screen = self.ui.renderArea.to_render_coords(world.x, world.y)
         xy = f" || x: {screen.x:.2f}, " + f"y: {screen.y:.2f}, "
 
-        self.statusBar().showMessage(coordsText + faceText + xy)
+        self.statusBar().showMessage(coords_text + face_text + xy)
 
     def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if not delta.y:
             return  # sometimes it'll be zero when holding middlemouse-down.
-        if QtCore.Qt.Key_Control in keys:  # pyright: ignore[reportGeneralTypeIssues, attr-defined]
-            sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
-            zoomFactor = calculate_zoom_strength(delta.y, sensSetting)
-            self.ui.renderArea.camera.nudge_zoom(zoomFactor)
-            self.ui.renderArea.update()  # Trigger a re-render
+        if Qt.Key.Key_Control not in keys:  # pyright: ignore[reportGeneralTypeIssues, attr-defined]
+            return
+        sens_setting = ModuleDesignerSettings().zoomCameraSensitivity2d
+        zoom_factor = calculate_zoom_strength(delta.y, sens_setting)
+        self.ui.renderArea.camera.nudge_zoom(zoom_factor)
+        self.ui.renderArea.update()  # Trigger a re-render
 
-    def changeFaceMaterial(self, face: BWMFace):
+    def change_face_material(self, face: BWMFace):
         """Change material of a face.
 
         Args:
@@ -231,20 +230,12 @@ class BWMEditor(Editor):
             - Check if the current face material is different than the selected material
             - Assign the selected material to the provided face.
         """
-        newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.ItemDataRole.UserRole)  # type: ignore[attr-defined]
-        if face.material != newMaterial:
-            face.material = newMaterial
+        new_material = self.ui.materialList.currentItem().data(Qt.ItemDataRole.UserRole)  # type: ignore[attr-defined]
+        if face.material == new_material:
+            return
+        face.material = new_material
 
     def onTransitionSelect(self):
-        """Select currently highlighted transition in list.
-
-        Processing Logic:
-        ----------------
-            - Check if a transition is selected in the list
-            - If selected, get the selected item and extract the transition data
-            - Pass the transition data to the render area to highlight
-            - If no item selected, clear any existing highlight.
-        """
         if self.ui.transList.currentItem():
             item: QListWidgetItem | None = self.ui.transList.currentItem()
             self.ui.renderArea.setHighlightedTrans(item.data(_TRANS_FACE_ROLE))  # FIXME: no function 'setHighlightedTrans'

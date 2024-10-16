@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from qtpy.QtCore import QDir
 
-from utility.ui_libraries.qt.kernel.qplatformdialoghelper.qplatformdialoghelper import AcceptMode, FileMode, ViewMode
+from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qplatformdialoghelper import AcceptMode, FileMode, ViewMode
 
 
 class QFileDialogOptions:

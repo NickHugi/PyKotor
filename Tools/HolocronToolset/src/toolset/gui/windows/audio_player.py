@@ -15,7 +15,6 @@ from qtpy.QtCore import QBuffer, QIODevice, QTimer
 from qtpy.QtMultimedia import QAudioOutput, QMediaPlayer
 from qtpy.QtWidgets import QFileDialog, QMainWindow
 
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
 from utility.system.os_helper import remove_any
@@ -74,15 +73,15 @@ class AudioPlayer(QMainWindow):
         if not data:
             return
 
-        if qtpy.API_NAME in {"PyQt5", "PySide2"}:
+        if qtpy.QT5:
             self.buffer = QBuffer(self)
             self.buffer.setData(data)
             if not self.buffer.open(QIODevice.OpenModeFlag.ReadOnly):
                 print("Audio player Buffer not ready?")
                 return
             from qtpy.QtMultimedia import QMediaContent
-            self.player.setMedia(QMediaContent(), self.buffer)
-        else:
+            self.player.setMedia(QMediaContent(), self.buffer)  # pyright: ignore[reportAttributeAccessIssue]
+        elif qtpy.QT6:
             self.temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
             self.temp_file.write(data)
             self.temp_file.flush()
@@ -114,20 +113,20 @@ class AudioPlayer(QMainWindow):
 
     def open(self):
         filepath: str = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
-        if filepath:
+        if filepath and str(filepath).strip():
             with suppress(ValueError, TypeError):
                 resname, restype = ResourceIdentifier.from_path(filepath).validate().unpack()
-                data: bytes = BinaryReader.load_file(filepath)
+                data: bytes = Path(filepath).read_bytes()
                 self.load(filepath, resname, restype, data)
 
     def duration_changed(self, duration: int):
-        totalTime: str = time.strftime("%H:%M:%S", time.gmtime(duration // 1000))
-        self.ui.totalTimeLabel.setText(totalTime)
+        total_time: str = time.strftime("%H:%M:%S", time.gmtime(duration // 1000))
+        self.ui.totalTimeLabel.setText(total_time)
         self.ui.timeSlider.setMaximum(duration)
 
     def positionChanged(self, position: int):
-        currentTime: str = time.strftime("%H:%M:%S", time.gmtime(position // 1000))
-        self.ui.currentTimeLabel.setText(currentTime)
+        current_time: str = time.strftime("%H:%M:%S", time.gmtime(position // 1000))
+        self.ui.currentTimeLabel.setText(current_time)
 
         # sometimes QMediaPlayer does not accurately calculate the duration of the audio
         if position > self.ui.timeSlider.maximum():

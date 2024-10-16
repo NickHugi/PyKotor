@@ -47,7 +47,6 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
-from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -384,7 +383,7 @@ class ToolWindow(QMainWindow):
     def on_savepath_changed(self, new_save_dir: str):
         assert self.active is not None, "No active installation selected"
         self.ui.savesWidget.modules_model.invisibleRootItem().removeRows(0, self.ui.savesWidget.modules_model.rowCount())  # pyright: ignore[reportOptionalMemberAccess]
-        new_save_dir_path = CaseAwarePath(new_save_dir)
+        new_save_dir_path = Path(new_save_dir)
         if new_save_dir_path not in self.active.saves:
             self.active.load_saves()
         if new_save_dir_path not in self.active.saves:
@@ -484,7 +483,7 @@ class ToolWindow(QMainWindow):
         tsl: bool = self.settings.installations()[name].tsl
 
         # If the user has not set a path for the particular game yet, ask them too.
-        if not path or not path.strip() or not CaseAwarePath(path).is_dir():
+        if not path or not path.strip() or not Path(path).is_dir():
             if path and path.strip():
                 QMessageBox(QMessageBox.Icon.Warning, f"Installation '{path}' not found", "Select another path now.").exec()
             path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}", "Knights of the Old Republic II" if tsl else "swkotor")
@@ -495,7 +494,7 @@ class ToolWindow(QMainWindow):
             return
 
         active: HTInstallation | None = self.installations.get(name)
-        self.active = HTInstallation(CaseAwarePath(path), name, tsl=tsl) if active is None else active
+        self.active = HTInstallation(Path(path), name, tsl=tsl) if active is None else active
 
         # KEEP UI CODE IN MAIN THREAD!
         self.ui.resourceTabs.setEnabled(True)
@@ -523,7 +522,7 @@ class ToolWindow(QMainWindow):
         assert prepare_loader.value is not None
         assert self.active is not None
 
-        # Any issues past this point must call self.unsetInstallation()
+        # Any issues past this point must call self.unset_installation()
         try:
             RobustLogger().debug("Set sections of prepared lists")
             module_items, override_items, texture_items = prepare_loader.value
@@ -735,7 +734,7 @@ class ToolWindow(QMainWindow):
     @Slot()
     def open_active_talktable(self):
         assert self.active is not None, "No installation loaded."
-        c_filepath: CaseAwarePath = self.active.path() / "dialog.tlk"
+        c_filepath = self.active.path() / "dialog.tlk"
         if not c_filepath.exists() or not c_filepath.is_file():
             QMessageBox(QMessageBox.Icon.Information, "dialog.tlk not found", f"Could not open the TalkTable editor, dialog.tlk not found at the expected location<br><br>{c_filepath}.").exec()
             return
@@ -823,7 +822,7 @@ class ToolWindow(QMainWindow):
         filename = reslist.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
         if not filename:
             return
-        erf_filepath: CaseAwarePath = self.active.module_path() / filename
+        erf_filepath = self.active.module_path() / filename
         if not erf_filepath.is_file():
             return
         res_ident: ResourceIdentifier = ResourceIdentifier.from_path(erf_filepath)
@@ -872,7 +871,7 @@ class ToolWindow(QMainWindow):
         self.ui.overrideWidget.set_resource_selection(resource)
         subfolder: str = "."
         for folder_name in self.active.override_list():
-            folder_path: CaseAwarePath = self.active.override_path() / folder_name
+            folder_path = self.active.override_path() / folder_name
             if os.path.commonpath([resource.filepath(), folder_path]) == str(folder_path) and len(subfolder) < len(folder_path.name):
                 subfolder = folder_name
         self.change_override_folder(subfolder)
@@ -1069,7 +1068,7 @@ class ToolWindow(QMainWindow):
     @Slot(str)
     def _save_capsule_from_tool_ui(self, module_name: str):
         assert self.active is not None
-        c_filepath: CaseAwarePath = self.active.module_path() / module_name
+        c_filepath = self.active.module_path() / module_name
         capsule_filter: str = "Module (*.mod);;Encapsulated Resource File (*.erf);;Resource Image File (*.rim);;Save (*.sav);;All Capsule Types (*.erf; *.mod; *.rim; *.sav)"
         capsule_type: str = "mod"
         if is_erf_file(c_filepath):

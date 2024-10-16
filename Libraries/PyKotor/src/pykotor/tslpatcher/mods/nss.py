@@ -191,7 +191,7 @@ class ModificationsNSS(PatcherModifications):
             result: bool | bytes = "File is an include file, ignored" in stdout
             if not result:
                 # Return the compiled bytes
-                result = BinaryReader.load_file(tempcompiled_filepath)
+                result = tempcompiled_filepath.read_bytes()
 
         # Parse the output.
         if stdout.strip():

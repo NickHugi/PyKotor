@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.misc import Game
-from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
@@ -34,7 +33,7 @@ class InbuiltNCSCompiler(NCSCompiler):
         debug: bool = False,
     ):
         source_filepath: Path = Path(source_path)
-        nss_data: bytes = BinaryReader.load_file(source_filepath)
+        nss_data: bytes = source_filepath.read_bytes()
         nss_contents: str = decode_bytes_with_fallbacks(nss_data)
         ncs: NCS = compile_nss(nss_contents, game, optimizers, library_lookup=[source_filepath.parent], debug=debug)
         write_ncs(ncs, output_path)

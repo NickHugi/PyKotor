@@ -501,7 +501,7 @@ class MDLSkin:
         self,
     ):
         self.bone_indices: tuple[int, ...] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        self.qbones: list[Vector3] = []
+        self.qbones: list[Vector4] = []
         self.tbones: list[Vector3] = []
         self.bonemap: list[int] = []
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import importlib
 import os
 import platform
 
@@ -10,14 +11,14 @@ from typing import TYPE_CHECKING, Any, Union, cast
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import QAbstractProxyModel, QByteArray, QDataStream, QIODevice, QMimeData, QSortFilterProxyModel, QUrl, Qt
-from qtpy.QtGui import QClipboard, QValidator
+from qtpy.QtGui import QClipboard, QColor, QPalette, QValidator
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QColumnView,
     QDialog,
     QFileDialog,
-    QFileSystemModel,
+    QFileSystemModel,  # pyright: ignore[reportPrivateImportUsage]
     QHBoxLayout,
     QHeaderView,
     QInputDialog,
@@ -39,14 +40,13 @@ from utility.ui_libraries.qt.common.menu_definitions import FileExplorerMenus, M
 from utility.ui_libraries.qt.common.tasks.actions_executor import FileActionsExecutor
 
 try:
-    from win32com.shell import shell, shellcon  # pyright: ignore[reportMissingModuleSource]
+    importlib.util.find_spec("win32com")  # pyright: ignore[reportAttributeAccessIssue]
     HAS_PYWIN32 = True
 except ImportError:
     HAS_PYWIN32 = False
 
 try:
-    import comtypes  # pyright: ignore[reportMissingModuleSource, reportMissingTypeStubs]
-    import comtypes.client  # pyright: ignore[reportMissingModuleSource, reportMissingTypeStubs]
+    importlib.util.find_spec("comtypes")  # pyright: ignore[reportAttributeAccessIssue]
     HAS_COMTYPES = True
 except ImportError:
     HAS_COMTYPES = False
@@ -160,7 +160,7 @@ class ActionsDispatcher:
 
     def prepare_file_comparison(self):
         selected_items = self.get_selected_paths()
-        if len(selected_items) != 2:
+        if len(selected_items) != 2:  # noqa: PLR2004
             QMessageBox.warning(self.dialog, "Invalid Selection", "Please select exactly two files for comparison.")
             return
 
@@ -197,8 +197,8 @@ class ActionsDispatcher:
         view: QAbstractItemView = self.get_current_view()
         if not isinstance(view.itemDelegate(), QStyledItemDelegate):
             view.setItemDelegate(QStyledItemDelegate())
-        current_state = view.itemDelegate().hasCheckBoxes if hasattr(view.itemDelegate(), "hasCheckBoxes") else False
-        view.itemDelegate().setCheckBoxes(not current_state)
+        current_state = view.itemDelegate().hasCheckBoxes if hasattr(view.itemDelegate(), "hasCheckBoxes") else False  # type: ignore[attr-defined]
+        view.itemDelegate().setCheckBoxes(not current_state)  # type: ignore[attr-defined]
         view.viewport().update()
 
     def get_current_directory(self) -> Path:
@@ -228,7 +228,7 @@ class ActionsDispatcher:
 
                 for item in items:
                     item_label = QLabel(f'<a href="{item}">{item.name}</a>')
-                    item_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
+                    item_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
                     item_label.setOpenExternalLinks(True)
                     content_layout.addWidget(item_label)
 
@@ -238,7 +238,10 @@ class ActionsDispatcher:
                 # Buttons
                 button_layout = QHBoxLayout()
                 delete_button = QPushButton("Delete")
-                delete_button.setStyleSheet("background-color: #ff4d4d; color: white;")
+                palette = delete_button.palette()
+                palette.setColor(QPalette.ColorRole.Button, QColor(255, 77, 77))
+                palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+                delete_button.setPalette(palette)
                 delete_button.clicked.connect(self.accept)
                 cancel_button = QPushButton("Cancel")
                 cancel_button.clicked.connect(self.reject)
@@ -248,7 +251,7 @@ class ActionsDispatcher:
 
         dialog = CustomDeleteDialog(self.dialog, items)
         result = dialog.exec()
-        return result == QDialog.Accepted
+        return result == QDialog.DialogCode.Accepted
 
     def get_selected_paths(self) -> list[Path]:
         return [Path(file) for file in self.dialog.selectedFiles()]
@@ -301,7 +304,7 @@ class ActionsDispatcher:
     def prepare_sort(self, column_name):
         column_map: dict[str, int] = {}
         for column in range(self.fs_model.columnCount()):
-            header = self.fs_model.headerData(column, Qt.Horizontal, Qt.DisplayRole)
+            header = self.fs_model.headerData(column, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
             assert isinstance(header, str)
             column_map[header.casefold()] = column
 
@@ -313,6 +316,8 @@ class ActionsDispatcher:
 
     def get_current_view(self) -> QAbstractItemView:
         for view in self.dialog.findChildren(QAbstractItemView):
+            if not isinstance(view, QAbstractItemView):
+                continue
             if view.isVisible() and view.isEnabled():
                 return view
         raise RuntimeError("No visible view found")
@@ -504,7 +509,11 @@ class ActionsDispatcher:
         self.queue_task("share", paths)
 
     def prepare_show_hidden_items(self, show: bool):  # noqa: FBT001
-        self.fs_model.setFilter(self.fs_model.filter() | QDir.Hidden if show else self.fs_model.filter() & ~QDir.Hidden)
+        self.fs_model.setFilter(
+            self.fs_model.filter() | QDir.Filter.Hidden
+            if show
+            else self.fs_model.filter() & ~QDir.Filter.Hidden
+        )
         self.queue_task("refresh_view")
 
     def prepare_show_file_extensions(self, show: bool):  # noqa: FBT001
@@ -648,14 +657,6 @@ class ActionsDispatcher:
         operation = self.task_operations.get(task_id)
         if operation == "get_properties":
             self.show_properties_dialog(result)
-        elif operation == "batch_rename":
-            self.result_batch_rename(result)
-        elif operation == "find_duplicates":
-            self.result_find_duplicates(result)  # TODO: create a dialog for this
-        elif operation == "generate_hashes":
-            self.result_generate_hashes(result)  # TODO: create a dialog for this
-        elif operation == "shred_files":
-            self.fs_model.refreshFiles()
         else:
             print("Operation completed successfully:", operation)
         self.task_operations.pop(task_id)
@@ -708,6 +709,8 @@ if __name__ == "__main__":
     views = file_dialog.findChildren(QAbstractItemView)
 
     for view in views:
+        if not isinstance(view, QAbstractItemView):
+            continue
         print("Setting context menu policy for view:", view.objectName(), "of type:", type(view).__name__)
 
         def show_context_menu(pos: QPoint, view: QAbstractItemView = view):

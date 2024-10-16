@@ -19,8 +19,10 @@ except (ImportError, ModuleNotFoundError):
 absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
-if getattr(sys, "frozen", False) is False:
-
+if (
+    __name__ == "__main__"
+    and getattr(sys, "frozen", False) is False
+):
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -52,7 +54,7 @@ from pykotor.resource.type import ResourceType
 if TYPE_CHECKING:
     import types
 
-    from PySide2.QtWidgets import QApplication
+    from qtpy.QtWidgets import QApplication
     from toolset.data.installation import HTInstallation
 
 
@@ -155,7 +157,7 @@ class GFFEditorTest(TestCase):
         filepath = TESTS_FILES_PATH / "../toolset_tests/files/zio001.git"
         editor = self.Editor(None, self.get_installation_k1())
 
-        data = BinaryReader.load_file(filepath)
+        data = filepath.read_bytes()
         old = read_gff(data)
         editor.load(filepath, "zio001", ResourceType.GFF, data)
 

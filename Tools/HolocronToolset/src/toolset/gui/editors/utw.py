@@ -83,7 +83,7 @@ class UTWEditor(Editor):
         self._utw = utw
 
         # Basic
-        self.ui.nameEdit.setLocstring(utw.name)
+        self.ui.nameEdit.set_locstring(utw.name)
         self.ui.tagEdit.setText(utw.tag)
         self.ui.resrefEdit.setText(str(utw.resref))
 
