@@ -20,10 +20,7 @@ class TwoDABinaryReader(ResourceReader):
         self._twoda: TwoDA | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> TwoDA:
+    def load(self) -> TwoDA:
         """Loads a 2DA file from the provided reader.
 
         Args:
@@ -101,10 +98,7 @@ class TwoDABinaryWriter(ResourceWriter):
         self._twoda: TwoDA = twoda
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         """Writes the 2DA data to a binary file.
 
         Args:

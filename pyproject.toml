@@ -253,7 +253,7 @@ ignore = [
 ]
 "tests/*.py" = ["ALL"]
 ".github/*py" = ["INP001"]
-"__init__.py" = ["I001", "F401"]
+"__init__.py" = ["I001", "I002", "TID252", "F401"]
 "globalsettings.py" = ["I001", "F401"]
 "Tools/HolocronToolset/src/toolset/*.py" = [
     "FBT003",

@@ -6,22 +6,12 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import qtpy
 
-from qtpy.QtCore import (
-    QEvent,
-    QModelIndex,
-    QRect,
-    QSettings,
-    QTimer,
-    Qt,
-)
-from qtpy.QtGui import (
-    QColor,
-    QStandardItem,
-)
+from qtpy.QtCore import QEvent, QModelIndex, QRect, QSettings, QTimer, Qt
+from qtpy.QtGui import QColor, QStandardItem
 from qtpy.QtWidgets import (
     QAbstractItemView,
-    QAction,
-    QActionGroup,
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QActionGroup,  # pyright: ignore[reportPrivateImportUsage]
     QColorDialog,
     QHeaderView,
     QInputDialog,
@@ -36,21 +26,9 @@ from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 
 if TYPE_CHECKING:
 
-    from qtpy.QtCore import (
-        QAbstractItemModel,
-        QObject,
-        QPoint,
-    )
-    from qtpy.QtGui import (
-        QPainter,
-        QResizeEvent,
-        QStandardItemModel,
-        QWheelEvent,
-    )
-    from qtpy.QtWidgets import (
-        QStyledItemDelegate,
-        QWidget,
-    )
+    from qtpy.QtCore import QAbstractItemModel, QObject, QPoint
+    from qtpy.QtGui import QPainter, QResizeEvent, QStandardItemModel, QWheelEvent
+    from qtpy.QtWidgets import QStyledItemDelegate, QWidget
     from typing_extensions import Literal
 
 

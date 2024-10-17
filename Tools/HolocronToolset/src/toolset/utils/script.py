@@ -5,6 +5,7 @@ import re
 import uuid
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from loggerplus import RobustLogger
 from qtpy.QtWidgets import QFileDialog, QMessageBox
@@ -13,17 +14,14 @@ from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
-from pykotor.resource.formats.ncs.compilers import (
-    ExternalNCSCompiler,
-    KnownExternalCompilers,
-)
+from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler, KnownExternalCompilers
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.resource.type import ResourceType
 from pykotor.tools.registry import SpoofKotorRegistry
-from toolset.gui.widgets.settings.installations import (
-    GlobalSettings,
-    NoConfigurationSetError,
-)
+from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
+
+if TYPE_CHECKING:
+    from typing_extensions import LiteralString
 
 NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
     "PyKotor has detected you are using the {} version of nwnnsscomp.<br>"
@@ -76,7 +74,7 @@ def ht_decompile_script(
         The string of the decompiled script.
     """
     global_settings = GlobalSettings()
-    extract_path = setupExtractPath()
+    extract_path: Path = setup_extract_path()
 
     ncs_decompiler_path = Path(global_settings.ncsDecompilerPath)
     if (
@@ -94,9 +92,9 @@ def ht_decompile_script(
     global_settings.extractPath = str(extract_path)
     global_settings.ncsDecompilerPath = str(ncs_decompiler_path)
 
-    tempscript_filestem = f"tempscript_{uuid.uuid1().hex[:7]}"
-    tempCompiledPath = extract_path / f"{tempscript_filestem}.ncs"
-    temp_decompiled_path = extract_path / f"{tempscript_filestem}_decompiled.txt"
+    tempscript_filestem: str = f"tempscript_{uuid.uuid1().hex[:7]}"
+    tempCompiledPath: Path = extract_path / f"{tempscript_filestem}.ncs"
+    temp_decompiled_path: Path = extract_path / f"{tempscript_filestem}_decompiled.txt"
     BinaryWriter.dump(tempCompiledPath, compiled_bytes)
 
     gameEnum: Game = Game.K2 if tsl else Game.K1
@@ -126,7 +124,7 @@ def ht_decompile_script(
         raise ValueError(stderr)  # noqa: TRY301
     return temp_decompiled_path.read_text(encoding="windows-1252")
 
-def setupExtractPath() -> Path:
+def setup_extract_path() -> Path:
     global_settings = GlobalSettings()
     extract_path = Path(global_settings.extractPath)
 
@@ -167,7 +165,7 @@ def ht_compile_script(
         Bytes object of the compiled script.
     """
     global_settings = GlobalSettings()
-    extract_path = setupExtractPath()
+    extract_path: Path = setup_extract_path()
 
     return_value: int | None = None
     if os.name == "nt":
@@ -175,7 +173,7 @@ def ht_compile_script(
 
     if os.name == "posix" or return_value == QMessageBox.StandardButton.Yes:
         log.debug("user chose Yes, compiling with builtin")
-        return bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1, library_lookup=[extract_path]))
+        return bytes(bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1, library_lookup=[extract_path])))
     if return_value == QMessageBox.StandardButton.No:
         log.debug("user chose No, compiling with nwnnsscomp")
         return _execute_nwnnsscomp_compile(global_settings, extract_path, source, installation_path, tsl=tsl)
@@ -186,7 +184,7 @@ def ht_compile_script(
     # This should never be reached, leave in for static type checkers.
     raise ValueError("Could not get the NCS bytes.")  # noqa: TRY003, EM101
 
-def _prompt_additional_include_dirs(
+def _prompt_additional_include_dirs(  # noqa: PLR0913
     extCompiler: ExternalNCSCompiler,
     source: str,
     stderr: str,
@@ -195,8 +193,9 @@ def _prompt_additional_include_dirs(
     extract_path: Path,
     gameEnum: Game,
 ) -> tuple[str, str]:
+    stdout = ""
     include_missing_errstr = "Unable to open the include file"
-    pattern = rf'{include_missing_errstr} "([^"\n]*)"'
+    pattern: LiteralString = rf'{include_missing_errstr} "([^"\n]*)"'
     while include_missing_errstr in stderr:
         match: re.Match | None = re.search(pattern, stderr)
         include_path_str = QFileDialog.getExistingDirectory(
@@ -247,12 +246,11 @@ def _execute_nwnnsscomp_compile(
             msg = "NCS Compiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
-    global_settings.extractPath = str(extract_path)
     global_settings.nssCompilerPath = str(nss_compiler_path)
 
-    tempscript_filestem = f"tempscript_{uuid.uuid1().hex[:7]}"
-    tempSourcePath = extract_path / f"{tempscript_filestem}.nss"
-    tempCompiledPath = extract_path / f"{tempscript_filestem}.ncs"
+    tempscript_filestem: str = f"tempscript_{uuid.uuid1().hex[:7]}"
+    tempSourcePath: Path = extract_path / f"{tempscript_filestem}.nss"
+    tempCompiledPath: Path = extract_path / f"{tempscript_filestem}.ncs"
     tempSourcePath.write_text(source)
 
     gameEnum: Game = Game.K2 if tsl else Game.K1
@@ -324,7 +322,7 @@ def handle_permission_error(
         raise
 
     # Spoofing was required but failed. Show the relevant message.
-    msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
+    msg: str = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
         extCompiler.get_info().value.name,
         reg_spoofer.registry_path,
         installation_path,

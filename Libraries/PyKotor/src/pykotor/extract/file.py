@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Iterator
@@ -484,24 +483,23 @@ class ResourceIdentifier:
 
         Processing Logic:
         ----------------
-            - Splits the file path into resource name and type by filename dots, starting from maximum dots
-            - Validates the extracted resource type
-            - If splitting fails, uses stem as name and extension (from the last dot) as type
-            - Handles exceptions during processing
+            - Splits the file path into resource name and type
+            - Attempts to validate the extracted resource type, starting from the full extension
+            - If validation fails, progressively shortens the extension and tries again
+            - If all attempts fail, uses stem as name and sets type to INVALID
         """
         try:
             path_obj = PurePath(file_path)
-        except Exception:
-            return cls("", ResourceType.from_extension(""))
-
-        max_dots: int = path_obj.name.count(".")
-        for dots in range(max_dots + 1, 1, -1):
-            with suppress(Exception):
-                resname, restype_ext = path_obj.split_filename(dots)
-                return cls(
-                    resname,
-                    ResourceType.from_extension(restype_ext).validate(),
-                )
-
-        # ResourceType is invalid at this point.
-        return cls(path_obj.stem, ResourceType.from_extension(path_obj.suffix))
+        except Exception:  # noqa: BLE001
+            resname, ext = str(file_path).split(".", 1)
+            return cls(resname, ResourceType.from_extension(ext))
+        name_parts = path_obj.name.split(".")
+        extension_parts = name_parts[1:]
+        while extension_parts:
+            ext = ".".join(extension_parts)
+            restype = ResourceType.from_extension(ext)
+            if restype:
+                resname = ".".join(name_parts[:-len(extension_parts)])
+                return cls(resname, restype)
+            extension_parts.pop(0)
+        return cls(path_obj.stem, ResourceType.from_invalid(extension=path_obj.suffix))

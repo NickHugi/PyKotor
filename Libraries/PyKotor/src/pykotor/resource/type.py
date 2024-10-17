@@ -19,6 +19,8 @@ from utility.common.misc_string.mutable_str import WrappedStr
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from typing_extensions import Literal, Self
+
     from pykotor.common.stream import BinaryWriterBytearray, BinaryWriterFile
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
@@ -27,15 +29,66 @@ SOURCE_TYPES = Union[BASE_SOURCE_TYPES, STREAM_TYPES]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
 
 
+R = TypeVar("R")
+
+
+def autoclose(func: Callable[..., R]) -> Callable[..., R]:
+    def wrapper(self: ResourceReader | ResourceWriter) -> R:  # noqa: FBT002, FBT001
+        try:
+            resource: R = func(self)
+        except (
+            OSError,
+            ParseError,
+            ValueError,
+            IndexError,
+            StopIteration,
+            struct.error,
+        ) as e:
+            msg = "Tried to save or load an unsupported or corrupted file."
+            raise ValueError(msg) from e
+        finally:
+            self.close()
+        return resource
+
+    return wrapper
+
+
 class ResourceReader:
     def __init__(
         self,
         source: SOURCE_TYPES,
         offset: int = 0,
-        size: int = 0,
+        size: int | None = None,
+        *,
+        use_binary_reader: bool = True,
     ):
-        self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
-        self._size: int = self._reader.remaining() if size == 0 else size
+        if use_binary_reader:
+            self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
+            self._size: int = size or self._reader.remaining()
+        else:
+            if isinstance(source, memoryview):
+                loaded_src = bytearray(source)
+            elif isinstance(source, (bytes, bytearray)):
+                loaded_src = source if isinstance(source, bytearray) else bytearray(source)
+            elif isinstance(source, (os.PathLike, str)):
+                with open(  # noqa: PTH123
+                    os.path.normpath(source) if isinstance(source, str) else os.fspath(source),
+                    "rb",
+                ) as f:
+                    loaded_src = bytearray(f.read())
+            elif isinstance(source, io.BufferedIOBase):
+                loaded_src = bytearray(source.read())
+            elif isinstance(source, mmap.mmap):
+                loaded_src = bytearray(source)
+            else:
+                data: bytes | None = source.read()
+                if data is None:
+                    raise ValueError("Could not read from source")
+                loaded_src = bytearray(data)
+
+            self._offset: int = offset
+            self._size: int = len(loaded_src)
+            self._source: bytearray = loaded_src[offset : self._size]
 
     def close(
         self,
@@ -48,7 +101,7 @@ class ResourceWriter:
         self,
         target: TARGET_TYPES,
     ):
-        self._writer: BinaryWriterFile | BinaryWriterBytearray = BinaryWriter.to_auto(target)
+        self._writer: BinaryWriterFile | BinaryWriterBytearray = BinaryWriter.to_auto(target)  # pyright: ignore[reportAttributeAccessIssue]
 
     def close(
         self,
@@ -158,7 +211,7 @@ class ResourceType(Enum):
     TTF = ResourceTuple(2072, "ttf", "Fonts", "binary")  # pyright: ignore[reportCallIssue]
     TTC = ResourceTuple(2073, "ttc", "Unused", "binary")  # pyright: ignore[reportCallIssue]
     CUT = ResourceTuple(2074, "cut", "Cutscenes", "gff")  # pyright: ignore[reportCallIssue]
-    KA  = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221  # pyright: ignore[reportCallIssue]
+    KA = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221  # pyright: ignore[reportCallIssue]
     JPG = ResourceTuple(2076, "jpg", "Images", "binary")  # pyright: ignore[reportCallIssue]
     ICO = ResourceTuple(2077, "ico", "Images", "binary")  # pyright: ignore[reportCallIssue]
     OGG = ResourceTuple(2078, "ogg", "Audio", "binary")  # pyright: ignore[reportCallIssue]
@@ -229,7 +282,7 @@ class ResourceType(Enum):
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext", target_member="LIP")  # pyright: ignore[reportCallIssue]
     RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext", target_member="RES")  # pyright: ignore[reportCallIssue]
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> Self:
         obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
         name = args[1].upper() or "INVALID"
         while name in cls.__members__:
@@ -258,8 +311,93 @@ class ResourceType(Enum):
         """Returns True if this resourcetype is a gff, excluding the xml/json abstractions, False otherwise."""
         return self.contents == "gff"
 
-    def target_type(self):
+    def target_type(self) -> Self:
         return self if self.target_member is None else self.__class__.__members__[self.target_member]
+
+    @classmethod
+    @lru_cache(maxsize=0xFFFF)
+    def from_id(
+        cls,
+        type_id: int | str,
+    ) -> Self:
+        """Returns the ResourceType for the specified id.
+
+        Args:
+        ----
+            type_id: The resource id.
+
+        Returns:
+        -------
+            The corresponding ResourceType object.
+        """
+        if isinstance(type_id, str):
+            type_id = int(type_id)
+
+        return next(
+            (restype for restype in cls.__members__.values() if type_id == restype),
+            cls.from_invalid(type_id=type_id),
+        )
+
+    @classmethod
+    def from_extension(
+        cls,
+        extension: str,
+    ) -> Self:
+        """Returns the ResourceType for the specified extension.
+
+        This will slice off the leading dot in the extension, if it exists.
+
+        Args:
+        ----
+            extension: The resource's extension. This is case-insensitive
+
+        Returns:
+        -------
+            The corresponding ResourceType object.
+        """
+        lower_ext: str = extension.lower()
+        if lower_ext.startswith("."):
+            lower_ext = lower_ext[1:]
+        return next(
+            (restype for restype in cls.__members__.values() if lower_ext == restype.extension),
+            cls.from_invalid(extension=lower_ext),
+        )
+
+    @classmethod
+    def from_invalid(
+        cls,
+        **kwargs,
+    ) -> Self | Literal[ResourceType.INVALID]:
+        if not kwargs:
+            return cls.INVALID
+        instance = object.__new__(cls)
+        name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension)) or uuid.uuid4().hex}"
+        while name in cls.__members__:
+            name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
+        instance._name_ = name
+        instance._value_ = ResourceTuple(
+            type_id=kwargs.get("type_id", cls.INVALID.type_id),
+            extension=kwargs.get("extension", cls.INVALID.extension),
+            category=kwargs.get("category", cls.INVALID.category),
+            contents=kwargs.get("contents", cls.INVALID.contents),
+            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
+            target_member=kwargs.get("target_member", cls.INVALID.target_member),
+        )
+        instance.__init__(
+            type_id=kwargs.get("type_id", cls.INVALID.type_id),
+            extension=kwargs.get("extension", cls.INVALID.extension),
+            category=kwargs.get("category", cls.INVALID.category),
+            contents=kwargs.get("contents", cls.INVALID.contents),
+            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
+            target_member=kwargs.get("target_member", cls.INVALID.target_member),
+        )
+        return super().__new__(cls, instance)
+
+    def validate(self) -> Self:
+        if not self:
+            msg = f"Invalid ResourceType: '{self!r}'"
+            raise ValueError(msg)
+        return self
 
     def __bool__(self) -> bool:
         return not self.is_invalid
@@ -314,106 +452,3 @@ class ResourceType(Enum):
 
     def __hash__(self):
         return hash(self.extension)
-
-    @classmethod
-    @lru_cache(maxsize=0xFFFF)
-    def from_id(
-        cls,
-        type_id: int | str,
-    ) -> ResourceType:
-        """Returns the ResourceType for the specified id.
-
-        Args:
-        ----
-            type_id: The resource id.
-
-        Returns:
-        -------
-            The corresponding ResourceType object.
-        """
-        if isinstance(type_id, str):
-            type_id = int(type_id)
-
-        return next(
-            (restype for restype in ResourceType.__members__.values() if type_id == restype),
-            ResourceType.from_invalid(type_id=type_id),
-        )
-
-    @classmethod
-    def from_extension(
-        cls,
-        extension: str,
-    ) -> ResourceType:
-        """Returns the ResourceType for the specified extension.
-
-        This will slice off the leading dot in the extension, if it exists.
-
-        Args:
-        ----
-            extension: The resource's extension. This is case-insensitive
-
-        Returns:
-        -------
-            The corresponding ResourceType object.
-        """
-        lower_ext: str = extension.lower()
-        if lower_ext.startswith("."):
-            lower_ext = lower_ext[1:]
-        return next(
-            (restype for restype in ResourceType.__members__.values() if lower_ext == restype.extension),
-            ResourceType.from_invalid(extension=lower_ext),
-        )
-
-    @classmethod
-    def from_invalid(
-        cls,
-        **kwargs,
-    ):
-        if not kwargs:
-            return cls.INVALID
-        instance = object.__new__(cls)
-        name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension)) or uuid.uuid4().hex}"
-        while name in cls.__members__:
-            name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
-        instance._name_ = name
-        instance._value_ = ResourceTuple(
-            type_id=kwargs.get("type_id", cls.INVALID.type_id),
-            extension=kwargs.get("extension", cls.INVALID.extension),
-            category=kwargs.get("category", cls.INVALID.category),
-            contents=kwargs.get("contents", cls.INVALID.contents),
-            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
-            target_member=kwargs.get("target_member", cls.INVALID.target_member)
-        )
-        instance.__init__(
-            type_id=kwargs.get("type_id", cls.INVALID.type_id),
-            extension=kwargs.get("extension", cls.INVALID.extension),
-            category=kwargs.get("category", cls.INVALID.category),
-            contents=kwargs.get("contents", cls.INVALID.contents),
-            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
-            target_member=kwargs.get("target_member", cls.INVALID.target_member)
-        )
-        return super().__new__(cls, instance)
-
-    def validate(self):
-        if not self:
-            msg = f"Invalid ResourceType: '{self!r}'"
-            raise ValueError(msg)
-        return self
-
-
-R = TypeVar("R")
-
-
-def autoclose(func: Callable[..., R]) -> Callable[..., R]:
-    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
-        try:
-            resource: R = func(self, auto_close)
-        except (OSError, ParseError, ValueError, IndexError, StopIteration, struct.error) as e:
-            msg = "Tried to save or load an unsupported or corrupted file."
-            raise ValueError(msg) from e
-        finally:
-            if auto_close:
-                self.close()
-        return resource
-
-    return _autoclose

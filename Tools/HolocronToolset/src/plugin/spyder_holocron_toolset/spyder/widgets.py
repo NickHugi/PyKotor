@@ -26,7 +26,7 @@ class HolocronToolbar(QToolBar):
         self.installation_selector.clear()
         self.installation_selector.addItem("Select Installation")
         for installation in installations:
-            self.installation_selector.addItem(installation)
+            self.installation_selector.addItem(installation["name"])
 
     @Slot(str)
     def on_installation_changed(self, installation_name):
@@ -51,4 +51,4 @@ class HolocronStatus(StatusBarWidget):
 
     def set_value(self, value):
         self.value = value
-        self.update_status()
+        self.update_status

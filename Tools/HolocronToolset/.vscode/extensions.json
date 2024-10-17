@@ -8,6 +8,7 @@
     "charliermarsh.ruff",
     "tamasfe.even-better-toml",
     "chinmaybharti.codequalitychecker",
-    "codeantai.codeantai"
+    "codeantai.codeantai",
+    "saoudrizwan.claude-dev"
   ]
 }

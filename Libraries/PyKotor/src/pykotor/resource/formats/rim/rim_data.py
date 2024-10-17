@@ -7,12 +7,13 @@ from typing import Any, Generator
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.resource.bioware_archive import ArchiveResource, BiowareArchive
 from pykotor.resource.formats.erf.erf_data import ERF
 from pykotor.resource.type import ResourceType
 from utility.common.more_collections import OrderedSet
 
 
-class RIM:
+class RIM(BiowareArchive):
     """Represents the data of a RIM file."""
 
     BINARY_TYPE = ResourceType.RIM
@@ -156,19 +157,17 @@ class RIM:
             erf.set_data(str(resource.resref), resource.restype, resource.data)
         return erf
 
-    def calculate_resource_offsets(self) -> dict[RIMResource, int]:
+    def get_resource_offset(self, resource: RIMResource) -> int:
         from pykotor.resource.formats.rim.io_rim import RIMBinaryWriter
+
         entry_count = len(self._resources)
         offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
         data_start = offset_to_keys + RIMBinaryWriter.KEY_ELEMENT_SIZE * entry_count
 
-        offsets = {}
-        offset = data_start
-        for resource in self._resources:
-            offsets[resource] = offset
-            offset += len(resource.data)
+        resource_index = self._resources.index(resource)
+        offset = data_start + sum(len(res.data) for res in self._resources[:resource_index])
 
-        return offsets
+        return offset
 
     def __eq__(self, other):
         from pykotor.resource.formats.rim import RIM
@@ -177,34 +176,6 @@ class RIM:
         return set(self._resources) == set(other._resources)
 
 
-class RIMResource:
-    def __init__(
-        self,
-        resref: ResRef,
-        restype: ResourceType,
-        data: bytes,
-    ):
-        self.resref: ResRef = resref
-        self.restype: ResourceType = restype
-        if isinstance(data, bytearray):  # FIXME: Something is passing bytearray here. This breaks the __hash__ function.
-            data = bytes(data)
-        self.data: bytes = data
-
-    def __eq__(
-        self,
-        other,
-    ):
-        from pykotor.resource.formats.erf import ERFResource
-        if not isinstance(other, (ERFResource, RIMResource)):
-            return NotImplemented
-        return (
-            self.resref == other.resref
-            and self.restype == other.restype
-            and self.data == other.data
-        )
-
-    def __hash__(self):
-        return hash((self.resref, self.restype, self.data))
-
-    def identifier(self) -> ResourceIdentifier:
-        return ResourceIdentifier(str(self.resref), self.restype)
+class RIMResource(ArchiveResource):
+    def __init__(self, resref: ResRef, restype: ResourceType, data: bytes):
+        super().__init__(resref=resref, restype=restype, data=data)

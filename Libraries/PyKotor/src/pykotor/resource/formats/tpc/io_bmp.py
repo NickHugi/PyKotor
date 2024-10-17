@@ -32,10 +32,7 @@ class TPCBMPWriter(ResourceWriter):
         self._tpc: TPC = tpc
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         """Writes the texture to a bitmap file.
 
         Args:
@@ -54,9 +51,7 @@ class TPCBMPWriter(ResourceWriter):
         else:
             self._write_with_custom_logic()
 
-    def _write_with_pillow(
-        self,
-    ):
+    def _write_with_pillow(self):
         if self._tpc is None:
             raise ValueError("TPC instance is not set.")
 
@@ -70,9 +65,7 @@ class TPCBMPWriter(ResourceWriter):
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
         img.save(self._writer._stream if isinstance(self._writer, BinaryWriterFile) else io.BytesIO(self._writer._ba), format="BMP")
 
-    def _write_with_custom_logic(
-        self,
-    ):
+    def _write_with_custom_logic(self):
         if self._tpc is None:
             raise ValueError("TPC instance is not set.")
         width, height, data = self._tpc.convert(TPCTextureFormat.RGB)

@@ -26,10 +26,7 @@ class LYTAsciiReader(ResourceReader):
         self._lines: list[str] = []
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> LYT:
+    def load(self) -> LYT:
         self._lyt = LYT()
 
         self._lines = self._reader.read_string(self._reader.size()).splitlines()
@@ -46,9 +43,6 @@ class LYTAsciiReader(ResourceReader):
                 self._load_obstacles(iterator, int(tokens[1]))
             if tokens[0] == "doorhookcount":
                 self._load_doorhooks(iterator, int(tokens[1]))
-
-        if auto_close:
-            self._reader.close()
 
         return self._lyt
 
@@ -116,10 +110,7 @@ class LYTAsciiWriter(ResourceWriter):
         self._lyt: LYT = lyt
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         roomcount = len(self._lyt.rooms)
         trackcount = len(self._lyt.tracks)
         obstaclecount = len(self._lyt.obstacles)
@@ -152,6 +143,3 @@ class LYTAsciiWriter(ResourceWriter):
             )
 
         self._writer.write_string("donelayout")
-
-        if auto_close:
-            self._writer.close()

@@ -48,10 +48,7 @@ class BWMBinaryReader(ResourceReader):
         self.absolute_hook2: Vector3 = Vector3.from_null()
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> BWM:
+    def load(self) -> BWM:
         """Loads a binary BWM file and returns a BWM object.
 
         Args:
@@ -166,10 +163,7 @@ class BWMBinaryWriter(ResourceWriter):
         self._wok: BWM = wok
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         """Writes the walkmesh data to a binary file.
 
         Args:

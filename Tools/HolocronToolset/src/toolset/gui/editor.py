@@ -6,7 +6,7 @@ import uuid
 
 from abc import abstractmethod
 from contextlib import suppress
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import qtpy
@@ -31,6 +31,7 @@ from qtpy.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QMenu,
+    QMenuBar,
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
@@ -56,7 +57,7 @@ from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
-from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
+from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.os_helper import remove_any
 
@@ -66,10 +67,14 @@ if TYPE_CHECKING:
     from pathlib import PurePath
 
     from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer
+    from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer
+    from qtpy.QtCore import QRect
     from qtpy.QtGui import QFocusEvent, QMouseEvent, QShowEvent
-    from qtpy.QtMultimedia import QMediaPlayer as PySide6MediaPlayer
+    from qtpy.QtMultimedia import QAudioOutput
+    from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
+    from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
 
@@ -88,15 +93,15 @@ class MediaPlayerWidget(QWidget):
         self.current_speed_index: int = 0
 
         self.play_pause_button: QPushButton = QPushButton()
-        self.play_pause_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
+        self.play_pause_button.setIcon(cast(QStyle, self.style()).standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
         self.play_pause_button.setFixedSize(24, 24)
 
         self.stop_button: QPushButton = QPushButton()
-        self.stop_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaStop))
+        self.stop_button.setIcon(cast(QStyle, self.style()).standardIcon(QStyle.StandardPixmap.SP_MediaStop))
         self.stop_button.setFixedSize(24, 24)
 
         self.mute_button: QPushButton = QPushButton()
-        self.mute_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))
+        self.mute_button.setIcon(cast(QStyle, self.style()).standardIcon(QStyle.StandardPixmap.SP_MediaVolume))
         self.mute_button.setFixedSize(24, 24)
 
         button_layout: QHBoxLayout = QHBoxLayout()
@@ -153,9 +158,9 @@ class MediaPlayerWidget(QWidget):
                 ev.accept()
             super(QSlider, slider).focusOutEvent(ev)
 
-        self.time_slider.mouseMoveEvent = slider_mouse_move_event
-        self.time_slider.mousePressEvent = slider_mouse_press_event
-        self.time_slider.mouseReleaseEvent = slider_mouse_release_event
+        self.time_slider.mouseMoveEvent = slider_mouse_move_event  # type: ignore[attr-defined]
+        self.time_slider.mousePressEvent = slider_mouse_press_event  # type: ignore[attr-defined]
+        self.time_slider.mouseReleaseEvent = slider_mouse_release_event  # type: ignore[attr-defined]
         self.time_slider.focusOutEvent = slider_focus_out_event  # type: ignore[attr-defined]
 
     def on_play_pause_button_clicked(self):
@@ -185,9 +190,9 @@ class MediaPlayerWidget(QWidget):
             self.show_widget()
 
     def format_time(self, msecs: int) -> str:
-        secs = msecs // 1000
-        mins = secs // 60
-        hrs = mins // 60
+        secs: int = msecs // 1000
+        mins: int = secs // 60
+        hrs: int = mins // 60
         return f"{hrs:02}:{mins % 60:02}:{secs % 60:02}"
 
     def on_media_state_changed(self, state: QMediaPlayer.MediaStatus):
@@ -203,11 +208,11 @@ class MediaPlayerWidget(QWidget):
     def change_playback_speed(self, direction: int):
         """Some qt bug prevents this from working properly. Requires a start and a play in order to take effect."""
         self.current_speed_index = max(0, min(len(self.speed_levels) - 1, self.current_speed_index + direction))
-        new_rate = self.speed_levels[self.current_speed_index]
+        new_rate: float = self.speed_levels[self.current_speed_index]
         state_enum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # type: ignore[attr-defined]
         state_getter = self.player.state if qtpy.QT5 else self.player.playbackState  # type: ignore[attr-defined]
-        was_playing = state_getter() == state_enum.PlayingState
-        current_position = self.player.position()
+        was_playing: bool = state_getter() == state_enum.PlayingState
+        current_position: int = self.player.position()
         self.player.setPlaybackRate(new_rate)
         self.player.setPosition(current_position)
         if was_playing:
@@ -218,10 +223,10 @@ class MediaPlayerWidget(QWidget):
             self.player.setMuted(not self.player.isMuted())  # type: ignore[attr-defined]
             muted = self.player.isMuted()  # type: ignore[attr-defined]
         else:
-            audio_output = self.player.audioOutput()  # type: ignore[attr-defined]
-            current_volume = audio_output.volume()  # type: ignore[attr-defined]
+            audio_output: QAudioOutput | None = self.player.audioOutput()  # type: ignore[attr-defined]
+            current_volume: float = audio_output.volume()  # type: ignore[attr-defined]
             if current_volume > 0:
-                self.previous_volume = current_volume
+                self.previous_volume: float = current_volume
                 audio_output.setVolume(0)  # type: ignore[attr-defined]
                 muted = True
             else:
@@ -235,14 +240,14 @@ class MediaPlayerWidget(QWidget):
     def on_position_changed(self, position: int):
         if not self.time_slider.isSliderDown():
             self.time_slider.setValue(position)
-        current_time = self.format_time(position)
-        total_time = self.format_time(self.time_slider.maximum())
+        current_time: str = self.format_time(position)
+        total_time: str = self.format_time(self.time_slider.maximum())
         self.time_label.setText(f"{current_time} / {total_time}")
 
     def on_duration_changed(self, duration: int):
         self.time_slider.setRange(0, duration)
-        total_time = self.format_time(duration)
-        current_time = self.format_time(self.time_slider.value())
+        total_time: str = self.format_time(duration)
+        current_time: str = self.format_time(self.time_slider.value())
         self.time_label.setText(f"{current_time} / {total_time}")
 
     def show_widget(self):
@@ -339,7 +344,9 @@ class Editor(QMainWindow):
     def build(self) -> tuple[bytes, bytes]: ...
 
     def _setup_menus(self):
-        menubar_menu = self.menuBar().actions()[0].menu()
+        menubar: QMenuBar | None = self.menuBar()
+        assert menubar is not None, "menubar is somehow None"
+        menubar_menu: QMenu | None = menubar.actions()[0].menu()
         if not isinstance(menubar_menu, QMenu):
             raise TypeError(f"self.menuBar().actions()[0].menu() returned a {type(menubar_menu).__name__} object, expected QMenu.")
         for action in menubar_menu.actions():
@@ -364,27 +371,26 @@ class Editor(QMainWindow):
         QShortcut("Ctrl+R", self).activated.connect(self.revert)
         QShortcut("Ctrl+Q", self).activated.connect(self.close)
 
-    def _setup_icon(self, icon_name: str):
-        iconVersion = "x" if self._installation is None else "2" if self._installation.tsl else "1"
-        iconPath = f":/images/icons/k{iconVersion}/{icon_name}.png"
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
+    def _setup_icon(self, icon_resname: str):
+        icon_version: Literal["x", "2", "1"] = "x" if self._installation is None else "2" if self._installation.tsl else "1"
+        icon_path_str: str = f":/images/icons/k{icon_version}/{icon_resname}.png"
+        self.setWindowIcon(QIcon(QPixmap(icon_path_str)))
 
     def setup_extract_path(self) -> Path:
         extract_path = Path(GlobalSettings().extractPath)
         if not extract_path.exists() or not extract_path.is_dir():
-            extract_path_str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
-            extract_path = Path(extract_path_str) if extract_path_str and extract_path_str.strip() else None
-            if not extract_path or not extract_path.exists() or not extract_path.is_dir():
-                msg = "Temp directory has not been set or is invalid."
-                raise NoConfigurationSetError(msg)
+            extract_path_str: str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
+            if not extract_path_str.strip():
+                GlobalSettings().extractPath = tempfile.gettempdir()
+                return Path(GlobalSettings().extractPath)
         return extract_path
 
     def refresh_window_title(self):
         """Refreshes the window title based on the current state of the editor."""
-        installation_name = self._installation.name if self._installation else "No Installation"
-        title = f"{self._editor_title}({installation_name})[*]"
+        installation_name: str = self._installation.name if self._installation else "No Installation"
+        title: str = f"{self._editor_title}({installation_name})[*]"
         if self._filepath and self._resname and self._restype:
-            relpath = self._filepath.relative_to(self._filepath.parent.parent) if self._filepath.parent.parent.name else self._filepath.parent
+            relpath: Path = self._filepath.relative_to(self._filepath.parent.parent) if self._filepath.parent.parent.name else self._filepath.parent
             from toolset.gui.editors.erf import ERFEditor
 
             if (is_bif_file(relpath) or is_capsule_file(self._filepath)) and not isinstance(self, ERFEditor):
@@ -394,7 +400,7 @@ class Editor(QMainWindow):
 
     def setup_editor_filters(self, read_supported: list[ResourceType], write_supported: list[ResourceType]):
         write_supported = read_supported.copy() if read_supported is write_supported else write_supported
-        additional_formats = {"XML", "JSON", "CSV", "ASCII", "YAML"}
+        additional_formats: set[str] = {"XML", "JSON", "CSV", "ASCII", "YAML"}
         for add_format in additional_formats:
             read_supported.extend(
                 ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in read_supported if f"{restype.name}_{add_format}" in ResourceType.__members__
@@ -479,7 +485,7 @@ class Editor(QMainWindow):
         self.save()
 
         self.refresh_window_title()
-        for action in cast(QMenu, self.menuBar().actions()[0].menu()).actions():
+        for action in cast(QMenu, cast(QMenuBar, self.menuBar()).actions()[0].menu()).actions():
             if action.text() == "Revert":
                 action.setEnabled(True)
 
@@ -502,10 +508,10 @@ class Editor(QMainWindow):
                 and self._revert is not None
             ):
                 print("Adding deleted fields from original gff into final gff.")
-                old_gff = read_gff(self._revert)
-                new_gff = read_gff(data)
+                old_gff: GFF = read_gff(self._revert)
+                new_gff: GFF = read_gff(data)
                 new_gff.root.add_missing(old_gff.root)
-                data = bytes_gff(new_gff)
+                data: bytes = bytes_gff(new_gff)
             self._revert = data
 
             self.refresh_window_title()
@@ -610,7 +616,7 @@ class Editor(QMainWindow):
         if is_any_erf_type_file(self._filepath) or is_rim_file(self._filepath):
             nested_paths.append(self._filepath)
 
-        r_parent_filepath = self._filepath.parent
+        r_parent_filepath: Path = self._filepath.parent
         while (
             (
                 ResourceType.from_extension(r_parent_filepath.suffix).name
@@ -631,27 +637,23 @@ class Editor(QMainWindow):
         erf_or_rim: ERF | RIM = read_rim(self._filepath) if ResourceType.from_extension(r_parent_filepath.suffix) is ResourceType.RIM else read_erf(self._filepath)
         nested_capsules: list[tuple[PurePath, ERF | RIM]] = [(self._filepath, erf_or_rim)]
         for capsule_path in reversed(nested_paths[:-1]):
-            nested_erf_or_rim_data = erf_or_rim.get(capsule_path.stem, ResourceType.from_extension(capsule_path.suffix))
+            nested_erf_or_rim_data: bytes | None = erf_or_rim.get(capsule_path.stem, ResourceType.from_extension(capsule_path.suffix))
             if nested_erf_or_rim_data is None:
-                msg = f"You must save the ERFEditor for '{capsule_path.relative_to(r_parent_filepath)}' to before modifying its nested resources. Do so and try again."
+                msg: str = f"You must save the ERFEditor for '{capsule_path.relative_to(r_parent_filepath)}' to before modifying its nested resources. Do so and try again."
                 raise ValueError(msg)
 
-            erf_or_rim = (
-                read_rim(nested_erf_or_rim_data)
-                if ResourceType.from_extension(capsule_path.suffix) is ResourceType.RIM
-                else read_erf(nested_erf_or_rim_data)
-            )
+            erf_or_rim = read_rim(nested_erf_or_rim_data) if ResourceType.from_extension(capsule_path.suffix) is ResourceType.RIM else read_erf(nested_erf_or_rim_data)
             nested_capsules.append((capsule_path, erf_or_rim))
 
         this_erf_or_rim = None
         for index, (capsule_path, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
-            rel_capsule_path = capsule_path.relative_to(r_parent_filepath)
+            rel_capsule_path: PurePath = capsule_path.relative_to(r_parent_filepath)
             if index == 0:
                 if not self._is_capsule_editor:
                     print(f"Saving non ERF/RIM '{self._resname}.{self._restype.extension}' to '{rel_capsule_path}'")
                     this_erf_or_rim.set_data(self._resname, self._restype, bytes(data))
                 continue
-            child_index = len(nested_capsules) - index
+            child_index: int = len(nested_capsules) - index
             child_capsule_path, child_erf_or_rim = nested_capsules[child_index]
             if self._filepath != child_capsule_path or not self._is_capsule_editor:
                 data = bytearray()
@@ -736,9 +738,9 @@ class Editor(QMainWindow):
             self.load(r_filepath, resname, restype, data)
 
     def center_and_adjust_window(self):
-        screen = QApplication.primaryScreen().geometry()
-        new_x = (screen.width() - self.width()) // 2
-        new_y = (screen.height() - self.height()) // 2
+        screen: QRect = QApplication.primaryScreen().geometry()
+        new_x: int = (screen.width() - self.width()) // 2
+        new_y: int = (screen.height() - self.height()) // 2
 
         self.move(
             max(0, min(new_x, screen.width() - self.width())),
@@ -756,7 +758,7 @@ class Editor(QMainWindow):
         self._resname = resref
         self._restype = restype
         self._revert = data
-        for action in cast(QMenu, self.menuBar().actions()[0].menu()).actions():
+        for action in cast(QMenu, cast(QMenuBar, self.menuBar()).actions()[0].menu()).actions():
             if action.text() == "Revert":
                 action.setEnabled(True)
                 break
@@ -766,7 +768,7 @@ class Editor(QMainWindow):
     def new(self):
         self._revert = b""
         self._filepath = self.setup_extract_path() / f"{self._resname}.{self._restype.extension}"
-        for action in cast(QMenu, self.menuBar().actions()[0].menu()).actions():
+        for action in cast(QMenu, cast(QMenuBar, self.menuBar()).actions()[0].menu()).actions():
             if action.text() != "Revert":
                 continue
             action.setEnabled(False)
@@ -780,7 +782,11 @@ class Editor(QMainWindow):
             return
         self.load(self._filepath, self._resname, self._restype, self._revert)
 
-    def _load_locstring(self, textbox: QLineEdit | QPlainTextEdit | LocalizedStringLineEdit, locstring: LocalizedString):
+    def _load_locstring(
+        self,
+        textbox: QLineEdit | QPlainTextEdit | LocalizedStringLineEdit,
+        locstring: LocalizedString,
+    ):
         """Loads a LocalizedString into a textbox.
 
         Args:
@@ -800,7 +806,7 @@ class Editor(QMainWindow):
             textbox.set_locstring(locstring)
             return
         setText: Callable[[str], None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
-        class_name = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
+        class_name: Literal["QLineEdit", "QPlainTextEdit"] = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
         if locstring.stringref == -1:
             text = str(locstring)
             setText(text if text != "-1" else "")
@@ -822,7 +828,7 @@ class Editor(QMainWindow):
             self.blink_window()
             return False
         if qtpy.QT5:
-            from qtpy.QtMultimedia import QMediaContent
+            from qtpy.QtMultimedia import QMediaContent  # pyright: ignore[reportAttributeAccessIssue]
 
             self.media_player.buffer = buffer = QBuffer(self)
             buffer.setData(data)
@@ -833,7 +839,7 @@ class Editor(QMainWindow):
         elif qtpy.QT6:
             from qtpy.QtMultimedia import QAudioOutput
 
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+            temp_file: tempfile._TemporaryFileWrapper[bytes] = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
             temp_file.write(data)  # pyright: ignore[reportArgumentType, reportCallIssue]
             temp_file.flush()
             temp_file.seek(0)
@@ -848,7 +854,11 @@ class Editor(QMainWindow):
             player.play()
         return True
 
-    def play_sound(self, resname: str, order: list[SearchLocation] | None = None) -> bool:
+    def play_sound(
+        self,
+        resname: str,
+        order: list[SearchLocation] | None = None,
+    ) -> bool:
         """Plays a sound resource."""
         if not resname or not resname.strip() or self._installation is None:
             self.blink_window(sound=False)
@@ -872,7 +882,11 @@ class Editor(QMainWindow):
             self.blink_window(sound=False)
         return self.play_byte_source_media(data)
 
-    def remove_temp_audio_file(self, status: QMediaPlayer.MediaStatus, file_path: os.PathLike | str):
+    def remove_temp_audio_file(
+        self,
+        status: QMediaPlayer.MediaStatus,
+        file_path: os.PathLike | str,
+    ):
         if status != QMediaPlayer.MediaStatus.EndOfMedia:
             return
         try:

@@ -24,10 +24,7 @@ class TwoDACSVReader(ResourceReader):
         self._twoda: TwoDA | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> TwoDA:
+    def load(self) -> TwoDA:
         self._twoda = TwoDA()
         data: str = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
         _csv = csv.reader(io.StringIO(data))
@@ -75,10 +72,7 @@ class TwoDACSVWriter(ResourceWriter):
         self._csv_writer = csv.writer(self._csv_string)
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         headers: list[str] = self._twoda.get_headers()
 
         insert: list[str] = [""]

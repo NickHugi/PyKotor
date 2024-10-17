@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
-from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
 from pykotor.resource.formats.ncs.io_ncs import NCSBinaryReader, NCSBinaryWriter
@@ -12,13 +10,20 @@ from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    import os
 
     from ply import yacc
 
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
+
+    # FIXME(th3w1zard1): these are so large they crash the language server
+    KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS = [], [], [], []
+    KOTOR_LIBRARY, TSL_LIBRARY = {}, {}
+else:
+    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+    from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY  # noqa: F811
 
 
 def read_ncs(
@@ -99,7 +104,7 @@ def compile_nss(
     source: str,
     game: Game,
     optimizers: list[NCSOptimizer] | None = None,
-    library_lookup: list[str | Path] | list[Path] | list[str] | str | Path | None = None,
+    library_lookup: list[str] | list[os.PathLike] | None = None,
     *,
     errorlog: yacc.NullLogger | None = None,
     debug: bool = False,

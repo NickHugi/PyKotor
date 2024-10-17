@@ -1,4 +1,3 @@
-from __future__ import annotations
 from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
 from pykotor.resource.formats.tlk.io_tlk import (
     TLKBinaryReader,

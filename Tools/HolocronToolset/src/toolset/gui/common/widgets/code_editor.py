@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import qtpy
 
@@ -15,7 +15,7 @@ from qtpy.QtCore import (
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
-from qtpy.QtGui import QColor, QKeySequence, QPainter, QPalette, QTextCharFormat, QTextCursor, QTextDocument, QTextFormat
+from qtpy.QtGui import QColor, QPainter, QPalette, QTextCharFormat, QTextCursor, QTextDocument, QTextFormat
 from qtpy.QtWidgets import (
     QCheckBox,
     QCompleter,

@@ -7,12 +7,15 @@ from typing import TYPE_CHECKING, Any
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
+from loggerplus import RobustLogger
+
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
 
     ElementTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
-    print("warning: defusedxml is not available but recommended due to security concerns.")
+    print("warning: defusedxml is not available but recommended for security")
+
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -36,14 +39,13 @@ class GFFXMLReader(ResourceReader):
         self._gff: GFF | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> GFF:
+    def load(self) -> GFF:
         self._gff = GFF()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
         xml_root: ElementTree.Element | None = ElementTree.fromstring(data).find("struct")  # noqa: S314
+        if xml_root is None:
+            raise ValueError("XML data is not valid XML")
         self._load_struct(self._gff.root, xml_root)
 
         return self._gff
@@ -53,7 +55,7 @@ class GFFXMLReader(ResourceReader):
         gff_struct: GFFStruct,
         xml_struct: ElementTree.Element,
     ):
-        gff_struct.struct_id = int(xml_struct.get("id"))
+        gff_struct.struct_id = int(xml_struct.get("id", -1))
 
         for xml_field in xml_struct:
             self._load_field(gff_struct, xml_field)
@@ -63,59 +65,63 @@ class GFFXMLReader(ResourceReader):
         gff_struct: GFFStruct,
         xml_field: ElementTree.Element,
     ):
-        label: str | None = xml_field.get("label")
+        label: str = xml_field.get("label", "")
 
         if xml_field.tag == "byte":
-            gff_struct.set_uint8(label, int(xml_field.text))
+            gff_struct.set_uint8(label, int(xml_field.text or 0))
         elif xml_field.tag == "char":
-            gff_struct.set_int8(label, int(xml_field.text))
+            gff_struct.set_int8(label, int(xml_field.text or 0))
         elif xml_field.tag == "uint16":
-            gff_struct.set_uint16(label, int(xml_field.text))
+            gff_struct.set_uint16(label, int(xml_field.text or 0))
         elif xml_field.tag == "sint16":
-            gff_struct.set_int16(label, int(xml_field.text))
+            gff_struct.set_int16(label, int(xml_field.text or 0))
         elif xml_field.tag == "uint32":
-            gff_struct.set_uint32(label, int(xml_field.text))
+            gff_struct.set_uint32(label, int(xml_field.text or 0))
         elif xml_field.tag == "sint32":
-            gff_struct.set_int32(label, int(xml_field.text))
+            gff_struct.set_int32(label, int(xml_field.text or 0))
         elif xml_field.tag == "uint64":
-            gff_struct.set_uint64(label, int(xml_field.text))
+            gff_struct.set_uint64(label, int(xml_field.text or 0))
         elif xml_field.tag == "sint65":
-            gff_struct.set_int64(label, int(xml_field.text))
+            gff_struct.set_int64(label, int(xml_field.text or 0))
         elif xml_field.tag == "float":
-            gff_struct.set_single(label, float(xml_field.text))
+            gff_struct.set_single(label, float(xml_field.text or 0))
         elif xml_field.tag == "double":
-            gff_struct.set_double(label, float(xml_field.text))
+            gff_struct.set_double(label, float(xml_field.text or 0))
         elif xml_field.tag == "exostring":
-            gff_struct.set_string(label, xml_field.text)
+            gff_struct.set_string(label, xml_field.text or "")
         elif xml_field.tag == "resref":
-            gff_struct.set_resref(label, ResRef(xml_field.text))
+            gff_struct.set_resref(label, ResRef(xml_field.text or ""))
         elif xml_field.tag == "locstring":
             locstring = LocalizedString(-1)
-            locstring.stringref = -1 if xml_field.get("strref") == "4294967295" else int(xml_field.get("strref"))
+            locstring.stringref = (
+                -1
+                if xml_field.get("strref") == "4294967295"
+                else int(xml_field.get("strref") or -1)
+            )
             for substring in xml_field:
                 language, gender = LocalizedString.substring_pair(
-                    int(substring.get("language")),
+                    int(substring.get("language", 0)),
                 )
-                locstring.set_data(language, gender, substring.text)
+                locstring.set_data(language, gender, substring.text or "")
             gff_struct.set_locstring(label, locstring)
         elif xml_field.tag == "data":
-            data = base64.b64decode(xml_field.text)
+            data = base64.b64decode(xml_field.text or "")
             gff_struct.set_binary(label, data)
         elif xml_field.tag == "orientation":
             coords = xml_field.findall("double")
             v4 = Vector4(
-                float(coords[0].text),
-                float(coords[1].text),
-                float(coords[2].text),
-                float(coords[3].text),
+                float(coords[0].text or 0),
+                float(coords[1].text or 0),
+                float(coords[2].text or 0),
+                float(coords[3].text or 0),
             )
             gff_struct.set_vector4(label, v4)
         elif xml_field.tag == "vector":
             coords = xml_field.findall("double")
             v3 = Vector3(
-                float(coords[0].text),
-                float(coords[1].text),
-                float(coords[2].text),
+                float(coords[0].text or 0),
+                float(coords[1].text or 0),
+                float(coords[2].text or 0),
             )
             gff_struct.set_vector3(label, v3)
         elif xml_field.tag == "struct":
@@ -127,6 +133,9 @@ class GFFXMLReader(ResourceReader):
             for xml_struct in xml_field:
                 gff_list.add(0)
                 child_struct = gff_list.at(len(gff_list) - 1)
+                if child_struct is None:
+                    RobustLogger().error(f"Failed to acquire the GFFStruct at index {len(gff_list) - 1}, skipping...")
+                    continue
                 self._load_struct(child_struct, xml_struct)
             gff_struct.set_list(label, gff_list)
 
@@ -142,10 +151,7 @@ class GFFXMLWriter(ResourceWriter):
         self.gff: GFF = gff
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         self.xml_root.tag = "gff3"
 
         xml_struct = ElementTree.Element("struct")

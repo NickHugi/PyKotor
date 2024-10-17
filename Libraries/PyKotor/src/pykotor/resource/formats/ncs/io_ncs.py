@@ -22,15 +22,8 @@ class NCSBinaryReader(ResourceReader):
         self._jumps: dict[NCSInstruction, int] = {}
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> NCS:
+    def load(self) -> NCS:
         """Loads an NCS file from the reader.
-
-        Args:
-        ----
-            auto_close: {Whether to automatically close the reader after loading}.
 
         Returns:
         -------
@@ -334,10 +327,7 @@ class NCSBinaryWriter(ResourceWriter):
         self._sizes: dict[NCSInstruction, int] = {}
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         """Writes the NCS file.
 
         Args:
@@ -365,8 +355,8 @@ class NCSBinaryWriter(ResourceWriter):
         for instruction in self._ncs.instructions:
             self._write_instruction(instruction)
 
-    def determine_size(self, instruction: NCSInstruction) -> int:  # TODO
-        """Determines the size of an NCS instruction. This function is unfinished and is missing defs.
+    def determine_size(self, instruction: NCSInstruction) -> int:  # TODO(th3w1zard1): This function is unfinished and is missing defs.
+        """Determines the size of an NCS instruction.
 
         Args:
         ----
@@ -428,8 +418,8 @@ class NCSBinaryWriter(ResourceWriter):
 
         return size
 
-    def _write_instruction(self, instruction: NCSInstruction):  # TODO
-        """Writes an instruction to the NCS binary stream. This function is unfinished and is missing defs.
+    def _write_instruction(self, instruction: NCSInstruction):  # TODO(th3w1zard1): This function is unfinished and is missing defs.
+        """Writes an instruction to the NCS binary stream.
 
         Args:
         ----
@@ -444,14 +434,14 @@ class NCSBinaryWriter(ResourceWriter):
             - Raises error for unsupported instructions
         """
 
-        def to_signed_32bit(n):  # FIXME: Presumably this issue happens further up the call stack, fix later.
+        def to_signed_32bit(n):  # FIXME(th3w1zard1): Presumably this issue happens further up the call stack, fix later.
             # Assuming n is provided as an unsigned 32-bit integer
             # Convert it to a signed 32-bit integer
             if n >= 2**31:
                 n -= 2**32
             return n
 
-        def to_signed_16bit(n):  # FIXME: Only seen this issue happen with 32bit but better safe than sorry, remove this once above issue is fixed.
+        def to_signed_16bit(n):  # FIXME(th3w1zard1): Only seen this issue happen with 32bit but better safe than sorry, remove this once above issue is fixed.
             if n >= 2**15:
                 n -= 2**16
             return n
@@ -470,7 +460,7 @@ class NCSBinaryWriter(ResourceWriter):
 
         elif instruction.ins_type in {NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP, NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP}:
             self._writer.write_int32(instruction.args[0], big=True)
-            self._writer.write_uint16(4, big=True)  # TODO: 12 for float support
+            self._writer.write_uint16(4, big=True)  # TODO(NickHugi): 12 for float support
 
         elif instruction.ins_type == NCSInstructionType.CONSTF:
             self._writer.write_single(instruction.args[0], big=True)

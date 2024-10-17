@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
@@ -24,7 +25,9 @@ from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.tpc import TPCTextureFormat
+from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.formats.twoda import read_2da
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from toolset.utils.window import add_window
@@ -35,7 +38,7 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import QPlainTextEdit
     from typing_extensions import Literal, Self
 
-    from pykotor.extract.file import LocationResult
+    from pykotor.extract.file import LocationResult, ResourceResult
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
@@ -104,7 +107,7 @@ class HTInstallation(Installation):
         name: str,
         *,
         tsl: bool | None = None,
-        progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = None
+        progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = None,
     ):
         super().__init__(path, progress_callback=progress_callback)
 
@@ -127,7 +130,22 @@ class HTInstallation(Installation):
         self._cache_streamwaves: list[FileResource] = []
         self._cache_texturepacks: dict[str, list[FileResource]] = {}
 
-    def _clear_cache(self, cache_name: str):
+    def _clear_cache(
+        self,
+        cache_name: Literal[
+            "core_items",
+            "chitin",
+            "lips",
+            "modules",
+            "override",
+            "rims",
+            "saves",
+            "streammusic",
+            "streamsounds",
+            "streamwaves",
+            "texturepacks",
+        ],
+    ):
         """Clear a specific cache and print a debug message."""
         cache_attr = f"_cache_{cache_name}"
         if not hasattr(self, cache_attr):
@@ -167,124 +185,146 @@ class HTInstallation(Installation):
     @property
     def _chitin(self) -> list[FileResource]:
         return self._get_cached_or_load("chitin", self._load_chitin)
+
     @_chitin.setter
-    def _chitin(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument
+    def _chitin(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
     def _load_chitin(self) -> list[FileResource]:
         chitin_path: Path = self._path / "chitin.key"
         return list(Chitin(key_path=chitin_path)) if chitin_path.is_file() else []
 
     @property
-    def _female_talktable(self) -> TalkTable: return TalkTable(self._path / "dialogf.tlk")
+    def _female_talktable(self) -> TalkTable:
+        return TalkTable(self._path / "dialogf.tlk")
+
     @_female_talktable.setter
-    def _female_talktable(self, value: TalkTable) -> None: ...  # pylint: disable=unused-argument
+    def _female_talktable(self, value: TalkTable) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @property
     def _lips(self) -> dict[str, list[FileResource]]:
-        return self._get_cached_or_load("lips", lambda: self.load_resources_dict(self.lips_path(), capsule_check=is_mod_file))
+        return self._get_cached_or_load(
+            "lips",
+            lambda: self.load_resources_dict(self.lips_path(), capsule_check=is_mod_file),
+        )
+
     @_lips.setter
-    def _lips(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument
+    def _lips(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @property
     def _modules(self) -> dict[str, list[FileResource]]:
-        return self._get_cached_or_load("modules", lambda: self.load_resources_dict(self.module_path(), capsule_check=is_capsule_file))
+        return self._get_cached_or_load(
+            "modules",
+            lambda: self.load_resources_dict(self.module_path(), capsule_check=is_capsule_file),
+        )
+
     @_modules.setter
-    def _modules(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument
+    def _modules(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @property
     def _override(self) -> dict[str, list[FileResource]]:
         return self._get_cached_or_load("override", self._load_override)
+
     @_override.setter
-    def _override(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument
+    def _override(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
     def _load_override(self) -> dict[str, list[FileResource]]:
-        override_path = self.override_path()
-        result = {}
+        override_path: Path = self.override_path()
+        result: dict[str, list[FileResource]] = {}
         for folder in [f for f in override_path.rglob("*") if f.is_dir()] + [override_path]:
             relative_folder: str = folder.relative_to(override_path).as_posix()
             result[relative_folder] = self.load_resources_list(folder, recurse=True)
         return result
 
     @property
-    def _rims(self) -> dict[str, list[FileResource]]: return self.load_resources_dict(self.rims_path(), capsule_check=is_rim_file)
+    def _rims(self) -> dict[str, list[FileResource]]:
+        return self.load_resources_dict(self.rims_path(), capsule_check=is_rim_file)
+
     @_rims.setter
-    def _rims(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument
+    def _rims(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @property
     def saves(self) -> dict[Path, dict[Path, list[FileResource]]]:
         return self._get_cached_or_load("saves", self._load_saves)
+
     @saves.setter
-    def saves(self, value: dict[Path, dict[Path, list[FileResource]]]) -> None: ...  # pylint: disable=unused-argument
+    def saves(self, value: dict[Path, dict[Path, list[FileResource]]]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
     def _load_saves(self) -> dict[Path, dict[Path, list[FileResource]]]:  # pylint: disable=unused-argument
         if getattr(self, "_saves", None):
             return self._saves
         self._saves = {  # pylint: disable=attribute-defined-outside-init
             save_location: {
                 save_path: [
-                    FileResource(
-                        ResourceIdentifier.from_path(file).resname,
-                        ResourceIdentifier.from_path(file).restype,
-                        file.stat().st_size,
-                        0,
-                        file
-                    ) for file in save_path.iterdir() if file.is_file()
-                ] for save_path in save_location.iterdir() if save_path.is_dir()
-            } for save_location in self.save_locations() if save_location.is_dir()
+                    FileResource(ResourceIdentifier.from_path(file).resname, ResourceIdentifier.from_path(file).restype, file.stat().st_size, 0, file)
+                    for file in save_path.iterdir()
+                    if file.is_file()
+                ]
+                for save_path in save_location.iterdir()
+                if save_path.is_dir()
+            }
+            for save_location in self.save_locations()
+            if save_location.is_dir()
         }
         return self._saves
+
     @saves.setter
-    def saves(self, value: dict[Path, dict[Path, list[FileResource]]]) -> None: ...  # pylint: disable=unused-argument
+    def saves(self, value: dict[Path, dict[Path, list[FileResource]]]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @property
     def _streammusic(self) -> list[FileResource]:
         return self._get_cached_or_load("streammusic", lambda: self.load_resources_list(self.streammusic_path()))
+
     @_streammusic.setter
-    def _streammusic(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument
+    def _streammusic(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
     def _load_streammusic(self) -> list[FileResource]:
         return self.load_resources_list(self.streammusic_path())
 
     @property
     def _streamsounds(self) -> list[FileResource]:
         return self._get_cached_or_load("streamsounds", lambda: self.load_resources_list(self.streamsounds_path()))
+
     @_streamsounds.setter
-    def _streamsounds(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument
+    def _streamsounds(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
     def _load_streamsounds(self) -> list[FileResource]:
         return self.load_resources_list(self.streamsounds_path())
 
     @property
     def _streamwaves(self) -> list[FileResource]:
         return self._get_cached_or_load("streamwaves", lambda: self.load_resources_list(self._find_resource_folderpath(("streamwaves", "streamvoice")), recurse=True))
+
     @_streamwaves.setter
-    def _streamwaves(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument
+    def _streamwaves(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
     def _load_streamwaves(self) -> list[FileResource]:
         return self.load_resources_list(self._find_resource_folderpath(("streamwaves", "streamvoice")), recurse=True)
 
     @property
     def _streamvoice(self) -> list[FileResource]:
         return self._get_cached_or_load("streamvoice", lambda: self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves")), recurse=True))
+
     @_streamvoice.setter
-    def _streamvoice(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument
+    def _streamvoice(self, value: list[FileResource]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
     def _load_streamvoice(self) -> list[FileResource]:
         return self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves")), recurse=True)
 
     @property
     def _talktable(self) -> TalkTable:
         return self._get_cached_or_load("talktable", self._load_talktable)
+
     @_talktable.setter
-    def _talktable(self, value: TalkTable) -> None: ...  # pylint: disable=unused-argument
+    def _talktable(self, value: TalkTable) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
     def _load_talktable(self) -> TalkTable:
         return TalkTable(self._path / "dialog.tlk")
 
     @property
     def _texturepacks(self) -> dict[str, list[FileResource]]:
         return self._get_cached_or_load("texturepacks", self._load_texturepacks)
+
     @_texturepacks.setter
-    def _texturepacks(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument
+    def _texturepacks(self, value: dict[str, list[FileResource]]) -> None: ...  # pylint: disable=unused-argument  # pyright: ignore[reportIncompatibleVariableOverride]
     def _load_texturepacks(self) -> dict[str, list[FileResource]]:
         return self.load_resources_dict(self.texturepacks_path(), capsule_check=is_erf_file)
 
     @classmethod
     def from_base_instance(cls, installation: Installation) -> Self:
         """Create a new HTInstallation instance from an existing Installation instance."""
-        ht_installation = installation
+        ht_installation: HTInstallation = installation  # type: ignore[assignment]
         ht_installation.__class__ = cls
         assert isinstance(ht_installation, cls)
         ht_installation.name = f"NonHTInit_{installation.__class__.__name__}_{id(installation)}"
@@ -307,19 +347,13 @@ class HTInstallation(Installation):
         def extend_context_menu(pos: QPoint):
             root_menu = QMenu(widget) if isinstance(widget, QComboBox) else widget.createStandardContextMenu()
             widget_text: str = (
-                widget.currentText().strip()
-                if isinstance(widget, QComboBox)
-                else (
-                    widget.text()
-                    if isinstance(widget, QLineEdit)
-                    else widget.toPlainText()
-                ).strip()
+                widget.currentText().strip() if isinstance(widget, QComboBox) else (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).strip()
             )
 
             build_file_context_menu(root_menu, widget_text)
             root_menu.exec(widget.mapToGlobal(pos))
 
-        def build_file_context_menu(root_menu: QMenu, widgetText: str):
+        def build_file_context_menu(root_menu: QMenu, widget_text: str):
             """Build and populate a file context menu for the given widget text.
 
             This function creates a "File..." submenu in the root menu, populates it with
@@ -334,30 +368,22 @@ class HTInstallation(Installation):
             root_menu.addMenu(file_menu)
             root_menu.addSeparator()
 
-            search_order = order or [SearchLocation.CHITIN, SearchLocation.OVERRIDE, SearchLocation.MODULES, SearchLocation.RIMS]
-            resource_types = resref_type if isinstance(resref_type[0], ResourceType) else resref_type
+            search_order: list[SearchLocation] = order or [SearchLocation.CHITIN, SearchLocation.OVERRIDE, SearchLocation.MODULES, SearchLocation.RIMS]
+            resource_types: list[ResourceType] | list[ResourceIdentifier] = resref_type if isinstance(resref_type[0], ResourceType) else resref_type
             # FIXME(th3w1zard1): Seems the type hinter override's for `locations` are wrong, need to fix
             locations: dict[str, list[LocationResult]] = self.locations(
-                ([widgetText], resource_types),  # pyright: ignore[reportArgumentType, reportAssignmentType]
-                search_order
+                ([widget_text], resource_types),  # pyright: ignore[reportArgumentType, reportAssignmentType]
+                search_order,
             )
-            flat_locations: list[LocationResult] = (
-                [
-                    item
-                    for sublist in locations.values()
-                    for item in sublist
-                ]
-                if isinstance(locations, dict)
-                else locations
-            )
+            flat_locations: list[LocationResult] = [item for sublist in locations.values() for item in sublist] if isinstance(locations, dict) else locations
 
             if flat_locations:
                 for location in flat_locations:
-                    display_path = location.filepath.relative_to(self.path())
-                    file_resource = location.as_file_resource()
+                    display_path: Path = location.filepath.relative_to(self.path())
+                    file_resource: FileResource = location.as_file_resource()
                     if file_resource.inside_bif:
                         display_path /= file_resource.filename()
-                    location_menu = file_menu.addMenu(str(display_path))
+                    location_menu: QMenu | None = file_menu.addMenu(str(display_path))
                     ResourceItems(resources=[location]).build_menu(location_menu, self)
 
                 details_action = QAction("Details...", file_menu)
@@ -377,6 +403,7 @@ class HTInstallation(Installation):
     @Slot(list)
     def _open_details(self, locations: list[LocationResult]):
         from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow
+
         selection_window = FileSelectionWindow(locations, self)
         selection_window.show()
         selection_window.activateWindow()
@@ -402,10 +429,10 @@ class HTInstallation(Installation):
         lower_streamsounds_path = str(self.streamsounds_path()).lower()
         lower_streamwaves_path = str(self._find_resource_folderpath(("streamvoice", "streamwaves"))).lower()
         lower_texturepacks_path = str(self.texturepacks_path()).lower()
-        lower_save_locations = [str(save_loc).lower() for save_loc in self.save_locations()]
+        lower_save_locations: list[str] = [str(save_loc).lower() for save_loc in self.save_locations()]
 
         for path in changed_files:
-            lower_path = path.lower()
+            lower_path: str = path.lower()
             if lower_path == lower_install_path:
                 self._clear_cache("chitin")
             elif lower_lips_path in lower_path:
@@ -429,7 +456,6 @@ class HTInstallation(Installation):
             else:
                 RobustLogger().warning(f"Unhandled file change: '{path}'")
 
-
     # region Cache 2DA
     def ht_get_cache_2da(self, resname: str) -> TwoDA | None:
         """Gets a 2DA resource from the cache or loads it if not present.
@@ -451,7 +477,7 @@ class HTInstallation(Installation):
         """
         resname = resname.lower()
         if resname not in self._cache2da:
-            result = self.resource(resname, ResourceType.TwoDA, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+            result: ResourceResult | None = self.resource(resname, ResourceType.TwoDA, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
             if result is None:
                 return None
             self._cache2da[resname] = read_2da(result.data)
@@ -486,26 +512,13 @@ class HTInstallation(Installation):
         if src_filepath is None:
             return {res for res in self if res.restype() is restype}
 
-        relevant_resources: set[FileResource] = {
-            res
-            for res in (*self.override_resources(), *self.chitin_resources())
-            if res.restype() is restype
-        }
+        relevant_resources: set[FileResource] = {res for res in (*self.override_resources(), *self.chitin_resources()) if res.restype() is restype}
 
         if os.path.commonpath([src_filepath.absolute(), self.module_path()]) == self.module_path():
-            relevant_resources.update(
-                res
-                for cap in Module.find_capsules(self, src_filepath.name, strict=True)
-                for res in cap
-                if res.restype() is restype
-            )
+            relevant_resources.update(res for cap in Module.find_capsules(self, src_filepath.name, strict=True) for res in cap if res.restype() is restype)
         elif os.path.commonpath([src_filepath.absolute(), self.override_path()]) == self.override_path():
             relevant_resources.update(
-                res
-                for reslist in self._modules.values()
-                if any(r.identifier() == src_filepath.name for r in reslist)
-                for res in reslist
-                if res.restype() is restype
+                res for reslist in self._modules.values() if any(r.identifier() == src_filepath.name for r in reslist) for res in reslist if res.restype() is restype
             )  # noqa: E501
 
         return relevant_resources
@@ -524,19 +537,16 @@ class HTInstallation(Installation):
             2. Query the resources from override and chitin locations
             3. Read and cache the 2DA data for each queried resource.
         """
+        queries: list[ResourceIdentifier] = []
         if reload:
-            queries = [ResourceIdentifier(resname, ResourceType.TwoDA) for resname in resnames]
+            queries.extend(ResourceIdentifier(resname, ResourceType.TwoDA) for resname in resnames)
         else:
-            queries = [
-                ResourceIdentifier(resname, ResourceType.TwoDA)
-                for resname in resnames
-                if resname not in self._cache2da
-            ]
+            queries.extend(ResourceIdentifier(resname, ResourceType.TwoDA) for resname in resnames if resname not in self._cache2da)
 
         if not queries:
             return
 
-        resources = self.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+        resources: dict[ResourceIdentifier, ResourceResult | None] = self.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
         for iden, resource in resources.items():
             if not resource:
                 continue
@@ -544,12 +554,13 @@ class HTInstallation(Installation):
 
     def htClearCache2DA(self):
         self._cache2da = {}
+
     # endregion
 
     # region Cache TPC
     def ht_get_cache_tpc(self, resname: str) -> TPC | None:
         if resname not in self._cache_tpc:
-            tex = self.texture(
+            tex: TPC | None = self.texture(
                 resname,
                 [
                     SearchLocation.OVERRIDE,
@@ -562,11 +573,7 @@ class HTInstallation(Installation):
         return self._cache_tpc.get(resname, None)
 
     def ht_batch_cache_tpc(self, names: list[str], *, reload: bool = False):
-        queries: list[str] = (
-            list(names)
-            if reload
-            else [name for name in names if name not in self._cache_tpc]
-        )
+        queries: list[str] = list(names) if reload else [name for name in names if name not in self._cache_tpc]
 
         if not queries:
             return
@@ -595,10 +602,10 @@ class HTInstallation(Installation):
             return pixmap
 
         with suppress(Exception):
-            item_class = baseitems.get_cell(uti.base_item, "itemclass")
-            variation = uti.model_variation if uti.model_variation != 0 else uti.texture_variation
-            texture_resname = f'i{item_class}_{str(variation).rjust(3, "0")}'
-            texture = self.ht_get_cache_tpc(texture_resname.lower())
+            item_class: str = baseitems.get_cell(uti.base_item, "itemclass")
+            variation: int = uti.model_variation if uti.model_variation != 0 else uti.texture_variation
+            texture_resname: str = f'i{item_class}_{str(variation).rjust(3, "0")}'
+            texture: TPC | None = self.ht_get_cache_tpc(texture_resname.lower())
 
             if texture is not None:
                 return self._get_icon(texture)
@@ -607,7 +614,7 @@ class HTInstallation(Installation):
     def get_item_base_name(self, base_item: int) -> str:
         """Get the name of the base item from its ID."""
         try:
-            baseitems = self.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
+            baseitems: TwoDA | None = self.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
             if baseitems is None:
                 RobustLogger().error("Failed to retrieve `baseitems.2da` from your installation.")
                 return "Unknown"
@@ -627,17 +634,17 @@ class HTInstallation(Installation):
 
     def get_item_icon_path(self, base_item: int, model_variation: int, texture_variation: int) -> str:
         """Get the icon path based on base item, model variation, and texture variation."""
-        baseitems = self.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
+        baseitems: TwoDA | None = self.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
         if baseitems is None:
             RobustLogger().warning("Failed to retrieve `baseitems.2da` from your installation.")
             return "Unknown"
         try:
-            item_class = baseitems.get_cell(base_item, "itemclass")
+            item_class: str = baseitems.get_cell(base_item, "itemclass")
         except Exception:  # noqa: BLE001  # pylint: disable=broad-exception-caught
             RobustLogger().exception(f"An exception occurred while getting cell '{base_item}' from `baseitems.2da`.")
             return "Unknown"
         else:
-            variation = model_variation if model_variation != 0 else texture_variation
+            variation: int = model_variation if model_variation != 0 else texture_variation
             return f"i{item_class}_{str(variation).rjust(3, '0')}"
 
     def get_item_icon(
@@ -647,17 +654,31 @@ class HTInstallation(Installation):
         texture_variation: int,
     ) -> QPixmap:
         pixmap = QPixmap(":/images/inventory/unknown.png")
-        icon_path = self.get_item_icon_path(base_item, model_variation, texture_variation)
+        icon_path: str = self.get_item_icon_path(base_item, model_variation, texture_variation)
         print(f"Icon path: '{icon_path}'")
-        with suppress(Exception):
-            texture = self.ht_get_cache_tpc(icon_path.lower())
-            if texture is not None:
-                return self._get_icon(texture)
+        try:
+            texture: TPC | None = self.ht_get_cache_tpc(os.path.basename(icon_path.lower()))  # noqa: PTH119
+            if texture is None:
+                return pixmap
+            return self._get_icon(texture)
+        except Exception as e:
+            RobustLogger().error(
+                f"An error occurred loading the icon at '{icon_path}' " f"model variation '{model_variation}' and " f"texture variation '{texture_variation}'.",
+                exc_info=e,
+            )
+            return pixmap
         return pixmap
 
-    def _get_icon(self, texture: TPC) -> QPixmap:
-        width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
-        image = QImage(bytes(rgba), width, height, QImage.Format.Format_RGBA8888)
+    def _get_icon(self, texture: TPC, mipmap: int = 0) -> QPixmap:
+        tpc_format: TPCTextureFormat = texture.format()
+        if tpc_format.is_dxt():
+            width, height, data = texture.convert(
+                (TPCTextureFormat.RGB if tpc_format is TPCTextureFormat.DXT1 else TPCTextureFormat.RGBA),
+                mipmap,
+            )
+        else:
+            width, height, tpc_format, data = texture.get(mipmap)
+        image = QImage(bytes(data), width, height, tpc_format.to_qimage_format())
         return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
     @property

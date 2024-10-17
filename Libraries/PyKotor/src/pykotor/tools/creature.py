@@ -90,7 +90,7 @@ def get_body_model(
         def lookup_no_armor() -> tuple[Literal["modela"], str, Literal["texaevil", "texa"], Literal["01"], str]:
             model_column = "modela"
             body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model 'modela'{context_base}")
-            tex_column = "texaevil" if utc.alignment <= 25 else "texa"
+            tex_column = "texaevil" if utc.alignment <= 25 else "texa"  # noqa: PLR2004
             tex_append = "01"
             override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching default texture{context_base}")
             return model_column, body_model, tex_column, tex_append, override_texture

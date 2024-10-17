@@ -240,7 +240,7 @@ def clone_module(
                     rgba: TPCConvertResult = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
+                    tga.set_data([rgba.data], TPCTextureFormat.RGBA, rgba.width, rgba.height)
 
                     tga_data = bytearray()
                     try:
@@ -273,7 +273,7 @@ def clone_module(
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
+                    tga.set_data([rgba.data], TPCTextureFormat.RGBA, rgba.width, rgba.height)
 
                     tga_data = bytearray()
                     write_tpc(tga, tga_data, ResourceType.TGA)

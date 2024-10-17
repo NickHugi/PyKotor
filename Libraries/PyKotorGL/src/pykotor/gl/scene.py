@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import math
-import threading
 
-from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
@@ -62,9 +60,9 @@ from pykotor.gl.models.predefined_mdl import (
 )
 from pykotor.gl.models.read_mdl import gl_load_stitched_model
 from pykotor.gl.shader import KOTOR_FSHADER, KOTOR_VSHADER, PICKER_FSHADER, PICKER_VSHADER, PLAIN_FSHADER, PLAIN_VSHADER, Shader, Texture
-from pykotor.resource.formats.lyt import LYTRoom
-from pykotor.resource.formats.lyt.lyt_data import LYT
-from pykotor.resource.formats.twoda import TwoDA, read_2da
+from pykotor.resource.formats.lyt.lyt_data import LYT, LYTRoom
+from pykotor.resource.formats.twoda.twoda_auto import read_2da
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.generics.git import GIT, GITCamera, GITCreature, GITDoor, GITEncounter, GITInstance, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from pykotor.resource.generics.utd import UTD
 from pykotor.resource.generics.utp import UTP
@@ -87,8 +85,6 @@ if TYPE_CHECKING:
 
 from typing import TYPE_CHECKING
 
-from pykotor.resource.formats.lyt import LYT
-from pykotor.resource.generics.git import GIT
 from pykotor.resource.generics.ifo import IFO
 
 T = TypeVar("T")
@@ -112,32 +108,19 @@ class Scene:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glCullFace(GL_BACK)
 
-        self.executor = ThreadPoolExecutor(max_workers=4)
-        self.texture_data_futures = {}
-        self.textures_data_queue: dict[str, tuple[TPC | None, bool] | None] = {}  # This will hold the texture data loaded in the background
-        self.textures_data_lock: threading.Lock = threading.Lock()
-        self.model_data_futures = {}
-        self.models_data_queue: dict[str, Any] = {}
-        self.models_data_lock: threading.Lock = threading.Lock()
-
         self.installation: Installation | None = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
-        """Fully loaded textures."""
-
         self.textures["NULL"] = Texture.from_color()
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
 
         self.cursor: RenderObject = RenderObject("cursor")
         self.objects: dict[Any, RenderObject] = {}
-        """RenderObjects currently in the scene."""
 
         self.installation: Installation | None = installation
         self.selection: list[RenderObject] = []
         self._module: Module | None = module
         self.camera: Camera = Camera()
         self.cursor: RenderObject = RenderObject("cursor")
-
-        self.textures["NULL"] = Texture.from_color()
 
         self.git: GIT | None = None
         self.layout: LYT | None = None
@@ -189,7 +172,7 @@ class Scene:
         self.table_heads = load_2da("heads")
         self.table_baseitems = load_2da("baseitems")
 
-    def get_creature_render_object(
+    def get_creature_render_object(  # noqa: C901
         self,
         instance: GITCreature,
         utc: UTC | None = None,
@@ -392,6 +375,7 @@ class Scene:
         for door in self.git.doors:
             if door not in self.objects:
                 model_name = "unknown"  # If failed to load door models, use an empty model instead
+                utd = None
                 try:
                     utd = self._resource_from_gitinstance(door, self._module.door)
                     if utd is not None:
@@ -409,6 +393,7 @@ class Scene:
         for placeable in self.git.placeables:
             if placeable not in self.objects:
                 model_name = "unknown"  # If failed to load a placeable models, use an empty model instead
+                utp = None
                 try:
                     utp = self._resource_from_gitinstance(placeable, self._module.placeable)
                     if utp is not None:
@@ -448,6 +433,7 @@ class Scene:
 
         for sound in self.git.sounds:
             if sound not in self.objects:
+                uts = None
                 try:
                     uts = self._resource_from_gitinstance(sound, self._module.sound)
                 except Exception:  # noqa: BLE001
@@ -684,7 +670,7 @@ class Scene:
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
 
-    def load_texture(
+    def texture(
         self,
         name: str,
         *,
@@ -759,7 +745,7 @@ class Scene:
                     mdl_data = mdl_search.data
                     mdx_data = mdx_search.data
 
-            try:  # TODO(th3w1zard1): offload to another thread.
+            try:
                 mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
                 mdx_reader = BinaryReader.from_bytes(mdx_data)
                 model = gl_load_stitched_model(self, mdl_reader, mdx_reader)

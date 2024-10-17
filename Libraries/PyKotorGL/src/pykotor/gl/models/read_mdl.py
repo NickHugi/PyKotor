@@ -175,7 +175,7 @@ def gl_load_mdl(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
 
 
-def gl_load_stitched_model(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
+def gl_load_stitched_model(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:  # noqa: C901, PLR0915, PLR0912
     """Returns a model instance that has meshes with the same textures merged together.
 
     Loads and stitches together a gltf model from binary files

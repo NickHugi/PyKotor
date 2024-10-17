@@ -8,7 +8,7 @@ try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tup
 
     ElementTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
-    print("warning: defusedxml is not available but recommended due to security concerns.")
+    print("warning: defusedxml is not available but recommended for security")
 
 from typing import TYPE_CHECKING
 
@@ -31,10 +31,7 @@ class LIPXMLReader(ResourceReader):
         self._lip: LIP | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> LIP:
+    def load(self) -> LIP:
         self._lip = LIP()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
@@ -44,12 +41,23 @@ class LIPXMLReader(ResourceReader):
             msg = "The XML file that was loaded was not a valid LIP."
             raise ValueError(msg)
 
-        self._lip.length = float(xml_root.get("duration"))
+        duration = xml_root.get("duration")
+        if duration is None:
+            msg = "Missing duration of the LIP."
+            raise ValueError(msg)
+        self._lip.length = float(duration)
 
         for subelement in xml_root:
-            time = float(subelement.get("time"))
-            shape = LIPShape(int(subelement.get("shape")))
-            self._lip.add(time, shape)
+            time = subelement.get("time")
+            if time is None:
+                msg = "Missing time for a keyframe."
+                raise ValueError(msg)
+
+            shape = subelement.get("shape")
+            if shape is None:
+                msg = "Missing shape for a keyframe."
+                raise ValueError(msg)
+            self._lip.add(float(time), LIPShape(int(shape)))
 
         return self._lip
 
@@ -65,10 +73,7 @@ class LIPXMLWriter(ResourceWriter):
         self._xml_root: ElementTree.Element = ElementTree.Element("lip")
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         self._xml_root.set("duration", str(self._lip.length))
 
         for keyframe in self._lip:

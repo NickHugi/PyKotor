@@ -7,14 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
-from qtpy.QtWidgets import (
-    QApplication,
-    QHBoxLayout,
-    QLabel,
-    QMenu,
-    QMessageBox,
-    QWidget,
-)
+from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QMessageBox, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color

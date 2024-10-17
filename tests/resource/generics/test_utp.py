@@ -153,5 +153,12 @@ class Test(TestCase):
         assert utp.inventory[1].resref == "g_w_iongren02"
 
 
+
 if __name__ == "__main__":
-    unittest.main()
+    try:
+        import pytest
+    except ImportError: # pragma: no cover
+        unittest.main()
+    else:
+        pytest.main(["-v", __file__])
+

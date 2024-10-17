@@ -2,39 +2,60 @@
 
 from __future__ import annotations
 
-import itertools as tpc_itertools
+import itertools
 
+from dataclasses import dataclass
 from enum import IntEnum
-from typing import TYPE_CHECKING, NamedTuple, Tuple, cast
+from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.stream import BinaryReader
+from pykotor.resource.formats.tpc.bgra_conversions import bgra_to_grey, bgra_to_rgb, bgra_to_rgba, rgba_to_bgra  # noqa: F401
+from pykotor.resource.formats.tpc.dxt_conversions import dxt1_to_rgb, dxt5_to_rgba, rgb_to_dxt1, rgba_to_dxt5  # noqa: F401
+from pykotor.resource.formats.tpc.greyscale_conversions import grey_to_rgb, grey_to_rgba, rgb_to_grey, rgba_to_grey  # noqa: F401
+from pykotor.resource.formats.tpc.rgb_conversions import rgb_to_rgba, rgba_to_rgb  # noqa: F401
+from pykotor.resource.formats.txi.txi_data import TXI
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from PIL import Image
-    from qtpy.QtGui import QIcon, QImage
+    from qtpy.QtGui import QIcon, QImage, QPixmap
+    from typing_extensions import Literal
+
+
+@dataclass
+class TPCMipmap:
+    data: bytearray
+    width: int
+    height: int
+
+    @property
+    def size(self) -> int:
+        return len(self.data)
 
 
 class TPCGetResult(NamedTuple):
     width: int
     height: int
     texture_format: TPCTextureFormat
-    data: bytes
+    data: bytearray
 
     def to_qicon(self) -> QIcon:
         from qtpy.QtGui import QIcon, QImage, QPixmap, QTransform
+
         width, height, tpc_format, img_bytes = self
-        image = QImage(img_bytes, width, height, tpc_format.to_qimage_format())
-        pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+        image = QImage(bytes(img_bytes), width, height, tpc_format.to_qimage_format())
+        pixmap: QPixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
         return QIcon(pixmap)
 
     def to_qimage(self) -> QImage:
         from qtpy.QtGui import QImage
+
         width, height, tpc_format, img_bytes = self
-        return QImage(img_bytes, width, height, tpc_format.to_qimage_format())
+        return QImage(bytes(img_bytes), width, height, tpc_format.to_qimage_format())
 
     def to_pil_image(self) -> Image.Image:
         from PIL import Image
+
         width, height, tpc_format, img_bytes = self
         return Image.frombytes(tpc_format.to_pil_mode(), (width, height), img_bytes)
 
@@ -50,7 +71,7 @@ class TPC:
 
     Attributes:
     ----------
-        txi: Stores additional information regarding the texture.
+        txi (str): Stores additional information regarding the texture.
     """
 
     BINARY_TYPE = ResourceType.TPC
@@ -58,16 +79,64 @@ class TPC:
     def __init__(
         self,
     ):
+        self._txi: TXI = TXI()
         self._texture_format: TPCTextureFormat = TPCTextureFormat.RGB
-        self._mipmaps: list[bytes] = [bytes(0 for _ in range(4 * 4 * 3))]
-        self._width: int = 4
-        self._height: int = 4
-        self.txi: str = ""
+        self.mipmaps: list[TPCMipmap] = []
+        self.is_animated: bool = False
+        self.layer_count: int = 1
+        self.is_cube_map: bool = False
+
         from pykotor.resource.formats.tpc.io_tga import _DataTypes
 
         self.original_datatype_code: _DataTypes = _DataTypes.NO_IMAGE_DATA
 
-        # TODO: cube maps
+    @property
+    def txi(self) -> str:
+        return str(self._txi)
+
+    @txi.setter
+    def txi(self, value: str):
+        self._txi = TXI(value)
+
+    def set_single(
+        self,
+        width: int,
+        height: int,
+        data: bytes,
+        texture_format: TPCTextureFormat,
+    ):
+        self.set_data([data], texture_format, width, height)
+
+    def set_data(
+        self,
+        mipmaps: list[bytes | bytearray],
+        texture_format: TPCTextureFormat | None = None,
+        width: int | None = None,
+        height: int | None = None,
+    ):
+        # Perform sanity check on mipmap data sizes
+        if not mipmaps:
+            self.mipmaps.clear()
+            return
+        texture_format = self._texture_format if texture_format is None else texture_format
+
+        mm_size: int = len(mipmaps[0]) // 4
+        mm_width: int = mm_size if width is None else width
+        mm_height: int = mm_size if height is None else height
+        for i, mipmap in enumerate(mipmaps):
+            mm_data: bytes | bytearray = mipmap if isinstance(mipmap, bytearray) else bytearray(mipmap)
+            expected_size: int = texture_format.get_size(mm_width, mm_height)
+            if len(mm_data) != expected_size:
+                raise ValueError(f"Mipmap {i} has incorrect size (out of {len(mipmaps)} mipmaps total)." f" Expected {expected_size} bytes, got {len(mm_data)} bytes.")
+            mm = TPCMipmap(mm_data, mm_width, mm_height)
+            if len(self.mipmaps) <= i:
+                self.mipmaps.append(mm)
+            else:
+                self.mipmaps[i] = mm
+            if mm_width <= 1 or mm_height <= 1:
+                break
+            mm_width = max(1, mm_width // 2)
+            mm_height = max(1, mm_height // 2)
 
     def mipmap_count(
         self,
@@ -78,7 +147,7 @@ class TPC:
         -------
             The number of mipmaps.
         """
-        return len(self._mipmaps)
+        return len(self.mipmaps)
 
     def format(
         self,
@@ -100,7 +169,12 @@ class TPC:
         -------
             A tuple containing [width, height].
         """
-        return self._width, self._height
+        return self.mipmaps[0].width, self.mipmaps[0].height
+
+    def mipmap_size(self, mipmap: int) -> tuple[int, int]:
+        if not 0 <= mipmap < len(self.mipmaps):
+            raise IndexError("Mipmap index out of range")
+        return self.mipmaps[mipmap].width, self.mipmaps[mipmap].height
 
     def get(
         self,
@@ -116,8 +190,8 @@ class TPC:
         -------
             A tuple equal to (width, height, texture format, data).
         """
-        width, height = self._mipmap_size(mipmap)
-        return TPCGetResult(width, height, self._texture_format, self._mipmaps[mipmap])
+        width, height = self.mipmap_size(mipmap)
+        return TPCGetResult(width, height, self._texture_format, self.mipmaps[mipmap].data)
 
     def convert(
         self,
@@ -136,8 +210,8 @@ class TPC:
             A tuple equal to (width, height, data)
         """
         width, height = self._mipmap_size(mipmap)
-        raw_data: bytes = self._mipmaps[mipmap]
-        if self._texture_format == convert_format:  # Is conversion needed?
+        raw_data: bytes = bytes(self.mipmaps[mipmap].data)
+        if self._texture_format == convert_format and not y_flip:  # Is conversion needed?
             return TPCConvertResult(width, height, bytearray(raw_data))
 
         data: bytearray = bytearray(raw_data)
@@ -185,64 +259,19 @@ class TPC:
             bytes_per_pixel = 4 if self._texture_format == TPCTextureFormat.RGBA else 3
         return bytes_per_pixel
 
-    def set_single(
-        self,
-        width: int,
-        height: int,
-        data: bytes,
-        texture_format: TPCTextureFormat,
-    ):
-        """Sets the texture data but only for a single mipmap.
+    @staticmethod
+    def flip_image_data(data: bytes | bytearray, width: int, height: int, bytes_per_pixel: int) -> bytes:
+        """Flip the image data vertically."""
+        flipped_data = bytearray(len(data))
+        row_length = width * bytes_per_pixel
 
-        Args:
-        ----
-            width: The new width.
-            height: The new height.
-            data: The new texture data.
-            texture_format: The texture format.
-        """
-        self.set_data(width, height, [data], texture_format)
+        for row in range(height):
+            source_start = row * row_length
+            source_end = source_start + row_length
+            dest_start = (height - 1 - row) * row_length
+            flipped_data[dest_start : dest_start + row_length] = data[source_start:source_end]
 
-    def set_data(
-        self,
-        width: int,
-        height: int,
-        mipmaps: list[bytes],
-        texture_format: TPCTextureFormat,
-    ):
-        """Sets the new texture data.
-
-        Args:
-        ----
-            width: The new width.
-            height: The new height.
-            mipmaps: The new mipmaps data.
-            texture_format: The texture format.
-        """
-        # TODO: Some sort of simple sanity check on the data; make sure the mipmaps' data have the appropriate size
-        #       according to their texture format.
-        # possible fix for the todo:
-        # Check if the number of mipmaps matches the expected count based on the width and height.
-        # This simplistic check assumes square textures for simplicity.
-        # max_dimension = max(width, height)
-        # expected_mipmap_count = 1 + math.floor(math.log2(max_dimension))
-        # if len(mipmaps) != expected_mipmap_count:
-        # raise ValueError(f"Expected {expected_mipmap_count} mipmaps, got {len(mipmaps)}.")
-        # Iterate over mipmaps and check if their data sizes match the expected sizes.
-        # current_width, current_height = width, height
-        # for i, mipmap in enumerate(mipmaps):
-        # expected_size = (current_width * current_height * bits_per_pixel) // 8
-        # if len(mipmap) != expected_size:
-        # raise ValueError(f"Mipmap level {i} has incorrect size. Expected {expected_size} bytes, got {len(mipmap)} bytes.")
-
-        # Update dimensions for the next mipmap level.
-        # current_width = max(1, current_width // 2)
-        # current_height = max(1, current_height // 2)
-
-        self._texture_format = texture_format
-        self._mipmaps = mipmaps
-        self._width = width
-        self._height = height
+        return bytes(flipped_data)
 
     def is_compressed(
         self,
@@ -267,16 +296,11 @@ class TPC:
         -------
             A tuple equal to (width, height).
         """
-        if 0 > mipmap >= len(self._mipmaps):
+        if not self.mipmaps or 0 > mipmap >= len(self.mipmaps):
             msg = "The index for the mipmap is out of range."
             raise IndexError(msg)
-
-        width = self._width
-        height = self._height
-        for _ in range(mipmap):
-            width >>= 1
-            height >>= 1
-        return width, height
+        mm = self.mipmaps[mipmap]
+        return mm.width, mm.height
 
     @staticmethod
     def _calculate_color_indices(
@@ -310,7 +334,7 @@ class TPC:
     ) -> bytearray:
         """Convert RGBA data to DXT1 compressed format."""
         compressed_data = bytearray()
-        for y, x in tpc_itertools.product(range(0, height, 4), range(0, width, 4)):
+        for y, x in itertools.product(range(0, height, 4), range(0, width, 4)):
             rgba_block: list[tuple[int, int, int, int]] = [
                 cast(Tuple[int, int, int, int], tuple(rgba_data[i : i + 4]))
                 for dy in range(4)
@@ -329,7 +353,7 @@ class TPC:
     # region Convert to RGBA
     @staticmethod
     def _dxt5_to_rgba(
-        data: bytes,
+        data: bytes | bytearray,
         width: int,
         height: int,
     ) -> bytearray:  # sourcery skip: merge-list-appends-into-extend
@@ -357,7 +381,7 @@ class TPC:
         dxt_reader: BinaryReader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 4)
 
-        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             alpha0 = dxt_reader.read_uint8()
             alpha1 = dxt_reader.read_uint8()
             dxt_alpha = TPC._integer48(dxt_reader.read_bytes(6))
@@ -424,7 +448,7 @@ class TPC:
 
     @staticmethod
     def _dxt1_to_rgba(
-        data: bytes,
+        data: bytes | bytearray,
         width: int,
         height: int,
     ) -> bytearray:
@@ -451,7 +475,7 @@ class TPC:
         dxt_reader: BinaryReader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 4)
 
-        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             x = dxt_reader.read_int16()
             y = dxt_reader.read_int16()
             c0: tuple[int, int, int] = TPC._rgba565_to_rgb(x)
@@ -484,14 +508,14 @@ class TPC:
 
     @staticmethod
     def _rgb_to_rgba(
-        data: bytes,
+        data: bytes | bytearray,
         width: int,
         height: int,
     ) -> bytearray:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for _ty, _x in tpc_itertools.product(range(4, height + 4, 4), range(width)):
+        for _ty, _x in itertools.product(range(4, height + 4, 4), range(width)):
             new_data.extend(
                 [
                     rgb_reader.read_uint8(),
@@ -505,14 +529,14 @@ class TPC:
 
     @staticmethod
     def _grey_to_rgba(
-        data: bytes,
+        data: bytes | bytearray,
         width: int,
         height: int,
     ) -> bytearray:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for _y, _x in tpc_itertools.product(range(height), range(width)):
+        for _y, _x in itertools.product(range(height), range(width)):
             brightness = rgb_reader.read_uint8()
             new_data.extend([brightness, brightness, brightness, 255])
 
@@ -523,23 +547,21 @@ class TPC:
     # region Convert to Grey
     @staticmethod
     def _rgba_to_grey(
-        data: bytes,
+        data: bytes | bytearray,
         width: int,
         height: int,
     ) -> bytearray:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for _y, _x in tpc_itertools.product(range(height), range(width)):
+        for _y, _x in itertools.product(range(height), range(width)):
             r = rgb_reader.read_uint8()
             g = rgb_reader.read_uint8()
             b = rgb_reader.read_uint8()
             rgb_reader.read_uint8()
             highest = r
-            if g > highest:
-                highest = g
-            if b > highest:
-                highest = b
+            highest = max(g, highest)
+            highest = max(b, highest)
             new_data.extend([highest])
 
         return new_data
@@ -549,14 +571,14 @@ class TPC:
     # region Convert to RGB
     @staticmethod
     def _dxt5_to_rgb(
-        data: bytes,
+        data: bytes | bytearray,
         width: int,
         height: int,
     ) -> bytearray:
         dxt_reader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 3)
 
-        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             dxt_reader.skip(8)
 
             x = dxt_reader.read_int16()
@@ -590,14 +612,14 @@ class TPC:
 
     @staticmethod
     def _dxt1_to_rgb(
-        data: bytes,
+        data: bytes | bytearray,
         width: int,
         height: int,
     ) -> bytearray:
         dxt_reader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 3)
 
-        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             x = dxt_reader.read_int16()
             y = dxt_reader.read_int16()
             c0: tuple[int, int, int] = TPC._rgba565_to_rgb(x)
@@ -629,14 +651,14 @@ class TPC:
 
     @staticmethod
     def _rgba_to_rgb(
-        data: bytes,
+        data: bytes | bytearray,
         width: int,
         height: int,
     ) -> bytearray:
         new_data = bytearray()
         rgb_reader: BinaryReader = BinaryReader.from_bytes(data)
 
-        for _y, _x in tpc_itertools.product(range(height), range(width)):
+        for _y, _x in itertools.product(range(height), range(width)):
             new_data.extend(
                 [
                     rgb_reader.read_uint8(),
@@ -755,38 +777,174 @@ class TPC:
     ) -> int:
         return bytes48[0] + (bytes48[1] << 8) + (bytes48[2] << 16) + (bytes48[3] << 24) + (bytes48[4] << 32) + (bytes48[5] << 40)
 
+    def rotate90(  # noqa: C901
+        self,
+        times: int,
+    ) -> None:
+        """Rotate all mipmaps in 90° steps, clock-wise for positive times, counter-clockwise for negative times."""
+        times = times % 4  # Normalize to -3 to 3 range
+        if times == 0:
+            return  # No rotation needed
+
+        bytes_per_pixel: Literal[1, 4, 3, 0] = self._texture_format.bytes_per_pixel()
+        if bytes_per_pixel <= 0 or not self.mipmaps or self._texture_format is TPCTextureFormat.Invalid:
+            return
+
+        for mipmap in self.mipmaps:
+            width, height = mipmap.width, mipmap.height
+            if width <= 0 or height <= 0:
+                continue
+
+            data: bytearray = mipmap.data
+            new_data = bytearray(len(data))
+
+            dst_idx: int = 0
+            for y in range(height):
+                for x in range(width):
+                    src_idx: int = (y * width + x) * bytes_per_pixel
+                    if times in {1, -3}:
+                        dst_idx = ((width - 1 - x) * height + y) * bytes_per_pixel
+                    elif times in {2, -2}:
+                        dst_idx = ((height - 1 - y) * width + (width - 1 - x)) * bytes_per_pixel
+                    elif times in {3, -1}:
+                        dst_idx = (x * height + (height - 1 - y)) * bytes_per_pixel
+
+                    for i in range(bytes_per_pixel):
+                        new_data[dst_idx + i] = data[src_idx + i]
+
+            mipmap.data = new_data
+            if abs(times) % 2 != 0:
+                mipmap.width, mipmap.height = mipmap.height, mipmap.width
+
+    def flip_vertically(self) -> None:
+        """Flip all mipmaps vertically."""
+        bytes_per_pixel: Literal[1, 4, 3, 0] = self._texture_format.bytes_per_pixel()
+        if bytes_per_pixel <= 0 or not self.mipmaps or self._texture_format is TPCTextureFormat.Invalid:
+            return
+
+        for mipmap in self.mipmaps:
+            mm_width, mm_height = mipmap.width, mipmap.height
+            if mm_width <= 0 or mm_height <= 0:
+                continue
+
+            pitch: int = bytes_per_pixel * mm_width
+            data: bytearray = mipmap.data
+
+            for y in range(mm_height // 2):
+                top_row: int = y * pitch
+                bottom_row: int = (mm_height - 1 - y) * pitch
+
+                # Swap rows
+                data[top_row : top_row + pitch], data[bottom_row : bottom_row + pitch] = (
+                    data[bottom_row : bottom_row + pitch],
+                    data[top_row : top_row + pitch],
+                )
+
+    def flip_horizontally(self) -> None:
+        """Flip all mipmaps horizontally."""
+        bytes_per_pixel: Literal[1, 4, 3, 0] = self._texture_format.bytes_per_pixel()
+        if bytes_per_pixel <= 0 or not self.mipmaps or self._texture_format is TPCTextureFormat.Invalid:
+            return
+
+        for mipmap in self.mipmaps:
+            mm_width, mm_height = mipmap.width, mipmap.height
+            if mm_width <= 0 or mm_height <= 0:
+                continue
+
+            data: bytearray = mipmap.data
+
+            for y in range(mm_height):
+                row_start = y * mm_width * bytes_per_pixel
+                for x in range(mm_width // 2):
+                    left_pixel: int = row_start + x * bytes_per_pixel
+                    right_pixel: int = row_start + (mm_width - 1 - x) * bytes_per_pixel
+
+                    # Swap pixels
+                    for i in range(bytes_per_pixel):
+                        data[left_pixel + i], data[right_pixel + i] = (
+                            data[right_pixel + i],
+                            data[left_pixel + i],
+                        )
+
 
 class TPCTextureFormat(IntEnum):
     Invalid = -1
     Greyscale = 0
-    RGB = 1
-    RGBA = 2
-    DXT1 = 3
-    DXT5 = 4
+    DXT1 = 1
+    DXT3 = 2
+    DXT5 = 3
+    RGB = 4
+    RGBA = 5
+    BGRA = 6
+    BGR = 7
 
-    def bytes_per_pixel(self):
+    def bytes_per_pixel(self) -> Literal[1, 4, 3, 0]:
         bytes_per_pixel = 0
-        if self == TPCTextureFormat.Greyscale:
+        if self is TPCTextureFormat.Greyscale:
             bytes_per_pixel = 1
-        elif self in {TPCTextureFormat.RGB, TPCTextureFormat.RGBA}:
-            bytes_per_pixel = 4 if self == TPCTextureFormat.RGBA else 3
+        elif self in (TPCTextureFormat.RGB, TPCTextureFormat.BGR):
+            bytes_per_pixel = 3
+        elif self in (TPCTextureFormat.RGBA, TPCTextureFormat.BGRA):
+            bytes_per_pixel = 4
         return bytes_per_pixel
 
+    def is_dxt(self) -> bool:
+        return self in (
+            TPCTextureFormat.DXT1,
+            TPCTextureFormat.DXT3,
+            TPCTextureFormat.DXT5,
+        )
+
+    def min_size(self) -> Literal[1, 3, 4, 8, 16, 0]:
+        if self is TPCTextureFormat.Greyscale:
+            return 1
+        if self in (TPCTextureFormat.RGB, TPCTextureFormat.BGR):
+            return 3
+        if self in (TPCTextureFormat.RGBA, TPCTextureFormat.BGRA):
+            return 4
+        if self is TPCTextureFormat.DXT1:
+            return 8
+        if self is TPCTextureFormat.DXT5:
+            return 16
+        return 0
+
     def to_qimage_format(self) -> QImage.Format:
+        """Convert this texture format to a QImage format."""
         from qtpy.QtGui import QImage
-        if self == TPCTextureFormat.Greyscale:
+
+        if self is TPCTextureFormat.Greyscale:
             return QImage.Format.Format_Grayscale8
-        if self == TPCTextureFormat.RGB:
+        if self is TPCTextureFormat.RGB:
             return QImage.Format.Format_RGB888
-        if self == TPCTextureFormat.RGBA:
+        if self is TPCTextureFormat.RGBA:
             return QImage.Format.Format_RGBA8888
+        if self is TPCTextureFormat.BGRA:
+            return QImage.Format.Format_ARGB32
         return QImage.Format.Format_Invalid
 
     def to_pil_mode(self) -> str:
-        if self == TPCTextureFormat.Greyscale:
+        """Convert this texture format to a PIL mode string."""
+        if self is TPCTextureFormat.Greyscale:
             return "L"
-        if self == TPCTextureFormat.RGB:
+        if self is TPCTextureFormat.RGB or self is TPCTextureFormat.BGR:
             return "RGB"
-        if self == TPCTextureFormat.RGBA:
+        if self is TPCTextureFormat.RGBA or self is TPCTextureFormat.BGRA:
             return "RGBA"
-        return "Invalid"
+        raise ValueError(f"Invalid texture format: {self!r}")
+
+    def get_size(
+        self,
+        width: int,
+        height: int,
+    ) -> int:
+        if self is TPCTextureFormat.Greyscale:
+            return width * height * 1
+        if self is TPCTextureFormat.RGB or self is TPCTextureFormat.BGR:
+            return width * height * 3
+        if self is TPCTextureFormat.RGBA or self is TPCTextureFormat.BGRA:
+            return width * height * 4
+        if self is TPCTextureFormat.DXT1:
+            return max(8, ((width + 3) // 4) * ((height + 3) // 4) * 8)
+        if self is TPCTextureFormat.DXT5:
+            return max(16, ((width + 3) // 4) * ((height + 3) // 4) * 16)
+        return 0

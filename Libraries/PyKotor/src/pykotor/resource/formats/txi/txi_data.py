@@ -1,19 +1,464 @@
+"""This module is a massive work in progress. The TXI format is largely undocumented
+and the information is scattered across multiple sources.
+
+The TXI class needs to be merged with the TXIBaseInformation and its subclasses at some point in an intuitive manner.
+"""
 # From https://nwn.wiki/display/NWN1/TXI#TXI-TextureRelatedFields
 # From DarthParametric and Drazgar in the DeadlyStream Discord.
 from __future__ import annotations
 
 import math
 
+from enum import Enum
 from typing import ClassVar
+
+from loggerplus import RobustLogger
+
+
+class TXI:
+    def __init__(self, txi: str | None = None):
+        self.features: TXIFeatures = TXIFeatures()
+        self._empty: bool = True
+        if txi and txi.strip():
+            self.load(txi)
+
+    def load(self, txi: str):
+        from pykotor.resource.formats.txi.io_txi import TXIReaderMode
+        self._empty = True
+        mode = TXIReaderMode.NORMAL
+        cur_coords: int = 0
+
+        for line in txi.splitlines():
+            try:
+                parsed_line: str = line.strip()
+                if not parsed_line:
+                    continue
+
+                if mode == TXIReaderMode.UPPER_LEFT_COORDS:
+                    coords = list(map(float, map(str.strip, parsed_line.split())))
+                    self.features.upperleftcoords.append(coords)
+                    cur_coords += 1
+                    if cur_coords >= len(self.features.upperleftcoords):
+                        mode = TXIReaderMode.NORMAL
+                    continue
+
+                if mode == TXIReaderMode.LOWER_RIGHT_COORDS:
+                    coords = list(map(float, map(str.strip, parsed_line.split())))
+                    self.features.lowerrightcoords.append(coords)
+                    cur_coords += 1
+                    if cur_coords >= len(self.features.lowerrightcoords):
+                        mode = TXIReaderMode.NORMAL
+                    continue
+
+                raw_cmd, args = (
+                    parsed_line.split(" ", maxsplit=1)
+                    if " " in parsed_line
+                    else (
+                        parsed_line,
+                        "",
+                    )
+                )
+                parsed_cmd_str: str = raw_cmd.strip().upper()
+                if (
+                    not parsed_cmd_str
+                    or parsed_cmd_str not in TXICommand.__members__
+                ):
+                    RobustLogger().warning(f"Invalid TXI command: '{raw_cmd}'")
+                    continue
+                command: TXICommand = TXICommand.__members__[parsed_cmd_str]
+                args: str = args.strip() if args else ""
+
+                if command == TXICommand.ALPHAMEAN:
+                    self.features.alphamean = float(args)
+                    self._empty = False
+                elif command == TXICommand.ARTUROHEIGHT:
+                    self.features.arturoheight = int(args)
+                    self._empty = False
+                elif command == TXICommand.ARTUROWIDTH:
+                    self.features.arturowidth = int(args)
+                    self._empty = False
+                elif command == TXICommand.BASELINEHEIGHT:
+                    self.features.baselineheight = int(args)
+                    self._empty = False
+                elif command == TXICommand.BLENDING:
+                    self.features.blending = self.parse_blending(args)
+                    self._empty = False
+                elif command == TXICommand.BUMPMAPSCALING:
+                    self.features.bumpmapscaling = float(args)
+                    self._empty = False
+                elif command == TXICommand.BUMPMAPTEXTURE:
+                    self.features.bumpmaptexture = args
+                    self._empty = False
+                elif command == TXICommand.BUMPYSHINYTEXTURE:
+                    self.features.bumpyshinytexture = args
+                    self._empty = False
+                elif command == TXICommand.CANDOWNSAMPLE:
+                    self.features.candownsample = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.CARETINDENT:
+                    self.features.caretindent = int(args)
+                    self._empty = False
+                elif command == TXICommand.CHANNELSCALE:
+                    self.features.channelscale = list(map(float, args.split()))
+                    self._empty = False
+                elif command == TXICommand.CHANNELTRANSLATE:
+                    self.features.channeltranslate = list(map(float, args.split()))
+                    self._empty = False
+                elif command == TXICommand.CLAMP:
+                    self.features.clamp = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.CODEPAGE:
+                    self.features.codepage = int(args)
+                    self._empty = False
+                elif command == TXICommand.COLS:
+                    self.features.cols = int(args)
+                    self._empty = False
+                elif command == TXICommand.COMPRESSTEXTURE:
+                    self.features.compresstexture = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.CONTROLLERSCRIPT:
+                    self.features.controllerscript = args
+                    self._empty = False
+                elif command == TXICommand.CUBE:
+                    self.features.cube = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.DBMAPPING:
+                    self.features.dbmapping = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.DECAL:
+                    self.features.decal = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.DEFAULTBPP:
+                    self.features.defaultbpp = int(args)
+                    self._empty = False
+                elif command == TXICommand.DEFAULTHEIGHT:
+                    self.features.defaultheight = int(args)
+                    self._empty = False
+                elif command == TXICommand.DEFAULTWIDTH:
+                    self.features.defaultwidth = int(args)
+                    self._empty = False
+                elif command == TXICommand.DISTORT:
+                    self.features.distort = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.DISTORTANGLE:
+                    self.features.distortangle = float(args)
+                    self._empty = False
+                elif command == TXICommand.DISTORTIONAMPLITUDE:
+                    self.features.distortionamplitude = float(args)
+                    self._empty = False
+                elif command == TXICommand.DOWNSAMPLEFACTOR:
+                    self.features.downsamplefactor = float(args)
+                    self._empty = False
+                elif command == TXICommand.DOWNSAMPLEMAX:
+                    self.features.downsamplemax = int(args)
+                    self._empty = False
+                elif command == TXICommand.DOWNSAMPLEMIN:
+                    self.features.downsamplemin = int(args)
+                    self._empty = False
+                elif command == TXICommand.ENVMAPTEXTURE:
+                    self.features.envmaptexture = args
+                    self._empty = False
+                elif command == TXICommand.FILERANGE:
+                    self.features.filerange = list(map(int, args.split()))
+                    self._empty = False
+                elif command == TXICommand.FILTER:
+                    self.features.filter = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.FONTHEIGHT:
+                    self.features.fontheight = int(args)
+                    self._empty = False
+                elif command == TXICommand.FONTWIDTH:
+                    self.features.fontwidth = int(args)
+                    self._empty = False
+                elif command == TXICommand.FPS:
+                    self.features.fps = float(args)
+                    self._empty = False
+                elif command == TXICommand.ISBUMPMAP:
+                    self.features.isbumpmap = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.ISDOUBLEBYTE:
+                    self.features.isdoublebyte = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.ISLIGHTMAP:
+                    self.features.islightmap = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.LOWERRIGHTCOORDS:
+                    self.features.lowerrightcoords = [[] for _ in range(int(args))]
+                    mode = TXIReaderMode.LOWER_RIGHT_COORDS
+                    cur_coords = 0
+                    self._empty = False
+                elif command == TXICommand.MAXSIZEHQ:
+                    self.features.maxSizeHQ = int(args)
+                    self._empty = False
+                elif command == TXICommand.MAXSIZELQ:
+                    self.features.maxSizeLQ = int(args)
+                    self._empty = False
+                elif command == TXICommand.MINSIZEHQ:
+                    self.features.minSizeHQ = int(args)
+                    self._empty = False
+                elif command == TXICommand.MINSIZELQ:
+                    self.features.minSizeLQ = int(args)
+                    self._empty = False
+                elif command == TXICommand.MIPMAP:
+                    self.features.mipmap = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.NUMCHARS:
+                    self.features.numchars = int(args)
+                    self._empty = False
+                elif command == TXICommand.NUMCHARSPERSHEET:
+                    self.features.numcharspersheet = int(args)
+                    self._empty = False
+                elif command == TXICommand.NUMX:
+                    self.features.numx = int(args)
+                    self._empty = False
+                elif command == TXICommand.NUMY:
+                    self.features.numy = int(args)
+                    self._empty = False
+                elif command == TXICommand.ONDEMAND:
+                    self.features.ondemand = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.PRIORITY:
+                    self.features.priority = int(args)
+                    self._empty = False
+                elif command == TXICommand.PROCEDURETYPE:
+                    self.features.proceduretype = args
+                    self._empty = False
+                elif command == TXICommand.ROWS:
+                    self.features.rows = int(args)
+                    self._empty = False
+                elif command == TXICommand.SPACINGB:
+                    self.features.spacingB = float(args)
+                    self._empty = False
+                elif command == TXICommand.SPACINGR:
+                    self.features.spacingR = float(args)
+                    self._empty = False
+                elif command == TXICommand.SPEED:
+                    self.features.speed = float(args)
+                    self._empty = False
+                elif command == TXICommand.TEMPORARY:
+                    self.features.temporary = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.TEXTUREWIDTH:
+                    self.features.texturewidth = int(args)
+                    self._empty = False
+                elif command == TXICommand.UNIQUE:
+                    self.features.unique = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.UPPERLEFTCOORDS:
+                    self.features.upperleftcoords = [[] for _ in range(int(args))]
+                    mode = TXIReaderMode.UPPER_LEFT_COORDS
+                    cur_coords = 0
+                    self._empty = False
+                elif command == TXICommand.WATERHEIGHT:
+                    self.features.waterheight = float(args)
+                    self._empty = False
+                elif command == TXICommand.WATERWIDTH:
+                    self.features.waterwidth = float(args)
+                    self._empty = False
+                elif command == TXICommand.XBOX_DOWNSAMPLE:
+                    self.features.xbox_downsample = bool(int(args))
+                    self._empty = False
+            except Exception as e:  # noqa: BLE001
+                RobustLogger().warning(f"Invalid TXI line: '{line}'", exc_info=e)
+
+    def empty(self) -> bool:
+        return self._empty
+
+    def get_features(self) -> TXIFeatures:
+        return self.features
+
+    @staticmethod
+    def parse_blending(s: str) -> int:
+        return s.lower() in {"default", "additive", "punchthrough"}
+
+    def __str__(self) -> str:
+        lines: list[str] = []
+        for attr, value in vars(self.features).items():
+            if not value:
+                continue
+            upper_attr = attr.upper()
+            if upper_attr not in TXICommand.__members__:
+                RobustLogger().error(f"Invalid TXI attribute '{attr}'")
+                continue
+            command = TXICommand[upper_attr]
+            if isinstance(value, bool):
+                lines.append(f"{command.value} {int(value)}")
+            elif isinstance(value, (int, float)):
+                lines.append(f"{command.value} {value}")
+            elif isinstance(value, list):
+                if attr in [TXICommand.UPPERLEFTCOORDS.value, TXICommand.LOWERRIGHTCOORDS.value]:
+                    lines.append(command.value)
+                    lines.extend(" ".join(map(str, coord)) for coord in value)
+                else:
+                    lines.append(f"{command.value} {' '.join(map(str, value))}")
+            else:
+                lines.append(f"{command.value} {value}")
+        return "\n".join(lines)
+
+class TXIFeatures:
+    """This class is used to store the features of a texture."""
+
+    def __init__(self):  # noqa: PLR0915
+        self.alphamean: float = 0.0
+        self.arturoheight: int = 0
+        self.arturowidth: int = 0
+        self.baselineheight: int = 0
+        self.blending: int = 0
+        self.bumpmapscaling: float = 0.0
+        self.bumpmaptexture: str = ""
+        self.bumpyshinytexture: str = ""
+        self.candownsample: bool = False
+        self.caretindent: int = 0
+        self.channelscale: list[float] = []
+        self.channeltranslate: list[float] = []
+        self.clamp: bool = False
+        self.codepage: int = 0
+        self.cols: int = 0
+        self.compresstexture: bool = False
+        self.controllerscript: str = ""
+        self.cube: bool = False
+        self.dbmapping: bool = False  # (???) Potentially for dbcs multi-byte encodings?
+        self.decal: bool = False
+        self.defaultbpp: int = 0
+        self.defaultheight: int = 0
+        self.defaultwidth: int = 0
+        self.distort: bool = False
+        self.distortangle: float = 0.0
+        self.distortionamplitude: float = 0.0
+        self.downsamplefactor: float = 0.0
+        self.downsamplemax: int = 0
+        self.downsamplemin: int = 0
+        self.envmaptexture: str = ""
+        self.filerange: list[int] = []
+
+        # Mipmap and Filter settings (0/1) can apply different graphical "softening" on the fonts (not affecting
+        # spacing etc.). Don't use it though, in most case it would hurt your eyes.
+        # The engine has broken mip use implementation. It incorrectly mixes mip levels, even on objects
+        # filling the screen.
+        self.filter: bool = False  # (???)
+        self.fontheight: int = 0  # Tested. Float between 0 and 1.
+
+        # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in
+        # k1 tests, changing this does not yield any noticeable ingame result.
+        self.fontwidth: int = 0
+
+        self.fps: float = 0.0
+        self.isbumpmap: bool = False
+        self.isdoublebyte: bool = False  # Potentially for dbcs multi-byte encodings? Might not even be a bool.
+        self.islightmap: bool = False
+
+        # Confirmed. The bottom right coordinates for the character
+        # box the game draws. each float is 0 to 1. 3rd tuple int is always 0
+        self.lowerrightcoords: list[list[float]] = []
+
+        self.maxSizeHQ: int = 0
+        self.maxSizeLQ: int = 0
+        self.minSizeHQ: int = 0
+        self.minSizeLQ: int = 0
+
+        # The mipmap 0 setting shouldn't be changed. That tells the engine to use mip 0, i.e.
+        # the highest resolution of the image
+        self.mipmap: bool = False
+        self.numchars: int = 0  # Tested. Unsure if this is actually required, or if the game simply takes from the 'upperleftcoords' and 'lowerrightcoords' sizes.
+        self.numcharspersheet: int = 0
+        self.numx: int = 0
+        self.numy: int = 0
+        self.ondemand: bool = False
+        self.priority: int = 0
+        self.proceduretype: str = ""
+        self.rows: int = 0
+        self.spacingB: float = 0.0  # Confirmed. Float between 0 and 1. Spacing between each multiline string rendered ingame.
+        self.spacingR: float = 0.0  # Untested. Float between 0 and 1. According to research, should NEVER exceed the maximum of 0.002600
+        self.speed: float = 0.0
+        self.temporary: bool = False
+        self.texturewidth: int = 0
+        self.unique: bool = False
+
+        # Confirmed. The top left coordinates for the character
+        # box the game draws. each float is 0 to 1. 3rd tuple int is always 0
+        self.upperleftcoords: list[list[float]] = []
+
+        self.waterheight: float = 0.0
+        self.waterwidth: float = 0.0
+        self.xbox_downsample: bool = False
+
+class TXICommand(Enum):
+    """This class is used to store the commands of a texture."""
+
+    ALPHAMEAN = "alphamean"
+    ARTUROHEIGHT = "arturoheight"
+    ARTUROWIDTH = "arturowidth"
+    BASELINEHEIGHT = "baselineheight"
+    BLENDING = "blending"
+    BUMPMAPSCALING = "bumpmapscaling"
+    BUMPMAPTEXTURE = "bumpmaptexture"
+    BUMPYSHINYTEXTURE = "bumpyshinytexture"
+    CANDOWNSAMPLE = "candownsample"
+    CARETINDENT = "caretindent"
+    CHANNELSCALE = "channelscale"
+    CHANNELTRANSLATE = "channeltranslate"
+    CLAMP = "clamp"
+    CODEPAGE = "codepage"
+    COLS = "cols"
+    COMPRESSTEXTURE = "compresstexture"
+    CONTROLLERSCRIPT = "controllerscript"
+    CUBE = "cube"
+    DBMAPPING = "dbmapping"
+    DECAL = "decal"
+    DEFAULTBPP = "defaultbpp"
+    DEFAULTHEIGHT = "defaultheight"
+    DEFAULTWIDTH = "defaultwidth"
+    DISTORT = "distort"
+    DISTORTANGLE = "distortangle"
+    DISTORTIONAMPLITUDE = "distortionamplitude"
+    DOWNSAMPLEFACTOR = "downsamplefactor"
+    DOWNSAMPLEMAX = "downsamplemax"
+    DOWNSAMPLEMIN = "downsamplemin"
+    ENVMAPTEXTURE = "envmaptexture"
+    FILERANGE = "filerange"
+    FILTER = "filter"
+    FONTHEIGHT = "fontheight"
+    FONTWIDTH = "fontwidth"
+    FPS = "fps"
+    ISBUMPMAP = "isbumpmap"
+    ISDOUBLEBYTE = "isdoublebyte"
+    ISLIGHTMAP = "islightmap"
+    LOWERRIGHTCOORDS = "lowerrightcoords"
+    MAXSIZEHQ = "maxSizeHQ"
+    MAXSIZELQ = "maxSizeLQ"
+    MINSIZEHQ = "minSizeHQ"
+    MINSIZELQ = "minSizeLQ"
+    MIPMAP = "mipmap"
+    NUMCHARS = "numchars"
+    NUMCHARSPERSHEET = "numcharspersheet"
+    NUMX = "numx"
+    NUMY = "numy"
+    ONDEMAND = "ondemand"
+    PRIORITY = "priority"
+    PROCEDURETYPE = "proceduretype"
+    ROWS = "rows"
+    SPACINGB = "spacingB"
+    SPACINGR = "spacingR"
+    SPEED = "speed"
+    TEMPORARY = "temporary"
+    TEXTUREWIDTH = "texturewidth"
+    UNIQUE = "unique"
+    UPPERLEFTCOORDS = "upperleftcoords"
+    WATERHEIGHT = "waterheight"
+    WATERWIDTH = "waterwidth"
+    XBOX_DOWNSAMPLE = "xbox_downsample"
 
 
 class TXIBaseInformation:
     """Fields used within all txi files."""
 
     def __init__(self):
-        #  Mipmap and Filter settings (0/1) can apply different graphical "softening" on the fonts (not affecting spacing etc.). Don't use it though, in most case it would hurt your eyes.
-        #  The engine has broken mip use implementation. It incorrectly mixes mip levels, even on objects filling the screen.
-        self.mipmap: int = 0  # The mipmap 0 setting shouldn't be changed. That tells the engine to use mip 0, i.e. the highest resolution of the image
+        # Mipmap and Filter settings (0/1) can apply different graphical "softening" on the fonts (not affecting
+        # spacing etc.). Don't use it though, in most case it would hurt your eyes.
+        # The engine has broken mip use implementation. It incorrectly mixes mip levels, even on objects
+        # filling the screen.
+        self.mipmap: int = 0  # The mipmap 0 setting shouldn't be changed. That tells the engine to use mip 0, i.e. the
+        # highest resolution of the image
         self.filter: int = 0  # (???)
         self.downsamplemin: int = 0  # (???) (probably unsupported or broken related to above)
         self.downsamplemax: int = 0  # (???) (probably unsupported or broken related to above)
@@ -58,7 +503,7 @@ class TXITextureInformation(TXIBaseInformation):
 
 class TXIFontInformation(TXIBaseInformation):
     DEFAULT_RESOLUTION: ClassVar[int] = 512
-    FONT_TEXTURES: ClassVar[list[str]] = [  # TODO: figure out which ones the game actually uses.
+    FONT_TEXTURES: ClassVar[list[str]] = [  # TODO(th3w1zard1): figure out which ones the game actually uses.
         "fnt_galahad14",  # Main menu?
         "dialogfont10x10",
         "dialogfont10x10a",
@@ -246,7 +691,7 @@ lowerrightcoords {self.lr_coords_count}
         # self.texturewidth: float = self.numchars * custom_scaling / 50  # maybe?
         # self.fontheight: float = (self.numchars * custom_scaling * max_char_height) / (50 * resolution[1])  # maybe?
 
-        # TODO: I'm pretty sure fontwidth could be calculated here too. During testing, it's been easier to leave that at 1.000000 so there's less variables to worry about.
+        # TODO(th3w1zard1): I'm pretty sure fontwidth could be calculated here too. During testing, it's been easier to leave that at 1.000000 so there's less variables to worry about.
         # We should figure out the relationship for proper readability. I think vanilla K1 defines texturewidth as 'resolution_x / 100'.
         # Also worth mentioning the above math doesn't even work if the resolution isn't a perfect square.
         # EDIT: Editing fontwidth yields no changes in K1. Might do something in K2.

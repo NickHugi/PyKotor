@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-# Try to import defusedxml, fallback to ElementTree if not available
-from xml.etree import ElementTree
+# Try to import defusedxml, fallback to ET if not available
+from xml.etree import ElementTree as ET
 
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
 
-    ElementTree.fromstring = _fromstring
+    ET.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
-    print("warning: defusedxml is not available but recommended due to security concerns.")
+    print("warning: defusedxml is not available but recommended for security")
 
 from typing import TYPE_CHECKING
 
@@ -34,21 +34,36 @@ class TLKXMLReader(ResourceReader):
         self._tlk: TLK | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> TLK:
+    def load(self) -> TLK:
         self._tlk = TLK()
 
         data = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
-        xml = ElementTree.fromstring(data)  # noqa: S314
+        xml = ET.fromstring(data)  # noqa: S314
 
-        self._tlk.language = Language(int(xml.get("language")))
+        language = xml.get("language")
+        if language is None:
+            raise ValueError("The 'language' attribute is missing from the root element of the TLK XML. This attribute is required to specify the language of the TLK file.")
+        self._tlk.language = Language(int(language))
         self._tlk.resize(len(xml))
         for string in xml:
-            index = int(string.get("id"))
-            self._tlk.entries[index].text = string.text
-            self._tlk.entries[index].voiceover = ResRef(string.get("sound")) if string.get("sound") else ResRef.from_blank()
+            id_str = string.get("id")
+            if id_str is None:
+                raise ValueError(
+                    "The 'id' attribute is missing for a string element in the TLK XML. Each <string>"
+                    f" element must have an 'id' attribute to specify its index in the TLK file. Problematic element: {ET.tostring(string, encoding='unicode')}"
+                )
+            index = int(id_str)
+
+            text = string.text
+            if text is None:
+                raise ValueError(
+                    "The text content is missing for a string element in the TLK XML. Each <string>"
+                    f" element must contain text content. Problematic element with id '{id_str}': {ET.tostring(string, encoding='unicode')}"
+                )
+            self._tlk.entries[index].text = text
+
+            sound = string.get("sound")
+            self._tlk.entries[index].voiceover = ResRef(sound) if sound is not None else ResRef.from_blank()
 
         return self._tlk
 
@@ -60,19 +75,16 @@ class TLKXMLWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._xml: ElementTree.Element = ElementTree.Element("xml")
+        self._xml: ET.Element = ET.Element("xml")
         self._tlk: TLK = tlk
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         self._xml.tag = "tlk"
         self._xml.set("language", str(self._tlk.language.value))
 
         for stringref, entry in self._tlk:
-            element = ElementTree.Element("string")
+            element = ET.Element("string")
             element.text = entry.text
             element.set("id", str(stringref))
             if entry.voiceover:
@@ -80,4 +92,4 @@ class TLKXMLWriter(ResourceWriter):
             self._xml.append(element)
 
         indent(self._xml)
-        self._writer.write_bytes(ElementTree.tostring(self._xml))
+        self._writer.write_bytes(ET.tostring(self._xml))

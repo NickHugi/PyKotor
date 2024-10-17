@@ -307,7 +307,12 @@ def format_exception_with_variables(
         detailed_message.extend(format_frame_info(frame_info))
     if exc.__cause__ is not None:
         detailed_message.append("This is the original exception:")
-        detailed_message.extend(format_exception_with_variables(exc.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
+        detailed_message.extend(
+            format_exception_with_variables(
+                exc.__cause__,
+                message="Causing Exception's Stack Trace Variables:",
+            ).split("\n")
+        )
 
     detailed_message.append(formatted_traceback)
     return "\n".join(detailed_message)

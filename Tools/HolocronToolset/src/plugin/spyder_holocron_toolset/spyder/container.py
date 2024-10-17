@@ -1,11 +1,11 @@
 # Third-party imports
 from __future__ import annotations
 
-from qtpy.QtCore import Slot
+from qtpy.QtCore import Slot  # pyright: ignore[reportPrivateImportUsage]
 from qtpy.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout
 
 # Local imports
-from plugin.spyder.widgets import HolocronStatus, HolocronToolbar
+from plugin.spyder_holocron_toolset.spyder.widgets import HolocronStatus, HolocronToolbar
 
 # Spyder imports
 from spyder.api.translations import get_translation
@@ -73,3 +73,23 @@ class HolocronToolsetContainer(PluginMainContainer):
         self.tool_window.change_active_installation(
             self.tool_window.ui.gameCombo.findText(installation_name)
         )
+
+    def setup_toolbar(self, toolbar):
+        """Set up toolbars specific to Holocron Toolset."""
+        # Add toolbar setup logic here
+        pass
+
+    def setup_widgets(self):
+        """Set up widgets specific to Holocron Toolset."""
+        # Add widget setup logic here
+        pass
+
+    def open_resource(self, resource_type: str, resource_path: str):
+        """Open a resource in the appropriate editor."""
+        # Implement logic to open the resource
+        pass
+
+    def update_for_installation(self, installation):
+        """Update UI based on the current installation."""
+        # Implement logic to update the UI
+        pass

@@ -20,10 +20,7 @@ class SSFBinaryReader(ResourceReader):
         self._ssf: SSF | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> SSF:
+    def load(self) -> SSF:
         self._ssf = SSF()
 
         file_type = self._reader.read_string(4)
@@ -85,45 +82,39 @@ class SSFBinaryWriter(ResourceWriter):
         self._ssf: SSF = ssf
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         self._writer.write_string("SSF ")
         self._writer.write_string("V1.1")
         self._writer.write_uint32(12)
 
-        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_1), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_2), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_3), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_4), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_5), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_6), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.SELECT_1), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.SELECT_2), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.SELECT_3), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.ATTACK_GRUNT_1), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.ATTACK_GRUNT_2), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.ATTACK_GRUNT_3), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.PAIN_GRUNT_1), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.PAIN_GRUNT_2), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.LOW_HEALTH), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.DEAD), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.CRITICAL_HIT), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.TARGET_IMMUNE), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.LAY_MINE), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.DISARM_MINE), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.BEGIN_STEALTH), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.BEGIN_SEARCH), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.BEGIN_UNLOCK), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.UNLOCK_FAILED), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.UNLOCK_SUCCESS), max_neg1=True)
-        self._writer.write_uint32(
-            self._ssf.get(SSFSound.SEPARATED_FROM_PARTY),
-            max_neg1=True,
-        )
-        self._writer.write_uint32(self._ssf.get(SSFSound.REJOINED_PARTY), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.POISONED), max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_1) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_2) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_3) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_4) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_5) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.BATTLE_CRY_6) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.SELECT_1) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.SELECT_2) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.SELECT_3) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.ATTACK_GRUNT_1) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.ATTACK_GRUNT_2) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.ATTACK_GRUNT_3) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.PAIN_GRUNT_1) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.PAIN_GRUNT_2) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.LOW_HEALTH) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.DEAD) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.CRITICAL_HIT) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.TARGET_IMMUNE) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.LAY_MINE) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.DISARM_MINE) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.BEGIN_STEALTH) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.BEGIN_SEARCH) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.BEGIN_UNLOCK) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.UNLOCK_FAILED) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.UNLOCK_SUCCESS) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.SEPARATED_FROM_PARTY) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.REJOINED_PARTY) or 0, max_neg1=True)
+        self._writer.write_uint32(self._ssf.get(SSFSound.POISONED) or 0, max_neg1=True)
 
-        for _i in range(12):
+        for _ in range(12):
             self._writer.write_uint32(0xFFFFFFFF)

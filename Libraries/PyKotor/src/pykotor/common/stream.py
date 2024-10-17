@@ -140,9 +140,9 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream = Path(path).open("rb")
+        stream = open(path, "rb")  # noqa: SIM115, PTH123
         instance = cls.from_stream(stream, offset, size)
-        if instance._stream is not stream:
+        if instance._stream is not stream:  # noqa: SLF001
             stream.close()
         return instance
 
@@ -244,7 +244,10 @@ class BinaryReader:
     def size(
         self,
     ) -> int:
-        """Returns the total number of bytes remaining in the stream.
+        """Returns the total number of bytes in the stream.
+
+        When a BinaryReader is instantiated, it can be given a size argument and an offset argument, and will not
+        exceed those limits. Use true_size if you want to know this information.
 
         Returns:
         -------
@@ -257,23 +260,25 @@ class BinaryReader:
     ) -> int:
         """Returns the total number of bytes in the stream.
 
+        This does NOT include the initial offset and size constraint passed to the constructor.
+
         Returns:
         -------
-            The total file size.
+            The absolute size of the stream.
         """
         if isinstance(self._stream, mmap.mmap):
             return self._stream.size()
 
-        current = self._stream.tell()
+        current: int = self._stream.tell()
         self._stream.seek(0, os.SEEK_END)
-        size = self._stream.tell()
+        size: int = self._stream.tell()
         self._stream.seek(current)
         return size
 
     def remaining(
         self,
     ) -> int:
-        """Returns the remaining number of bytes in the stream.
+        """Returns the number of bytes remaining in the stream based on current position.
 
         Returns:
         -------
@@ -683,7 +688,7 @@ class BinaryReader:
             return string
 
         # If a length is specified and not all bytes were read, skip the remaining bytes
-        remaining_length = length - bytes_read
+        remaining_length: int = length - bytes_read
         if remaining_length > 0:
             self.skip(remaining_length)
         return string
@@ -769,7 +774,7 @@ class BinaryWriter(ABC):
         -------
             A new BinaryWriter instance.
         """
-        return BinaryWriterFile(Path(path).open("wb"))
+        return BinaryWriterFile(Path(path).open("wb"))  # noqa: SIM115
 
     @classmethod
     def to_bytearray(
@@ -1468,7 +1473,7 @@ class BinaryWriterFile(BinaryWriter):
 
     def write_bytes(
         self,
-        value: bytes,
+        value: bytes | bytearray,
     ):
         """Writes the specified bytes to the stream.
 

@@ -25,7 +25,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 import contextlib
 
-from pathlib import Path
+from utility.system.path import Path
 
 
 class TestPathExtras(unittest.TestCase):

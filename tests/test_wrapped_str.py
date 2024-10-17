@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from utility.common.misc_string.mutable_str import WrappedStr
+from utility.common.misc_string.case_insens_str import CaseInsensImmutableStr
 
 
 class TestMutableStr(unittest.TestCase):
@@ -284,7 +285,7 @@ class TestCaseInsensImmutableStr(unittest.TestCase):
         assert CaseInsensImmutableStr._coerce_str(CaseInsensImmutableStr("Test")) == "test"
 
     def test_init(self):
-        assert CaseInsensImmutableStr("Test")._lower_content == "test"
+        assert CaseInsensImmutableStr("Test")._casefold_content == "test"
 
     def test_contains(self):
         assert "test" in CaseInsensImmutableStr("Test")
@@ -332,5 +333,11 @@ class TestCaseInsensImmutableStr(unittest.TestCase):
     def test_split_by_indices(self):
         assert CaseInsensImmutableStr("a,b,c")._split_by_indices([1, 3], 2) == [CaseInsensImmutableStr("a"), CaseInsensImmutableStr(","), CaseInsensImmutableStr("b,c")]
 
+
 if __name__ == "__main__":
-    unittest.main()
+    try:
+        import pytest
+    except ImportError: # pragma: no cover
+        unittest.main()
+    else:
+        pytest.main(["-v", __file__])

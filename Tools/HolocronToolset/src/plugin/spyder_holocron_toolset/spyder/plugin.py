@@ -322,25 +322,160 @@ class HolocronToolset(SpyderPluginV2):
         return QIcon(":/images/icons/sith.png")
 
     def on_initialize(self):
+        """Initialize the Holocron Toolset plugin."""
+        # Step 1: Get the container
         container = self.get_container()
 
-        # Integrate the menu bar
+        # Step 2: Integrate the menu bar
         self.integrate_menubar(container)
 
-        # Reposition widgets if necessary
+        # Step 3: Reposition widgets if necessary
         self.reposition_widgets(container)
+
+        # Step 4: Initialize the ToolWindow in plugin mode
         self.tool_window = ToolWindow(plugin_mode=True)
         container.add_widget(self.tool_window)
 
-        # Connect signals
+        # Step 5: Connect signals
         self.tool_window.installationChanged.connect(self.on_installation_changed)
         self.tool_window.installationsUpdated.connect(self.on_installations_updated)
 
+        # Step 6: Load installations
         self.load_installations()
+
+        # Step 7: Set up the plugin's UI
         self._setup_plugin()
 
         print("HolocronToolset initialized!")
 
+    @on_plugin_available(plugin=Plugins.Toolbar)
+    def on_toolbar_available(self):
+        container = self.get_container()
+        toolbar = self.get_plugin(Plugins.Toolbar)
+        toolbar.add_application_toolbar(container.holocron_toolbar)
+
+    @on_plugin_available(plugin=Plugins.StatusBar)
+    def on_statusbar_available(self):
+        statusbar = self.get_plugin(Plugins.StatusBar)
+        if statusbar:
+            statusbar.add_status_widget(self.holocron_status)
+
+    @on_plugin_available(plugin=Plugins.Preferences)
+    def on_preferences_available(self):
+        preferences = self.get_plugin(Plugins.Preferences)
+        preferences.register_plugin_preferences(self)
+
+    def integrate_menubar(self, container):
+        # Assuming `self.main` has access to Spyder's main window
+        main_window = self.main
+        file_menu = main_window.get_menu("file")
+
+        # Add custom actions
+        debug_action = QAction("Debug Reload", container)
+        debug_action.triggered.connect(self.debug_reload_pymodules)
+        file_menu.addAction(debug_action)
+
+    def debug_reload_pymodules(self):
+        # Placeholder for the actual debug reload logic
+        print("Debug reload of Python modules triggered.")
+        # Example: Move a widget to a new location in the Spyder interface
+        # self.ui.someWidget.setParent(container.someNewContainer)
+        # container.someNewContainer.layout().addWidget(self.ui.someWidget)
+        conf_file = get_conf_path(self.CONF_FILE)
+        with suppress(FileNotFoundError):
+            with open(conf_file) as f:
+                data = json.load(f)
+                installations = data.get("installations", [])
+                for installation in installations:
+                    self.tool_window.add_installation(
+                        installation["name"],
+                        installation["path"],
+                        installation["tsl"]
+                    )
+        except FileNotFoundError:
+            pass
+
+    def save_installations(self):
+        conf_file = get_conf_path(self.CONF_FILE)
+        data: dict[str, list[dict[str, Any]]] = {
+            "installations": [
+                {
+                    "name": name,
+                    "path": inst.path(),
+                    "tsl": inst.tsl
+                }
+                for name, inst in self.tool_window.installations.items()
+            ]
+        }
+        with open(conf_file, "w") as f:
+            json.dump(data, f)
+
+    def check_compatibility(self):
+        valid = True
+        message = ""
+        return valid, message
+
+    def on_close(self, cancellable=True):
+        return True
+
+    @property
+    def holocron_status(self):
+        container = self.get_container()
+        return container.holocron_status
+
+    # --- Public API
+    # ------------------------------------------------------------------------
+    @Slot(HTInstallation)
+    def on_installation_changed(self, installation: HTInstallation):
+        self.current_installation = installation
+        self.sig_installation_changed.emit(installation)
+        self.holocron_status.set_value(f"Active: {installation.name}")
+
+    @Slot(list)
+    def on_installations_updated(self, installations):
+        self.save_installations()
+        container = self.get_container()
+        container.holocron_toolbar.update_installations(installations)
+
+    def get_installations(self):
+        return self.tool_window.get_installations()
+
+    def show_about_dialog(self):
+        QMessageBox.about(self.main, _("About Holocron Toolset"),
+                          _("Holocron Toolset is a KotOR modding toolset for Spyder."))
+
+    # --- Preferences API
+    # ------------------------------------------------------------------------
+    def apply_conf(self):
+        self.load_installations()
+        container = self.get_container()
+        container.holocron_toolbar.update_installations(self.tool_window.get_installations())
+
+    def reset_conf(self):
+        for name in self.tool_window.get_installations():
+            self.tool_window.remove_installation(name)
+        self.save_installations()
+        container = self.get_container()
+        container.holocron_toolbar.update_installations([])
+
+    def get_config_page(self):
+        return HolocronToolsetConfigPage(self, self.name)
+
+    # --- Preferences API
+    # ------------------------------------------------------------------------
+    def apply_conf(self):
+        self.load_installations()
+        container = self.get_container()
+        container.holocron_toolbar.update_installations(self.installations)
+
+    def reset_conf(self):
+        self.installations = []
+        self.save_installations()
+        container = self.get_container()
+        container.holocron_toolbar.update_installations(self.installations)
+
+    def get_config_page(self):
+        return HolocronToolsetConfigPage(self, self.name)
     @on_plugin_available(plugin=Plugins.Toolbar)
     def on_toolbar_available(self):
         container = self.get_container()

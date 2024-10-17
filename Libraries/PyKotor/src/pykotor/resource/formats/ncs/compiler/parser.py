@@ -58,6 +58,8 @@ from pykotor.resource.formats.ncs.compiler.classes import (
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.common.script import ScriptConstant, ScriptFunction
     from pykotor.resource.formats.ncs.compiler.classes import Expression
 
@@ -68,7 +70,7 @@ class NssParser:
         functions: list[ScriptFunction],
         constants: list[ScriptConstant],
         library: dict[str, bytes],
-        library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None,
+        library_lookup: list[str] | list[os.PathLike] | None,
         errorlog: yacc.NullLogger | None = yacc.NullLogger(),  # noqa: B008
         *,
         debug: bool = False,

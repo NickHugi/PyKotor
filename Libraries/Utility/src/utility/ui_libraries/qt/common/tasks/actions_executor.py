@@ -14,7 +14,6 @@ from multiprocessing.managers import ValueProxy
 from typing import Any, Callable, ClassVar, cast
 
 import qtpy
-import structlog
 
 from loggerplus import RobustLogger
 from qtpy.QtCore import QObject, Signal
@@ -32,8 +31,6 @@ if TYPE_CHECKING:
     from concurrent.futures import Future
     from multiprocessing import Queue
     from multiprocessing.managers import DictProxy, SyncManager
-
-logger = structlog.get_logger(__name__)
 
 
 class TaskStatus(Enum):

@@ -290,6 +290,7 @@ class TestFileActionsExecutor(unittest.TestCase):
 if __name__ == "__main__":
     try:
         import pytest
-        pytest.main(["-v", __file__])
-    except ImportError:
+    except ImportError: # pragma: no cover
         unittest.main()
+    else:
+        pytest.main(["-v", __file__])

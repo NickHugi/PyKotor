@@ -20,10 +20,7 @@ class RIMBinaryReader(ResourceReader):
         self._rim: RIM | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> RIM:
+    def load(self) -> RIM:
         self._rim = RIM()
 
         file_type = self._reader.read_string(4)
@@ -75,10 +72,7 @@ class RIMBinaryWriter(ResourceWriter):
         self._rim: RIM = rim
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         entry_count = len(self._rim)
         offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
 

@@ -6,39 +6,40 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>274</width>
-    <height>401</height>
+    <width>800</width>
+    <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>TPC Editor</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QLabel" name="textureImage">
-      <property name="frameShape">
-       <enum>QFrame::Box</enum>
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="widgetResizable">
+       <bool>true</bool>
       </property>
-      <property name="frameShadow">
-       <enum>QFrame::Sunken</enum>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPlainTextEdit" name="txiEdit">
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>100</height>
-       </size>
-      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <layout class="QVBoxLayout" name="scrollAreaLayout">
+        <item>
+         <widget class="QLabel" name="textureImage">
+          <property name="frameShape">
+           <enum>QFrame::Box</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Sunken</enum>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -48,8 +49,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>274</width>
-     <height>21</height>
+     <width>800</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -66,6 +67,47 @@
     <addaction name="actionExit"/>
    </widget>
    <addaction name="menuFile"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionZoomIn"/>
+   <addaction name="actionZoomOut"/>
+   <addaction name="actionResetZoom"/>
+   <addaction name="separator"/>
+   <addaction name="actionRotateLeft"/>
+   <addaction name="actionRotateRight"/>
+   <addaction name="actionFlipHorizontal"/>
+   <addaction name="actionFlipVertical"/>
+   <addaction name="separator"/>
+   <addaction name="actionToggleTXIEditor"/>
+   <addaction name="separator"/>
+   <addaction name="actionConvertLabel"/>
+   <addaction name="actionConvertComboBox"/>
+   <addaction name="actionExport"/>
+  </widget>
+  <widget class="QDockWidget" name="txiDockWidget">
+   <property name="windowTitle">
+    <string>TXI Editor</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QPlainTextEdit" name="txiEdit"/>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <action name="actionNew">
    <property name="text">
@@ -95,6 +137,61 @@
   <action name="actionRevert">
    <property name="text">
     <string>Revert</string>
+   </property>
+  </action>
+  <action name="actionZoomIn">
+   <property name="text">
+    <string>Zoom In</string>
+   </property>
+  </action>
+  <action name="actionZoomOut">
+   <property name="text">
+    <string>Zoom Out</string>
+   </property>
+  </action>
+  <action name="actionResetZoom">
+   <property name="text">
+    <string>Reset Zoom</string>
+   </property>
+  </action>
+  <action name="actionRotateLeft">
+   <property name="text">
+    <string>Rotate Left</string>
+   </property>
+  </action>
+  <action name="actionRotateRight">
+   <property name="text">
+    <string>Rotate Right</string>
+   </property>
+  </action>
+  <action name="actionFlipHorizontal">
+   <property name="text">
+    <string>Flip Horizontal</string>
+   </property>
+  </action>
+  <action name="actionFlipVertical">
+   <property name="text">
+    <string>Flip Vertical</string>
+   </property>
+  </action>
+  <action name="actionToggleTXIEditor">
+   <property name="text">
+    <string>Toggle TXI Editor</string>
+   </property>
+  </action>
+  <action name="actionConvertLabel">
+   <property name="text">
+    <string>Convert to:</string>
+   </property>
+  </action>
+  <action name="actionConvertComboBox">
+   <property name="text">
+    <string>Format</string>
+   </property>
+  </action>
+  <action name="actionExport">
+   <property name="text">
+    <string>Export</string>
    </property>
   </action>
  </widget>

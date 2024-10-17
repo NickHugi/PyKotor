@@ -8,6 +8,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc.io_bmp import TPCBMPWriter
 from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.io_tpc import TPCBinaryReader, TPCBinaryWriter
+from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
 
@@ -101,6 +102,7 @@ def read_tpc(
     """
     file_format: ResourceType = detect_tpc(source, offset)
 
+    loaded_tpc: TPC
     if file_format is ResourceType.TPC:
         loaded_tpc = TPCBinaryReader(source, offset, size or 0).load()
     elif file_format is ResourceType.TGA:
@@ -177,4 +179,4 @@ def bytes_tpc(
     """
     data = bytearray()
     write_tpc(tpc, data, file_format)
-    return data
+    return bytes(data)

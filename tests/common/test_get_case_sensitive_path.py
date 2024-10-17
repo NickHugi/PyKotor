@@ -54,7 +54,9 @@ class TestCaseAwarePath(TestCase):
         expected_path.touch()
         assert expected_path.exists(), f"expected_path: '{expected_path}' should always exist on disk in this test."
         assert case_aware_file_path.exists(), f"expected_path: '{expected_path}' actual_path: '{case_aware_file_path}'"
-        assert str(case_aware_file_path) == str(expected_path) or platform.system() == "Darwin", f"Path case mismatch on a case-sensitive filesystem. Case-aware path: {case_aware_file_path}, expected path: {expected_path}"
+        assert (
+            str(case_aware_file_path) == str(expected_path) or platform.system() == "Darwin"
+        ), f"Path case mismatch on a case-sensitive filesystem. Case-aware path: {case_aware_file_path}, expected path: {expected_path}"
 
     def test_make_and_parse_uri(self):
         # Create a temporary directory
@@ -72,7 +74,9 @@ class TestCaseAwarePath(TestCase):
 
             # Ensure that the URI is in the expected format
             expected_uri = f'file://{temp_dir.replace(os.sep, "/")}/SAMPLE.TXT'
-            assert uri == expected_uri or platform.system() == "Darwin", f"Path case mismatch on a case-sensitive filesystem. Case-aware path: {uri}, expected path: {expected_uri}"
+            assert (
+                uri == expected_uri or platform.system() == "Darwin"
+            ), f"Path case mismatch on a case-sensitive filesystem. Case-aware path: {uri}, expected path: {expected_uri}"
 
             # Parse the URI back into a path
             assert uri.startswith("file:///"), f"Unsupported URI format: '{uri}'"
@@ -186,7 +190,9 @@ class TestCaseAwarePath(TestCase):
         assert case_aware_file_path.exists(), f"{relative} does not exist on disk"
         expected_relpath = "someDir/someFile.txt"
         if os.name == "posix":
-            assert str(relative) == expected_relpath or platform.system() == "Darwin", f"Path case mismatch on a case-sensitive filesystem. Case-aware path: {relative}, expected path: {expected_relpath}"
+            assert (
+                str(relative) == expected_relpath or platform.system() == "Darwin"
+            ), f"Path case mismatch on a case-sensitive filesystem. Case-aware path: {relative}, expected path: {expected_relpath}"
         if os.name == "nt":
             assert str(relative).lower() == "somedir\\somefile.txt"
 
@@ -282,4 +288,9 @@ class TestCaseAwarePath(TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    try:
+        import pytest
+    except ImportError:  # pragma: no cover
+        unittest.main()
+    else:
+        pytest.main(["-v", __file__])

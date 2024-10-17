@@ -3,21 +3,40 @@ from __future__ import annotations
 import os
 import uuid
 
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from loggerplus import RobustLogger, get_log_directory
-from qtpy import QtCore
-from qtpy.QtCore import QSettings
+from qtpy.QtCore import (
+    QModelIndex,
+    QSettings,
+    Signal,  # pyright: ignore[reportPrivateImportUsage]
+)
 from qtpy.QtGui import QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import QWidget
 
 from pykotor.common.misc import Game
-from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
+from pykotor.tools.path import find_kotor_paths_from_default
 from toolset.data.settings import Settings
+
+if TYPE_CHECKING:
+    from qtpy.QtCore import QItemSelectionModel, QModelIndex
+    from typing_extensions import Literal, TypedDict
+
+    from toolset.data.installation import HTInstallation  # noqa: F401
+    from toolset.data.settings import SettingsProperty
+
+    class InstallationDetailDict(TypedDict):
+        name: str
+        path: str
+        tsl: bool
+
+    class InstallationsDict(TypedDict):
+        installations: dict[str, InstallationDetailDict]
 
 
 class InstallationsWidget(QWidget):
-    edited = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    edited = Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         """Initialize the Installations widget.
@@ -36,21 +55,22 @@ class InstallationsWidget(QWidget):
         """
         super().__init__(parent)
 
-        self.installationsModel: QStandardItemModel = QStandardItemModel()
+        self.installations_model: QStandardItemModel = QStandardItemModel()
         self.settings = GlobalSettings()
 
         from toolset.uic.qtpy.widgets.settings.installations import Ui_Form
+
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setup_values()
         self.setup_signals()
 
     def setup_values(self):
-        self.installationsModel.clear()
+        self.installations_model.clear()
         for installation in self.settings.installations().values():
             item = QStandardItem(installation.name)
             item.setData({"path": installation.path, "tsl": installation.tsl})
-            self.installationsModel.appendRow(item)
+            self.installations_model.appendRow(item)
 
     def setup_signals(self):
         """Set up signal connections for installation management UI.
@@ -67,20 +87,24 @@ class InstallationsWidget(QWidget):
             - Connect TSL checkbox state change to update installation slot
             - Connect path list selection change to selection changed slot
         """
-        self.ui.pathList.setModel(self.installationsModel)
+        self.ui.pathList.setModel(self.installations_model)
 
         self.ui.addPathButton.clicked.connect(self.add_new_installation)
         self.ui.removePathButton.clicked.connect(self.remove_selected_installation)
         self.ui.pathNameEdit.textEdited.connect(self.update_installation)
         self.ui.pathDirEdit.textEdited.connect(self.update_installation)
         self.ui.pathTslCheckbox.stateChanged.connect(self.update_installation)
-        self.ui.pathList.selectionModel().selectionChanged.connect(self.installation_selected)
+        select_model: QItemSelectionModel | None = self.ui.pathList.selectionModel()
+        assert select_model is not None, "select_model cannot be None in setup_signals"
+        select_model.selectionChanged.connect(self.installation_selected)
 
     def save(self):
         installations: dict[str, dict[str, str]] = {}
 
-        for row in range(self.installationsModel.rowCount()):
-            item: QStandardItem = self.installationsModel.item(row, 0)
+        for row in range(self.installations_model.rowCount()):
+            item: QStandardItem | None = self.installations_model.item(row, 0)
+            if item is None:
+                continue
             item_text: str = item.text()
             installations[item_text] = item.data()
             installations[item_text]["name"] = item_text
@@ -90,24 +114,26 @@ class InstallationsWidget(QWidget):
     def add_new_installation(self):
         item = QStandardItem("New")
         item.setData({"path": "", "tsl": False})
-        self.installationsModel.appendRow(item)
+        self.installations_model.appendRow(item)
         self.edited.emit()
 
     def remove_selected_installation(self):
         if len(self.ui.pathList.selectedIndexes()) > 0:
-            index = self.ui.pathList.selectedIndexes()[0]
-            item = self.installationsModel.itemFromIndex(index)
-            self.installationsModel.removeRow(item.row())
+            index: QModelIndex = self.ui.pathList.selectedIndexes()[0]
+            item: QStandardItem | None = self.installations_model.itemFromIndex(index)
+            assert item is not None, "Item should not be None in remove_selected_installation"
+            self.installations_model.removeRow(item.row())
             self.edited.emit()
 
         if len(self.ui.pathList.selectedIndexes()) == 0:
             self.ui.pathFrame.setEnabled(False)
 
     def update_installation(self):
-        index = self.ui.pathList.selectedIndexes()[0]
-        item = self.installationsModel.itemFromIndex(index)
+        index: QModelIndex = self.ui.pathList.selectedIndexes()[0]
+        item: QStandardItem | None = self.installations_model.itemFromIndex(index)
+        assert item is not None, "Item should not be None in update_installation"
 
-        data = item.data()
+        data: dict[str, Any] = item.data()
         data["path"] = self.ui.pathDirEdit.text()
         data["tsl"] = self.ui.pathTslCheckbox.isChecked()
         item.setData(data)
@@ -120,12 +146,15 @@ class InstallationsWidget(QWidget):
         if len(self.ui.pathList.selectedIndexes()) > 0:
             self.ui.pathFrame.setEnabled(True)
 
-            index = self.ui.pathList.selectedIndexes()[0]
-            item = self.installationsModel.itemFromIndex(index)
+            index: QModelIndex = self.ui.pathList.selectedIndexes()[0]
+            item: QStandardItem | None = self.installations_model.itemFromIndex(index)
+            assert item is not None, "Item should not be None in installation_selected"
+            item_text: str = item.text()
+            item_data: dict[str, Any] = item.data()
 
-            self.ui.pathNameEdit.setText(item.text())
-            self.ui.pathDirEdit.setText(item.data()["path"])
-            self.ui.pathTslCheckbox.setChecked(bool(item.data()["tsl"]))
+            self.ui.pathNameEdit.setText(item_text)
+            self.ui.pathDirEdit.setText(item_data["path"])
+            self.ui.pathTslCheckbox.setChecked(bool(item_data["tsl"]))
 
 
 class InstallationConfig:
@@ -140,7 +169,7 @@ class InstallationConfig:
     @name.setter
     def name(self, value: str):
         installations: dict[str, dict[str, Any]] = self._settings.value("installations", {}, dict)
-        installation = installations[self._name]
+        installation: dict[str, Any] = installations[self._name]
 
         del installations[self._name]
         installations[value] = installation
@@ -152,7 +181,7 @@ class InstallationConfig:
     @property
     def path(self) -> str:
         try:
-            installation = self._settings.value("installations", {})[self._name]
+            installation: dict[str, Any] = self._settings.value("installations", {})[self._name]
         except Exception:  # noqa: BLE001
             return ""
         else:
@@ -172,7 +201,7 @@ class InstallationConfig:
     @property
     def tsl(self) -> bool:
         all_installs: dict[str, dict[str, Any]] = self._settings.value("installations", {})
-        installation = all_installs.get(self._name, {})
+        installation: dict[str, Any] = all_installs.get(self._name, {})
         return installation.get("tsl", False)
 
     @tsl.setter
@@ -193,6 +222,7 @@ class GlobalSettings(Settings):
             installations = {}
 
         if self.firstTime:
+            self.firstTime = False
             self._handle_firsttime_user(installations)
         self.settings.setValue("installations", installations)
 
@@ -205,119 +235,118 @@ class GlobalSettings(Settings):
         Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.
         The installations dictionary is then saved back to the user settings.
         """
+        self.firstTime = False
         RobustLogger().info("First time user, attempt auto-detection of currently installed KOTOR paths.")
         self.extractPath = str(get_log_directory(f"{uuid.uuid4().hex[:7]}_extract"))
         counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
         # Create a set of existing paths
-        existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
+        existing_paths: set[Path] = {Path(inst["path"]) for inst in installations.values()}
 
         for game, paths in find_kotor_paths_from_default().items():
-            for path in filter(CaseAwarePath.is_dir, paths):
+            for path in filter(Path.is_dir, paths):
                 RobustLogger().info(f"Autodetected game {game!r} path {path}")
                 if path in existing_paths:
                     continue
-                game_name = "KotOR" if game.is_k1() else "TSL"
-                base_game_name = game_name
+                game_name: Literal["KotOR", "TSL"] = "KotOR" if game.is_k1() else "TSL"
+                base_game_name: Literal["KotOR", "TSL"] = game_name
                 while game_name in installations:
                     counters[game] += 1
-                    game_name = f"{base_game_name} ({counters[game]})"
+                    game_name = f"{base_game_name} ({counters[game]})"  # type: ignore[assignment]
                 installations[game_name] = {
                     "name": game_name,
                     "path": str(path),
                     "tsl": game.is_k2(),
                 }
                 existing_paths.add(path)
-        self.firstTime = False
 
     # region Strings
-    recentFiles = Settings.addSetting(
+    recentFiles: SettingsProperty[list[str]] = Settings.addSetting(
         "recentFiles",
         [],
     )
-    extractPath = Settings.addSetting(
+    extractPath: SettingsProperty[str] = Settings.addSetting(
         "extractPath",
         "",
     )
-    nssCompilerPath = Settings.addSetting(
+    nssCompilerPath: SettingsProperty[str] = Settings.addSetting(
         "nssCompilerPath",
         "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp",
     )
-    ncsDecompilerPath = Settings.addSetting(
+    ncsDecompilerPath: SettingsProperty[str] = Settings.addSetting(
         "ncsDecompilerPath",
         "",
     )
-    selectedTheme = Settings.addSetting(
+    selectedTheme: SettingsProperty[str] = Settings.addSetting(
         "selectedTheme",
         "Fusion (Light)",  # Default theme
     )
     # endregion
 
     # region Numbers
-    max_child_processes = Settings.addSetting(
+    maxChildProcesses: SettingsProperty[int] = Settings.addSetting(
         "max_child_processes",
-        (os.cpu_count() or 1) * 2,
+        (os.cpu_count() or 1),
     )
-    moduleSortOption = Settings.addSetting(
+    moduleSortOption: SettingsProperty[int] = Settings.addSetting(
         "moduleSortOption",
         2,
     )
     # endregion
 
     # region Bools
-    load_entire_installation = Settings.addSetting(
+    loadEntireInstallation: SettingsProperty[bool] = Settings.addSetting(
         "load_entire_installation",
         False,
     )
-    profileToolset = Settings.addSetting(
+    profileToolset: SettingsProperty[bool] = Settings.addSetting(
         "profileToolset",
         False,
     )
-    disableRIMSaving = Settings.addSetting(
+    disableRIMSaving: SettingsProperty[bool] = Settings.addSetting(
         "disableRIMSaving",
         True,
     )
-    attemptKeepOldGFFFields = Settings.addSetting(
+    attemptKeepOldGFFFields: SettingsProperty[bool] = Settings.addSetting(
         "attemptKeepOldGFFFields",
         False,
     )
-    use_beta_channel = Settings.addSetting(
+    use_beta_channel: SettingsProperty[bool] = Settings.addSetting(
         "use_beta_channel",
         True,
     )
-    firstTime = Settings.addSetting(
+    firstTime: SettingsProperty[bool] = Settings.addSetting(
         "firstTime",
         True,
     )
-    gff_specializedEditors = Settings.addSetting(
+    gff_specializedEditors: SettingsProperty[bool] = Settings.addSetting(
         "gff_specializedEditors",
         True,
     )
-    joinRIMsTogether = Settings.addSetting(
+    joinRIMsTogether: SettingsProperty[bool] = Settings.addSetting(
         "joinRIMsTogether",
         True,
     )
-    useModuleFilenames = Settings.addSetting(
+    useModuleFilenames: SettingsProperty[bool] = Settings.addSetting(
         "useModuleFilenames",
         False,
     )
-    greyRIMText = Settings.addSetting(
+    greyRIMText: SettingsProperty[bool] = Settings.addSetting(
         "greyRIMText",
         True,
     )
-    showPreviewUTC = Settings.addSetting(
+    showPreviewUTC: SettingsProperty[bool] = Settings.addSetting(
         "showPreviewUTC",
         True,
     )
-    showPreviewUTP = Settings.addSetting(
+    showPreviewUTP: SettingsProperty[bool] = Settings.addSetting(
         "showPreviewUTP",
         True,
     )
-    showPreviewUTD = Settings.addSetting(
+    showPreviewUTD: SettingsProperty[bool] = Settings.addSetting(
         "showPreviewUTD",
         True,
     )
     # endregion
 
 
-class NoConfigurationSetError(Exception):
-    ...
+class NoConfigurationSetError(Exception): ...

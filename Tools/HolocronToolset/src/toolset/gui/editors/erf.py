@@ -184,7 +184,10 @@ class ERFEditor(Editor):
                 "Unable to load file",
                 "The file specified is not a MOD/ERF type file.",
                 parent=self,
-                flags=Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint,
+                flags=Qt.WindowType.Dialog
+                | Qt.WindowType.Window
+                | Qt.WindowType.WindowStaysOnTopHint
+                | Qt.WindowType.WindowSystemMenuHint,
             ).show()
 
     def build(self) -> tuple[bytes, bytes]:
@@ -203,7 +206,7 @@ class ERFEditor(Editor):
         elif self._restype in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):  # sourcery skip: split-or-ifs
             erf = ERF(ERFType.from_extension(self._restype.extension))
             if self._restype is ResourceType.SAV:
-                erf.is_save_erf = True
+                erf.is_save = True
             for i in range(self._proxy_model.rowCount()):
                 source_index = self._proxy_model.mapToSource(self._proxy_model.index(i, 0))
                 item = self.source_model.itemFromIndex(source_index)

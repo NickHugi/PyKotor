@@ -16,8 +16,10 @@ from pykotor.tools.misc import is_mod_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
 
 if TYPE_CHECKING:
+    from pykotor.common.misc import ResRef
     from pykotor.common.module import ModuleResource
     from pykotor.extract.installation import Installation
+    from pykotor.resource.formats.gff.gff_data import GFF
 
 
 class ResourceInfo:
@@ -49,12 +51,12 @@ class ModuleManager:
             modules (list[Module]): A list of Module objects to analyze.
         """
         for module in modules:
-            module_name = module.root()
+            module_name: str = module.root()
             print(f"Analyzing module '{module_name}'...")
 
             # First Pass: Collect Resource Information
             for identifier, mod_res in module.resources.items():
-                resource_info = self.resources_info.setdefault(identifier, ResourceInfo())
+                resource_info: ResourceInfo = self.resources_info.setdefault(identifier, ResourceInfo())
                 resource_info.modules.add(module_name)
 
                 # Create FileResource instances for each location and add them to the resource info
@@ -67,7 +69,7 @@ class ModuleManager:
                         filepath=location,
                     )
                     resource_info.file_resources.append(file_resource)
-                    resource_hash = file_resource.get_sha1_hash()
+                    resource_hash: str = file_resource.get_sha1_hash()
                     resource_info.resource_hashes[file_resource.filepath().as_posix()] = resource_hash
 
                 # Check for unused resources
@@ -84,7 +86,7 @@ class ModuleManager:
                 resource_info = self.resources_info[identifier]
 
                 # Find dependencies within the module
-                dependent_resources = self._find_dependencies(module, mod_res)
+                dependent_resources: set[ResourceIdentifier] = self._find_dependencies(module, mod_res)
                 resource_info.dependent_resources.update(dependent_resources)
 
                 # Check for resource conflicts across multiple modules
@@ -105,7 +107,7 @@ class ModuleManager:
 
         # Search for linked resources like GIT, LYT, VIS
         if mod_res.restype() in {ResourceType.GIT, ResourceType.LYT, ResourceType.VIS}:
-            linked_resources = self._search_linked_resources(module, mod_res)
+            linked_resources: set[ResourceIdentifier] = self._search_linked_resources(module, mod_res)
             dependencies.update(linked_resources)
 
         # Extract dependencies from GFF files
@@ -114,7 +116,7 @@ class ModuleManager:
 
         # Extract texture and model dependencies
         if mod_res.restype() in {ResourceType.MDL, ResourceType.MDX}:
-            model_data = mod_res.data()
+            model_data: bytes | None = mod_res.data()
             dependencies.update(self._extract_references_from_model(model_data))
 
         return dependencies
@@ -129,10 +131,10 @@ class ModuleManager:
         Returns:
             Set[ResourceIdentifier]: A set of linked resources.
         """
-        link_resname = module.module_id()
+        link_resname: ResRef | None = module.module_id()
         linked_resources = set()
 
-        queries = [
+        queries: list[ResourceIdentifier] = [
             ResourceIdentifier(link_resname, ResourceType.LYT),
             ResourceIdentifier(link_resname, ResourceType.GIT),
             ResourceIdentifier(link_resname, ResourceType.VIS),
@@ -140,7 +142,7 @@ class ModuleManager:
 
         search_results = module._search_resource_locations(module, queries)
         for query, locations in search_results.items():
-            for location in locations:
+            for _location in locations:
                 linked_resources.add(query)
 
         return linked_resources
@@ -155,12 +157,12 @@ class ModuleManager:
             Set[ResourceIdentifier]: Set of found resource identifiers.
         """
         references = set()
-        gff = read_gff(data)
+        gff: GFF = read_gff(data)
 
         # Traverse GFF fields looking for references to other resources
         for field in gff.fields():
             if field.type == GFFFieldType.ResRef:
-                resref = field.value
+                resref: ResRef = field.value
                 references.add(ResourceIdentifier(resref.get(), ResourceType.UNKNOWN))  # ResourceType.UNKNOWN is a placeholder
         return references
 
@@ -171,7 +173,7 @@ class ModuleManager:
         try:
             lookup_texture_queries.update(iterate_textures(model_data))
             lookup_texture_queries.update(iterate_lightmaps(model_data))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Warning: Failed to extract texture/lightmap references: {e}")
 
         return {ResourceIdentifier(texture, ResourceType.TGA) for texture in lookup_texture_queries}
@@ -218,26 +220,26 @@ class ModuleManager:
         print(f"Extracting resources from module '{module_name}' to '{module_dir}'...")
 
         for identifier, mod_res in module.resources.items():
-            resource_data = mod_res.data()
+            resource_data: bytes | None = mod_res.data()
             if resource_data is None:
                 print(f"Missing resource: {identifier}")
                 self.missing_resources[module_name].append(identifier)
                 continue
 
-            resource_filename = f"{identifier.resname}.{identifier.restype.extension}"
-            resource_path = module_dir / resource_filename
+            resource_filename: str = f"{identifier.resname}.{identifier.restype.extension}"
+            resource_path: Path = module_dir / resource_filename
 
             try:
                 with resource_path.open("wb") as file:
                     file.write(resource_data)
                 print(f"Extracted: {resource_filename}")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Failed to extract {resource_filename}: {e}")
 
     def build_resource_to_modules_mapping(self) -> None:
         """Builds a mapping from resource names to the modules they are found in."""
         print("Building resource to modules mapping...")
-        module_names = self.installation.module_names()
+        module_names: dict[str, str] = self.installation.module_names()
         for module_name in module_names:
             module = Module(module_name, self.installation, use_dot_mod=is_mod_file(module_name))
             for identifier in module.resources:
@@ -303,24 +305,24 @@ class ModuleManager:
 
         for resource_file in override_path.iterdir():
             if resource_file.is_file():
-                resname = resource_file.stem
-                restype = ResourceType.from_extension(resource_file.suffix[1:])  # Remove the dot
+                resname: str = resource_file.stem
+                restype: ResourceType = ResourceType.from_extension(resource_file.suffix[1:])  # Remove the dot
                 identifier = ResourceIdentifier(resname, restype)
 
-                modules = self.resource_to_modules.get(resname.lower(), set())
+                modules: set[str] = self.resource_to_modules.get(resname.lower(), set())
                 if not modules:
                     print(f"Resource '{resource_file.name}' does not belong to any module.")
                     continue
 
                 for module_name in modules:
-                    module_dir = Path(output_dir) / module_name
+                    module_dir: Path = Path(output_dir) / module_name
                     module_dir.mkdir(parents=True, exist_ok=True)
-                    destination = module_dir / resource_file.name
+                    destination: Path = module_dir / resource_file.name
 
                     try:
                         shutil.copy2(resource_file, destination)
                         print(f"Copied '{resource_file.name}' to '{destination}'.")
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         print(f"Failed to copy '{resource_file.name}' to '{destination}': {e}")
 
     def summarize(self) -> None:

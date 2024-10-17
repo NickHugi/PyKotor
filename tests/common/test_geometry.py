@@ -201,4 +201,9 @@ class TestPolygon2(TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    try:
+        import pytest
+    except ImportError: # pragma: no cover
+        unittest.main()
+    else:
+        pytest.main(["-v", __file__])

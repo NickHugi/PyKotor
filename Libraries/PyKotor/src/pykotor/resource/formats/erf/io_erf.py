@@ -22,16 +22,12 @@ class ERFBinaryReader(ResourceReader):
         self._erf: ERF | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> ERF:
+    def load(self) -> ERF:
         """Load ERF file.
 
         Args:
         ----
             self: The ERF object
-            auto_close: Whether to close the file after loading
 
         Returns:
         -------
@@ -71,7 +67,7 @@ class ERFBinaryReader(ResourceReader):
         description_strref = self._reader.read_uint32()
         if description_strref == 0 and file_type == ERFType.MOD.value:
             RobustLogger().debug("Assuming this is a SAV file")
-            self._erf.is_save_erf = True
+            self._erf.is_save = True
 
         resrefs: list[str] = []
         resids: list[int] = []
@@ -112,16 +108,13 @@ class ERFBinaryWriter(ResourceWriter):
         self.erf: ERF = erf
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         entry_count = len(self.erf)
         offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
         offset_to_resources = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count
         offset_to_localized_strings = 0x0
         description_strref_dword_value = 0xFFFFFFFF
-        if self.erf.is_save_erf:
+        if self.erf.is_save:
             # might matter.
             offset_to_localized_strings = 0xA0
             description_strref_dword_value = 0x00000000
