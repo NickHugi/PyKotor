@@ -84,6 +84,7 @@
     <file>icons/kx/tlk.png</file>
     <file>icons/kx/trigger.png</file>
     <file>icons/kx/waypoint.png</file>
+    <file>icons/sith.png</file>
     <file>inventory/clothes.png</file>
     <file>inventory/droid_armor.png</file>
     <file>inventory/droid_belt.png</file>
@@ -105,7 +106,6 @@
     <file>inventory/human_implant.png</file>
     <file>inventory/slot.png</file>
     <file>inventory/unknown.png</file>
-    <file>icons/sith.png</file>
     <file>inventory/trash.png</file>
   </qresource>
 </RCC>

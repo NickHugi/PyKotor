@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
-from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from pykotor.common.script import ScriptConstant, ScriptFunction
@@ -688,7 +687,7 @@ class IncludeScript(TopLevelObject):
         else:
             case_sensitive: bool = not root.library_lookup or all(
                 lookup_path for lookup_path in root.library_lookup
-                if isinstance(lookup_path, CaseAwarePath)
+                if isinstance(lookup_path, Path)
             )
             include_filename: str = self.file.value if case_sensitive else self.file.value.lower()
             if include_filename in self.library:

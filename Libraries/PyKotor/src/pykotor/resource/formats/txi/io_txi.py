@@ -69,7 +69,7 @@ class TXIBinaryReader(ResourceReader):
                 )
                 parsed_cmd_str: str = raw_cmd.strip().upper()
                 if not parsed_cmd_str or parsed_cmd_str not in TXICommand.__members__:
-                    RobustLogger().warning(f"Invalid TXI command: '{raw_cmd}'")
+                    #RobustLogger().warning(f"Invalid TXI command: '{raw_cmd}'")
                     continue
                 command: TXICommand = TXICommand.__members__[parsed_cmd_str]
                 args: str = args.strip() if args else ""

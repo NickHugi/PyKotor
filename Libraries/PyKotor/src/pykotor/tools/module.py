@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from loggerplus import RobustLogger
@@ -8,29 +9,36 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
-from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.formats.lyt import write_lyt
+from pykotor.resource.formats.gff import bytes_gff
+from pykotor.resource.formats.lyt import bytes_lyt
 from pykotor.resource.formats.rim import read_rim
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, write_tpc
-from pykotor.resource.formats.vis import write_vis
+from pykotor.resource.formats.tpc import TPCTextureFormat
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
+from pykotor.resource.formats.vis import bytes_vis
 from pykotor.resource.generics.are import dismantle_are
 from pykotor.resource.generics.git import dismantle_git
 from pykotor.resource.generics.ifo import dismantle_ifo
-from pykotor.resource.generics.pth import dismantle_pth
-from pykotor.resource.generics.utd import dismantle_utd
-from pykotor.resource.generics.utp import dismantle_utp
+from pykotor.resource.generics.pth import PTH, dismantle_pth
+from pykotor.resource.generics.utd import UTD, dismantle_utd
+from pykotor.resource.generics.utp import UTP, dismantle_utp
 from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
-from pykotor.tools.path import CaseAwarePath
 from utility.common.misc_string.util import ireplace
 
 if TYPE_CHECKING:
     import os
 
     from pykotor.common.misc import Game, ResRef
-    from pykotor.resource.formats.tpc.tpc_data import TPCConvertResult
+    from pykotor.common.module import ModuleResource
+    from pykotor.extract.file import ResourceResult
+    from pykotor.resource.formats.lyt.lyt_data import LYT
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.formats.vis.vis_data import VIS
+    from pykotor.resource.generics.are import ARE
+    from pykotor.resource.generics.git import GIT
+    from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.pth import PTH
     from pykotor.resource.generics.utd import UTD
     from pykotor.resource.generics.utp import UTP
@@ -71,44 +79,37 @@ def clone_module(
     old_module = Module(root, installation)
     new_module = ERF(ERFType.MOD)
 
-    git_res = old_module.git()
-    git = git_res.resource() if git_res is not None else None
+    git_res: ModuleResource[GIT] | None = old_module.git()
+    git: GIT | None = git_res.resource() if git_res is not None else None
     if git is None:
         raise ValueError(f"No GIT file found in module '{root}'")
 
-    ifo_res = old_module.info()
-    ifo = ifo_res.resource() if ifo_res is not None else None
+    ifo_res: ModuleResource[IFO] | None = old_module.info()
+    ifo: IFO | None = ifo_res.resource() if ifo_res is not None else None
     if ifo is not None:
         old_resref: ResRef = ifo.resref
         ifo.resref.set_data(identifier)
         ifo.mod_name = LocalizedString.from_english(identifier.upper())
         ifo.tag = identifier.upper()
         ifo.area_name.set_data(identifier)
-        ifo_data = bytearray()
-        write_gff(dismantle_ifo(ifo), ifo_data)
-        new_module.set_data("module", ResourceType.IFO, ifo_data)
+        new_module.set_data("module", ResourceType.IFO, bytes_gff(dismantle_ifo(ifo)))
     else:
         RobustLogger().warning(f"No IFO found in module to be cloned: '{root}'")
 
-    are_res = old_module.are()
-    are = are_res.resource() if are_res is not None else None
+    are_res: ModuleResource[ARE] | None = old_module.are()
+    are: ARE | None = are_res.resource() if are_res is not None else None
 
     if are is not None:
         are.name = LocalizedString.from_english(name)
-        are_data = bytearray()
-
-        write_gff(dismantle_are(are), are_data)
-        new_module.set_data(identifier, ResourceType.ARE, are_data)
+        new_module.set_data(identifier, ResourceType.ARE, bytes_gff(dismantle_are(are)))
     else:
         RobustLogger().warning(f"No ARE found in module to be cloned: '{root}'")
 
     if keep_pathing:  # sourcery skip: extract-method
-        pth_res = old_module.pth()
+        pth_res: ModuleResource[PTH] | None = old_module.pth()
         pth: PTH | None = None if pth_res is None else pth_res.resource()
         if pth is not None:
-            pth_data = bytearray()
-            write_gff(dismantle_pth(pth), pth_data)
-            new_module.set_data(identifier, ResourceType.PTH, pth_data)
+            new_module.set_data(identifier, ResourceType.PTH, bytes_gff(dismantle_pth(pth)))
 
     git.creatures = []
     git.encounters = []
@@ -124,7 +125,7 @@ def clone_module(
             door.resref.set_data(new_resname)
             door.tag = new_resname
 
-            utd_res = old_module.door(old_resname)
+            utd_res: ModuleResource[UTD] | None = old_module.door(old_resname)
             if utd_res is None:
                 RobustLogger().warning(f"No UTD found for door '{old_resname}' in module '{root}'")
                 continue
@@ -133,9 +134,7 @@ def clone_module(
                 RobustLogger().warning(f"UTD resource is None for door '{old_resname}' in module '{root}'")
                 continue
 
-            data = bytearray()
-            write_gff(dismantle_utd(utd), data)
-            new_module.set_data(new_resname, ResourceType.UTD, data)
+            new_module.set_data(new_resname, ResourceType.UTD, bytes_gff(dismantle_utd(utd)))
     else:
         git.doors = []
 
@@ -146,7 +145,7 @@ def clone_module(
             placeable.resref.set_data(new_resname)
             placeable.tag = new_resname
 
-            utp_res = old_module.placeable(old_resname)
+            utp_res: ModuleResource[UTP] | None = old_module.placeable(old_resname)
             if utp_res is None:
                 RobustLogger().warning(f"No UTP found for placeable '{old_resname}' in module '{root}'")
                 continue
@@ -155,9 +154,7 @@ def clone_module(
                 RobustLogger().warning(f"UTP resource is None for placeable '{old_resname}' in module '{root}'")
                 continue
 
-            data = bytearray()
-            write_gff(dismantle_utp(utp), data)
-            new_module.set_data(new_resname, ResourceType.UTP, data)
+            new_module.set_data(new_resname, ResourceType.UTP, bytes_gff(dismantle_utp(utp)))
     else:
         git.placeables = []
 
@@ -176,23 +173,17 @@ def clone_module(
             if uts is None:
                 RobustLogger().warning(f"UTS resource is None for sound '{old_resname}' in module '{root}'")
                 continue
-
-            data = bytearray()
-            write_gff(dismantle_uts(uts), data)
-            new_module.set_data(new_resname, ResourceType.UTS, data)
+            new_module.set_data(new_resname, ResourceType.UTS, bytes_gff(dismantle_uts(uts)))
     else:
         git.sounds = []
 
-    git_data = bytearray()
+    new_module.set_data(identifier, ResourceType.GIT, bytes_gff(dismantle_git(git)))
 
-    write_gff(dismantle_git(git), git_data)
-    new_module.set_data(identifier, ResourceType.GIT, git_data)
+    lyt_res: ModuleResource[LYT] | None = old_module.layout()
+    lyt: LYT | None = lyt_res.resource() if lyt_res is not None else None
 
-    lyt_res = old_module.layout()
-    lyt = lyt_res.resource() if lyt_res is not None else None
-
-    vis_res = old_module.vis()
-    vis = vis_res.resource() if vis_res is not None else None
+    vis_res: ModuleResource[VIS] | None = old_module.vis()
+    vis: VIS | None = vis_res.resource() if vis_res is not None else None
 
     new_lightmaps: dict[str, str] = {}
     new_textures: dict[str, str] = {}
@@ -205,16 +196,16 @@ def clone_module(
             if vis is not None and vis.room_exists(old_model_name):
                 vis.rename_room(old_model_name, new_model_name)
 
-            mdl_resource = installation.resource(old_model_name, ResourceType.MDL)
-            mdl_data = None if mdl_resource is None else mdl_resource.data
+            mdl_resource: ResourceResult | None = installation.resource(old_model_name, ResourceType.MDL)
+            mdl_data: None | bytes = None if mdl_resource is None else mdl_resource.data
             if mdl_data is None:
                 continue
-            mdx_resource = installation.resource(old_model_name, ResourceType.MDX)
-            mdx_data = None if mdx_resource is None else mdx_resource.data
+            mdx_resource: ResourceResult | None = installation.resource(old_model_name, ResourceType.MDX)
+            mdx_data: None | bytes = None if mdx_resource is None else mdx_resource.data
             if mdx_data is None:
                 continue
-            wok_resource = installation.resource(old_model_name, ResourceType.WOK)
-            wok_data = None if wok_resource is None else wok_resource.data
+            wok_resource: ResourceResult | None = installation.resource(old_model_name, ResourceType.WOK)
+            wok_data: None | bytes = None if wok_resource is None else wok_resource.data
             if wok_data is None:
                 continue
 
@@ -237,18 +228,12 @@ def clone_module(
                     if tpc is None:
                         RobustLogger().warning(f"TPC/TGA resource not found for texture '{texture}' in module '{root}'")
                         continue
-                    rgba: TPCConvertResult = tpc.convert(TPCTextureFormat.RGBA)
-
-                    tga = TPC()
-                    tga.set_data([rgba.data], TPCTextureFormat.RGBA, rgba.width, rgba.height)
-
-                    tga_data = bytearray()
-                    try:
-                        write_tpc(tga, tga_data, ResourceType.TGA)
-                    except ValueError as e:
-                        RobustLogger().warning(f"Failed to write TGA for texture '{texture}' in clone_module: {e}")
-                        continue
-                    new_module.set_data(new_texture_name, ResourceType.TGA, tga_data)
+                    tpc = tpc.copy()
+                    if tpc.format() in (TPCTextureFormat.BGR, TPCTextureFormat.DXT1, TPCTextureFormat.Greyscale):
+                        tpc.convert(TPCTextureFormat.RGB)
+                    elif tpc.format() in (TPCTextureFormat.BGRA, TPCTextureFormat.DXT3, TPCTextureFormat.DXT5):
+                        tpc.convert(TPCTextureFormat.RGBA)
+                    new_module.set_data(new_texture_name, ResourceType.TGA, bytes_tpc(tpc, ResourceType.TGA))
                 mdl_data = model.change_textures(mdl_data, new_textures)
 
             if copy_lightmaps:
@@ -268,16 +253,14 @@ def clone_module(
                         ],
                     )
                     if tpc is None:
-                        RobustLogger().warning(f"TPC/TGA resource not found for lightmap '{texture}' in module '{root}'")
+                        RobustLogger().warning(f"TPC/TGA resource not found for lightmap '{lightmap}' in module '{root}'")
                         continue
-                    rgba = tpc.convert(TPCTextureFormat.RGBA)
-
-                    tga = TPC()
-                    tga.set_data([rgba.data], TPCTextureFormat.RGBA, rgba.width, rgba.height)
-
-                    tga_data = bytearray()
-                    write_tpc(tga, tga_data, ResourceType.TGA)
-                    new_module.set_data(new_lightmap_name, ResourceType.TGA, tga_data)
+                    tpc = tpc.copy()
+                    if tpc.format() in (TPCTextureFormat.BGR, TPCTextureFormat.DXT1, TPCTextureFormat.Greyscale):
+                        tpc.convert(TPCTextureFormat.RGB)
+                    elif tpc.format() in (TPCTextureFormat.BGRA, TPCTextureFormat.DXT3, TPCTextureFormat.DXT5):
+                        tpc.convert(TPCTextureFormat.RGBA)
+                    new_module.set_data(new_lightmap_name, ResourceType.TGA, bytes_tpc(tpc))
                 mdl_data = model.change_lightmaps(mdl_data, new_lightmaps)
 
             mdl_data = model.rename(mdl_data, new_model_name)
@@ -286,21 +269,16 @@ def clone_module(
             new_module.set_data(new_model_name, ResourceType.WOK, wok_data)
 
     if vis is not None:
-        vis_data = bytearray()
-        write_vis(vis, vis_data)
-        new_module.set_data(identifier, ResourceType.VIS, vis_data)
+        new_module.set_data(identifier, ResourceType.VIS, bytes_vis(vis))
     else:
         RobustLogger().warning(f"No VIS found in module to be cloned: '{root}'")
 
     if lyt is not None:
-        lyt_data = bytearray()
-        write_lyt(lyt, lyt_data)
-        new_module.set_data(identifier, ResourceType.LYT, lyt_data)
+        new_module.set_data(identifier, ResourceType.LYT, bytes_lyt(lyt))
     else:
         RobustLogger().error(f"No LYT found in module to be cloned: '{root}'")
 
-    filepath: CaseAwarePath = installation.module_path() / f"{identifier}.mod"
-    write_erf(new_module, filepath)
+    write_erf(new_module, installation.module_path().joinpath(f"{identifier}.mod"))
 
 
 def rim_to_mod(
@@ -324,17 +302,17 @@ def rim_to_mod(
         rim_folderpath: Folderpath where the rims can be found for this module.
             The filestem of the filepath will be used to determine which rim to load.
     """
-    r_outpath: CaseAwarePath = CaseAwarePath(filepath)
+    r_outpath: Path = Path(filepath)
     if not is_mod_file(r_outpath):
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
     module_root = Installation.get_module_root(module_root or filepath)
-    r_rim_folderpath = CaseAwarePath(rim_folderpath) if rim_folderpath else r_outpath.parent
+    r_rim_folderpath = Path(rim_folderpath) if rim_folderpath else r_outpath.parent
 
-    filepath_rim: CaseAwarePath = r_rim_folderpath / f"{module_root}.rim"
-    filepath_rim_s: CaseAwarePath = r_rim_folderpath / f"{module_root}_s.rim"
-    filepath_dlg_erf: CaseAwarePath = r_rim_folderpath / f"{module_root}_dlg.erf"
+    filepath_rim: Path = r_rim_folderpath / f"{module_root}.rim"
+    filepath_rim_s: Path = r_rim_folderpath / f"{module_root}_s.rim"
+    filepath_dlg_erf: Path = r_rim_folderpath / f"{module_root}_dlg.erf"
 
     mod = ERF(ERFType.MOD)
     for res in read_rim(filepath_rim):

@@ -6,20 +6,7 @@
     "**/.trunk/*out/": true,
     "**/.trunk/*plugins/": true
   },
-  "python.analysis.inlayHints.variableTypes": false,
-  "python.analysis.typeCheckingMode": "basic",
   "python.analysis.enablePytestSupport": true,
-  "python.analysis.extraPaths": [
-    "./Tools/BatchPatcher/src",
-    "./Tools/GuiConverter/src",
-    "./Tools/HolocronToolset/src",
-    "./Tools/HoloPatcher/src",
-    "./Tools/KotorDiff/src",
-    "./Libraries/PyKotor/src",
-    "./Libraries/PyKotorGL/src",
-    "./Libraries/PyKotorFont/src",
-    "./Libraries/Utility/src"
-  ],
   "python.missingPackage.severity": "Information",
   "python.terminal.launchArgs": [
     "-i",
@@ -77,40 +64,17 @@
   "pythonTestExplorer.testFramework": "unittest",
   "cody.codebase": "http://github.com/th3w1zard1/PyKotor",
   "cmake.options.statusBarVisibility": "hidden",
-  "ruff.lineLength": 320,
-  "python.analysis.packageIndexDepths": [
-    {
-      "name": "",
-      "depth": 10,
-      "includeAllSymbols": false
-    },
-    {
-      "name": "qtpy",
-      "depth": 2
-    },
-    {
-      "name": "sklearn",
-      "depth": 2
-    },
-    {
-      "name": "matplotlib",
-      "depth": 2
-    },
-    {
-      "name": "scipy",
-      "depth": 2
-    },
-    {
-      "name": "django",
-      "depth": 2
-    },
-    {
-      "name": "flask",
-      "depth": 2
-    },
-    {
-      "name": "fastapi",
-      "depth": 2
-    }
-  ],
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.autoIndent": true,
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.includeAliasesFromUserFiles": true,
+  "python.analysis.indexing": true,
+  "python.analysis.languageServerMode": "default",
+  "python.analysis.persistAllIndices": true,
+  "python.analysis.regenerateStdLibIndices": false,
+  "python.languageServer": "Default",
+  "python.analysis.aiCodeActions": {
+    "implementAbstractClasses": true,
+  }
+  "ruff.lineLength": 275,
 }

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import struct
 
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     import os
@@ -30,9 +29,9 @@ class Chitin:
         base_path: os.PathLike | str | None = None,
         game: Game | None = None,
     ):
-        self._key_path: CaseAwarePath = CaseAwarePath(key_path)
+        self._key_path: Path = Path(key_path)
         base_path = self._key_path.parent if base_path is None else base_path
-        self._base_path: CaseAwarePath = CaseAwarePath(base_path)
+        self._base_path: Path = Path(base_path)
 
         self._resources: list[FileResource]
         self._resource_dict: dict[str, list[FileResource]]
@@ -64,17 +63,17 @@ class Chitin:
 
     def read_bif(
         self,
-        bif_path: CaseAwarePath,
+        bif_path: Path,
         keys: dict[int, str],
         bif_filename: str,
     ):
         with BinaryReader.from_file(bif_path) as reader:
-            _bif_file_type = reader.read_string(4)        # 0x0
-            _bif_file_version = reader.read_string(4)     # 0x4
-            resource_count = reader.read_uint32()         # 0x8
+            _bif_file_type = reader.read_string(4)  # 0x0
+            _bif_file_version = reader.read_string(4)  # 0x4
+            resource_count = reader.read_uint32()  # 0x8
             _fixed_resource_count = reader.read_uint32()  # unimplemented/padding (always 0x00000000?)
-            resource_offset = reader.read_uint32()        # 0x10 always the value hex 0x14 (dec 20)
-            reader.seek(resource_offset)                  # Skip to 0x14
+            resource_offset = reader.read_uint32()  # 0x10 always the value hex 0x14 (dec 20)
+            reader.seek(resource_offset)  # Skip to 0x14
             for _ in range(resource_count):
                 # Initialize the FileResource and add to this chitin object's collections.
                 resource = FileResource(
@@ -91,9 +90,7 @@ class Chitin:
         """(unfinished) Writes the list of resource info to the chitin.key file and associated .bif files."""
         keys, bifs = self._get_chitin_data()
         resource_lookup: dict[str, tuple[PurePath, FileResource]] = {
-            resource.resname(): (PurePath(bif), resource)
-            for bif, bif_resources in self._resource_dict.items()
-            for resource in bif_resources
+            resource.resname(): (PurePath(bif), resource) for bif, bif_resources in self._resource_dict.items() for resource in bif_resources
         }
 
         # Initialize a dictionary to store bytearrays for each bif file
@@ -134,7 +131,7 @@ class Chitin:
 
             resource_count = len(self._resource_dict[str(bif_path)])
             bif_writer.write_uint32(resource_count)  # 0x8
-            bif_writer.write_uint32(0)   # 0xC padding (always 0x00000000?)
+            bif_writer.write_uint32(0)  # 0xC padding (always 0x00000000?)
             bif_writer.write_uint32(20)  # 0x10 resource offset
             merged_bytearrays.extend(byte_array_data)
             BinaryWriter.dump(absolute_bif_path, merged_bytearrays)

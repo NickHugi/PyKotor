@@ -74,6 +74,12 @@ issues = "https://github.com/th3w1zard1/PyKotor/issues"
 ## define only linter configurations below this point ##
 ########################################################
 
+[tool.pyright.defineConstant]
+PYQT5 = false
+PYSIDE2 = false
+PYQT6 = true
+PYSIDE6 = false
+
 [tool.black]
 line-length = 175
 skip-magic-trailing-comma = false

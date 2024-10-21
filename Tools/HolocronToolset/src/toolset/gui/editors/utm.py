@@ -65,7 +65,7 @@ class UTMEditor(Editor):
         """Sets up signal connections for UI buttons."""
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
-        self.ui.inventoryButton.clicked.connect(self.openInventory)
+        self.ui.inventoryButton.clicked.connect(self.open_inventory)
 
     def _setup_installation(self, installation: HTInstallation):
         """Sets up the installation for editing.
@@ -180,7 +180,7 @@ class UTMEditor(Editor):
         else:
             self.ui.resrefEdit.setText("m00xx_mer_000")
 
-    def openInventory(self):
+    def open_inventory(self):
         capsules: list[Capsule] = []
 
         try:

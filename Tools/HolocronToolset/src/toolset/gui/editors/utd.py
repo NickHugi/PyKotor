@@ -84,16 +84,16 @@ class UTDEditor(Editor):
         ----------------
             - Connect tagGenerateButton click signal to generate_tag method
             - Connect resrefGenerateButton click signal to generate_resref method
-            - Connect conversationModifyButton click signal to editConversation method
+            - Connect conversationModifyButton click signal to edit_conversation method
             - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
-            - Connect actionShowPreview triggered signal to togglePreview method.
+            - Connect actionShowPreview triggered signal to toggle_preview method.
         """
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
-        self.ui.conversationModifyButton.clicked.connect(self.editConversation)
+        self.ui.conversationModifyButton.clicked.connect(self.edit_conversation)
 
         self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
-        self.ui.actionShowPreview.triggered.connect(self.togglePreview)
+        self.ui.actionShowPreview.triggered.connect(self.toggle_preview)
 
     def _setup_installation(self, installation: HTInstallation):
         """Sets up the installation for editing.
@@ -344,7 +344,7 @@ class UTDEditor(Editor):
         else:
             self.ui.resrefEdit.setText("m00xx_dor_000")
 
-    def editConversation(self):
+    def edit_conversation(self):
         """Edits a conversation.
 
         Processing Logic:
@@ -379,7 +379,7 @@ class UTDEditor(Editor):
         if data is not None:
             open_resource_editor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
-    def togglePreview(self):
+    def toggle_preview(self):
         self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
         self.update3dPreview()
 

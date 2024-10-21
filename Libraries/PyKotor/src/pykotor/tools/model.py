@@ -80,23 +80,6 @@ def rename(
 
 
 def iterate_textures_and_lightmaps(data: bytes) -> Generator[str, Any, None]:
-    """Extracts textures or lightmaps from a mdl file, and yields each one in lowercase.
-
-    Args:
-    ----
-        data: bytes - The raw mdl data to parse.
-
-    Returns:
-    -------
-        Generator[str, Any, None]: A generator yielding unique resource names in lowercase.
-
-    Processing Logic:
-    ----------------
-        - Uses a BinaryReader to parse the binary data.
-        - Starts at a root offset to traverse node offsets.
-        - Checks node IDs for resource nodes.
-        - Reads resource names and yields unique names.
-    """
     seen_names: set[str] = set()
 
     with BinaryReader.from_bytes(data, 12) as reader:
@@ -135,24 +118,6 @@ def iterate_textures_and_lightmaps(data: bytes) -> Generator[str, Any, None]:
 def iterate_textures(
     data: bytes,
 ) -> Generator[str, Any, None]:
-    """Extracts textures from a mdl file, and yields each one in lowercase.
-
-    Args:
-    ----
-        data: bytes - The raw mdl data to parse
-
-    Returns:
-    -------
-        list[str] - A list of unique texture names in lowercase.
-
-    Processing Logic:
-    ----------------
-        - Uses a BinaryReader to parse the binary data
-        - Starts at a root offset to traverse node offsets
-        - Checks node IDs for texture nodes
-        - Reads texture names and adds unique names to the textures list
-        - Returns the list of unique textures.
-    """
     texture_caseset: set[str] = set()
 
     with BinaryReader.from_bytes(data, 12) as reader:
@@ -187,23 +152,6 @@ def iterate_textures(
 def iterate_lightmaps(
     data: bytes,
 ) -> Generator[str, Any, None]:
-    """Extracts lightmap names from a mdl file, and yields each one in lowercase.
-
-    Args:
-    ----
-        data: The raw mdl data to parse.
-
-    Returns:
-    -------
-        lightmaps: {A list of unique lightmap names in lowercase}
-
-    Processing Logic:
-    ----------------
-        - The function reads the lightmap data file using a BinaryReader
-        - It parses the node tree to extract all lightmap names
-        - Duplicate and empty names are filtered out
-        - The unique lightmap names are returned as a list.
-    """
     lightmaps_caseset: set[str] = set()
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
@@ -238,23 +186,6 @@ def change_textures(
     data: bytes,
     textures: dict[str, str],
 ) -> bytes:
-    """Changes textures in the MDL file.
-
-    Args:
-    ----
-        data: bytes - Game file data
-        textures: dict[str, str] - Dictionary of old texture names keyed to new texture names
-
-    Returns:
-    -------
-        bytes - Game file data with textures replaced
-
-    Processing Logic:
-    ---------------
-        1. Reads offsets of texture names from game file
-        2. Loops through offsets and replaces texture names based on textures dictionary
-        3. Returns updated game file data with new textures.
-    """
     data = bytearray(data)
     offsets: dict[str, list[int]] = {}
 
@@ -306,24 +237,6 @@ def change_lightmaps(
     data: bytes,
     textures: dict[str, str],
 ) -> bytes:
-    """Changes lightmaps textures in the MDL data.
-
-    Args:
-    ----
-        data: bytes - Binary data of the Unity3D asset file
-        textures: dict[str, str] - Dictionary of old texture names to new texture names
-
-    Returns:
-    -------
-        bytes - Binary data of the Unity3D asset file with lightmaps textures changed
-
-    Processing Logic:
-    ----------------
-        1. Reads offsets of nodes containing texture names from the asset file
-        2. Gets list of texture names to replace from the textures dictionary
-        3. Loops through offsets lists to replace texture names in the asset file data
-        4. Returns updated asset file data with lightmaps textures changed
-    """
     data = bytearray(data)
     offsets: dict[str, list[int]] = {}
 
@@ -374,22 +287,6 @@ def change_lightmaps(
 def detect_version(
     data: bytes,
 ) -> Game:
-    """Detect game version from data header.
-
-    Args:
-    ----
-        data: bytes: Binary data header
-
-    Returns:
-    -------
-        Game: Detected game version enum
-
-    Processing Logic:
-    ----------------
-        - Unpack 4 byte integer from offset 12-16 in data
-        - Compare integer to known version pointer values
-        - Return Game.K1 if match, else return Game.K2.
-    """
     pointer = struct.unpack("I", data[12:16])[0]
     return Game.K1 if pointer == _GEOM_ROOT_FP0_K1 else Game.K2
 
@@ -397,24 +294,6 @@ def detect_version(
 def convert_to_k1(
     data: bytes,
 ) -> bytes:
-    """Converts data to K1 format.
-
-    Args:
-    ----
-        data: bytes - The bytes data to convert
-
-    Returns:
-    -------
-        bytes: The converted bytes data
-
-    Processing Logic:
-    ----------------
-        - Detect if already in K1 format and return early
-        - Trim unnecessary nodes
-        - Update file pointers
-        - Shift offsets for trimmed nodes
-        - Reassemble and return converted data.
-    """
     if detect_version(data) == Game.K1:
         return data
 
@@ -445,7 +324,7 @@ def convert_to_k1(
     data[:4] = struct.pack("I", _GEOM_ROOT_FP0_K1)
     data[4:8] = struct.pack("I", _GEOM_ROOT_FP1_K1)
 
-    # TODO Animations
+    # TODO(NickHugi): Animations
 
     for node_type, node_offset in trim:
         mesh_start = node_offset + 80  # Start of mesh header
@@ -482,24 +361,6 @@ def convert_to_k1(
 def convert_to_k2(
     data: bytes,
 ) -> bytes:
-    """Convert a game data file to the K2 format.
-
-    Args:
-    ----
-        data: bytes - The game data file
-
-    Returns:
-    -------
-        bytes: The converted game data file
-
-    Processing Logic:
-    ----------------
-        1. Builds a dictionary mapping offsets to offsets
-        2. Extracts mesh and animation node offsets
-        3. Updates function pointers to K2 values
-        4. Adds extra data to mesh headers
-        5. Updates all offsets in the data.
-    """
     if detect_version(data) == Game.K2:
         return data
 
@@ -509,7 +370,6 @@ def convert_to_k2(
 
     # First, we build a dictionary of every offset in the file plus a list of the mesh nodes
     with BinaryReader.from_bytes(data, 12) as reader:
-
         def node_recursive(offset_to_root_offset: int):
             nodes: list[int] = [offset_to_root_offset]
             while nodes:
@@ -530,11 +390,11 @@ def convert_to_k2(
 
                     reader.seek(base_offset + 176)
                     offsets[base_offset + 176] = reader.read_uint32()  # Node header -> Vertex indices count array
-                    indicies_array_count = reader.read_uint32()
+                    indices_array_count: int = reader.read_uint32()
 
                     reader.seek(base_offset + 188)
                     offsets[base_offset + 188] = reader.read_uint32()  # Node header -> Vertex indices locations array
-                    if indicies_array_count == 1:
+                    if indices_array_count == 1:
                         indices_locations_offset = offsets[base_offset + 188]
                         reader.seek(indices_locations_offset)
                         offsets[indices_locations_offset] = reader.read_uint32()  # Vertex indices locations array -> Vertex indices array
@@ -760,25 +620,6 @@ def transform(
     translation: Vector3,
     rotation: float,
 ) -> bytes:
-    """Performs a translation and then rotation on the target MDL data.
-
-    Process:
-        - Injects a new node at the end of the MDL file.
-        - New node has the appropriate transformations applied to it.
-        - The children of the root node are copied to the new node.
-        - The root node is set to have a single child.
-        - The root node's single child offset is overriden to be the offset to the new node.
-
-    Args:
-    ----
-        data: MDL data.
-        translation: Translation value.
-        rotation: Rotation value.
-
-    Returns:
-    -------
-        The MDL data post-transformation.
-    """
     orientation = Vector4.from_euler(0, 0, math.radians(rotation))
     mdx_size = struct.unpack("I", data[8:12])[0]
     data = bytearray(data[12:])
@@ -867,19 +708,6 @@ def flip(
     flip_x: bool,
     flip_y: bool,
 ) -> MDLMDXTuple:
-    """Returns the given MDL and MDX data with the vertices flipped along the specified axes.
-
-    Args:
-    ----
-        mdl_data: The raw MDL data.
-        mdx_data: The raw MDX data.
-        flip_x: Flip the vertices across the X-axis.
-        flip_y: Flip the vertices across the Y-axis.
-
-    Returns:
-    -------
-        The MDL and MDX data post-flip.
-    """
     # If neither bools are set to True, no transformations need to be done and we can just return the original data
     if not flip_x and not flip_y:
         return MDLMDXTuple(mdl_data, mdx_data)

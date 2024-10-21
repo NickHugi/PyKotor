@@ -63,6 +63,7 @@ if TYPE_CHECKING:
     from glm import mat4, vec3, vec4
 
     from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.formats.tpc.tpc_data import TPCMipmap
 
 KOTOR_VSHADER = """
 #version 330 core
@@ -205,20 +206,20 @@ class Texture:
 
     @classmethod
     def from_tpc(cls, tpc: TPC) -> Texture:
-        width, height, tpc_format, data = tpc.get(0)
-        image_size = len(data)
+        mm: TPCMipmap = tpc.get(0, 0)
+        image_size = len(mm.data)
 
         gl_id = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, gl_id)
 
-        if tpc_format == TPCTextureFormat.DXT1:
-            glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, image_size, data)
-        if tpc_format == TPCTextureFormat.DXT5:
-            glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, 0, image_size, data)
-        if tpc_format == TPCTextureFormat.RGB:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data)
-        if tpc_format == TPCTextureFormat.RGBA:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
+        if mm.tpc_format == TPCTextureFormat.DXT1:
+            glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, mm.width, mm.height, 0, image_size, mm.data)
+        if mm.tpc_format == TPCTextureFormat.DXT5:
+            glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, mm.width, mm.height, 0, image_size, mm.data)
+        if mm.tpc_format == TPCTextureFormat.RGB:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mm.width, mm.height, 0, GL_RGB, GL_UNSIGNED_BYTE, mm.data)
+        if mm.tpc_format == TPCTextureFormat.RGBA:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mm.width, mm.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, mm.data)
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)

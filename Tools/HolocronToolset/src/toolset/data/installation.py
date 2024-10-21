@@ -24,7 +24,6 @@ from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.extract.talktable import TalkTable
-from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -40,6 +39,7 @@ if TYPE_CHECKING:
 
     from pykotor.extract.file import LocationResult, ResourceResult
     from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.formats.tpc.tpc_data import TPCMipmap
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
     from toolset.gui.dialogs.inventory import ItemModel
@@ -661,7 +661,7 @@ class HTInstallation(Installation):
             if texture is None:
                 return pixmap
             return self._get_icon(texture)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             RobustLogger().error(
                 f"An error occurred loading the icon at '{icon_path}' " f"model variation '{model_variation}' and " f"texture variation '{texture_variation}'.",
                 exc_info=e,
@@ -670,15 +670,10 @@ class HTInstallation(Installation):
         return pixmap
 
     def _get_icon(self, texture: TPC, mipmap: int = 0) -> QPixmap:
-        tpc_format: TPCTextureFormat = texture.format()
-        if tpc_format.is_dxt():
-            width, height, data = texture.convert(
-                (TPCTextureFormat.RGB if tpc_format is TPCTextureFormat.DXT1 else TPCTextureFormat.RGBA),
-                mipmap,
-            )
-        else:
-            width, height, tpc_format, data = texture.get(mipmap)
-        image = QImage(bytes(data), width, height, tpc_format.to_qimage_format())
+        if texture.format().is_dxt():
+            texture.decode()
+        mm: TPCMipmap = texture.get(0, mipmap)
+        image = QImage(bytes(mm.data), mm.width, mm.height, mm.tpc_format.to_qimage_format())
         return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
     @property

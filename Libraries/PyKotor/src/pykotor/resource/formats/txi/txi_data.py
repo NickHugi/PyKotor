@@ -3,6 +3,7 @@ and the information is scattered across multiple sources.
 
 The TXI class needs to be merged with the TXIBaseInformation and its subclasses at some point in an intuitive manner.
 """
+
 # From https://nwn.wiki/display/NWN1/TXI#TXI-TextureRelatedFields
 # From DarthParametric and Drazgar in the DeadlyStream Discord.
 from __future__ import annotations
@@ -22,31 +23,44 @@ class TXI:
         if txi and txi.strip():
             self.load(txi)
 
-    def load(self, txi: str):
+    def load(self, txi: str):  # noqa: C901, PLR0912, PLR0915
         from pykotor.resource.formats.txi.io_txi import TXIReaderMode
+
         self._empty = True
         mode = TXIReaderMode.NORMAL
         cur_coords: int = 0
-
+        max_coords: int = 0
         for line in txi.splitlines():
             try:
                 parsed_line: str = line.strip()
                 if not parsed_line:
                     continue
 
+                #print(parsed_line)
                 if mode == TXIReaderMode.UPPER_LEFT_COORDS:
-                    coords = list(map(float, map(str.strip, parsed_line.split())))
+                    parts: list[str] = parsed_line.split()
+                    coords: tuple[float, float, int] = (
+                        float(parts[0].strip()),
+                        float(parts[1].strip()),
+                        int(parts[2].strip()),
+                    )
                     self.features.upperleftcoords.append(coords)
                     cur_coords += 1
-                    if cur_coords >= len(self.features.upperleftcoords):
+                    if cur_coords >= max_coords:
                         mode = TXIReaderMode.NORMAL
+                        cur_coords = 0
                     continue
 
                 if mode == TXIReaderMode.LOWER_RIGHT_COORDS:
-                    coords = list(map(float, map(str.strip, parsed_line.split())))
+                    parts: list[str] = parsed_line.split()
+                    coords: tuple[float, float, int] = (
+                        float(parts[0].strip()),
+                        float(parts[1].strip()),
+                        int(parts[2].strip()),
+                    )
                     self.features.lowerrightcoords.append(coords)
                     cur_coords += 1
-                    if cur_coords >= len(self.features.lowerrightcoords):
+                    if cur_coords >= max_coords:
                         mode = TXIReaderMode.NORMAL
                     continue
 
@@ -59,11 +73,11 @@ class TXI:
                     )
                 )
                 parsed_cmd_str: str = raw_cmd.strip().upper()
-                if (
-                    not parsed_cmd_str
-                    or parsed_cmd_str not in TXICommand.__members__
-                ):
-                    RobustLogger().warning(f"Invalid TXI command: '{raw_cmd}'")
+                if parsed_cmd_str == "DECAL1":  # per_lt06.tpc, per_lt07.tpc
+                    parsed_cmd_str = "DECAL"
+                    args = "1"
+                if not parsed_cmd_str or parsed_cmd_str not in TXICommand.__members__:
+                    RobustLogger().warning(f"Invalid TXI command: '{parsed_line}'")
                     continue
                 command: TXICommand = TXICommand.__members__[parsed_cmd_str]
                 args: str = args.strip() if args else ""
@@ -78,7 +92,7 @@ class TXI:
                     self.features.arturowidth = int(args)
                     self._empty = False
                 elif command == TXICommand.BASELINEHEIGHT:
-                    self.features.baselineheight = int(args)
+                    self.features.baselineheight = float(args)
                     self._empty = False
                 elif command == TXICommand.BLENDING:
                     self.features.blending = self.parse_blending(args)
@@ -96,7 +110,7 @@ class TXI:
                     self.features.candownsample = bool(int(args))
                     self._empty = False
                 elif command == TXICommand.CARETINDENT:
-                    self.features.caretindent = int(args)
+                    self.features.caretindent = float(args)
                     self._empty = False
                 elif command == TXICommand.CHANNELSCALE:
                     self.features.channelscale = list(map(float, args.split()))
@@ -120,7 +134,7 @@ class TXI:
                     self.features.controllerscript = args
                     self._empty = False
                 elif command == TXICommand.CUBE:
-                    self.features.cube = bool(int(args))
+                    self.features.cube = bool(int(args)) if args else True
                     self._empty = False
                 elif command == TXICommand.DBMAPPING:
                     self.features.dbmapping = bool(int(args))
@@ -165,7 +179,7 @@ class TXI:
                     self.features.filter = bool(int(args))
                     self._empty = False
                 elif command == TXICommand.FONTHEIGHT:
-                    self.features.fontheight = int(args)
+                    self.features.fontheight = float(args)
                     self._empty = False
                 elif command == TXICommand.FONTWIDTH:
                     self.features.fontwidth = int(args)
@@ -176,6 +190,12 @@ class TXI:
                 elif command == TXICommand.ISBUMPMAP:
                     self.features.isbumpmap = bool(int(args))
                     self._empty = False
+                elif command == TXICommand.ISDIFFUSEBUMPMAP:
+                    self.features.isdiffusebumpmap = bool(int(args))
+                    self._empty = False
+                elif command == TXICommand.ISSPECULARBUMPMAP:
+                    self.features.isspecularbumpmap = bool(int(args))
+                    self._empty = False
                 elif command == TXICommand.ISDOUBLEBYTE:
                     self.features.isdoublebyte = bool(int(args))
                     self._empty = False
@@ -183,9 +203,11 @@ class TXI:
                     self.features.islightmap = bool(int(args))
                     self._empty = False
                 elif command == TXICommand.LOWERRIGHTCOORDS:
-                    self.features.lowerrightcoords = [[] for _ in range(int(args))]
-                    mode = TXIReaderMode.LOWER_RIGHT_COORDS
+                    if not args:
+                        continue
                     cur_coords = 0
+                    max_coords = int(args)
+                    mode = TXIReaderMode.LOWER_RIGHT_COORDS
                     self._empty = False
                 elif command == TXICommand.MAXSIZEHQ:
                     self.features.maxSizeHQ = int(args)
@@ -239,15 +261,20 @@ class TXI:
                     self.features.temporary = bool(int(args))
                     self._empty = False
                 elif command == TXICommand.TEXTUREWIDTH:
-                    self.features.texturewidth = int(args)
+                    self.features.texturewidth = float(args)
                     self._empty = False
                 elif command == TXICommand.UNIQUE:
                     self.features.unique = bool(int(args))
                     self._empty = False
                 elif command == TXICommand.UPPERLEFTCOORDS:
-                    self.features.upperleftcoords = [[] for _ in range(int(args))]
-                    mode = TXIReaderMode.UPPER_LEFT_COORDS
+                    if not args:
+                        continue
                     cur_coords = 0
+                    max_coords = int(args)
+                    mode = TXIReaderMode.UPPER_LEFT_COORDS
+                    self._empty = False
+                elif command == TXICommand.WATERALPHA:
+                    self.features.wateralpha = float(args)
                     self._empty = False
                 elif command == TXICommand.WATERHEIGHT:
                     self.features.waterheight = float(args)
@@ -274,13 +301,13 @@ class TXI:
     def __str__(self) -> str:
         lines: list[str] = []
         for attr, value in vars(self.features).items():
-            if not value:
+            if attr.startswith("__"):
                 continue
             upper_attr = attr.upper()
             if upper_attr not in TXICommand.__members__:
                 RobustLogger().error(f"Invalid TXI attribute '{attr}'")
                 continue
-            command = TXICommand[upper_attr]
+            command: TXICommand = TXICommand[upper_attr]
             if isinstance(value, bool):
                 lines.append(f"{command.value} {int(value)}")
             elif isinstance(value, (int, float)):
@@ -295,6 +322,7 @@ class TXI:
                 lines.append(f"{command.value} {value}")
         return "\n".join(lines)
 
+
 class TXIFeatures:
     """This class is used to store the features of a texture."""
 
@@ -302,13 +330,13 @@ class TXIFeatures:
         self.alphamean: float = 0.0
         self.arturoheight: int = 0
         self.arturowidth: int = 0
-        self.baselineheight: int = 0
+        self.baselineheight: float = 0
         self.blending: int = 0
         self.bumpmapscaling: float = 0.0
         self.bumpmaptexture: str = ""
         self.bumpyshinytexture: str = ""
         self.candownsample: bool = False
-        self.caretindent: int = 0
+        self.caretindent: float = -0.010000  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted.
         self.channelscale: list[float] = []
         self.channeltranslate: list[float] = []
         self.clamp: bool = False
@@ -336,7 +364,7 @@ class TXIFeatures:
         # The engine has broken mip use implementation. It incorrectly mixes mip levels, even on objects
         # filling the screen.
         self.filter: bool = False  # (???)
-        self.fontheight: int = 0  # Tested. Float between 0 and 1.
+        self.fontheight: float = 0  # Tested. Float between 0 and 1.
 
         # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in
         # k1 tests, changing this does not yield any noticeable ingame result.
@@ -344,12 +372,14 @@ class TXIFeatures:
 
         self.fps: float = 0.0
         self.isbumpmap: bool = False
+        self.isdiffusebumpmap: bool = False
+        self.isspecularbumpmap: bool = False
         self.isdoublebyte: bool = False  # Potentially for dbcs multi-byte encodings? Might not even be a bool.
         self.islightmap: bool = False
 
         # Confirmed. The bottom right coordinates for the character
         # box the game draws. each float is 0 to 1. 3rd tuple int is always 0
-        self.lowerrightcoords: list[list[float]] = []
+        self.lowerrightcoords: list[tuple[float, float, int]] = []
 
         self.maxSizeHQ: int = 0
         self.maxSizeLQ: int = 0
@@ -371,16 +401,18 @@ class TXIFeatures:
         self.spacingR: float = 0.0  # Untested. Float between 0 and 1. According to research, should NEVER exceed the maximum of 0.002600
         self.speed: float = 0.0
         self.temporary: bool = False
-        self.texturewidth: int = 0
+        self.texturewidth: float = 0.0
         self.unique: bool = False
 
         # Confirmed. The top left coordinates for the character
         # box the game draws. each float is 0 to 1. 3rd tuple int is always 0
-        self.upperleftcoords: list[list[float]] = []
+        self.upperleftcoords: list[tuple[float, float, int]] = []
 
+        self.wateralpha: float = 0.0
         self.waterheight: float = 0.0
         self.waterwidth: float = 0.0
         self.xbox_downsample: bool = False
+
 
 class TXICommand(Enum):
     """This class is used to store the commands of a texture."""
@@ -421,8 +453,10 @@ class TXICommand(Enum):
     FONTWIDTH = "fontwidth"
     FPS = "fps"
     ISBUMPMAP = "isbumpmap"
+    ISDIFFUSEBUMPMAP = "isdiffusebumpmap"
     ISDOUBLEBYTE = "isdoublebyte"
     ISLIGHTMAP = "islightmap"
+    ISSPECULARBUMPMAP = "isspecularbumpmap"
     LOWERRIGHTCOORDS = "lowerrightcoords"
     MAXSIZEHQ = "maxSizeHQ"
     MAXSIZELQ = "maxSizeLQ"
@@ -444,6 +478,7 @@ class TXICommand(Enum):
     TEXTUREWIDTH = "texturewidth"
     UNIQUE = "unique"
     UPPERLEFTCOORDS = "upperleftcoords"
+    WATERALPHA = "wateralpha"
     WATERHEIGHT = "waterheight"
     WATERWIDTH = "waterwidth"
     XBOX_DOWNSAMPLE = "xbox_downsample"
@@ -553,9 +588,7 @@ class TXIFontInformation(TXIBaseInformation):
         self.numchars: int = 256  # Tested. Unsure if this is actually required, or if the game simply takes from the 'upperleftcoords' and 'lowerrightcoords' sizes.
         self.spacingR: float = 0  # Untested. Float between 0 and 1. According to research, should NEVER exceed the maximum of 0.002600
         self.spacingB: float = 0  # Confirmed. Float between 0 and 1. Spacing between each multiline string rendered ingame.
-        self.caretindent: float = (
-            -0.010000
-        )  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted so this checks out.
+        self.caretindent: float = -0.010000  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted.
         self.fontwidth: float = 1.000000  # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in k1 tests, changing this does not yield any noticeable ingame result.
 
         # This could easily be used for DBCS (double byte encodings).
@@ -625,7 +658,12 @@ lowerrightcoords {self.lr_coords_count}
     def get_scaling_factor(self) -> float:
         return 2 ** (math.log2(self.DEFAULT_RESOLUTION) - 1)
 
-    def coords_from_normalized(self, upper_left_coords, lower_right_coords, resolution):
+    def coords_from_normalized(
+        self,
+        upper_left_coords: list[tuple[float, float, int]],
+        lower_right_coords: list[tuple[float, float, int]],
+        resolution: tuple[int, int],
+    ) -> list[tuple[int, int, int, int]]:
         """Converts normalized coordinates to bounding boxes.
 
         Args:
@@ -638,14 +676,14 @@ lowerrightcoords {self.lr_coords_count}
         -------
             boxes: List of bounding boxes as lists of [x1,y1,x2,y2] coordinates
         """
-        boxes = []
+        boxes: list[tuple[int, int, int, int]] = []
         for (ulx, uly, _), (lrx, lry, _) in zip(upper_left_coords, lower_right_coords):
             # Convert normalized coords back to pixel coords
             pixel_ulx = ulx * resolution[0]
             pixel_uly = (1 - uly) * resolution[1]  # Y is inverted
             pixel_lrx = lrx * resolution[0]
             pixel_lry = (1 - lry) * resolution[1]  # Y is inverted
-            boxes.append([int(pixel_ulx), int(pixel_uly), int(pixel_lrx), int(pixel_lry)])
+            boxes.append((int(pixel_ulx), int(pixel_uly), int(pixel_lrx), int(pixel_lry)))
         return boxes
 
     def normalize_coords(

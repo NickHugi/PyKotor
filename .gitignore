@@ -129,5 +129,11 @@ src/tests/results/*
 Libraries/Utility/.aider.model.settings.json
 /Libraries/Utility/src/utility/ui_libraries/qt/filesystem/common/deprecated
 /Libraries/Utility/src/utility/ui_libraries/qt/filesystem/common/untested
-/Tools/HolocronToolset/src/ui/**/*.py
 Libraries\PyKotorGL\src\pykotor\gl\models\predefined_mdl.py
+.*
+**\.magicodeconfig
+Tools/HolocronToolset/src/ui/**/*.py
+!Tools/HolocronToolset/src/ui/convertui.py
+*.tpc
+Libraries\PyKotor\src\pykotor\common\scriptdefs.py
+Libraries\PyKotor\src\pykotor\common\scriptlib.py

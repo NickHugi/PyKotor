@@ -206,7 +206,7 @@ def main_init():
         fix_qt_env_var()
     # Do not use `faulthandler.enable()` in the toolset!
     # https://bugreports.qt.io/browse/PYSIDE-2359
-    faulthandler.disable()
+    faulthandler.enable()
 
 
 def setup_post_init_settings():
@@ -278,9 +278,9 @@ if __name__ == "__main__":
         from qtpy.QtGui import QIcon
         from qtpy.QtWidgets import QApplication, QMessageBox  # pylint: disable=no-name-in-module
 
-        from resources import resources_rc  # noqa: PLC0415, F401  # pylint: disable=ungrouped-imports,unused-import
+        import resources_rc  # noqa: PLC0415, F401  # pylint: disable=ungrouped-imports,unused-import
+
         from toolset.config import CURRENT_VERSION
-        from ui import stylesheet_resources  # noqa: F401  # pylint: disable=unused-import
 
         _setup_pre_init_settings()
 

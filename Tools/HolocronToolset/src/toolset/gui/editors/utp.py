@@ -82,19 +82,19 @@ class UTPEditor(Editor):
         ----------------
             - Connect tagGenerateButton clicked signal to generate_tag method
             - Connect resrefGenerateButton clicked signal to generate_resref method
-            - Connect conversationModifyButton clicked signal to editConversation method
-            - Connect inventoryButton clicked signal to openInventory method
+            - Connect conversationModifyButton clicked signal to edit_conversation method
+            - Connect inventoryButton clicked signal to open_inventory method
 
             - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
-            - Connect actionShowPreview triggered signal to togglePreview method
+            - Connect actionShowPreview triggered signal to toggle_preview method
         """
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
-        self.ui.conversationModifyButton.clicked.connect(self.editConversation)
-        self.ui.inventoryButton.clicked.connect(self.openInventory)
+        self.ui.conversationModifyButton.clicked.connect(self.edit_conversation)
+        self.ui.inventoryButton.clicked.connect(self.open_inventory)
 
         self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
-        self.ui.actionShowPreview.triggered.connect(self.togglePreview)
+        self.ui.actionShowPreview.triggered.connect(self.toggle_preview)
 
     def _setup_installation(self, installation: HTInstallation):
         """Sets up the installation for editing.
@@ -161,7 +161,7 @@ class UTPEditor(Editor):
         utp = read_utp(data)
         self._loadUTP(utp)
 
-        self.updateItemCount()
+        self.update_item_count()
 
     def _loadUTP(self, utp: UTP):
         """Loads UTP data into UI elements.
@@ -258,7 +258,7 @@ class UTPEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utp.comment)
 
-        self.updateItemCount()
+        self.update_item_count()
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTP from UI fields.
@@ -342,7 +342,7 @@ class UTPEditor(Editor):
         super().new()
         self._loadUTP(UTP())
 
-    def updateItemCount(self):
+    def update_item_count(self):
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utp.inventory)}")
 
     def change_name(self):
@@ -364,7 +364,7 @@ class UTPEditor(Editor):
         else:
             self.ui.resrefEdit.setText("m00xx_plc_000")
 
-    def editConversation(self):
+    def edit_conversation(self):
         """Edits a conversation. This function is duplicated in most UT-prefixed gffs."""
         resname = self.ui.conversationEdit.currentText()
         data, filepath = None, None
@@ -390,7 +390,7 @@ class UTPEditor(Editor):
         if data is not None:
             open_resource_editor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
-    def openInventory(self):
+    def open_inventory(self):
         """Opens inventory editor for the module.
 
         Processing Logic:
@@ -422,9 +422,9 @@ class UTPEditor(Editor):
         )
         if inventoryEditor.exec():
             self._utp.inventory = inventoryEditor.inventory
-            self.updateItemCount()
+            self.update_item_count()
 
-    def togglePreview(self):
+    def toggle_preview(self):
         self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
         self.update3dPreview()
 

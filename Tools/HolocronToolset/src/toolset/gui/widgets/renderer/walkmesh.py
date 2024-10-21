@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from pykotor.common.geometry import SurfaceMaterial
     from pykotor.resource.formats.bwm.bwm_data import BWMFace
     from pykotor.resource.formats.lyt.lyt_data import LYT, LYTRoom
-    from pykotor.resource.formats.tpc.tpc_data import TPC, TPCGetResult
+    from pykotor.resource.formats.tpc.tpc_data import TPC, TPCMipmap
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.git import GIT, GITInstance
     from pykotor.resource.generics.pth import PTH
@@ -271,7 +271,7 @@ class WalkmeshRenderer(QWidget):
         self._are = are
 
         tpc_rgb_data: bytearray = tpc.convert(TPCTextureFormat.RGB).data
-        get_result: TPCGetResult = tpc.get()
+        get_result: TPCMipmap = tpc.get()
         image = QImage(bytes(tpc_rgb_data), get_result.width, get_result.height, QImage.Format.Format_RGB888)
         crop = QRect(0, 0, 435, 256)
         self._minimap_image = image.copy(crop)

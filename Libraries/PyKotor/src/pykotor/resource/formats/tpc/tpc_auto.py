@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
@@ -10,7 +11,6 @@ from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.io_tpc import TPCBinaryReader, TPCBinaryWriter
 from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.tpc.tpc_data import TPC
@@ -45,7 +45,7 @@ def detect_tpc(
         first100: bytes,
     ) -> ResourceType:
         file_format = ResourceType.TPC
-        if len(first100) < 100:
+        if len(first100) < 100:  # noqa: PLR2004
             file_format = ResourceType.TGA
         else:
             for i in range(15, 100):
@@ -53,8 +53,9 @@ def detect_tpc(
                     file_format = ResourceType.TGA
         return file_format
 
+    file_format: ResourceType = ResourceType.INVALID
     try:
-        if isinstance(source, (str, CaseAwarePath)):
+        if isinstance(source, (str, os.PathLike)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = do_check(reader.read_bytes(100))
         elif isinstance(source, (bytes, bytearray)):
@@ -62,8 +63,6 @@ def detect_tpc(
         elif isinstance(source, BinaryReader):
             file_format = do_check(source.read_bytes(100))
             source.skip(-100)
-        else:
-            file_format = ResourceType.INVALID
     except (FileNotFoundError, PermissionError, IsADirectoryError):
         raise
     except OSError:
@@ -111,11 +110,11 @@ def read_tpc(
         msg = "Failed to determine the format of the TPC/TGA file."
         raise ValueError(msg)
     if txi_source is None and isinstance(source, (os.PathLike, str)):
-        txi_source = CaseAwarePath(source).with_suffix(".txi")
+        txi_source = Path(source).with_suffix(".txi")
         if not txi_source.is_file():
             return loaded_tpc
     elif isinstance(txi_source, (os.PathLike, str)):
-        txi_source = CaseAwarePath(txi_source).with_suffix(".txi")
+        txi_source = Path(txi_source).with_suffix(".txi")
         if not txi_source.is_file():
             return loaded_tpc
 

@@ -15,17 +15,13 @@ from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.ltr import read_ltr
-from pykotor.resource.formats.tpc import TPCTextureFormat
-from pykotor.resource.generics.dlg import DLG, write_dlg
+from pykotor.resource.generics.dlg import DLG, bytes_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_sav_file
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
-from toolset.gui.dialogs.load_from_location_result import (
-    FileSelectionWindow,
-    ResourceItems,
-)
+from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import add_window, open_resource_editor
@@ -42,7 +38,7 @@ if TYPE_CHECKING:
     from pykotor.extract.capsule import LazyCapsule
     from pykotor.extract.file import LocationResult, ResourceResult
     from pykotor.resource.formats.ltr.ltr_data import LTR
-    from pykotor.resource.formats.tpc.tpc_data import TPC
+    from pykotor.resource.formats.tpc.tpc_data import TPC, TPCMipmap
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.tools.path import CaseAwarePath
 
@@ -184,10 +180,10 @@ class UTCEditor(Editor):
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.alignmentSlider.valueChanged.connect(lambda: self.portraitChanged(self.ui.portraitSelect.currentIndex()))
         self.ui.portraitSelect.currentIndexChanged.connect(self.portraitChanged)
-        self.ui.conversationModifyButton.clicked.connect(self.editConversation)
-        self.ui.inventoryButton.clicked.connect(self.openInventory)
-        self.ui.featList.itemChanged.connect(self.updateFeatSummary)
-        self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
+        self.ui.conversationModifyButton.clicked.connect(self.edit_conversation)
+        self.ui.inventoryButton.clicked.connect(self.open_inventory)
+        self.ui.featList.itemChanged.connect(self.update_feat_summary)
+        self.ui.powerList.itemChanged.connect(self.update_power_summary)
         self.ui.class1LevelSpin.setToolTip("Class Level")
         self.ui.class2LevelSpin.setToolTip("Class Level")
 
@@ -196,7 +192,7 @@ class UTCEditor(Editor):
 
         self.ui.actionSaveUnusedFields.triggered.connect(lambda: setattr(self.settings, "saveUnusedFields", self.ui.actionSaveUnusedFields.isChecked()))
         self.ui.actionAlwaysSaveK2Fields.triggered.connect(lambda: setattr(self.settings, "alwaysSaveK2Fields", self.ui.actionAlwaysSaveK2Fields.isChecked()))
-        self.ui.actionShowPreview.triggered.connect(self.togglePreview)
+        self.ui.actionShowPreview.triggered.connect(self.toggle_preview)
 
     def _setup_installation(self, installation: HTInstallation):
         """Sets up the installation for character creation.
@@ -350,7 +346,7 @@ class UTCEditor(Editor):
     ):
         super().load(filepath, resref, restype, data)
         self._loadUTC(read_utc(data))
-        self.updateItemCount()
+        self.update_item_count()
 
     def _loadUTC(
         self,
@@ -451,7 +447,7 @@ class UTCEditor(Editor):
             assert item is not None, f"{self.__class__.__name__}.ui.featList.item({i}) {item.__class__.__name__}: {item}"
             item.setCheckState(Qt.CheckState.Unchecked)  # pyright: ignore[reportArgumentType]
         for feat in utc.feats:
-            item = self.getFeatItem(feat)
+            item = self.get_feat_item(feat)
             if item is None:
                 item = QListWidgetItem(f"[Modded Feat ID: {feat}]")
                 item.setData(Qt.ItemDataRole.UserRole, feat)
@@ -466,7 +462,7 @@ class UTCEditor(Editor):
             item.setCheckState(Qt.CheckState.Unchecked)  # pyright: ignore[reportArgumentType]
         for utc_class in utc.classes:
             for power in utc_class.powers:
-                item = self.getPowerItem(power)
+                item = self.get_power_item(power)
                 if item is None:
                     item = QListWidgetItem(f"[Modded Power ID: {power}]")
                     item.setData(Qt.ItemDataRole.UserRole, power)
@@ -636,7 +632,7 @@ class UTCEditor(Editor):
     def new(self):
         super().new()
         self._loadUTC(UTC())
-        self.updateItemCount()
+        self.update_item_count()
 
     def randomizeFirstname(self):
         ltr_resname: Literal["humanf", "humanm"] = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"
@@ -711,14 +707,16 @@ class UTCEditor(Editor):
         texture: TPC | None = self._installation.texture(portrait, [SearchLocation.TEXTURES_GUI])
 
         if texture is not None:
-            width, height, rgba = texture.convert(TPCTextureFormat.RGB, 0)
-            image = QImage(rgba, width, height, QImage.Format.Format_RGB888)
+            if texture.format().is_dxt():
+                texture.decode()
+            mipmap: TPCMipmap = texture.get(0, 0)
+            image = QImage(bytes(mipmap.data), mipmap.width, mipmap.height, texture.format().to_qimage_format())
             return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
         image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format.Format_RGB888)
         return QPixmap.fromImage(image)
 
-    def editConversation(self):
+    def edit_conversation(self):
         """Edits a conversation.
 
         Processing Logic:
@@ -749,23 +747,19 @@ class UTCEditor(Editor):
                 ).exec()
                 == QMessageBox.StandardButton.Yes
             ):
-                data = bytearray()
                 filepath = self._installation.override_path() / f"{resname}.dlg"
-
-                dlg = DLG()
-                write_dlg(dlg, data, Game.K2 if self._installation.tsl else Game.K1)
-                with filepath.open("wb") as f:
-                    f.write(data)
+                blank_dlg = bytes_dlg(DLG(), self._installation.game())
+                filepath.write_bytes(blank_dlg)
         else:
             resname, restype, filepath, data = search  # pyright: ignore[reportAssignmentType]
 
         if data is None or filepath is None:
-            print(f"Data/filepath cannot be None in self.editConversation() relevance: (resname={resname}, restype={restype!r}, filepath={filepath!r})")
+            print(f"Data/filepath cannot be None in self.edit_conversation() relevance: (resname={resname}, restype={restype!r}, filepath={filepath!r})")
             return
 
         open_resource_editor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
-    def openInventory(self):
+    def open_inventory(self):
         """Opens the inventory editor.
 
         Processing Logic:
@@ -776,94 +770,76 @@ class UTCEditor(Editor):
             - Refreshes item count and 3D preview.
         """
         droid: bool = self.ui.raceSelect.currentIndex() == 0
-        capsulesToSearch: Sequence[LazyCapsule] = []
+        capsules_to_search: Sequence[LazyCapsule] = []
         if self._filepath is None:
             ...
         elif is_sav_file(self._filepath):
             # search the capsules inside the .sav outer capsule.
             # self._filepath represents the outer capsule
             # res.filepath() is potentially a nested capsule.
-            capsulesToSearch = [Capsule(res.filepath()) for res in Capsule(self._filepath) if is_capsule_file(res.filename()) and res.inside_capsule]
+            capsules_to_search = [Capsule(res.filepath()) for res in Capsule(self._filepath) if is_capsule_file(res.filename()) and res.inside_capsule]
         elif is_capsule_file(self._filepath):
-            capsulesToSearch = Module.find_capsules(self._installation, self._filepath.name)
-        inventoryEditor = InventoryEditor(
+            capsules_to_search = Module.find_capsules(self._installation, self._filepath.name)
+        inventory_editor = InventoryEditor(
             self,
             self._installation,
-            capsulesToSearch,
+            capsules_to_search,
             [],
             self._utc.inventory,
             self._utc.equipment,
             droid=droid,
         )
-        if inventoryEditor.exec():
-            self._utc.inventory = inventoryEditor.inventory
-            self._utc.equipment = inventoryEditor.equipment
-            self.updateItemCount()
+        if inventory_editor.exec():
+            self._utc.inventory = inventory_editor.inventory
+            self._utc.equipment = inventory_editor.equipment
+            self.update_item_count()
             self.update3dPreview()
 
-    def updateItemCount(self):
+    def update_item_count(self):
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utc.inventory)}")
 
-    def getFeatItem(self, featId: int) -> QListWidgetItem | None:
+    def get_feat_item(self, featId: int) -> QListWidgetItem | None:
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
+                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.get_feat_item(featId={featId!r})")
                 continue
             if item.data(Qt.ItemDataRole.UserRole) == featId:
                 return item
         return None
 
-    def getPowerItem(self, powerId: int) -> QListWidgetItem | None:
+    def get_power_item(self, powerId: int) -> QListWidgetItem | None:
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
+                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.get_power_item(powerId={powerId!r})")
                 continue
             if item.data(Qt.ItemDataRole.UserRole) == powerId:
                 return item
         return None
 
-    def togglePreview(self):
+    def toggle_preview(self):
         self.globalSettings.showPreviewUTC = not self.globalSettings.showPreviewUTC
         self.update3dPreview()
 
-    def updateFeatSummary(self):
-        """Updates the feats summary text.
-
-        Processing Logic:
-        ----------------
-            - Loops through each item in the feature list
-            - Checks if the item is checked
-            - Adds the text of checked items to a summary string
-            - Sets the summary text to the feature summary edit text area.
-        """
+    def update_feat_summary(self):
         summary: str = ""
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
+                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.update_feat_summary()")
                 continue
 
-            if item.checkState() == Qt.Checked:
+            if item.checkState() == Qt.CheckState.Checked:
                 summary += f"{item.text()}\n"
         self.ui.featSummaryEdit.setPlainText(summary)
 
-    def updatePowerSummary(self):
-        """Updates the power summary text with checked items from the power list.
-
-        Processing Logic:
-        ----------------
-            - Loops through each item in the power list
-            - Checks if the item is checked
-            - Adds the item text to the summary string with a newline
-            - Sets the power summary edit text to the generated summary.
-        """
+    def update_power_summary(self):
         summary: str = ""
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
+                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.update_power_summary()")
                 continue
 
             if item.checkState() == Qt.Checked:
@@ -871,15 +847,6 @@ class UTCEditor(Editor):
         self.ui.powerSummaryEdit.setPlainText(summary)
 
     def update3dPreview(self):
-        """Updates the 3D preview based on global settings.
-
-        Processing Logic:
-        ----------------
-            - Check if the global setting for showing preview is checked
-            - If checked, show the preview renderer and set the window size
-            - If an installation is present, build the data and pass it to the renderer
-            - If not checked, hide the preview renderer and adjust the window size.
-        """
         self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTC)
 
         if self.globalSettings.showPreviewUTC:

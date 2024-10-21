@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Type, TypeVar
+from typing import TYPE_CHECKING
 
-from pykotor.common.misc import ResRef
-from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.bioware_archive import ArchiveResource, BiowareArchive
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_file, is_mod_file, is_sav_file
@@ -14,9 +12,14 @@ from pykotor.tools.misc import is_erf_file, is_mod_file, is_sav_file
 if TYPE_CHECKING:
     import os
 
-    from pykotor.resource.formats.rim import RIM
+    from pykotor.common.misc import ResRef
+    from pykotor.extract.file import ResourceIdentifier
 
-T = TypeVar("T", bound="ERFResource")
+
+class ERFResource(ArchiveResource):
+    def __init__(self, resref: ResRef, restype: ResourceType, data: bytes):
+        super().__init__(resref=resref, restype=restype, data=data)
+
 
 
 class ERFType(Enum):
@@ -46,6 +49,7 @@ class ERF(BiowareArchive):
     """
 
     BINARY_TYPE = ResourceType.ERF
+    ARCHIVE_TYPE: type[ArchiveResource] = ERFResource
 
     def __init__(
         self,
@@ -53,47 +57,12 @@ class ERF(BiowareArchive):
         *,
         is_save: bool = False,
     ):
+        self._resources: list[ERFResource]
+        self._resource_dict: dict[ResourceIdentifier, ERFResource]
         super().__init__()
+
         self.erf_type: ERFType = erf_type
         self.is_save: bool = is_save
-
-    def __repr__(
-        self,
-    ):
-        return f"{self.__class__.__name__}({self.erf_type!r})"
-
-    def __getitem__(
-        self,
-        item: int | str | ResourceIdentifier | object,
-    ) -> ERFResource:
-        if isinstance(item, int):
-            return list(self._resources)[item]
-
-        return NotImplemented
-
-    def get(self, resname: str, restype: ResourceType) -> bytes | None:
-        resource: ERFResource | None = self._resource_dict.get(ResourceIdentifier(resname, restype))
-        return None if resource is None else resource.data
-
-    def remove(
-        self,
-        resname: str,
-        restype: ResourceType,
-    ):
-        key = ResourceIdentifier(resname, restype)
-        resource: ERFResource | None = self._resource_dict.pop(key, None)
-        if resource:
-            self._resources.remove(resource)
-
-    def to_rim(
-        self,
-    ) -> RIM:
-        from pykotor.resource.formats.rim import RIM  # Prevent circular imports
-
-        rim = RIM()
-        for resource in self._resources:
-            rim.set_data(str(resource.resref), resource.restype, resource.data)
-        return rim
 
     def __eq__(self, other):
         from pykotor.resource.formats.rim import RIM
@@ -102,7 +71,7 @@ class ERF(BiowareArchive):
             return NotImplemented
         return set(self._resources) == set(other._resources)
 
-    def get_resource_offset(self, resource: ERFResource) -> int:
+    def get_resource_offset(self, resource: ArchiveResource) -> int:
         from pykotor.resource.formats.erf.io_erf import ERFBinaryWriter
 
         entry_count = len(self._resources)
@@ -113,8 +82,3 @@ class ERF(BiowareArchive):
         offset = data_start + sum(len(res.data) for res in self._resources[:resource_index])
 
         return offset
-
-
-class ERFResource(ArchiveResource):
-    def __init__(self, resref: ResRef, restype: ResourceType, data: bytes):
-        super().__init__(resref=resref, restype=restype, data=data)

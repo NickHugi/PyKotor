@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
 
     from pykotor.common.misc import Game
-    from utility.system.path import PathElem
+    from utility.system.path import StrBytesOrPathLike
 
 
 def is_filesystem_case_sensitive(path: os.PathLike | str) -> bool | None:
@@ -232,7 +232,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
     def relative_to(
         self,
-        *args: PathElem,
+        *args: StrBytesOrPathLike,
         walk_up: bool = False,
         **kwargs,
     ) -> InternalPath:
@@ -264,7 +264,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
     @classmethod
     def get_case_sensitive_path(
         cls,
-        path: PathElem,
+        path: StrBytesOrPathLike,
         prefixes: list[str] | tuple[str, ...] | None = None,
     ):
         """Get a case sensitive path.

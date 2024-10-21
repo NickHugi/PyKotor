@@ -235,53 +235,6 @@ class FileResource:
         return NotImplemented
 
 
-@dataclass
-class ResourceStatResult:
-    st_size: int | None = None
-    st_mode: int | None = None
-    st_atime: float | None = None
-    st_mtime: float | None = None
-    st_ctime: float | None = None
-    st_nlink: int | None = None
-    st_atime_ns: int | None = None
-    st_mtime_ns: int | None = None
-    st_ctime_ns: int | None = None
-    st_ino: int | None = None
-    st_dev: int | None = None
-    st_uid: int | None = None
-    st_gid: int | None = None
-    st_file_attributes: int | None = None
-    st_reparse_tag: int | None = None
-    st_blocks: int | None = None
-    st_blksize: int | None = None
-    st_rdev: int | None = None
-    st_flags: int | None = None
-
-    @classmethod
-    def from_stat_result(cls, stat_result: os.stat_result) -> ResourceStatResult:
-        return cls(
-            st_size=stat_result.st_size,
-            st_mode=stat_result.st_mode,
-            st_atime=stat_result.st_atime,
-            st_mtime=stat_result.st_mtime,
-            st_ctime=stat_result.st_ctime,
-            st_nlink=stat_result.st_nlink,
-            st_atime_ns=stat_result.st_atime_ns,
-            st_mtime_ns=stat_result.st_mtime_ns,
-            st_ctime_ns=stat_result.st_ctime_ns,
-            st_ino=stat_result.st_ino,
-            st_dev=stat_result.st_dev,
-            st_uid=stat_result.st_uid,
-            st_gid=stat_result.st_gid,
-            st_file_attributes=getattr(stat_result, "st_file_attributes", None),
-            st_reparse_tag=getattr(stat_result, "st_reparse_tag", None),
-            st_blocks=getattr(stat_result, "st_blocks", None),
-            st_blksize=getattr(stat_result, "st_blksize", None),
-            st_rdev=getattr(stat_result, "st_rdev", None),
-            st_flags=getattr(stat_result, "st_flags", None),
-        )
-
-
 @dataclass(frozen=True)
 class ResourceResult:
     resname: str
@@ -321,9 +274,9 @@ class ResourceResult:
             return self.resname
         if key == 1:
             return self.restype
-        if key == 2:
+        if key == 2:  # noqa: PLR2004
             return self.filepath
-        if key == 3:
+        if key == 3:  # noqa: PLR2004
             return self.data
         msg = f"Index out of range for ResourceResult. key: {key}"
         raise IndexError(msg)
@@ -381,7 +334,7 @@ class LocationResult:
             return self.filepath
         if key == 1:
             return self.offset
-        if key == 2:
+        if key == 2:  # noqa: PLR2004
             return self.size
         msg = f"Index out of range for LocationResult. key: {key}"
         raise IndexError(msg)
@@ -410,8 +363,8 @@ class ResourceIdentifier:
 
     resname: str
     restype: ResourceType
-    _cached_filename_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportArgumentType]
-    _lower_resname_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportArgumentType]
+    _cached_filename_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportAssignmentType, reportArgumentType]
+    _lower_resname_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportAssignmentType, reportArgumentType]
 
     def __post_init__(self):
         # Workaround to initialize a field in a frozen dataclass
@@ -421,14 +374,10 @@ class ResourceIdentifier:
         object.__setattr__(self, "_cached_filename_str", lower_filename_str)
         object.__setattr__(self, "_lower_resname_str", self.resname.lower())
 
-    def __hash__(
-        self,
-    ):
+    def __hash__(self):
         return hash(str(self))
 
-    def __repr__(
-        self,
-    ):
+    def __repr__(self):
         return f"{self.__class__.__name__}(resname='{self.resname}', restype={self.restype!r})"
 
     def __str__(self) -> str:

@@ -1,29 +1,35 @@
 from __future__ import annotations
 
-import io
+import warnings
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PIL import Image, ImageOps
+from PIL import Image
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QImage, QPixmap
-from qtpy.QtWidgets import QFileDialog
-from typing_extensions import Literal
+from qtpy.QtGui import QIcon, QImage, QImageReader, QPixmap
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QFileDialog,
+    QHBoxLayout,
+    QMenu,
+    QPushButton,
+    QStyle,
+    QToolButton,
+    QVBoxLayout,
+)
 
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
-from pykotor.resource.formats.tpc.io_tga import _DataTypes
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QSize
-    from qtpy.QtWidgets import QWidget
-    from qtpy.sip import voidptr
+    from qtpy.QtWidgets import QLayoutItem, QWidget
 
     from pykotor.extract.installation import Installation
+    from pykotor.resource.formats.tpc.tpc_data import TPCMipmap
 
 
 class TPCEditor(Editor):
@@ -32,53 +38,86 @@ class TPCEditor(Editor):
         parent: QWidget | None,
         installation: Installation | None = None,
     ):
-        """Initializes the texture viewer window.
-
-        Args:
-        ----
-            parent: {QWidget}: The parent widget of this window
-            installation: {Installation}: The installation context
-        Returns:
-            None: Does not return anything
-        Processing Logic:
-        ----------------
-            - Initializes the base class with supported resource types
-            - Loads the UI from the designer file
-            - Sets up menus and connects signals
-            - Creates a default 256x256 RGBA texture
-            - Calls new() to display the default texture.
-        """
         supported: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)  # type: ignore[arg-type]
 
+        self._tpc: TPC = TPC.from_blank()
+        self.current_frame: int = 0
+        self.zoom_factor: float = 1.0
+
         from toolset.uic.qtpy.editors.tpc import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.zoom_factor: float = 1.0
         self._setup_signals()
-        self._setup_ui()
         self._setup_menus()
-        self._setup_signals()
-
-        self._tpc: TPC = TPC()
-        self._tpc.set_single(256, 256, bytes(0 for _ in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
+        self._setup_toolbar()
 
         self.new()
 
-    def _setup_ui(self):
+    def _setup_toolbar(self):
+        self.convert_format_button = QToolButton(self.ui.toolBar)
+        self.convert_format_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.convert_format_button.setText("Convert Format")
+        self.convert_format_button.setToolTip("Convert TPC Texture Format")
+        self.convert_format_menu = QMenu(self)
+        self.convert_format_button.setMenu(self.convert_format_menu)
 
-        self.ui.formatComboBox.addItems(
-            [
-                format.name
-                for format in TPCTextureFormat
-            ]
-        )
+        for format_name, format_value in TPCTextureFormat.__members__.items():
+            action = QAction(format_name, self)
+            action.setData(format_value)
+            self.convert_format_menu.addAction(action)
+
+        style: QStyle | None = self.style()
+        if style is not None:
+            self.convert_format_button.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_ArrowDown))
+            self.ui.actionResetZoom.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
+            self.ui.actionRotateLeft.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_ArrowLeft))
+            self.ui.actionRotateRight.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_ArrowRight))
+            self.ui.actionFlipHorizontal.setIcon(QIcon.fromTheme("object-flip-horizontal"))
+            self.ui.actionFlipVertical.setIcon(QIcon.fromTheme("object-flip-vertical"))
+            self.ui.actionExport.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+            self.ui.actionToggleTXIEditor.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView))
+        self.convert_format_menu.triggered.connect(self.on_convert_format_selected)
+        self.ui.toolBar.addWidget(self.convert_format_button)
 
     def _setup_signals(self):
-        self.ui.zoomInButton.clicked.connect(self.zoom_in)
-        self.ui.zoomOutButton.clicked.connect(self.zoom_out)
-        self.ui.resetZoomButton.clicked.connect(self.reset_zoom)
-        self.ui.rotateLeftButton.clicked.connect(self.rotate_left)
+        self.ui.actionResetZoom.triggered.connect(self.reset_zoom)
+        self.ui.actionRotateLeft.triggered.connect(self.rotate_left)
+        self.ui.actionRotateRight.triggered.connect(self.rotate_right)
+        self.ui.zoomSlider.valueChanged.connect(self.on_zoom_slider_changed)
+        self.ui.actionFlipHorizontal.triggered.connect(self.flip_horizontal)
+        self.ui.actionFlipVertical.triggered.connect(self.flip_vertical)
+        self.setup_navigation_buttons()
+
+    def on_convert_format_selected(self, action):
+        selected_format = action.data()
+        self._tpc.convert(selected_format)
+        self.update_image()
+
+    def setup_navigation_buttons(self):
+        layout = QVBoxLayout(self.ui.scrollAreaWidgetContents)
+        if self._tpc.is_animated:
+            hbox = QHBoxLayout()
+            prev_button = QPushButton("Previous")
+            next_button = QPushButton("Next")
+            prev_button.clicked.connect(lambda: self.navigate_frames(-1))
+            next_button.clicked.connect(lambda: self.navigate_frames(1))
+            hbox.addWidget(prev_button)
+            hbox.addWidget(next_button)
+            layout.addLayout(hbox)
+        else:
+            for i in range(layout.count()):
+                item: QLayoutItem | None = layout.itemAt(i)
+                if isinstance(item, QHBoxLayout):
+                    layout.removeItem(item)
+                    break
+
+    def new(self):
+        super().new()
+
+        self._tpc: TPC = TPC.from_blank()
+        self.update_image()
 
     def load(
         self,
@@ -88,87 +127,18 @@ class TPCEditor(Editor):
         data: bytes,
     ):
         super().load(filepath, resref, restype, data)
-
-        orig_format: TPCTextureFormat | None = None
+        self._tpc = TPC()
         if restype in {ResourceType.TPC, ResourceType.TGA}:
-            txi_filepath: CaseAwarePath | None = CaseAwarePath(filepath).with_suffix(".txi")
-            self._tpc = read_tpc(data, txi_source=txi_filepath)
-            orig_format = self._tpc.format()
-            if restype is ResourceType.TPC:
-                if self._tpc.format() is TPCTextureFormat.DXT1:
-                    tpc_format = TPCTextureFormat.RGB
-                    width, height, img_bytes = self._tpc.convert(tpc_format)
-                elif self._tpc.format() is TPCTextureFormat.DXT5:
-                    tpc_format = TPCTextureFormat.RGBA
-                    width, height, img_bytes = self._tpc.convert(tpc_format)
-                else:
-                    width, height, tpc_format, img_bytes = self._tpc.get()
-            else:
-                width, height, tpc_format, img_bytes = self._tpc.get()
+            self._tpc = read_tpc(data, txi_source=Path(filepath).with_suffix(".txi"))
         else:
-            pillow: Image.Image = Image.open(io.BytesIO(data))
-            pillow = pillow.convert("RGBA")
-            pillow = ImageOps.flip(pillow)
-            self._tpc = TPC()
-            self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
-            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB)
-
-        image = QImage(bytes(img_bytes), width, height, QImage.Format.Format_RGB888)
-        image: QImage = image.mirrored(False, True)  # flip vertically.
-
-        # Calculate new dimensions maintaining aspect ratio
-        max_width, max_height = 640, 480
-        aspect_ratio: float = width / height
-        if width / height > max_width / max_height:
-            new_width = max_width
-            new_height = int(new_width / aspect_ratio)
-        else:
-            new_height = max_height
-            new_width = int(new_height * aspect_ratio)
-
-        scaled_image: QImage = image.scaled(
-            new_width,
-            new_height,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        self.ui.textureImage.setPixmap(QPixmap.fromImage(scaled_image))
-        self.ui.textureImage.setScaledContents(True)
-        self.ui.txiEdit.setPlainText(self._tpc.txi)
-        if self._tpc.original_datatype_code != _DataTypes.NO_IMAGE_DATA and orig_format is not None:
-            self.setToolTip(f"{self._tpc.original_datatype_code.name} - {orig_format.name}")
-        elif orig_format is not None:
-            self.setToolTip(orig_format.name)
-        self.center_and_adjust_window()
-
-    def new(self):
-        """Set texture image from TPC texture.
-
-        Args:
-        ----
-            self: The class instance
-
-        Processing Logic:
-        ----------------
-            1. Call super().new() to initialize parent class
-            2. Create TPC object and set single texture
-            3. Convert TPC texture to RGBA format
-            4. Create QImage from RGBA data
-            5. Create QPixmap from QImage
-            6. Set pixmap to texture image label
-            7. Clear texture index edit field.
-        """
-        super().new()
-
-        self._tpc: TPC = TPC()
-        self._tpc.set_single(256, 256, bytes(0 for _ in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
-        width, height, rgba = self._tpc.convert(TPCTextureFormat.RGBA, 0)
-
-        image = QImage(bytes(rgba), width, height, QImage.Format.Format_RGBA8888)
-        pixmap: QPixmap = QPixmap.fromImage(image)
-        self.ui.textureImage.setPixmap(pixmap)  # type: ignore[arg-type]
-        self.ui.textureImage.setScaledContents(True)
-        self.ui.txiEdit.setPlainText("")
+            supported_formats: list[str] = [x.data().decode().strip().lstrip(".") for x in QImageReader.supportedImageFormats()]
+            if restype.extension.lstrip(".") not in supported_formats:
+                warnings.warn(f"Unsupported image format: {restype.extension!r}", stacklevel=1)
+            image: QImage = QImage.fromData(data)
+            if image.isNull():
+                raise ValueError(f"Failed to load image data for resource of type {restype!r}")
+            self._tpc.convert(TPCTextureFormat.from_qimage_format(image.format()))
+        self.update_image()
 
     def build(self) -> tuple[bytes, bytes]:
         self._tpc.txi = self.ui.txiEdit.toPlainText()
@@ -176,27 +146,16 @@ class TPCEditor(Editor):
         data: bytes | bytearray = bytearray()
 
         if self._restype in {ResourceType.TPC, ResourceType.TGA}:
-            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
-            self._tpc.set_data([img_bytes], TPCTextureFormat.RGB, width, height)
             write_tpc(self._tpc, data, self._restype)
-            return bytes(data), b""
-
-        if self._restype in {ResourceType.PNG, ResourceType.BMP}:
-            data = self.extract_png_bmp_bytes()
-        elif self._restype is ResourceType.JPG:
-            data = self.extract_tpc_jpeg_bytes()
+            return bytes(self._tpc.layers[0].mipmaps[0].data), b""
         return bytes(data), b""
 
-    def zoom_in(self):
-        self.zoom_factor *= 1.2
-        self.update_image()
-
-    def zoom_out(self):
-        self.zoom_factor /= 1.2
+    def on_zoom_slider_changed(self, value):
+        self.zoom_factor = value / 100
         self.update_image()
 
     def reset_zoom(self):
-        self.zoom_factor = 1.0
+        self.ui.zoomSlider.setValue(100)
         self.update_image()
 
     def rotate_left(self):
@@ -215,55 +174,56 @@ class TPCEditor(Editor):
         self._tpc.flip_vertically()
         self.update_image()
 
-    def convert_format(self):
-        new_format = TPCTextureFormat[self.ui.formatComboBox.currentText()]
-        width, height, img_bytes = self._tpc.convert(new_format, 0)
-        self._tpc.set_data([img_bytes], new_format, width, height)
-        self.update_image()
-
     def export_image(self):
         file_path, _ = QFileDialog.getSaveFileName(self, "Export Image", "", "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)")
-        if file_path:
-            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGBA, 0)
-            image = Image.frombytes("RGBA", (width, height), img_bytes)
-            image.save(file_path)
+        if not file_path:
+            return
+        mm: TPCMipmap = self._tpc.get(0, 0)
+        image = Image.frombytes(self._tpc.format().to_pil_mode(), (mm.width, mm.height), mm.data)
+        image.save(file_path)
 
     def update_image(self):
-        width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0)
-        image = QImage(width, height, QImage.Format.Format_RGB888)
-        image.loadFromData(img_bytes)
-        pixmap: QPixmap = QPixmap.fromImage(image)
-        scaled_size: QSize = pixmap.size() * self.zoom_factor
-        self.ui.textureImage.setPixmap(pixmap.scaled(scaled_size, Qt.AspectRatioMode.KeepAspectRatio))
-        self.ui.textureImage.setFixedSize(scaled_size)
+        tpc_format = self._tpc.format()
+        if tpc_format is TPCTextureFormat.DXT1:
+            tpc_format = TPCTextureFormat.RGB
+            self._tpc.convert(tpc_format)
+        elif tpc_format in (TPCTextureFormat.DXT3, TPCTextureFormat.DXT5):
+            tpc_format = TPCTextureFormat.RGBA
+            self._tpc.convert(tpc_format)
+        mm: TPCMipmap = self._tpc.get(0, 0)
 
-    def qimage_to_pillow_image(self, qimage: QImage) -> Image.Image:
-        # Convert QImage to bytes
-        qimage = qimage.convertToFormat(
-            QImage.Format.Format_RGBA8888,
-            Qt.ImageConversionFlag.AutoColor,
+        image: QImage = QImage(
+            bytes(mm.data),
+            mm.width,
+            mm.height,
+            tpc_format.to_qimage_format(),
         )
-        width, height = qimage.width(), qimage.height()
-        qimg_data: voidptr | None = qimage.constBits()
-        assert qimg_data is not None, f"qimg_data is None in {self.__class__.__name__}.qimage_to_pillow_image()"
-        return Image.frombuffer("RGBA", (width, height), io.BytesIO(bytes(qimg_data.asarray())), "raw", "RGBA", 0, 1)
+        image = image.mirrored(False, True)  # flip vertically.
 
-    def extract_tpc_jpeg_bytes(self) -> bytes:
-        width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGB)
-        image: Image.Image = Image.frombuffer("RGB", (width, height), bytes(pixeldata))
-        yflipped_img: Image.Image = ImageOps.flip(image)
+        # Calculate new dimensions maintaining aspect ratio
+        max_width, max_height = 640, 480
+        aspect_ratio: float = mm.width / mm.height
+        if mm.width / mm.height > max_width / max_height:
+            new_width = max_width
+            new_height = int(new_width / aspect_ratio)
+        else:
+            new_height = max_height
+            new_width = int(new_height * aspect_ratio)
 
-        dataIO = io.BytesIO()
-        yflipped_img.save(dataIO, "JPEG", quality=80)
-        return dataIO.getvalue()
+        image = image.scaled(
+            int(new_width * self.zoom_factor),
+            int(new_height * self.zoom_factor),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        pixmap: QPixmap = QPixmap.fromImage(image)
+        self.ui.textureImage.setPixmap(pixmap)
+        self.ui.textureImage.setScaledContents(True)
+        self.ui.txiEdit.setPlainText(self._tpc.txi)
+        self.center_and_adjust_window()
 
-    def extract_png_bmp_bytes(self) -> bytes:
-        pixmap: QPixmap = self.ui.textureImage.pixmap()
-        if pixmap is None:
-            raise ValueError("No image available in QLabel")
-        qimage: QImage = pixmap.toImage()
-        pil_image: Image.Image = self.qimage_to_pillow_image(qimage)  # type: ignore[arg-type]
-        dataIO = io.BytesIO()
-        image_format: Literal["PNG", "BMP"] = "PNG" if self._restype is ResourceType.PNG else "BMP"
-        pil_image.save(dataIO, format=image_format)
-        return dataIO.getvalue()
+    def navigate_frames(self, direction):
+        num_frames = len(self._tpc.layers)
+        if num_frames > 0:
+            self.current_frame = (self.current_frame + direction) % num_frames
+            # TODO: ui code to move a slider or something.

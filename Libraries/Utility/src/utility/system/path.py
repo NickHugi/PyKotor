@@ -940,12 +940,14 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
 
 
 class PosixPath(Path):  # type: ignore[misc]
-    _flavour = pathlib.PurePosixPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info < (3, 13):
+        _flavour = pathlib.PurePosixPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
 
 
 
 class WindowsPath(Path):  # type: ignore[misc]
-    _flavour = pathlib.PureWindowsPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info < (3, 13):
+        _flavour = pathlib.PureWindowsPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
 
 
 PATHLIB_TO_CUSTOM: dict[type, type] = {

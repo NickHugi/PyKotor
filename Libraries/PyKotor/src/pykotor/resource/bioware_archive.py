@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import copy
 from enum import Enum
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Dict, List, TypeVar, cast
 
+from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
 
 if TYPE_CHECKING:
     from typing import ClassVar
 
-    from pykotor.common.misc import ResRef
+    from typing_extensions import Self
+
+    from pykotor.resource.formats.bif.bif_data import BIF
+    from pykotor.resource.formats.erf.erf_data import ERF
+    from pykotor.resource.formats.rim.rim_data import RIM
     from pykotor.resource.type import ResourceType
 
 B = TypeVar("B")
@@ -21,6 +27,7 @@ class HashAlgo(Enum):
     FNV32 = 2
     FNV64 = 3
     JENKINS = 4
+
 
 
 class ArchiveResource:
@@ -54,29 +61,37 @@ class ArchiveResource:
         return ResourceIdentifier(str(self.resref), self.restype)
 
 
+
 class BiowareArchive(ABC):
     BINARY_TYPE: ClassVar[ResourceType]
+    ARCHIVE_TYPE: type[ArchiveResource] = ArchiveResource
 
     def __init__(self):
         self._resources = []
         self._resource_dict = {}
 
+    @abstractmethod
+    def get_resource_offset(self, resource: ArchiveResource) -> int:
+        ...
+
     def __repr__(self):
-        return f"{self.__class__.__name__}()"
+        return f"{self.__class__.__name__}(resources=[{self._resources!r}])"
 
     def __iter__(self):
-        yield from self._resources
+        yield from self._resources.copy()
 
     def __len__(self):
         return len(self._resources)
 
-    def __getitem__(self, item: int | str | ResourceIdentifier | object) -> Any:
+    def __getitem__(self, item):
         if isinstance(item, int):
-            return self._resources[item]
-        elif isinstance(item, (str, ResourceIdentifier)):
-            return self._resource_dict[item]
-        else:
-            raise TypeError(f"Invalid key type: {type(item)}")
+            return copy(self._resources[item])
+        if isinstance(item, str):
+            item = ResourceIdentifier.from_path(item)
+        return copy(self._resource_dict[item])
+
+    def __contains__(self, item):
+        return item in self._resource_dict
 
     def __setitem__(self, key: str | ResourceIdentifier, value: ArchiveResource):
         if isinstance(key, str):
@@ -87,28 +102,22 @@ class BiowareArchive(ABC):
 
     def __delitem__(self, key: str | ResourceIdentifier):
         if isinstance(key, str):
-            key = next((k for k in self._resource_dict.keys() if k.resref == key), None)
-            if key is None:
-                raise KeyError(key)
-        resource = self._resource_dict.pop(key)
-        self._resources.remove(resource)
+            key = ResourceIdentifier.from_path(key)
+        self._resources.remove(cast(Dict[ResourceIdentifier, ArchiveResource], self._resource_dict).pop(key))
 
-    def __contains__(self, item):
-        return item in self._resource_dict
+    def __add__(self, other) -> Self:  # noqa: ANN001
+        if not isinstance(other, BiowareArchive):
+            return NotImplemented
 
-    @abstractmethod
-    def set_data(self, resname: str, restype: ResourceType, data: bytes): ...
+        combined_archive = self.__class__()
+        resource: ArchiveResource
+        for resource in self:
+            combined_archive.set_data(str(resource.resref), resource.restype, resource.data)
+        for resource in other:
+            combined_archive.set_data(str(resource.resref), resource.restype, resource.data)
 
-    @abstractmethod
-    def get(self, resname: str, restype: ResourceType) -> bytes | None: ...
+        return combined_archive
 
-    @abstractmethod
-    def remove(self, resname: str, restype: ResourceType): ...
-
-    @abstractmethod
-    def to_rim(self): ...
-
-    @abstractmethod
     def __eq__(self, other):
         if self is other:
             return True
@@ -116,21 +125,41 @@ class BiowareArchive(ABC):
             return NotImplemented
         return set(self._resources) == set(other._resources)
 
-    @abstractmethod
-    def get_resource_offset(
+    def set_data(
         self,
-        resource: ArchiveResource,
-    ) -> int:
-        ...  # TODO: implement this method. Ensure subclasses provided a class property we can access here.
+        resname: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
+        resource: ArchiveResource | None = next(
+            (
+                resource
+                for resource in cast(List[ArchiveResource], self._resources)
+                if resource.resref == resname and resource.restype == restype
+            ),
+            None,
+        )
+        if resource is None:
+            resource = self.ARCHIVE_TYPE(ResRef(resname), restype, data)
+            self._resources.append(resource)
+            self._resource_dict[resource.identifier()] = resource
+        else:
+            resource.data = data
 
-    def get_name_hash_algo(self) -> HashAlgo:
-        """Get the hash algorithm used for resource names."""
-        return HashAlgo.NONE
+    def get(self, resname: str, restype: ResourceType) -> bytes | None:
+        resource_dict = cast(Dict[ResourceIdentifier, ArchiveResource], self._resource_dict)
+        resource: ArchiveResource | None = resource_dict.get(ResourceIdentifier(resname, restype), None)
+        return None if resource is None else resource.data
+
+    def remove(
+        self,
+        resname: str,
+        restype: ResourceType,
+    ):
+        key = ResourceIdentifier(resname, restype)
+        self._resources.remove(self._resource_dict.pop(key, None))
 
     def find_resource_by_hash(self, h: int) -> int | None:
-        """Find a resource by its hash value."""
-        if self.get_name_hash_algo() == HashAlgo.NONE:
-            return None
         return next(
             (
                 i
@@ -140,18 +169,32 @@ class BiowareArchive(ABC):
             None,
         )
 
-    def find_resource(
+    def to_bif(
         self,
-        name: str,
-        restype: ResourceType,
-    ) -> int | None:
-        """Find a resource by its name and type."""
-        ident = ResourceIdentifier(name, restype)
-        return next(
-            (
-                i
-                for i, resource in enumerate(self._resources)
-                if resource.identifier() == ident
-            ),
-            None,
-        )
+    ) -> BIF:
+        from pykotor.resource.formats.bif.bif_data import BIF  # Prevent circular imports
+
+        bif = BIF()
+        for resource in cast(List[ArchiveResource], self._resources):
+            bif.set_data(str(resource.resref), resource.restype, resource.data)
+        return bif
+
+    def to_erf(
+        self,
+    ) -> ERF:
+        from pykotor.resource.formats.erf.erf_data import ERF  # Prevent circular imports
+
+        erf = ERF()
+        for resource in cast(List[ArchiveResource], self._resources):
+            erf.set_data(str(resource.resref), resource.restype, resource.data)
+        return erf
+
+    def to_rim(
+        self,
+    ) -> RIM:
+        from pykotor.resource.formats.rim.rim_data import RIM  # Prevent circular imports
+
+        rim = RIM()
+        for resource in cast(List[ArchiveResource], self._resources):
+            rim.set_data(str(resource.resref), resource.restype, resource.data)
+        return rim

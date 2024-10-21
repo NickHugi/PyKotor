@@ -40,7 +40,6 @@ from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw, write_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
-from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -155,7 +154,7 @@ class ModulePieceResource(Capsule):
     ):
         new_cls = cls
         if new_cls is ModulePieceResource:
-            path_obj = CaseAwarePath(path)
+            path_obj = Path(path)
             piece_info = ModulePieceInfo.from_filename(path_obj.name)
             if piece_info.modtype is KModuleType.DATA:
                 new_cls = ModuleDataPiece
@@ -173,7 +172,7 @@ class ModulePieceResource(Capsule):
         *args,
         **kwargs,
     ):
-        path_obj = CaseAwarePath(path)
+        path_obj = Path(path)
         self.piece_info: ModulePieceInfo = ModulePieceInfo.from_filename(path_obj.name)
         self.missing_resources: list[FileResource] = []  # TODO(th3w1zard1):
         super().__init__(path_obj, *args, **kwargs)
@@ -324,7 +323,7 @@ class Module:  # noqa: PLR0904
             KModuleType.K2_DLG.name: None,
             KModuleType.MOD.name: None,
         }
-        module_path: Path | CaseAwarePath = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
+        module_path: Path | Path = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
         if filename.lower().endswith(".mod"):
             mod_filepath = module_path.joinpath(root + KModuleType.MOD.value)
             if mod_filepath.is_file():

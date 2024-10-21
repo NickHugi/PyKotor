@@ -32,7 +32,6 @@
         "github.vscode-pull-request-github",
         "ryuta46.multi-command",
         "phohale.pho-pyqt-class-generator",
-        "mgesbert.python-path",
         "mukundan.python-docs",
         "patrick91.python-dependencies-vscode",
         "ms-vscode-remote.remote-wsl-recommender",
@@ -62,7 +61,6 @@
         "deerawan.vscode-dash",
         "donjayamanne.python-environment-manager",
         "eamodio.gitlens",
-        "mhutchie.git-graph",
         "howardzuo.vscode-git-tags",
         "ziyasal.vscode-open-in-github",
         "adam-bender.commit-message-editor",
@@ -129,6 +127,10 @@
         "s-nlf-fh.glassit",
         "ms-vscode.powershell",
         "unthrottled.doki-theme",
-        "saoudrizwan.claude-dev"
+        "saoudrizwan.claude-dev",
+        "twixes.pypi-assistant",
+        "donadigo.inlinepython",
+        "njqdev.vscode-python-typehint",
+        "mhutchie.git-graph"
     ]
 }

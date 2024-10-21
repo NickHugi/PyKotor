@@ -47,7 +47,7 @@ Issues = "https://github.com/NickHugi/PyKotor/issues"
 ########################################################
 
 [tool.pyright.defineConstant]
-PYQT5 = false
+PYQT5 = true
 PYSIDE2 = false
 PYQT6 = true
 PYSIDE6 = false
