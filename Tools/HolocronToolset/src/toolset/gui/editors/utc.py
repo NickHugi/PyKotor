@@ -779,7 +779,7 @@ class UTCEditor(Editor):
             # res.filepath() is potentially a nested capsule.
             capsules_to_search = [Capsule(res.filepath()) for res in Capsule(self._filepath) if is_capsule_file(res.filename()) and res.inside_capsule]
         elif is_capsule_file(self._filepath):
-            capsules_to_search = Module.find_capsules(self._installation, self._filepath.name)
+            capsules_to_search = Module.get_capsules_tuple_matching(self._installation, self._filepath.name)
         inventory_editor = InventoryEditor(
             self,
             self._installation,

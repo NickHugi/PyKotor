@@ -5,35 +5,11 @@ from typing import TYPE_CHECKING
 import glm
 import numpy as np
 
-from OpenGL.GL import (
-    GL_LINEAR,
-    GL_NO_ERROR,
-    GL_REPEAT,
-    GL_RGB,
-    GL_TEXTURE_2D,
-    GL_TEXTURE_MAG_FILTER,
-    GL_TEXTURE_MIN_FILTER,
-    GL_TEXTURE_WRAP_S,
-    GL_TEXTURE_WRAP_T,
-    GL_UNSIGNED_BYTE,
-    glBindTexture,
-    glGenTextures,
-    glGetError,
-    glGetUniformLocation,
-    glTexImage2D,
-    glTexParameteri,
-    glUniform3fv,
-    glUniform4fv,
-    glUniformMatrix4fv,
-    shaders,
-)
+from OpenGL.GL import GL_NO_ERROR, glGenTextures, glGetError, glGetUniformLocation, glTexImage2D, glUniform3fv, glUniform4fv, glUniformMatrix4fv, shaders
 from OpenGL.GL.framebufferobjects import glGenerateMipmap
 from OpenGL.GL.shaders import GL_FALSE
 from OpenGL.GLU import gluErrorString
-from OpenGL.raw.GL.EXT.texture_compression_s3tc import (
-    GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
-    GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
-)
+from OpenGL.raw.GL.EXT.texture_compression_s3tc import GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_S3TC_DXT1_EXT
 from OpenGL.raw.GL.VERSION.GL_1_0 import (
     GL_LINEAR,
     GL_NEAREST_MIPMAP_LINEAR,
@@ -50,12 +26,7 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
 )
 from OpenGL.raw.GL.VERSION.GL_1_1 import glBindTexture
 from OpenGL.raw.GL.VERSION.GL_1_3 import glCompressedTexImage2D
-from OpenGL.raw.GL.VERSION.GL_2_0 import (
-    GL_FRAGMENT_SHADER,
-    GL_VERTEX_SHADER,
-    glUniform1i,
-    glUseProgram,
-)
+from OpenGL.raw.GL.VERSION.GL_2_0 import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glUniform1i, glUseProgram
 
 from pykotor.resource.formats.tpc import TPCTextureFormat
 
@@ -176,40 +147,65 @@ void main()
 
 
 class Shader:
-    def __init__(self, vshader: str, fshader: str):
-        vertex_shader = shaders.compileShader(vshader, GL_VERTEX_SHADER)
-        fragment_shader = shaders.compileShader(fshader, GL_FRAGMENT_SHADER)
+    def __init__(
+        self,
+        vshader: str,
+        fshader: str,
+    ):
+        vertex_shader: int = shaders.compileShader(vshader, GL_VERTEX_SHADER)
+        fragment_shader: int = shaders.compileShader(fshader, GL_FRAGMENT_SHADER)
         self._id: int = shaders.compileProgram(vertex_shader, fragment_shader)
 
     def use(self):
         glUseProgram(self._id)
 
-    def uniform(self, uniform_name: str):
+    def uniform(
+        self,
+        uniform_name: str,
+    ) -> int:
         return glGetUniformLocation(self._id, uniform_name)
 
-    def set_matrix4(self, uniform: str, matrix: mat4):
+    def set_matrix4(
+        self,
+        uniform: str,
+        matrix: mat4,
+    ):
         glUniformMatrix4fv(self.uniform(uniform), 1, GL_FALSE, glm.value_ptr(matrix))
 
-    def set_vector4(self, uniform: str, vector: vec4):
+    def set_vector4(
+        self,
+        uniform: str,
+        vector: vec4,
+    ):
         glUniform4fv(self.uniform(uniform), 1, glm.value_ptr(vector))
 
-    def set_vector3(self, uniform: str, vector: vec3):
+    def set_vector3(
+        self,
+        uniform: str,
+        vector: vec3,
+    ):
         glUniform3fv(self.uniform(uniform), 1, glm.value_ptr(vector))
 
-    def set_bool(self, uniform: str, boolean: bool):
+    def set_bool(self, uniform: str, boolean: bool):  # noqa: FBT001
         glUniform1i(self.uniform(uniform), boolean)
 
 
 class Texture:
-    def __init__(self, tex_id: int):
+    def __init__(
+        self,
+        tex_id: int,
+    ):
         self._id: int = tex_id
 
     @classmethod
-    def from_tpc(cls, tpc: TPC) -> Texture:
+    def from_tpc(
+        cls,
+        tpc: TPC,
+    ) -> Texture:
         mm: TPCMipmap = tpc.get(0, 0)
-        image_size = len(mm.data)
+        image_size: int = len(mm.data)
 
-        gl_id = glGenTextures(1)
+        gl_id: int = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, gl_id)
 
         if mm.tpc_format == TPCTextureFormat.DXT1:
@@ -230,17 +226,22 @@ class Texture:
         return Texture(gl_id)
 
     @classmethod
-    def from_color(cls, r: int = 0, g: int = 0, b: int = 0) -> Texture:
-        gl_id = glGenTextures(1)
+    def from_color(
+        cls,
+        r: int = 0,
+        g: int = 0,
+        b: int = 0,
+    ) -> Texture:
+        gl_id: int = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, gl_id)
 
         # Create pixel data using numpy for better performance and alignment
-        pixels = np.full((64, 64, 3), [r, g, b], dtype=np.uint8)
+        pixels: np.ndarray = np.full((64, 64, 3), [r, g, b], dtype=np.uint8)
 
         # Immediate error checking before and after glTexImage2D
-        err = glGetError()
-        if err != GL_NO_ERROR:
-            print(f"Error before glTexImage2D: {gluErrorString(err)}")
+        errno: int | None = glGetError()
+        if errno is not None and errno != GL_NO_ERROR:
+            print(f"Error before glTexImage2D: {gluErrorString(errno)}")
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)

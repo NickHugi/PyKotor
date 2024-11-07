@@ -1,3 +1,18 @@
+__all__ = [
+    "GFF",
+    "GFFList",
+    "GFFStruct",
+    "GFFFieldType",
+    "GFFContent",
+    "GFFBinaryReader",
+    "GFFBinaryWriter",
+    "GFFXMLReader",
+    "GFFXMLWriter",
+    "write_gff",
+    "read_gff",
+    "detect_gff",
+    "bytes_gff"
+]
 
 from pykotor.resource.formats.gff.gff_data import (
     GFF,

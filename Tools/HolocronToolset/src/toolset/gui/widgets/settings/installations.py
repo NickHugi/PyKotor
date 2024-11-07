@@ -4,7 +4,7 @@ import os
 import uuid
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from loggerplus import RobustLogger, get_log_directory
 from qtpy.QtCore import (
@@ -21,7 +21,7 @@ from toolset.data.settings import Settings
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QItemSelectionModel, QModelIndex
-    from typing_extensions import Literal, TypedDict
+    from typing_extensions import Literal, TypedDict  # pyright: ignore[reportMissingModuleSource]
 
     from toolset.data.installation import HTInstallation  # noqa: F401
     from toolset.data.settings import SettingsProperty
@@ -36,31 +36,20 @@ if TYPE_CHECKING:
 
 
 class InstallationsWidget(QWidget):
-    edited = Signal()  # pyright: ignore[reportPrivateImportUsage]
+    sig_settings_edited: ClassVar[Signal] = Signal()  # pyright: ignore[reportPrivateImportUsage]
 
-    def __init__(self, parent: QWidget):
-        """Initialize the Installations widget.
-
-        Args:
-        ----
-            parent: Parent widget
-
-        Processing Logic:
-        ----------------
-            - Set up model to hold installation data
-            - Load global settings
-            - Set up UI from designer file
-            - Populate UI with initial values
-            - Connect signal handlers.
-        """
+    def __init__(
+        self,
+        parent: QWidget,
+    ):
         super().__init__(parent)
 
         self.installations_model: QStandardItemModel = QStandardItemModel()
-        self.settings = GlobalSettings()
+        self.settings: GlobalSettings = GlobalSettings()
 
         from toolset.uic.qtpy.widgets.settings.installations import Ui_Form
 
-        self.ui = Ui_Form()
+        self.ui: Ui_Form = Ui_Form()
         self.ui.setupUi(self)
         self.setup_values()
         self.setup_signals()
@@ -73,20 +62,6 @@ class InstallationsWidget(QWidget):
             self.installations_model.appendRow(item)
 
     def setup_signals(self):
-        """Set up signal connections for installation management UI.
-
-        Args:
-        ----
-            self: {The class instance}
-
-        Processing Logic:
-        ----------------
-            - Connect add path button click to add new installation slot
-            - Connect remove path button click to remove selected installation slot
-            - Connect path name and directory edits to update installation slot
-            - Connect TSL checkbox state change to update installation slot
-            - Connect path list selection change to selection changed slot
-        """
         self.ui.pathList.setModel(self.installations_model)
 
         self.ui.addPathButton.clicked.connect(self.add_new_installation)
@@ -112,10 +87,10 @@ class InstallationsWidget(QWidget):
         self.settings.settings.setValue("installations", installations)
 
     def add_new_installation(self):
-        item = QStandardItem("New")
+        item: QStandardItem = QStandardItem("New")
         item.setData({"path": "", "tsl": False})
         self.installations_model.appendRow(item)
-        self.edited.emit()
+        self.sig_settings_edited.emit()
 
     def remove_selected_installation(self):
         if len(self.ui.pathList.selectedIndexes()) > 0:
@@ -123,7 +98,7 @@ class InstallationsWidget(QWidget):
             item: QStandardItem | None = self.installations_model.itemFromIndex(index)
             assert item is not None, "Item should not be None in remove_selected_installation"
             self.installations_model.removeRow(item.row())
-            self.edited.emit()
+            self.sig_settings_edited.emit()
 
         if len(self.ui.pathList.selectedIndexes()) == 0:
             self.ui.pathFrame.setEnabled(False)
@@ -140,26 +115,29 @@ class InstallationsWidget(QWidget):
 
         item.setText(self.ui.pathNameEdit.text())
 
-        self.edited.emit()
+        self.sig_settings_edited.emit()
 
     def installation_selected(self):
         if len(self.ui.pathList.selectedIndexes()) > 0:
             self.ui.pathFrame.setEnabled(True)
 
-            index: QModelIndex = self.ui.pathList.selectedIndexes()[0]
-            item: QStandardItem | None = self.installations_model.itemFromIndex(index)
-            assert item is not None, "Item should not be None in installation_selected"
-            item_text: str = item.text()
-            item_data: dict[str, Any] = item.data()
+        index: QModelIndex = self.ui.pathList.selectedIndexes()[0]
+        item: QStandardItem | None = self.installations_model.itemFromIndex(index)
+        assert item is not None, "Item should not be None in installation_selected"
+        item_text: str = item.text()
+        item_data: dict[str, Any] = item.data()
 
-            self.ui.pathNameEdit.setText(item_text)
-            self.ui.pathDirEdit.setText(item_data["path"])
-            self.ui.pathTslCheckbox.setChecked(bool(item_data["tsl"]))
+        self.ui.pathNameEdit.setText(item_text)
+        self.ui.pathDirEdit.setText(item_data["path"])
+        self.ui.pathTslCheckbox.setChecked(bool(item_data["tsl"]))
 
 
 class InstallationConfig:
-    def __init__(self, name: str):
-        self._settings = QSettings("HolocronToolsetV3", "Global")
+    def __init__(
+        self,
+        name: str,
+    ):
+        self._settings: QSettings = QSettings("HolocronToolsetV3", "Global")
         self._name: str = name
 
     @property
@@ -167,7 +145,10 @@ class InstallationConfig:
         return self._name
 
     @name.setter
-    def name(self, value: str):
+    def name(
+        self,
+        value: str,
+    ):
         installations: dict[str, dict[str, Any]] = self._settings.value("installations", {}, dict)
         installation: dict[str, Any] = installations[self._name]
 
@@ -188,7 +169,10 @@ class InstallationConfig:
             return installation.get("path", "")
 
     @path.setter
-    def path(self, value: str):
+    def path(
+        self,
+        value: str,
+    ):
         try:
             installations: dict[str, dict[str, str]] = self._settings.value("installations", {})
             installations[self._name] = installations.get(self._name, {})
@@ -205,7 +189,10 @@ class InstallationConfig:
         return installation.get("tsl", False)
 
     @tsl.setter
-    def tsl(self, value: bool):
+    def tsl(
+        self,
+        value: bool,
+    ):
         installations: dict[str, dict[str, Any]] = self._settings.value("installations", {})
         installations[self._name] = installations.get(self._name, {})
         installations[self._name]["tsl"] = value
@@ -226,9 +213,15 @@ class GlobalSettings(Settings):
             self._handle_firsttime_user(installations)
         self.settings.setValue("installations", installations)
 
-        return {name: InstallationConfig(name) for name in installations}
+        return {
+            name: InstallationConfig(name)
+            for name in installations
+        }
 
-    def _handle_firsttime_user(self, installations: dict[str, dict[str, Any]]):
+    def _handle_firsttime_user(
+        self,
+        installations: dict[str, dict[str, Any]],
+    ):
         """Finds KotOR installation paths on the system, checks for duplicates, and records the paths and metadata in the user settings.
 
         Paths are filtered to only existing ones. Duplicates are detected by path and the game name is incremented with a number.
@@ -283,10 +276,6 @@ class GlobalSettings(Settings):
     # endregion
 
     # region Numbers
-    maxChildProcesses: SettingsProperty[int] = Settings.addSetting(
-        "max_child_processes",
-        (os.cpu_count() or 1),
-    )
     moduleSortOption: SettingsProperty[int] = Settings.addSetting(
         "moduleSortOption",
         2,
@@ -298,10 +287,6 @@ class GlobalSettings(Settings):
         "load_entire_installation",
         False,
     )
-    profileToolset: SettingsProperty[bool] = Settings.addSetting(
-        "profileToolset",
-        False,
-    )
     disableRIMSaving: SettingsProperty[bool] = Settings.addSetting(
         "disableRIMSaving",
         True,
@@ -310,16 +295,16 @@ class GlobalSettings(Settings):
         "attemptKeepOldGFFFields",
         False,
     )
-    use_beta_channel: SettingsProperty[bool] = Settings.addSetting(
-        "use_beta_channel",
+    useBetaChannel: SettingsProperty[bool] = Settings.addSetting(
+        "useBetaChannel",
         True,
     )
     firstTime: SettingsProperty[bool] = Settings.addSetting(
         "firstTime",
         True,
     )
-    gff_specializedEditors: SettingsProperty[bool] = Settings.addSetting(
-        "gff_specializedEditors",
+    gffSpecializedEditors: SettingsProperty[bool] = Settings.addSetting(
+        "gffSpecializedEditors",
         True,
     )
     joinRIMsTogether: SettingsProperty[bool] = Settings.addSetting(
@@ -349,4 +334,5 @@ class GlobalSettings(Settings):
     # endregion
 
 
-class NoConfigurationSetError(Exception): ...
+class NoConfigurationSetError(Exception):
+    ...

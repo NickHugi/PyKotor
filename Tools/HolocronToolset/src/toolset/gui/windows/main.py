@@ -73,7 +73,7 @@ from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
 from toolset.gui.theme_manager import ThemeManager
 from toolset.gui.widgets.main_widgets import ResourceList, ResourceStandardItem
-from toolset.gui.widgets.settings.misc import GlobalSettings
+from toolset.gui.widgets.settings.widgets.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
@@ -88,7 +88,7 @@ if TYPE_CHECKING:
     from qtpy import QtGui
     from qtpy.QtCore import QPoint
     from qtpy.QtGui import QCloseEvent, QKeyEvent, QMouseEvent, QPalette
-    from qtpy.QtWidgets import QStyle, QWidget
+    from qtpy.QtWidgets import QComboBox, QStyle, QWidget
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.extract.file import LocationResult, ResourceResult
@@ -161,6 +161,7 @@ class ToolWindow(QMainWindow):
     def _initUi(self):
         """Initialize Holocron Toolset main window UI."""
         from toolset.uic.qtpy.windows.main import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -174,13 +175,13 @@ class ToolWindow(QMainWindow):
         self.setup_modules_tab()
 
     def setup_modules_tab(self):
-        self.erf_editor_button: QPushButton = QPushButton("ERF Editor", self)
+        self.erf_editor_button = QPushButton("ERF Editor", self)
         self.erf_editor_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.erf_editor_button.clicked.connect(self._open_module_tab_erf_editor)  # Connect to the ERF Editor functionality
         self.ui.verticalLayoutRightPanel.insertWidget(2, self.erf_editor_button)  # pyright: ignore[reportArgumentType]
         self.erf_editor_button.hide()
         modules_resource_list = self.ui.modulesWidget.ui
-        modules_section_combo = modules_resource_list.sectionCombo  # type: ignore[]
+        modules_section_combo: QComboBox = modules_resource_list.sectionCombo  # type: ignore[]
         refresh_button: QPushButton = modules_resource_list.refreshButton  # type: ignore[attr-defined]
         designer_button: QPushButton = self.ui.specialActionButton  # type: ignore[attr-defined]
         modules_resource_list.horizontalLayout_2.removeWidget(modules_section_combo)  # type: ignore[arg-type]
@@ -188,11 +189,11 @@ class ToolWindow(QMainWindow):
         modules_resource_list.verticalLayout.removeItem(modules_resource_list.horizontalLayout_2)  # type: ignore[arg-type]
         refresh_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
         designer_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
-        stack_button_layout: QVBoxLayout = QVBoxLayout()
+        stack_button_layout = QVBoxLayout()
         stack_button_layout.setSpacing(1)
         stack_button_layout.addWidget(refresh_button)  # type: ignore[arg-type]
         stack_button_layout.addWidget(designer_button)  # type: ignore[arg-type]
-        top_layout: QHBoxLayout = QHBoxLayout()
+        top_layout = QHBoxLayout()
         top_layout.addWidget(modules_section_combo)  # type: ignore[arg-type]
         top_layout.addLayout(stack_button_layout)
         self.ui.verticalLayoutModulesTab.insertLayout(0, top_layout)  # type: ignore[attributeAccessIssue]
@@ -249,12 +250,12 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.sig_request_open_resource.connect(self.on_open_resources)
         self.sig_installation_changed.connect(self.ui.texturesWidget.set_installation)
 
-        self.ui.extractButton.clicked.connect(
-            lambda: self.on_extract_resources(
+        def extract_resources():
+            self.on_extract_resources(
                 self.get_active_resource_widget().selected_resources(),
                 resource_widget=self.get_active_resource_widget(),
-            ),
-        )
+            )
+        self.ui.extractButton.clicked.connect(extract_resources)
         self.ui.openButton.clicked.connect(self.get_active_resource_widget().on_resource_double_clicked)
 
         self.ui.openAction.triggered.connect(self.open_from_file)
@@ -291,6 +292,11 @@ class ToolWindow(QMainWindow):
         self.ui.actionDiscordDeadlyStream.triggered.connect(lambda: open_link("https://discord.com/invite/bRWyshn"))
         self.ui.actionDiscordKotOR.triggered.connect(lambda: open_link("http://discord.gg/kotor"))
         self.ui.actionDiscordHolocronToolset.triggered.connect(lambda: open_link("https://discord.gg/3ME278a9tQ"))
+
+        for theme_name in self.theme_manager.get_supported_themes():  # loop through the themes defined in the theme manager
+            def change_theme(*args, theme=theme_name):
+                self.theme_manager.change_theme(theme)
+            cast(QAction, self.ui.menuTheme.addAction(theme_name)).triggered.connect(change_theme)
 
         self.ui.menuRecentFiles.aboutToShow.connect(self.populate_recent_files_menu)
 
@@ -337,7 +343,6 @@ class ToolWindow(QMainWindow):
         open_resource_editor(resource, self.active, self)
 
     # region Signal callbacks
-    @Slot()
     def on_core_refresh(self):
         self.refresh_core_list(reload=True)
 
@@ -353,10 +358,7 @@ class ToolWindow(QMainWindow):
         RobustLogger().info(f"Reloading module '{module_file}'")
         resources: list[FileResource] = self.active.module_resources(module_file)
         module_file_name = PurePath(module_file).name
-        if self.settings.joinRIMsTogether and (
-            (is_rim_file(module_file) or is_erf_file(module_file))
-            and not module_file_name.lower().endswith(("_s.rim", "_dlg.erf"))
-        ):
+        if self.settings.joinRIMsTogether and ((is_rim_file(module_file) or is_erf_file(module_file)) and not module_file_name.lower().endswith(("_s.rim", "_dlg.erf"))):
             resources.extend(self.active.module_resources(f"{PurePath(module_file).stem}_s.rim"))
             if self.active.game().is_k2():
                 resources.extend(self.active.module_resources(f"{PurePath(module_file).stem}_dlg.erf"))
@@ -375,7 +377,6 @@ class ToolWindow(QMainWindow):
             if self.ui.modulesWidget.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole) == changed_file:
                 self.on_module_reload(changed_file)
 
-    @Slot()
     def on_module_refresh(self):  # noqa: FBT001, FBT002
         self.refresh_module_list()
 
@@ -406,11 +407,7 @@ class ToolWindow(QMainWindow):
                 found_resource = False
                 for i in range(category_item.rowCount()):
                     item = category_item.child(i)
-                    if (
-                        item is not None
-                        and isinstance(item, ResourceStandardItem)
-                        and item.resource == resource
-                    ):
+                    if item is not None and isinstance(item, ResourceStandardItem) and item.resource == resource:
                         item.resource = resource
                         found_resource = True
                         break
@@ -445,16 +442,11 @@ class ToolWindow(QMainWindow):
         override_path = self.active.override_path()
 
         file_or_folder_path = override_path.joinpath(file_or_folder)
-
-        if not file_or_folder_path.is_relative_to(self.active.override_path()):
-            raise ValueError(f"'{file_or_folder_path}' is not relative to the override folder, cannot reload")
         if file_or_folder_path.is_file():
             rel_folderpath = file_or_folder_path.parent.relative_to(self.active.override_path())
-
             self.active.reload_override_file(file_or_folder_path)
         else:
             rel_folderpath = file_or_folder_path.relative_to(self.active.override_path())
-
             self.active.load_override(str(rel_folderpath))
         self.ui.overrideWidget.set_resources(self.active.override_resources(str(rel_folderpath) if rel_folderpath.name else None))
 
@@ -493,12 +485,37 @@ class ToolWindow(QMainWindow):
             self.ui.gameCombo.setCurrentIndex(prev_index)
             return
 
-        active: HTInstallation | None = self.installations.get(name)
-        self.active = HTInstallation(Path(path), name, tsl=tsl) if active is None else active
-
         # KEEP UI CODE IN MAIN THREAD!
         self.ui.resourceTabs.setEnabled(True)
         self.ui.sidebar.setEnabled(True)
+
+        def create_installation_task(loader: AsyncLoader) -> HTInstallation:
+            """Creates and returns a new HTInstallation instance.
+            
+            Returns:
+            -------
+                HTInstallation: The newly created installation instance
+            """
+            if loader is not None and loader._realtime_progress:  # noqa: SLF001
+                return HTInstallation(Path(path), name, tsl=tsl, progress_callback=loader.progress_callback_api)
+            return HTInstallation(Path(path), name, tsl=tsl)
+
+        active = self.installations.get(name)
+        if active is None:
+            installation_loader = AsyncLoader.__new__(AsyncLoader)
+            installation_loader.__init__(
+                self,
+                "Creating installation...",
+                lambda: create_installation_task(installation_loader),
+                "Failed to create installation",
+                realtime_progress=True,
+            )
+            if not installation_loader.exec():
+                RobustLogger().error("installation_loader.exec() failed.")
+                self.ui.gameCombo.setCurrentIndex(prev_index)
+                return
+            self.active = installation_loader.value
+        assert self.active is not None
 
         def prepare_task() -> tuple[list[QStandardItem] | None, ...]:
             """Prepares the lists of modules, overrides, and textures for the active installation.
@@ -644,7 +661,8 @@ class ToolWindow(QMainWindow):
                 RobustLogger().debug(f"Not loading dropped file '{filepath}'. Unsupported restype.")
                 continue
             resource = FileResource(resname, restype, os.path.getsize(filepath), 0x0, filepath)  # noqa: PTH202
-            open_resource_editor(resource, self.active, self, gff_specialized=GlobalSettings().gff_specializedEditors)
+            open_resource_editor(resource, self.active, self, gff_specialized=GlobalSettings().gffSpecializedEditors)
+
     # endregion
 
     # region Menu Bar
@@ -727,7 +745,8 @@ class ToolWindow(QMainWindow):
                 "You appear to have made changes to your installations, would you like to reload?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
-            ).exec() == QMessageBox.StandardButton.Yes
+            ).exec()
+            == QMessageBox.StandardButton.Yes
         ):
             self.reload_settings()
 
@@ -736,7 +755,11 @@ class ToolWindow(QMainWindow):
         assert self.active is not None, "No installation loaded."
         c_filepath = self.active.path() / "dialog.tlk"
         if not c_filepath.exists() or not c_filepath.is_file():
-            QMessageBox(QMessageBox.Icon.Information, "dialog.tlk not found", f"Could not open the TalkTable editor, dialog.tlk not found at the expected location<br><br>{c_filepath}.").exec()
+            QMessageBox(
+                QMessageBox.Icon.Information,
+                "dialog.tlk not found",
+                f"Could not open the TalkTable editor, dialog.tlk not found at the expected location<br><br>{c_filepath}.",
+            ).exec()
             return
         resource = FileResource("dialog", ResourceType.TLK, os.path.getsize(c_filepath), 0x0, c_filepath)  # noqa: PTH202
         open_resource_editor(resource, self.active, self)
@@ -788,6 +811,7 @@ class ToolWindow(QMainWindow):
     def open_about_dialog(self):
         """Opens the about dialog."""
         About(self).exec()
+
     # endregion
 
     # region Other
@@ -833,7 +857,7 @@ class ToolWindow(QMainWindow):
             erf_file_resource,
             self.active,
             self,
-            gff_specialized=self.settings.gff_specializedEditors,
+            gff_specialized=self.settings.gffSpecializedEditors,
         )
 
     def on_tab_changed(self):
@@ -901,6 +925,7 @@ class ToolWindow(QMainWindow):
         self.ui.sidebar.setEnabled(False)
         self.update_menus()
         self.active = None
+
     # endregion
 
     # region ResourceList handlers
@@ -974,6 +999,7 @@ class ToolWindow(QMainWindow):
                     sort_str = self.active.module_id(module_file_name, use_alternate=True)
             sort_str += f"_{lower_module_file_name}".lower()
             return sort_str
+
         try:
             sorted_keys: list[str] = sorted(area_names, key=sort_algo)
         except Exception:  # noqa: BLE001
@@ -1364,4 +1390,5 @@ class ToolWindow(QMainWindow):
             except (ValueError, OSError) as e:
                 etype, msg = universal_simplify_exception(e)
                 QMessageBox(QMessageBox.Icon.Critical, f"Failed to open file ({etype})", msg).exec()
+
     # endregion

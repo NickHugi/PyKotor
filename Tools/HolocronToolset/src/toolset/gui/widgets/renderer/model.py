@@ -16,7 +16,7 @@ from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
 from toolset.data.misc import ControlItem
-from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
@@ -182,7 +182,7 @@ class ModelRenderer(QOpenGLWidget):
             strength = ModuleDesignerSettings().moveCameraSensitivity3d / 10000
             self.scene.camera.rotate(-screenDelta.x * strength, screenDelta.y * strength, clamp=True)
 
-        self._mousePrev = screen  # Always assign mousePrev after emitting, in order to do cursor lock properly.
+        self._mousePrev = screen  # Always assign mouse_prev after emitting, in order to do cursor lock properly.
 
     def mousePressEvent(self, e: QMouseEvent):
         button = e.button()

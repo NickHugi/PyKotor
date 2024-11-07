@@ -26,10 +26,10 @@ if TYPE_CHECKING:
 
 
 def fetch_update_info(
-    use_beta_channel: bool = False,  # noqa: FBT001, FBT002
+    useBetaChannel: bool = False,  # noqa: FBT001, FBT002
     silent: bool = False,  # noqa: FBT001, FBT002
 ) -> dict[str, Any] | Exception:
-    return get_remote_toolset_update_info(use_beta_channel=use_beta_channel, silent=silent)
+    return get_remote_toolset_update_info(useBetaChannel=useBetaChannel, silent=silent)
 
 
 class UpdateManager:
@@ -45,7 +45,7 @@ class UpdateManager:
         silent: bool = False,
     ):
         with ProcessPoolExecutor() as executor:
-            if self.settings.use_beta_channel:
+            if self.settings.useBetaChannel:
                 edge_future = executor.submit(fetch_update_info, True, silent)
             master_future = executor.submit(fetch_update_info, False, silent)
 
@@ -124,7 +124,7 @@ class UpdateManager:
     ) -> tuple[dict[str, Any], bool]:
         version_list: list[tuple[Literal["toolsetLatestVersion", "toolsetLatestBetaVersion"], Literal["master", "edge"], str]] = []
 
-        if self.settings.use_beta_channel:
+        if self.settings.useBetaChannel:
             version_list.append(("toolsetLatestVersion", "master", master_remote_info.get("toolsetLatestVersion", "")))
             version_list.append(("toolsetLatestVersion", "edge", edge_remote_info.get("toolsetLatestVersion", "")))
             version_list.append(("toolsetLatestBetaVersion", "master", master_remote_info.get("toolsetLatestBetaVersion", "")))

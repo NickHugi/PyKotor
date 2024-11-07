@@ -70,8 +70,8 @@ class TestDLG(TestCase):
         gff: GFF = read_gff(TEST_K1_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
         re_reconstructed_gff: GFF = dismantle_dlg(construct_dlg(reconstructed_gff), Game.K1)
-        result = reconstructed_gff.compare(re_reconstructed_gff, self.log_func)
-        output = os.linesep.join(self.log_messages)
+        result: bool = reconstructed_gff.compare(re_reconstructed_gff, self.log_func)
+        output: str = os.linesep.join(self.log_messages)
         assert result, output
 
     def test_k1_serialization(self):

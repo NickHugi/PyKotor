@@ -119,7 +119,7 @@ class FileSystemExplorerWidget(QMainWindow):
         self.ui.addressBar.pathChanged.connect(self.on_address_bar_path_changed)
         self.ui.addressBar.returnPressed.connect(self.on_address_bar_return)
 
-        self.ui.zoomSlider.valueChanged.connect(self.on_zoom_slider_changed)
+        self.ui.zoom_slider.valueChanged.connect(self.on_zoom_slider_changed)
         self.ui.itemCountLabel.linkActivated.connect(self.on_item_count_clicked)
         self.ui.selectedCountLabel.linkActivated.connect(self.on_selected_count_clicked)
         self.ui.freeSpaceLabel.linkActivated.connect(self.on_free_space_clicked)

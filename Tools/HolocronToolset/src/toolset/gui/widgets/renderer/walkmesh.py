@@ -743,7 +743,7 @@ class WalkmeshRenderer(QWidget):
         coords = Vector2(e.x(), e.y())
         coords_delta = Vector2(coords.x - self._mouse_prev.x, coords.y - self._mouse_prev.y)
         self.sig_mouse_moved.emit(coords, coords_delta, self._mouse_down, self._keys_down)
-        self._mouse_prev = coords  # Always assign mousePrev after emitting: allows signal handlers (e.g. ModuleDesigner, GITEditor) to handle cursor lock.
+        self._mouse_prev = coords  # Always assign mouse_prev after emitting: allows signal handlers (e.g. ModuleDesigner, GITEditor) to handle cursor lock.
 
         self._instances_under_mouse: list[GITInstance] = []
         self._geom_points_under_mouse: list[GeomPoint] = []

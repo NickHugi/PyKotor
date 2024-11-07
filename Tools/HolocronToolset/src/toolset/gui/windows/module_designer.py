@@ -46,7 +46,7 @@ from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
 from toolset.gui.editors.git import DeleteCommand, MoveCommand, RotateCommand, _GeometryMode, _InstanceMode, _SpawnMode, open_instance_dialog
 from toolset.gui.widgets.renderer.module import ModuleRenderer
-from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.designer_controls import ModuleDesignerControls2d, ModuleDesignerControls3d, ModuleDesignerControlsFreeCam
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import MODIFIER_KEY_NAMES, get_qt_button_string, get_qt_key_string
@@ -58,7 +58,7 @@ if TYPE_CHECKING:
     from glm import vec3
     from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
     from qtpy.QtWidgets import QCheckBox
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.gl.scene import Camera
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -345,7 +345,7 @@ class ModuleDesigner(QMainWindow):
         if self._module is None:
             title = f"No Module - {self._installation.name} - Module Designer"
         else:
-            title = f"{self._module.root_name()} - {self._installation.name} - Module Designer"
+            title = f"{self._module.root()} - {self._installation.name} - Module Designer"
         self.setWindowTitle(title)
 
     def open_module_with_dialog(self):

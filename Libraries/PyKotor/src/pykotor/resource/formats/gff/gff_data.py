@@ -26,16 +26,27 @@ T = TypeVar("T")
 U = TypeVar("U")
 
 
-def format_diff(old_value: object, new_value: object, name: str) -> str:
+def format_diff(
+    old_value: object,
+    new_value: object,
+    name: str,
+) -> str:
     # Convert values to strings if they aren't already
-    str_old_value = str(old_value).splitlines(keepends=True)
-    str_new_value = str(new_value).splitlines(keepends=True)
+    str_old_value: list[str] = str(old_value).splitlines(keepends=True)
+    str_new_value: list[str] = str(new_value).splitlines(keepends=True)
 
     # Generate unified diff
-    diff = difflib.unified_diff(str_old_value, str_new_value, fromfile=f"(old){name}", tofile=f"(new){name}", lineterm="")
+    diff: Iterator[str] = difflib.unified_diff(
+        str_old_value,
+        str_new_value,
+        fromfile=f"(old){name}",
+        tofile=f"(new){name}",
+        lineterm="",
+    )
 
     # Return formatted diff
     return "\n".join(diff)
+
 
 class GFFContent(Enum):
     """The different resources that the GFF can represent."""
@@ -68,19 +79,19 @@ class GFFContent(Enum):
     JRL = "JRL "
     PTH = "PTH "
     NFO = "NFO "  # savenfo.res
-    PT  = "PT  "  # partytable.res
+    PT = "PT  "  # partytable.res
     GVT = "GVT "  # GLOBALVARS.res
     INV = "INV "  # inventory in SAVEGAME.res
 
     @classmethod
     def has_value(
         cls,
-        value,
-    ):
+        value: GFFContent | str,  # noqa: E501
+    ) -> bool:
         if isinstance(value, GFFContent):
             value = value.value
-        elif not isinstance(value, str):
-            raise NotImplementedError(value)
+        if not isinstance(value, str):
+            raise TypeError(value)
         return any(gff_content.value == value.upper() for gff_content in cls)
 
     @classmethod
@@ -135,7 +146,7 @@ class GFFFieldType(IntEnum):
     Vector4 = 16
     Vector3 = 17
 
-    def return_type(
+    def return_type(  # noqa: C901, PLR0911
         self,
     ) -> type[int | str | ResRef | Vector3 | Vector4 | LocalizedString | GFFStruct | GFFList | bytes | float]:
         if self in {
@@ -171,7 +182,12 @@ class GFFFieldType(IntEnum):
 
 
 class Difference:
-    def __init__(self, path: PureWindowsPath | str, old_value: object, new_value: object):
+    def __init__(
+        self,
+        path: PureWindowsPath | str,
+        old_value: object,
+        new_value: object,
+    ):
         """Initializes a Difference instance representing a specific difference between two GFFStructs.
 
         Args:
@@ -205,7 +221,12 @@ class GFFCompareResult:
         # Return False if the list has any contents (meaning the objects are different), True if it's empty.
         return not self.differences
 
-    def add_difference(self, path, old_value, new_value):
+    def add_difference(
+        self,
+        path,
+        old_value,
+        new_value,
+    ):
         """Adds a difference to the collection of tracked differences.
 
         Args:
@@ -223,13 +244,7 @@ class GFFCompareResult:
         -------
             tuple[Difference]: A collection of differences with changed values.
         """
-        return tuple(
-            diff
-            for diff in self.differences
-            if diff.old_value is not None
-            and diff.new_value is not None
-            and diff.old_value != diff.new_value
-        )
+        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value)
 
     def get_new_values(self) -> tuple[Difference, ...]:
         """Returns a tuple of differences where a new value is present in the compared GFFStruct.
@@ -298,6 +313,7 @@ class GFF:
         other_gff: GFF,
         log_func: Callable = print,
         path: PureWindowsPath | None = None,
+        *,
         ignore_default_changes: bool = False,
     ) -> bool:
         """Compare two GFF objects.
@@ -321,7 +337,7 @@ class GFF:
             - Write comparison report to given path if provided
             - Return True if no differences found, False otherwise.
         """
-        return self.root.compare(other_gff.root, log_func, path, ignore_default_changes)
+        return self.root.compare(other_gff.root, log_func, path, ignore_default_changes=ignore_default_changes)
 
 
 class _GFFField:
@@ -445,11 +461,12 @@ class GFFStruct:
         """
         return label in self._fields
 
-    def compare(
+    def compare(  # noqa: C901, PLR0912, PLR0915
         self,
         other_gff_struct: GFFStruct,
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
+        *,
         ignore_default_changes: bool = False,
     ) -> bool:
         """Recursively compares two GFFStructs.
@@ -473,7 +490,7 @@ class GFFStruct:
             - Compares field types, values recursively for structs and lists
             - Logs any differences found
         """
-        ignore_labels = {
+        ignore_labels: set[str] = {
             "KTInfoDate",
             "KTGameVerIndex",
             "KTInfoVersion",
@@ -521,7 +538,7 @@ class GFFStruct:
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
                 if new_ftype is None:
-                    msg = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
+                    msg: str = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
                     raise RuntimeError(msg)
                 log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(safe_repr(new_value))}")
                 is_same = False
@@ -545,27 +562,33 @@ class GFFStruct:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
                     is_same = False
 
-                if not cur_struct_this.compare(new_value, log_func, child_path, ignore_default_changes):
+                if not cur_struct_this.compare(
+                    new_value,
+                    log_func,
+                    child_path,
+                    ignore_default_changes=ignore_default_changes,
+                ):
                     is_same = False
                     continue
             elif old_ftype == GFFFieldType.List:
                 gff_list: GFFList = old_value
-                if not gff_list.compare(new_value, log_func, child_path, ignore_default_changes=ignore_default_changes):
+                if not gff_list.compare(
+                    new_value,
+                    log_func,
+                    child_path,
+                    ignore_default_changes=ignore_default_changes,
+                ):
                     is_same = False
                     continue
 
             elif old_value != new_value:
-                if (
-                    isinstance(old_value, float)
-                    and isinstance(new_value, float)
-                    and math.isclose(old_value, new_value, rel_tol=1e-4, abs_tol=1e-4)
-                ):
+                if isinstance(old_value, float) and isinstance(new_value, float) and math.isclose(old_value, new_value, rel_tol=1e-4, abs_tol=1e-4):
                     continue
 
                 is_same = False
                 if str(old_value) == str(new_value):
                     log_func(
-                        f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference)."
+                        f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference)."  # noqa: E501
                     )
                     continue
                 log_func(f"Field '{old_ftype.name}' is different at '{child_path}':")
@@ -602,9 +625,8 @@ class GFFStruct:
         if object_type is None:
             object_type = default.__class__
         if (
-            self.exists(label)
-            and object_type is not None
-#           and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
+            self.exists(label) and object_type is not None
+            #           and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
         ):
             value = self[label]
         if object_type is bool and value.__class__ is int:
@@ -617,7 +639,10 @@ class GFFStruct:
     ) -> Any:
         return self._fields[label].value()
 
-    def add_missing(self, other: GFFStruct):
+    def add_missing(
+        self,
+        other: GFFStruct,
+    ):
         """Updates this GFFStruct with any missing fields from the other GFFStruct, deepcopying their values.
 
         Args:
@@ -627,7 +652,11 @@ class GFFStruct:
         self._add_missing(self, other)
 
     @staticmethod
-    def _add_missing(target: GFFStruct, source: GFFStruct, relpath: PureWindowsPath | None = None):
+    def _add_missing(  # noqa: PLR0912, C901
+        target: GFFStruct,
+        source: GFFStruct,
+        relpath: PureWindowsPath | None = None,
+    ):
         """Static method to update target with missing fields from source, handling nested structures.
 
         Args:
@@ -640,12 +669,16 @@ class GFFStruct:
             if target.exists(label):
                 if field_type == GFFFieldType.Struct:
                     assert isinstance(value, GFFStruct)
-                    value._add_missing(value, source.get_struct(label), relpath.joinpath(label))
+                    value._add_missing(value, source.get_struct(label), relpath.joinpath(label))  # noqa: SLF001
                 elif field_type == GFFFieldType.List:
                     assert isinstance(value, GFFList)
-                    target_list = target.get_list(label)
+                    target_list: GFFList = target.get_list(label)
                     for i, (target_item, source_item) in enumerate(zip(target_list, value)):
-                        target_item._add_missing(target_item, source_item, relpath.joinpath(label, str(i)))
+                        target_item._add_missing(  # noqa: SLF001
+                            target_item,
+                            source_item,
+                            relpath.joinpath(label, str(i)),
+                        )
             else:
                 RobustLogger().debug(f"Adding {field_type!r} '{relpath.joinpath(label)}' to target.")
                 if field_type == GFFFieldType.UInt8:
@@ -1490,11 +1523,11 @@ class GFFList:
         new_dict = dict(enumerate(other_gff_list))
 
         # Detect unique items in both lists
-        unique_to_old = set(old_dict.keys()) - set(new_dict.keys())
-        unique_to_new = set(new_dict.keys()) - set(old_dict.keys())
+        unique_to_old: set[int] = set(old_dict.keys()) - set(new_dict.keys())
+        unique_to_new: set[int] = set(new_dict.keys()) - set(old_dict.keys())
 
         for list_index in unique_to_old:
-            struct = old_dict[list_index]
+            struct: GFFStruct = old_dict[list_index]
             log_func(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             log_func("Contents of old struct:")
             for label, field_type, field_value in struct:
@@ -1503,7 +1536,7 @@ class GFFList:
             is_same_result = False
 
         for list_index in unique_to_new:
-            struct = new_dict[list_index]
+            struct: GFFStruct = new_dict[list_index]
             log_func(f"Extra GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             log_func("Contents of new struct:")
             for label, field_type, field_value in struct:
@@ -1512,11 +1545,11 @@ class GFFList:
             is_same_result = False
 
         # For items present in both lists
-        common_items = old_dict.keys() & new_dict.keys()
+        common_items: set[int] = old_dict.keys() & new_dict.keys()
         for list_index in common_items:
             old_child: GFFStruct = old_dict[list_index]
             new_child: GFFStruct = new_dict[list_index]
-            if not old_child.compare(new_child, log_func, current_path / str(list_index), ignore_default_changes):
+            if not old_child.compare(new_child, log_func, current_path / str(list_index), ignore_default_changes=ignore_default_changes):
                 is_same_result = False
 
         return is_same_result

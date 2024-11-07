@@ -85,7 +85,7 @@ class TPCEditor(Editor):
         self.ui.actionResetZoom.triggered.connect(self.reset_zoom)
         self.ui.actionRotateLeft.triggered.connect(self.rotate_left)
         self.ui.actionRotateRight.triggered.connect(self.rotate_right)
-        self.ui.zoomSlider.valueChanged.connect(self.on_zoom_slider_changed)
+        self.ui.zoom_slider.valueChanged.connect(self.on_zoom_slider_changed)
         self.ui.actionFlipHorizontal.triggered.connect(self.flip_horizontal)
         self.ui.actionFlipVertical.triggered.connect(self.flip_vertical)
         self.setup_navigation_buttons()
@@ -155,7 +155,7 @@ class TPCEditor(Editor):
         self.update_image()
 
     def reset_zoom(self):
-        self.ui.zoomSlider.setValue(100)
+        self.ui.zoom_slider.setValue(100)
         self.update_image()
 
     def rotate_left(self):

@@ -4,28 +4,18 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QSortFilterProxyModel, QTimer, Qt
+from qtpy.QtCore import QAbstractItemModel, QSortFilterProxyModel, QTimer, Qt
 from qtpy.QtGui import QCursor
-from qtpy.QtWidgets import (
-    QAbstractItemView,
-    QAbstractScrollArea,
-    QFrame,
-    QStyle,
-    QStyleOptionViewItem,
-)
+from qtpy.QtWidgets import QAbstractItemView, QAbstractScrollArea, QFrame, QStyle, QStyleOptionViewItem
 
 from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustBaseWidget
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QAbstractItemModel, QMargins, QModelIndex, QPoint
+    from qtpy.QtCore import QAbstractItemModel, QItemSelectionModel, QMargins, QModelIndex, QPoint
     from qtpy.QtGui import QResizeEvent, QWheelEvent
-    from qtpy.QtWidgets import (
-        QAbstractItemDelegate,
-        QMenu,
-        QWidget,
-    )
-    from typing_extensions import Literal
+    from qtpy.QtWidgets import QAbstractItemDelegate, QMenu, QWidget
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
 
 class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKING else object):
@@ -41,7 +31,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
 
     def _create_drawer_button(self):
         super()._create_drawer_button()
-        self._robustDrawer.clicked.connect(lambda _: self.show_header_context_menu())
+        self._robust_drawer.clicked.connect(lambda _: self.show_header_context_menu())
 
     def debounce_layout_changed(
         self,
@@ -64,16 +54,16 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         super().setParent(parent) if f is None else super().setParent(parent, f)
 
     def _fix_drawer_button(self):
-        if not hasattr(self, "_robustDrawer"):
+        if not hasattr(self, "_robust_drawer"):
             self._create_drawer_button()
-            self._robustDrawer.show()
+            self._robust_drawer.show()
         if self.verticalScrollBar().isVisible():
-            self._robustDrawer.move(
-                self.width() - self._robustDrawer.width() - self.verticalScrollBar().width(),
+            self._robust_drawer.move(
+                self.width() - self._robust_drawer.width() - self.verticalScrollBar().width(),
                 0,
             )
         else:
-            self._robustDrawer.move(self.width() - self._robustDrawer.width(), 0)
+            self._robust_drawer.move(self.width() - self._robust_drawer.width(), 0)
 
     def show_header_context_menu(
         self,
@@ -126,7 +116,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         item_delegate = self.itemDelegate()
         if isinstance(item_delegate, HTMLDelegate):
             single_step: Literal[-1, 1] = 1 if delta > 0 else -1
-            new_vertical_spacing: int = max(0, item_delegate.customVerticalSpacing + single_step)
+            new_vertical_spacing: int = max(0, item_delegate.custom_vertical_spacing + single_step)
             item_delegate.setVerticalSpacing(new_vertical_spacing)
             self.emit_layout_changed()  # Requires immediate update
             return True
@@ -165,14 +155,14 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self.debounce_layout_changed()
 
     def get_text_size(self) -> int:
-        delegate: QAbstractItemDelegate = self.itemDelegate()
+        delegate: QAbstractItemDelegate | None = self.itemDelegate()
         return delegate.text_size if isinstance(delegate, HTMLDelegate) else self.font().pointSize()
 
     def update_columns_after_text_size_change(self):
         """This method should be implemented by subclasses if needed."""
 
     def emit_layout_changed(self):
-        model = self.model()
+        model: QAbstractItemModel | None = self.model()
         if model is not None:
             model.layoutChanged.emit()
 
@@ -187,7 +177,9 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             option.initFrom(self)
 
             # Set state flags based on item's selection, focus, and enabled states
-            if self.selectionModel().isSelected(index):
+            sel_model: QItemSelectionModel | None = self.selectionModel()
+            assert sel_model is not None
+            if sel_model.isSelected(index):
                 option.state |= QStyle.StateFlag.State_Selected
             if index == self.currentIndex() and self.hasFocus():
                 option.state |= QStyle.StateFlag.State_HasFocus
@@ -195,8 +187,8 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
                 option.state = cast(QStyle.StateFlag, option.state & ~QStyle.StateFlag.State_Enabled)
 
             # Additional properties
-            checkStateData = index.data(Qt.ItemDataRole.CheckStateRole)
-            option.checkState = Qt.CheckState.Unchecked if checkStateData is None else checkStateData
+            check_state_data = index.data(Qt.ItemDataRole.CheckStateRole)
+            option.checkState = Qt.CheckState.Unchecked if check_state_data is None else check_state_data
             option.decorationPosition = QStyleOptionViewItem.Position.Top
             option.decorationAlignment = Qt.AlignmentFlag.AlignCenter
             option.displayAlignment = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter

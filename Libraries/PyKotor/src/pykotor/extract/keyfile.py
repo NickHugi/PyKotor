@@ -2,34 +2,29 @@ from __future__ import annotations
 
 import struct
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass
 from typing import BinaryIO
 
+from pykotor.resource.bioware_archive import ArchiveResource
 from pykotor.resource.type import ResourceType
 
 
-class Archive(ABC):
-    # This is a placeholder for the Archive class.
-    # You may need to implement or import the actual Archive class.
-    pass
-
-
 @dataclass
-class Resource:
+class BIFResource:
     name: str
     type: ResourceType
     bif_index: int
     res_index: int
 
 
-class KEYDataFile(Archive):
+class KEYDataFile(ArchiveResource):
     @abstractmethod
     def get_internal_resource_count(self) -> int:
         """Return the number of internal resources (including unmerged ones)."""
 
     @abstractmethod
-    def merge_KEY(self, key: KEYFile, data_file_index: int) -> None:
+    def merge_key(self, key: KEYFile, data_file_index: int) -> None:
         """Merge information from the KEY into the data file.
 
         Without this step, this data file archive does not contain any
@@ -44,14 +39,14 @@ class KEYDataFile(Archive):
 class KEYFile:
     def __init__(self, key: BinaryIO):
         self._bifs: list[str] = []
-        self._resources: list[Resource] = []
+        self._resources: list[BIFResource] = []
         self.load(key)
 
     def get_bifs(self) -> list[str]:
         """Return a list of all managed bifs."""
         return self._bifs
 
-    def get_resources(self) -> list[Resource]:
+    def get_resources(self) -> list[BIFResource]:
         """Return a list of all containing resources."""
         return self._resources
 
@@ -98,5 +93,5 @@ class KEYFile:
             bif_index = res_id >> 20
             res_index = res_id & 0xFFFFF
 
-            resource = Resource(name, ResourceType(res_type), bif_index, res_index)
+            resource = BIFResource(name, ResourceType(res_type), bif_index, res_index)
             self._resources.append(resource)

@@ -125,9 +125,9 @@ class RobustListView(RobustAbstractItemView, QListView):
         self._add_menu_action(
             settings_menu,
             "Grid Size",
-            self.gridSize,
+            self.grid_size,
             self.setGridSize,
-            "gridSize",
+            "grid_size",
             param_type=QSize
         )
         self._add_exclusive_menu_action(

@@ -13,7 +13,7 @@ from pykotor.common.misc import Color
 from pykotor.resource.formats.bwm import read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
 
 if TYPE_CHECKING:
     import os

@@ -158,7 +158,7 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
     from toolset.gui.windows.audio_player import AudioPlayer  # noqa: PLC0415  # noqa: PLC0415
 
     if gff_specialized is None:
-        gff_specialized = GlobalSettings().gff_specializedEditors
+        gff_specialized = GlobalSettings().gffSpecializedEditors
 
     editor: Editor | QMainWindow | None = None
     parent_window_widget: QWidget | None = parent_window if isinstance(parent_window, QWidget) else None

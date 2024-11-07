@@ -9,10 +9,6 @@ packages = [
     { include = "pykotorfont", from = "Libraries/PyKotorFont/src" },
     { include = "pykotorgl", from = "Libraries/PyKotorGL/src" },
     { include = "utility", from = "Libraries/Utility/src" },
-    { include = "toolset", from = "Tools/HolocronToolset/src" },
-    { include = "holopatcher", from = "Tools/HoloPatcher/src" },
-    { include = "kotordiff", from = "Tools/KotorDiff/src" },
-    { include = "batchpatcher", from = "Tools/BatchPatcher/src" },
 ]
 
 [tool.poetry.dependencies]
@@ -21,28 +17,12 @@ loggerplus = "^0.1.3"
 pykotor = { path = "Libraries/PyKotor", develop = true }
 pykotorfont = { path = "Libraries/PyKotorFont", develop = true }
 pykotorgl = { path = "Libraries/PyKotorGL", develop = true }
-utility = { path = "Libraries/Utility", develop = true }
 
-[tool.poetry.group.qt_tools]
-optional = true
-
-[tool.poetry.group.qt_tools.dependencies]
-qasync = "^0.23.0"
-pyqt5 = "^5.15.2"
-pyqt6 = "^6.6.1"
-pyside2 = { version = "^5.15.2", python = ">=3.8,<3.11" }
-pyside6 = { version = "^6.6.3.1", python = ">=3.8,<3.13" }
-
-
-[tool.poetry.group.tools]
-optional = true
-
-[tool.poetry.group.tools.dependencies]
-utility = { path = "Libraries/Utility", develop = true }
 holocrontoolset = { path = "Tools/HolocronToolset", develop = true }
 holopatcher = { path = "Tools/HoloPatcher", develop = true }
 kotor-diff = { path = "Tools/KotorDiff", develop = true }
 batch-patcher = { path = "Tools/BatchPatcher", develop = true }
+gui-converter = { path = "Tools/GuiConverter", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 mypy = "*"
@@ -58,6 +38,15 @@ types-Send2Trash = "*"
 send2trash = "*"
 black = "*"
 flake8 = "*"
+
+[tool.poetry.group.qt_tools]
+optional = true
+
+[tool.poetry.group.qt_tools.dependencies]
+pyqt5 = "^5.15.2"
+pyqt6 = "^6.6.1"
+pyside2 = { version = "^5.15.2", python = ">=3.8,<3.11" }
+pyside6 = { version = "^6.6.3.1", python = ">=3.8,<3.13" }
 
 [build-system]
 requires = ["poetry-core"]

@@ -216,6 +216,13 @@ class AsyncLoader(QDialog, Generic[T]):
         if start_immediately:
             self.start_worker()
 
+    def progress_callback_api(
+        self,
+        data: int | str,
+        mtype: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"],
+    ):
+        self._worker.progress.emit(data, mtype)
+
     def start_worker(self):
         self._worker.start()
 

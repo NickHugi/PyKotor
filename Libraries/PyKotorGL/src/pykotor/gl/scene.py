@@ -31,7 +31,7 @@ from glm import mat4, quat, vec3, vec4
 from loggerplus import RobustLogger
 
 from pykotor.common.geometry import Vector3
-from pykotor.common.module import Module
+from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
@@ -61,6 +61,7 @@ from pykotor.gl.models.predefined_mdl import (
 from pykotor.gl.models.read_mdl import gl_load_stitched_model
 from pykotor.gl.shader import KOTOR_FSHADER, KOTOR_VSHADER, PICKER_FSHADER, PICKER_VSHADER, PLAIN_FSHADER, PLAIN_VSHADER, Shader, Texture
 from pykotor.resource.formats.lyt.lyt_data import LYT, LYTRoom
+from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.formats.twoda.twoda_auto import read_2da
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.generics.git import GIT, GITCamera, GITCreature, GITDoor, GITEncounter, GITInstance, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
@@ -74,12 +75,13 @@ from utility.common.more_collections import CaseInsensitiveDict
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from glm import mat4x4
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.module import Module, ModulePieceResource, ModuleResource
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.extract.installation import Installation
-    from pykotor.gl.models.mdl import Model
+    from pykotor.gl.models.mdl import Model, Node
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.generics.utc import UTC
 
@@ -101,7 +103,7 @@ class Scene:
         installation: Installation | None = None,
         module: Module | None = None,
     ):
-        module_id_part = "" if module is None else f" from module '{module.root()}'"
+        module_id_part: str = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().info(f"Start initialize Scene{module_id_part}")
 
         glEnable(GL_DEPTH_TEST)
@@ -160,7 +162,7 @@ class Scene:
 
     def set_installation(self, installation: Installation):
         def load_2da(name: str) -> TwoDA:
-            resource = installation.resource(name, ResourceType.TwoDA, SEARCH_ORDER_2DA)
+            resource: ResourceResult | None = installation.resource(name, ResourceType.TwoDA, SEARCH_ORDER_2DA)
             if resource is None:
                 RobustLogger().warning(f"Could not load {name}.2da, using blank 2DA")
                 return TwoDA()
@@ -177,23 +179,6 @@ class Scene:
         instance: GITCreature,
         utc: UTC | None = None,
     ) -> RenderObject:
-        """Generates a render object for a creature instance.
-
-        Args:
-        ----
-            instance: {Creature instance}: Creature instance to generate render object for
-            utc: {Optional timestamp}: Timestamp to use for generation or current time if None
-
-        Returns:
-        -------
-            RenderObject: Render object representing the creature
-
-        Processing Logic:
-        ----------------
-            - Gets body, head, weapon and mask models/textures based on creature appearance
-            - Creates base render object and attaches head, hands and mask sub-objects
-            - Catches exceptions and returns default "unknown" render object if model loading fails.
-        """
         assert self.installation is not None
         try:
             if utc is None:
@@ -232,24 +217,24 @@ class Scene:
 
             obj = RenderObject(body_model, data=instance, override_texture=body_texture)
 
-            head_hook = self.model(body_model).find("headhook")
+            head_hook: Node | None = self.model(body_model).find("headhook")
             if head_model and head_hook:
                 head_obj = RenderObject(head_model, override_texture=head_texture)
                 head_obj.set_transform(head_hook.global_transform())
                 obj.children.append(head_obj)
 
-            rhand_hook = self.model(body_model).find("rhand")
+            rhand_hook: Node | None = self.model(body_model).find("rhand")
             if rhand_model and rhand_hook:
                 rhand_obj = RenderObject(rhand_model)
                 rhand_obj.set_transform(rhand_hook.global_transform())
                 obj.children.append(rhand_obj)
-            lhand_hook = self.model(body_model).find("lhand")
+            lhand_hook: Node | None = self.model(body_model).find("lhand")
             if lhand_model and lhand_hook:
                 lhand_obj = RenderObject(lhand_model)
                 lhand_obj.set_transform(lhand_hook.global_transform())
                 obj.children.append(lhand_obj)
             if head_hook is None:
-                mask_hook = self.model(body_model).find("gogglehook")
+                mask_hook: Node | None = self.model(body_model).find("gogglehook")
             elif head_model:
                 mask_hook = self.model(head_model).find("gogglehook")
             if mask_model and mask_hook:
@@ -301,7 +286,11 @@ class Scene:
             return IFO()
         return result
 
-    def _resource_from_module(self, module_res: ModuleResource[T] | None, errpart: str) -> T | None:
+    def _resource_from_module(
+        self,
+        module_res: ModuleResource[T] | None,
+        errpart: str,
+    ) -> T | None:
         if module_res is None:
             RobustLogger().error(f"Cannot render a frame in Scene when this module '{self.module.root()}{errpart}")
             return None
@@ -326,7 +315,7 @@ class Scene:
             return None
         return resource_data
 
-    def build_cache(
+    def build_cache(  # noqa: C901, PLR0912, PLR0915
         self,
         *,
         clear_cache: bool = False,
@@ -370,14 +359,18 @@ class Scene:
         for room in self.layout.rooms:
             if room not in self.objects:
                 position = vec3(room.position.x, room.position.y, room.position.z)
-                self.objects[room] = RenderObject(room.model, position, data=room)
+                self.objects[room] = RenderObject(
+                    room.model,
+                    position,
+                    data=room,
+                )
 
         for door in self.git.doors:
             if door not in self.objects:
                 model_name = "unknown"  # If failed to load door models, use an empty model instead
                 utd = None
                 try:
-                    utd = self._resource_from_gitinstance(door, self._module.door)
+                    utd: UTD | None = self._resource_from_gitinstance(door, self._module.door)
                     if utd is not None:
                         model_name: str = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
                 except Exception:  # noqa: BLE001
@@ -385,7 +378,12 @@ class Scene:
                 if utd is None:
                     utd = UTD()
 
-                self.objects[door] = RenderObject(model_name, vec3(), vec3(), data=door)
+                self.objects[door] = RenderObject(
+                    model_name,
+                    vec3(),
+                    vec3(),
+                    data=door,
+                )
 
             self.objects[door].set_position(door.position.x, door.position.y, door.position.z)
             self.objects[door].set_rotation(0, 0, door.bearing)
@@ -395,7 +393,7 @@ class Scene:
                 model_name = "unknown"  # If failed to load a placeable models, use an empty model instead
                 utp = None
                 try:
-                    utp = self._resource_from_gitinstance(placeable, self._module.placeable)
+                    utp: UTP | None = self._resource_from_gitinstance(placeable, self._module.placeable)
                     if utp is not None:
                         model_name: str = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
                 except Exception:  # noqa: BLE001
@@ -403,69 +401,119 @@ class Scene:
                 if utp is None:
                     utp = UTP()
 
-                self.objects[placeable] = RenderObject(model_name, vec3(), vec3(), data=placeable)
+                self.objects[placeable] = RenderObject(
+                    model_name,
+                    vec3(),
+                    vec3(),
+                    data=placeable,
+                )
 
             self.objects[placeable].set_position(placeable.position.x, placeable.position.y, placeable.position.z)
             self.objects[placeable].set_rotation(0, 0, placeable.bearing)
 
         for git_creature in self.git.creatures:
-            if git_creature not in self.objects:
-                self.objects[git_creature] = self.get_creature_render_object(git_creature)
+            if git_creature in self.objects:
+                continue
+            self.objects[git_creature] = self.get_creature_render_object(git_creature)
 
             self.objects[git_creature].set_position(git_creature.position.x, git_creature.position.y, git_creature.position.z)
             self.objects[git_creature].set_rotation(0, 0, git_creature.bearing)
 
         for waypoint in self.git.waypoints:
-            if waypoint not in self.objects:
-                obj = RenderObject("waypoint", vec3(), vec3(), data=waypoint)
-                self.objects[waypoint] = obj
+            if waypoint in self.objects:
+                continue
+            obj = RenderObject(
+                "waypoint",
+                vec3(),
+                vec3(),
+                data=waypoint,
+            )
+            self.objects[waypoint] = obj
 
             self.objects[waypoint].set_position(waypoint.position.x, waypoint.position.y, waypoint.position.z)
             self.objects[waypoint].set_rotation(0, 0, waypoint.bearing)
 
         for store in self.git.stores:
             if store not in self.objects:
-                obj = RenderObject("store", vec3(), vec3(), data=store)
+                obj = RenderObject(
+                    "store",
+                    vec3(),
+                    vec3(),
+                    data=store,
+                )
                 self.objects[store] = obj
 
             self.objects[store].set_position(store.position.x, store.position.y, store.position.z)
             self.objects[store].set_rotation(0, 0, store.bearing)
 
         for sound in self.git.sounds:
-            if sound not in self.objects:
-                uts = None
-                try:
-                    uts = self._resource_from_gitinstance(sound, self._module.sound)
-                except Exception:  # noqa: BLE001
-                    RobustLogger().exception(f"Could not get the sound resource '{sound.resref}.uts' and/or the appearance.2da")
-                if uts is None:
-                    uts = UTS()
+            if sound in self.objects:
+                continue
+            uts = None
+            try:
+                uts: UTS | None = self._resource_from_gitinstance(sound, self._module.sound)
+            except Exception:  # noqa: BLE001
+                RobustLogger().exception(f"Could not get the sound resource '{sound.resref}.uts' and/or the appearance.2da")
+            if uts is None:
+                uts = UTS()
 
-                obj = RenderObject("sound", vec3(), vec3(), data=sound, gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance))
-                self.objects[sound] = obj
+            obj = RenderObject(
+                "sound",
+                vec3(),
+                vec3(),
+                data=sound,
+                gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance),
+            )
+            self.objects[sound] = obj
 
             self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
             self.objects[sound].set_rotation(0, 0, 0)
 
         for encounter in self.git.encounters:
-            if encounter not in self.objects:
-                obj = RenderObject("encounter", vec3(), vec3(), data=encounter, gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points))
-                self.objects[encounter] = obj
+            if encounter in self.objects:
+                continue
+            obj = RenderObject(
+                "encounter",
+                vec3(),
+                vec3(),
+                data=encounter,
+                gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points),
+            )
+            self.objects[encounter] = obj
 
-            self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
+            self.objects[encounter].set_position(
+                encounter.position.x,
+                encounter.position.y,
+                encounter.position.z,
+            )
             self.objects[encounter].set_rotation(0, 0, 0)
 
         for trigger in self.git.triggers:
             if trigger not in self.objects:
-                obj = RenderObject("trigger", vec3(), vec3(), data=trigger, gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points))
+                obj = RenderObject(
+                    "trigger",
+                    vec3(),
+                    vec3(),
+                    data=trigger,
+                    gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points),
+                )
                 self.objects[trigger] = obj
 
-            self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
+            self.objects[trigger].set_position(
+                trigger.position.x,
+                trigger.position.y,
+                trigger.position.z,
+            )
             self.objects[trigger].set_rotation(0, 0, 0)
 
         for camera in self.git.cameras:
             if camera not in self.objects:
-                obj = RenderObject("camera", vec3(), vec3(), data=camera)
+                obj = RenderObject(
+                    "camera",
+                    vec3(),
+                    vec3(),
+                    data=camera,
+                )
                 self.objects[camera] = obj
 
             self.objects[camera].set_position(camera.position.x, camera.position.y, camera.position.z + camera.height)
@@ -547,7 +595,10 @@ class Scene:
             self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
             self._render_object(self.plain_shader, self.cursor, mat4())
 
-    def should_hide_obj(self, obj: RenderObject) -> bool:
+    def should_hide_obj(
+        self,
+        obj: RenderObject,
+    ) -> bool:
         result = False
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
             result = True
@@ -569,7 +620,12 @@ class Scene:
             result = True
         return result
 
-    def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4):
+    def _render_object(
+        self,
+        shader: Shader,
+        obj: RenderObject,
+        transform: mat4,
+    ):
         if self.should_hide_obj(obj):
             return
 
@@ -618,8 +674,8 @@ class Scene:
         y: float,
     ) -> RenderObject | None:
         self.picker_render()
-        pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
-        instances = list(self.objects.values())
+        pixel: int = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
+        instances: list[RenderObject] = list(self.objects.values())
         return instances[pixel] if pixel != 0xFFFFFF else None  # noqa: PLR2004
 
     def select(
@@ -635,21 +691,33 @@ class Scene:
         actual_target: RenderObject
         if isinstance(target, GITInstance):
             for obj in self.objects.values():
-                if obj.data is target:
-                    actual_target = obj
-                    break
+                if obj.data is not target:
+                    continue
+                actual_target = obj
+                break
         else:
             actual_target = target
 
         self.selection.append(actual_target)
 
-    def screen_to_world(self, x: int, y: int) -> Vector3:
+    def screen_to_world(
+        self,
+        x: int,
+        y: int,
+    ) -> Vector3:
         self._prepare_gl_and_shader()
         group1: list[RenderObject] = [obj for obj in self.objects.values() if isinstance(obj.data, LYTRoom)]
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
-        zpos = glReadPixels(x, self.camera.height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]  # type: ignore[]
+        zpos = glReadPixels(
+            x,
+            self.camera.height - y,
+            1,
+            1,
+            GL_DEPTH_COMPONENT,
+            GL_FLOAT,
+        )[0][0]  # type: ignore[]
         cursor: vec3 = glm.unProject(
             vec3(x, self.camera.height - y, zpos),
             self.camera.view(),
@@ -678,13 +746,13 @@ class Scene:
     ) -> Texture:
         if name in self.textures:
             return self.textures[name]
-        type_name = "lightmap" if lightmap else "texture"
+        type_name: Literal["lightmap", "texture"] = "lightmap" if lightmap else "texture"
         tpc: TPC | None = None
         try:
             # Check the textures linked to the module first
             if self._module is not None:
                 RobustLogger().debug(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
-                module_tex = self.module.texture(name)
+                module_tex: ModuleResource[TPC] | None = self.module.texture(name)
                 if module_tex is not None:
                     RobustLogger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
                     tpc = module_tex.resource()
@@ -698,11 +766,14 @@ class Scene:
         except Exception:  # noqa: BLE001
             RobustLogger().warning(f"Could not load {type_name} '{name}'.")
 
-        blank = Texture.from_color(0, 0, 0) if lightmap else Texture.from_color(255, 0, 255)
+        blank: Texture = Texture.from_color(0, 0, 0) if lightmap else Texture.from_color(255, 0, 255)
         self.textures[name] = blank if tpc is None else Texture.from_tpc(tpc)
         return self.textures[name]
 
-    def model(self, name: str) -> Model:
+    def model(
+        self,
+        name: str,
+    ) -> Model:
         mdl_data: bytes = EMPTY_MDL_DATA
         mdx_data: bytes = EMPTY_MDX_DATA
 
@@ -746,9 +817,9 @@ class Scene:
                     mdx_data = mdx_search.data
 
             try:
-                mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
-                mdx_reader = BinaryReader.from_bytes(mdx_data)
-                model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
+                mdl_reader: BinaryReader = BinaryReader.from_bytes(mdl_data, 12)
+                mdx_reader: BinaryReader = BinaryReader.from_bytes(mdx_data)
+                model: Model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
             except Exception:  # noqa: BLE001
                 RobustLogger().warning(f"Could not load model '{name}'.")
                 model = gl_load_stitched_model(
@@ -766,7 +837,13 @@ class Scene:
             self.camera.y = 0
             self.camera.z = 0
         else:
-            point: Vector3 = self.module.info().resource().entry_position
+            ifo_module_resource: ModuleResource[IFO] | None = self.module.info()
+            if ifo_module_resource is None:
+                raise ValueError("IFO module resource not found.")
+            ifo: IFO | None = ifo_module_resource.resource()
+            if ifo is None:
+                raise ValueError("IFO resource not found.")
+            point: Vector3 = ifo.entry_position
             self.camera.x = point.x
             self.camera.y = point.y
             self.camera.z = point.z + 1.8
@@ -799,7 +876,10 @@ class RenderObject:
     def transform(self) -> mat4:
         return self._transform
 
-    def set_transform(self, transform: mat4):
+    def set_transform(
+        self,
+        transform: mat4,
+    ):
         self._transform = transform
         rotation = quat()
         glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())  # pyright: ignore[reportCallIssue, reportArgumentType]
@@ -812,7 +892,12 @@ class RenderObject:
     def position(self) -> vec3:
         return copy(self._position)
 
-    def set_position(self, x: float, y: float, z: float):
+    def set_position(
+        self,
+        x: float,
+        y: float,
+        z: float,
+    ):
         if self._position.x == x and self._position.y == y and self._position.z == z:
             return
 
@@ -822,7 +907,12 @@ class RenderObject:
     def rotation(self) -> vec3:
         return copy(self._rotation)
 
-    def set_rotation(self, x: float, y: float, z: float):
+    def set_rotation(
+        self,
+        x: float,
+        y: float,
+        z: float,
+    ):
         if self._rotation.x == x and self._rotation.y == y and self._rotation.z == z:
             return
 
@@ -832,7 +922,10 @@ class RenderObject:
     def reset_cube(self):
         self._cube = None
 
-    def cube(self, scene: Scene) -> Cube:
+    def cube(
+        self,
+        scene: Scene,
+    ) -> Cube:
         if not self._cube:
             min_point = vec3(10000, 10000, 10000)
             max_point = vec3(-10000, -10000, -10000)
@@ -840,7 +933,10 @@ class RenderObject:
             self._cube = Cube(scene, min_point, max_point)
         return self._cube
 
-    def radius(self, scene: Scene) -> float:
+    def radius(
+        self,
+        scene: Scene,
+    ) -> float:
         cube = self.cube(scene)
         return max(
             abs(cube.min_point.x),
@@ -874,13 +970,12 @@ class RenderObject:
     def reset_boundary(self):
         self._boundary = None
 
-    def boundary(self, scene: Scene) -> Boundary | Empty:
+    def boundary(
+        self,
+        scene: Scene,
+    ) -> Boundary | Empty:
         if self._boundary is None:
-            self._boundary = (
-                Empty(scene)
-                if self.gen_boundary is None
-                else self.gen_boundary()
-            )
+            self._boundary = Empty(scene) if self.gen_boundary is None else self.gen_boundary()
         return self._boundary
 
 
@@ -896,32 +991,47 @@ class Camera:
         self.distance: float = 10.0
         self.fov: float = 90.0
 
-    def set_resolution(self, width: int, height: int):
+    def set_resolution(
+        self,
+        width: int,
+        height: int,
+    ):
         self.width, self.height = width, height
 
-    def set_position(self, position: Vector3 | vec3):
+    def set_position(
+        self,
+        position: Vector3 | vec3,
+    ):
         self.x = position.x
         self.y = position.y
         self.z = position.z
 
     def view(self) -> mat4:
-        up = vec3(0, 0, 1)
-        pitch = glm.vec3(1, 0, 0)
+        up: vec3 = vec3(0, 0, 1)
+        pitch: vec3 = glm.vec3(1, 0, 0)
 
         x, y, z = self.x, self.y, self.z
         x += math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
         y += math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
         z += math.sin(self.pitch - math.pi / 2) * self.distance
 
-        camera = mat4() * glm.translate(vec3(x, y, z))
+        camera: mat4x4 = mat4() * glm.translate(vec3(x, y, z))
         camera = glm.rotate(camera, self.yaw + math.pi / 2, up)
         camera = glm.rotate(camera, math.pi - self.pitch, pitch)
         return glm.inverse(camera)
 
     def projection(self) -> mat4:
-        return glm.perspective(self.fov, self.width / self.height, 0.1, 5000)
+        return glm.perspective(
+            self.fov,
+            self.width / self.height,
+            0.1,
+            5000,
+        )
 
-    def translate(self, translation: vec3):
+    def translate(
+        self,
+        translation: vec3,
+    ):
         self.x += translation.x
         self.y += translation.y
         self.z += translation.z
@@ -935,39 +1045,49 @@ class Camera:
         lower_limit: float = 0,
         upper_limit: float = math.pi,
     ):
-        self.pitch = self.pitch + pitch
-        self.yaw = self.yaw + yaw
-        if self.yaw > 2 * math.pi:
-            self.yaw -= 4 * math.pi
-        elif self.yaw < -2 * math.pi:
-            self.yaw += 4 * math.pi
+        # Update angles
+        self.pitch += pitch
+        self.yaw += yaw
+
+        # Normalize yaw to [-2π, 2π]
+        self.yaw = self.yaw % (4 * math.pi) - (2 * math.pi)
+
         if pitch == 0:
             return
-        if self.pitch > 2 * math.pi:
-            self.pitch -= 4 * math.pi
-        elif self.pitch < -2 * math.pi:
-            self.pitch += 4 * math.pi
-        if clamp:
-            if self.pitch < lower_limit:
-                self.pitch = lower_limit
-            elif self.pitch > upper_limit:
-                self.pitch = upper_limit
-        gimbal_lock_range = 0.05
-        pitch_limit = math.pi / 2
-        if pitch_limit - gimbal_lock_range < self.pitch < pitch_limit + gimbal_lock_range:
-            small_value = 0.02 if pitch > 0 else -0.02
-            self.pitch += small_value
 
-    def forward(self, *, ignore_z: bool = True) -> vec3:
+        # Normalize pitch to [-2π, 2π]
+        self.pitch = self.pitch % (4 * math.pi) - (2 * math.pi)
+
+        # Apply pitch clamping if enabled
+        if clamp:
+            self.pitch = max(lower_limit, min(upper_limit, self.pitch))
+
+        # Avoid gimbal lock near π/2
+        if abs(self.pitch - math.pi / 2) < 0.05:  # noqa: PLR2004
+            self.pitch += 0.02 if pitch > 0 else -0.02
+
+    def forward(
+        self,
+        *,
+        ignore_z: bool = True,
+    ) -> vec3:
         eye_x: float = math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2)
         eye_y: float = math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2)
         eye_z: float | Literal[0] = 0 if ignore_z else math.sin(self.pitch - math.pi / 2)
         return glm.normalize(-vec3(eye_x, eye_y, eye_z))
 
-    def sideward(self, *, ignore_z: bool = True) -> vec3:
+    def sideward(
+        self,
+        *,
+        ignore_z: bool = True,
+    ) -> vec3:
         return glm.normalize(glm.cross(self.forward(ignore_z=ignore_z), vec3(0.0, 0.0, 1.0)))
 
-    def upward(self, *, ignore_xy: bool = True) -> vec3:
+    def upward(
+        self,
+        *,
+        ignore_xy: bool = True,
+    ) -> vec3:
         if ignore_xy:
             return glm.normalize(vec3(0, 0, 1))
         forward: vec3 = self.forward(ignore_z=False)
@@ -976,8 +1096,8 @@ class Camera:
         return glm.normalize(cross)
 
     def true_position(self) -> vec3:
-        x, y, z = self.x, self.y, self.z
-        x += math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
-        y += math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
-        z += math.sin(self.pitch - math.pi / 2) * self.distance
-        return vec3(x, y, z)
+        return vec3(
+            self.x + math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance,
+            self.y + math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance,
+            self.z + math.sin(self.pitch - math.pi / 2) * self.distance,
+        )

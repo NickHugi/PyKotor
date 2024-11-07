@@ -10,14 +10,17 @@ from qtpy.QtCore import (
     Slot,  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QColor, QPalette
-from qtpy.QtWidgets import QAction, QApplication, QMessageBox
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QApplication,
+    QMessageBox,
+)
 
-from toolset.gui.widgets.settings.misc import GlobalSettings
+from toolset.gui.widgets.settings.widgets.misc import GlobalSettings
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QCoreApplication, Qt
     from qtpy.QtWidgets import QStyle
-
 
 
 class ThemeManager:
@@ -26,6 +29,25 @@ class ThemeManager:
     def __init__(self, original_style: str):
         """Initialize the theme manager."""
         self.original_style: str = original_style
+
+    def get_supported_themes(self) -> list[str]:
+        """Returns a list of all supported themes."""
+        return [
+            "Native",
+            "Fusion (Light)",
+            "Fusion (Dark)",
+            "QDarkStyle",
+            "AMOLED",
+            "Aqua",
+            "ConsoleStyle",
+            "ElegantDark",
+            "MacOS",
+            "ManjaroMix",
+            "MaterialDark",
+            "NeonButtons",
+            "Ubuntu",
+            "Breeze (Dark)"
+        ]
 
     @Slot(QApplication, str, object, object, bool)
     def apply_style(
@@ -59,7 +81,10 @@ class ThemeManager:
                 widget.repaint()
 
     @Slot()
-    def change_theme(self, theme: QAction | str | None = None):
+    def change_theme(
+        self,
+        theme: QAction | str | None = None,
+    ):
         """Changes the theme of the application.
 
         Args:
@@ -67,8 +92,6 @@ class ThemeManager:
         """
         app: QCoreApplication | None = QApplication.instance()
         assert isinstance(app, QApplication), "No Qt Application found or not a QApplication instance."
-
-        print("<SDM> [toggle_stylesheet scope] GlobalSettings().selectedTheme: ", GlobalSettings().selectedTheme)
         GlobalSettings().selectedTheme = theme.text() if isinstance(theme, QAction) else theme
         self.apply_style(app)
 
@@ -149,7 +172,11 @@ class ThemeManager:
         print(f"Theme changed to: '{GlobalSettings().selectedTheme}'. Native style name: {self.original_style}")
         self.apply_style(app, sheet, style, palette)
 
-    def _get_file_stylesheet(self, qt_path: str, app: QApplication) -> str:
+    def _get_file_stylesheet(
+        self,
+        qt_path: str,
+        app: QApplication,
+    ) -> str:
         file = QFile(qt_path)
         if not file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text):
             return ""
@@ -224,8 +251,8 @@ class ThemeManager:
         # Special handling for PyQt5 and PyQt6
         if qtpy.QT5:
             extra_roles = {
-                QPalette.ColorRole.Background: self.adjust_color(primary, lightness=110),  # Use Background for PyQt5
-                QPalette.ColorRole.Foreground: self.adjust_color(text, lightness=95),  # Use Foreground for PyQt5
+                QPalette.ColorRole.Background: self.adjust_color(primary, lightness=110),  # pyright: ignore[reportAttributeAccessIssue]
+                QPalette.ColorRole.Foreground: self.adjust_color(text, lightness=95),  # pyright: ignore[reportAttributeAccessIssue]
             }
         else:
             # In PyQt6, Background and Foreground are handled with Window and WindowText respectively

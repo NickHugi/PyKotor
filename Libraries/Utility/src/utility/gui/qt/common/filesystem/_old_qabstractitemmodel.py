@@ -57,7 +57,7 @@ from pykotor.extract.file import FileResource  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.utils.window import open_resource_editor  # noqa: E402
 
-from utility.ui_libraries.qt.widgets.itemviews.html_delegate import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
+from utility.ui_libraries.qt.widgets.itemviews.html_delegate import ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView  # noqa: E402
 
 if TYPE_CHECKING:
@@ -647,7 +647,7 @@ class ResourceFileSystemModel(QAbstractItemModel):
         item: TreeItem = index.internalPointer()
         if role == Qt.DisplayRole:
             return self.get_detailed_data(index) if self._detailed_view else self.get_default_data(index)
-        if role == _ICONS_DATA_ROLE:
+        if role == ICONS_DATA_ROLE:
             return item.icon_data()
         return None
 

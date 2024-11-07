@@ -166,7 +166,7 @@ def _setup_pre_init_settings():
     """
     from qtpy.QtWidgets import QApplication  # pylint: disable=redefined-outer-name
 
-    from toolset.gui.widgets.settings.application import ApplicationSettings
+    from toolset.gui.widgets.settings.widgets.application import ApplicationSettings
 
     # Some application settings must be set before the app starts.
     # These ones are accessible through the in-app settings window widget.
@@ -224,7 +224,7 @@ def setup_post_init_settings():
     from qtpy.QtGui import QFont
     from qtpy.QtWidgets import QApplication
 
-    from toolset.gui.widgets.settings.application import ApplicationSettings
+    from toolset.gui.widgets.settings.widgets.application import ApplicationSettings
 
     settings_widget = ApplicationSettings()
     toolset_qsettings: QSettings = settings_widget.settings

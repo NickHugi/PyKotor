@@ -58,6 +58,8 @@ class JRLEditor(Editor):
         supported: list[ResourceType] = [ResourceType.JRL]
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
 
+        self._jrl: JRL = JRL()
+        self._model: QStandardItemModel = QStandardItemModel(self)
         from toolset.uic.qtpy.editors.jrl import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -71,8 +73,6 @@ class JRLEditor(Editor):
         if installation is not None:  # will only be none in the unittests
             self._setup_installation(installation)
 
-        self._jrl: JRL = JRL()
-        self._model: QStandardItemModel = QStandardItemModel(self)
 
         self.new()
 

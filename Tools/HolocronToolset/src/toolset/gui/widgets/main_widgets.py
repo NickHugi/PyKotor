@@ -9,13 +9,14 @@ from collections import defaultdict
 from concurrent.futures import Future, ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from io import BytesIO
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, cast
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import (
     QFileInfo,
     QModelIndex,
-    QSize,
+    QPoint,  # pyright: ignore[reportPrivateImportUsage]
     QSortFilterProxyModel,
     QTimer,
     Qt,
@@ -26,8 +27,10 @@ from qtpy.QtGui import QCursor, QIcon, QImage, QImageReader, QPixmap, QStandardI
 from qtpy.QtWidgets import (
     QAction,  # pyright: ignore[reportPrivateImportUsage]
     QApplication,
+    QFileDialog,
     QFileIconProvider,
     QHeaderView,
+    QInputDialog,
     QListView,
     QMenu,
     QStyle,
@@ -36,24 +39,17 @@ from qtpy.QtWidgets import (
 )
 
 from pykotor.extract.file import FileResource
-from pykotor.resource.formats.tpc.tpc_auto import read_tpc
-from pykotor.resource.formats.tpc.tpc_data import TPCMipmap, TPCTextureFormat
+from pykotor.resource.formats.tpc.tpc_auto import read_tpc, write_tpc
+from pykotor.resource.formats.tpc.tpc_data import TPC, TPCMipmap, TPCTextureFormat
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
-    from pathlib import Path
 
     from PIL.Image import Image
-    from qtpy.QtCore import (
-        QAbstractItemModel,
-        QModelIndex,
-        QObject,
-        QPoint,  # pyright: ignore[reportPrivateImportUsage]
-        QRect,
-    )
+    from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject, QRect
     from qtpy.QtGui import QMouseEvent, QResizeEvent, QShowEvent
     from qtpy.QtWidgets import QScrollBar
     from qtpy.sip import voidptr
@@ -86,7 +82,7 @@ class ResourceList(MainWindowList):
     """A widget for displaying and interacting with a list of KOTOR resources."""
 
     sig_request_reload: Signal = Signal(str)  # pyright: ignore[reportPrivateImportUsage]
-    sig_request_refresh: Signal = Signal(bool)  # pyright: ignore[reportPrivateImportUsage]
+    sig_request_refresh: Signal = Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     HORIZONTAL_HEADER_LABELS: ClassVar[list[str]] = ["ResRef", "Type"]
 
@@ -125,10 +121,10 @@ class ResourceList(MainWindowList):
         """Set up the signals for the resource list."""
         self.ui.searchEdit.textEdited.connect(self.on_filter_string_updated)
         self.ui.sectionCombo.currentIndexChanged.connect(self.on_section_changed)
-        self.ui.reloadButton.clicked.connect(self.on_reload_clicked)
-        self.ui.refreshButton.clicked.connect(self.on_refresh_clicked)
         self.ui.resourceTree.customContextMenuRequested.connect(self.on_resource_context_menu)
         self.ui.resourceTree.doubleClicked.connect(self.on_resource_double_clicked)
+        self.ui.reloadButton.clicked.connect(self.on_reload_clicked)
+        self.ui.refreshButton.clicked.connect(self.on_refresh_clicked)
 
     def hide_reload_button(self):
         """Hide the reload button."""
@@ -160,14 +156,6 @@ class ResourceList(MainWindowList):
         *,
         clear_existing: bool = True,
     ):
-        """Adds and removes FileResources from the model.
-
-        Args:
-        ----
-            resources: {list[FileResource]}: list of FileResource objects to set
-            custom_category: {str | None}: The custom category to set the resources to.
-            clear_existing: {bool}: Whether to clear the existing resources.
-        """
         all_resources: list[ResourceStandardItem] = self.modules_model.all_resources_items()
         resource_set: set[FileResource] = set(resources)
         resource_item_map: dict[FileResource, ResourceStandardItem] = {item.resource: item for item in all_resources}
@@ -205,7 +193,7 @@ class ResourceList(MainWindowList):
             RobustLogger().warning("Could not find model for resource list")
             return
 
-        def select(parent, child):
+        def select(parent: QModelIndex, child: QModelIndex):
             self.ui.resourceTree.expand(parent)
             self.ui.resourceTree.scrollTo(child)
             self.ui.resourceTree.setCurrentIndex(child)
@@ -216,30 +204,42 @@ class ResourceList(MainWindowList):
             resource_from_item: FileResource = item.resource
             if resource_from_item == resource:
                 item_index: QModelIndex = model.proxy_model().mapFromSource(item.index())
-                QTimer.singleShot(0, lambda index=item_index, item=item: select(item.parent().index(), index))
+
+                def select_item(index: QModelIndex = item_index):
+                    if not index.isValid():
+                        RobustLogger().warning(f"Invalid index to select_item: {index}")
+                        return
+                    select(index.parent(), index)
+
+                QTimer.singleShot(0, select_item)
 
     def selected_resources(self) -> list[FileResource]:
         return self.modules_model.resource_from_indexes(self.ui.resourceTree.selectedIndexes())  # pyright: ignore[reportArgumentType]
 
+    @Slot()
     def on_filter_string_updated(self):
         """Update the filter string for the resource list."""
         self.modules_model.proxy_model().set_filter_string(self.ui.searchEdit.text())
 
+    @Slot()
     def on_section_changed(self):
         """Handle the section change event."""
         data: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
         self.sig_section_changed.emit(data)
 
+    @Slot()
     def on_reload_clicked(self):
         """Handle the reload button click event."""
         data: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
         self.sig_request_reload.emit(data)
 
+    @Slot()
     def on_refresh_clicked(self):
         """Handle the refresh button click event."""
         self._clear_modules_model()
         self.sig_request_refresh.emit()
 
+    @Slot(QPoint)
     def on_resource_context_menu(self, point: QPoint):
         resources: list[FileResource] = self.selected_resources()
         if not resources:
@@ -253,6 +253,7 @@ class ResourceList(MainWindowList):
         builder.viewport = lambda: self.ui.resourceTree
         builder.run_context_menu(point, menu=menu)
 
+    @Slot()
     def on_resource_double_clicked(self):
         self.sig_request_open_resource.emit(self.selected_resources(), None)
 
@@ -284,27 +285,10 @@ class ResourceProxyModel(QSortFilterProxyModel):
         self.filter_string: str = ""
 
     def set_filter_string(self, filter_string: str):
-        """Set the filter string for the proxy model.
-
-        Args:
-        ----
-            filter_string (str): The filter string to set.
-        """
         self.filter_string = filter_string.lower()
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
-        """Check if a row should be filtered out.
-
-        Args:
-        ----
-            source_row (int): The row to check.
-            source_parent (QModelIndex): The parent index of the row.
-
-        Returns:
-        ----
-            Whether the row should be filtered out.
-        """
         model: QAbstractItemModel | None = self.sourceModel()  # pyright: ignore[reportAssignmentType]
         assert isinstance(model, QStandardItemModel)
         resref_index: QModelIndex = model.index(source_row, 0, source_parent)
@@ -338,12 +322,6 @@ class ResourceModel(QStandardItemModel):
         self.setHorizontalHeaderLabels(["ResRef", "Type"])
 
     def proxy_model(self) -> ResourceProxyModel:
-        """Get the proxy model for the resource model.
-
-        Returns:
-        ----
-            The proxy model for the resource model.
-        """
         return self._proxy_model
 
     def clear(self):
@@ -358,15 +336,6 @@ class ResourceModel(QStandardItemModel):
         resource_type: ResourceType,
         custom_category: str | None = None,
     ) -> QStandardItem:
-        """Add a resource to the resource model.
-
-        Args:
-            resource_type (ResourceType): The type of resource to add.
-            custom_category (str | None): The custom category to add the resource to.
-
-        Returns:
-            The category item for the resource.
-        """
         chosen_category: str = resource_type.category if custom_category is None else custom_category
         if chosen_category not in self._category_items:
             category_item = QStandardItem(chosen_category)
@@ -382,13 +351,6 @@ class ResourceModel(QStandardItemModel):
         resource: FileResource,
         custom_category: str | None = None,
     ):
-        """Add a resource to the resource model.
-
-        Args:
-        ----
-            resource (FileResource): The resource to add.
-            custom_category (str | None): The custom category to add the resource to.
-        """
         self._add_resource_into_category(resource.restype(), custom_category).appendRow(
             [
                 ResourceStandardItem(resource.resname(), resource=resource),
@@ -410,17 +372,7 @@ class ResourceModel(QStandardItemModel):
         ]
 
     def all_resources_items(self) -> list[ResourceStandardItem]:
-        """Get all the resource items from the resource model.
-
-        Returns:
-        ----
-            A list of all QStandardItem objects in the model that represent resource files.
-        """
-        resources: tuple[QStandardItem | None, ...] = tuple(
-            category.child(i, 0)
-            for category in self._category_items.values()
-            for i in range(category.rowCount())
-        )
+        resources: tuple[QStandardItem | None, ...] = tuple(category.child(i, 0) for category in self._category_items.values() for i in range(category.rowCount()))
         return [item for item in resources if isinstance(item, ResourceStandardItem)]
 
     def remove_unused_categories(self):
@@ -456,21 +408,19 @@ class TextureList(MainWindowList):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.ui.resourceList.setUniformItemSizes(False)  # should be default
-        self.ui.resourceList.setIconSize(QSize(64, 64))
-        self.ui.resourceList.setUniformItemSizes(False)
         self.ui.resourceList.setResizeMode(QListView.ResizeMode.Adjust)
         self.ui.resourceList.setMovement(QListView.Movement.Snap)
         self.setup_signals()
 
         self._installation: HTInstallation | None = None
-        self._executor: ProcessPoolExecutor = ProcessPoolExecutor(multiprocessing.cpu_count())
+        self._executor: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=max(1, multiprocessing.cpu_count()))
         self.texture_source_models: defaultdict[str, QStandardItemModel] = defaultdict(QStandardItemModel)
         self.textures_proxy_model: QSortFilterProxyModel = QSortFilterProxyModel()
         self.textures_proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
         self.ui.resourceList.setModel(self.textures_proxy_model)  # pyright: ignore[reportArgumentType]
         self.ui.resourceList.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
-        self.ui.resourceList.customContextMenuRequested.connect(self.show_context_menu)
+        self.ui.resourceList.customContextMenuRequested.connect(self.on_resource_context_menu)
         self._loading_resources: set[FileResource] = set()
 
     def __del__(self):
@@ -481,7 +431,7 @@ class TextureList(MainWindowList):
     def setup_signals(self):
         """Setup the signals for the texture list."""
         print("Setting up signals for TextureList")
-        self.ui.searchEdit.editingFinished.connect(self.on_filter_string_updated)
+        self.ui.searchEdit.textChanged.connect(self.on_filter_string_updated)
         self.ui.sectionCombo.currentIndexChanged.connect(self.on_section_changed)
         self.ui.resourceList.doubleClicked.connect(self.on_resource_double_clicked)
         self.ui.reloadButton.clicked.connect(self.on_reload_clicked)
@@ -529,15 +479,12 @@ class TextureList(MainWindowList):
 
     def visible_indexes(self) -> list[QModelIndex]:
         """Get the visible source indexes visible on the viewport."""
-        print("Getting visible indexes for TextureList")
         view: RobustListView = self.ui.resourceList
         if not view.isVisible() or self.textures_proxy_model.rowCount() == 0:
             print("View is not visible or model is empty")
             return []
 
         visible_rect: QRect = view.viewport().rect()  # pyright: ignore[reportOptionalMemberAccess]
-        print(f"Visible rect: {visible_rect}")
-
         visible_indexes: list[QModelIndex] = []
         for row in range(self.textures_proxy_model.rowCount()):
             proxy_index: QModelIndex = self.textures_proxy_model.index(row, 0)
@@ -552,7 +499,6 @@ class TextureList(MainWindowList):
                 continue
             visible_indexes.append(src_index)
 
-        print(f"Number of visible indexes: {len(visible_indexes)}")
         return visible_indexes
 
     def set_sections(self, items: list[QStandardItem]):
@@ -587,6 +533,7 @@ class TextureList(MainWindowList):
                 continue
             item = ResourceStandardItem(resname, resource=resource)
             item.setData(resource, Qt.ItemDataRole.UserRole + 1)
+            item.setIcon(QIcon(QPixmap.fromImage(self.BLANK_IMAGE)))
             current_source_model.appendRow(item)
             added_count += 1
 
@@ -606,14 +553,54 @@ class TextureList(MainWindowList):
     def on_filter_string_updated(self):
         self.textures_proxy_model.setFilterFixedString(self.ui.searchEdit.text())
 
-    def show_context_menu(self, position: QPoint):
+    def on_resource_context_menu(self, position: QPoint):
         """Show the context menu for the texture list."""
         print(f"Showing context menu at position: {position}")
         menu = QMenu(self)
-        reload_action: QAction | None = menu.addAction("Reload")
-        assert reload_action is not None, "Reload action is None"
-        reload_action.triggered.connect(self.on_reload_selected)
+        cast(QAction, menu.addAction("Open in Editor")).triggered.connect(self.on_resource_double_clicked)
+        cast(QAction, menu.addAction("Reload")).triggered.connect(self.on_reload_selected)
+
+        export_submenu = QMenu("Export texture as...", menu)
+        menu.addMenu(export_submenu)
+
+        for tpc_format in TPCTextureFormat:
+
+            def export_texture_wrapper(_checked, f=tpc_format):
+                return self.export_texture(f)
+
+            cast(QAction, export_submenu.addAction(tpc_format.name)).triggered.connect(export_texture_wrapper)
+
         menu.exec(self.ui.resourceList.mapToGlobal(position))  # pyright: ignore[reportArgumentType, reportCallIssue]
+
+    def export_texture(self, target_format: TPCTextureFormat):
+        selected_items: list[ResourceStandardItem] = self._get_selected_items()
+        if len(selected_items) > 1:
+            folder_path = QFileDialog.getExistingDirectory(self, "Select Export Folder")
+            if not folder_path or not folder_path.strip():
+                return
+            folderpath = Path(folder_path)
+            target_restype: ResourceType = cast(
+                ResourceType,
+                QInputDialog.getItem(
+                    self,
+                    "Export Texture",
+                    "Select Target Format",
+                    (ResourceType.TPC.name,) if target_format.is_dxt() else (ResourceType.TGA.name, ResourceType.TPC.name),
+                    0,
+                ),
+            )
+        else:
+            file_filter = "TPC Files (*.tpc);;All Files (*)" if target_format.is_dxt() else "TGA Files (*.tga);;TPC Files (*.tpc);;All Files (*)"
+            filepath, _ = QFileDialog.getSaveFileName(self, "Export Texture", "", file_filter)
+            if not filepath or not filepath.strip():
+                return
+            folderpath = Path(filepath).parent
+            target_restype = ResourceType.TGA if filepath.endswith(".tga") else ResourceType.TPC
+        for item in selected_items:
+            orig_tpc: TPC = read_tpc(item.resource.data())
+            tpc: TPC = orig_tpc.copy()
+            tpc.convert(target_format)
+            write_tpc(tpc, folderpath / f"{item.resource.resname()}{target_restype.extension}", target_restype)
 
     def on_reload_selected(self):
         """Handle reloading selected textures."""
@@ -667,7 +654,7 @@ class TextureList(MainWindowList):
         for index in visible_indexes:
             item: QStandardItem | None = cur_src_model.itemFromIndex(index)
             if item is None:
-                RobustLogger().warning("No item found for row {index.row()}")
+                RobustLogger().warning(f"No item found for row {index.row()}")
                 continue
             if not isinstance(item, ResourceStandardItem):
                 RobustLogger().warning(f"Expected ResourceStandardItem, got {type(item).__name__}")
@@ -734,6 +721,7 @@ class TextureList(MainWindowList):
         )
         item.setIcon(QIcon(pixmap))
 
+    @Slot()
     def on_resource_double_clicked(self):
         self.sig_request_open_resource.emit(self.selected_resources(), None)
 
@@ -753,7 +741,11 @@ def get_image_from_tpc(resource: FileResource, icon_size: int) -> TPCMipmap:
     """Get an image from a TPC resource."""
     tpc: TPC = read_tpc(resource.data())
     tpc.decode()
-    mm: TPCMipmap = tpc.get(0, 0)
+    best_mipmap: TPCMipmap = next(
+        (mipmap for mipmap in tpc.layers[0].mipmaps if mipmap.width <= icon_size and mipmap.height <= icon_size),
+        tpc.layers[0].mipmaps[-1],
+    )
+    mm: TPCMipmap = best_mipmap
     assert mm.data
     assert mm.width
     assert mm.height
@@ -853,7 +845,7 @@ def on_open_resources(
     from toolset.utils.window import open_resource_editor
 
     for resource in resources:
-        _filepath, _editor = open_resource_editor(resource, active, gff_specialized=GlobalSettings().gff_specializedEditors)
+        _filepath, _editor = open_resource_editor(resource, active, gff_specialized=GlobalSettings().gffSpecializedEditors)
 
     if resources or isinstance(resource_widget, TextureList):
         return
@@ -870,4 +862,4 @@ def on_open_resources(
     if not res_ident.restype:
         return
     erfrim_file_resource = FileResource(res_ident.resname, res_ident.restype, os.path.getsize(erf_filepath), 0x0, erf_filepath)  # noqa: PTH202
-    _filepath, _editor = open_resource_editor(erfrim_file_resource, active, gff_specialized=GlobalSettings().gff_specializedEditors)
+    _filepath, _editor = open_resource_editor(erfrim_file_resource, active, gff_specialized=GlobalSettings().gffSpecializedEditors)

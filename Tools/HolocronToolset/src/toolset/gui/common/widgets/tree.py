@@ -218,7 +218,7 @@ class RobustTreeView(QTreeView):
         item_delegate: HTMLDelegate | QStyledItemDelegate | None = self.itemDelegate()
         if isinstance(item_delegate, HTMLDelegate):
             single_step: Literal[-1, 1] = (1 if delta > 0 else -1)
-            newVerticalSpacing: int = max(0, item_delegate.customVerticalSpacing + single_step)
+            newVerticalSpacing: int = max(0, item_delegate.custom_vertical_spacing + single_step)
             item_delegate.setVerticalSpacing(newVerticalSpacing)
             self.emitLayoutChanged()  # Requires immediate update
             return True
@@ -308,7 +308,7 @@ class RobustTreeView(QTreeView):
         self._addMenuAction(
             displaySettingsMenu,
             "Vertical Spacing",
-            lambda: self.itemDelegate().customVerticalSpacing,
+            lambda: self.itemDelegate().custom_vertical_spacing,
             lambda x: self.itemDelegate().setVerticalSpacing(x),
             settings_key="verticalSpacing",
             param_type=int,

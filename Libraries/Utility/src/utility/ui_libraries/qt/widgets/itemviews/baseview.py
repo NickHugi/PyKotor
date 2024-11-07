@@ -100,18 +100,28 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         self._initialized: bool = False
 
     def _create_drawer_button(self):
-        self._robustDrawer = QPushButton(self)
-        self._robustDrawer.setObjectName("_robustDrawer")
-        self._robustDrawer.setToolTip("Show context menu")
-        icon = QIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_ToolBarHorizontalExtensionButton))
-        self._robustDrawer.setIcon(icon)
+        self._robust_drawer = QPushButton(self)
+        self._robust_drawer.setObjectName("_robust_drawer")
+        self._robust_drawer.setToolTip("Show context menu")
+        q_app_style: QStyle | None = QApplication.style()
+        assert q_app_style is not None
+        icon = QIcon(q_app_style.standardIcon(QStyle.StandardPixmap.SP_ToolBarHorizontalExtensionButton))
+        self._robust_drawer.setIcon(icon)
 
-    def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
+    def build_context_menu(
+        self,
+        parent: QWidget | None = None,
+    ) -> QMenu:
+        q_app_style: QStyle | None = QApplication.style()
+        assert q_app_style is not None
+
         self.menu = QMenu(None)
-        widget_menu = self.menu.addMenu("QWidget")
+        widget_menu: QMenu | None = self.menu.addMenu("QWidget")
+        assert widget_menu is not None
 
         # Window properties
-        window_menu = widget_menu.addMenu("Window")
+        window_menu: QMenu | None = widget_menu.addMenu("Window")
+        assert window_menu is not None
         self._add_menu_action(window_menu, "Set Window Title", self.windowTitle, self.setWindowTitle, "windowTitle", param_type=str)
         self._add_menu_action(window_menu, "Set Window Icon", self.windowIcon, self.setWindowIcon, "windowIcon", param_type=QIcon)
         self._add_menu_action(window_menu, "Set Window Icon Text", self.windowIconText, self.setWindowIconText, "windowIconText", param_type=str)
@@ -132,7 +142,8 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         }, "windowModality", param_type=Qt.WindowModality)
 
         # Geometry and layout
-        geometry_menu = widget_menu.addMenu("Geometry")
+        geometry_menu: QMenu | None = widget_menu.addMenu("Geometry")
+        assert geometry_menu is not None
         self._add_menu_action(geometry_menu, "Set Geometry", self.geometry, self.setGeometry, "geometry", param_type=QRect)
         self._add_menu_action(geometry_menu, "Set Fixed Size", self.size, self.setFixedSize, "fixedSize", param_type=QSize)
         self._add_menu_action(geometry_menu, "Set Minimum Size", self.minimumSize, self.setMinimumSize, "minimumSize", param_type=QSize)
@@ -148,7 +159,8 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         self._add_menu_action(geometry_menu, "Set Contents Margins", self.contentsMargins, self.setContentsMargins, "contentsMargins", param_type=QMargins)
 
         # Appearance
-        appearance_menu = widget_menu.addMenu("Appearance")
+        appearance_menu: QMenu | None = widget_menu.addMenu("Appearance")
+        assert appearance_menu is not None
         self._add_menu_action(appearance_menu, "Set Style Sheet", self.styleSheet, self.setStyleSheet, "styleSheet", param_type=str)
         self._add_menu_action(appearance_menu, "Set Font", self.font, self.setFont, "font", param_type=QFont)
         self._add_menu_action(appearance_menu, "Set Cursor", self.cursor, self.setCursor, "cursor", param_type=QCursor)
@@ -192,7 +204,8 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         )
 
         # Behavior
-        behavior_menu = widget_menu.addMenu("Behavior")
+        behavior_menu: QMenu | None = widget_menu.addMenu("Behavior")
+        assert behavior_menu is not None
         self._add_menu_action(
             behavior_menu,
             "Auto Fill Background",
@@ -202,20 +215,22 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         )
 
         # Help menu
-        whats_this_action = QAction(
-            self.style().standardIcon(
+        whats_this_action: QAction | None = QAction(
+            q_app_style.standardIcon(
                 QStyle.StandardPixmap.SP_TitleBarContextHelpButton
             ),
             "What's This?",
             self,
         )
+        assert whats_this_action is not None
         self._add_menu_action(behavior_menu, "Set Enabled", self.isEnabled, self.setEnabled, "enabled")
         self._add_menu_action(behavior_menu, "Set Visible", self.isVisible, self.setVisible, "visible")
         self._add_menu_action(behavior_menu, "Set Hidden", self.isHidden, self.setHidden, "hidden")
         self._add_menu_action(behavior_menu, "Set Mouse Tracking", self.hasMouseTracking, self.setMouseTracking, "mouseTracking")
         self._add_menu_action(behavior_menu, "Set Tablet Tracking", self.hasTabletTracking, self.setTabletTracking, "tabletTracking")
         self._add_menu_action(behavior_menu, "Set Updates Enabled", self.updatesEnabled, self.setUpdatesEnabled, "updatesEnabled")
-        behavior_advanced_menu = behavior_menu.addMenu("Advanced")
+        behavior_advanced_menu: QMenu | None = behavior_menu.addMenu("Advanced")
+        assert behavior_advanced_menu is not None
         self._add_exclusive_menu_action(
             behavior_advanced_menu,
             "Focus Policy",
@@ -254,19 +269,23 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         }, "layoutDirection", param_type=Qt.LayoutDirection)
 
         # Accessibility
-        accessibility_menu = widget_menu.addMenu("Accessibility")
+        accessibility_menu: QMenu | None = widget_menu.addMenu("Accessibility")
+        assert accessibility_menu is not None
         self._add_menu_action(accessibility_menu, "Set Accessible Name", self.accessibleName, self.setAccessibleName, "accessibleName", param_type=str)
         self._add_menu_action(accessibility_menu, "Set Accessible Description", self.accessibleDescription, self.setAccessibleDescription, "accessibleDescription", param_type=str)
 
         # Locale
-        locale_menu = widget_menu.addMenu("Locale")
+        locale_menu: QMenu | None = widget_menu.addMenu("Locale")
+        assert locale_menu is not None
         self._add_menu_action(locale_menu, "Set Locale", self.locale, self.setLocale, "locale", param_type=QLocale)
 
         # Actions
-        actions_menu = widget_menu.addMenu("Actions")
+        actions_menu: QMenu | None = widget_menu.addMenu("Actions")
+        assert actions_menu is not None
 
         # Actions menu
-        refresh_menu = widget_menu.addMenu("Refresh...")
+        refresh_menu: QMenu | None = widget_menu.addMenu("Refresh...")
+        assert refresh_menu is not None
         self._add_simple_action(refresh_menu, "Update", self.update)
         self._add_simple_action(refresh_menu, "Repaint", self.repaint)
         self._add_simple_action(actions_menu, "Raise", self.raise_)
@@ -290,8 +309,10 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         self._add_simple_action(actions_menu, "Close", self.close)
 
         # Advanced
-        advanced_menu = widget_menu.addMenu("Advanced")
-        widget_attributes_menu = advanced_menu.addMenu("Widget Attributes")
+        advanced_menu: QMenu | None = widget_menu.addMenu("Advanced")
+        assert advanced_menu is not None
+        widget_attributes_menu: QMenu | None = advanced_menu.addMenu("Widget Attributes")
+        assert widget_attributes_menu is not None
         for attr_name, attr_value in Qt.WidgetAttribute.__dict__.items():
             if not attr_name.startswith("WA_"):
                 continue
@@ -316,9 +337,24 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         #    param_type=Qt.WindowType
         #)
         if qtpy.QT5:
-            self._add_menu_action(advanced_menu, "Set Input Method Hints", self.inputMethodHints, self.setInputMethodHints, "inputMethodHints", param_type=Qt.InputMethodHints)
-        self._add_menu_action(advanced_menu, "Set Tool Tip Duration", self.toolTipDuration, self.setToolTipDuration, "toolTipDuration", param_type=int)
+            self._add_menu_action(
+                advanced_menu,
+                "Set Input Method Hints",
+                self.inputMethodHints,
+                self.setInputMethodHints,
+                "inputMethodHints",
+                param_type=Qt.InputMethodHint,
+            )
+        self._add_menu_action(
+            advanced_menu,
+            "Set Tool Tip Duration",
+            self.toolTipDuration,
+            self.setToolTipDuration,
+            "toolTipDuration",
+            param_type=int,
+        )
 
+        assert whats_this_action is not None
         whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
         whats_this_action.setToolTip("Enter 'What's This?' mode.")
         self.menu.addAction(whats_this_action)
@@ -335,11 +371,14 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
     ):
         current_value = get_func()
         if title == "Edit Stylesheet":
-            action = QAction(title, self)
-            action.triggered.connect(lambda: self._show_stylesheet_editor(get_func, set_func, settings_key))
+            action: QAction | None = QAction(title, self)
+            assert action is not None
+            def on_toggled(checked: bool):
+                set_func(checked)
+            action.toggled.connect(on_toggled)
             menu.addAction(action)
             return
-        action_title = f"{title}: {format_qt_obj(current_value)[:10]}" if param_type is not bool else title
+        action_title: str = f"{title}: {format_qt_obj(current_value)[:10]}" if param_type is not bool else title
         action = QAction(action_title, self)
 
         if param_type is bool:
@@ -355,7 +394,12 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             action.triggered.connect(on_triggered)
         menu.addAction(action)
 
-    def _add_simple_action(self, menu: QMenu, title: str, func: Callable[[], Any]):
+    def _add_simple_action(
+        self,
+        menu: QMenu,
+        title: str,
+        func: Callable[[], Any],
+    ):
         action = QAction(title, self)
         action.triggered.connect(lambda random_arg_qt_is_sending: func())  # noqa: ARG005
         menu.addAction(action)
@@ -371,7 +415,9 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         param_type: type = bool,
     ):
         current_value = current_state_func()
-        sub_menu = menu.addMenu(title)
+        sub_menu: QMenu | None = menu.addMenu(title)
+        assert sub_menu is not None
+
         action_group = QActionGroup(sub_menu)
         action_group.setExclusive(True)
         for option_name, option_value in options.items():
@@ -396,9 +442,12 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         param_type: type | None = None,
     ):  # noqa: PLR0913
         initial_value = get_func()
-        sub_menu = menu.addMenu(title)
+        sub_menu: QMenu | None = menu.addMenu(title)
+        assert sub_menu is not None
 
-        def update_state(menu: QMenu = sub_menu):
+        def update_state(
+            menu: QMenu = sub_menu,
+        ):
             current_state = 0
             for action in menu.actions():
                 if action.isChecked():
@@ -424,7 +473,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         title: str,
         settings_key: str,
     ):
-        color = QColorDialog.getColor(get_func(), self, title)
+        color: QColor = QColorDialog.getColor(get_func(), self, title)
         if color.isValid():
             self.update()
 
@@ -436,17 +485,18 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         settings_key: str,
         param_type: type,
     ):
-        get_result = get_func()
+        get_result: Any = get_func()
         current_value: Any = get_result
 
         dialog = QDialog(self)
         dialog.setWindowTitle(f"Set {title}")
         layout = QVBoxLayout(dialog)
 
-        input_widget = self._create_input_widget(param_type, current_value)
+        input_widget: QWidget = self._create_input_widget(param_type, current_value)
         layout.addWidget(input_widget)
 
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box: QDialogButtonBox | None = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        assert button_box is not None
         button_box.accepted.connect(dialog.accept)
         button_box.rejected.connect(dialog.reject)
         layout.addWidget(button_box)
@@ -455,7 +505,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             return
 
         try:
-            new_value = self._get_new_value(input_widget, param_type)
+            new_value: Any = self._get_new_value(input_widget, param_type)
         except (ValueError, TypeError):
             QMessageBox.warning(
                 self,
@@ -471,49 +521,73 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             return
         self._update_action_text(title, new_value)
 
-    def _create_input_widget(self, param_type: type, current_value: Any) -> QWidget:
-        meta_type = get_qt_meta_type(param_type, current_value)
+    def _create_input_widget(
+        self,
+        param_type: type,
+        current_value: Any,
+    ) -> QWidget:
+        meta_type: QMetaType.Type = get_qt_meta_type(param_type, current_value)
 
-        if meta_type in (QMetaType.Int, QMetaType.Long, QMetaType.LongLong):
-            widget = QSpinBox()
+        if meta_type in (
+            QMetaType.Type.Int,
+            QMetaType.Type.Long,
+            QMetaType.Type.LongLong,
+        ):
+            widget: QWidget = QSpinBox()
+            assert widget is not None
+
             widget.setMinimum(-0x80000000)
             widget.setMaximum(0x7FFFFFFF)
             widget.setValue(int(current_value))  # pyright: ignore[reportArgumentType]
-        elif meta_type in (QMetaType.Float, QMetaType.Double):
+        elif meta_type in (QMetaType.Type.Float, QMetaType.Type.Double):
             widget = QDoubleSpinBox()
+            assert widget is not None
             widget.setMinimum(-0x80000000)
             widget.setMaximum(0x7FFFFFFF)
             widget.setValue(float(current_value))  # pyright: ignore[reportArgumentType]
-        elif meta_type == QMetaType.Bool:
+        elif meta_type == QMetaType.Type.Bool:
             widget = QCheckBox()
+            assert widget is not None
             widget.setChecked(bool(current_value))
-        elif meta_type == QMetaType.QString:
+        elif meta_type == QMetaType.Type.QString:
             widget = QLineEdit(str(current_value))
-        elif meta_type == QMetaType.QColor:
+            assert widget is not None
+        elif meta_type == QMetaType.Type.QColor:
             widget = QLineEdit(current_value.name() if isinstance(current_value, QColor) else str(current_value))
-        elif meta_type == QMetaType.QDate:
+        elif meta_type == QMetaType.Type.QDate:
             widget = QDateEdit(current_value)  # pyright: ignore[reportArgumentType, reportCallIssue]
-        elif meta_type == QMetaType.QTime:
+            assert widget is not None
+        elif meta_type == QMetaType.Type.QTime:
             widget = QTimeEdit(current_value)  # pyright: ignore[reportArgumentType, reportCallIssue]
-        elif meta_type == QMetaType.QDateTime:
+            assert widget is not None
+        elif meta_type == QMetaType.Type.QDateTime:
             widget = QDateTimeEdit(current_value)  # pyright: ignore[reportArgumentType, reportCallIssue]
-        elif meta_type == QMetaType.QSize:
+            assert widget is not None
+        elif meta_type == QMetaType.Type.QSize:
             if isinstance(current_value, QSize):
                 widget = QLineEdit(f"{current_value.width()},{current_value.height()}")
+                assert widget is not None
             else:
                 widget = QLineEdit()
-        elif param_type == QMargins and isinstance(current_value, QMargins):
+                assert widget is not None
+        elif meta_type == QMargins and isinstance(current_value, QMargins):
             widget = QLineEdit(f"{current_value.left()},{current_value.top()},{current_value.right()},{current_value.bottom()}")
         elif hasattr(param_type, "__members__"):  # Enum type
             widget = QComboBox()
+            assert widget is not None
             widget.addItems(param_type.__members__.keys())
             widget.setCurrentText(current_value.name if hasattr(current_value, "name") else str(current_value))
         else:
             widget = QLineEdit(str(current_value))
+            assert widget is not None
 
         return widget
 
-    def _get_new_value(self, input_widget: QWidget, param_type: type) -> Any:
+    def _get_new_value(
+        self,
+        input_widget: QWidget,
+        param_type: type,
+    ) -> Any:
         if isinstance(input_widget, QSpinBox):
             return input_widget.value()
         if isinstance(input_widget, QDoubleSpinBox):
@@ -541,10 +615,10 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         raise ValueError(f"Unsupported input widget type: {type(input_widget)}")
 
     def _update_action_text(self, title: str, new_value: Any):
-        action = self.sender()
+        action: QObject | None = self.sender()
         if isinstance(action, QAction):
             if isinstance(new_value, QMargins):
-                value_str = f"{new_value.left()},{new_value.top()},{new_value.right()},{new_value.bottom()}"
+                value_str: str = f"{new_value.left()},{new_value.top()},{new_value.right()},{new_value.bottom()}"
             else:
                 value_str = format_qt_obj(new_value)
             value_str = value_str[:10]  # Limit to 10 characters
@@ -618,19 +692,31 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             self._stylesheet_text_edit.textChanged.connect(lambda: self._update_stylesheet_preview())
 
             # Syntax highlighter
-            self._highlighter = StyleSheetHighlighter(self._stylesheet_text_edit.document())
+            text_doc: QTextDocument | None = self._stylesheet_text_edit.document()
+            assert text_doc is not None
+
+            self._highlighter: StyleSheetHighlighter | None = StyleSheetHighlighter(text_doc)
+            assert self._highlighter is not None
 
             splitter.addWidget(preview_widget)
             splitter.addWidget(self._stylesheet_text_edit)
 
             # Buttons
-            button_layout = QHBoxLayout()
-            apply_button = QPushButton("Apply")
+            button_layout: QHBoxLayout | None = QHBoxLayout()
+            assert button_layout is not None
+
+            apply_button: QPushButton | None = QPushButton("Apply")
+            assert apply_button is not None
+
             apply_button.clicked.connect(lambda: self._apply_stylesheet(set_func, settings_key))
-            reset_button = QPushButton("Reset")
+            reset_button: QPushButton | None = QPushButton("Reset")
+
+            assert reset_button is not None
             reset_button.clicked.connect(lambda: self._reset_stylesheet(get_func))
-            color_picker_button = QPushButton("Color Picker")
+            color_picker_button: QPushButton | None = QPushButton("Color Picker")
+            assert color_picker_button is not None
             color_picker_button.clicked.connect(self._show_color_picker)
+
             button_layout.addWidget(apply_button)
             button_layout.addWidget(reset_button)
             button_layout.addWidget(color_picker_button)
@@ -648,21 +734,21 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         if hasattr(self, "_preview_area"):
             self._preview_area.setStyleSheet(self._stylesheet_text_edit.toPlainText())
 
-    def _apply_stylesheet(self, set_func: Callable[[Any], Any], settings_key: str):
-        new_stylesheet = self._stylesheet_text_edit.toPlainText()
+    def _apply_stylesheet(self, set_func: Callable[[Any], Any], settings_key: str,):
+        new_stylesheet: str = self._stylesheet_text_edit.toPlainText()
         set_func(new_stylesheet)
         if hasattr(self, "_preview_area"):
             self._preview_area.setStyleSheet(new_stylesheet)
 
-    def _reset_stylesheet(self, get_func: Callable[[], Any]):
+    def _reset_stylesheet(self, get_func: Callable[[], Any],):
         self._stylesheet_text_edit.setPlainText(get_func())
         if hasattr(self, "_preview_area"):
             self._preview_area.setStyleSheet(get_func())
 
     def _show_color_picker(self):
-        color = QColorDialog.getColor(parent=self)
+        color: QColor = QColorDialog.getColor(parent=self)
         if color.isValid():
-            cursor = self._stylesheet_text_edit.textCursor()
+            cursor: QTextCursor = self._stylesheet_text_edit.textCursor()
             cursor.insertText(color.name())
 
 
@@ -676,7 +762,7 @@ if __name__ == "__main__":
         def __init__(
             self,
             parent: QWidget | None = None,
-            flags: Qt.WindowFlags | Qt.WindowType | None = None,
+            flags: Qt.WindowType | None = None,
             *args,
             should_call_qt_init: bool = True,
             **kwargs,
@@ -690,9 +776,9 @@ if __name__ == "__main__":
             layout = QVBoxLayout(self)
 
             # Add widgets to test various features
-            self.label = QLabel("Test Widget")
-            self.button = QPushButton("Click Me")
-            self.text_edit = QTextEdit()
+            self.label: QLabel = QLabel("Test Widget")
+            self.button: QPushButton = QPushButton("Click Me")
+            self.text_edit: QTextEdit = QTextEdit()
 
             # Add buttons to test menu actions
             action_layout = QHBoxLayout()
@@ -715,7 +801,7 @@ if __name__ == "__main__":
             self.build_context_menu().exec()
 
         def test_color_action_method(self):
-            self._handle_color_action(lambda: Qt.red, "Test Color", "testColorSetting")
+            self._handle_color_action(lambda: Qt.GlobalColor.red, "Test Color", "testColorSetting")
 
         def test_generic_action_method(self):
             self._handle_generic_action(lambda: 10, lambda x: self.text_edit.setText(f"New value: {x}"), "Test Generic", "testGenericSetting", int)

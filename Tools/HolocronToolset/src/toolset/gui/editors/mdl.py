@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qtpy.QtWidgets import QMessageBox
@@ -11,7 +12,6 @@ from pykotor.resource.formats.mdl.mdl_data import MDL
 from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
-from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -75,7 +75,7 @@ class MDLEditor(Editor):
             - Sets model data on renderer if both MDL and MDX found
             - Displays error if unable to find associated data.
         """
-        c_filepath: CaseAwarePath = CaseAwarePath(filepath)
+        c_filepath: Path = Path(filepath)
         super().load(c_filepath, resref, restype, data)
 
         mdl_data: bytes | None = None

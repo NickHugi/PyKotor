@@ -29,12 +29,13 @@ from pykotor.resource.formats.lyt import (
 from pykotor.resource.type import ResourceType
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.lyt_editor import LYTEditorSettings
+from toolset.gui.widgets.settings.editor_settings.lyt import LYTEditorSettings
 
 if TYPE_CHECKING:
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtWidgets import QGraphicsSceneMouseEvent, QWidget
 
     from toolset.data.installation import HTInstallation
+
 
 class LYTEditor(Editor):
     def __init__(
@@ -46,6 +47,7 @@ class LYTEditor(Editor):
         super().__init__(parent, "LYT Editor", "lyt", supported, supported, installation)
 
         from toolset.uic.qtpy.editors.lyt import Ui_LYTEditor
+
         self.ui: Ui_LYTEditor = Ui_LYTEditor()
         self.ui.setupUi(self)
         self._setup_menus()
@@ -93,12 +95,12 @@ class LYTEditor(Editor):
         }
 
     def _setupConnections(self):
-        self.ui.addRoomButton.clicked.connect(self.addRoom)
-        self.ui.addTrackButton.clicked.connect(self.addTrack)
-        self.ui.addObstacleButton.clicked.connect(self.addObstacle)
-        self.ui.addDoorHookButton.clicked.connect(self.addDoorHook)  # FIXME: addDoorHookButton attribute not found
-        self.ui.generateWalkmeshButton.clicked.connect(self.generateWalkmesh)
-        self.ui.zoomSlider.valueChanged.connect(self.updateZoom)
+        self.ui.add_room_button.clicked.connect(self.add_room)
+        self.ui.add_track_button.clicked.connect(self.add_track)
+        self.ui.addObstacleButton.clicked.connect(self.add_obstacle)
+        self.ui.addDoorHookButton.clicked.connect(self.add_door_hook)  # FIXME: addDoorHookButton attribute not found
+        self.ui.generateWalkmeshButton.clicked.connect(self.generate_walkmesh)
+        self.ui.zoom_slider.valueChanged.connect(self.update_zoom)
         self.ui.importTextureButton.clicked.connect(self.importTexture)  # FIXME: importTextureButton attribute not found
         self.ui.importModelButton.clicked.connect(self.importModel)  # FIXME: importModelButton attribute not found
 
@@ -118,38 +120,38 @@ class LYTEditor(Editor):
         # Setup room templates
         self.ui.roomTemplateList.addItems(["Square Room", "Circular Room", "L-Shaped Room"])  # FIXME: roomTemplateList attribute not found
 
-    def addRoom(self):
+    def add_room(self):
         room = LYTRoom()
         room.position = Vector3(0, 0, 0)
         room.size = Vector2(10, 10)  # FIXME: size attribute not found
         self._lyt.rooms.append(room)
         self.updateScene()
 
-    def addTrack(self):
+    def add_track(self):
         track = LYTTrack()
         track.start = Vector3(0, 0, 0)  # FIXME: start attribute not found
         track.end = Vector3(10, 10, 0)  # FIXME: end attribute not found
         self._lyt.tracks.append(track)
         self.updateScene()
 
-    def addObstacle(self):
+    def add_obstacle(self):
         obstacle = LYTObstacle()
         obstacle.position = Vector3(0, 0, 0)
         obstacle.radius = 5  # FIXME: radius attribute not found
         self._lyt.obstacles.append(obstacle)
         self.updateScene()
 
-    def addDoorHook(self):
+    def add_door_hook(self):
         doorhook = LYTDoorHook()
         doorhook.position = Vector3(0, 0, 0)
         self._lyt.doorhooks.append(doorhook)
         self.updateScene()
 
-    def generateWalkmesh(self):
+    def generate_walkmesh(self):
         # Implement walkmesh generation logic here
         pass
 
-    def updateZoom(self, value):
+    def update_zoom(self, value):
         scale = value / 100.0
         self.ui.graphicsView.setTransform(QTransform().scale(scale, scale))
 
@@ -190,20 +192,22 @@ class LYTEditor(Editor):
     def build(self) -> tuple[bytes, ResourceType]:
         return bytes_lyt(self._lyt), ResourceType.LYT
 
+
 class RoomItem(QGraphicsRectItem):
     def __init__(self, room: LYTRoom, editor: LYTEditor):
         super().__init__(0, 0, room.size.x, room.size.y)
-        self.room = room
-        self.editor = editor
+        self.room: LYTRoom = room
+        self.editor: LYTEditor = editor
         self.setPos(room.position.x, room.position.y)
-        self.setPen(QPen(Qt.black))
-        self.setBrush(QBrush(Qt.lightGray))
-        self.setFlag(QGraphicsItem.ItemIsMovable)
-        self.setFlag(QGraphicsItem.ItemIsSelectable)
+        self.setPen(QPen(Qt.GlobalColor.black))
+        self.setBrush(QBrush(Qt.GlobalColor.lightGray))
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         self.room.position = Vector3(self.pos().x(), self.pos().y(), self.room.position.z)
+
 
 class TrackItem(QGraphicsLineItem):
     def __init__(self, track: LYTTrack, editor: LYTEditor):
@@ -213,6 +217,7 @@ class TrackItem(QGraphicsLineItem):
         self.setPen(QPen(Qt.red, 2))
         self.setFlag(QGraphicsItem.ItemIsMovable)
         self.setFlag(QGraphicsItem.ItemIsSelectable)
+
 
 class ObstacleItem(QGraphicsEllipseItem):
     def __init__(self, obstacle: LYTObstacle, editor: LYTEditor):
@@ -229,20 +234,33 @@ class ObstacleItem(QGraphicsEllipseItem):
         super().mouseMoveEvent(event)
         self.obstacle.position = Vector3(self.pos().x(), self.pos().y(), self.obstacle.position.z)
 
-class DoorHookItem(QGraphicsRectItem):
-    def __init__(self, doorhook: LYTDoorHook, editor: LYTEditor):
-        super().__init__(-1, -1, 2, 2)
-        self.doorhook = doorhook
-        self.editor = editor
-        self.setPos(doorhook.position.x, doorhook.position.y)
-        self.setPen(QPen(Qt.green))
-        self.setBrush(QBrush(Qt.green))
-        self.setFlag(QGraphicsItem.ItemIsMovable)
-        self.setFlag(QGraphicsItem.ItemIsSelectable)
 
-    def mouseMoveEvent(self, event):
+class DoorHookItem(QGraphicsRectItem):
+    def __init__(
+        self,
+        doorhook: LYTDoorHook,
+        editor: LYTEditor,
+    ):
+        super().__init__(-1, -1, 2, 2)
+        self.doorhook: LYTDoorHook = doorhook
+        self.editor: LYTEditor = editor
+        self.setPos(doorhook.position.x, doorhook.position.y)
+        self.setPen(QPen(Qt.GlobalColor.green))
+        self.setBrush(QBrush(Qt.GlobalColor.green))
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
+
+    def mouseMoveEvent(
+        self,
+        event: QGraphicsSceneMouseEvent,
+    ):
         super().mouseMoveEvent(event)
-        self.doorhook.position = Vector3(self.pos().x(), self.pos().y(), self.doorhook.position.z)
+        self.doorhook.position = Vector3(
+            self.pos().x(),
+            self.pos().y(),
+            self.doorhook.position.z,
+        )
+
 
 class LYTControlScheme:
     def __init__(self, editor: LYTEditor):

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, ClassVar, Generic, Iterable, TypeVar
 
@@ -12,12 +14,14 @@ if TYPE_CHECKING:
 
     from collections.abc import Iterable
 
+    from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
+
 T = TypeVar("T")
 VT = TypeVar("VT")
 _unique_sentinel = object()
 
 
-class ResRef:
+class ResRef(str):
     """A string reference to a game resource.
 
     ResRefs are the names of resources without the extension (the file stem).
@@ -36,12 +40,20 @@ class ResRef:
         - (recommended) Stored as case-sensitive text.
     """
 
+    __slots__: ClassVar[tuple[str, ...]] = ("_value",)
+
     MAX_LENGTH: ClassVar[int] = 16
 
     INVALID_CHARACTERS: ClassVar[str] = '<>:"/\\|?*'
 
     class InvalidFormatError(ValueError):
         """ResRefs must conform to Windows filename requirements."""
+
+        def __init__(self, bad_text: str):
+            invalid_chars: list[tuple[str, int]] = [(char, pos) for pos, char in enumerate(bad_text) if char in ResRef.INVALID_CHARACTERS]
+            details: str = ", ".join(f"'{char}' at position {pos}" for char, pos in invalid_chars)
+            message: str = f"String '{bad_text}' contains invalid characters: {details}. " f"Full list of invalid characters: '{ResRef.INVALID_CHARACTERS}'"
+            super().__init__(message)
 
     class InvalidEncodingError(ValueError):
         """ResRefs must only contain ASCII characters."""
@@ -63,20 +75,19 @@ class ResRef:
         def __init__(self, resref: ResRef, func_name: str, *args, **kwargs):
             super().__init__(f"ResRef's must be case-insensitive, attempted {resref!r}.{func_name}({args, kwargs})")
 
-    def __init__(
-        self,
-        text: str,
-    ):
-        self._value = ""
-        self.set_data(text)
+    def __new__(cls, text: str) -> Self:
+        # Create the instance
+        instance: Self = super().__new__(cls, text)
+        instance.set_data(text)
+        return instance
 
     def __len__(
         self,
     ):
-        return len(self._value)
+        return len(self._value.strip())  # should already be stripped, leave here for clarity (it is a fast operation)
 
     def __bool__(self):
-        return bool(self._value)
+        return bool(self._value.strip())  # should already be stripped, leave here for clarity (it is a fast operation)
 
     def __eq__(
         self,
@@ -85,16 +96,13 @@ class ResRef:
         """A ResRef can be compared to another ResRef or a str."""
         if self is other:
             return True
-        if isinstance(other, ResRef):
-            other_value = str(other).lower()
-        elif isinstance(other, str):
-            other_value = other.lower().strip()
-        else:
+        if not isinstance(other, str):
             return NotImplemented
-        return other_value == self._value.lower()
+        other_value: str = other.casefold().strip()
+        return other_value == self._value.casefold()
 
     def __hash__(self):
-        return hash(self._value.lower())
+        return hash(self._value.casefold())
 
     def __repr__(
         self,
@@ -104,7 +112,7 @@ class ResRef:
     def __str__(
         self,
     ):
-        return self._value
+        return str(self._value)
 
     @classmethod
     def from_blank(cls) -> ResRef:
@@ -142,12 +150,7 @@ class ResRef:
             return False
         return next(
             (False for char in cls.INVALID_CHARACTERS if char in text),
-            (
-                text != ""
-                and text.isascii()
-                and len(text) <= cls.MAX_LENGTH
-                and text == text.strip()
-            ),
+            (text != "" and text.isascii() and len(text) <= cls.MAX_LENGTH and text == text.strip()),
         )
 
     def set_data(
@@ -170,31 +173,36 @@ class ResRef:
             InvalidFormatError - text starts/ends with a space or contains windows invalid filename characters.
             All of the above exceptions inherit ValueError.
         """
-        parsed_text: str = str(text)
+        # Ensure the value is a string
+        if not isinstance(text, str):
+            msg = f"Value must be a string, not a `{text.__class__.__name__}`"
+            raise TypeError(msg)
 
-        # Ensure text only contains ASCII characters.
-        if not text.isascii():
+        # Check for leading or trailing whitespace. Ensure text doesn't start/end with whitespace.
+        raw_text = str(text)
+        text = raw_text.strip()
+        if raw_text != text:
+            msg = f"String '{raw_text}' starts or ends with whitespace. It will be stripped to '{text}'"
+            warnings.warn(msg, stacklevel=2)
+
+        # Check for maximum length
+        if len(text) > self.MAX_LENGTH:
+            if not truncate:
+                raise self.ExceedsMaxLengthError(text)
+            warnings.warn(f"String '{raw_text}' exceeds the maximum allowed length ({self.MAX_LENGTH}) and will be truncated to '{text}'", stacklevel=2)
+            text = text[: self.MAX_LENGTH]
+
+        if any(
+            (char, pos)  # Check for invalid characters and their positions
+            for pos, char in enumerate(text)
+            if char in self.INVALID_CHARACTERS
+        ):
+            raise self.InvalidFormatError(text)
+
+        if not text.isascii():  # Ensure text only contains ASCII characters.
             raise self.InvalidEncodingError(text)
 
-        # Validate text length.
-        if len(parsed_text) > self.MAX_LENGTH:
-            if not truncate:
-                ...
-                # raise self.ExceedsMaxLengthError(parsed_text)  # FIXME: pykotor isn't stable enough to enforce this yet.
-            parsed_text = parsed_text[: self.MAX_LENGTH]
-
-        # Ensure text doesn't start/end with whitespace.
-        if parsed_text != parsed_text.strip():
-            msg = f"ResRef '{text}' cannot start or end with a space."
-            # raise self.InvalidFormatError(msg)  # FIXME: pykotor isn't stable enough to enforce this yet.
-
-        # Ensure text doesn't contain any invalid ASCII characters.
-        for i in range(len(parsed_text)):
-            if parsed_text[i] in self.INVALID_CHARACTERS:
-                msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
-                # raise self.InvalidFormatError(msg)  # FIXME: pykotor isn't stable enough to enforce this yet.
-
-        self._value = parsed_text.strip()
+        self._value: str = text.strip()
 
     def get(self) -> str:
         """Returns a case-insensitive wrapped string."""

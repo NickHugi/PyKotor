@@ -5,13 +5,6 @@ import struct
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-try:
-    from PIL import Image
-
-    pillow_available = True
-except ImportError:
-    pillow_available = False
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose

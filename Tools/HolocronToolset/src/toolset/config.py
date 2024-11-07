@@ -72,10 +72,10 @@ def fetch_update_info(update_link: str, timeout: int = 15) -> Any:
 
 def get_remote_toolset_update_info(
     *,
-    use_beta_channel: bool = False,
+    useBetaChannel: bool = False,
     silent: bool = False,
 ) -> Exception | dict[str, Any]:
-    if use_beta_channel:
+    if useBetaChannel:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateBetaInfoLink"]
     else:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateInfoLink"]

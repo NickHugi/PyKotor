@@ -18,8 +18,6 @@ class Entry:
     file_size: int
 
 
-
-
 class KEYDataWriter(ABC):
     @abstractmethod
     def size(self) -> int:

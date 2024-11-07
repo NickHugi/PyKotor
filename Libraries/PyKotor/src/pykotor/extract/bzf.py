@@ -4,11 +4,15 @@ import lzma
 import struct
 
 from dataclasses import dataclass
-from typing import BinaryIO
+from typing import TYPE_CHECKING, BinaryIO
+
+if TYPE_CHECKING:
+    from pykotor.extract.keyfile import BIFResource, KEYFile
 
 # Constants
 BZF_ID = b"BIFF"
 VERSION_1 = b"V1  "
+
 
 @dataclass
 class IResource:
@@ -17,15 +21,17 @@ class IResource:
     type: int = 0
     packed_size: int = 0
 
+
 @dataclass
 class Resource:
     name: str = ""
     type: int = 0
     index: int = 0
 
+
 class BZFFile:
     def __init__(self, bzf: BinaryIO):
-        self._bzf = bzf
+        self._bzf: BinaryIO = bzf
         self._resources: list[Resource] = []
         self._iResources: list[IResource] = []
         self.load(bzf)
@@ -71,8 +77,8 @@ class BZFFile:
         if self._iResources:
             self._iResources[-1].packed_size = bzf.seek(0, 2) - self._iResources[-1].offset
 
-    def merge_KEY(self, key, data_file_index: int):
-        key_res_list = key.get_resources()
+    def merge_KEY(self, key: KEYFile, data_file_index: int):
+        key_res_list: list[BIFResource] = key.get_resources()
 
         for key_res in key_res_list:
             if key_res.bif_index != data_file_index:
@@ -83,8 +89,7 @@ class BZFFile:
                 continue
 
             if key_res.type != self._iResources[key_res.res_index].type:
-                print(f'KEY and BZF disagree on the type of the resource "{key_res.name}" '
-                      f"({key_res.type}, {self._iResources[key_res.res_index].type}). Trusting the BZF")
+                print(f'KEY and BZF disagree on the type of the resource "{key_res.name}" ' f"({key_res.type}, {self._iResources[key_res.res_index].type}). Trusting the BZF")
 
             res = Resource()
             res.name = key_res.name
@@ -110,5 +115,5 @@ class BZFFile:
     def get_resource(self, index: int) -> bytes:
         res = self.get_iresource(index)
         self._bzf.seek(res.offset)
-        compressed_data = self._bzf.read(res.packed_size)
+        compressed_data: bytes = self._bzf.read(res.packed_size)
         return lzma.decompress(compressed_data, format=lzma.FORMAT_RAW, filters=[{"id": lzma.FILTER_LZMA1}])

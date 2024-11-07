@@ -4,17 +4,18 @@ import re
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from qtpy.QtCore import QEvent, QPoint, QRect, QSize, Qt
+from qtpy.QtCore import QEvent, QModelIndex, QPoint, QRect, QSize, Qt
 from qtpy.QtGui import QBrush, QColor, QFont, QIcon, QImage, QMouseEvent, QPainter, QPalette, QPen, QPixmap, QTextDocument, QTextOption
 from qtpy.QtWidgets import QApplication, QListView, QListWidget, QStyle, QStyledItemDelegate, QToolTip, QTreeView, QTreeWidget, QWidget
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QAbstractItemModel, QModelIndex
+    from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject
+    from qtpy.QtGui import QAbstractTextDocumentLayout
     from qtpy.QtWidgets import QStyleOptionViewItem
 
 
-FONT_SIZE_REPLACE_RE = re.compile(r"font-size:\d+pt;")
-_ICONS_DATA_ROLE = Qt.ItemDataRole.UserRole + 10
+FONT_SIZE_REPLACE_RE: re.Pattern[str] = re.compile(r"font-size:\d+pt;")
+ICONS_DATA_ROLE: int = Qt.ItemDataRole.UserRole + 10
 
 
 class HTMLDelegate(QStyledItemDelegate):
@@ -34,26 +35,26 @@ class HTMLDelegate(QStyledItemDelegate):
     ):
         super().__init__(parent)
         self.text_size: int = text_size
-        self.customVerticalSpacing: int = custom_vertical_spacing
-        self.nudgedModelIndexes: dict[QModelIndex, tuple[int, int]] = {}
+        self.custom_vertical_spacing: int = custom_vertical_spacing
+        self.nudged_model_indexes: dict[QModelIndex, tuple[int, int]] = {}
         self.word_wrap: bool = word_wrap
 
     def parent(self) -> QWidget:
-        parent = super().parent()
+        parent: QObject | None = super().parent()
         assert isinstance(parent, QWidget), f"HTMLDelegate.parent() returned non-QWidget: '{parent.__class__.__name__}'"
         return parent
 
     def setVerticalSpacing(self, spacing: int):
-        self.customVerticalSpacing = spacing
+        self.custom_vertical_spacing = spacing
 
     def set_text_size(self, size: int):
         self.text_size = size
 
-    def setWordWrap(self, *, wrap: bool):
+    def set_word_wrap(self, *, wrap: bool):
         self.word_wrap = wrap
 
-    def nudgeItem(self, index: QModelIndex, x: int, y: int):
-        self.nudgedModelIndexes[index] = (x, y)
+    def nudge_item(self, index: QModelIndex, x: int, y: int):
+        self.nudged_model_indexes[index] = (x, y)
 
     def createTextDocument(self, html: str, font: QFont, width: int) -> QTextDocument:
         doc = QTextDocument()
@@ -61,7 +62,7 @@ class HTMLDelegate(QStyledItemDelegate):
         doc.setDefaultFont(font)
         if not self.word_wrap:
             text_option = QTextOption()
-            text_option.setWrapMode(QTextOption.NoWrap)
+            text_option.setWrapMode(QTextOption.WrapMode.NoWrap)
             doc.setDefaultTextOption(text_option)
         doc.setTextWidth(width)
         return doc
@@ -73,7 +74,7 @@ class HTMLDelegate(QStyledItemDelegate):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)  # noqa: FBT003
         painter.drawEllipse(center, radius, radius)
         painter.setPen(QPen(QColor(0, 0, 0)))
-        painter.setFont(QFont("Arial", max(10, self.text_size - 1), QFont.Bold))
+        painter.setFont(QFont("Arial", max(10, self.text_size - 1), QFont.Weight.Bold))
         painter.drawText(QRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2), Qt.AlignmentFlag.AlignCenter, text)
         painter.restore()
 
@@ -87,7 +88,7 @@ class HTMLDelegate(QStyledItemDelegate):
         show_tooltip: bool = False,
         execute_action: bool = False,
     ) -> tuple[int, bool]:
-        icon_data: dict = index.data(_ICONS_DATA_ROLE)
+        icon_data: dict = index.data(ICONS_DATA_ROLE)
         icon_width_total = 0
         handled_click = False
         if icon_data:
@@ -103,7 +104,7 @@ class HTMLDelegate(QStyledItemDelegate):
             icon_width_total = columns * (icon_size + icon_spacing) - icon_spacing
 
             for i, (icon_serialized, action, tooltip) in enumerate(icons):
-                icon = self._get_icon(icon_serialized, icon_size)
+                icon: QIcon | None = self._get_icon(icon_serialized, icon_size)
                 col, row = i % columns, i // columns
                 x_offset = option.rect.left() + (icon_size + icon_spacing) * col
                 y_offset = option.rect.top() + icon_spacing + (icon_size + icon_spacing) * row
@@ -115,7 +116,7 @@ class HTMLDelegate(QStyledItemDelegate):
 
                 if event and icon_rect.contains(event.pos()):
                     if show_tooltip:
-                        QToolTip.showText(event.globalPos(), tooltip, self.parent())
+                        QToolTip.showText(event.globalPosition().toPoint(), tooltip, self.parent())
                         return icon_width_total, True
                     if execute_action and action:
                         action()
@@ -135,7 +136,9 @@ class HTMLDelegate(QStyledItemDelegate):
         if isinstance(iconSerialized, QIcon):
             return iconSerialized
         if isinstance(iconSerialized, QStyle.StandardPixmap):
-            return QApplication.style().standardIcon(iconSerialized)
+            q_style: QStyle | None = QApplication.style()
+            assert q_style is not None
+            return q_style.standardIcon(iconSerialized)
         if isinstance(iconSerialized, str):
             return QIcon(QPixmap(iconSerialized).scaled(icon_size, icon_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         if isinstance(iconSerialized, QPixmap):
@@ -146,7 +149,7 @@ class HTMLDelegate(QStyledItemDelegate):
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
         painter.save()
-        painter.translate(*self.nudgedModelIndexes.get(index, (0, 0)))
+        painter.translate(*self.nudged_model_indexes.get(index, (0, 0)))
 
         # Handle the Decoration Role (icon)
         decoration = index.data(Qt.ItemDataRole.DecorationRole)
@@ -156,17 +159,18 @@ class HTMLDelegate(QStyledItemDelegate):
             icon.paint(painter, icon_rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             option.rect.setLeft(icon_rect.right() + 5)
 
-        display_data = index.data(Qt.DisplayRole)
+        display_data: Any = index.data(Qt.ItemDataRole.DisplayRole)
         if not display_data:
             painter.restore()
             return
 
         icon_width_total, _ = self.process_icons(painter, option, index)
-        new_rect = option.rect.adjusted(icon_width_total, 0, 0, 0)
+        new_rect: QRect = option.rect.adjusted(icon_width_total, 0, 0, 0)
         painter.setClipRect(new_rect)
 
-        doc = self.createTextDocument(display_data, option.font, new_rect.width())
-        ctx = doc.documentLayout().PaintContext()
+        doc: QTextDocument = self.createTextDocument(display_data, option.font, new_rect.width())
+        ctx: QAbstractTextDocumentLayout.PaintContext | None = doc.documentLayout().PaintContext()
+        assert ctx is not None
         ctx.palette = option.palette
 
         if bool(option.state & QStyle.StateFlag.State_Selected):
@@ -178,7 +182,9 @@ class HTMLDelegate(QStyledItemDelegate):
             ctx.palette.setColor(QPalette.ColorRole.Text, option.palette.text().color())
 
         painter.translate(new_rect.topLeft())
-        doc.documentLayout().draw(painter, ctx)
+        doc_layout: QAbstractTextDocumentLayout | None = doc.documentLayout()
+        assert doc_layout is not None
+        doc_layout.draw(painter, ctx)
         painter.restore()
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
@@ -186,34 +192,37 @@ class HTMLDelegate(QStyledItemDelegate):
         if html is None:
             return super().sizeHint(option, index)
 
-        parentWidget = self.parent()
-        available_width, available_height = self._get_available_size(parentWidget, index)
+        parent_widget: QWidget = self.parent()
+        available_width, available_height = self._get_available_size(parent_widget, index)
 
-        doc = self.createTextDocument(html, option.font, available_height)
+        doc: QTextDocument = self.createTextDocument(html, option.font, available_height)
         naturalWidth, naturalHeight = int(doc.idealWidth()), int(doc.size().height())
         ratio = 1.4
-        min_width = naturalHeight * ratio
-        max_height = min(naturalWidth / ratio, (naturalHeight * naturalWidth) / min_width)
-        finalSize = QSize(int(max(naturalWidth, min_width)), int(min(naturalHeight, max_height) + self.customVerticalSpacing))
+        min_width: float = naturalHeight * ratio
+        max_height: float = min(naturalWidth / ratio, (naturalHeight * naturalWidth) / min_width)
+        finalSize: QSize = QSize(int(max(naturalWidth, min_width)), int(min(naturalHeight, max_height) + self.custom_vertical_spacing))
 
-        icon_data: dict[str, Any] = index.data(_ICONS_DATA_ROLE)
+        icon_data: dict[str, Any] = index.data(ICONS_DATA_ROLE)
         if icon_data:
             finalSize = self._adjust_size_for_icons(finalSize, icon_data)
 
         return finalSize
 
-    def _get_available_size(self, parentWidget: QWidget, index: QModelIndex) -> tuple[int, int]:  # noqa: N803
-        if isinstance(parentWidget, (QListWidget, QListView, QTreeView, QTreeWidget)):
-            available_width, available_height = parentWidget.viewport().width(), parentWidget.viewport().height()
-            if isinstance(parentWidget, (QTreeView, QTreeWidget)):
-                depth = 1
-                parentIndex = index.parent()
-                while parentIndex.isValid():
+    def _get_available_size(self, parent_widget: QWidget, index: QModelIndex) -> tuple[int, int]:  # noqa: N803
+        if isinstance(parent_widget, (QListWidget, QListView, QTreeView, QTreeWidget)):
+            viewport: QWidget | None = parent_widget.viewport()
+            assert viewport is not None
+            available_width: int = viewport.width()
+            available_height: int = viewport.height()
+            if isinstance(parent_widget, (QTreeView, QTreeWidget)):
+                depth: int = 1
+                parent_index: QModelIndex = index.parent()
+                while parent_index.isValid():
                     depth += 1
-                    parentIndex = parentIndex.parent()
-                available_width -= depth * parentWidget.indentation()
+                    parent_index = parent_index.parent()
+                available_width -= depth * parent_widget.indentation()
         else:
-            available_width, available_height = parentWidget.width(), parentWidget.height()
+            available_width, available_height = parent_widget.width(), parent_widget.height()
         return available_width, available_height
 
     def _adjust_size_for_icons(self, size: QSize, icon_data: dict[str, Any]) -> QSize:

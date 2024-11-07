@@ -268,7 +268,7 @@ class TLKEditor(Editor):
             selection.data(),
             self._installation,
             self,
-            gff_specialized=GlobalSettings().gff_specializedEditors,
+            gff_specialized=GlobalSettings().gffSpecializedEditors,
         )
 
     def new(self):

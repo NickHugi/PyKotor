@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from loggerplus import RobustLogger
 
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
@@ -30,7 +31,7 @@ from utility.common.misc_string.util import ireplace
 if TYPE_CHECKING:
     import os
 
-    from pykotor.common.misc import Game, ResRef
+    from pykotor.common.misc import Game
     from pykotor.common.module import ModuleResource
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.lyt.lyt_data import LYT
@@ -88,7 +89,7 @@ def clone_module(
     ifo: IFO | None = ifo_res.resource() if ifo_res is not None else None
     if ifo is not None:
         old_resref: ResRef = ifo.resref
-        ifo.resref.set_data(identifier)
+        ifo.resref = ResRef(identifier)
         ifo.mod_name = LocalizedString.from_english(identifier.upper())
         ifo.tag = identifier.upper()
         ifo.area_name.set_data(identifier)
@@ -125,16 +126,16 @@ def clone_module(
             door.resref.set_data(new_resname)
             door.tag = new_resname
 
-            utd_res: ModuleResource[UTD] | None = old_module.door(old_resname)
-            if utd_res is None:
+            utd_mod_res: ModuleResource[UTD] | None = old_module.door(old_resname)
+            if utd_mod_res is None:
                 RobustLogger().warning(f"No UTD found for door '{old_resname}' in module '{root}'")
                 continue
-            utd: UTD | None = utd_res.resource()
-            if utd is None:
+            utd_res: UTD | None = utd_mod_res.resource()
+            if utd_res is None:
                 RobustLogger().warning(f"UTD resource is None for door '{old_resname}' in module '{root}'")
                 continue
 
-            new_module.set_data(new_resname, ResourceType.UTD, bytes_gff(dismantle_utd(utd)))
+            new_module.set_data(new_resname, ResourceType.UTD, bytes_gff(dismantle_utd(utd_res)))
     else:
         git.doors = []
 
@@ -145,16 +146,16 @@ def clone_module(
             placeable.resref.set_data(new_resname)
             placeable.tag = new_resname
 
-            utp_res: ModuleResource[UTP] | None = old_module.placeable(old_resname)
-            if utp_res is None:
+            utp_mod_res: ModuleResource[UTP] | None = old_module.placeable(old_resname)
+            if utp_mod_res is None:
                 RobustLogger().warning(f"No UTP found for placeable '{old_resname}' in module '{root}'")
                 continue
-            utp: UTP | None = utp_res.resource()
-            if utp is None:
+            utp_res: UTP | None = utp_mod_res.resource()
+            if utp_res is None:
                 RobustLogger().warning(f"UTP resource is None for placeable '{old_resname}' in module '{root}'")
                 continue
 
-            new_module.set_data(new_resname, ResourceType.UTP, bytes_gff(dismantle_utp(utp)))
+            new_module.set_data(new_resname, ResourceType.UTP, bytes_gff(dismantle_utp(utp_res)))
     else:
         git.placeables = []
 
@@ -165,15 +166,15 @@ def clone_module(
             sound.resref.set_data(new_resname)
             sound.tag = new_resname
 
-            uts_res = old_module.sound(old_resname)
-            if uts_res is None:
+            uts_mod_res = old_module.sound(old_resname)
+            if uts_mod_res is None:
                 RobustLogger().warning(f"No UTS found for sound '{old_resname}' in module '{root}'")
                 continue
-            uts: UTS | None = uts_res.resource()
-            if uts is None:
+            uts_res: UTS | None = uts_mod_res.resource()
+            if uts_res is None:
                 RobustLogger().warning(f"UTS resource is None for sound '{old_resname}' in module '{root}'")
                 continue
-            new_module.set_data(new_resname, ResourceType.UTS, bytes_gff(dismantle_uts(uts)))
+            new_module.set_data(new_resname, ResourceType.UTS, bytes_gff(dismantle_uts(uts_res)))
     else:
         git.sounds = []
 

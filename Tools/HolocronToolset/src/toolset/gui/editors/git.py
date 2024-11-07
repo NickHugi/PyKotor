@@ -44,8 +44,8 @@ from toolset.gui.dialogs.instance.waypoint import WaypointDialog
 from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.renderer.walkmesh import GeomPoint
-from toolset.gui.widgets.settings.git import GITSettings
-from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from toolset.gui.widgets.settings.editor_settings.git import GITSettings
+from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
 from toolset.utils.window import add_window, open_resource_editor
 
 if TYPE_CHECKING:
@@ -859,7 +859,7 @@ class _InstanceMode(_Mode):
             edited_file_from_dot_mod = self._editor._filepath.suffix.lower() == ".mod"  # noqa: SLF001
         else:
             assert self._editor._module is not None  # noqa: SLF001
-            module_root = self._editor._module.root_name().lower()  # noqa: SLF001
+            module_root = self._editor._module.root().lower()  # noqa: SLF001
             edited_file_from_dot_mod = self._editor._module.dot_mod  # noqa: SLF001
 
         for i, loc in reversed(list(enumerate(search))):

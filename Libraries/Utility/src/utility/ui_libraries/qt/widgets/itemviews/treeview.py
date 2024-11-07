@@ -64,7 +64,7 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         self._add_menu_action(tree_view_menu, "Tree Indentation", self.indentation, self.setIndentation, "indentation", param_type=int)
         self._add_menu_action(tree_view_menu, "Show Horizontal Scrollbar", lambda: self.header_visible, self.set_horizontal_scrollbar, "horizontalScrollBarVisible")
         self._add_menu_action(tree_view_menu, "Vertical Spacing",
-            lambda: getattr(self.itemDelegate(), "customVerticalSpacing", 0),
+            lambda: getattr(self.itemDelegate(), "custom_vertical_spacing", 0),
             lambda x: getattr(self.itemDelegate(), "setVerticalSpacing", lambda _: None)(x),
             "verticalSpacing", param_type=int)
         self._add_menu_action(tree_view_menu, "Word Wrap", self.wordWrap, self.setWordWrap, "wordWrap")

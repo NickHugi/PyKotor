@@ -44,6 +44,8 @@ class TXI:
                         float(parts[1].strip()),
                         int(parts[2].strip()),
                     )
+                    if self.features.upperleftcoords is None:
+                        self.features.upperleftcoords = []
                     self.features.upperleftcoords.append(coords)
                     cur_coords += 1
                     if cur_coords >= max_coords:
@@ -58,6 +60,8 @@ class TXI:
                         float(parts[1].strip()),
                         int(parts[2].strip()),
                     )
+                    if self.features.lowerrightcoords is None:
+                        self.features.lowerrightcoords = []
                     self.features.lowerrightcoords.append(coords)
                     cur_coords += 1
                     if cur_coords >= max_coords:
@@ -301,7 +305,7 @@ class TXI:
     def __str__(self) -> str:
         lines: list[str] = []
         for attr, value in vars(self.features).items():
-            if attr.startswith("__"):
+            if value is None or attr.startswith("__"):
                 continue
             upper_attr = attr.upper()
             if upper_attr not in TXICommand.__members__:
@@ -327,91 +331,91 @@ class TXIFeatures:
     """This class is used to store the features of a texture."""
 
     def __init__(self):  # noqa: PLR0915
-        self.alphamean: float = 0.0
-        self.arturoheight: int = 0
-        self.arturowidth: int = 0
-        self.baselineheight: float = 0
-        self.blending: int = 0
-        self.bumpmapscaling: float = 0.0
-        self.bumpmaptexture: str = ""
-        self.bumpyshinytexture: str = ""
-        self.candownsample: bool = False
-        self.caretindent: float = -0.010000  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted.
-        self.channelscale: list[float] = []
-        self.channeltranslate: list[float] = []
-        self.clamp: bool = False
-        self.codepage: int = 0
-        self.cols: int = 0
-        self.compresstexture: bool = False
-        self.controllerscript: str = ""
-        self.cube: bool = False
-        self.dbmapping: bool = False  # (???) Potentially for dbcs multi-byte encodings?
-        self.decal: bool = False
-        self.defaultbpp: int = 0
-        self.defaultheight: int = 0
-        self.defaultwidth: int = 0
-        self.distort: bool = False
-        self.distortangle: float = 0.0
-        self.distortionamplitude: float = 0.0
-        self.downsamplefactor: float = 0.0
-        self.downsamplemax: int = 0
-        self.downsamplemin: int = 0
-        self.envmaptexture: str = ""
-        self.filerange: list[int] = []
+        self.alphamean: float | None = None
+        self.arturoheight: int | None = None
+        self.arturowidth: int | None = None
+        self.baselineheight: float | None = None
+        self.blending: int | None = None
+        self.bumpmapscaling: float | None = None
+        self.bumpmaptexture: str | None = None
+        self.bumpyshinytexture: str | None = None
+        self.candownsample: bool | None = None
+        self.caretindent: float | None = None  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted.
+        self.channelscale: list[float] | None = None
+        self.channeltranslate: list[float] | None = None
+        self.clamp: bool | None = None
+        self.codepage: int | None = None
+        self.cols: int | None = None
+        self.compresstexture: bool | None = None
+        self.controllerscript: str | None = None
+        self.cube: bool | None = None
+        self.dbmapping: bool | None = None  # (???) Potentially for dbcs multi-byte encodings?
+        self.decal: bool | None = None
+        self.defaultbpp: int | None = None
+        self.defaultheight: int | None = None
+        self.defaultwidth: int | None = None
+        self.distort: bool | None = None
+        self.distortangle: float | None = None
+        self.distortionamplitude: float | None = None
+        self.downsamplefactor: float | None = None
+        self.downsamplemax: int | None = None
+        self.downsamplemin: int | None = None
+        self.envmaptexture: str | None = None
+        self.filerange: list[int] | None = None
 
         # Mipmap and Filter settings (0/1) can apply different graphical "softening" on the fonts (not affecting
         # spacing etc.). Don't use it though, in most case it would hurt your eyes.
         # The engine has broken mip use implementation. It incorrectly mixes mip levels, even on objects
         # filling the screen.
-        self.filter: bool = False  # (???)
-        self.fontheight: float = 0  # Tested. Float between 0 and 1.
+        self.filter: bool | None = None  # (???)
+        self.fontheight: float | None = None  # Tested. Float between 0 and 1.
 
         # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in
         # k1 tests, changing this does not yield any noticeable ingame result.
-        self.fontwidth: int = 0
+        self.fontwidth: int | None = None
 
-        self.fps: float = 0.0
-        self.isbumpmap: bool = False
-        self.isdiffusebumpmap: bool = False
-        self.isspecularbumpmap: bool = False
-        self.isdoublebyte: bool = False  # Potentially for dbcs multi-byte encodings? Might not even be a bool.
-        self.islightmap: bool = False
+        self.fps: float | None = None
+        self.isbumpmap: bool | None = None
+        self.isdiffusebumpmap: bool | None = None
+        self.isspecularbumpmap: bool | None = None
+        self.isdoublebyte: bool | None = None  # Potentially for dbcs multi-byte encodings? Might not even be a bool.
+        self.islightmap: bool | None = None
 
         # Confirmed. The bottom right coordinates for the character
         # box the game draws. each float is 0 to 1. 3rd tuple int is always 0
-        self.lowerrightcoords: list[tuple[float, float, int]] = []
+        self.lowerrightcoords: list[tuple[float, float, int]] | None = None
 
-        self.maxSizeHQ: int = 0
-        self.maxSizeLQ: int = 0
-        self.minSizeHQ: int = 0
-        self.minSizeLQ: int = 0
+        self.maxSizeHQ: int | None = None
+        self.maxSizeLQ: int | None = None
+        self.minSizeHQ: int | None = None
+        self.minSizeLQ: int | None = None
 
         # The mipmap 0 setting shouldn't be changed. That tells the engine to use mip 0, i.e.
         # the highest resolution of the image
-        self.mipmap: bool = False
-        self.numchars: int = 0  # Tested. Unsure if this is actually required, or if the game simply takes from the 'upperleftcoords' and 'lowerrightcoords' sizes.
-        self.numcharspersheet: int = 0
-        self.numx: int = 0
-        self.numy: int = 0
-        self.ondemand: bool = False
-        self.priority: int = 0
-        self.proceduretype: str = ""
-        self.rows: int = 0
-        self.spacingB: float = 0.0  # Confirmed. Float between 0 and 1. Spacing between each multiline string rendered ingame.
-        self.spacingR: float = 0.0  # Untested. Float between 0 and 1. According to research, should NEVER exceed the maximum of 0.002600
-        self.speed: float = 0.0
-        self.temporary: bool = False
-        self.texturewidth: float = 0.0
-        self.unique: bool = False
+        self.mipmap: bool | None = None
+        self.numchars: int | None = None  # Tested. Unsure if this is actually required, or if the game simply takes from the 'upperleftcoords' and 'lowerrightcoords' sizes.
+        self.numcharspersheet: int | None = None
+        self.numx: int | None = None
+        self.numy: int | None = None
+        self.ondemand: bool | None = None
+        self.priority: int | None = None
+        self.proceduretype: str | None = None
+        self.rows: int | None = None
+        self.spacingB: float | None = None  # Confirmed. Float between 0 and 1. Spacing between each multiline string rendered ingame.
+        self.spacingR: float | None = None  # Untested. Float between 0 and 1. According to research, should NEVER exceed the maximum of 0.002600
+        self.speed: float | None = None
+        self.temporary: bool | None = None
+        self.texturewidth: float | None = None
+        self.unique: bool | None = None
 
         # Confirmed. The top left coordinates for the character
         # box the game draws. each float is 0 to 1. 3rd tuple int is always 0
-        self.upperleftcoords: list[tuple[float, float, int]] = []
+        self.upperleftcoords: list[tuple[float, float, int]] | None = None
 
-        self.wateralpha: float = 0.0
-        self.waterheight: float = 0.0
-        self.waterwidth: float = 0.0
-        self.xbox_downsample: bool = False
+        self.wateralpha: float | None = None
+        self.waterheight: float | None = None
+        self.waterwidth: float | None = None
+        self.xbox_downsample: bool | None = None
 
 
 class TXICommand(Enum):

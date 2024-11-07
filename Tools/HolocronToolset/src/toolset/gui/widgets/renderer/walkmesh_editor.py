@@ -38,8 +38,8 @@ if TYPE_CHECKING:
 
 
 class LYTEditor(QWidget):
-    lytUpdated = Signal(LYT)
-    walkmeshUpdated = Signal(BWM)
+    sig_lyt_updated = Signal(LYT)
+    sig_walkmesh_updated = Signal(BWM)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -56,49 +56,49 @@ class LYTEditor(QWidget):
         self.walkmesh: Optional[BWM] = None
         
         self.initUI()
-        self.initConnections()
+        self.init_connections()
 
     def initUI(self):
         loadUi("Tools/HolocronToolset/src/ui/widgets/renderer/lyt_editor.ui", self)
         self.graphicsView.setScene(self.scene)
         self.graphicsView.setRenderHint(QPainter.Antialiasing)
         
-        self.addRoomButton.clicked.connect(self.addRoom)
+        self.add_room_button.clicked.connect(self.add_room)
         self.editRoomButton.clicked.connect(self.editRoom)
         self.deleteRoomButton.clicked.connect(self.deleteRoom)
         
-        self.addTrackButton.clicked.connect(self.addTrack)
+        self.add_track_button.clicked.connect(self.add_track)
         self.editTrackButton.clicked.connect(self.editTrack)
         self.deleteTrackButton.clicked.connect(self.deleteTrack)
         
-        self.addObstacleButton.clicked.connect(self.addObstacle)
+        self.addObstacleButton.clicked.connect(self.add_obstacle)
         self.editObstacleButton.clicked.connect(self.editObstacle)
         self.deleteObstacleButton.clicked.connect(self.deleteObstacle)
         
-        self.addDoorhookButton.clicked.connect(self.addDoorHook)
+        self.addDoorhookButton.clicked.connect(self.add_door_hook)
         self.editDoorhookButton.clicked.connect(self.editDoorHook)
         self.deleteDoorhookButton.clicked.connect(self.deleteDoorHook)
         
-        self.generateWalkmeshButton.clicked.connect(self.generateWalkmesh)
+        self.generateWalkmeshButton.clicked.connect(self.generate_walkmesh)
         
-        self.zoomSlider.valueChanged.connect(self.updateZoom)
+        self.zoom_slider.valueChanged.connect(self.update_zoom)
 
-    def initConnections(self):
+    def init_connections(self):
         self.roomsList.itemClicked.connect(self.onRoomSelected)
         self.tracksList.itemClicked.connect(self.onTrackSelected)
         self.obstaclesList.itemClicked.connect(self.onObstacleSelected)
         self.doorhooksList.itemClicked.connect(self.onDoorhookSelected)
 
-    def setLYT(self, lyt: LYT):
+    def set_lyt(self, lyt: LYT):
         self.lyt = lyt
         self.updateLists()
         self.updateScene()
-        self.lytUpdated.emit(self.lyt)
+        self.sig_lyt_updated.emit(self.lyt)
 
-    def getLYT(self) -> LYT:
+    def get_lyt(self) -> LYT:
         return self.lyt
 
-    def addRoom(self):
+    def add_room(self):
         dialog = RoomPropertiesDialog(self)
         if dialog.exec():
             room = LYTRoom()
@@ -131,7 +131,7 @@ class LYTEditor(QWidget):
             command = DeleteRoomCommand(self, room)
             self.undo_stack.push(command)
 
-    def addTrack(self):
+    def add_track(self):
         if len(self.lyt.rooms) < 2:
             QMessageBox.warning(self, "Add Track", "At least two rooms are required to add a track.")
             return
@@ -164,7 +164,7 @@ class LYTEditor(QWidget):
             command = DeleteTrackCommand(self, track)
             self.undo_stack.push(command)
 
-    def addObstacle(self):
+    def add_obstacle(self):
         dialog = ObstaclePropertiesDialog(self)
         if dialog.exec():
             obstacle = LYTObstacle()
@@ -194,7 +194,7 @@ class LYTEditor(QWidget):
             command = DeleteObstacleCommand(self, obstacle)
             self.undo_stack.push(command)
 
-    def addDoorHook(self):
+    def add_door_hook(self):
         if not self.lyt.rooms:
             QMessageBox.warning(self, "Add Door Hook", "At least one room is required to add a door hook.")
             return
@@ -230,13 +230,13 @@ class LYTEditor(QWidget):
             command = DeleteDoorHookCommand(self, doorhook)
             self.undo_stack.push(command)
 
-    def generateWalkmesh(self):
+    def generate_walkmesh(self):
         self.walkmesh = BWM()
         for room in self.lyt.rooms:
             self.addRoomToWalkmesh(room)
         for obstacle in self.lyt.obstacles:
             self.addObstacleToWalkmesh(obstacle)
-        self.walkmeshUpdated.emit(self.walkmesh)
+        self.sig_walkmesh_updated.emit(self.walkmesh)
 
     def addRoomToWalkmesh(self, room: LYTRoom):
         # Create a simple rectangular walkmesh for the room
@@ -282,7 +282,7 @@ class LYTEditor(QWidget):
                 Vector3(*center)
             ])
 
-    def updateZoom(self, value: int):
+    def update_zoom(self, value: int):
         zoom_factor = value / 100.0
         self.graphicsView.resetTransform()
         self.graphicsView.scale(zoom_factor, zoom_factor)
@@ -653,7 +653,7 @@ class AddRoomCommand(QUndoCommand):
         self.editor.lyt.rooms.append(self.room)
         self.editor.addRoomToScene(self.room)
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.editor.lyt.rooms.remove(self.room)
@@ -662,7 +662,7 @@ class AddRoomCommand(QUndoCommand):
                 self.editor.scene.removeItem(item)
                 break
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class EditRoomCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, room: LYTRoom, old_room: LYTRoom):
@@ -677,7 +677,7 @@ class EditRoomCommand(QUndoCommand):
         self.room.model = self.new_model
         self.editor.updateScene()
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.room.position = self.old_room.position
@@ -685,7 +685,7 @@ class EditRoomCommand(QUndoCommand):
         self.room.model = self.old_room.model
         self.editor.updateScene()
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class DeleteRoomCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, room: LYTRoom):
@@ -700,13 +700,13 @@ class DeleteRoomCommand(QUndoCommand):
                 self.editor.scene.removeItem(item)
                 break
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.editor.lyt.rooms.append(self.room)
         self.editor.addRoomToScene(self.room)
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class AddTrackCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, track: LYTTrack):
@@ -718,7 +718,7 @@ class AddTrackCommand(QUndoCommand):
         self.editor.lyt.tracks.append(self.track)
         self.editor.addTrackToScene(self.track)
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.editor.lyt.tracks.remove(self.track)
@@ -727,7 +727,7 @@ class AddTrackCommand(QUndoCommand):
                 self.editor.scene.removeItem(item)
                 break
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class EditTrackCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, track: LYTTrack, old_track: LYTTrack):
@@ -741,14 +741,14 @@ class EditTrackCommand(QUndoCommand):
         self.track.end_room = self.new_end_room
         self.editor.updateScene()
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.track.start_room = self.old_track.start_room
         self.track.end_room = self.old_track.end_room
         self.editor.updateScene()
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class DeleteTrackCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, track: LYTTrack):
@@ -763,13 +763,13 @@ class DeleteTrackCommand(QUndoCommand):
                 self.editor.scene.removeItem(item)
                 break
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.editor.lyt.tracks.append(self.track)
         self.editor.addTrackToScene(self.track)
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class AddObstacleCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, obstacle: LYTObstacle):
@@ -781,7 +781,7 @@ class AddObstacleCommand(QUndoCommand):
         self.editor.lyt.obstacles.append(self.obstacle)
         self.editor.addObstacleToScene(self.obstacle)
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.editor.lyt.obstacles.remove(self.obstacle)
@@ -790,7 +790,7 @@ class AddObstacleCommand(QUndoCommand):
                 self.editor.scene.removeItem(item)
                 break
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class EditObstacleCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, obstacle: LYTObstacle, old_obstacle: LYTObstacle):
@@ -804,14 +804,14 @@ class EditObstacleCommand(QUndoCommand):
         self.obstacle.radius = self.new_radius
         self.editor.updateScene()
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.obstacle.position = self.old_obstacle.position
         self.obstacle.radius = self.old_obstacle.radius
         self.editor.updateScene()
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class DeleteObstacleCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, obstacle: LYTObstacle):
@@ -826,13 +826,13 @@ class DeleteObstacleCommand(QUndoCommand):
                 self.editor.scene.removeItem(item)
                 break
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.editor.lyt.obstacles.append(self.obstacle)
         self.editor.addObstacleToScene(self.obstacle)
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class AddDoorHookCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, doorhook: LYTDoorHook):
@@ -844,7 +844,7 @@ class AddDoorHookCommand(QUndoCommand):
         self.editor.lyt.doorhooks.append(self.doorhook)
         self.editor.addDoorHookToScene(self.doorhook)
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.editor.lyt.doorhooks.remove(self.doorhook)
@@ -853,7 +853,7 @@ class AddDoorHookCommand(QUndoCommand):
                 self.editor.scene.removeItem(item)
                 break
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class EditDoorHookCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, doorhook: LYTDoorHook, old_doorhook: LYTDoorHook):
@@ -868,7 +868,7 @@ class EditDoorHookCommand(QUndoCommand):
         self.doorhook.orientation = self.new_orientation
         self.editor.updateScene()
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.doorhook.room = self.old_doorhook.room
@@ -876,7 +876,7 @@ class EditDoorHookCommand(QUndoCommand):
         self.doorhook.orientation = self.old_doorhook.orientation
         self.editor.updateScene()
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class DeleteDoorHookCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, doorhook: LYTDoorHook):
@@ -891,13 +891,13 @@ class DeleteDoorHookCommand(QUndoCommand):
                 self.editor.scene.removeItem(item)
                 break
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.editor.lyt.doorhooks.append(self.doorhook)
         self.editor.addDoorHookToScene(self.doorhook)
         self.editor.updateLists()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
 class MoveRoomCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, room: LYTRoom, old_pos: Vector3, new_pos: Vector3):
@@ -910,12 +910,12 @@ class MoveRoomCommand(QUndoCommand):
     def redo(self):
         self.room.position = self.new_pos
         self.updateSceneItem()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.room.position = self.old_pos
         self.updateSceneItem()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def updateSceneItem(self):
         for item in self.editor.scene.items():
@@ -934,12 +934,12 @@ class MoveObstacleCommand(QUndoCommand):
     def redo(self):
         self.obstacle.position = self.new_pos
         self.updateSceneItem()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.obstacle.position = self.old_pos
         self.updateSceneItem()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def updateSceneItem(self):
         for item in self.editor.scene.items():
@@ -959,12 +959,12 @@ class MoveDoorHookCommand(QUndoCommand):
     def redo(self):
         self.doorhook.position = self.new_pos
         self.updateSceneItem()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def undo(self):
         self.doorhook.position = self.old_pos
         self.updateSceneItem()
-        self.editor.lytUpdated.emit(self.editor.lyt)
+        self.editor.sig_lyt_updated.emit(self.editor.lyt)
 
     def updateSceneItem(self):
         for item in self.editor.scene.items():

@@ -9,16 +9,16 @@ from typing import TYPE_CHECKING
 
 import qtpy  # noqa: E402
 
-if qtpy.API_NAME in ("PyQt6", "PySide6"):
-    QDesktopWidget = None
-    from qtpy.QtGui import (  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
-        QUndoCommand,
+if qtpy.QT5:
+    from qtpy.QtWidgets import (  # noqa: F401
+        QDesktopWidget,
+        QUndoCommand,  # pyright: ignore[reportPrivateImportUsage]
         QUndoStack,
     )
-elif qtpy.API_NAME in ("PyQt5", "PySide2"):
-    from qtpy.QtWidgets import (  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
-        QDesktopWidget,
-        QUndoCommand,
+elif qtpy.QT6:
+    QDesktopWidget = None
+    from qtpy.QtGui import (  # noqa: F401
+        QUndoCommand,  # pyright: ignore[reportPrivateImportUsage]
         QUndoStack,
     )
 else:
@@ -70,7 +70,6 @@ if toolset_path.exists():
         os.chdir(toolset_path)
 
 
-
 class PyFileInfoGatherer(QThread):
     updates: Signal = Signal(str, list)
     newListOfFiles: Signal = Signal(str, list)
@@ -115,7 +114,10 @@ class PyFileInfoGatherer(QThread):
         self.condition.wakeAll()
         self.wait()
 
-    def setResolveSymlinks(self, enable: bool):  # noqa: FBT001
+    def setResolveSymlinks(
+        self,
+        enable: bool,  # noqa: FBT001
+    ):  # noqa: FBT001
         if os.name == "nt":
             self.m_resolveSymlinks = enable
 
@@ -130,8 +132,8 @@ class PyFileInfoGatherer(QThread):
             finally:
                 self.mutex.unlock()
 
-            thisPath = self._paths.pop(0)
-            thisList = self._files.pop(0)
+            thisPath: str = self._paths.pop(0)
+            thisList: list[str] = self._files.pop(0)
 
             self.getFileInfos(thisPath, thisList)
 
@@ -139,12 +141,16 @@ class PyFileInfoGatherer(QThread):
         self.fetchExtendedInformation("", [])
 
     def driveRemoved(self):
-        drive_info = QDir.drives()
-        drives = [self._translateDriveName(fi) for fi in drive_info]
+        drive_info: list[QFileInfo] = QDir.drives()
+        drives: list[str] = [self._translateDriveName(fi) for fi in drive_info]
         self.newListOfFiles.emit("", drives)
 
-    def fetchExtendedInformation(self, path: str, files: list[str]):
-        loc = len(self._paths) - 1
+    def fetchExtendedInformation(
+        self,
+        path: str,
+        files: list[str],
+    ):
+        loc: int = len(self._paths) - 1
         while loc >= 0:
             if self._paths[loc] == path and self._files[loc] == files:
                 return
@@ -164,9 +170,12 @@ class PyFileInfoGatherer(QThread):
             print("Watching path:", path)
             self.watchPaths([path])
 
-    def updateFile(self, filePath: str):  # noqa: N803
-        dir_path = os.path.dirname(filePath)  # noqa: PTH120
-        file_name = os.path.basename(filePath)  # noqa: PTH119
+    def updateFile(
+        self,
+        filePath: str,  # noqa: N803
+    ):
+        dir_path: str = os.path.dirname(filePath)  # noqa: PTH120
+        file_name: str = os.path.basename(filePath)  # noqa: PTH119
         self.fetchExtendedInformation(dir_path, [file_name])
 
     def watchedFiles(self) -> list[str]:
@@ -175,25 +184,39 @@ class PyFileInfoGatherer(QThread):
     def watchedDirectories(self) -> list[str]:
         return self.m_watcher.directories()
 
-    def watchPaths(self, paths: list[str]):
+    def watchPaths(
+        self,
+        paths: list[str],
+    ):
         self.m_watcher.addPaths(paths)
 
-    def unwatchPaths(self, paths: list[str]):
+    def unwatchPaths(
+        self,
+        paths: list[str],
+    ):
         self.m_watcher.removePaths(paths)
 
     def clear(self):
         self.unwatchPaths(self.watchedFiles())
         self.unwatchPaths(self.watchedDirectories())
 
-    def removePath(self, path: str):
+    def removePath(
+        self,
+        path: str,
+    ):
         self.unwatchPaths([path])
 
-    def list(self, directoryPath: str):  # noqa: N803
+    def list(
+        self,
+        directoryPath: str,  # noqa: N803
+    ):
         self.fetchExtendedInformation(directoryPath, [])
 
     @staticmethod
-    def _translateDriveName(drive: QFileInfo) -> str:
-        driveName = drive.absoluteFilePath()
+    def _translateDriveName(
+        drive: QFileInfo,
+    ) -> str:
+        driveName: str = drive.absoluteFilePath()
         if os.name == "nt":  # Windows
             if driveName.startswith("/"):  # UNC host
                 return drive.fileName()
@@ -201,7 +224,11 @@ class PyFileInfoGatherer(QThread):
                 driveName = driveName[:-1]
         return driveName
 
-    def getFileInfos(self, path: str, files: list[str]):  # noqa: N803
+    def getFileInfos(
+        self,
+        path: str,
+        files: list[str],
+    ):  # noqa: N803
         # firstTime must be a c_bool
         # in order to match the qt src code.
         # it is a mutable boolean and c_bool is the best way to represent it.
@@ -211,7 +238,7 @@ class PyFileInfoGatherer(QThread):
         base.start()
 
         if not path:  # List drives
-            infoList = [QFileInfo(file) for file in files] if files else QDir.drives()
+            infoList: list[QFileInfo] = [QFileInfo(file) for file in files] if files else QDir.drives()
             updatedFiles = [(self._translateDriveName(info), info) for info in reversed(infoList)]
             self.updates.emit(path, updatedFiles)
             return
@@ -230,7 +257,7 @@ class PyFileInfoGatherer(QThread):
         if allFiles:
             self.newListOfFiles.emit(path, allFiles)
 
-        filesToCheck = files if files else allFiles
+        filesToCheck: list[str] = files if files else allFiles
         for fileName in filesToCheck:
             with QMutexLocker(self.mutex):
                 if self.abort.value:
@@ -251,12 +278,12 @@ class PyFileInfoGatherer(QThread):
         firstTime: c_bool,  # noqa: N803
         updatedFiles: list[tuple[str, QFileInfo]],  # noqa: N803
         path: str,
-    ):
+    ) -> c_bool:
         updatedFiles.append((fileInfo.fileName(), fileInfo))
         current = QElapsedTimer()
         current.start()
 
-        if (firstTime.value and len(updatedFiles) > self.max_files_before_updates) or base.msecsTo(current) > 1000:
+        if (firstTime.value and len(updatedFiles) > self.max_files_before_updates) or base.msecsTo(current) > 1000:  # noqa: PLR2004
             self.updates.emit(path, updatedFiles)
             updatedFiles.clear()
             base.restart()
@@ -281,12 +308,12 @@ class PyFileInfoGatherer(QThread):
         if not fileInfo.exists() and not fileInfo.isSymLink():
             self.unwatchPaths([fileInfo.absoluteFilePath()])
         else:
-            path = fileInfo.absoluteFilePath()
+            path: str = fileInfo.absoluteFilePath()
             if path and fileInfo.exists() and fileInfo.isFile() and fileInfo.isReadable() and path not in self.watchedFiles():
                 self.watchPaths([path])
 
         if os.name == "nt" and self.m_resolveSymlinks and info.isSymLink(ignoreNtfsSymLinks=True):
-            resolvedInfo = QFileInfo(fileInfo.symLinkTarget()).canonicalFilePath()
+            resolvedInfo: str = QFileInfo(fileInfo.symLinkTarget()).canonicalFilePath()
             if QFileInfo(resolvedInfo).exists():
                 self.nameResolved.emit(fileInfo.filePath(), QFileInfo(resolvedInfo).fileName())
 
@@ -299,7 +326,7 @@ if __name__ == "__main__":
     from qtpy.QtWidgets import QApplication
 
     # Initialize the application (required for Qt signal handling)
-    app = QApplication([])
+    app = QApplication(sys.argv)
 
     # Initialize the PyFileInfoGatherer
     file_info_gatherer = PyFileInfoGatherer()

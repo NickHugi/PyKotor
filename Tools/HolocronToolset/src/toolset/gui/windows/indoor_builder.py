@@ -394,7 +394,7 @@ class IndoorMapBuilder(QMainWindow):
                 clear_existing: bool = QtCore.Qt.Key_Shift not in keys
                 room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
                 if room is not None:
-                    self.ui.mapRenderer.selectRoom(room, clear_existing=clear_existing)
+                    self.ui.mapRenderer.select_room(room, clear_existing=clear_existing)
                 else:
                     self.ui.mapRenderer.clearSelectedRooms()
 
@@ -469,7 +469,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.keyReleaseEvent(e)
 
     def addConnectedToSelection(self, room: IndoorMapRoom):
-        self.ui.mapRenderer.selectRoom(room, clear_existing=False)
+        self.ui.mapRenderer.select_room(room, clear_existing=False)
         for hookIndex, _hook in enumerate(room.component.hooks):
             hook: IndoorMapRoom | None = room.hooks[hookIndex]
             if hook is not None and hook not in self.ui.mapRenderer.selectedRooms():
@@ -540,7 +540,7 @@ class IndoorMapRenderer(QWidget):
     def setCursorComponent(self, component: KitComponent | None):
         self._cursorComponent = component
 
-    def selectRoom(
+    def select_room(
         self,
         room: IndoorMapRoom,
         *,
@@ -1001,9 +1001,9 @@ class IndoorMapRenderer(QWidget):
         self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
 
     def mouseDoubleClickEvent(self, e: QMouseEvent):
-        mouseDown: set[int] = copy(self._mouseDown)
-        mouseDown.add(e.button())  # Called after release event so we need to manually include it
-        self.mouseDoubleClicked.emit(Vector2(e.x(), e.y()), mouseDown, self._keysDown)
+        mouse_down: set[int] = copy(self._mouseDown)
+        mouse_down.add(e.button())  # Called after release event so we need to manually include it
+        self.mouseDoubleClicked.emit(Vector2(e.x(), e.y()), mouse_down, self._keysDown)
 
     def keyPressEvent(self, e: QKeyEvent):
         self._keysDown.add(e.key())
@@ -1040,7 +1040,7 @@ class KitDownloader(QDialog):
             - Adds kit name and button to layout in group box
         """
         updateInfoData = get_remote_toolset_update_info(
-            use_beta_channel=GlobalSettings().use_beta_channel,
+            useBetaChannel=GlobalSettings().useBetaChannel,
         )
         try:
             if not isinstance(updateInfoData, dict):

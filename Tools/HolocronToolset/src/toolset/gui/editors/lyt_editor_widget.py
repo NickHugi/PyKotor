@@ -86,7 +86,7 @@ if TYPE_CHECKING:
 
 
 class LYTEditorWidget(QWidget):
-    lytUpdated: Signal = Signal(object)
+    sig_lyt_updated: Signal = Signal(object)
 
     def __init__(self, parent: ModuleRenderer):
         super().__init__(parent)
@@ -122,10 +122,10 @@ class LYTEditorWidget(QWidget):
         self.custom_textures: dict[str, QPixmap] = {}
         self.selected_room: Optional[LYTRoom] = None
 
-        self.setupLYTTools()
+        self.setup_lyt_tools()
 
         # Initialize LYT rendering
-        self.parent_ref.setLYT(self.current_lyt)  # FIXME: setLYT method does not exist.
+        self.parent_ref.set_lyt(self.current_lyt)  # FIXME: set_lyt method does not exist.
 
     def _worker_init(self):
         # Initialize worker process with necessary resources
@@ -139,7 +139,7 @@ class LYTEditorWidget(QWidget):
         # Create main toolbar
         self.main_toolbar = CustomizableToolBar("LYT Editor Toolbar")
         self.main_toolbar.setIconSize(QSize(24, 24))
-        self.setupMainToolbar()
+        self.setup_main_toolbar()
         main_layout.addWidget(self.main_toolbar)
 
         # Create main splitter for resizable widgets
@@ -219,19 +219,19 @@ class LYTEditorWidget(QWidget):
         self.preview_timer = QTimer(self)
         self.preview_timer.setSingleShot(True)
         self.preview_timer.timeout.connect(self.updateRealTimePreview)
-        self.lyt_editor.lytUpdated.connect(self.schedulePreviewUpdate)
+        self.lyt_editor.sig_lyt_updated.connect(self.schedulePreviewUpdate)
         self.texture_browser.textureChanged.connect(self.schedulePreviewUpdate)
 
-    def setupMainToolbar(self):
+    def setup_main_toolbar(self):
         # Room actions
         self.room_actions = []
         room_menu = QMenu("Room Actions", self)
         add_room_action = room_menu.addAction(QIcon("path/to/add_room_icon.png"), "Add Room")
-        add_room_action.triggered.connect(self.lyt_editor.addRoom)
+        add_room_action.triggered.connect(self.lyt_editor.add_room)
         resize_room_action = room_menu.addAction(QIcon("path/to/resize_room_icon.png"), "Resize Room")
-        resize_room_action.triggered.connect(self.lyt_editor.resizeRoom)
+        resize_room_action.triggered.connect(self.lyt_editor.resize_room)
         rotate_room_action = room_menu.addAction(QIcon("path/to/rotate_room_icon.png"), "Rotate Room")
-        rotate_room_action.triggered.connect(self.lyt_editor.rotateRoom)
+        rotate_room_action.triggered.connect(self.lyt_editor.rotate_room)
         connect_rooms_action = room_menu.addAction(QIcon("path/to/connect_rooms_icon.png"), "Connect Rooms")
         connect_rooms_action.triggered.connect(self.connectRooms)
         self.room_actions.extend([add_room_action, resize_room_action, rotate_room_action, connect_rooms_action])
@@ -248,9 +248,9 @@ class LYTEditorWidget(QWidget):
         walkmesh_menu = QMenu("Walkmesh Actions", self)
 
         generate_walkmesh_action = walkmesh_menu.addAction(QIcon("path/to/generate_walkmesh_icon.png"), "Generate Walkmesh")
-        generate_walkmesh_action.triggered.connect(self.generateWalkmesh)
+        generate_walkmesh_action.triggered.connect(self.generate_walkmesh)
         edit_walkmesh_action = walkmesh_menu.addAction(QIcon("path/to/edit_walkmesh_icon.png"), "Edit Walkmesh")
-        edit_walkmesh_action.triggered.connect(self.editWalkmesh)
+        edit_walkmesh_action.triggered.connect(self.edit_walkmesh)
 
         walkmesh_tool_button = QToolButton()
         walkmesh_tool_button.setMenu(walkmesh_menu)
@@ -266,7 +266,7 @@ class LYTEditorWidget(QWidget):
         import_texture_action = texture_menu.addAction(QIcon("path/to/import_texture_icon.png"), "Import Texture")
         import_texture_action.triggered.connect(self.importTexture)
         manage_textures_action = texture_menu.addAction(QIcon("path/to/manage_textures_icon.png"), "Manage Textures")
-        manage_textures_action.triggered.connect(self.manageTextures)
+        manage_textures_action.triggered.connect(self.manage_textures)
 
         texture_tool_button = QToolButton()
         texture_tool_button.setMenu(texture_menu)
@@ -339,7 +339,7 @@ class LYTEditorWidget(QWidget):
 
     def onToolSelected(self, action: QAction):
         self.current_tool = action.text().lower()
-        self.lyt_editor.setCurrentTool(self.current_tool)  # FIXME: setCurrentTool method does not exist.
+        self.lyt_editor.set_current_tool(self.current_tool)  # FIXME: set_current_tool method does not exist.
 
     def setupDragAndDrop(self):
         self.setAcceptDrops(True)
@@ -354,7 +354,7 @@ class LYTEditorWidget(QWidget):
         self.zoom_slider.setValue(100)
         self.zoom_slider.setTickPosition(QSlider.TicksBelow)
         self.zoom_slider.setTickInterval(10)
-        self.zoom_slider.valueChanged.connect(self.onZoomSliderValueChanged)
+        self.zoom_slider.valueChanged.connect(self.on_zoom_slider_value_changed)
         self.main_toolbar.addWidget(self.zoom_slider)
 
     def saveLayoutState(self):
@@ -392,14 +392,14 @@ class LYTEditorWidget(QWidget):
         super().closeEvent(event)
 
     def setupShortcuts(self):
-        QShortcut(QKeySequence("Ctrl+A"), self, self.lyt_editor.addRoom)
-        QShortcut(QKeySequence("Ctrl+R"), self, self.lyt_editor.resizeRoom)
-        QShortcut(QKeySequence("Ctrl+T"), self, self.lyt_editor.rotateRoom)
+        QShortcut(QKeySequence("Ctrl+A"), self, self.lyt_editor.add_room)
+        QShortcut(QKeySequence("Ctrl+R"), self, self.lyt_editor.resize_room)
+        QShortcut(QKeySequence("Ctrl+T"), self, self.lyt_editor.rotate_room)
         QShortcut(QKeySequence("Ctrl+C"), self, self.connectRooms)
-        QShortcut(QKeySequence("Ctrl+G"), self, self.generateWalkmesh)
-        QShortcut(QKeySequence("Ctrl+E"), self, self.editWalkmesh)
+        QShortcut(QKeySequence("Ctrl+G"), self, self.generate_walkmesh)
+        QShortcut(QKeySequence("Ctrl+E"), self, self.edit_walkmesh)
         QShortcut(QKeySequence("Ctrl+I"), self, self.importTexture)
-        QShortcut(QKeySequence("Ctrl+M"), self, self.manageTextures)
+        QShortcut(QKeySequence("Ctrl+M"), self, self.manage_textures)
         QShortcut(QKeySequence("Ctrl++"), self, self.zoom_pan_widget.zoomIn)
         QShortcut(QKeySequence("Ctrl+-"), self, self.zoom_pan_widget.zoomOut)
 
@@ -423,7 +423,7 @@ class LYTEditorWidget(QWidget):
         QShortcut(QKeySequence("F1"), self, self.showHelpOverlay)
         QShortcut(QKeySequence("Ctrl+Q"), self, self.quickSearch)
         QShortcut(QKeySequence("Ctrl+Shift+Z"), self, self.zoom_pan_widget.resetZoomPan)
-        QShortcut(QKeySequence("Ctrl+L"), self, self.toggleLayerVisibility)
+        QShortcut(QKeySequence("Ctrl+L"), self, self.toggle_layer_visibility)
         QShortcut(QKeySequence("Esc"), self, self.cancelCurrentOperation)
 
     def activateFocusedWidget(self):
@@ -435,18 +435,18 @@ class LYTEditorWidget(QWidget):
         context_menu = QMenu(self)
 
         room_submenu = context_menu.addMenu("Room Actions")
-        room_submenu.addAction("Add Room", self.lyt_editor.addRoom)
-        room_submenu.addAction("Resize Room", self.lyt_editor.resizeRoom)
-        room_submenu.addAction("Rotate Room", self.lyt_editor.rotateRoom)
+        room_submenu.addAction("Add Room", self.lyt_editor.add_room)
+        room_submenu.addAction("Resize Room", self.lyt_editor.resize_room)
+        room_submenu.addAction("Rotate Room", self.lyt_editor.rotate_room)
         room_submenu.addAction("Connect Rooms", self.connectRooms)
 
         walkmesh_submenu = context_menu.addMenu("Walkmesh Actions")
-        walkmesh_submenu.addAction("Generate Walkmesh", self.generateWalkmesh)
-        walkmesh_submenu.addAction("Edit Walkmesh", self.editWalkmesh)
+        walkmesh_submenu.addAction("Generate Walkmesh", self.generate_walkmesh)
+        walkmesh_submenu.addAction("Edit Walkmesh", self.edit_walkmesh)
 
         texture_submenu = context_menu.addMenu("Texture Actions")
         texture_submenu.addAction("Import Texture", self.importTexture)
-        texture_submenu.addAction("Manage Textures", self.manageTextures)
+        texture_submenu.addAction("Manage Textures", self.manage_textures)
 
         context_menu.addSeparator()
         context_menu.addAction("Undo", self.undo_stack.undo)
@@ -458,17 +458,17 @@ class LYTEditorWidget(QWidget):
         context_menu.addAction("Toggle Help Overlay", self.toggleHelpOverlay)
         context_menu.addAction("Show Context Help", self.showContextHelp)
         context_menu.addAction("Quick Search", self.quickSearch)
-        context_menu.addAction("Toggle Layer Visibility", self.toggleLayerVisibility)
+        context_menu.addAction("Toggle Layer Visibility", self.toggle_layer_visibility)
         context_menu.addAction("Cancel Current Operation", self.cancelCurrentOperation)
 
         context_menu.exec(self.mapToGlobal(event.pos()))
 
-    def setLYT(self, lyt: LYT):
-        self.lyt_editor.setLYT(lyt)
-        self.walkmesh_editor.setLYT(lyt)  # FIXME: setLYT method does not exist.
+    def set_lyt(self, lyt: LYT):
+        self.lyt_editor.set_lyt(lyt)
+        self.walkmesh_editor.set_lyt(lyt)  # FIXME: set_lyt method does not exist.
 
-    def getLYT(self) -> Optional[LYT]:
-        return self.lyt_editor.getLYT()  # FIXME: getLYT method does not exist.
+    def get_lyt(self) -> Optional[LYT]:
+        return self.lyt_editor.get_lyt()  # FIXME: get_lyt method does not exist.
 
     def submit_task(self, task: Callable[..., Any], *args: Any, **kwargs: Any) -> concurrent.futures.Future:
         self.task_queue.append((task, args, kwargs))
@@ -511,9 +511,9 @@ class LYTEditorWidget(QWidget):
             task, result = future.result()
             if isinstance(result, functools.partial):
                 if result.success:  # FIXME: success attribute does not exist.
-                    self.lytUpdated.emit(self.getLYT())
+                    self.sig_lyt_updated.emit(self.get_lyt())
                 elif result.error:  # FIXME: error attribute does not exist.
-                    self.showErrorMessage(str(result.error))  # FIXME: error attribute does not exist.
+                    self.show_error_message(str(result.error))  # FIXME: error attribute does not exist.
             RobustLogger().info(f"Task {task.__name__} completed successfully")
         except Exception as e:  # noqa: BLE001
             self.on_task_exception(task, e)
@@ -526,23 +526,23 @@ class LYTEditorWidget(QWidget):
         future = self.submit_task(self._connect_rooms)
         future.add_done_callback(self.on_connect_rooms_completed)
 
-    def generateWalkmesh(self):
-        future = self.submit_task(self.walkmesh_editor.generateWalkmesh)
+    def generate_walkmesh(self):
+        future = self.submit_task(self.walkmesh_editor.generate_walkmesh)
         future.add_done_callback(self.on_walkmesh_generated)
 
-    def editWalkmesh(self):
-        self.walkmesh_editor.editWalkmesh()  # FIXME: editWalkmesh method does not exist.
+    def edit_walkmesh(self):
+        self.walkmesh_editor.edit_walkmesh()  # FIXME: edit_walkmesh method does not exist.
 
     def importTexture(self):
         self.undo_stack.push(ImportTextureCommand(self.texture_browser))
 
-    def manageTextures(self):
-        self.texture_browser.manageTextures()  # FIXME: manageTextures method does not exist.
+    def manage_textures(self):
+        self.texture_browser.manage_textures()  # FIXME: manage_textures method does not exist.
 
     def _connect_rooms(self) -> tuple[Any, Any]:
-        old_state = self.lyt_editor.getLYT().serialize()  # FIXME: getLYT method does not exist.
-        self.lyt_editor.autoConnectRooms()  # FIXME: autoConnectRooms method does not exist.
-        new_state = self.lyt_editor.getLYT().serialize()  # FIXME: getLYT method does not exist.
+        old_state = self.lyt_editor.get_lyt().serialize()  # FIXME: get_lyt method does not exist.
+        self.lyt_editor.auto_connect_rooms()  # FIXME: auto_connect_rooms method does not exist.
+        new_state = self.lyt_editor.get_lyt().serialize()  # FIXME: get_lyt method does not exist.
         return old_state, new_state
 
     def on_connect_rooms_completed(self, future: concurrent.futures.Future):
@@ -550,7 +550,7 @@ class LYTEditorWidget(QWidget):
             old_state, new_state = future.result()
             self.undo_stack.push(ConnectRoomsCommand(self.lyt_editor, old_state, new_state))
         except Exception as e:  # noqa: BLE001
-            self.showErrorMessage(f"Error connecting rooms: {e}")
+            self.show_error_message(f"Error connecting rooms: {e}")
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         mime_data = event.mimeData()
@@ -567,19 +567,19 @@ class LYTEditorWidget(QWidget):
                     if file_ext in (".tga", ".dds", ".jpg", ".png"):
                         self.importTexture(file_path, event.pos())
                     elif file_ext == ".lyt":
-                        self.importLYT(file_path)
+                        self.import_lyt(file_path)
                     else:
-                        self.showErrorMessage(f"Unsupported file type: {file_path}")
+                        self.show_error_message(f"Unsupported file type: {file_path}")
         elif mime_data.hasText():
             # Assume it's a room template or other LYT component
             component_data = mime_data.text()
-            self.addLYTComponent(component_data, event.pos())  # FIXME: addLYTComponent method does not exist.
+            self.add_lyt_component(component_data, event.pos())  # FIXME: add_lyt_component method does not exist.
         elif mime_data.hasFormat("application/x-qabstractitemmodeldatalist"):
             # Handle drag and drop from texture browser
             model = cast(QModelIndex, event.source()).model()
             index = model.index(event.source().currentIndex().row(), 0)
             texture_name = model.data(index, Qt.DisplayRole)
-            self.applyTextureToSelectedRoom(texture_name, event.pos())
+            self.apply_texture_to_selected_room(texture_name, event.pos())
 
     def dragMoveEvent(self, event: QDragMoveEvent):
         if event.mimeData().hasUrls() or event.mimeData().hasText() or event.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
@@ -588,12 +588,12 @@ class LYTEditorWidget(QWidget):
     def dragLeaveEvent(self, event: QDragLeaveEvent):
         event.accept()
 
-    def importLYT(self, file_path: str):
+    def import_lyt(self, file_path: str):
         # Implement LYT import logic here
-        self.showInfoMessage(f"Importing LYT file: {file_path}")
+        self.show_info_message(f"Importing LYT file: {file_path}")
         # Add actual import logic
 
-    def applyTextureToSelectedRoom(self, texture_name: str):
+    def apply_texture_to_selected_room(self, texture_name: str):
         # Implement logic to apply the texture to the selected room
         ...
 
@@ -602,36 +602,36 @@ class LYTEditorWidget(QWidget):
             result = future.result()
             if isinstance(result, (asyncio.Future, concurrent.futures.Future, asyncio.Task, functools.partial)):
                 if result.success:  # FIXME: success attribute does not exist.
-                    self.walkmesh_editor.setWalkmesh(result.data)  # FIXME: setWalkmesh method does not exist.
-                    self.showInfoMessage("Walkmesh generated successfully")
+                    self.walkmesh_editor.set_walkmesh(result.data)  # FIXME: set_walkmesh method does not exist.
+                    self.show_info_message("Walkmesh generated successfully")
                 else:
-                    self.showErrorMessage(f"Error generating walkmesh: {result.error}")
+                    self.show_error_message(f"Error generating walkmesh: {result.error}")
             else:
-                self.showErrorMessage("Unexpected result from walkmesh generation")
+                self.show_error_message("Unexpected result from walkmesh generation")
         finally:
             self.active_tasks -= 1
             self.update_status_bar()
 
     def on_task_exception(self, task: Callable, error: Exception):
-        self.showErrorMessage(str(error))
+        self.show_error_message(str(error))
         RobustLogger().error(f"Task exception in {task.__name__}: {error!s}")
 
     def update_status_bar(self):
-        lyt = self.getLYT()
-        selected_room = self.lyt_editor.getSelectedRoom()  # FIXME: getSelectedRoom method does not exist.
-        selected_texture = self.texture_browser.getSelectedTexture()  # FIXME: getSelectedTexture method does not exist.
+        lyt = self.get_lyt()
+        selected_room = self.lyt_editor.get_selected_room()  # FIXME: get_selected_room method does not exist.
+        selected_texture = self.texture_browser.get_selected_texture()  # FIXME: get_selected_texture method does not exist.
         room_info = f"Selected Room: {selected_room.name if selected_room else 'None'}" if selected_room else ""
         walkmesh_info = "Walkmesh visible" if self.walkmesh_editor.isVisible() else "Walkmesh hidden"
         search_info = f"Search results: {len(self.search_results)}" if self.search_results else ""
         status_message = f"Active tasks: {self.active_tasks} | Rooms: {len(lyt.rooms) if lyt else 0} | Zoom: {self.zoom_pan_widget.zoom_factor:.2f}x | {room_info} | Selected Texture: {selected_texture if selected_texture else 'None'} | {walkmesh_info} | {search_info}"
         self.status_bar.showMessage(status_message)
 
-    def showErrorMessage(self, message: str):
+    def show_error_message(self, message: str):
         self.error_dialog.showMessage(f"An error occurred: {message}\n\nPlease check the log for more details.")
         self.error_dialog.show()
         RobustLogger().error(f"Error: {message}")
 
-    def showInfoMessage(self, message: str):
+    def show_info_message(self, message: str):
         info_box = QMessageBox(self)
         info_box.setIcon(QMessageBox.Information)
         info_box.setText(message)
@@ -670,18 +670,18 @@ class LYTEditorWidget(QWidget):
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key_Delete:
-            self.deleteSelectedItem()
+            self.delete_selected_item()
         elif event.key() == Qt.Key_F2:
-            self.renameSelectedItem()
+            self.rename_selected_item()
         super().keyPressEvent(event)
 
-    def deleteSelectedItem(self):
-        selected_item = self.lyt_editor.getSelectedItem()  # FIXME: getSelectedItem method does not exist.
+    def delete_selected_item(self):
+        selected_item = self.lyt_editor.get_selected_item()  # FIXME: get_selected_item method does not exist.
         if selected_item:
             self.undo_stack.push(DeleteItemCommand(self.lyt_editor, selected_item))
 
-    def renameSelectedItem(self):
-        selected_item = self.lyt_editor.getSelectedItem()  # FIXME: getSelectedItem method does not exist.
+    def rename_selected_item(self):
+        selected_item = self.lyt_editor.get_selected_item()  # FIXME: get_selected_item method does not exist.
         if selected_item:
             self.undo_stack.push(RenameItemCommand(self.lyt_editor, selected_item))
 
@@ -697,10 +697,10 @@ class LYTEditorWidget(QWidget):
 
     def _perform_search(self, search_text: str) -> list[tuple[str, str]]:
         results: list[tuple[str, str]] = []
-        lyt = self.getLYT()
+        lyt = self.get_lyt()
         if lyt:
             results.extend(("Room", room.model) for room in lyt.rooms if search_text.lower() in room.model.lower())
-            results.extend(("Texture", texture) for texture in self.texture_browser.getTextures() if search_text.lower() in texture.lower())  # FIXME: getTextures method does not exist.
+            results.extend(("Texture", texture) for texture in self.texture_browser.get_textures() if search_text.lower() in texture.lower())  # FIXME: get_textures method does not exist.
             results.extend(("Track", track.model) for track in lyt.tracks if search_text.lower() in track.model.lower())
             results.extend(
                 ("Obstacle", obstacle.model)
@@ -716,10 +716,10 @@ class LYTEditorWidget(QWidget):
         """
         self.search_results = results
         if results:
-            self.showSearchResults(results)
+            self.show_search_results(results)
         else:
-            self.showInfoMessage("No results found")
-        self.highlightSearchResults(results)
+            self.show_info_message("No results found")
+        self.highlight_search_results(results)
         self.update_status_bar()
 
     def focusInEvent(self, event: QFocusEvent):
@@ -738,17 +738,17 @@ class LYTEditorWidget(QWidget):
         self.texture_browser.show()
 
     def saveLYT(self):
-        lyt: LYT | None = self.getLYT()
+        lyt: LYT | None = self.get_lyt()
         if lyt:
             try:
-                write_lyt(lyt, self.getLYTPath())  # FIXME: getLYTPath method does not exist.
-                self.showInfoMessage("LYT saved successfully")
+                write_lyt(lyt, self.get_lyt_path())  # FIXME: get_lyt_path method does not exist.
+                self.show_info_message("LYT saved successfully")
                 RobustLogger().info("LYT saved successfully")
             except Exception as e:  # noqa: BLE001
-                self.showErrorMessage(f"Error saving LYT: {e!s}")
+                self.show_error_message(f"Error saving LYT: {e!s}")
                 RobustLogger().error(f"Error saving LYT: {e!s}")
 
-    def showSearchResults(self, results: list[tuple[str, str]]):
+    def show_search_results(self, results: list[tuple[str, str]]):
         result_dialog = QDialog(self)
         result_dialog.setWindowTitle("Search Results")
         layout = QVBoxLayout(result_dialog)
@@ -766,7 +766,7 @@ class LYTEditorWidget(QWidget):
         self.main_splitter.setSizes([int(self.width() * 0.7), int(self.width() * 0.3)])
         self.texture_dock.show()
         self.walkmesh_dock.show()
-        self.showInfoMessage("Layout has been reset to default")
+        self.show_info_message("Layout has been reset to default")
 
     def saveCustomLayout(self):
         self.layout_config = {
@@ -775,7 +775,7 @@ class LYTEditorWidget(QWidget):
             "walkmesh_dock": {"visible": self.walkmesh_dock.isVisible(), "geometry": self.walkmesh_dock.saveGeometry().data()},
         }
         self.settings.setValue("LYTEditorWidget/customLayout", json.dumps(self.layout_config))
-        self.showInfoMessage("Custom layout has been saved")
+        self.show_info_message("Custom layout has been saved")
 
     def restoreRightPanelLayout(self, layout_data: dict):
         if "texture_dock" in layout_data:
@@ -786,7 +786,7 @@ class LYTEditorWidget(QWidget):
             self.walkmesh_dock.restoreGeometry(QByteArray.fromHex(layout_data["walkmesh_dock"]["geometry"].encode()))
 
     def duplicateSelectedRoom(self):
-        selected_room = self.lyt_editor.getSelectedRoom()  # FIXME: getSelectedRoom method does not exist.
+        selected_room = self.lyt_editor.get_selected_room()  # FIXME: get_selected_room method does not exist.
         if selected_room:
             self.undo_stack.push(DuplicateRoomCommand(self.lyt_editor, selected_room))
 
@@ -796,19 +796,19 @@ class LYTEditorWidget(QWidget):
         else:
             self.showFullScreen()
 
-    def highlightSearchResults(self, results: list[tuple[str, str]]):
-        self.lyt_editor.clearHighlights()  # FIXME: clearHighlights method does not exist.
+    def highlight_search_results(self, results: list[tuple[str, str]]):
+        self.lyt_editor.clear_highlights()  # FIXME: clear_highlights method does not exist.
         for result_type, result_name in results:
             if result_type == "Room":
-                self.lyt_editor.highlightRoom(result_name)  # FIXME: highlightRoom method does not exist.
+                self.lyt_editor.highlight_room(result_name)  # FIXME: highlight_room method does not exist.
             elif result_type == "Texture":
-                self.texture_browser.highlightTexture(result_name)  # FIXME: highlightTexture method does not exist.
+                self.texture_browser.highlight_texture(result_name)  # FIXME: highlight_texture method does not exist.
 
     def goToSearchResult(self, result_type: str, result_name: str, event: QMouseEvent):
         if result_type == "Room":
-            self.lyt_editor.selectRoom(result_name)  # FIXME: selectRoom method does not exist.
+            self.lyt_editor.select_room(result_name)  # FIXME: select_room method does not exist.
         elif result_type == "Texture":
-            self.texture_browser.selectTexture(result_name)  # FIXME: selectTexture method does not exist.
+            self.texture_browser.select_texture(result_name)  # FIXME: select_texture method does not exist.
 
     def toggleHelpOverlay(self):
         if hasattr(self, "help_overlay") and self.help_overlay.isVisible():
@@ -883,10 +883,10 @@ class LYTEditorWidget(QWidget):
 
     def performQuickSearch(self, search_text: str) -> list[tuple[str, str]]:
         results: list[tuple[str, str]] = []
-        lyt = self.getLYT()
+        lyt = self.get_lyt()
         if lyt:
             results.extend(("Room", room.model) for room in lyt.rooms if search_text.lower() in room.model.lower())
-            results.extend(("Texture", texture) for texture in self.texture_browser.getTextures() if search_text.lower() in texture.lower())  # FIXME: getTextures method does not exist.
+            results.extend(("Texture", texture) for texture in self.texture_browser.get_textures() if search_text.lower() in texture.lower())  # FIXME: get_textures method does not exist.
             results.extend(("Track", track.model) for track in lyt.tracks if search_text.lower() in track.model.lower())
             results.extend(("Obstacle", obstacle.model) for obstacle in lyt.obstacles if search_text.lower() in obstacle.model.lower())
         return results
@@ -895,7 +895,7 @@ class LYTEditorWidget(QWidget):
         if results:
             self.showQuickSearchResults(results)
         else:
-            self.showInfoMessage("No results found")
+            self.show_info_message("No results found")
 
     def showQuickSearchResults(self, results: list[tuple[str, str]]):
         result_dialog = QDialog(self)
@@ -911,8 +911,8 @@ class LYTEditorWidget(QWidget):
         result_dialog.setModal(False)
         result_dialog.exec()
 
-    def toggleLayerVisibility(self):
-        self.lyt_editor.toggleLayerVisibility()  # FIXME: toggleLayerVisibility method does not exist.
+    def toggle_layer_visibility(self):
+        self.lyt_editor.toggle_layer_visibility()  # FIXME: toggle_layer_visibility method does not exist.
         self.update_status_bar()
 
     def cancelCurrentOperation(self):
@@ -920,8 +920,8 @@ class LYTEditorWidget(QWidget):
         self.current_tool = "select"
         self.tool_group.actions()[0].setChecked(True)  # FIXME: tool_group and actions methods do not exist.
 
-    def onZoomSliderValueChanged(self, value: int):
-        self.zoom_pan_widget.setZoomFactor(value / 100)
+    def on_zoom_slider_value_changed(self, value: int):
+        self.zoom_pan_widget.set_zoom_factor(value / 100)
 
     def showEvent(self, event: QShowEvent):
         super().showEvent(event)
@@ -933,15 +933,15 @@ class LYTEditorWidget(QWidget):
 
     def updateRealTimePreview(self):
         # Update the preview based on the current LYT state
-        self.lyt_editor.updatePreview()  # FIXME: updatePreview method does not exist.
-        self.walkmesh_editor.updatePreview()  # FIXME: updatePreview method does not exist.
+        self.lyt_editor.update_preview()  # FIXME: update_preview method does not exist.
+        self.walkmesh_editor.update_preview()  # FIXME: update_preview method does not exist.
 
-    def setupLYTTools(self):
+    def setup_lyt_tools(self):
         self.lyt_toolbar = QToolBar("LYT Tools")
         self.addToolBar(self.lyt_toolbar)  # FIXME: addToolBar method does not exist.
 
         self.add_room_action = QAction("Add Room", self)
-        self.add_room_action.triggered.connect(self.addRoom)
+        self.add_room_action.triggered.connect(self.add_room)
         self.lyt_toolbar.addAction(self.add_room_action)
 
         self.edit_room_action = QAction("Edit Room", self)
@@ -949,18 +949,18 @@ class LYTEditorWidget(QWidget):
         self.lyt_toolbar.addAction(self.edit_room_action)
 
         self.add_track_action = QAction("Add Track", self)
-        self.add_track_action.triggered.connect(self.addTrack)
+        self.add_track_action.triggered.connect(self.add_track)
         self.lyt_toolbar.addAction(self.add_track_action)
 
         self.add_obstacle_action = QAction("Add Obstacle", self)
-        self.add_obstacle_action.triggered.connect(self.addObstacle)
+        self.add_obstacle_action.triggered.connect(self.add_obstacle)
         self.lyt_toolbar.addAction(self.add_obstacle_action)
 
         self.add_doorhook_action = QAction("Add Doorhook", self)
-        self.add_doorhook_action.triggered.connect(self.addDoorhook)
+        self.add_doorhook_action.triggered.connect(self.add_door_hook)
         self.lyt_toolbar.addAction(self.add_doorhook_action)
 
-    def addRoom(self):
+    def add_room(self):
         room = LYTRoom()
         room.position = Vector3(0, 0, 0)  # Default position
         room.size = Vector3(10, 10, 3)  # Default size  # FIXME: size attribute does not exist.
@@ -975,7 +975,7 @@ class LYTEditorWidget(QWidget):
             if dialog.exec():
                 self.updateLYTPreview()
 
-    def addTrack(self):
+    def add_track(self):
         if self.selected_room:
             track = LYTTrack()
             track.start_room = self.selected_room  # FIXME: start_room attribute does not exist.
@@ -985,7 +985,7 @@ class LYTEditorWidget(QWidget):
                 self.current_lyt.tracks.append(track)
                 self.updateLYTPreview()
 
-    def addObstacle(self):
+    def add_obstacle(self):
         obstacle = LYTObstacle()
         # Open a dialog to set obstacle properties
         dialog = ObstaclePropertiesDialog(obstacle, self)  # FIXME: ObstaclePropertiesDialog does not exist.
@@ -993,7 +993,7 @@ class LYTEditorWidget(QWidget):
             self.current_lyt.obstacles.append(obstacle)
             self.updateLYTPreview()
 
-    def addDoorhook(self):
+    def add_door_hook(self):
         if self.selected_room:
             doorhook = LYTDoorHook()
             doorhook.room = self.selected_room
@@ -1004,9 +1004,9 @@ class LYTEditorWidget(QWidget):
                 self.updateLYTPreview()
 
     def updateLYTPreview(self):
-        self.lyt_editor.setLYT(self.current_lyt)
-        self.lytUpdated.emit(self.current_lyt)
-        self.parent_ref.setLYT(self.current_lyt)  # FIXME: setLYT method does not exist.
+        self.lyt_editor.set_lyt(self.current_lyt)
+        self.sig_lyt_updated.emit(self.current_lyt)
+        self.parent_ref.set_lyt(self.current_lyt)  # FIXME: set_lyt method does not exist.
 
     def importCustomTexture(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Import Texture", "", "Image Files (*.png *.jpg *.bmp)")
@@ -1029,7 +1029,7 @@ class LYTEditorWidget(QWidget):
         if self.current_lyt and self.parent_ref.module:  # FIXME: module attribute does not exist.
             self.parent_ref.module.layout().save(self.current_lyt)
             QMessageBox.information(self, "LYT Saved", "The layout has been saved successfully.")
-        self.parent_ref.setLYT(self.current_lyt)  # FIXME: setLYT method does not exist.
+        self.parent_ref.set_lyt(self.current_lyt)  # FIXME: set_lyt method does not exist.
 
 
 class ConnectRoomsCommand(QUndoCommand):
@@ -1043,7 +1043,7 @@ class ConnectRoomsCommand(QUndoCommand):
         self.lyt_editor.getLyt().deserialize(self.new_state)  # FIXME: getLyt method does not exist.
 
     def undo(self):
-        self.lyt_editor.getLYT().deserialize(self.old_state)  # FIXME: getLYT method does not exist.
+        self.lyt_editor.get_lyt().deserialize(self.old_state)  # FIXME: get_lyt method does not exist.
 
 
 class EditWalkmeshCommand(QUndoCommand):
@@ -1085,11 +1085,11 @@ class DeleteItemCommand(QUndoCommand):
         self.old_state: str | None = None
 
     def redo(self):
-        self.old_state = self.lyt_editor.getLYT().serialize()  # FIXME: getLYT method does not exist.
+        self.old_state = self.lyt_editor.get_lyt().serialize()  # FIXME: get_lyt method does not exist.
         self.lyt_editor.deleteItem(self.item)  # FIXME: deleteItem method does not exist.
 
     def undo(self):
-        self.lyt_editor.getLYT().deserialize(self.old_state)  # FIXME: getLYT method does not exist.
+        self.lyt_editor.get_lyt().deserialize(self.old_state)  # FIXME: get_lyt method does not exist.
 
 
 class RenameItemCommand(QUndoCommand):
@@ -1120,11 +1120,11 @@ class DuplicateRoomCommand(QUndoCommand):
 
     def redo(self):
         self.new_room = self.lyt_editor.duplicateRoom(self.original_room)  # FIXME: duplicateRoom method does not exist.
-        self.lyt_editor.selectRoom(self.new_room)  # FIXME: selectRoom method does not exist.
+        self.lyt_editor.select_room(self.new_room)  # FIXME: select_room method does not exist.
 
     def undo(self):
         self.lyt_editor.deleteRoom(self.new_room)
-        self.lyt_editor.selectRoom(self.original_room)  # FIXME: selectRoom method does not exist.
+        self.lyt_editor.select_room(self.original_room)  # FIXME: select_room method does not exist.
 
 
 class ZoomPanWidget(QWidget):
@@ -1146,7 +1146,7 @@ class ZoomPanWidget(QWidget):
         self.zoom_factor = max(self.zoom_factor, 0.1)  # Limit min zoom
         self.update()
 
-    def setZoomFactor(self, factor):
+    def set_zoom_factor(self, factor):
         self.zoom_factor = max(min(factor, 5.0), 0.1)
         self.update()
 

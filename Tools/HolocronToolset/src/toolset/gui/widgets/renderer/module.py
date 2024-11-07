@@ -411,7 +411,7 @@ class ModuleRenderer(QOpenGLWidget):
         world = self.scene.cursor.position()
         if datetime.now(tz=timezone.utc).astimezone() - self._mouse_press_time > timedelta(milliseconds=60):
             self.sig_mouse_moved.emit(screen, screenDelta, world, self._mouse_down, self._keys_down)
-        self._mouse_prev = screen  # Always assign mousePrev after emitting: allows signal handlers (e.g. ModuleDesigner, GITEditor) to handle cursor lock.
+        self._mouse_prev = screen  # Always assign mouse_prev after emitting: allows signal handlers (e.g. ModuleDesigner, GITEditor) to handle cursor lock.
 
     def mousePressEvent(self, e: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         super().mousePressEvent(e)
@@ -460,8 +460,8 @@ class ModuleRenderer(QOpenGLWidget):
         """Loads the LYT data into the renderer."""
         self._lyt = deepcopy(lyt)
         if self._lyt_editor:
-            self._lyt_editor.setLYT(self._lyt)
-        self.lytUpdated.emit(self._lyt)
+            self._lyt_editor.set_lyt(self._lyt)
+        self.sig_lyt_updated.emit(self._lyt)
         self.update()
 
     def get_lyt(self) -> LYT | None:
@@ -471,35 +471,35 @@ class ModuleRenderer(QOpenGLWidget):
     def update_lyt(self, lyt: LYT):
         """Updates the LYT data, notifies listeners, and triggers a redraw."""
         self._lyt = deepcopy(lyt)
-        self.lytUpdated.emit(self._lyt)
+        self.sig_lyt_updated.emit(self._lyt)
         self.update()
 
     def add_room(self, room: LYTRoom):
         """Adds a new room to the LYT data and triggers a redraw."""
         if self._lyt:
             self._lyt.rooms.append(room)
-            self.lytUpdated.emit(self._lyt)
+            self.sig_lyt_updated.emit(self._lyt)
             self.update()
 
     def add_track(self, track: LYTTrack):
         """Adds a new track to the LYT data and triggers a redraw."""
         if self._lyt:
             self._lyt.tracks.append(track)
-            self.lytUpdated.emit(self._lyt)
+            self.sig_lyt_updated.emit(self._lyt)
             self.update()
 
     def add_obstacle(self, obstacle: LYTObstacle):
         """Adds a new obstacle to the LYT data and triggers a redraw."""
         if self._lyt:
             self._lyt.obstacles.append(obstacle)
-            self.lytUpdated.emit(self._lyt)
+            self.sig_lyt_updated.emit(self._lyt)
             self.update()
 
     def add_door_hook(self, doorhook: LYTDoorHook):
         """Adds a new doorhook to the LYT data and triggers a redraw."""
         if self._lyt:
             self._lyt.doorhooks.append(doorhook)
-            self.lytUpdated.emit(self._lyt)
+            self.sig_lyt_updated.emit(self._lyt)
             self.update()
 
     def get_lyt_room_templates(self) -> list[LYTRoomTemplate]:

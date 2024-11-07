@@ -28,17 +28,7 @@ elif qtpy.API_NAME in ("PyQt5", "PySide2"):
     )
 else:
     raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
-from qtpy.QtWidgets import (
-    QAbstractItemView,
-    QApplication,
-    QFileIconProvider,
-    QHeaderView,
-    QMainWindow,
-    QMenu,
-    QStyle,
-    QVBoxLayout,
-    QWidget,
-)
+from qtpy.QtWidgets import QAbstractItemView, QApplication, QFileIconProvider, QHeaderView, QMainWindow, QMenu, QStyle, QVBoxLayout, QWidget
 
 
 def update_sys_path(path: pathlib.Path):
@@ -67,7 +57,6 @@ if toolset_path.exists():
         os.chdir(toolset_path)
 
 
-
 from pathlib import Path  # noqa: E402
 
 from qtpy.QtCore import QAbstractItemModel, QDir, QModelIndex, QObject, Qt  # noqa: E402, F401
@@ -80,7 +69,7 @@ from toolset.__main__ import main_init  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.utils.window import open_resource_editor  # noqa: E402
 from utility.system.os_helper import get_size_on_disk  # noqa: E402
-from utility.ui_libraries.qt.widgets.itemviews.html_delegate import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
+from utility.ui_libraries.qt.widgets.itemviews.html_delegate import ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
@@ -119,8 +108,7 @@ class TreeItem:
         return 0
 
     @abstractmethod
-    def iconData(self) -> QIcon:
-        ...
+    def iconData(self) -> QIcon: ...
 
     def data(self) -> str:
         return self.path.name
@@ -218,10 +206,7 @@ class CapsuleItem(DirItem, FileItem):
     def loadChildren(self: CapsuleItem | NestedCapsuleItem, model: ResourceFileSystemModel) -> list[CapsuleChildItem | NestedCapsuleItem]:
         print(f"{self.__class__.__name__}({self.path}).load_children, row={self.row()}")
         children: list[NestedCapsuleItem | CapsuleChildItem] = [
-            NestedCapsuleItem(res, self)
-            if is_capsule_file(res.filename())
-            else CapsuleChildItem(res, self)
-            for res in LazyCapsule(self.resource.filepath())
+            NestedCapsuleItem(res, self) if is_capsule_file(res.filename()) else CapsuleChildItem(res, self) for res in LazyCapsule(self.resource.filepath())
         ]
         self.children = children
         return self.children
@@ -254,7 +239,9 @@ class ResourceFileSystemTreeView(RobustTreeView):
             rootMenu,
             "Resize Mode",
             lambda: next((self.header().sectionResizeMode(i) for i in range(self.parent().fsModel.columnCount())), QHeaderView.ResizeMode.ResizeToContents),
-            lambda mode: [self.header().setSectionResizeMode(i, mode) for i in range(self.parent().fsModel.columnCount())] if qtpy.QT5 else lambda mode: [self.header().setSectionResizeMode(i, QHeaderView.ResizeMode(mode)) for i in range(self.header().count())],
+            lambda mode: [self.header().setSectionResizeMode(i, mode) for i in range(self.parent().fsModel.columnCount())]
+            if qtpy.QT5
+            else lambda mode: [self.header().setSectionResizeMode(i, QHeaderView.ResizeMode(mode)) for i in range(self.header().count())],
             {
                 "Custom": QHeaderView.ResizeMode.Custom,
                 "Fixed": QHeaderView.ResizeMode.Fixed,
@@ -318,7 +305,7 @@ class ResourceFileSystemWidget(QWidget):
         self.main_layout: QVBoxLayout = QVBoxLayout(self)
         self.main_layout.addLayout(self.address_layout)
         self.main_layout.addWidget(self.fsTreeView)
-        
+
         # Configure the QTreeView
         self.setup_tree_view()
 
@@ -444,7 +431,7 @@ class ResourceFileSystemWidget(QWidget):
                 "rows": 1,
                 "columns": 1,
             }
-            self.fsModel.setData(idx, iconData, _ICONS_DATA_ROLE)
+            self.fsModel.setData(idx, iconData, ICONS_DATA_ROLE)
         else:
             self.fsModel.setData(idx, icon, Qt.ItemDataRole.DecorationRole)
 
@@ -550,16 +537,19 @@ class ResourceFileSystemWidget(QWidget):
         m = QMenu(self)
         print("<SDM> [fileSystemModelContextMenu scope] m: ", m)
 
-        m.addAction("Open").triggered.connect(lambda: [open_resource_editor(r.filepath(), r.resname(), r.restype(), r.data(), installation=active_installation) for r in resources])  # pyright: ignore[reportOptionalMemberAccess]
+        m.addAction("Open").triggered.connect(
+            lambda: [open_resource_editor(r.filepath(), r.resname(), r.restype(), r.data(), installation=active_installation) for r in resources]
+        )  # pyright: ignore[reportOptionalMemberAccess]
 
         if all(r.restype().contents == "gff" for r in resources):
-            m.addAction("Open with GFF Editor").triggered.connect(lambda: [open_resource_editor(r.filepath(), r.resname(), r.restype(), r.data(), installation=active_installation, gff_specialized=False) for r in resources])  # pyright: ignore[reportOptionalMemberAccess]
+            m.addAction("Open with GFF Editor").triggered.connect(
+                lambda: [open_resource_editor(r.filepath(), r.resname(), r.restype(), r.data(), installation=active_installation, gff_specialized=False) for r in resources]
+            )  # pyright: ignore[reportOptionalMemberAccess]
 
         m.addSeparator()
         ResourceItems(resources=list(resources), viewport=lambda: self.parent()).runContextMenu(point, installation=active_installation, menu=m)
         print("<SDM> [fileSystemModelContextMenu scope] resources: ", resources)
         self.fsModel.resetInternalData()
-
 
     def startDrag(self, actions: Qt.DropAction):  # pyright: ignore[reportOptionalMemberAccess]
         print("startDrag")
@@ -587,6 +577,8 @@ class SupportsRichComparison(Protocol):
 
 
 T = TypeVar("T", bound=Union[SupportsRichComparison, str])
+
+
 class ResourceFileSystemModel(QAbstractItemModel):
     COLUMN_TO_STAT_MAP: ClassVar[dict[str, str]] = {
         "Size on Disk": "size_on_disk",
@@ -619,12 +611,7 @@ class ResourceFileSystemModel(QAbstractItemModel):
         self._headers: list[str] = ["Name", "Size", "Path", "Offset", "Last Modified"]
         self._detailed_headers: list[str] = [*self._headers]
         self._detailed_headers.extend(h for h in self.COLUMN_TO_STAT_MAP if h not in self._headers)
-        self._filter: QDir.Filter | QDir.Filters | int = (
-            QDir.Filter.AllEntries
-            | QDir.Filter.NoDotAndDotDot
-            | QDir.Filter.AllDirs
-            | QDir.Filter.Files
-        )
+        self._filter: QDir.Filter | QDir.Filters | int = QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot | QDir.Filter.AllDirs | QDir.Filter.Files
 
     @property
     def NumColumns(self) -> int:
@@ -644,11 +631,11 @@ class ResourceFileSystemModel(QAbstractItemModel):
         return qParentObj
 
     def toggle_detailed_view(self):
-        #self.layoutAboutToBeChanged.emit()
+        # self.layoutAboutToBeChanged.emit()
         self._detailed_view = not self._detailed_view
         print("<SDM> [toggle_detailed_view scope] self._detailed_view: ", self._detailed_view)
         self.getContainerWidget().resize_all_columns()
-        #self.layoutChanged.emit()
+        # self.layoutChanged.emit()
 
     def rootPath(self) -> Path | None:
         return None if self._root is None else self._root.path
@@ -681,9 +668,13 @@ class ResourceFileSystemModel(QAbstractItemModel):
         """Creates a tree item that can have children."""
         path = file.filepath() if isinstance(file, FileResource) else file
         cls = (
-            NestedCapsuleItem if is_capsule_file(path) and not path.exists() and any(p.exists() and p.is_file() for p in path.parents)
-            else CapsuleItem if isinstance(file, FileResource) or is_capsule_file(path)
-            else DirItem if path.is_dir() else None.__class__
+            NestedCapsuleItem
+            if is_capsule_file(path) and not path.exists() and any(p.exists() and p.is_file() for p in path.parents)
+            else CapsuleItem
+            if isinstance(file, FileResource) or is_capsule_file(path)
+            else DirItem
+            if path.is_dir()
+            else None.__class__
         )
         if cls is None.__class__:
             raise ValueError(f"invalid path: {file}")
@@ -751,7 +742,7 @@ class ResourceFileSystemModel(QAbstractItemModel):
         if role == Qt.ItemDataRole.DecorationRole and index.column() == 0:
             return item.iconData()
 
-        if role == _ICONS_DATA_ROLE and index.column() == 0:
+        if role == ICONS_DATA_ROLE and index.column() == 0:
             iconData = {
                 "icons": [(item.iconData(), None, "Item icon")],
                 "size": 32,
@@ -759,7 +750,7 @@ class ResourceFileSystemModel(QAbstractItemModel):
                 "rows": 1,
                 "columns": 1,
             }
-            self.setData(index, iconData, _ICONS_DATA_ROLE)
+            self.setData(index, iconData, ICONS_DATA_ROLE)
 
         return None
 
@@ -779,7 +770,8 @@ class ResourceFileSystemModel(QAbstractItemModel):
 
         item: TreeItem = index.internalPointer()
         print(
-            "<SDM> [fetchMore scope] index.internalPointer(): ", item,
+            "<SDM> [fetchMore scope] index.internalPointer(): ",
+            item,
             f"row: {'item is None' if item is None else item.row()}",
         )
 

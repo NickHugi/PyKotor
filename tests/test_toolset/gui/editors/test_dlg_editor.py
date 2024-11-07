@@ -5,36 +5,36 @@ import os
 import sys
 import unittest
 
-from loggerplus import RobustLogger
-from qtpy.QtCore import QDataStream, QIODevice, QModelIndex
-from qtpy.QtWidgets import QApplication
-from toolset.gui.editors.dlg import (DLGEditor, DLGStandardItem, DLGStandardItemModel, DLGTreeView)
+from typing import Any, Union, cast
 
+from loggerplus import RobustLogger
 from pykotor.common.language import LocalizedString
 from pykotor.resource.generics.dlg import DLG, DLGEntry, DLGLink, DLGNode, DLGReply
-
+from qtpy.QtCore import QByteArray, QDataStream, QIODevice, QMimeData, QModelIndex, Qt
+from qtpy.QtGui import QStandardItem
+from qtpy.QtWidgets import QApplication
 from toolset.data.installation import HTInstallation
+from toolset.gui.editors.dlg import DLGEditor, DLGStandardItem, DLGStandardItemModel, DLGTreeView, _DLG_MIME_DATA_ROLE, _MODEL_INSTANCE_ID_ROLE, QT_STANDARD_ITEM_FORMAT
 
 app = QApplication(sys.argv)
 
-K1_PATH = os.environ.get("K1_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH")
+
 
 @unittest.skipIf(
     bool(K1_PATH if K1_PATH is None else not os.path.exists(K1_PATH)),
     "K1_PATH environment variable is not set or not found on disk.",
 )
 class TestDLGStandardItemModel(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         assert K1_PATH is not None
         cls.installation: HTInstallation = HTInstallation(K1_PATH, "", tsl=False)
-        
 
     def setUp(self):
-        self.editor = DLGEditor(None, self.installation)
-        self.treeView: DLGTreeView = self.editor.ui.dialogTree
-        model = self.editor.ui.dialogTree.model()
+        self.editor: DLGEditor = DLGEditor(None, self.installation)
+        self.tree_view: DLGTreeView = self.editor.ui.dialogTree
+        model: DLGStandardItemModel | None = self.editor.ui.dialogTree.model()
         assert isinstance(model, DLGStandardItemModel)
         self.model: DLGStandardItemModel = model
         self.editor.core_dlg = DLG()
@@ -45,18 +45,24 @@ class TestDLGStandardItemModel(unittest.TestCase):
     def create_item(self, node) -> DLGStandardItem:
         link = DLGLink(node=node)
         item = DLGStandardItem(link=link)
-        self.model.loadDLGItemRec(item)
+        self.model.load_dlg_item_rec(item)
         return item
 
     def create_complex_tree(self) -> DLG:
         # Create the DLG structure with entries and replies
         dlg = DLG()
-        entries = [DLGEntry(comment=f"E{i}") for i in range(5)]
-        replies = [DLGReply(text=LocalizedString.from_english(f"R{i}")) for i in range(5, 10)]
+        entries: list[DLGEntry] = [DLGEntry(comment=f"E{i}") for i in range(5)]
+        replies: list[DLGReply] = [DLGReply(text=LocalizedString.from_english(f"R{i}")) for i in range(5, 10)]
 
         # Create a nested structure
         def add_links(parent_node: DLGNode, children: list[DLGNode]):
             for i, child in enumerate(children):
+                if isinstance(parent_node, DLGEntry):
+                    assert isinstance(child, DLGReply)
+                elif isinstance(parent_node, DLGReply):
+                    assert isinstance(child, DLGEntry)
+                else:
+                    assert False, f"{parent_node.__class__.__name__}: {parent_node}"
                 link = DLGLink(node=child, list_index=i)
                 parent_node.links.append(link)
 
@@ -75,6 +81,7 @@ class TestDLGStandardItemModel(unittest.TestCase):
 
         # Set starters
         dlg.starters.append(DLGLink(node=entries[0], list_index=0))  # Start with the first entry
+        dlg.starters.append(DLGLink(node=entries[1], list_index=1))  # Then the second entry
 
         # Manually update list_index
         def update_list_index(links: list[DLGLink]):
@@ -88,26 +95,26 @@ class TestDLGStandardItemModel(unittest.TestCase):
         return dlg
 
     def test_dictionaries_filled_correctly(self):
-        dlg = self.create_complex_tree()
-        self.editor._loadDLG(dlg)
+        dlg: DLG = self.create_complex_tree()
+        self.editor._load_dlg(dlg)
         items: list[DLGStandardItem] = []
         for link in dlg.starters:
-            items.extend(self.model.linkToItems.get(link, []))
+            items.extend(self.model.link_to_items.get(link, []))
 
         for item in items:
             assert item.link is not None
-            assert item in self.model.linkToItems[item.link]
-            assert item in self.model.nodeToItems[item.link.node]
-            assert item.link in self.model.linkToItems
+            assert item in self.model.link_to_items[item.link]
+            assert item in self.model.node_to_items[item.link.node]
+            assert item.link in self.model.link_to_items
             assert item.link.node is not None
-            assert item.link.node in self.model.nodeToItems
+            assert item.link.node in self.model.node_to_items
 
     def test_hashing(self):
-        dlg = self.create_complex_tree()
-        self.editor._loadDLG(dlg)
-        items = []
+        dlg: DLG = self.create_complex_tree()
+        self.editor._load_dlg(dlg)
+        items: list[DLGStandardItem] = []
         for link in dlg.starters:
-            items.extend(self.model.linkToItems.get(link, []))
+            items.extend(self.model.link_to_items.get(link, []))
 
         for item in items:
             assert hash(item) == id(item)
@@ -124,7 +131,7 @@ class TestDLGStandardItemModel(unittest.TestCase):
             assert link.list_index == i, f"Starter link list_index {link.list_index} == {i} before loading to the model"
             verify_list_index(link.node)
 
-        self.editor._loadDLG(dlg)
+        self.editor._load_dlg(dlg)
 
         for i, link in enumerate(dlg.starters):
             assert link.list_index == i, f"Starter link list_index {link.list_index} == {i} after loading to the model"
@@ -132,60 +139,66 @@ class TestDLGStandardItemModel(unittest.TestCase):
 
         items: list[DLGStandardItem] = []
         for link in dlg.starters:
-            items.extend(self.model.linkToItems.get(link, []))
+            items.extend(self.model.link_to_items.get(link, []))
 
         for index, item in enumerate(items):
             assert item.link is not None
             assert item.link.list_index == index, f"{item.link.list_index} == {index}"
 
-
-    def test_shift_item(self):  # sourcery skip: class-extract-method
-        dlg = self.create_complex_tree()
-        self.editor._loadDLG(dlg)
-        items: list[DLGStandardItem] = []
+    def test_shift_item(self):
+        dlg: DLG = self.create_complex_tree()
+        self.editor._load_dlg(dlg)
+        items_before: list[DLGStandardItem] = []
         for link in dlg.starters:
-            items.extend(self.model.linkToItems.get(link, []))
+            items_before.extend(self.model.link_to_items.get(link, []))
 
-        self.model.shiftItem(items[0], 1)
-        assert items[0].row() == 1
-        assert items[1].row() == 0
+        self.model.shift_item(items_before[0], 1)
 
-    def test_move_item_to_index(self):
-        dlg = self.create_complex_tree()
-        self.editor._loadDLG(dlg)
-        items: list[DLGStandardItem] = []
-        for link in dlg.starters:
-            items.extend(self.model.linkToItems.get(link, []))
+        # Re-fetch items from model
+        items_after: list[DLGStandardItem] = []
+        for i in range(self.model.rowCount()):
+            item: DLGStandardItem | QStandardItem = self.model.item(i, 0)
+            if isinstance(item, DLGStandardItem):
+                items_after.append(item)
 
-        self.model.moveItemToIndex(items[0], 1, None)
-        assert items[0].row() == 1
-        assert items[1].row() == 0
+        # Now check that the items are in the expected order
+        self.assertEqual(items_after[0], items_before[1])
+        self.assertEqual(items_after[1], items_before[0])
 
     def test_paste_item(self):
-        dlg = self.create_complex_tree()
-        self.editor._loadDLG(dlg)
+        dlg: DLG = self.create_complex_tree()
+        self.editor._load_dlg(dlg)
         items: list[DLGStandardItem] = []
         for link in dlg.starters:
-            items.extend(self.model.linkToItems.get(link, []))
+            items.extend(self.model.link_to_items.get(link, []))
 
-        link = DLGLink(node=DLGNode())
-        self.model.pasteItem(items[0], link)
+        self.model.paste_item(
+            items[0],
+            DLGLink(
+                node=DLGReply(
+                    text=LocalizedString.from_english("Pasted Entry"),
+                    list_index=69,
+                ),
+            ),
+        )
 
-        pastedItem = items[0].child(0)
-        assert isinstance(pastedItem, DLGStandardItem)
-        assert pastedItem.link is not None
-        assert pastedItem.link == link
+        pasted_item: QStandardItem | None = items[0].child(0)
+        assert isinstance(pasted_item, DLGStandardItem), f"{pasted_item!r} is not a DLGStandardItem, instead was {pasted_item.__class__.__name__}"
+        assert pasted_item.link is not None, f"{pasted_item.link!r} is None"
+        assert pasted_item.link.node is not None, f"{pasted_item.link.node!r} is None"
+        assert items[0].link is not None, f"{items[0].link!r} is None (items[0] is {items[0]!r})"
+        assert pasted_item.link == items[0].link.node.links[0], f"{pasted_item.link!r} != {items[0].link.node.links[0]!r}"
 
     def test_serialize_mime_data(self):
-        dlg = self.create_complex_tree()
-        self.editor._loadDLG(dlg)
+        dlg: DLG = self.create_complex_tree()
+        self.editor._load_dlg(dlg)
 
         # Step 1: Generate a flat list of all QModelIndex objects
-        all_indices = []
+        all_indices: list[QModelIndex] = []
 
-        def collect_indices(parent_index=QModelIndex()):
+        def collect_indices(parent_index: QModelIndex = QModelIndex()):
             for row in range(self.model.rowCount(parent_index)):
-                index = self.model.index(row, 0, parent_index)
+                index: QModelIndex = self.model.index(row, 0, parent_index)
                 if index.isValid():
                     all_indices.append(index)
                     collect_indices(index)
@@ -193,42 +206,50 @@ class TestDLGStandardItemModel(unittest.TestCase):
         collect_indices()
 
         # Step 2: Generate a flat list of all DLGStandardItem objects
-        all_items = []
-        invalid_indices = []
+        all_items: list[DLGStandardItem] = []
+        invalid_indices: list[QModelIndex] = []
 
         for index in all_indices:
-            item = self.model.itemFromIndex(index)
+            item: QStandardItem | None = self.model.itemFromIndex(index)  # pyright: ignore[reportArgumentType]
             if item is None:
                 invalid_indices.append(index)
             else:
+                assert isinstance(
+                    item, DLGStandardItem
+                ), f"item is {item.__class__.__name__}, {item} for index {index} ({index.row()}, {index.column()}) expected DLGStandardItem"
                 all_items.append(item)
 
-        mime_data = self.model.mimeData([item.index() for item in all_items])
+        mime_data: QMimeData = self.model.mimeData([item.index() for item in all_items])
 
-        assert mime_data.hasFormat("application/x-qabstractitemmodeldatalist")
-        assert mime_data.hasFormat("application/x-pykotor-dlgbranch")
+        assert mime_data.hasFormat(QT_STANDARD_ITEM_FORMAT)
 
-        data = mime_data.data("application/x-pykotor-dlgbranch")
-        stream = QDataStream(data, QIODevice.OpenModeFlag.ReadOnly)
-        model_memory_id = stream.readInt64()
-        dlg_nodes_encoded = stream.readString()
-        dlg_nodes_json = dlg_nodes_encoded.decode()
-        dlg_nodes_dict = json.loads(dlg_nodes_json)
+        data: QByteArray = mime_data.data(QT_STANDARD_ITEM_FORMAT)
+        stream: QDataStream = QDataStream(data, QIODevice.OpenModeFlag.ReadOnly)
+
+        while not stream.atEnd():
+            row: int = stream.readInt32()
+            column: int = stream.readInt32()
+            num_roles: int = stream.readInt32()
+            for _ in range(num_roles):
+                role: int = stream.readInt32()
+                if role == int(Qt.ItemDataRole.DisplayRole):
+                    display_data: str = stream.readQString()
+                elif role == _DLG_MIME_DATA_ROLE:
+                    dlg_data_encoded: bytes | str | None = cast(Union[bytes, str, None], stream.readQString())
+                    assert dlg_data_encoded is not None, "dlg_data_encoded is None, expected byte-encoded string of DLG data."
+                    dlg_data_dict: dict[str | int, Any] = json.loads(dlg_data_encoded)
+                elif role == _MODEL_INSTANCE_ID_ROLE:
+                    model_id: int = stream.readInt64()
 
         # Deserialize and compare
-        try:
-            deserialized_node = DLGNode.from_dict(dlg_nodes_dict)
-        except Exception:
-            RobustLogger().exception("Unhandled exception by DLGNode.from_dict.")
-            raise
-        test1 = deserialized_node.links[0].node.links[0].node.links[0].node
-        try:
-            test2 = all_items[4].link.node
-        except IndexError:
-            RobustLogger().exception("IndexError: items[4].link.node")
-            raise
-        assert test1 == test2
+        deserialized_link: DLGLink = DLGLink.from_dict(dlg_data_dict)
+        assert deserialized_link == all_items[4].link, f"{deserialized_link!r} != {all_items[4].link!r}"
 
 
 if __name__ == "__main__":
-    unittest.main()
+    try:
+        import pytest
+
+        pytest.main(["-v", "-s", __file__])
+    except ImportError:
+        unittest.main()

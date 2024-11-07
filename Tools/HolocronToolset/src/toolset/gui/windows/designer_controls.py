@@ -24,7 +24,7 @@ from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint
 from toolset.data.misc import ControlItem
 from toolset.gui.editors.git import DuplicateCommand, _GeometryMode, _InstanceMode, calculate_zoom_strength
-from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
 from toolset.utils.misc import BUTTON_TO_INT
 
 if TYPE_CHECKING:
