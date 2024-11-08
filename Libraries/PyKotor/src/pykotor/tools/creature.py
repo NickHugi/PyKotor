@@ -10,7 +10,6 @@ from pykotor.resource.generics.uti import read_uti
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal
 
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.twoda import TwoDA
@@ -87,15 +86,13 @@ def get_body_model(
     else:
         print("appearance.2da: utc 'modeltype' is 'B'")
 
-        def lookup_no_armor() -> tuple[Literal["modela"], str, Literal["texaevil", "texa"], Literal["01"], str]:
+        if EquipmentSlot.ARMOR not in utc.equipment or not utc.equipment[EquipmentSlot.ARMOR].resref:
             model_column = "modela"
             body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model 'modela'{context_base}")
             tex_column = "texaevil" if utc.alignment <= 25 else "texa"  # noqa: PLR2004
             tex_append = "01"
             override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching default texture{context_base}")
-            return model_column, body_model, tex_column, tex_append, override_texture
-
-        if EquipmentSlot.ARMOR in utc.equipment and utc.equipment[EquipmentSlot.ARMOR].resref:
+        else:
             armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref
             RobustLogger().debug(f"utc is wearing armor, fetch '{armor_resref}.uti'")
             armor_res_lookup = installation.resource(str(armor_resref), ResourceType.UTI)
@@ -117,8 +114,6 @@ def get_body_model(
 
                 body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model column{context_base}")
                 override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching texture column{context_base}")
-        else:
-            model_column, body_model, tex_column, tex_append, override_texture = lookup_no_armor()
 
         print(f"appearance.2da's texture column: '{tex_column}'")
         print(f"override_texture name: '{override_texture}'")
@@ -161,17 +156,17 @@ def get_weapon_models(
             return None, None
         baseitems = read_2da(baseitems_lookup.data)
 
-    rhand_model: str | None = _load_hand_uti(
+    right_hand_model: str | None = _load_hand_uti(
         installation,
         str(utc.equipment[EquipmentSlot.RIGHT_HAND].resref),
         baseitems
     ) if EquipmentSlot.RIGHT_HAND in utc.equipment else None
-    lhand_model: str | None = _load_hand_uti(
+    left_hand_model: str | None = _load_hand_uti(
         installation,
         str(utc.equipment[EquipmentSlot.LEFT_HAND].resref),
         baseitems
     ) if EquipmentSlot.LEFT_HAND in utc.equipment else None
-    return rhand_model, lhand_model
+    return right_hand_model, left_hand_model
 
 
 def _load_hand_uti(

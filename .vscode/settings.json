@@ -1,80 +1,81 @@
 {
-  "files.exclude": {
-    "**/.trunk/*actions/": true,
-    "**/.trunk/*logs/": true,
-    "**/.trunk/*notifications/": true,
-    "**/.trunk/*out/": true,
-    "**/.trunk/*plugins/": true
-  },
-  "python.analysis.enablePytestSupport": true,
-  "python.missingPackage.severity": "Information",
-  "python.terminal.launchArgs": [
-    "-i",
-    "-m",
-    "debugpy",
-    "--listen",
-    "5678",
-    "--wait-for-client"
-  ],
-  "python.testing.unittestEnabled": true,
-  "python.testing.unittestArgs": [
-    "-v",
-    "-s",
-    "./tests",
-    "-p",
-    "*test*.py"
-  ],
-  "launch": {
-    "compounds": [],
-    "justMyCode": false,
-    "debugStdLib": true,
-    "autoReload": {
-      "enable": true
-    }
-  },
-  "github-actions.workflows.pinned.workflows": [
-    ".github/workflows/publish_and_test_pykotor.yml"
-  ],
-  "mypy.extraArguments": [
-    "--exclude=./.venv",
-    "--exclude=tests/results",
-    "--check-untyped-defs",
-    "-v",
-    "--explicit-package-bases"
-  ],
-  "mypy.runUsingActiveInterpreter": true,
-  "mypy-type-checker.args": [
-    "--check-untyped-defs",
-    "--explicit-package-bases"
-  ],
-  "mypy-type-checker.preferDaemon": true,
-  "mypy-type-checker.reportingScope": "file",
-  "mypy-type-checker.importStrategy": "fromEnvironment",
-  "remote.WSL.fileWatcher.polling": true,
-  "files.watcherExclude": {
-    "**/.trunk/*actions/": true,
-    "**/.trunk/*logs/": true,
-    "**/.trunk/*notifications/": true,
-    "**/.trunk/*out/": true,
-    "**/.trunk/*plugins/": true,
-    "**/.git/**": true
-  },
-  "debugpy.debugJustMyCode": false,
-  "pythonTestExplorer.outputs.showOutputsOnRun": true,
-  "pythonTestExplorer.testFramework": "unittest",
-  "cody.codebase": "http://github.com/th3w1zard1/PyKotor",
-  "cmake.options.statusBarVisibility": "hidden",
-  "python.analysis.autoImportCompletions": true,
-  "python.analysis.autoIndent": true,
-  "python.analysis.autoSearchPaths": true,
-  "python.analysis.includeAliasesFromUserFiles": true,
-  "python.analysis.indexing": true,
-  "python.analysis.languageServerMode": "default",
-  "python.analysis.persistAllIndices": true,
-  "python.analysis.regenerateStdLibIndices": false,
-  "python.languageServer": "Default",
-  "python.analysis.aiCodeActions": {
-    "implementAbstractClasses": true,
-  }
-  "ruff.lineLength": 275,
+    "cmake.options.statusBarVisibility": "hidden",
+    "debugpy.debugJustMyCode": false,
+    "files.exclude": {
+        "**/.trunk/*actions/": true,
+        "**/.trunk/*logs/": true,
+        "**/.trunk/*notifications/": true,
+        "**/.trunk/*out/": true,
+        "**/.trunk/*plugins/": true
+    },
+    "files.watcherExclude": {
+        "**/.git/**": true,
+        "**/.trunk/*actions/": true,
+        "**/.trunk/*logs/": true,
+        "**/.trunk/*notifications/": true,
+        "**/.trunk/*out/": true,
+        "**/.trunk/*plugins/": true
+    },
+    "github-actions.workflows.pinned.workflows": [
+        ".github/workflows/publish_and_test_pykotor.yml"
+    ],
+    "launch": {
+        "autoReload": {
+            "enable": true
+        },
+        "compounds": [],
+        "justMyCode": false
+    },
+    "mypy-type-checker.args": [
+        "--check-untyped-defs",
+        "--explicit-package-bases"
+    ],
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+    "mypy-type-checker.preferDaemon": true,
+    "mypy-type-checker.reportingScope": "file",
+    "mypy.extraArguments": [
+        "--exclude=./.venv",
+        "--exclude=tests/results",
+        "--check-untyped-defs",
+        "-v",
+        "--explicit-package-bases"
+    ],
+    "mypy.runUsingActiveInterpreter": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.autoIndent": true,
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.enablePytestSupport": true,
+    "python.analysis.indexing": true,
+    "python.analysis.persistAllIndices": true,
+    "python.analysis.regenerateStdLibIndices": false,
+    "python.missingPackage.severity": "Warning",
+    "python.terminal.launchArgs": [
+        "-i",
+        "-m",
+        "debugpy",
+        "--listen",
+        "5678",
+        "--wait-for-client"
+    ],
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "*test*.py"
+    ],
+    "python.testing.unittestEnabled": true,
+    "python.testing.autoTestDiscoverOnSaveEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.analysis.packageIndexDepths": [
+        {
+            "name": "",
+            "depth": 3,
+            "includeAllSymbols": true
+        },
+    ],
+    "pythonTestExplorer.outputs.showOutputsOnRun": true,
+    "remote.WSL.fileWatcher.polling": true,
+    "ruff.lineLength": 275,
+    "cody.codebase": "https://github.com/th3w1zard1/PyKotor"
 }

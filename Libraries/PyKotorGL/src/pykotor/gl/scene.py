@@ -1095,9 +1095,14 @@ class Camera:
         cross: vec3 = glm.cross(forward, sideward)
         return glm.normalize(cross)
 
+# Updated code snippet
     def true_position(self) -> vec3:
+        cos_yaw = math.cos(self.yaw)
+        cos_pitch = math.cos(self.pitch - math.pi / 2)
+        sin_yaw = math.sin(self.yaw)
+        sin_pitch = math.sin(self.pitch - math.pi / 2)
         return vec3(
-            self.x + math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance,
-            self.y + math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance,
-            self.z + math.sin(self.pitch - math.pi / 2) * self.distance,
+            self.x + cos_yaw * cos_pitch * self.distance,
+            self.y + sin_yaw * cos_pitch * self.distance,
+            self.z + sin_pitch * self.distance,
         )

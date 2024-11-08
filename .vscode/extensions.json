@@ -131,6 +131,7 @@
         "twixes.pypi-assistant",
         "donadigo.inlinepython",
         "njqdev.vscode-python-typehint",
-        "mhutchie.git-graph"
+        "mhutchie.git-graph",
+        "codesherlockai.codesherlock"
     ]
 }

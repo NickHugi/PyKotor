@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from typing import ClassVar
 
 
 class CardType:
@@ -12,25 +13,29 @@ class CardType:
 
 @dataclass
 class PazaakSideCard:
-    value: int | list[int]
-    card_type: CardType
+    value: ClassVar[int | list[int]]
+    card_type: ClassVar[CardType]
 
     def __str__(self) -> str:
         if self.card_type == CardType.YELLOW_SPECIAL:
             return f"Yellow {self.value}"
         return f"{self.card_type.value.replace('+', f'+{self.value}').replace('-', f'-{self.value}')}"
 
-    def get_value(self, choice: str | None = None) -> int:
-        if self.card_type == CardType.POSITIVE:
-            return self.value
-        elif self.card_type == CardType.NEGATIVE:
-            return -self.value
-        elif self.card_type == CardType.POS_OR_NEG:
-            return self.value if choice == "+" else -self.value
-        elif self.card_type == CardType.YELLOW_SPECIAL:
-            return self.value[0]  # Return the first value for yellow cards
-        else:
+    def get_value(
+        self,
+        choice: str | None = None,
+    ) -> int:
+        value_map: dict[CardType, int | list[int]] = {
+            CardType.POSITIVE: self.value,
+            CardType.NEGATIVE: -self.value,
+            CardType.POS_OR_NEG: self.value if choice == "+" else -self.value,
+            CardType.YELLOW_SPECIAL: self.value[0],
+        }
+
+        if self.card_type not in value_map:
             raise ValueError(f"Unknown card_type {self.card_type!r}")
+
+        return value_map[self.card_type]
 
 @dataclass
 class Player:
@@ -114,10 +119,18 @@ class PazaakGame:
     def draw_card(self) -> int:
         return self.deck.pop()
 
-    def play_card(self, player: Player, card: int | PazaakSideCard):
+    def play_card(
+        self,
+        player: Player,
+        card: int | PazaakSideCard,
+    ) -> None:
         player.hand.append(card)
 
-    def apply_yellow_card_effect(self, player: Player, yellow_card: PazaakSideCard):
+    def apply_yellow_card_effect(
+        self,
+        player: Player,
+        yellow_card: PazaakSideCard,
+    ) -> None:
         for i, card in enumerate(player.hand):
             if isinstance(card, PazaakSideCard) and card.card_type == CardType.POSITIVE and card.value in yellow_card.value:
                 player.hand[i] = PazaakSideCard(card.value, CardType.NEGATIVE)
@@ -143,7 +156,10 @@ class PazaakGame:
                 return None  # Tie
         return None
 
-    def update_score(self, winner: Player | None):
+    def update_score(
+        self,
+        winner: Player | None,
+    ) -> None:
         if winner:
             winner.score += 1
         if winner and winner.score >= self.SETS_TO_WIN:
@@ -273,7 +289,10 @@ class ConsolePazaak(PazaakInterface):
         else:
             print("AI ended its turn.")
 
-    def use_side_card(self, player: Player):
+    def use_side_card(
+        self,
+        player: Player,
+    ) -> None:
         print("Your side cards:")
         for i, card in enumerate(player.active_side_hand, 1):
             print(f"{i}. {card}")
@@ -294,21 +313,30 @@ class ConsolePazaak(PazaakInterface):
         except ValueError:
             print("Invalid input. Please enter a number.")
 
-    def print_hand(self, player: Player):
+    def print_hand(
+        self,
+        player: Player,
+    ) -> None:
         hand_str = ", ".join(str(card) for card in player.hand)
         print(f"{player.name}'s hand: {hand_str} (Total: {player.calculate_hand_value()})")
 
     def print_scores(self):
         print(f"Current score - Player: {self.game.player.score}, AI: {self.game.ai.score}")
 
-    def end_round(self, winner: Player | None):
+    def end_round(
+        self,
+        winner: Player | None,
+    ) -> None:
         if winner:
             print(f"\n{winner.name} wins this round!")
         else:
             print("\nThis round is a tie!")
         self.print_scores()
 
-    def end_game(self, winner: Player):
+    def end_game(
+        self,
+        winner: Player,
+    ) -> None:
         print(f"\nGame over! {winner.name} wins the game!")
         self.print_scores()
 

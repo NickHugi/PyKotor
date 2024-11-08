@@ -151,7 +151,7 @@ class TestQFileDialog2(unittest.TestCase):
         settings.remove("filedialog")
         settings.endGroup()
 
-    def openContextMenu(self, fd: PythonQFileDialog) -> bool:
+    def open_context_menu(self, fd: PythonQFileDialog) -> bool:
         try:
             fd.d_func()._q_showContextMenu(QCursor.pos())  # noqa: SLF001
         except Exception as e:  # noqa: BLE001
@@ -287,7 +287,7 @@ class TestQFileDialog2(unittest.TestCase):
         # these are the real test cases:
 
         # defaults
-        assert self.openContextMenu(fd), "Failed to open context menu"
+        assert self.open_context_menu(fd), "Failed to open context menu"
         assert fd.selectedFiles() == [ctx.file.fileName()], f"Selected files were not correct, expected: {ctx.file.fileName()}, got: {fd.selectedFiles()}"
         assert rm.isEnabled() != fd.testOption(
             self.fd_class.Option.ReadOnly
@@ -299,7 +299,7 @@ class TestQFileDialog2(unittest.TestCase):
         # change to non-defaults:
         fd.setOption(self.fd_class.Option.ReadOnly, not fd.testOption(self.fd_class.Option.ReadOnly))  # noqa: FBT003
 
-        assert self.openContextMenu(fd), "Failed to open context menu"
+        assert self.open_context_menu(fd), "Failed to open context menu"
         assert len(fd.selectedFiles()) == 1, f"Selected files were not correct, expected: 1, got: {len(fd.selectedFiles())}"
         assert rm.isEnabled() != fd.testOption(
             self.fd_class.Option.ReadOnly
@@ -311,7 +311,7 @@ class TestQFileDialog2(unittest.TestCase):
         # and changed back to defaults:
         fd.setOption(self.fd_class.Option.ReadOnly, not fd.testOption(self.fd_class.Option.ReadOnly))
 
-        assert self.openContextMenu(fd), "Failed to open context menu"
+        assert self.open_context_menu(fd), "Failed to open context menu"
         assert len(fd.selectedFiles()) == 1, f"Selected files were not correct, expected: 1, got: {len(fd.selectedFiles())}"
         assert rm.isEnabled() != fd.testOption(
             self.fd_class.Option.ReadOnly

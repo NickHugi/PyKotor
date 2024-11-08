@@ -8,9 +8,9 @@ from unittest import TestCase
 
 from pykotor.common.language import Gender, Language, LocalizedString
 
-THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
+THIS_SCRIPT_PATH: pathlib.Path = pathlib.Path(__file__).resolve()
+PYKOTOR_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[3].resolve()
+UTILITY_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
 
 
 def add_sys_path(p: pathlib.Path):

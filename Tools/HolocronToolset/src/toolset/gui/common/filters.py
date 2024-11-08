@@ -10,7 +10,7 @@ from qtpy.QtGui import QKeyEvent, QStandardItemModel
 from qtpy.QtWidgets import QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QModelIndex
+    from qtpy.QtCore import QAbstractItemModel, QModelIndex
 
 
 class TemplateFilterProxyModel(QSortFilterProxyModel):
@@ -28,7 +28,10 @@ class RobustSortFilterProxyModel(TemplateFilterProxyModel):
         self.setDynamicSortFilter(True)
         self.sort_states: dict[int, int] = {}
 
-    def toggle_sort(self, column: int):
+    def toggle_sort(
+        self,
+        column: int,
+    ):
         if column not in self.sort_states:
             self.sort_states[column] = 0
         self.sort_states[column] = (self.sort_states[column] + 1) % 3
@@ -43,15 +46,22 @@ class RobustSortFilterProxyModel(TemplateFilterProxyModel):
     def reset_sort(self):
         self.sort(-1)  # Reset sorting
         self.invalidate()  # Force a refresh
-        self.sort_states = {}
+        self.sort_states.clear()
 
-    def get_sort_value(self, index: QModelIndex) -> Any:
+    def get_sort_value(
+        self,
+        index: QModelIndex,
+    ) -> Any:
         """Return the sort value based on the column."""
-        srcModel = self.sourceModel()
-        assert isinstance(srcModel, QStandardItemModel)
-        return self.sourceModel().data(index)
+        src_model: QAbstractItemModel | None = self.sourceModel()
+        assert isinstance(src_model, QStandardItemModel)
+        return src_model.data(index)
 
-    def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
+    def lessThan(
+        self,
+        left: QModelIndex,
+        right: QModelIndex,
+    ) -> bool:
         left_data = self.get_sort_value(left)
         right_data = self.get_sort_value(right)
 
@@ -62,19 +72,25 @@ class RobustSortFilterProxyModel(TemplateFilterProxyModel):
 
 
 class NoScrollEventFilter(QObject):
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # pyright: ignore[reportIncompatibleMethodOverride]
-        if event.type() == QEvent.Type.Wheel and isinstance(obj, QWidget):
-            parent_widget = obj.parent()
-            self_parent = self.parent()
-            while parent_widget is not None and (
-                not isinstance(parent_widget, self_parent.__class__)
-                or self_parent.__class__ == QObject
-            ):
-                parent_widget = parent_widget.parent()
-            if parent_widget:
-                QApplication.sendEvent(parent_widget, event)
-            return True
-        return super().eventFilter(obj, event)
+    def eventFilter(
+        self,
+        obj: QObject,
+        event: QEvent,
+    ) -> bool:  # pyright: ignore[reportIncompatibleMethodOverride]
+        event_type: QEvent.Type = event.type()
+        if event_type != QEvent.Type.Wheel or not isinstance(obj, QWidget):
+            return super().eventFilter(obj, event)
+
+        parent_widget: QObject | None = obj.parent()
+        self_parent: QObject | None = self.parent()
+        while parent_widget is not None and (
+            not isinstance(parent_widget, self_parent.__class__)
+            or self_parent.__class__ == QObject
+        ):
+            parent_widget: QObject | None = parent_widget.parent()
+        if parent_widget:
+            QApplication.sendEvent(parent_widget, event)
+        return True
 
     def setup_filter(
         self,
@@ -87,7 +103,11 @@ class NoScrollEventFilter(QObject):
 
         parent_widget = self.parent() if parent_widget is None else parent_widget
         if parent_widget is None:
-            RobustLogger().warning("NoScrollEventFilter has nothing to do, please provide a widget to process (parent_widget was somehow None here)", stack_info=True)
+            RobustLogger().warning(
+                "NoScrollEventFilter has nothing to do, please provide a widget to process (parent_widget was somehow None here)",
+                stack_info=True,
+            )
+            return
         for widget in parent_widget.findChildren(QWidget):
             if not isinstance(widget, QWidget):
                 continue
@@ -100,18 +120,26 @@ class NoScrollEventFilter(QObject):
 
 
 class HoverEventFilter(QObject):
-    def __init__(self, debugKey: Qt.Key | None = None):
+    def __init__(
+        self,
+        debug_key: Qt.Key | None = None,
+    ):
         super().__init__()
         self.current_widget: QObject | None = None
-        self.debugKey: Qt.Key = Qt.Key.Key_Pause if debugKey is None else debugKey
+        self.debug_key: Qt.Key = Qt.Key.Key_Pause if debug_key is None else debug_key
 
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # pyright: ignore[reportIncompatibleMethodOverride]
-        if event.type() == QEvent.Type.HoverEnter:
+    def eventFilter(
+        self,
+        obj: QObject,
+        event: QEvent,
+    ) -> bool:  # pyright: ignore[reportIncompatibleMethodOverride]
+        event_type: QEvent.Type = event.type()
+        if event_type == QEvent.Type.HoverEnter:
             self.current_widget = obj
-        elif event.type() == QEvent.Type.HoverLeave:
+        elif event_type == QEvent.Type.HoverLeave:
             if self.current_widget == obj:
                 self.current_widget = None
-        elif event.type() == QEvent.Type.KeyPress and cast(QKeyEvent, event).key() == self.debugKey:
+        elif event_type == QEvent.Type.KeyPress and cast(QKeyEvent, event).key() == self.debug_key:
             if self.current_widget:
                 print(f"Hovered control: {self.current_widget.__class__.__name__} ({self.current_widget.objectName()})")
             else:

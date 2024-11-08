@@ -25,7 +25,7 @@ from qtpy.QtWidgets import QApplication, QStyle
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import DLGEntry, DLGLink, DLGNode, DLGReply
 from toolset.gui.editors.dlg.constants import QT_STANDARD_ITEM_FORMAT, _COPY_ROLE, _DLG_MIME_DATA_ROLE, _DUMMY_ITEM, _LINK_PARENT_NODE_PATH_ROLE, _MODEL_INSTANCE_ID_ROLE
-from toolset.gui.editors.dlg.list_widgets import DLGListWidgetItem
+from toolset.gui.editors.dlg.list_widget_base import DLGListWidgetItem
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import ICONS_DATA_ROLE
 
 if TYPE_CHECKING:
@@ -567,13 +567,10 @@ class DLGStandardItemModel(QStandardItemModel):
         immediate_check: bool = False,
     ):
         """Add a deleted node to the QListWidget in the left_dock_widget, if the passed link is the only reference."""
-        if (
-            not shallow_link_copy.node
-            or shallow_link_copy.list_index == -1
-            and shallow_link_copy.node.list_index == -1
-        ):
+        if not shallow_link_copy.node or shallow_link_copy.list_index == -1 and shallow_link_copy.node.list_index == -1:
             return
         if not immediate_check:
+
             def on_orphan(*args):
                 self.on_orphaned_node(shallow_link_copy, link_parent_path, immediate_check=True)
 
@@ -770,11 +767,7 @@ class DLGStandardItemModel(QStandardItemModel):
             self.set_item_future_expand(item_to_load)
         else:
             orig_item: DLGStandardItem | None = next(
-                (
-                    item
-                    for item in self.link_to_items[item_to_load.link]
-                    if not item.isDeleted() and item.data(_COPY_ROLE) is False
-                ),
+                (item for item in self.link_to_items[item_to_load.link] if not item.isDeleted() and item.data(_COPY_ROLE) is False),
                 None,
             )
             item_to_load.setData(
@@ -839,11 +832,7 @@ class DLGStandardItemModel(QStandardItemModel):
         """Helper method to update the UI with the new link."""
         assert parent_item.link is not None
         if link is None:
-            new_node: DLGReply | DLGEntry = (
-                DLGEntry()
-                if isinstance(parent_item.link.node, DLGReply)
-                else DLGReply()
-            )
+            new_node: DLGReply | DLGEntry = DLGEntry() if isinstance(parent_item.link.node, DLGReply) else DLGReply()
             new_node.plot_index = -1
             new_node.list_index = self._get_new_node_list_index(new_node)
             link = DLGLink(new_node)
@@ -937,6 +926,7 @@ class DLGStandardItemModel(QStandardItemModel):
             assert parent_item.link is not None
             self.update_item_display_text(parent_item)
             self.sync_item_copies(parent_item.link, parent_item)
+
         def expand_item(new_item: DLGStandardItem):
             self.tree_view.expand(new_item.index())
 
@@ -1233,17 +1223,12 @@ class DLGStandardItemModel(QStandardItemModel):
             return
         assert self.editor is not None
         _temp_link: DLGLink = (
-            self.editor.core_dlg.starters[old_row]
-            if item_parent is None
-            else item_parent.link.node.links[old_row]  # pyright: ignore[reportOptionalMemberAccess]
+            self.editor.core_dlg.starters[old_row] if item_parent is None else item_parent.link.node.links[old_row]  # pyright: ignore[reportOptionalMemberAccess]
         )
         item_to_move: DLGStandardItem = (item_parent or self).takeRow(old_row)[0]
         (item_parent or self).insertRow(new_row, item_to_move)
         sel_model: QItemSelectionModel | None = self.tree_view.selectionModel()
-        if (
-            sel_model is not None
-            and not no_selection_update
-        ):
+        if sel_model is not None and not no_selection_update:
             sel_model.select(
                 item_to_move.index(),
                 QItemSelectionModel.SelectionFlag.ClearAndSelect,
@@ -1281,10 +1266,7 @@ class DLGStandardItemModel(QStandardItemModel):
         ):
             self.editor.blink_window()
             return
-        if (
-            target_parent_item is not None
-            and not target_parent_item.is_loaded()
-        ):
+        if target_parent_item is not None and not target_parent_item.is_loaded():
             self.load_dlg_item_rec(target_parent_item)
 
         if new_index < 0 or new_index > (target_parent_item or self).rowCount():
@@ -1293,9 +1275,7 @@ class DLGStandardItemModel(QStandardItemModel):
         if source_parent_item is target_parent_item and new_index > old_row:
             new_index -= 1
         _temp_link: DLGLink = (
-            self.editor.core_dlg.starters[old_row]
-            if source_parent_item is None
-            else source_parent_item.link.node.links[old_row]  # pyright: ignore[reportOptionalMemberAccess]
+            self.editor.core_dlg.starters[old_row] if source_parent_item is None else source_parent_item.link.node.links[old_row]  # pyright: ignore[reportOptionalMemberAccess]
         )
         item_to_move: DLGStandardItem = (source_parent_item or self).takeRow(old_row)[0]
         (target_parent_item or self).insertRow(new_index, item_to_move)
@@ -1320,10 +1300,7 @@ class DLGStandardItemModel(QStandardItemModel):
             if not item.is_loaded():
                 continue
             assert item.link is not None
-            link_to_cur_item: dict[DLGLink, DLGStandardItem | None] = {
-                link: None
-                for link in item.link.node.links
-            }
+            link_to_cur_item: dict[DLGLink, DLGStandardItem | None] = {link: None for link in item.link.node.links}
 
             self.ignoring_updates = True
             while item.rowCount() > 0:

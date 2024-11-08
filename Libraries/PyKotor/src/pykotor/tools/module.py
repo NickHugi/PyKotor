@@ -160,6 +160,8 @@ def clone_module(
         git.placeables = []
 
     if keep_sounds:
+        git.sounds = []
+    else:
         for i, sound in enumerate(git.sounds):
             old_resname = str(sound.resref)
             new_resname = f"{identifier}_snd{i}"
@@ -175,8 +177,6 @@ def clone_module(
                 RobustLogger().warning(f"UTS resource is None for sound '{old_resname}' in module '{root}'")
                 continue
             new_module.set_data(new_resname, ResourceType.UTS, bytes_gff(dismantle_uts(uts_res)))
-    else:
-        git.sounds = []
 
     new_module.set_data(identifier, ResourceType.GIT, bytes_gff(dismantle_git(git)))
 

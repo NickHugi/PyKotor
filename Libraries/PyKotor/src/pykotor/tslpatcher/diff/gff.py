@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from typing import Any
 
-def flatten_differences(compare_result):
+
+def flatten_differences(
+    compare_result: GFFCompareResult,
+) -> dict[str, Any]:
     """Flattens the differences from GFFCompareResult into a flat dictionary.
 
     Args:
@@ -12,7 +16,7 @@ def flatten_differences(compare_result):
     -------
         dict: A flat dictionary representing the changes.
     """
-    flat_changes = {}
+    flat_changes: dict[str, Any] = {}
     for diff in compare_result.get_differences():
         path_str = str(diff.path).replace("\\", "/")  # Use forward slashes for INI compatibility
         if diff.new_value is not None:  # Changed or added
@@ -22,7 +26,9 @@ def flatten_differences(compare_result):
     return flat_changes
 
 
-def build_hierarchy(flat_changes):
+def build_hierarchy(
+    flat_changes: dict[str, Any],
+) -> dict:
     """Builds a hierarchical structure suitable for INI serialization from flat changes.
 
     Args:
@@ -56,7 +62,11 @@ def serialize_to_ini(hierarchy):
     """
     ini_lines = []
 
-    def serialize_section(name, content, indent_level=0):
+    def serialize_section(
+        name: str,
+        content: dict,
+        indent_level: int = 0,
+    ) -> None:
         """Serializes a section of the hierarchy into INI format, recursively for nested sections.
 
         Args:

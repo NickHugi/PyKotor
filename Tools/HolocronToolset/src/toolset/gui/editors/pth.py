@@ -237,12 +237,12 @@ class PTHEditor(Editor):
         self.status_out.update_status_bar()
 
     def _setup_signals(self):
-        self.ui.renderArea.sig_mouse_pressed.connect(self.onMousePressed)
-        self.ui.renderArea.sig_mouse_moved.connect(self.onMouseMoved)
+        self.ui.renderArea.sig_mouse_pressed.connect(self.on_mouse_pressed)
+        self.ui.renderArea.sig_mouse_moved.connect(self.on_mouse_moved)
         self.ui.renderArea.sig_mouse_scrolled.connect(self.on_mouse_scrolled)
-        self.ui.renderArea.sig_mouse_released.connect(self.onMouseReleased)
+        self.ui.renderArea.sig_mouse_released.connect(self.on_mouse_released)
         self.ui.renderArea.customContextMenuRequested.connect(self.on_context_menu)
-        self.ui.renderArea.sig_key_pressed.connect(self.onKeyPressed)
+        self.ui.renderArea.sig_key_pressed.connect(self.on_key_pressed)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
@@ -360,28 +360,28 @@ class PTHEditor(Editor):
         self._controls.on_render_context_menu(Vector2.from_vector3(world), global_point)
 
     @status_bar_decorator
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_moved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
         world_delta: Vector2 = self.ui.renderArea.to_world_delta(delta.x, delta.y)
         world: Vector3 = self.ui.renderArea.to_world_coords(screen.x, screen.y)
-        self._controls.onMouseMoved(screen, delta, Vector2.from_vector3(world), world_delta, buttons, keys)
+        self._controls.on_mouse_moved(screen, delta, Vector2.from_vector3(world), world_delta, buttons, keys)
 
     @status_bar_decorator
     def on_mouse_scrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         #print(f"on_mouse_scrolled(delta={delta!r})", file=self.stdout)
         self._controls.on_mouse_scrolled(delta, buttons, keys)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        #print(f"onMousePressed(screen={screen!r})", file=self.stdout)
-        self._controls.onMousePressed(screen, buttons, keys)
+    def on_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+        #print(f"on_mouse_pressed(screen={screen!r})", file=self.stdout)
+        self._controls.on_mouse_pressed(screen, buttons, keys)
 
     @status_bar_decorator
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        #print("onMouseReleased", file=self.stdout)
-        self._controls.onMouseReleased(Vector2(0, 0), buttons, keys)
+    def on_mouse_released(self, screen: Vector2, buttons: set[int], keys: set[int]):
+        #print("on_mouse_released", file=self.stdout)
+        self._controls.on_mouse_released(Vector2(0, 0), buttons, keys)
 
     @status_bar_decorator
-    def onKeyPressed(self, buttons: set[int], keys: set[int]):
-        #print("onKeyPressed", file=self.stdout)
+    def on_key_pressed(self, buttons: set[int], keys: set[int]):
+        #print("on_key_pressed", file=self.stdout)
         self._controls.on_keyboard_pressed(buttons, keys)
 
     @status_bar_decorator
@@ -429,7 +429,7 @@ class PTHControlScheme:
             self.editor.zoom_camera(zoom_factor)
 
     @status_bar_decorator
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, world_delta: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_moved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, world_delta: Vector2, buttons: set[int], keys: set[int]):
         self.editor.status_out.mouse_pos = screen
         shouldPanCamera = self.pan_camera.satisfied(buttons, keys)
         shouldrotate_camera = self.rotate_camera.satisfied(buttons, keys)
@@ -450,12 +450,12 @@ class PTHControlScheme:
             self.editor.move_selected(world.x, world.y)
 
     @status_bar_decorator
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         if self.select_underneath.satisfied(buttons, keys):
             self.editor.select_node_under_mouse()
 
     @status_bar_decorator
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
+    def on_mouse_released(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     @status_bar_decorator
     def on_keyboard_pressed(self, buttons: set[int], keys: set[int]):

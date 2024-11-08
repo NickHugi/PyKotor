@@ -135,7 +135,9 @@ class PatcherModifications(ABC):
         self.sourcefolder = file_section_dict.pop("!SourceFolder", default_sourcefolder)
 
 
-def convert_to_bool(value: bool | str) -> bool:
+def convert_to_bool(
+    value: bool | str,
+) -> bool:
     # sourcery skip: assign-if-exp, reintroduce-else
     """Convert a value to boolean.
 

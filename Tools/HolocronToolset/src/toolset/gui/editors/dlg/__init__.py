@@ -1,7 +1,7 @@
 from __future__ import annotations
 from .tree_view import DropPosition, DropTarget, DLGTreeView  # noqa: F403, TID252
 from .editor import DLGEditor  # noqa: F403, TID252
-from .list_widgets import DLGListWidget, DLGListWidgetItem  # noqa: F403, TID252
+from .list_widget_base import DLGListWidget, DLGListWidgetItem  # noqa: F403, TID252
 from .settings import DLGSettings  # noqa: F403, TID252
 from .model import DLGStandardItem, DLGStandardItemModel  # noqa: F403, TID252
 from .constants import (  # noqa: TID252

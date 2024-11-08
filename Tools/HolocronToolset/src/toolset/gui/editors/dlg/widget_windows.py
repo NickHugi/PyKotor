@@ -12,10 +12,10 @@ from qtpy.QtCore import (
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QTextDocument
-from qtpy.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QStyle, QStyleOptionViewItem, QVBoxLayout
+from qtpy.QtWidgets import QDialog, QHBoxLayout, QLabel, QListWidgetItem, QPushButton, QStyle, QStyleOptionViewItem, QVBoxLayout
 
 from pykotor.resource.generics.dlg import DLGLink
-from toolset.gui.editors.dlg.list_widgets import DLGListWidget, DLGListWidgetItem
+from toolset.gui.editors.dlg.list_widget_base import DLGListWidget, DLGListWidgetItem
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 
 if TYPE_CHECKING:
@@ -110,9 +110,12 @@ class ReferenceChooserDialog(QDialog):
         return parent
 
     def update_item_sizes(self):
+        item_delegate = self.list_widget.itemDelegate()
+        if item_delegate is None:
+            return
         for i in range(self.list_widget.count()):
-            item: DLGListWidgetItem | None = self.list_widget.item(i)
-            if item is None:
+            item: QListWidgetItem | None = self.list_widget.item(i)
+            if not isinstance(item, QListWidgetItem):
                 RobustLogger().warning(f"ReferenceChooser.update_item_sizes({i}): Item was None unexpectedly.")
                 continue
             if qtpy.QT5:
@@ -120,7 +123,7 @@ class ReferenceChooserDialog(QDialog):
             else:
                 options: QStyleOptionViewItem = QStyleOptionViewItem()
                 self.list_widget.initViewItemOption(options)
-            item.setSizeHint(self.list_widget.itemDelegate().sizeHint(options, self.list_widget.indexFromItem(item)))
+            item.setSizeHint(item_delegate.sizeHint(options, self.list_widget.indexFromItem(item)))
 
     def calculate_html_width(
         self,
@@ -176,7 +179,7 @@ class ReferenceChooserDialog(QDialog):
     ):
         self.label.setText(item_text)
         self.list_widget.clear()
-        node_path = ""
+        node_path: str = ""
         for linkref in referenceItems:
             link: DLGLink | None = linkref()
             if link is None:

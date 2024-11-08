@@ -188,7 +188,7 @@ class LYTRoom:
     ) -> None:
         """Add a connection to another room."""
         if room not in self.connections:
-            self.connections.append(room)
+            self.connections.add(room)
 
     def remove_connection(
         self,
@@ -196,7 +196,7 @@ class LYTRoom:
     ) -> None:
         """Remove a connection to another room."""
         if room in self.connections:
-            self.connections.remove(room)
+            self.connections.discard(room)
 
     def overlaps(
         self,

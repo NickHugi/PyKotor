@@ -42,7 +42,8 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.misc import Game, ResRef
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.generics.dlg import DLG, DLGComputerType, DLGConversationType, DLGEntry, DLGLink, DLGReply, read_dlg, write_dlg
+from pykotor.resource.generics.dlg import DLG, DLGComputerType, DLGConversationType, DLGEntry, DLGLink, DLGReply
+from pykotor.resource.generics.dlg.io import read_dlg, write_dlg
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
@@ -50,7 +51,7 @@ from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.gui.editors.dlg.constants import QT_STANDARD_ITEM_FORMAT, _DLG_MIME_DATA_ROLE, _LINK_PARENT_NODE_PATH_ROLE, _MODEL_INSTANCE_ID_ROLE
-from toolset.gui.editors.dlg.list_widgets import DLGListWidget, DLGListWidgetItem
+from toolset.gui.editors.dlg.list_widget_base import DLGListWidget, DLGListWidgetItem
 from toolset.gui.editors.dlg.model import DLGStandardItem, DLGStandardItemModel
 from toolset.gui.editors.dlg.settings import DLGSettings
 from toolset.gui.editors.dlg.tree_view import DLGTreeView
@@ -475,7 +476,7 @@ Should return 1 or 0, representing a boolean.
         self.find_input.setFocus()
 
     def handle_go_to(self):
-        input_text = self.go_to_input.text()
+        input_text: str = self.go_to_input.text()
         self.custom_go_to_function(input_text)
         self.go_to_bar.setVisible(False)
 
@@ -1333,7 +1334,10 @@ Should return 1 or 0, representing a boolean.
                 (DLGStandardItemModel, QStandardItemModel),
             ), f"`modelToUse = source_widget if isinstance(source_widget, DLGListWidget) else index.model()` {model_to_use.__class__}: {model_to_use} cannot be None."
             item: DLGStandardItem | QStandardItem | None = model_to_use.itemFromIndex(index)
-            assert item is not None, "modelToUse.itemFromIndex(index) should not return None here in edit_text"
+            if item is None:
+                RobustLogger().error("modelToUse.itemFromIndex(index) should not return None here in edit_text")
+                continue
+
             assert isinstance(item, (DLGStandardItem, DLGListWidgetItem))
             if item.link is None:
                 continue
@@ -1366,7 +1370,7 @@ Should return 1 or 0, representing a boolean.
             print("<SDM> [copyPath scope] path: ", path)
 
         else:
-            path = "\n".join(f"  {i + 1}. {p}" for i, p in enumerate(paths))
+            path: str = "\n".join(f"  {i + 1}. {p}" for i, p in enumerate(paths))
 
         cb: QClipboard | None = QApplication.clipboard()
         if cb is None:
@@ -1518,7 +1522,13 @@ Should return 1 or 0, representing a boolean.
         if item is not None:
             menu: QMenu = self._get_link_context_menu(source_widget, item)
             menu.addSeparator()
-            cast(QAction, menu.addAction("Jump to in Tree")).triggered.connect(lambda *args: self.jump_to_node(item.link))
+
+            def on_tree_jump(*args, item=item):
+                if item is None:
+                    return None
+                return self.jump_to_node(item.link)
+
+            cast(QAction, menu.addAction("Jump to in Tree")).triggered.connect(on_tree_jump)
             sel_model: QItemSelectionModel | None = self.ui.dialogTree.selectionModel()
             if sel_model is not None and source_widget is self.orphaned_nodes_list and sel_model.selectedIndexes():
                 restore_action: QAction | None = menu.addAction("Insert Orphan at Selected Point")
@@ -1721,7 +1731,18 @@ Should return 1 or 0, representing a boolean.
             move_up_action.setShortcut(QKeySequence(Qt.Key.Key_Shift, Qt.Key.Key_Up))
             move_down_action: QAction | None = menu.addAction("Move Down")
             assert move_down_action is not None
-            move_down_action.triggered.connect(lambda: self.model.shift_item(item, 1))  # pyright: ignore[reportArgumentType]
+
+            def on_shift_item(
+                up_or_down: Literal["up", "down"],
+            ):
+                if not isinstance(item, DLGStandardItem):
+                    return
+                if up_or_down == "up":
+                    self.model.shift_item(item, 1)
+                else:
+                    self.model.shift_item(item, -1)
+
+            move_down_action.triggered.connect(on_shift_item)  # pyright: ignore[reportArgumentType]
             move_down_action.setShortcut(QKeySequence(Qt.Key.Key_Shift, Qt.Key.Key_Down))
             menu.addSeparator()
 
@@ -1792,7 +1813,7 @@ Should return 1 or 0, representing a boolean.
         self,
         item: DLGStandardItem | DLGListWidgetItem,
     ) -> tuple[str, str, str]:
-        link_parent_path = item.data(_LINK_PARENT_NODE_PATH_ROLE)
+        link_parent_path: str = item.data(_LINK_PARENT_NODE_PATH_ROLE)
         assert item.link is not None
         link_path: str = item.link.partial_path(is_starter=item.link in self.core_dlg.starters)
         linked_to_path: str = item.link.node.path()
@@ -1891,7 +1912,11 @@ Should return 1 or 0, representing a boolean.
 
             if below_index.isValid():
                 self.ui.dialogTree.setCurrentIndex(below_index)
-            self.model.shift_item(selected_item, 1, no_selection_update=True)
+            self.model.shift_item(
+                selected_item,
+                1,
+                no_selection_update=True,
+            )
         elif above_index.isValid() and key == Qt.Key.Key_Up and not self.ui.dialogTree.visualRect(above_index).contains(view_port.rect()):
             self.ui.dialogTree.scrollTo(above_index)
         elif below_index.isValid() and key == Qt.Key.Key_Down and not self.ui.dialogTree.visualRect(below_index).contains(view_port.rect()):
@@ -1922,7 +1947,10 @@ Should return 1 or 0, representing a boolean.
             return
 
         if event.isAutoRepeat() or key in self.keys_down:
-            if key in (Qt.Key.Key_Up, Qt.Key.Key_Down):
+            if key in (
+                Qt.Key.Key_Up,
+                Qt.Key.Key_Down,
+            ):
                 self.keys_down.add(key)
                 self._handle_shift_item_keybind(selected_index, selected_item, key)
             return  # Ignore auto-repeat events and prevent multiple executions on single key
@@ -1956,7 +1984,11 @@ Should return 1 or 0, representing a boolean.
             return
 
         self.keys_down.add(key)
-        self._handle_shift_item_keybind(selected_index, selected_item, key)
+        self._handle_shift_item_keybind(
+            selected_index,
+            selected_item,
+            key,
+        )
         if self.keys_down in (
             {Qt.Key.Key_Shift, Qt.Key.Key_Return},
             {Qt.Key.Key_Shift, Qt.Key.Key_Enter},
@@ -1966,7 +1998,12 @@ Should return 1 or 0, representing a boolean.
             {Qt.Key.Key_Shift, Qt.Key.Key_Return, Qt.Key.Key_Alt},
             {Qt.Key.Key_Shift, Qt.Key.Key_Enter, Qt.Key.Key_Alt},
         ):
-            self.set_expand_recursively(selected_item, set(), expand=False, maxdepth=-1)
+            self.set_expand_recursively(
+                selected_item,
+                set(),
+                expand=False,
+                maxdepth=-1,
+            )
         elif Qt.Key.Key_Control in self.keys_down or bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier):
             if key == Qt.Key.Key_G:
                 ...
@@ -1974,7 +2011,7 @@ Should return 1 or 0, representing a boolean.
             elif key == Qt.Key.Key_F:
                 self.show_find_bar()
             elif Qt.Key.Key_C in self.keys_down:
-                if Qt.Key.Key_Alt in self.keys_down:
+                if Qt.Key.Key_Alt in self.keys_down or bool(event.modifiers() & Qt.KeyboardModifier.AltModifier):
                     self.copy_path(selected_item.link.node)
                 else:
                     self.model.copy_link_and_node(selected_item.link)
@@ -1998,7 +2035,7 @@ Should return 1 or 0, representing a boolean.
                     as_new_branches=Qt.Key.Key_Alt in self.keys_down,
                 )
             elif Qt.Key.Key_Delete in self.keys_down:
-                if Qt.Key.Key_Shift in self.keys_down:
+                if Qt.Key.Key_Shift in self.keys_down or bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier):
                     self.model.delete_node_everywhere(selected_item.link.node)
                 else:
                     self.model.delete_selected_node()

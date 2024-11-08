@@ -1133,12 +1133,7 @@ class DialogueNodeEditor(QGraphicsView):
         node: Node,
     ) -> list[Node]:
         """Get all nodes connected to this node's inputs."""
-        return [
-            conn.start_port.parent_node
-            for port in node.input_ports
-            for conn in port.connections
-            if conn.start_port.parent_node != node
-        ]
+        return [conn.start_port.parent_node for port in node.input_ports for conn in port.connections if conn.start_port.parent_node != node]
 
     def align_horizontal(self):
         """Align selected nodes horizontally."""

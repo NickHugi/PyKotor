@@ -311,7 +311,7 @@ class GITEditor(Editor):
         self.ui.setupUi(self)
         self._setup_menus()
         self._setup_signals()
-        self._setupHotkeys()
+        self._setup_hotkeys()
 
         self._git: GIT = GIT()
         self._mode: _Mode = _InstanceMode(self, installation, self._git)
@@ -359,7 +359,7 @@ class GITEditor(Editor):
 
         self.new()
 
-    def _setupHotkeys(self):  # TODO: use GlobalSettings() defined hotkeys
+    def _setup_hotkeys(self):  # TODO: use GlobalSettings() defined hotkeys
         self.ui.actionDeleteSelected.setShortcut(QKeySequence("Del"))  # type: ignore[arg-type]
         self.ui.actionZoomIn.setShortcut(QKeySequence("+"))  # type: ignore[arg-type]
         self.ui.actionZoomOut.setShortcut(QKeySequence("-"))  # type: ignore[arg-type]

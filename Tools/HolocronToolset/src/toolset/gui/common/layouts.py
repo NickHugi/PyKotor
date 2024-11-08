@@ -11,6 +11,7 @@ from qtpy.QtWidgets import (
     QDateEdit,
     QLabel,
     QLayout,
+    QLayoutItem,
     QLineEdit,
     QMainWindow,
     QProgressBar,
@@ -24,96 +25,142 @@ from qtpy.QtWidgets import (
 )
 
 if TYPE_CHECKING:
-    from qtpy.QtWidgets import QLayoutItem
+    from qtpy.QtCore import QMargins
+    from qtpy.QtWidgets import QLayoutItem, QStyle
 
 
 class FlowLayout(QLayout):
-    def __init__(self, parent=None, margin=-1, hSpacing=-1, vSpacing=-1):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        margin: int = -1,
+        h_spacing: int = -1,
+        v_spacing: int = -1,
+    ):
         super().__init__(parent)
-        self.itemList: list[QLayoutItem] = []
-        self.m_hSpace = hSpacing
-        self.m_vSpace = vSpacing
+        self.item_list: list[QLayoutItem] = []
+        self.m_h_space: int = h_spacing
+        self.m_v_space: int = v_spacing
         if margin >= 0:
             self.setContentsMargins(margin, margin, margin, margin)
 
-    def addItem(self, item):
-        self.itemList.append(item)
+    def addItem(
+        self,
+        item: QLayoutItem,
+    ):
+        self.item_list.append(item)
 
-    def count(self):
-        return len(self.itemList)
+    def count(self) -> int:
+        return len(self.item_list)
 
-    def itemAt(self, index):
-        if 0 <= index < len(self.itemList):
-            return self.itemList[index]
+    def itemAt(
+        self,
+        index: int,
+    ) -> QLayoutItem | None:
+        if 0 <= index < len(self.item_list):
+            return self.item_list[index]
         return None
 
-    def takeAt(self, index):
-        if 0 <= index < len(self.itemList):
-            return self.itemList.pop(index)
+    def takeAt(
+        self,
+        index: int,
+    ) -> QLayoutItem | None:
+        if 0 <= index < len(self.item_list):
+            return self.item_list.pop(index)
         return None
 
-    def setGeometry(self, rect):
+    def setGeometry(self, rect: QRect):
         super().setGeometry(rect)
         self.rearrangeItems(rect)
 
-    def sizeHint(self):
+    def sizeHint(self) -> QSize:
         return self.calculateSize()
 
-    def minimumSize(self):
+    def minimumSize(self) -> QSize:
         return self.calculateSize()
 
-    def calculateSize(self):
-        size = QSize()
-        for item in self.itemList:
+    def calculateSize(self) -> QSize:
+        size: QSize = QSize()
+        for item in self.item_list:
             size = size.expandedTo(item.minimumSize())
-        margins = self.contentsMargins()
+        margins: QMargins = self.contentsMargins()
         size += QSize(margins.left() + margins.right(), margins.top() + margins.bottom())
         return size
 
     def rearrangeItems(self, rect: QRect):
-        left, top, right, bottom = self.getContentsMargins()
-        effectiveRect = rect.adjusted(left, top, -right, -bottom)
-        x, y = effectiveRect.x(), effectiveRect.y()
-        lineHeight = 0
-        maxWidth = effectiveRect.width()
-        maxHeight = effectiveRect.height()
+        contents_margin: QMargins = self.contentsMargins()
+        left: int = contents_margin.left()
+        top: int = contents_margin.top()
+        right: int = contents_margin.right()
+        bottom: int = contents_margin.bottom()
+        effective_rect: QRect = rect.adjusted(left, top, -right, -bottom)
+        x: float = effective_rect.x()
+        y: float = effective_rect.y()
+        line_height: int = 0
+        max_width: int = effective_rect.width()
+        max_height: int = effective_rect.height()
 
-        currentLine = []
+        current_line: list[QLayoutItem] = []
 
-        def layoutCurrentLine():
-            nonlocal x, y, lineHeight
-            if not currentLine:
+        def layout_current_line():
+            nonlocal x, y, line_height
+            if not current_line:
                 return
-            totalWidth = sum(item.sizeHint().width() for item in currentLine)
-            spaceBetween = (maxWidth - totalWidth) / (len(currentLine) - 1) if len(currentLine) > 1 else 0
-            x = effectiveRect.x()
-            for item in currentLine:
-                item.setGeometry(QRect(QPoint(x, y), item.sizeHint()))
-                x += item.sizeHint().width() + spaceBetween
-            y += lineHeight + spaceY
-            lineHeight = 0
-            currentLine.clear()
+            total_width: int = sum(item.sizeHint().width() for item in current_line)
+            space_between: float = (
+                (max_width - total_width) / (len(current_line) - 1)
+                if len(current_line) > 1
+                else 0
+            )
+            x = effective_rect.x()
+            for item in current_line:
+                item_size_hint: QSize = item.sizeHint()
+                item.setGeometry(QRect(QPoint(int(x), int(y)), item_size_hint))
+                x += item_size_hint.width() + space_between
+            y += line_height + space_y
+            line_height = 0
+            current_line.clear()
 
-        for item in self.itemList:
-            widget = item.widget()
-            itemWidth = item.sizeHint().width()
-            itemHeight = item.sizeHint().height()
-            spaceX = self.m_hSpace if self.m_hSpace >= 0 else widget.style().layoutSpacing(
-                QSizePolicy.PushButton, QSizePolicy.PushButton, Qt.Horizontal)
-            spaceY = self.m_vSpace if self.m_vSpace >= 0 else widget.style().layoutSpacing(
-                QSizePolicy.PushButton, QSizePolicy.PushButton, Qt.Vertical)
+        for item in self.item_list:
+            widget: QWidget | None = item.widget()
+            if widget is None:
+                continue
+            item_size_hint: QSize = item.sizeHint()
+            item_width: int = item_size_hint.width()
+            item_height: int = item_size_hint.height()
+            widget_style: QStyle | None = widget.style()
+            if widget_style is None:
+                continue
+            space_x: int = (
+                self.m_h_space
+                if self.m_h_space >= 0
+                else widget_style.layoutSpacing(
+                    QSizePolicy.ControlType.PushButton,
+                    QSizePolicy.ControlType.PushButton,
+                    Qt.Orientation.Horizontal,
+                )
+            )
+            space_y: int = (
+                self.m_v_space
+                if self.m_v_space >= 0
+                else widget_style.layoutSpacing(
+                    QSizePolicy.ControlType.PushButton,
+                    QSizePolicy.ControlType.PushButton,
+                    Qt.Orientation.Vertical,
+                )
+            )
 
-            if x + itemWidth > effectiveRect.right():
-                layoutCurrentLine()
+            if x + item_width > effective_rect.right():
+                layout_current_line()
 
-            if y + itemHeight + lineHeight + spaceY > effectiveRect.bottom():
-                spaceY = 0
+            if y + item_height + line_height + space_y > effective_rect.bottom():
+                space_y = 0
 
-            currentLine.append(item)
-            x += itemWidth + spaceX
-            lineHeight = max(lineHeight, itemHeight)
+            current_line.append(item)
+            x += item_width + space_x
+            line_height = max(line_height, item_height)
 
-        layoutCurrentLine()
+        layout_current_line()
 
 class ExampleWindow(QMainWindow):
     def __init__(self):
@@ -121,49 +168,55 @@ class ExampleWindow(QMainWindow):
         self.setWindowTitle("FlowLayout Example")
 
         # Scrollable Area Setup
-        scrollArea = QScrollArea(self)  # Create a scroll area that will contain the central widget
-        scrollArea.setWidgetResizable(True)
-        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.setCentralWidget(scrollArea)
+        scroll_area = QScrollArea(self)  # Create a scroll area that will contain the central widget
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setCentralWidget(scroll_area)
 
         # Central Widget which will contain the layout
-        centralWidget = QWidget()
-        scrollArea.setWidget(centralWidget)  # Set the central widget of the scroll area
+        central_widget = QWidget()
+        scroll_area.setWidget(central_widget)  # Set the central widget of the scroll area
 
         # Flow Layout Setup
-        flowLayout = FlowLayout(centralWidget)
-        centralWidget.setLayout(flowLayout)
+        flow_layout = FlowLayout(central_widget)
+        central_widget.setLayout(flow_layout)
 
         # Adding various widgets to the flow layout
-        flowLayout.addWidget(QLabel("Label"))
-        flowLayout.addWidget(QPushButton("Button"))
-        flowLayout.addWidget(QLineEdit("Edit me"))
-        flowLayout.addWidget(QCheckBox("Check me"))
-        flowLayout.addWidget(QRadioButton("Choose me"))
+        flow_layout.addWidget(QLabel("Label"))
+        flow_layout.addWidget(QPushButton("Button"))
+        flow_layout.addWidget(QLineEdit("Edit me"))
+        flow_layout.addWidget(QCheckBox("Check me"))
+        flow_layout.addWidget(QRadioButton("Choose me"))
 
         combo = QComboBox()
         combo.addItems(["Option 1", "Option 2", "Option 3"])
-        flowLayout.addWidget(combo)
+        flow_layout.addWidget(combo)
 
-        flowLayout.addWidget(QSlider(Qt.Horizontal))
-        spinBox = QSpinBox()
-        spinBox.setRange(0, 100)
-        flowLayout.addWidget(spinBox)
+        flow_layout.addWidget(QSlider(Qt.Orientation.Horizontal))
+        spin_box = QSpinBox()
+        spin_box.setRange(0, 100)
+        flow_layout.addWidget(spin_box)
 
-        progressBar = QProgressBar()
-        progressBar.setValue(50)
-        flowLayout.addWidget(progressBar)
+        progress_bar = QProgressBar()
+        progress_bar.setValue(50)
+        flow_layout.addWidget(progress_bar)
 
-        flowLayout.addWidget(QDateEdit())
+        flow_layout.addWidget(QDateEdit())
 
         # Styling the widgets
-        self.applyStyles(centralWidget)
+        self.applyStyles(central_widget)
 
-    def applyStyles(self, widget: QWidget):
+    def applyStyles(
+        self,
+        widget: QWidget,
+    ):
         # Apply some color to distinguish widget areas
         palette = QPalette()
-        palette.setColor(QPalette.Window, QColor(240, 240, 240))  # Light gray background
+        palette.setColor(
+            QPalette.ColorRole.Window,
+            QColor(240, 240, 240),
+        )  # Light gray background
         widget.setPalette(palette)
         widget.setAutoFillBackground(True)
 

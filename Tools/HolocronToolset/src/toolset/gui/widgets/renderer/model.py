@@ -42,9 +42,9 @@ class ModelRenderer(QOpenGLWidget):
         self._modelToLoad: tuple[BinaryReader, BinaryReader] | None = None
         self._creatureToLoad: UTC | None = None
 
-        self._keysDown: set[int] = set()
-        self._mouseDown: set[int] = set()
-        self._mousePrev: Vector2 = Vector2(0, 0)
+        self._keys_down: set[int] = set()
+        self._mouse_down: set[int] = set()
+        self._mouse_prev: Vector2 = Vector2(0, 0)
 
     def loop(self):
         self.repaint()
@@ -132,8 +132,8 @@ class ModelRenderer(QOpenGLWidget):
 
     # region Events
     def focusOutEvent(self, e: QFocusEvent):
-        self._mouseDown.clear()  # Clears the set when focus is lost
-        self._keysDown.clear()  # Clears the set when focus is lost
+        self._mouse_down.clear()  # Clears the set when focus is lost
+        self._keys_down.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
         RobustLogger().debug("ModelRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
@@ -145,12 +145,12 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.height = e.size().height()
 
     def wheelEvent(self, e: QWheelEvent):
-        if self.moveZCameraControl.satisfied(self._mouseDown, self._keysDown):
+        if self.moveZCameraControl.satisfied(self._mouse_down, self._keys_down):
             strength: float = ModuleDesignerSettings().moveCameraSensitivity3d / 20000
             self.scene.camera.z -= -e.angleDelta().y() * strength
             return
 
-        if self.zoom_cameraControl.satisfied(self._mouseDown, self._keysDown):
+        if self.zoom_cameraControl.satisfied(self._mouse_down, self._keys_down):
             strength: float = ModuleDesignerSettings().zoomCameraSensitivity3d / 30000
             self.scene.camera.distance += -e.angleDelta().y() * strength
 
@@ -159,7 +159,7 @@ class ModelRenderer(QOpenGLWidget):
 
         Used with the FreeCam and drag camera movements and drag rotations.
         """
-        global_old_pos = self.mapToGlobal(QPoint(int(self._mousePrev.x), int(self._mousePrev.y)))
+        global_old_pos = self.mapToGlobal(QPoint(int(self._mouse_prev.x), int(self._mouse_prev.y)))
         QCursor.setPos(global_old_pos)
         local_old_pos = self.mapFromGlobal(QPoint(global_old_pos.x(), global_old_pos.y()))
         mutableScreen.x = local_old_pos.x()
@@ -167,9 +167,9 @@ class ModelRenderer(QOpenGLWidget):
 
     def mouseMoveEvent(self, e: QMouseEvent):  # sourcery skip: extract-method
         screen = Vector2(e.x(), e.y())
-        screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
+        screenDelta = Vector2(screen.x - self._mouse_prev.x, screen.y - self._mouse_prev.y)
 
-        if self.moveXYCameraControl.satisfied(self._mouseDown, self._keysDown):
+        if self.moveXYCameraControl.satisfied(self._mouse_down, self._keys_down):
             self.do_cursor_lock(screen)
             forward: vec3 = -screenDelta.y * self.scene.camera.forward()
             sideward: vec3 = screenDelta.x * self.scene.camera.sideward()
@@ -177,22 +177,22 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.x -= (forward.x + sideward.x) * strength
             self.scene.camera.y -= (forward.y + sideward.y) * strength
 
-        if self.rotate_cameraControl.satisfied(self._mouseDown, self._keysDown):
+        if self.rotate_cameraControl.satisfied(self._mouse_down, self._keys_down):
             self.do_cursor_lock(screen)
             strength = ModuleDesignerSettings().moveCameraSensitivity3d / 10000
             self.scene.camera.rotate(-screenDelta.x * strength, screenDelta.y * strength, clamp=True)
 
-        self._mousePrev = screen  # Always assign mouse_prev after emitting, in order to do cursor lock properly.
+        self._mouse_prev = screen  # Always assign mouse_prev after emitting, in order to do cursor lock properly.
 
     def mousePressEvent(self, e: QMouseEvent):
         button = e.button()
-        self._mouseDown.add(button)
-        #RobustLogger().debug(f"ModelRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
+        self._mouse_down.add(button)
+        #RobustLogger().debug(f"ModelRenderer.mousePressEvent: {self._mouse_down}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         button = e.button()
-        self._mouseDown.discard(button)
-        #RobustLogger().debug(f"ModelRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
+        self._mouse_down.discard(button)
+        #RobustLogger().debug(f"ModelRenderer.mouseReleaseEvent: {self._mouse_down}, e.button() '{button}'")
 
     def pan_camera(self, forward: float, right: float, up: float):
         """Moves the camera by the specified amount.
@@ -237,45 +237,45 @@ class ModelRenderer(QOpenGLWidget):
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
         key: int = e.key()
-        self._keysDown.add(key)
+        self._keys_down.add(key)
 
         rotateStrength = ModuleDesignerSettings().rotateCameraSensitivity3d / 1000
         if "model" in self.scene.objects:
             model = self.scene.objects["model"]
-            if self.rotate_cameraLeftControl.satisfied(self._mouseDown, self._keysDown):
+            if self.rotate_cameraLeftControl.satisfied(self._mouse_down, self._keys_down):
                 self.rotateObject(model, 0, math.pi / 4 * rotateStrength, 0)
-            if self.rotate_cameraRightControl.satisfied(self._mouseDown, self._keysDown):
+            if self.rotate_cameraRightControl.satisfied(self._mouse_down, self._keys_down):
                 self.rotateObject(model, 0, -math.pi / 4 * rotateStrength, 0)
-            if self.rotate_cameraUpControl.satisfied(self._mouseDown, self._keysDown):
+            if self.rotate_cameraUpControl.satisfied(self._mouse_down, self._keys_down):
                 self.rotateObject(model, math.pi / 4 * rotateStrength, 0, 0)
-            if self.rotate_cameraDownControl.satisfied(self._mouseDown, self._keysDown):
+            if self.rotate_cameraDownControl.satisfied(self._mouse_down, self._keys_down):
                 self.rotateObject(model, -math.pi / 4 * rotateStrength, 0, 0)
 
-        if self.moveCameraUpControl.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraUpControl.satisfied(self._mouse_down, self._keys_down):
             self.scene.camera.z += (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
-        if self.moveCameraDownControl.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraDownControl.satisfied(self._mouse_down, self._keys_down):
             self.scene.camera.z -= (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
-        if self.moveCameraLeftControl.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraLeftControl.satisfied(self._mouse_down, self._keys_down):
             self.pan_camera(0, -(ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0)
-        if self.moveCameraRightControl.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraRightControl.satisfied(self._mouse_down, self._keys_down):
             self.pan_camera(0, (ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0)
-        if self.moveCameraForwardControl.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraForwardControl.satisfied(self._mouse_down, self._keys_down):
             self.pan_camera((ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0, 0)
-        if self.moveCameraBackwardControl.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraBackwardControl.satisfied(self._mouse_down, self._keys_down):
             self.pan_camera(-(ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0, 0)
 
-        if self.zoom_cameraInControl.satisfied(self._mouseDown, self._keysDown):
+        if self.zoom_cameraInControl.satisfied(self._mouse_down, self._keys_down):
             self.scene.camera.distance += (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
-        if self.zoom_cameraOutControl.satisfied(self._mouseDown, self._keysDown):
+        if self.zoom_cameraOutControl.satisfied(self._mouse_down, self._keys_down):
             self.scene.camera.distance -= (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
         #key_name = get_qt_key_string_localized(key)
-        #RobustLogger().debug(f"ModelRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustLogger().debug(f"ModelRenderer.keyPressEvent: {self._keys_down}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         key: int = e.key()
-        self._keysDown.discard(key)
+        self._keys_down.discard(key)
         #key_name = get_qt_key_string_localized(key)
-        #RobustLogger().debug(f"ModelRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustLogger().debug(f"ModelRenderer.keyReleaseEvent: {self._keys_down}, e.key() '{key_name}'")
 
     # endregion
 

@@ -420,7 +420,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouse_down.add(button)
         coords = Vector2(e.x(), e.y())
         self.sig_mouse_pressed.emit(coords, self._mouse_down, self._keys_down)
-        #RobustLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouse_down}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         super().mouseReleaseEvent(e)
@@ -429,7 +429,7 @@ class ModuleRenderer(QOpenGLWidget):
 
         coords = Vector2(e.x(), e.y())
         self.sig_mouse_released.emit(coords, self._mouse_down, self._keys_down)
-        #RobustLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouse_down}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):
         super().keyPressEvent(e)
@@ -440,7 +440,7 @@ class ModuleRenderer(QOpenGLWidget):
         if self.underMouse() and not self.free_cam:
             self.sig_keyboard_pressed.emit(self._mouse_down, self._keys_down)
         #key_name = get_qt_key_string_localized(key)
-        #RobustLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keys_down}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):
         super().keyReleaseEvent(e)
@@ -451,7 +451,7 @@ class ModuleRenderer(QOpenGLWidget):
         if self.underMouse() and not self.free_cam:
             self.sig_keyboard_released.emit(self._mouse_down, self._keys_down)
         # key_name = get_qt_key_string_localized(key)
-        # RobustLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        # RobustLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keys_down}, e.key() '{key_name}'")
 
     # endregion
 

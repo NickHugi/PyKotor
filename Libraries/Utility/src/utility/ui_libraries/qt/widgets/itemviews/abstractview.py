@@ -6,15 +6,15 @@ from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QAbstractItemModel, QSortFilterProxyModel, QTimer, Qt
 from qtpy.QtGui import QCursor
-from qtpy.QtWidgets import QAbstractItemView, QAbstractScrollArea, QFrame, QStyle, QStyleOptionViewItem
+from qtpy.QtWidgets import QAbstractItemDelegate, QAbstractItemView, QAbstractScrollArea, QFrame, QMenu, QStyle, QStyleOptionViewItem
 
 from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustBaseWidget
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QAbstractItemModel, QItemSelectionModel, QMargins, QModelIndex, QPoint
-    from qtpy.QtGui import QResizeEvent, QWheelEvent
-    from qtpy.QtWidgets import QAbstractItemDelegate, QMenu, QWidget
+    from qtpy.QtGui import QFont, QResizeEvent, QWheelEvent
+    from qtpy.QtWidgets import QAbstractItemDelegate, QMenu, QScrollBar, QWidget
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
 
@@ -39,17 +39,21 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         *,
         pre_change_emit: bool = False,
     ):
-        self.viewport().update()
+        view_port: QWidget | None = self.viewport()
+        assert view_port is not None
+        view_port.update()
         if self._layout_changed_debounce_timer.isActive():
             self._layout_changed_debounce_timer.stop()
         elif pre_change_emit:
-            self.model().layoutAboutToBeChanged.emit()
+            view_model: QAbstractItemModel | None = self.model()
+            assert view_model is not None
+            view_model.layoutAboutToBeChanged.emit()
         self._layout_changed_debounce_timer.start(timeout)
 
     def setParent(
         self,
         parent: QWidget,
-        f: Qt.WindowFlags | Qt.WindowType | None = None,
+        f: Qt.WindowType | None = None,
     ) -> None:
         super().setParent(parent) if f is None else super().setParent(parent, f)
 
@@ -57,9 +61,11 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         if not hasattr(self, "_robust_drawer"):
             self._create_drawer_button()
             self._robust_drawer.show()
-        if self.verticalScrollBar().isVisible():
+        vert_scroll_bar: QScrollBar | None = self.verticalScrollBar()
+        assert vert_scroll_bar is not None
+        if vert_scroll_bar.isVisible():
             self._robust_drawer.move(
-                self.width() - self._robust_drawer.width() - self.verticalScrollBar().width(),
+                self.width() - self._robust_drawer.width() - vert_scroll_bar.width(),
                 0,
             )
         else:
@@ -76,9 +82,9 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
     def selected_source_indexes(self) -> list[QModelIndex]:
         """Same as QAbstractItemView.selectedIndexes, but returns the source indexes instead of the proxy model indexes."""
         indexes: list[QModelIndex] = []
-        current_model = self.model()
+        current_model: QAbstractItemModel | None = self.model()
         for index in self.selectedIndexes():
-            sourceIndex = (
+            sourceIndex: QModelIndex = (
                 current_model.mapToSource(index)  # pyright: ignore[reportArgumentType]
                 if isinstance(current_model, QSortFilterProxyModel)
                 else index
@@ -89,7 +95,10 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             indexes.append(sourceIndex)
         return indexes
 
-    def resizeEvent(self, event: QResizeEvent):
+    def resizeEvent(
+        self,
+        event: QResizeEvent,
+    ):
         super().resizeEvent(event)
         self.debounce_layout_changed()
         self._fix_drawer_button()
@@ -98,8 +107,8 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         self,
         event: QWheelEvent,
     ) -> None:
-        modifiers = event.modifiers()
-        handled = False
+        modifiers: Qt.KeyboardModifier = event.modifiers()
+        handled: bool = False
 
         if bool(modifiers & Qt.KeyboardModifier.ShiftModifier) and bool(modifiers & Qt.KeyboardModifier.ControlModifier):
             handled = self._wheel_changes_item_spacing(event)
@@ -109,11 +118,14 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         if not handled:
             super().wheelEvent(event)
 
-    def _wheel_changes_item_spacing(self, event: QWheelEvent) -> bool:
+    def _wheel_changes_item_spacing(
+        self,
+        event: QWheelEvent,
+    ) -> bool:
         delta: int = event.angleDelta().y()
         if not delta:
             return False
-        item_delegate = self.itemDelegate()
+        item_delegate: QAbstractItemDelegate | None = self.itemDelegate()
         if isinstance(item_delegate, HTMLDelegate):
             single_step: Literal[-1, 1] = 1 if delta > 0 else -1
             new_vertical_spacing: int = max(0, item_delegate.custom_vertical_spacing + single_step)
@@ -122,7 +134,10 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             return True
         return False
 
-    def _wheel_changes_text_size(self, event: QWheelEvent) -> bool:
+    def _wheel_changes_text_size(
+        self,
+        event: QWheelEvent,
+    ) -> bool:
         delta: int = event.angleDelta().y()
         if not delta:
             return False
@@ -137,18 +152,20 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
     ):
         super()._handle_color_action(get_func, title, settings_key)
         self.debounce_layout_changed()
-        self.viewport().update()
+        view_port: QWidget | None = self.viewport()
+        assert view_port is not None
+        view_port.update()
 
     def set_text_size(self, size: int):
-        delegate: QAbstractItemDelegate = self.itemDelegate()
+        delegate: QAbstractItemDelegate | None = self.itemDelegate()
         if isinstance(delegate, HTMLDelegate):
-            text_size = max(1, size)
+            text_size: int = max(1, size)
             model: QAbstractItemModel | None = self.model()
             assert model is not None
             delegate.set_text_size(text_size)
             self.update_columns_after_text_size_change()
         else:
-            font = self.font()
+            font: QFont = self.font()
             font.setPointSize(max(1, size))
             self.setFont(font)
             self.updateGeometry()
@@ -163,10 +180,14 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
 
     def emit_layout_changed(self):
         model: QAbstractItemModel | None = self.model()
-        if model is not None:
-            model.layoutChanged.emit()
+        if model is None:
+            return
+        model.layoutChanged.emit()
 
-    def styleOptionForIndex(self, index: QModelIndex) -> QStyleOptionViewItem:
+    def styleOptionForIndex(
+        self,
+        index: QModelIndex,
+    ) -> QStyleOptionViewItem:
         """Construct and configure a QStyleOptionViewItem for the given index.
 
         Required for non-pyqt5 versions of Qt.
@@ -187,7 +208,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
                 option.state = cast(QStyle.StateFlag, option.state & ~QStyle.StateFlag.State_Enabled)
 
             # Additional properties
-            check_state_data = index.data(Qt.ItemDataRole.CheckStateRole)
+            check_state_data: Any = index.data(Qt.ItemDataRole.CheckStateRole)
             option.checkState = Qt.CheckState.Unchecked if check_state_data is None else check_state_data
             option.decorationPosition = QStyleOptionViewItem.Position.Top
             option.decorationAlignment = Qt.AlignmentFlag.AlignCenter
@@ -212,11 +233,15 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         parent: QWidget | None = None,
     ) -> QMenu:
         print(f"{self.__class__.__name__}.build_context_menu")
-        menu = super().build_context_menu(parent)
-        context_menu = menu.addMenu("QAbstractItemView")
-        advanced_menu = context_menu.addMenu("Advanced")
+        menu: QMenu | None = super().build_context_menu(parent)
+        assert menu is not None
+        context_menu: QMenu | None = menu.addMenu("QAbstractItemView")
+        assert context_menu is not None
+        advanced_menu: QMenu | None = context_menu.addMenu("Advanced")
+        assert advanced_menu is not None
         # Display menu
-        display_menu = context_menu.addMenu("Display")
+        display_menu: QMenu | None = context_menu.addMenu("Display")
+        assert display_menu is not None
         self._add_menu_action(
             display_menu,
             "Alternating Row Colors",
@@ -226,7 +251,8 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         )
 
         # Advanced submenu for Display
-        display_advanced_menu = display_menu.addMenu("Advanced")
+        display_advanced_menu: QMenu | None = display_menu.addMenu("Advanced")
+        assert display_advanced_menu is not None
         self._add_exclusive_menu_action(
             display_advanced_menu,
             "Text Elide Mode",
@@ -312,7 +338,8 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             settings_key="selectionBehavior",
             param_type=QAbstractItemView.SelectionBehavior,
         )
-        drag_drop_menu = advanced_menu.addMenu("Drag and Drop")
+        drag_drop_menu: QMenu | None = advanced_menu.addMenu("Drag and Drop")
+        assert drag_drop_menu is not None
         self._add_exclusive_menu_action(
             drag_drop_menu,
             "Drag Drop Mode",
@@ -358,8 +385,10 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         )
 
         # Behavior menu
-        behavior_menu = context_menu.addMenu("Behavior")
-        behavior_frame_menu = behavior_menu.addMenu("Frame")
+        behavior_menu: QMenu | None = context_menu.addMenu("Behavior")
+        assert behavior_menu is not None
+        behavior_frame_menu: QMenu | None = behavior_menu.addMenu("Frame")
+        assert behavior_frame_menu is not None
         self._add_exclusive_menu_action(
             behavior_frame_menu,
             "Frame Shape",
@@ -440,7 +469,9 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             settings_key="verticalScrollMode",
             param_type=QAbstractItemView.ScrollMode,
         )
-        scroll_advanced_menu = behavior_menu.addMenu("Advanced")
+        scroll_advanced_menu: QMenu | None = behavior_menu.addMenu("Advanced")
+        assert scroll_advanced_menu is not None
+
         self._add_menu_action(
             scroll_advanced_menu,
             "Auto Scroll",
@@ -481,7 +512,8 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
             else:
                 self.setViewportMargins(0, 0, 0, 0)  # Default values if neither tuple/list nor QMargins
 
-        viewport_menu = context_menu.addMenu("Viewport")
+        viewport_menu: QMenu | None = context_menu.addMenu("Viewport")
+        assert viewport_menu is not None
         self._add_menu_action(
             viewport_menu,
             "Viewport Margins",
@@ -492,7 +524,9 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
         )
 
         # Actions menu
-        refresh_menu = context_menu.addMenu("Refresh...")
+        refresh_menu: QMenu | None = context_menu.addMenu("Refresh...")
+        assert refresh_menu is not None
+
         self._add_simple_action(refresh_menu, "Update Geometries", self.updateGeometries)
         self._add_simple_action(refresh_menu, "Reset View", self.reset)
         self._add_simple_action(refresh_menu, "Clear Selection", self.clearSelection)

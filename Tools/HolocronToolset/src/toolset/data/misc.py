@@ -11,7 +11,10 @@ Bind = Tuple[Set[Qt.Key], Union[Set[Qt.MouseButton], None]]
 
 
 class ControlItem:
-    def __init__(self, bind: Bind):
+    def __init__(
+        self,
+        bind: Bind,
+    ):
         self.keys: set[Qt.Key] = bind[0]
         self.mouse: set[Qt.MouseButton] | None = bind[1]
 
@@ -35,37 +38,45 @@ class ControlItem:
         -------
             bool: Whether the input is satisfied.
         """
-        no_buttons = self.mouse is None
-        any_buttons = self.mouse is not None and len(self.mouse) == 0
-        any_keys = len(self.keys) == 0
+        no_buttons: bool = self.mouse is None
+        any_buttons: bool = self.mouse is not None and len(self.mouse) == 0
+        any_keys: bool = len(self.keys) == 0
         if exact_keys_and_buttons:
-            mouse_equal = self.mouse == buttons
-            mouse_satisfied = no_buttons or any_buttons or mouse_equal
+            mouse_equal: bool = self.mouse == buttons
+            mouse_satisfied: bool = no_buttons or any_buttons or mouse_equal
         else:
             mouse_subset = True if self.mouse is None else self.mouse.issubset(buttons)
             mouse_satisfied = no_buttons or any_buttons or mouse_subset
 
         if exact_keys_and_buttons:
-            keys_equal = self.keys == keys
-            keys_satisfied = any_keys or keys_equal
+            keys_equal: bool = self.keys == keys
+            keys_satisfied: bool = any_keys or keys_equal
         else:
-            keys_subset = self.keys.issubset(keys)
-            keys_satisfied = any_keys or keys_subset
+            keys_subset: bool = self.keys.issubset(keys)
+            keys_satisfied: bool = any_keys or keys_subset
 
-        if debug_log:
-            needed_mouse = [get_qt_button_string(btn) for btn in iter(self.mouse)] if self.mouse is not None else "None"
-            user_pressing_mouse = [get_qt_button_string(btn) for btn in iter(buttons)]
-            needed_keys = [get_qt_key_string(key) for key in iter(self.keys)]
-            user_pressing_keys = [get_qt_key_string(key) for key in iter(keys)]
+        if not debug_log:
+            return bool(mouse_satisfied and keys_satisfied)
+        needed_mouse: list[str] = [get_qt_button_string(btn) for btn in iter(self.mouse)] if self.mouse is not None else ["None"]
+        user_pressing_mouse: list[str] = [get_qt_button_string(btn) for btn in iter(buttons)]
+        needed_keys: list[str] = [get_qt_key_string(key) for key in iter(self.keys)]
+        user_pressing_keys: list[str] = [get_qt_key_string(key) for key in iter(keys)]
 
-            RobustLogger().debug(f"Needed mouse: {needed_mouse}, user pressing {user_pressing_mouse}. Satisfied? {mouse_satisfied} no_buttons? {no_buttons} any_buttons? {any_buttons}")  # noqa: E501
-            RobustLogger().debug(f"Needed keys: {needed_keys}, user pressing {user_pressing_keys} Satisfied? {keys_satisfied} any_keys? {any_keys} exactKeys? {exact_keys_and_buttons}")  # noqa: E501
+        RobustLogger().debug(
+            f"Needed mouse: {needed_mouse}, user pressing {user_pressing_mouse}. Satisfied? {mouse_satisfied} no_buttons? {no_buttons} any_buttons? {any_buttons}"
+        )  # noqa: E501
+        RobustLogger().debug(
+            f"Needed keys: {needed_keys}, user pressing {user_pressing_keys} Satisfied? {keys_satisfied} any_keys? {any_keys} exactKeys? {exact_keys_and_buttons}"
+        )  # noqa: E501
 
         return bool(mouse_satisfied and keys_satisfied)
 
 
 class ControlGroup:
-    def __init__(self, *controls: ControlItem):
+    def __init__(
+        self,
+        *controls: ControlItem,
+    ):
         self.controls: list[ControlItem] = list(controls)
 
     def satisfied(

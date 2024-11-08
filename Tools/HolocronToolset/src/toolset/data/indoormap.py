@@ -58,13 +58,13 @@ class MinimapData(NamedTuple):
 class IndoorMap:
     def __init__(self):
         self.rooms: list[IndoorMapRoom] = []
-        self.moduleId: str = "test01"
+        self.module_id: str = "test01"
         self.name: LocalizedString = LocalizedString.from_english("New Module")
         self.lighting: Color = Color(0.5, 0.5, 0.5)
         self.skybox: str = ""
         self.warpPoint: Vector3 = Vector3.from_null()
 
-    def rebuildRoomConnections(self):
+    def rebuild_room_connections(self):
         for room in self.rooms:
             room.rebuildConnections(self.rooms)
 
@@ -92,22 +92,22 @@ class IndoorMap:
         insertions: list[DoorInsertion] = []
 
         for room in self.rooms:
-            for hookIndex, connection in enumerate(room.hooks):
+            for hook_index, connection in enumerate(room.hooks):
                 room1 = room
                 room2 = None
-                hook1 = room1.component.hooks[hookIndex]
+                hook1 = room1.component.hooks[hook_index]
                 hook2 = None
                 door = hook1.door
-                position = room1.hookPosition(hook1)
+                position = room1.hook_position(hook1)
                 rotation = hook1.rotation + room1.rotation
                 if connection is not None:
                     for otherHookIndex, otherRoom in enumerate(connection.hooks):
                         if otherRoom == room1:
-                            otherHook = connection.component.hooks[otherHookIndex]
-                            if hook1.door.width < otherHook.door.width:
-                                door = otherHook.door
+                            other_hook = connection.component.hooks[otherHookIndex]
+                            if hook1.door.width < other_hook.door.width:
+                                door = other_hook.door
                                 hook2 = hook1
-                                hook1 = otherHook
+                                hook1 = other_hook
                                 room2 = room1
                                 room1 = connection
                             else:
@@ -128,7 +128,7 @@ class IndoorMap:
 
     def add_rooms(self):
         for i in range(len(self.rooms)):
-            modelname = f"{self.moduleId}_room{i}"
+            modelname: str = f"{self.module_id}_room{i}"
             self.vis.add_room(modelname)
 
     def process_room_components(self):
@@ -140,18 +140,18 @@ class IndoorMap:
 
         Processing Logic:
         ----------------
-            - Iterate through rooms and add component to usedRooms set
-            - Iterate through usedRooms and add mdl to scanMdls and kit to usedKits
-            - Iterate through door padding dicts and values, adding padding mdl to scanMdls.
+            - Iterate through rooms and add component to used_rooms set
+            - Iterate through used_rooms and add mdl to scan_mdls and kit to used_kits
+            - Iterate through door padding dicts and values, adding padding mdl to scan_mdls.
         """
         for room in self.rooms:
-            self.usedRooms.add(room.component)
-        for room in self.usedRooms:
-            self.scanMdls.add(room.mdl)
-            self.usedKits.add(room.kit)
-            for doorPaddingDict in list(room.kit.top_padding.values()) + list(room.kit.side_padding.values()):
-                for paddingModel in doorPaddingDict.values():
-                    self.scanMdls.add(paddingModel.mdl)
+            self.used_rooms.add(room.component)
+        for room in self.used_rooms:
+            self.scan_mdls.add(room.mdl)
+            self.used_kits.add(room.kit)
+            for door_padding_dict in list(room.kit.top_padding.values()) + list(room.kit.side_padding.values()):
+                for padding_model in door_padding_dict.values():
+                    self.scan_mdls.add(padding_model.mdl)
 
     def handle_textures(self):
         """Rename textures to avoid conflicts.
@@ -165,11 +165,11 @@ class IndoorMap:
             - Check texture usage in all kits
             - Replace texture references in kit textures and txis with new renamed texture.
         """
-        for mdl in self.scanMdls:
-            for texture in (texture for texture in model.iterate_textures(mdl) if texture not in self.texRenames):
-                renamed = f"{self.moduleId}_tex{len(self.texRenames.keys())}"
-                self.texRenames[texture] = renamed
-                for kit in self.usedKits:
+        for mdl in self.scan_mdls:
+            for texture in (texture for texture in model.iterate_textures(mdl) if texture not in self.tex_renames):
+                renamed = f"{self.module_id}_tex{len(self.tex_renames.keys())}"
+                self.tex_renames[texture] = renamed
+                for kit in self.used_kits:
                     if texture in kit.textures:
                         self.mod.set_data(renamed, ResourceType.TGA, kit.textures[texture])
                         self.mod.set_data(renamed, ResourceType.TXI, kit.txis[texture])
@@ -194,8 +194,8 @@ class IndoorMap:
         """
         for i, room in enumerate(self.rooms):
             # Set model name
-            modelname = f"{self.moduleId}_room{i}"
-            self.roomNames[room] = modelname
+            modelname = f"{self.module_id}_room{i}"
+            self.room_names[room] = modelname
 
             # Add room to layout
             self.lyt.rooms.append(LYTRoom(modelname, room.position))
@@ -263,9 +263,9 @@ class IndoorMap:
             - Return processed model and material index strings.
         """
         mdl, mdx = model.flip(room.component.mdl, room.component.mdx, flip_x=room.flip_x, flip_y=room.flip_y)
-        mdl = model.transform(mdl, Vector3.from_null(), room.rotation)
-        mdl = model.convert_to_k2(mdl) if installation.tsl else model.convert_to_k1(mdl)
-        return mdl, mdx
+        mdl_transformed: bytes = model.transform(mdl, Vector3.from_null(), room.rotation)
+        mdl_converted: bytes = model.convert_to_k2(mdl_transformed) if installation.tsl else model.convert_to_k1(mdl_transformed)
+        return mdl_converted, mdx
 
     def process_lightmaps(
         self,
@@ -277,11 +277,7 @@ class IndoorMap:
         Args:
         ----
             room (IndoorMapRoom): The room to process lightmaps for
-            mdl: The model to process lightmaps on
-
-        Returns:
-        -------
-            mdl: The model with renamed lightmaps
+            mdl_data (bytes): The model to process lightmaps on
 
         Processing Logic:
         ----------------
@@ -291,8 +287,8 @@ class IndoorMap:
         """
         lm_renames: dict[str, str] = {}
         for lightmap in model.iterate_lightmaps(mdl_data):
-            renamed = f"{self.moduleId}_lm{self.totalLm}"
-            self.totalLm += 1
+            renamed: str = f"{self.module_id}_lm{self.total_lm}"
+            self.total_lm += 1
             lm_renames[lightmap.lower()] = renamed
             self.mod.set_data(renamed, ResourceType.TGA, room.component.kit.lightmaps[lightmap])
             self.mod.set_data(renamed, ResourceType.TXI, room.component.kit.txis[lightmap])
@@ -308,9 +304,9 @@ class IndoorMap:
 
         Args:
         ----
-            modelname: Name of the model
-            mdl: MDL file data
-            mdx: MDX file data
+            modelname (str): Name of the model
+            mdl_data (bytes): MDL file data
+            mdx_data (bytes): MDX file data
 
         Processing Logic:
         ----------------
@@ -346,25 +342,25 @@ class IndoorMap:
         bwm.flip(room.flip_x, room.flip_y)
         bwm.rotate(room.rotation)
         bwm.translate(room.position.x, room.position.y, room.position.z)
-        for hookIndex, connection in enumerate(room.hooks):
-            dummyIndex: int = room.component.hooks[hookIndex].edge
-            actualIndex: int | None = None if connection is None else self.rooms.index(connection)
-            self.remap_transitions(bwm, dummyIndex, actualIndex)
+        for hook_index, connection in enumerate(room.hooks):
+            dummy_index: int = room.component.hooks[hook_index].edge
+            actual_index: int | None = None if connection is None else self.rooms.index(connection)
+            self.remap_transitions(bwm, dummy_index, actual_index)
         return bwm
 
     def remap_transitions(
         self,
         bwm: BWM,
-        dummyIndex: int,
-        actualIndex: int | None,
+        dummy_index: int,
+        actual_index: int | None,
     ):
         """Remaps dummy transition index to actual transition index in BWM faces.
 
         Args:
         ----
             bwm: BWM object containing faces
-            dummyIndex: Dummy transition index to remap
-            actualIndex: Actual transition index to remap to
+            dummy_index: Dummy transition index to remap
+            actual_index: Actual transition index to remap to
 
         Processing Logic:
         ----------------
@@ -373,12 +369,12 @@ class IndoorMap:
             - If so, replaces it with the actual index.
         """
         for face in bwm.faces:
-            if face.trans1 == dummyIndex:
-                face.trans1 = actualIndex
-            if face.trans2 == dummyIndex:
-                face.trans2 = actualIndex
-            if face.trans3 == dummyIndex:
-                face.trans3 = actualIndex
+            if face.trans1 == dummy_index:
+                face.trans1 = actual_index
+            if face.trans2 == dummy_index:
+                face.trans2 = actual_index
+            if face.trans3 == dummy_index:
+                face.trans3 = actual_index
 
     def add_bwm_resource(
         self,
@@ -387,7 +383,10 @@ class IndoorMap:
     ):
         self.mod.set_data(modelname, ResourceType.WOK, bytes_bwm(bwm))
 
-    def _handle_door_insertions(self, installation: HTInstallation):
+    def handle_door_insertions(
+        self,
+        installation: HTInstallation,
+    ):
         """Handle door insertions.
 
         Args:
@@ -403,87 +402,94 @@ class IndoorMap:
             4. Adds door to layout and visibility graphs
             5. Checks for height/width padding needs and adds if needed.
         """
-        paddingCount = 0
+        padding_count = 0
         for i, insert in enumerate(self.doorInsertions()):
             door = GITDoor(*insert.position)
-            door_resname: str = f"{self.moduleId}_dor{i:02}"
+            door_resname: str = f"{self.module_id}_dor{i:02}"
             door.resref = ResRef(door_resname)
             door.bearing = math.radians(insert.rotation)
             door.tweak_color = None
             self.git.doors.append(door)
 
-            utd: UTD = deepcopy(insert.door.utdK2 if installation.tsl else insert.door.utdK1)
+            utd: UTD = deepcopy(insert.door.utd_k2 if installation.tsl else insert.door.utd_k1)
             utd.resref = door.resref
             utd.static = insert.static
             utd.tag = door_resname.title().replace("_", "")
             self.mod.set_data(door_resname, ResourceType.UTD, bytes_utd(utd))
 
             orientation: Vector4 = Vector4.from_euler(0, 0, math.radians(door.bearing))
-            self.lyt.doorhooks.append(LYTDoorHook(self.roomNames[insert.room], door_resname, insert.position, orientation))
+            self.lyt.doorhooks.append(LYTDoorHook(self.room_names[insert.room], door_resname, insert.position, orientation))
 
             if insert.hook1 and insert.hook2:
                 if insert.hook1.door.height != insert.hook2.door.height:
-                    cRoom = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
-                    cHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
-                    altHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
+                    c_room = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
+                    c_hook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
+                    alt_hook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
 
-                    kit = cRoom.component.kit
-                    doorIndex = kit.doors.index(cHook.door)
-                    height = altHook.door.height * 100
-                    paddingKey = min((i for i in kit.top_padding[doorIndex] if i > height), default=None) if doorIndex in kit.top_padding else None
-                    if paddingKey is not None:
-                        paddingName = f"{self.moduleId}_tpad{paddingCount}"
-                        paddingCount += 1
-                        pad_mdl = model.transform(
-                            kit.top_padding[doorIndex][paddingKey].mdl,
+                    kit = c_room.component.kit
+                    door_index = kit.doors.index(c_hook.door)
+                    height = alt_hook.door.height * 100
+                    padding_key = min((i for i in kit.top_padding[door_index] if i > height), default=None) if door_index in kit.top_padding else None
+                    if padding_key is not None:
+                        padding_name = f"{self.module_id}_tpad{padding_count}"
+                        padding_count += 1
+                        pad_mdl: bytes = model.transform(
+                            kit.top_padding[door_index][padding_key].mdl,
                             Vector3.from_null(),
                             insert.rotation,
                         )
-                        pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
-                        pad_mdl = model.change_textures(pad_mdl, self.texRenames)
-                        lmRenames = {}
-                        for lightmap in model.iterate_lightmaps(pad_mdl):
-                            renamed = f"{self.moduleId}_lm{self.totalLm}"
-                            self.totalLm += 1
+                        pad_mdl_converted: bytes = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
+                        pad_mdl_converted = model.change_textures(pad_mdl_converted, self.tex_renames)
+                        lmRenames: dict[str, str] = {}
+                        for lightmap in model.iterate_lightmaps(pad_mdl_converted):
+                            renamed: str = f"{self.module_id}_lm{self.total_lm}"
+                            self.total_lm += 1
                             lmRenames[lightmap.lower()] = renamed
                             self.mod.set_data(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
                             self.mod.set_data(renamed, ResourceType.TXI, kit.txis[lightmap])
                         pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
-                        self.mod.set_data(paddingName, ResourceType.MDL, pad_mdl)
-                        self.mod.set_data(paddingName, ResourceType.MDX, kit.top_padding[doorIndex][paddingKey].mdx)
-                        self.lyt.rooms.append(LYTRoom(paddingName, insert.position))
-                        self.vis.add_room(paddingName)
+                        self.mod.set_data(padding_name, ResourceType.MDL, pad_mdl)
+                        self.mod.set_data(padding_name, ResourceType.MDX, kit.top_padding[door_index][padding_key].mdx)
+                        self.lyt.rooms.append(LYTRoom(padding_name, insert.position))
+                        self.vis.add_room(padding_name)
                 if insert.hook1.door.width != insert.hook2.door.width:
-                    cRoom: IndoorMapRoom = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
-                    cHook: KitComponentHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
-                    altHook: KitComponentHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
+                    c_room: IndoorMapRoom | None = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
+                    c_hook: KitComponentHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
+                    alt_hook: KitComponentHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
 
-                    kit: Kit = cRoom.component.kit
-                    doorIndex: int = kit.doors.index(cHook.door)
-                    width: float = altHook.door.width * 100
-                    paddingKey: int | None = min((i for i in kit.side_padding[doorIndex] if i > width), default=None) if doorIndex in kit.side_padding else None
-                    if paddingKey is not None:
-                        paddingName = f"{self.moduleId}_tpad{paddingCount}"
-                        paddingCount += 1
-                        pad_mdl = model.transform(
-                            kit.side_padding[doorIndex][paddingKey].mdl,
+                    kit: Kit = c_room.component.kit
+                    door_index: int = kit.doors.index(c_hook.door)
+                    width: float = alt_hook.door.width * 100
+                    padding_key: int | None = (
+                        min(
+                            (i for i in kit.side_padding[door_index] if i > width),
+                            default=None,
+                        )
+                        if door_index in kit.side_padding
+                        else None
+                    )
+                    if padding_key is not None:
+                        padding_name: str = f"{self.module_id}_tpad{padding_count}"
+                        padding_count += 1
+                        pad_mdl: bytes = model.transform(
+                            kit.side_padding[door_index][padding_key].mdl,
                             Vector3.from_null(),
                             insert.rotation,
                         )
                         pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
-                        pad_mdl = model.change_textures(pad_mdl, self.texRenames)
+                        pad_mdl = model.change_textures(pad_mdl, self.tex_renames)
                         lmRenames: dict[str, str] = {}
                         for lightmap in model.iterate_lightmaps(pad_mdl):
-                            renamed = f"{self.moduleId}_lm{self.totalLm}"
-                            self.totalLm += 1
+                            renamed = f"{self.module_id}_lm{self.total_lm}"
+                            self.total_lm += 1
                             lmRenames[lightmap.lower()] = renamed
                             self.mod.set_data(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
                             self.mod.set_data(renamed, ResourceType.TXI, kit.txis[lightmap])
                         pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
-                        self.mod.set_data(paddingName, ResourceType.MDL, pad_mdl)
-                        self.mod.set_data(paddingName, ResourceType.MDX, kit.side_padding[doorIndex][paddingKey].mdx)
-                        self.lyt.rooms.append(LYTRoom(paddingName, insert.position))
-                        self.vis.add_room(paddingName)
+                        self.mod.set_data(padding_name, ResourceType.MDL, pad_mdl)
+                        self.mod.set_data(padding_name, ResourceType.MDX, kit.side_padding[door_index][padding_key].mdx)
+                        self.lyt.rooms.append(LYTRoom(padding_name, insert.position))
+                        self.vis.add_room(padding_name)
 
     def process_skybox(
         self,
@@ -507,14 +513,15 @@ class IndoorMap:
         if not self.skybox:
             return
         for kit in kits:
-            if self.skybox in kit.skyboxes:
-                mdl, mdx = kit.skyboxes[self.skybox]
-                modelName = f"{self.moduleId}_sky"
-                mdl = model.change_textures(mdl, self.texRenames)
-                self.mod.set_data(modelName, ResourceType.MDL, mdl)
-                self.mod.set_data(modelName, ResourceType.MDX, mdx)
-                self.lyt.rooms.append(LYTRoom(modelName, Vector3.from_null()))
-                self.vis.add_room(modelName)
+            if self.skybox not in kit.skyboxes:
+                continue
+            mdl, mdx = kit.skyboxes[self.skybox]
+            model_name: str = f"{self.module_id}_sky"
+            mdl: bytes = model.change_textures(mdl, self.tex_renames)
+            self.mod.set_data(model_name, ResourceType.MDL, mdl)
+            self.mod.set_data(model_name, ResourceType.MDX, mdx)
+            self.lyt.rooms.append(LYTRoom(model_name, Vector3.from_null()))
+            self.vis.add_room(model_name)
 
     def generate_and_set_minimap(self):
         """Generates and sets the minimap texture.
@@ -530,14 +537,14 @@ class IndoorMap:
             - Creates a TPC texture from the bytearray
             - Sets the TPC texture as the module's minimap label texture.
         """
-        minimap: MinimapData = self.generateMinimap()
-        tpcData = bytearray()
+        minimap: MinimapData = self.generate_mipmap()
+        tpc_data: bytearray = bytearray()
         for y, x in itertools.product(range(256), range(512)):
-            pixel = QColor(minimap.image.pixel(x, y))
-            tpcData.extend([pixel.red(), pixel.green(), pixel.blue(), 255])
-        minimapTpc = TPC()
-        minimapTpc.set_data(512, 256, [tpcData], TPCTextureFormat.RGBA)
-        self.mod.set_data(f"lbl_map{self.moduleId}", ResourceType.TGA, bytes_tpc(minimapTpc, ResourceType.TGA))
+            pixel: QColor = QColor(minimap.image.pixel(x, y))
+            tpc_data.extend([pixel.red(), pixel.green(), pixel.blue(), 255])
+        minimap_tpc: TPC = TPC()
+        minimap_tpc.set_single(512, 256, [tpc_data], TPCTextureFormat.RGBA)
+        self.mod.set_data(f"lbl_map{self.module_id}", ResourceType.TGA, bytes_tpc(minimap_tpc, ResourceType.TGA))
 
     def handle_loadscreen(
         self,
@@ -554,8 +561,8 @@ class IndoorMap:
             - Loads the appropriate load screen TGA file based on installation type
             - Sets the loaded TGA as load screen data for the module.
         """
-        loadTga: bytes = Path("./kits/load_k2.tga" if installation.tsl else "./kits/load_k1.tga").read_bytes()
-        self.mod.set_data(f"load_{self.moduleId}", ResourceType.TGA, loadTga)
+        load_tga: bytes = Path("./kits/load_k2.tga" if installation.tsl else "./kits/load_k1.tga").read_bytes()
+        self.mod.set_data(f"load_{self.module_id}", ResourceType.TGA, load_tga)
 
     def set_area_attributes(
         self,
@@ -576,7 +583,7 @@ class IndoorMap:
             - Set area world points from minimap world bounds
             - Set default area map zoom and resolution.
         """
-        self.are.tag = self.moduleId
+        self.are.tag = self.module_id
         self.are.dynamic_light = self.lighting
         self.are.name = self.name
         self.are.map_point_1 = minimap.imagePointMin
@@ -602,9 +609,9 @@ class IndoorMap:
             - Calls set_all_visible() method on vis object to set all objects visible
             - Sets entry_position attribute of IFO object to warpPoint.
         """
-        self.ifo.tag = self.moduleId
-        self.ifo.area_name = ResRef(self.moduleId)
-        self.ifo.resref = ResRef(self.moduleId)
+        self.ifo.tag = self.module_id
+        self.ifo.area_name = ResRef(self.module_id)
+        self.ifo.resref = ResRef(self.module_id)
         self.vis.set_all_visible()
         self.ifo.entry_position = self.warpPoint
 
@@ -628,10 +635,10 @@ class IndoorMap:
             - Sets module info (IFO) data
             - Writes finalized module data to ERF file at output path.
         """
-        self.mod.set_data(self.moduleId, ResourceType.LYT, bytes_lyt(self.lyt))
-        self.mod.set_data(self.moduleId, ResourceType.VIS, bytes_vis(self.vis))
-        self.mod.set_data(self.moduleId, ResourceType.ARE, bytes_are(self.are))
-        self.mod.set_data(self.moduleId, ResourceType.GIT, bytes_git(self.git))
+        self.mod.set_data(self.module_id, ResourceType.LYT, bytes_lyt(self.lyt))
+        self.mod.set_data(self.module_id, ResourceType.VIS, bytes_vis(self.vis))
+        self.mod.set_data(self.module_id, ResourceType.ARE, bytes_are(self.are))
+        self.mod.set_data(self.module_id, ResourceType.GIT, bytes_git(self.git))
         self.mod.set_data("module", ResourceType.IFO, bytes_ifo(self.ifo))
 
         write_erf(self.mod, output_path)
@@ -668,12 +675,12 @@ class IndoorMap:
         self.are = ARE()
         self.ifo = IFO()
         self.git = GIT()
-        self.roomNames: dict[IndoorMapRoom, str] = {}
-        self.texRenames: dict[str, str] = {}
-        self.totalLm = 0
-        self.usedRooms: set[KitComponent] = set()
-        self.usedKits: set[Kit] = set()
-        self.scanMdls: set[bytes] = set()
+        self.room_names: dict[IndoorMapRoom, str] = {}
+        self.tex_renames: dict[str, str] = {}
+        self.total_lm: int = 0
+        self.used_rooms: set[KitComponent] = set()
+        self.used_kits: set[Kit] = set()
+        self.scan_mdls: set[bytes] = set()
 
         self.add_rooms()
         self.process_room_components()
@@ -683,8 +690,8 @@ class IndoorMap:
         self.generate_and_set_minimap()
 
         self.handle_loadscreen(installation)
-        self._handle_door_insertions(installation)
-        self.set_area_attributes(self.generateMinimap())
+        self.handle_door_insertions(installation)
+        self.set_area_attributes(self.generate_mipmap())
         self.set_ifo_attributes()
         self.finalize_module_data(output_path)
 
@@ -704,20 +711,20 @@ class IndoorMap:
             - Serializes room data like position, rotation etc for each room
             - Converts dictionary to JSON and encodes to bytes.
         """
-        data: dict[str, str | dict | list] = {"moduleId": self.moduleId, "name": {}}
+        data: dict[str, str | dict | list] = {"module_id": self.module_id, "name": {}}
 
         data["name"]["stringref"] = self.name.stringref  # type: ignore[call-overload, index]
         for language, gender, text in self.name:
-            stringid = LocalizedString.substring_id(language, gender)
+            stringid: int = LocalizedString.substring_id(language, gender)
             data["name"][stringid] = text  # type: ignore[index]
 
         data["lighting"] = [self.lighting.r, self.lighting.g, self.lighting.b]
         data["skybox"] = self.skybox
-        data["warp"] = self.moduleId
+        data["warp"] = self.module_id
 
         data["rooms"] = []
         for room in self.rooms:
-            roomData = {
+            room_data: dict[str, Any] = {
                 "position": [*room.position],
                 "rotation": room.rotation,
                 "flip_x": room.flip_x,
@@ -725,7 +732,7 @@ class IndoorMap:
                 "kit": room.component.kit.name,
                 "component": room.component.name,
             }
-            data["rooms"].append(roomData)  # type: ignore[union-attr]
+            data["rooms"].append(room_data)  # type: ignore[union-attr]
 
         return json.dumps(data).encode()
 
@@ -748,7 +755,7 @@ class IndoorMap:
             - Raise error if corrupted data is encountered during loading.
         """
         self.reset()
-        data = json.loads(raw)
+        data: dict[str, Any] = json.loads(raw)
 
         try:
             self._load_data(data, kits)
@@ -777,51 +784,53 @@ class IndoorMap:
         ----------------
             - Load name data from stringrefs
             - Load lighting values
-            - Load moduleId and skybox
+            - Load module_id and skybox
             - For each room:
                 - Find matching kit and component
                 - Create room with position, rotation, flips.
         """
         self.name = LocalizedString(data["name"]["stringref"])
-        for stringid in (key for key in data["name"] if key.isnumeric()):
-            language, gender = LocalizedString.substring_pair(int(stringid))
-            self.name.set_data(language, gender, data["name"][stringid])
+        for substring_id in (key for key in data["name"] if key.isnumeric()):
+            language, gender = LocalizedString.substring_pair(int(substring_id))
+            self.name.set_data(language, gender, data["name"][substring_id])
 
         self.lighting.b = data["lighting"][0]
         self.lighting.g = data["lighting"][1]
         self.lighting.r = data["lighting"][2]
 
-        self.moduleId = data["warp"]
+        self.module_id = data["warp"]
         self.skybox = data.get("skybox", "")
 
-        for roomData in data["rooms"]:
-            sKit = next((kit for kit in kits if kit.name == roomData["kit"]), None)
+        for room_data in data["rooms"]:
+            sKit: Kit | None = next((kit for kit in kits if kit.name == room_data["kit"]), None)
             if sKit is None:
-                msg = f"""Required kit is missing '{roomData["kit"]}'."""
+                msg = f"""Required kit is missing '{room_data["kit"]}'."""
                 raise ValueError(msg)
 
-            sComponent = next(
-                (component for component in sKit.components if component.name == roomData["component"]),
+            s_component: KitComponent | None = next(
+                (component for component in sKit.components if component.name == room_data["component"]),
                 None,
             )
-            if sComponent is None:
-                msg = f"""Required component '{roomData["component"]}' is missing in kit '{sKit.name}'."""
+            if s_component is None:
+                msg = f"""Required component '{room_data["component"]}' is missing in kit '{sKit.name}'."""
                 raise ValueError(msg)
 
-            position = Vector3(roomData["position"][0], roomData["position"][1], roomData["position"][2])
-            rotation = roomData["rotation"]
-            flip_x = bool(roomData.get("flip_x", False))
-            flip_y = bool(roomData.get("flip_y", False))
-            room = IndoorMapRoom(sComponent, position, rotation, flip_x, flip_y)
+            room: IndoorMapRoom = IndoorMapRoom(
+                s_component,
+                Vector3(room_data["position"][0], room_data["position"][1], room_data["position"][2]),
+                room_data["rotation"],
+                flip_x=bool(room_data.get("flip_x", False)),
+                flip_y=bool(room_data.get("flip_y", False)),
+            )
             self.rooms.append(room)
 
     def reset(self):
         self.rooms.clear()
-        self.moduleId = "test01"
+        self.module_id = "test01"
         self.name = LocalizedString.from_english("New Module")
         self.lighting = Color(0.5, 0.5, 0.5)
 
-    def generateMinimap(self) -> MinimapData:
+    def generate_mipmap(self) -> MinimapData:
         """Generates a minimap image from room data to display an overview of the level layout.
 
         Args:
@@ -843,7 +852,7 @@ class IndoorMap:
         # unscaled pixmap for our minimap
         walkmeshes: list[BWM] = []
         for room in self.rooms:
-            bwm = deepcopy(room.component.bwm)
+            bwm: BWM = deepcopy(room.component.bwm)
             bwm.rotate(room.rotation)
             bwm.translate(room.position.x, room.position.y, room.position.z)
             walkmeshes.append(bwm)
@@ -858,15 +867,15 @@ class IndoorMap:
         bbmax.x += 5
         bbmax.y += 5
 
-        width = bbmax.x * 10 - bbmin.x * 10
-        height = bbmax.y * 10 - bbmin.y * 10
+        width: float = bbmax.x * 10 - bbmin.x * 10
+        height: float = bbmax.y * 10 - bbmin.y * 10
         pixmap = QPixmap(int(width), int(height))
         pixmap.fill(QColor(0))
 
         # Draw the actual minimap
         painter = QPainter(pixmap)
         for room in self.rooms:
-            image = room.component.image
+            image: QImage = room.component.image
 
             painter.save()
             painter.translate(
@@ -883,19 +892,19 @@ class IndoorMap:
         del painter
 
         # Minimaps are 512x256 so we need to appropriately scale down our image
-        pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)  # type: ignore[attr-defined]
+        pixmap: QPixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)  # type: ignore[attr-defined]
 
         pixmap2 = QPixmap(512, 256)
         pixmap2.fill(QColor(0))
         painter2 = QPainter(pixmap2)
         painter2.drawPixmap(0, int(128 - pixmap.height() / 2), pixmap)
 
-        image = pixmap2.transformed(QTransform().scale(1, -1)).toImage()
-        image.convertTo(QImage.Format_RGB888)
-        imagePointMin = Vector2(0 / 435, (128 - pixmap.height() / 2) / 256)  # +512-435
-        imagePointMax = Vector2((imagePointMin.x + pixmap.width()) / 435, (imagePointMin.y + pixmap.height()) / 256)
-        worldPointMin = Vector2(bbmax.x, bbmin.y)
-        worldPointMax = Vector2(bbmin.x, bbmax.y)
+        image: QImage = pixmap2.transformed(QTransform().scale(1, -1)).toImage()
+        image.convertTo(QImage.Format.Format_RGB888)
+        image_point_min: Vector2 = Vector2(0 / 435, (128 - pixmap.height() / 2) / 256)  # +512-435
+        image_point_max: Vector2 = Vector2((image_point_min.x + pixmap.width()) / 435, (image_point_min.y + pixmap.height()) / 256)
+        world_point_min: Vector2 = Vector2(bbmax.x, bbmin.y)
+        world_point_max: Vector2 = Vector2(bbmin.x, bbmax.y)
 
         painter2.end()
 
@@ -903,7 +912,7 @@ class IndoorMap:
         del pixmap
         del pixmap2
 
-        return MinimapData(image, imagePointMin, imagePointMax, worldPointMin, worldPointMax)
+        return MinimapData(image, image_point_min, image_point_max, world_point_min, world_point_max)
 
     def _normalize_bwm_vertices(
         self,
@@ -925,6 +934,7 @@ class IndoorMapRoom:
         component: KitComponent,
         position: Vector3,
         rotation: float,
+        *,
         flip_x: bool,
         flip_y: bool,
     ):
@@ -935,18 +945,18 @@ class IndoorMapRoom:
         self.flip_x: bool = flip_x
         self.flip_y: bool = flip_y
 
-    def hookPosition(
+    def hook_position(
         self,
         hook: KitComponentHook,
         *,
-        worldOffset: bool = True,
+        world_offset: bool = True,
     ) -> Vector3:
         """Calculates the position of a hook relative to the component.
 
         Args:
         ----
             hook (KitComponentHook): The hook to calculate the position for
-            worldOffset (bool): Whether to offset the position by the component's world position
+            world_offset (bool): Whether to offset the position by the component's world position
 
         Returns:
         -------
@@ -957,7 +967,7 @@ class IndoorMapRoom:
             - Copies the hook's position
             - Flips the x and y coordinates if the component is flipped
             - Rotates the position by the component's rotation
-            - Adds the component's position if worldOffset is True
+            - Adds the component's position if world_offset is True
             - Returns the final calculated position.
         """
         pos: Vector3 = copy(hook.position)
@@ -971,7 +981,7 @@ class IndoorMapRoom:
         pos.x = temp.x * cos - temp.y * sin
         pos.y = temp.x * sin + temp.y * cos
 
-        if worldOffset:
+        if world_offset:
             pos = pos + self.position
 
         return pos
@@ -1004,13 +1014,13 @@ class IndoorMapRoom:
         self.hooks: list[IndoorMapRoom | None] = [None] * len(self.component.hooks)
 
         for hook in self.component.hooks:
-            hookIndex = self.component.hooks.index(hook)
-            hookPos = self.hookPosition(hook)
+            hook_index = self.component.hooks.index(hook)
+            hook_pos = self.hook_position(hook)
             for otherRoom in (room for room in rooms if room is not self):
-                for otherHook in otherRoom.component.hooks:
-                    otherHookPos = otherRoom.hookPosition(otherHook)
-                    if hookPos.distance(otherHookPos) < 0.001:
-                        self.hooks[hookIndex] = otherRoom
+                for other_hook in otherRoom.component.hooks:
+                    other_hook_pos = otherRoom.hook_position(other_hook)
+                    if hook_pos.distance(other_hook_pos) < 0.001:
+                        self.hooks[hook_index] = otherRoom
 
     def walkmesh(self) -> BWM:
         """Rotates and translates a copy of the component's BWM.
