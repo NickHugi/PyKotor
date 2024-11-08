@@ -103,6 +103,7 @@ class DLGListWidget(QListWidget):
         action: Qt.DropAction,
     ) -> bool:
         """Handle custom data dropping."""
+        assert self.editor is not None
         if data.hasFormat(QT_STANDARD_ITEM_FORMAT):
             item_data: list[dict[Literal["row", "column", "roles"], Any]] = self.editor.ui.dialogTree.parse_mime_data(data)
             link: DLGLink[Any] = DLGLink.from_dict(json.loads(item_data[0]["roles"][_DLG_MIME_DATA_ROLE]))

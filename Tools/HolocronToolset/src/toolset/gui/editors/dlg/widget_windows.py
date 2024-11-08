@@ -48,7 +48,7 @@ class ReferenceChooserDialog(QDialog):
         self.label = QLabel()
         self.editor: DLGEditor = parent
         self.label.setTextFormat(Qt.TextFormat.RichText)
-        self.list_widget = DLGListWidget(parent)  # HACK: fix later (set editor attr properly in listWidget)
+        self.list_widget: DLGListWidget = DLGListWidget(parent)  # HACK: fix later (set editor attr properly in listWidget)
         self.list_widget.use_hover_text = True
         self.list_widget.setParent(self)
         self.list_widget.setItemDelegate(HTMLDelegate(self.list_widget))
@@ -159,8 +159,8 @@ class ReferenceChooserDialog(QDialog):
         """
 
     def accept(self):
-        sel_item: DLGListWidgetItem | None = self.list_widget.currentItem()
-        if sel_item is not None:
+        sel_item: QListWidgetItem | None = self.list_widget.currentItem()
+        if isinstance(sel_item, DLGListWidgetItem):
             self.item_chosen.emit(sel_item)
         super().accept()
 

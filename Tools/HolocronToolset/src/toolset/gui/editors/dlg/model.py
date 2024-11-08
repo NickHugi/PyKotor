@@ -324,7 +324,7 @@ class DLGStandardItemModel(QStandardItemModel):
         parent_item: DLGStandardItem | DLGStandardItemModel | None = (self.itemFromIndex(parent) or self) if parent is not None and parent.isValid() else None
         if parent_item is None:
             return False
-        rows_available = parent_item.rowCount()
+        rows_available: int = parent_item.rowCount()
         if row + count > rows_available:
             return False
 
@@ -339,18 +339,23 @@ class DLGStandardItemModel(QStandardItemModel):
                 for item in (self.item(r, 0) for r in range(row, row + count))
                 if isinstance(item, DLGStandardItem)
             ]
-        self.beginRemoveRows(QModelIndex() if parent is None else parent, row, row + count - 1)
+        self.beginRemoveRows(
+            QModelIndex() if parent is None else parent,
+            row,
+            row + count - 1,
+        )
         result: bool = super().removeRows(row, count, parent)  # type: ignore[arg-type]
         sel_model: QItemSelectionModel | None = self.tree_view.selectionModel()
         assert sel_model is not None
         sel_model.clear()
         self.endRemoveRows()
-        if not self.ignoring_updates:
-            parent_item = None if parent is None else self.itemFromIndex(parent)
-            for link in links:
-                if link is None or parent_item is not None and not isinstance(parent_item, DLGStandardItem):
-                    continue
-                self._remove_link_from_parent(parent_item, link)
+        if self.ignoring_updates:
+            return result
+        parent_item = None if parent is None else self.itemFromIndex(parent)
+        for link in links:
+            if link is None or parent_item is not None and not isinstance(parent_item, DLGStandardItem):
+                continue
+            self._remove_link_from_parent(parent_item, link)
         return result
 
     def appendRows(
@@ -385,24 +390,24 @@ class DLGStandardItemModel(QStandardItemModel):
         to_insert: Iterable[QStandardItem] | QStandardItem | QModelIndex,
     ) -> bool | None:
         result: None | bool = super().insertRow(row, to_insert)
+        if self.ignoring_updates:
+            return result
         if isinstance(to_insert, Iterable):
-            if not self.ignoring_updates:
-                for item_to_insert in to_insert:
-                    if not isinstance(item_to_insert, DLGStandardItem):
-                        continue
-                    if item_to_insert.link is None:
-                        continue
-                    parent_item: DLGStandardItem | None = item_to_insert.parent()
-                    self._insert_link_to_parent(parent_item, item_to_insert, row)
-        elif isinstance(to_insert, (QModelIndex, QStandardItem)):
-            if not self.ignoring_updates:
-                item_to_insert: QStandardItem | DLGStandardItem | None = to_insert if isinstance(to_insert, QStandardItem) else self.itemFromIndex(to_insert)
+            for item_to_insert in to_insert:
                 if not isinstance(item_to_insert, DLGStandardItem):
-                    return result
+                    continue
                 if item_to_insert.link is None:
-                    return result
-                parent_item = item_to_insert.parent()
+                    continue
+                parent_item: DLGStandardItem | None = item_to_insert.parent()
                 self._insert_link_to_parent(parent_item, item_to_insert, row)
+        elif isinstance(to_insert, (QModelIndex, QStandardItem)):
+            item_to_insert: QStandardItem | DLGStandardItem | None = to_insert if isinstance(to_insert, QStandardItem) else self.itemFromIndex(to_insert)
+            if not isinstance(item_to_insert, DLGStandardItem):
+                return result
+            if item_to_insert.link is None:
+                return result
+            parent_item = item_to_insert.parent()
+            self._insert_link_to_parent(parent_item, item_to_insert, row)
         else:
             raise TypeError("Incorrect args passed to insertRow")
         return result
