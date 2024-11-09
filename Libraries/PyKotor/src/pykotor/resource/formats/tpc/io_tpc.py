@@ -8,10 +8,9 @@ from pykotor.resource.formats.tpc.tpc_data import TPC, TPCLayer, TPCMipmap, TPCT
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
-
     from pykotor.resource.formats.txi.txi_data import TXI
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
 
 class TPCBinaryReader(ResourceReader):
@@ -129,9 +128,12 @@ class TPCBinaryReader(ResourceReader):
         )
         full_data_size: int = self._reader.size() - self.IMG_DATA_START_OFFSET
         if full_data_size < (self._layer_count * full_image_data_size):
-            raise ValueError(
+            msg: str = (
                 f"Insufficient data for image. Expected at least {hex(self._layer_count * full_image_data_size)} bytes,"
-                f" but only {hex(full_data_size)} bytes are available.",
+                f" but only {hex(full_data_size)} bytes are available."
+            )
+            raise ValueError(
+                msg,
             )
 
         for _ in range(self._layer_count):
@@ -173,16 +175,17 @@ class TPCBinaryReader(ResourceReader):
                 if layer_width < 1 and layer_height < 1:
                     break
 
-        if self._tpc.format() == TPCTextureFormat.BGRA:
-            for layer in self._tpc.layers:
-                for mipmap in layer.mipmaps:
-                    mipmap.data = deswizzle(
-                        mipmap.data,
-                        mipmap.width,
-                        mipmap.height,
-                        self._tpc.format().bytes_per_pixel(),
-                    )
+        if self._tpc.format() != TPCTextureFormat.BGRA:
+            return self._tpc
 
+        for layer in self._tpc.layers:
+            for mipmap in layer.mipmaps:
+                mipmap.data = deswizzle(
+                    mipmap.data,
+                    mipmap.width,
+                    mipmap.height,
+                    self._tpc.format().bytes_per_pixel(),
+                )
         return self._tpc
 
     def _normalize_cubemaps(self):
