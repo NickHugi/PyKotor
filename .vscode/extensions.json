@@ -130,7 +130,6 @@
         "zeshuaro.vscode-python-poetry",
         "felgo.felgo",
         "thijsdekkers.ai-code-brushes",
-        "traycer.traycer-vscode",
         "gitsecure.wasps",
         "wrekeninc.wreken",
         "nvms.ai-wingman",
@@ -139,6 +138,7 @@
         "danielroedl.meld-diff",
         "datagy.pandaslilhelper",
         "mrpogofu.true-godot",
-        "tranquilmarmot.yarn-spinner-loom"
+        "tranquilmarmot.yarn-spinner-loom",
+        "catrina-dark-one.catrina-dark"
     ]
 }

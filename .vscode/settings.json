@@ -77,5 +77,6 @@
     "pythonTestExplorer.outputs.showOutputsOnRun": true,
     "remote.WSL.fileWatcher.polling": true,
     "ruff.lineLength": 275,
-    "cody.codebase": "https://github.com/th3w1zard1/PyKotor"
+    "cody.codebase": "https://github.com/th3w1zard1/PyKotor",
+    "traycer.executionMode": "Auto"
 }

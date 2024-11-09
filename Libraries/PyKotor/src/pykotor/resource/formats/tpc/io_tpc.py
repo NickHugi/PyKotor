@@ -8,9 +8,10 @@ from pykotor.resource.formats.tpc.tpc_data import TPC, TPCLayer, TPCMipmap, TPCT
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
+
     from pykotor.resource.formats.txi.txi_data import TXI
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
-    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
 
 class TPCBinaryReader(ResourceReader):
