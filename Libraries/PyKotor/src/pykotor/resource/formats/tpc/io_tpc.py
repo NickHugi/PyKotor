@@ -98,7 +98,7 @@ class TPCBinaryReader(ResourceReader):
             and txi.features.proceduretype.lower() == "cycle"  # noqa: SLF001
             and txi.features.numx
             and txi.features.numy
-            and txi.features.fps
+            and txi.features.fps,
         )
 
         if self._tpc.is_animated:
@@ -117,7 +117,7 @@ class TPCBinaryReader(ResourceReader):
         if compressed and not self._tpc.is_animated:
             expected_size: int = (width * height) // 2 if tpc_format == TPCTextureFormat.DXT1 else width * height
             if data_size != expected_size:
-                raise ValueError(f"Invalid data size for a texture of {width}x{height}" f" pixels and format {tpc_format!r}")
+                raise ValueError(f"Invalid data size for a texture of {width}x{height} pixels and format {tpc_format!r}")
 
         self._reader.seek(self.IMG_DATA_START_OFFSET)
         if width <= 0 or height <= 0 or width >= self.MAX_DIMENSIONS or height >= self.MAX_DIMENSIONS:
@@ -131,7 +131,7 @@ class TPCBinaryReader(ResourceReader):
         if full_data_size < (self._layer_count * full_image_data_size):
             raise ValueError(
                 f"Insufficient data for image. Expected at least {hex(self._layer_count * full_image_data_size)} bytes,"
-                f" but only {hex(full_data_size)} bytes are available."
+                f" but only {hex(full_data_size)} bytes are available.",
             )
 
         for _ in range(self._layer_count):
@@ -227,14 +227,23 @@ class TPCBinaryWriter(ResourceWriter):
             return 12
         raise ValueError(f"Invalid TPC texture format: {tpc_format}")
 
-    def _validate_dimensions(self, width: int, height: int) -> None:
+    def _validate_dimensions(
+        self,
+        width: int,
+        height: int,
+    ) -> None:
         """Validate the texture dimensions."""
         if width <= 0 or height <= 0:
             raise ValueError(f"Invalid dimensions: {width}x{height}")
         if width >= self.MAX_DIMENSIONS or height >= self.MAX_DIMENSIONS:
             raise ValueError(f"Dimensions exceed maximum allowed: {width}x{height}")
 
-    def _calculate_data_size(self, width: int, height: int, tpc_format: TPCTextureFormat) -> int:
+    def _calculate_data_size(
+        self,
+        width: int,
+        height: int,
+        tpc_format: TPCTextureFormat,
+    ) -> int:
         """Calculate the complete data size for all layers and mipmaps."""
         if not tpc_format.is_dxt():
             return tpc_format.get_size(width, height)
@@ -304,7 +313,7 @@ class TPCBinaryWriter(ResourceWriter):
 
                 if mipmap.width != expected_width or mipmap.height != expected_height:
                     raise ValueError(
-                        f"Invalid mipmap dimensions at level {mipmap_idx}. " f"Expected {expected_width}x{expected_height}, " f"got {mipmap.width}x{mipmap.height}"
+                        f"Invalid mipmap dimensions at level {mipmap_idx}. Expected {expected_width}x{expected_height}, got {mipmap.width}x{mipmap.height}",
                     )  # noqa: E501
 
                 mipmap_data: bytearray = mipmap.data

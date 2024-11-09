@@ -51,7 +51,9 @@ class SearchManager:
         self.indexed_nodes: set[DLGNode] = set()
         self.max_recent_searches: int = 10
 
-    def _iter_nodes_and_links(self) -> Generator[tuple[DLGNode, DLGLink | None], None, None]:
+    def _iter_nodes_and_links(
+        self,
+    ) -> Generator[tuple[DLGNode, DLGLink | None], None, None]:
         """Iterate through all indexed nodes and their links."""
         seen_nodes: set[DLGNode] = set()
         for node in self.indexed_nodes:
@@ -62,9 +64,10 @@ class SearchManager:
 
             # Yield each link and its target node
             for link in node.links:
-                if link.node not in seen_nodes:
-                    seen_nodes.add(link.node)
-                    yield link.node, link
+                if link.node in seen_nodes:
+                    continue
+                seen_nodes.add(link.node)
+                yield link.node, link
 
     def search(
         self,
@@ -104,8 +107,9 @@ class SearchManager:
                         continue
 
                     result: SearchResult | None = self._search_node_and_link(node, link, query_lower, category)
-                    if result is not None:
-                        results.append(result)
+                    if result is None:
+                        continue
+                    results.append(result)
 
             # Sort by score and limit results
             results.sort(key=lambda x: x.score, reverse=True)
@@ -127,29 +131,31 @@ class SearchManager:
             if category == SearchCategory.TEXT:
                 text: LocalizedString = node.text
                 text_str: str = str(text).lower()
-                if query in text_str:
+                if query not in text_str:
+                    return None
+                return SearchResult(
+                    node=node,
+                    link=link,
+                    category=category,
+                    match_text=str(text),
+                    context=f"Text match: {text_str[:50]}...",
+                    score=1.0 if query == text_str else 0.8,
+                )
+
+            if category == SearchCategory.SCRIPT:
+                scripts: list[str] = [str(node.script1), str(node.script2)]
+                for script in scripts:
+                    script_lower: str = script.lower()
+                    if query not in script_lower:
+                        continue
                     return SearchResult(
                         node=node,
                         link=link,
                         category=category,
-                        match_text=str(text),
-                        context=f"Text match: {text_str[:50]}...",
-                        score=1.0 if query == text_str else 0.8,
+                        match_text=script,
+                        context=f"Script match: {script[:50]}...",
+                        score=0.7,
                     )
-
-            elif category == SearchCategory.SCRIPT:
-                scripts: list[str] = [str(node.script1), str(node.script2)]
-                for script in scripts:
-                    script_lower: str = script.lower()
-                    if query in script_lower:
-                        return SearchResult(
-                            node=node,
-                            link=link,
-                            category=category,
-                            match_text=script,
-                            context=f"Script match: {script[:50]}...",
-                            score=0.7,
-                        )
 
             elif category == SearchCategory.CONDITION and link is not None:
                 conditions: list[str] = [
@@ -158,61 +164,66 @@ class SearchManager:
                 ]
                 for condition in conditions:
                     condition_lower: str = condition.lower()
-                    if query in condition_lower:
-                        return SearchResult(
-                            node=node,
-                            link=link,
-                            category=category,
-                            match_text=condition,
-                            context=f"Condition match: {condition[:50]}...",
-                            score=0.6,
-                        )
+                    if query not in condition_lower:
+                        continue
+                    return SearchResult(
+                        node=node,
+                        link=link,
+                        category=category,
+                        match_text=condition,
+                        context=f"Condition match: {condition[:50]}...",
+                        score=0.6,
+                    )
 
             elif category == SearchCategory.SPEAKER and isinstance(node, DLGEntry):
                 speaker_lower: str = node.speaker.lower()
-                if query in speaker_lower:
-                    return SearchResult(
-                        node=node,
-                        link=link,
-                        category=category,
-                        match_text=node.speaker,
-                        context=f"Speaker match: {node.speaker}",
-                        score=0.9,
-                    )
+                if query not in speaker_lower:
+                    return None
+                return SearchResult(
+                    node=node,
+                    link=link,
+                    category=category,
+                    match_text=node.speaker,
+                    context=f"Speaker match: {node.speaker}",
+                    score=0.9,
+                )
 
             elif category == SearchCategory.LISTENER:
                 listener_lower: str = node.listener.lower()
-                if query in listener_lower:
-                    return SearchResult(
-                        node=node,
-                        link=link,
-                        category=category,
-                        match_text=node.listener,
-                        context=f"Listener match: {node.listener}",
-                        score=0.9,
-                    )
+                if query not in listener_lower:
+                    return None
+                return SearchResult(
+                    node=node,
+                    link=link,
+                    category=category,
+                    match_text=node.listener,
+                    context=f"Listener match: {node.listener}",
+                    score=0.9,
+                )
 
             elif category == SearchCategory.SOUND:
                 sound_str: str = str(node.sound).lower()
                 vo_str: str = str(node.vo_resref).lower()
-                if query in sound_str:
-                    return SearchResult(
-                        node=node,
-                        link=link,
-                        category=category,
-                        match_text=str(node.sound),
-                        context="Sound match",
-                        score=0.5,
-                    )
-                if query in vo_str:
-                    return SearchResult(
-                        node=node,
-                        link=link,
-                        category=category,
-                        match_text=str(node.vo_resref),
-                        context="Voice-over match",
-                        score=0.5,
-                    )
+                if query not in sound_str:
+                    return None
+                return SearchResult(
+                    node=node,
+                    link=link,
+                    category=category,
+                    match_text=str(node.sound),
+                    context="Sound match",
+                    score=0.5,
+                )
+                if query not in vo_str:
+                    return None
+                return SearchResult(
+                    node=node,
+                    link=link,
+                    category=category,
+                    match_text=str(node.vo_resref),
+                    context="Voice-over match",
+                    score=0.5,
+                )
 
             elif category == SearchCategory.QUEST:
                 quest_lower: str = node.quest.lower()

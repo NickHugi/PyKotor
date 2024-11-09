@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
     from pykotor.resource.generics.dlg import DLGLink
     from toolset.gui.editors.dlg.editor import DLGEditor
+    from toolset.gui.editors.dlg.list_widget_base import QAbstractItemDelegate
 
 
 class ReferenceChooserDialog(QDialog):
@@ -60,7 +61,6 @@ class ReferenceChooserDialog(QDialog):
             if link is None:
                 continue
             item = DLGListWidgetItem(link=link, ref=linkref)
-
             # Build the HTML display
             self.list_widget.update_item(item)
             self.list_widget.addItem(item)
@@ -110,7 +110,7 @@ class ReferenceChooserDialog(QDialog):
         return parent
 
     def update_item_sizes(self):
-        item_delegate = self.list_widget.itemDelegate()
+        item_delegate: HTMLDelegate | QAbstractItemDelegate | None = self.list_widget.itemDelegate()
         if item_delegate is None:
             return
         for i in range(self.list_widget.count()):
