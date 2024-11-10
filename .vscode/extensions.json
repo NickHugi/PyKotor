@@ -105,6 +105,21 @@
         "tensorbox.tensorbox",
         "hbenl.vscode-test-explorer",
         "trunk.io",
-        "thijsdekkers.ai-code-brushes"
+        "thijsdekkers.ai-code-brushes",
+        "theqtcompany.qt-ui",
+        "tonka3000.qtvsctools",
+        "kylinideteam.qt-support",
+        "triangleoxo.qtservitor",
+        "theqtcompany.qt-qml",
+        "seanwu.vscode-qt-for-python",
+        "theqtcompany.qt",
+        "dvratil.vscode-qtdoc",
+        "theqtcompany.qt-core",
+        "theqtcompany.qt-cpp-pack",
+        "akankshasingh872.case-change",
+        "kodu-ai.claude-dev-experimental",
+        "shan.code-settings-sync",
+        "abhishekkumariitg.grapher",
+        "ex3ndr.llama-coder"
     ]
 }
