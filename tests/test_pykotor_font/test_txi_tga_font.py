@@ -88,7 +88,7 @@ class TestWriteBitmapFont(unittest.TestCase):
 if __name__ == "__main__":
     try:
         import pytest
-    except ImportError: # pragma: no cover
+    except ImportError:  # pragma: no cover
         unittest.main()
     else:
         pytest.main(["-v", __file__])
