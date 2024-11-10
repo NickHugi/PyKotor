@@ -47,13 +47,97 @@ Issues = "https://github.com/NickHugi/PyKotor/issues"
 ########################################################
 
 [tool.pyright.defineConstant]
-PYQT5 = true
+PYQT5 = false
 PYSIDE2 = false
 PYQT6 = true
 PYSIDE6 = false
 
+[tool.black]
+line-length = 275
+skip-magic-trailing-comma = false
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+| \.hg
+| \.github
+| \.mypy_cache
+| \.tox
+| \.venv
+| venv
+| _build
+| buck-out
+| build
+| __pycache__
+| dist
+| nuitka_dist
+| \.history
+| \.idea
+| \.chat
+| \.ruff_cache
+| \.trunk
+| .mdx
+| .mdl
+)/
+'''
+
+[tool.pyright]
+include = ["*.py"]
+exclude = ["**/node_modules/**", "**/__pycache__/**", "**/build/**", "**/dist/**", "**/venv/**", "**/__pycache__/**"]
+reportMissingImports = true
+reportMissingTypeStubs = false
+pythonVersion = "3.8"
+analyzeUnannotatedFunctions = true
+deprecateTypingAliases = false
+
+[tool.isort]
+atomic = true
+profile = "black"
+line_length = 275
+skip_gitignore = true
+multi_line_output = 3
+
+[tool.yapf]
+column_limit = 275
+ALLOW_SPLIT_BEFORE_DEFAULT_OR_NAMED_ASSIGNS = false
+ALLOW_SPLIT_BEFORE_DICT_VALUE = false
+DISABLE_SPLIT_LIST_WITH_COMMENT = true
+INDENT_DICTIONARY_VALUE = true
+join_multiple_lines = false
+no_spaces_around_selected_binary_operators = "*,/"
+split_before_dict_set_generator = true
+split_before_expression_after_opening_paren = false
+split_complex_comprehension = true
+split_penalty_after_opening_bracket = 50
+split_penalty_excess_character = 75                 # Lower penalty for going over the column limit
+split_penalty_for_added_line_split = 100            # Discourage adding new line splits
+
 [tool.ruff]
 extend = "../../pyproject.toml"
+line-length = 275
+
+# Enable preview features.
+preview = false
+
+fix = true
+force-exclude = true
+show-fixes = true
+output-format = "grouped" # Group violations by containing file.
+respect-gitignore = false
+
+src = [
+    "Libraries/PyKotor/src",
+    "Libraries/PyKotorGL/src",
+    "Libraries/PyKotorFont/src",
+    "Libraries/Utility/src",
+    "Tools/HolocronToolset/src",
+    "Tools/BatchPatcher/src",
+    "Tools/HoloPatcher/src",
+    "Tools/KotorDiff/src",
+    "Tools/GuiConverter/src",
+    "tests",
+]
 
 [tool.ruff.lint]
 external = ["V"]
@@ -157,24 +241,18 @@ ignore = [
 
 [tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
+mark-parentheses = false
+parametrize-names-type = "list"
+parametrize-values-row-type = "list"
+parametrize-values-type = "list"                         # default
+raises-require-match-for = ["requests.RequestException"]
 
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
-
-[tool.ruff.lint.pyupgrade]
-keep-runtime-typing = true
-
-[tool.mccabe]
-max-complexity = 25
-
-[tool.style]
-based_on_style = "pep8"
-split_before_named_assigns = true
-split_complex_comprehension = true
-split_arguments_when_comma_terminated = true
-
-[tool.pylintrc]
-max-line-length = 175
+case-sensitive = true
+force-wrap-aliases = false
+combine-as-imports = true
+lines-between-types = 1
 
 [tool.ruff.lint.flake8-annotations]
 ignore-fully-untyped = true
@@ -207,16 +285,31 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 preview = false
 
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = false
+
+[tool.mccabe]
+max-complexity = 25
+
 [tool.bandit]
 exclude_dirs = ["tests"]
 tests = ["B201", "B301"]
 skips = ["B101", "B601"]
 
 [tool.ruff.lint.pycodestyle]
-max-doc-length = 200
+max-doc-length = 275
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.style]
+based_on_style = "google"
+split_before_named_assigns = true
+split_complex_comprehension = true
+split_arguments_when_comma_terminated = true
+
+[tool.pylintrc]
+max-line-length = 275
 
 [tool.pytest.ini_options]
 log_cli = true

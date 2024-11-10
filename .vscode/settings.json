@@ -65,7 +65,6 @@
         "*test*.py"
     ],
     "python.testing.unittestEnabled": true,
-    "python.testing.autoTestDiscoverOnSaveEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.analysis.packageIndexDepths": [
         {
@@ -76,11 +75,16 @@
     ],
     "pythonTestExplorer.outputs.showOutputsOnRun": true,
     "remote.WSL.fileWatcher.polling": true,
-    "ruff.lineLength": 275,
     "cody.codebase": "https://github.com/th3w1zard1/PyKotor",
     "traycer.executionMode": "Auto",
     "gitlens.codeLens.scopes": [
         "document",
         "containers"
+    ],
+    "[python]": {
+        "editor.formatOnSave": false
+    },
+    "ruff.format.args": [
+        "--line-length=275"
     ]
 }
