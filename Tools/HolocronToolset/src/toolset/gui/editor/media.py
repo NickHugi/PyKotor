@@ -19,12 +19,12 @@ if TYPE_CHECKING:
     from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
     from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
 
-    from toolset.gui.editor_base import Editor
+    from toolset.gui.editor.base import Editor
 
 
 class EditorMedia:
     def __init__(self, editor: Editor):
-        self.editor = editor
+        self.editor: Editor = editor
 
     def play_byte_source_media(
         self,

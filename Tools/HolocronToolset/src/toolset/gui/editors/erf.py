@@ -169,7 +169,7 @@ class ERFEditor(Editor):
 
         elif restype is ResourceType.RIM:
             rim: RIM = read_rim(data)
-            rim_offsets: dict[RIMResource, int] = rim.calculate_resource_offsets()
+            rim_offsets: dict[RIMResource, int] = rim.get_resource_offset()
             for resource in rim:
                 resref_item = QStandardItem(str(resource.resref))
                 resref_item.setData(resource)

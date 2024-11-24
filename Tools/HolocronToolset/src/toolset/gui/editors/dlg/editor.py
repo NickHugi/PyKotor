@@ -1687,7 +1687,7 @@ Should return 1 or 0, representing a boolean.
                 self.set_expand_recursively(item, set(), expand=False)
 
             collapse_all_children_action.triggered.connect(collapse_all_children)
-            collapse_all_children_action.setShortcut(QKeySequence(Qt.Key.Key_Shift | Qt.Key.Key_Alt | Qt.Key.Key_Return))
+            collapse_all_children_action.setShortcut(QKeySequence(Qt.Key.Key_Shift, Qt.Key.Key_Alt, Qt.Key.Key_Return))
             menu.addSeparator()
 
             # Paste actions

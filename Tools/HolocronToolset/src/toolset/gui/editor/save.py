@@ -28,11 +28,11 @@ if TYPE_CHECKING:
     from pathlib import PurePath
 
     from pykotor.resource.formats.rim.rim_data import RIM
-    from toolset.gui.editor_base import Editor
+    from toolset.gui.editor.base import Editor
 
 class EditorSave:
     def __init__(self, editor: Editor):
-        self.editor = editor
+        self.editor: Editor = editor
 
     def save_as(self):
         def show_invalid(exc: Exception | None, msg: str):
@@ -52,7 +52,7 @@ class EditorSave:
             return
         error_msg, exc = "", None
         try:
-            identifier = ResourceIdentifier.from_path(filepath_str)
+            identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath_str)
             if identifier.restype.is_invalid:
                 show_invalid(None, str(identifier))
                 return

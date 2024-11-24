@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from qtpy.QtWidgets import QFileDialog, QMenu, QMenuBar
 
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_capsule_file
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 
 if TYPE_CHECKING:
     import os
 
-    from toolset.gui.editor_base import Editor
+    from toolset.gui.editor.base import Editor
 
 
 class EditorFile:

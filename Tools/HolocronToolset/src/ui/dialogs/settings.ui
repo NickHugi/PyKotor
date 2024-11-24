@@ -148,7 +148,7 @@
   <customwidget>
    <class>GITWidget</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.settings.editor_settings.git</header>
+   <header location="global">toolset.gui.widgets.settings.widgets.git</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

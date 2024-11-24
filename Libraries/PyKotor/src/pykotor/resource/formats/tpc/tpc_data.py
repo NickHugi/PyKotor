@@ -200,7 +200,7 @@ class TPCMipmap:
 
         if self.tpc_format == TPCTextureFormat.RGBA:
             if target is TPCTextureFormat.BGR:
-                self.data = rgb_to_bgr(self.data)
+                self.data = rgb_to_bgr(rgba_to_rgb(self.data))
             elif target is TPCTextureFormat.RGB:
                 self.data = rgba_to_rgb(self.data)
             elif target is TPCTextureFormat.BGRA:

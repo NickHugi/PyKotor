@@ -1,46 +1,66 @@
 from __future__ import annotations
 
 
-def rgb_to_dxt1(rgb_data: bytes | bytearray, width: int, height: int) -> bytearray:
+def rgb_to_dxt1(
+    rgb_data: bytes | bytearray,
+    width: int,
+    height: int,
+) -> bytearray:
     dxt1_data = bytearray()
     for y in range(0, height, 4):
         for x in range(0, width, 4):
-            block = _extract_block(rgb_data, x, y, width, height, 3)
+            block: list[int] = _extract_block(rgb_data, x, y, width, height, 3)
             dest = bytearray(8)
             _compress_dxt1_block(dest, block)
             dxt1_data.extend(dest)
     return dxt1_data
 
 
-def rgba_to_dxt3(rgba_data: bytes | bytearray, width: int, height: int) -> bytearray:
+def rgba_to_dxt3(
+    rgba_data: bytes | bytearray,
+    width: int,
+    height: int,
+) -> bytearray:
     dxt3_data = bytearray()
     for y in range(0, height, 4):
         for x in range(0, width, 4):
-            block = _extract_block(rgba_data, x, y, width, height, 4)
+            block: list[int] = _extract_block(rgba_data, x, y, width, height, 4)
             dest = bytearray(16)
             _compress_dxt3_block(dest, block)
             dxt3_data.extend(dest)
     return dxt3_data
 
 
-def rgba_to_dxt5(rgba_data: bytes | bytearray, width: int, height: int) -> bytearray:
+def rgba_to_dxt5(
+    rgba_data: bytes | bytearray,
+    width: int,
+    height: int,
+) -> bytearray:
     dxt5_data = bytearray()
     for y in range(0, height, 4):
         for x in range(0, width, 4):
-            block = _extract_block(rgba_data, x, y, width, height, 4)
+            block: list[int] = _extract_block(rgba_data, x, y, width, height, 4)
             dest = bytearray(16)
             _compress_dxt5_block(dest, block)
             dxt5_data.extend(dest)
     return dxt5_data
 
 
-def _extract_block(src: bytes | bytearray, x: int, y: int, w: int, h: int, channels: int) -> list[int]:  # noqa: PLR0913
+def _extract_block(
+    src: bytes | bytearray,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    channels: int,
+) -> list[int]:  # noqa: PLR0913
     block: list[int] = []
     for by in range(4):
         for bx in range(4):
-            sx, sy = x + bx, y + by
+            sx: int = x + bx
+            sy: int = y + by
             if sx < w and sy < h:
-                idx = (sy * w + sx) * channels
+                idx: int = (sy * w + sx) * channels
                 block.extend(src[idx : idx + channels])
                 if channels == 3:
                     block.append(255)  # Add alpha for RGB
@@ -49,17 +69,26 @@ def _extract_block(src: bytes | bytearray, x: int, y: int, w: int, h: int, chann
     return block
 
 
-def _compress_dxt1_block(dest: bytearray, src: list[int]) -> None:
+def _compress_dxt1_block(
+    dest: bytearray,
+    src: list[int],
+) -> None:
     _compress_color_block(dest, src)
 
-def _compress_dxt3_block(dest: bytearray, src: list[int]) -> None:
+def _compress_dxt3_block(
+    dest: bytearray,
+    src: list[int],
+) -> None:
     _compress_alpha_block_dxt3(dest, src)
     _compress_color_block(dest[8:], src)
 
-def _compress_alpha_block_dxt3(dest: bytearray, src: list[int]) -> None:
+def _compress_alpha_block_dxt3(
+    dest: bytearray,
+    src: list[int],
+) -> None:
     for i in range(8):
-        alpha1 = src[i * 8 + 3] >> 4
-        alpha2 = src[i * 8 + 7] >> 4
+        alpha1: int = src[i * 8 + 3] >> 4
+        alpha2: int = src[i * 8 + 7] >> 4
         dest[i] = (alpha2 << 4) | alpha1
 
 
@@ -68,10 +97,13 @@ def _compress_dxt5_block(dest: bytearray, src: list[int]) -> None:
     _compress_color_block(dest[8:], src)
 
 
-def _compress_alpha_block_dxt5(dest: bytearray, src: list[int]) -> None:
-    alpha = [src[i * 4 + 3] for i in range(16)]
-    min_a = min(alpha)
-    max_a = max(alpha)
+def _compress_alpha_block_dxt5(
+    dest: bytearray,
+    src: list[int],
+) -> None:
+    alpha: list[int] = [src[i * 4 + 3] for i in range(16)]
+    min_a: int = min(alpha)
+    max_a: int = max(alpha)
 
     if min_a == max_a:
         dest[0] = max_a
@@ -92,8 +124,8 @@ def _compress_alpha_block_dxt5(dest: bytearray, src: list[int]) -> None:
         elif alpha[i] == 255:  # noqa: PLR2004
             code = 7
         else:
-            t = (alpha[i] - min_a) * 7 // (max_a - min_a)
-            code = min(7, t)
+            t: int = (alpha[i] - min_a) * 7 // (max_a - min_a)
+            code: int = min(7, t)
 
         indices |= code << (3 * i)
 
@@ -101,14 +133,17 @@ def _compress_alpha_block_dxt5(dest: bytearray, src: list[int]) -> None:
         dest[2 + i] = (indices >> (8 * i)) & 255
 
 
-def _compress_color_block(dest: bytearray, src: list[int]) -> None:
+def _compress_color_block(
+    dest: bytearray,
+    src: list[int],
+) -> None:
     if all(src[i : i + 4] == src[0:4] for i in range(4, 64, 4)):
         r, g, b = src[0], src[1], src[2]
-        mask = 0xAAAAAAAA
-        max16 = as_16bit(quantize_rb(r), quantize_g(g), quantize_rb(b))
-        min16 = as_16bit(quantize_rb(r), quantize_g(g), quantize_rb(b))
+        mask: int = 0xAAAAAAAA
+        max16: int = as_16bit(quantize_rb(r), quantize_g(g), quantize_rb(b))
+        min16: int = as_16bit(quantize_rb(r), quantize_g(g), quantize_rb(b))
     else:
-        dblock = dither_block(src)
+        dblock: list[int] = dither_block(src)
         max16, min16 = optimize_colors_block(dblock)
         if max16 != min16:
             color = eval_colors(max16, min16)
@@ -117,10 +152,10 @@ def _compress_color_block(dest: bytearray, src: list[int]) -> None:
             mask = 0
 
         for _ in range(2):
-            lastmask = mask
+            lastmask: int = mask
             if refine_block(src, max16, min16, mask):
                 if max16 != min16:
-                    color = eval_colors(max16, min16)
+                    color: list[int] = eval_colors(max16, min16)
                     mask = match_colors_block(src, color)
                 else:
                     mask = 0
@@ -143,16 +178,16 @@ def _compress_color_block(dest: bytearray, src: list[int]) -> None:
 
 
 def dither_block(block: list[int]) -> list[int]:
-    dblock = block.copy()
-    err = [0] * 8
+    dblock: list[int] = block.copy()
+    err: list[int] = [0] * 8
     for ch in range(3):
         for y in range(4):
             for x in range(4):
-                idx = (y * 4 + x) * 4 + ch
-                old = dblock[idx]
-                new = quantize_rb(old) if ch != 1 else quantize_g(old)
+                idx: int = (y * 4 + x) * 4 + ch
+                old: int = dblock[idx]
+                new: int = quantize_rb(old) if ch != 1 else quantize_g(old)
                 dblock[idx] = new
-                err_val = old - new
+                err_val: int = old - new
                 if x < 3:  # noqa: PLR2004
                     dblock[idx + 4] += (err_val * 7) >> 4
                 if y < 3:  # noqa: PLR2004
@@ -165,10 +200,10 @@ def dither_block(block: list[int]) -> list[int]:
 
 
 def optimize_colors_block(block: list[int]) -> tuple[int, int]:
-    cov = [0] * 6
-    mu = [0] * 3
-    min_color = [255] * 3
-    max_color = [0] * 3
+    cov: list[int] = [0] * 6
+    mu: list[int] = [0] * 3
+    min_color: list[int] = [255] * 3
+    max_color: list[int] = [0] * 3
 
     for i in range(16):
         r, g, b = block[i * 4 : i * 4 + 3]
@@ -197,17 +232,17 @@ def optimize_colors_block(block: list[int]) -> tuple[int, int]:
         cov[4] += g * b
         cov[5] += b * b
 
-    vfr = max_color[0] - min_color[0]
-    vfg = max_color[1] - min_color[1]
-    vfb = max_color[2] - min_color[2]
+    vfr: int = max_color[0] - min_color[0]
+    vfg: int = max_color[1] - min_color[1]
+    vfb: int = max_color[2] - min_color[2]
 
     for _ in range(4):  # Power iteration
-        r = vfr * cov[0] + vfg * cov[1] + vfb * cov[2]
-        g = vfr * cov[1] + vfg * cov[3] + vfb * cov[4]
-        b = vfr * cov[2] + vfg * cov[4] + vfb * cov[5]
+        r: int = vfr * cov[0] + vfg * cov[1] + vfb * cov[2]
+        g: int = vfr * cov[1] + vfg * cov[3] + vfb * cov[4]
+        b: int = vfr * cov[2] + vfg * cov[4] + vfb * cov[5]
         vfr, vfg, vfb = r, g, b
 
-    magn = max(abs(vfr), abs(vfg), abs(vfb))
+    magn: int = max(abs(vfr), abs(vfg), abs(vfb))
     if magn < 4.0:  # noqa: PLR2004
         v_r, v_g, v_b = 299, 587, 114
     else:
@@ -215,11 +250,12 @@ def optimize_colors_block(block: list[int]) -> tuple[int, int]:
         v_g = int(vfg * 512 / magn)
         v_b = int(vfb * 512 / magn)
 
-    min_d = float("inf")
-    max_d = float("-inf")
-    min_p = max_p = 0
+    min_d: float = float("inf")
+    max_d: float = float("-inf")
+    min_p: int = 0
+    max_p: int = 0
     for i in range(16):
-        dot = block[i * 4] * v_r + block[i * 4 + 1] * v_g + block[i * 4 + 2] * v_b
+        dot: int = block[i * 4] * v_r + block[i * 4 + 1] * v_g + block[i * 4 + 2] * v_b
         if dot < min_d:
             min_d = dot
             min_p = i
@@ -227,17 +263,23 @@ def optimize_colors_block(block: list[int]) -> tuple[int, int]:
             max_d = dot
             max_p = i
 
-    return (as_16bit(block[max_p * 4], block[max_p * 4 + 1], block[max_p * 4 + 2]), as_16bit(block[min_p * 4], block[min_p * 4 + 1], block[min_p * 4 + 2]))
+    return (
+        as_16bit(block[max_p * 4], block[max_p * 4 + 1], block[max_p * 4 + 2]),
+        as_16bit(block[min_p * 4], block[min_p * 4 + 1], block[min_p * 4 + 2]),
+    )
 
 
-def eval_colors(color0: int, color1: int) -> list[int]:
+def eval_colors(
+    color0: int,
+    color1: int,
+) -> list[int]:
     def expand_565(c: int) -> tuple[int, int, int]:
         return ((c >> 11) & 31) * 8, ((c >> 5) & 63) * 4, (c & 31) * 8
 
-    c0 = expand_565(color0)
-    c1 = expand_565(color1)
+    c0: tuple[int, int, int] = expand_565(color0)
+    c1: tuple[int, int, int] = expand_565(color1)
 
-    colors = [
+    colors: list[int] = [
         c0[0],
         c0[1],
         c0[2],
@@ -259,13 +301,16 @@ def eval_colors(color0: int, color1: int) -> list[int]:
     return colors
 
 
-def match_colors_block(block: list[int], color: list[int]) -> int:
-    mask = 0
-    dir_r = color[0] - color[4]
-    dir_g = color[1] - color[5]
-    dir_b = color[2] - color[6]
-    dots = [0] * 16
-    stops = [0] * 4
+def match_colors_block(
+    block: list[int],
+    color: list[int],
+) -> int:
+    mask: int = 0
+    dir_r: int = color[0] - color[4]
+    dir_g: int = color[1] - color[5]
+    dir_b: int = color[2] - color[6]
+    dots: list[int] = [0] * 16
+    stops: list[int] = [0] * 4
 
     for i in range(16):
         dots[i] = block[i * 4] * dir_r + block[i * 4 + 1] * dir_g + block[i * 4 + 2] * dir_b
@@ -273,12 +318,12 @@ def match_colors_block(block: list[int], color: list[int]) -> int:
     for i in range(4):
         stops[i] = color[i * 4] * dir_r + color[i * 4 + 1] * dir_g + color[i * 4 + 2] * dir_b
 
-    c0_point = (stops[1] + stops[3]) >> 1
-    half_point = (stops[3] + stops[2]) >> 1
-    c3_point = (stops[2] + stops[0]) >> 1
+    c0_point: int = (stops[1] + stops[3]) >> 1
+    half_point: int = (stops[3] + stops[2]) >> 1
+    c3_point: int = (stops[2] + stops[0]) >> 1
 
     for i in range(16):
-        dot = dots[i]
+        dot: int = dots[i]
         if dot < half_point:
             mask |= (3 if dot < c0_point else 1) << (i * 2)
         else:
@@ -287,15 +332,20 @@ def match_colors_block(block: list[int], color: list[int]) -> int:
     return mask
 
 
-def refine_block(block: list[int], max16: int, min16: int, mask: int) -> bool:
+def refine_block(
+    block: list[int],
+    max16: int,
+    min16: int,
+    mask: int,
+) -> bool:
     old_min, old_max = min16, max16
     at1_r = at1_g = at1_b = 0
     at2_r = at2_g = at2_b = 0
     akku = 0
 
     for i in range(16):
-        step = mask & 3
-        w1 = [3, 0, 2, 1][step]
+        step: int = mask & 3
+        w1: int = [3, 0, 2, 1][step]
         r, g, b = block[i * 4 : i * 4 + 3]
         akku += [0x090000, 0x000900, 0x040102, 0x010402][step]
         at1_r += w1 * r
@@ -306,16 +356,20 @@ def refine_block(block: list[int], max16: int, min16: int, mask: int) -> bool:
         at2_b += b
         mask >>= 2
 
-    at2_r = 3 * at2_r - at1_r
-    at2_g = 3 * at2_g - at1_g
-    at2_b = 3 * at2_b - at1_b
+    at2_r: int = 3 * at2_r - at1_r
+    at2_g: int = 3 * at2_g - at1_g
+    at2_b: int = 3 * at2_b - at1_b
 
-    xx = akku >> 16
-    yy = (akku >> 8) & 255
-    xy = akku & 255
+    xx: int = akku >> 16
+    yy: int = (akku >> 8) & 255
+    xy: int = akku & 255
 
-    f_rb = 3 * 31 / 255 / (xx * yy - xy * xy)
-    f_g = f_rb * 63 / 31
+    denom: int = xx * yy - xy * xy
+    if denom == 0:
+        return False
+
+    f_rb: float = (3 * 31) / 255 / denom
+    f_g: float = f_rb * 63 / 31
 
     max16 = (
         (sclamp((at1_r * yy - at2_r * xy) * f_rb + 0.5, 0, 31) << 11)
@@ -332,12 +386,20 @@ def refine_block(block: list[int], max16: int, min16: int, mask: int) -> bool:
     return old_min != min16 or old_max != max16
 
 
-def as_16bit(r: int, g: int, b: int) -> int:
+def as_16bit(
+    r: int,
+    g: int,
+    b: int,
+) -> int:
     return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
 
 
-def sclamp(y: float, p0: int, p1: int) -> int:
-    x = int(y)
+def sclamp(
+    y: float,
+    p0: int,
+    p1: int,
+) -> int:
+    x: int = int(y)
     return max(p0, min(x, p1))
 
 

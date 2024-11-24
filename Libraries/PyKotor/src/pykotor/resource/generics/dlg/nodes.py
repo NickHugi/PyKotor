@@ -13,6 +13,7 @@ from pykotor.common.misc import Color, ResRef
 if TYPE_CHECKING:
     from collections import deque
     from pykotor.resource.generics.dlg.links import DLGLink
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
 
 class DLGAnimation:
@@ -142,6 +143,12 @@ class DLGNode:
     def __hash__(self):
         return self._hash_cache
 
+    def path(self) -> str:
+        """Returns the GFF path to this node."""
+        node_list_display: Literal["EntryList", "ReplyList"] = "EntryList" if isinstance(self, DLGEntry) else "ReplyList"
+        node_path: str = f"{node_list_display}\\{self.list_index}"
+        return node_path
+
     def add_node(
         self,
         target_links: list[DLGLink],
@@ -260,7 +267,7 @@ class DLGNode:
 
         node._hash_cache = int(node_key)  # noqa: SLF001
         for key, value in node_data.items():
-            if value is None:
+            if not isinstance(value, dict):
                 continue
             py_type: str | None = value.get("py_type")
             actual_value: Any = value.get("value")

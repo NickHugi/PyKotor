@@ -382,7 +382,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             action.toggled.connect(on_toggled)
             menu.addAction(action)
             return
-        action_title: str = f"{title}: {format_qt_obj(current_value)[:10]}" if param_type is not bool else title
+        action_title: str = title
         action = QAction(action_title, self)
 
         if param_type is bool:

@@ -1,5 +1,36 @@
 from __future__ import annotations
 
+from contextlib import suppress
+import tempfile
+import uuid
+
+from abc import abstractmethod
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable
+
+from loggerplus import RobustLogger
+from qtpy.QtCore import (
+    QTimer,
+    Signal,  # pyright: ignore[reportPrivateImportUsage]
+)
+from qtpy.QtGui import QIcon, QPixmap
+from qtpy.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QLineEdit,
+    QMainWindow,
+    QMenu,
+    QPlainTextEdit,
+    QShortcut,  # pyright: ignore[reportPrivateImportUsage]
+)
+
+from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_bif_file, is_capsule_file
+from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+from toolset.gui.widgets.media_player_widget import MediaPlayerWidget
+from toolset.gui.widgets.settings.installations import GlobalSettings
+
+
 import tempfile
 import traceback
 import uuid
@@ -72,6 +103,17 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
 
+
+    from qtpy.QtCore import QRect
+    from qtpy.QtGui import QScreen
+    from qtpy.QtWidgets import (
+        QMenuBar,
+        QWidget,
+    )
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
+
+    from pykotor.common.language import LocalizedString
+    from toolset.data.installation import HTInstallation
 
 class Editor(QMainWindow):
     sig_new_file: Signal = Signal()
