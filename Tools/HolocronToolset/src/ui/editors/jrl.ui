@@ -280,7 +280,7 @@
     <customwidget>
       <class>RobustTreeView</class>
       <extends>QTreeView</extends>
-     <header location="global">toolset.gui.editors.dlg</header>
+     <header location="global">utility.ui_libraries.qt.widgets.itemviews.treeview</header>
     </customwidget>
   <customwidget>
    <class>LocalizedStringLineEdit</class>
