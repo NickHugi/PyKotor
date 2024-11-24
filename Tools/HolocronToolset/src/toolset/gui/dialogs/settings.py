@@ -15,7 +15,10 @@ if TYPE_CHECKING:
 
 
 class SettingsDialog(QDialog):
-    def __init__(self, parent: QWidget):
+    def __init__(
+        self,
+        parent: QWidget
+    ):
         """Initialize Holocron Toolset settings dialog editor.
 
         Args:
@@ -54,32 +57,38 @@ class SettingsDialog(QDialog):
         }
 
     def _setup_signals(self):
-        self.ui.installationsWidget.edited.connect(self.on_installation_edited)
+        self.ui.installationsWidget.sig_settings_edited.connect(self.on_installation_edited)
         self.ui.settingsTree.itemClicked.connect(self.on_page_change)
         self.reset_button = QPushButton("Reset All Settings", self)
         self.reset_button.setObjectName("resetButton")
         self.reset_button.clicked.connect(self.on_reset_all_settings)
         self.ui.verticalLayout.addWidget(self.reset_button)  # pyright: ignore[reportCallIssue, reportArgumentType]
 
-    def closeEvent(self, a0: QCloseEvent | None) -> None:
+    def closeEvent(
+        self,
+        a0: QCloseEvent | None
+    ) -> None:
         self.accept()
         return super().closeEvent(a0)  # pyright: ignore[reportArgumentType]
 
-    def on_page_change(self, pageTreeItem: QTreeWidgetItem):
-        pageItemText = pageTreeItem.text(0)
-        newPage = self.page_dict[pageItemText]
-        self.ui.settingsStack.setCurrentWidget(newPage)  # type: ignore[arg-type]
+    def on_page_change(
+        self,
+        page_tree_item: QTreeWidgetItem
+    ):
+        page_item_text: str = page_tree_item.text(0)
+        new_page: QWidget = self.page_dict[page_item_text]
+        self.ui.settingsStack.setCurrentWidget(new_page)  # type: ignore[arg-type]
         if self.isMaximized():
             return
 
-        if self.previous_page not in ("GIT Editor", "Module Designer") and pageItemText in ("GIT Editor", "Module Designer"):
+        if self.previous_page not in ("GIT Editor", "Module Designer") and page_item_text in ("GIT Editor", "Module Designer"):
             self.original_size = self.size()
             self.resize(800, 800)  # Adjust the size based on the image dimensions
-        elif self.previous_page in ("GIT Editor", "Module Designer") and pageItemText not in ("GIT Editor", "Module Designer"):
+        elif self.previous_page in ("GIT Editor", "Module Designer") and page_item_text not in ("GIT Editor", "Module Designer"):
             if self.original_size is not None:
                 self.resize(self.original_size)
 
-        self.previous_page = pageItemText
+        self.previous_page = page_item_text
 
     def on_reset_all_settings(self):
         reply = QMessageBox.question(
