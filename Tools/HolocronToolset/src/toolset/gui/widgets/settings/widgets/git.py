@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from qtpy import QtCore
 
 from toolset.gui.common.filters import NoScrollEventFilter
-from toolset.gui.widgets.settings.editors.git import GITSettings
+from toolset.gui.widgets.settings.editor_settings.git import GITSettings
 from toolset.gui.widgets.settings.widgets.base import SettingsWidget
 
 if TYPE_CHECKING:
