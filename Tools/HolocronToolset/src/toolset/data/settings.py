@@ -5,7 +5,7 @@ from typing import Any, Generic, TypeVar
 from loggerplus import RobustLogger
 from qtpy.QtCore import QSettings, Qt
 
-from toolset.utils.misc import getQtMouseButton, get_qt_button_string, get_qt_key, get_qt_key_string
+from toolset.utils.misc import get_qt_mouse_button, get_qt_button_string, get_qt_key, get_qt_key_string
 
 
 class QtTypeWrapper:
@@ -18,7 +18,7 @@ class QtTypeWrapper:
         self.type_str: str = type_str
 
     def reconstruct(self) -> Qt.Key | Qt.MouseButton:
-        return get_qt_key(self.value) if self.type_str == "Qt.Key" else getQtMouseButton(self.value)
+        return get_qt_key(self.value) if self.type_str == "Qt.Key" else get_qt_mouse_button(self.value)
 
 
 T = TypeVar("T")
@@ -130,7 +130,7 @@ class SettingsProperty(property, Generic[T]):
             if value[0] == "Qt.Key":
                 return get_qt_key(value[1])
             if value[0] == "Qt.MouseButton":
-                return getQtMouseButton(value[1])
+                return get_qt_mouse_button(value[1])
             if value[0] == "set":
                 return {self.deserialize_value(item) for item in value[1]}
             if value[0] == "tuple":

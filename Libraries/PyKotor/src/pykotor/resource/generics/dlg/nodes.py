@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING, Any
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import Color, ResRef
-from pykotor.resource.generics.dlg.links import DLGLink
 
 if TYPE_CHECKING:
     from collections import deque
+    from pykotor.resource.generics.dlg.links import DLGLink
 
 
 class DLGAnimation:
@@ -147,6 +147,7 @@ class DLGNode:
         target_links: list[DLGLink],
         source: DLGNode,
     ):
+        from pykotor.resource.generics.dlg.links import DLGLink
         target_links.append(DLGLink(source, len(target_links)))
 
     def calculate_links_and_nodes(self) -> tuple[int, int]:
@@ -233,6 +234,8 @@ class DLGNode:
         data: dict[str | int, Any],
         node_map: dict[str | int, Any] | None = None,
     ) -> DLGEntry | DLGReply:  # noqa: C901, PLR0912
+        from pykotor.resource.generics.dlg.links import DLGLink
+
         if node_map is None:
             node_map = {}
 

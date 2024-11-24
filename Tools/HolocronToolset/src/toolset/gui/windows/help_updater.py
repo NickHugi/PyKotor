@@ -25,7 +25,7 @@ class HelpUpdater:
         self.help_window = help_window
 
     def check_for_updates(self):
-        remoteInfo = get_remote_toolset_update_info(useBetaChannel=GlobalSettings().useBetaChannel)
+        remoteInfo = get_remote_toolset_update_info(use_beta_channel=GlobalSettings().useBetaChannel)
         try:
             if not isinstance(remoteInfo, dict):
                 raise remoteInfo  # noqa: TRY301

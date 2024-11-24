@@ -29,7 +29,7 @@ def fetch_update_info(
     useBetaChannel: bool = False,  # noqa: FBT001, FBT002
     silent: bool = False,  # noqa: FBT001, FBT002
 ) -> dict[str, Any] | Exception:
-    return get_remote_toolset_update_info(useBetaChannel=useBetaChannel, silent=silent)
+    return get_remote_toolset_update_info(use_beta_channel=useBetaChannel, silent=silent)
 
 
 class UpdateManager:

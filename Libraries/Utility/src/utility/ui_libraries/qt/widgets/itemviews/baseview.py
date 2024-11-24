@@ -39,7 +39,6 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from utility.ui_libraries.qt.tools.debug.print_qobject import format_qt_obj
 from utility.ui_libraries.qt.tools.qt_meta import get_qt_meta_type
 
 if TYPE_CHECKING:

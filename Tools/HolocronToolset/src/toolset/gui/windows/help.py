@@ -112,7 +112,7 @@ class HelpWindow(QMainWindow):
             self._setup_contents_rec_xml(item, child)
 
     def check_for_updates(self):
-        remoteInfo = get_remote_toolset_update_info(useBetaChannel=GlobalSettings().useBetaChannel)
+        remoteInfo = get_remote_toolset_update_info(use_beta_channel=GlobalSettings().useBetaChannel)
         try:
             if not isinstance(remoteInfo, dict):
                 raise remoteInfo  # noqa: TRY301
