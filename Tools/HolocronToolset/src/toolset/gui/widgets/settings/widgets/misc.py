@@ -51,7 +51,6 @@ class MiscWidget(QWidget):
 
     def setup_values(self):
         self.ui.useBetaChannel.setChecked(self.settings.useBetaChannel)
-        self.ui.profileToolset.setChecked(self.settings.profileToolset)
         self.ui.attemptKeepOldGFFFields.setChecked(self.settings.attemptKeepOldGFFFields)
         self.ui.saveRimCheck.setChecked(not self.settings.disableRIMSaving)
         self.ui.mergeRimCheck.setChecked(self.settings.joinRIMsTogether)
@@ -67,7 +66,6 @@ class MiscWidget(QWidget):
 
     def save(self):
         self.settings.useBetaChannel = self.ui.useBetaChannel.isChecked()
-        self.settings.profileToolset = self.ui.profileToolset.isChecked()
         self.settings.attemptKeepOldGFFFields = self.ui.attemptKeepOldGFFFields.isChecked()
         self.settings.disableRIMSaving = not self.ui.saveRimCheck.isChecked()
         self.settings.joinRIMsTogether = self.ui.mergeRimCheck.isChecked()
