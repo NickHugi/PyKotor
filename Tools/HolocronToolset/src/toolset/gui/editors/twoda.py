@@ -140,7 +140,10 @@ class TwoDAEditor(Editor):
             self.proxy_model.setSourceModel(self.source_model)
             self.new()
 
-    def _load_main(self, data: bytes):
+    def _load_main(
+        self,
+        data: bytes,
+    ):
         twoda: TwoDA = read_2da(data)
         headers: list[str] = ["", *twoda.get_headers()]
         self.source_model.setColumnCount(len(headers))
@@ -168,7 +171,10 @@ class TwoDAEditor(Editor):
         self.ui.twodaTable.setModel(self.proxy_model)  # type: ignore[arg-type]
         self._reconstruct_menu(headers)
 
-    def _reconstruct_menu(self, headers):
+    def _reconstruct_menu(
+        self,
+        headers: list[str],
+    ):
         self.ui.menuSetRowHeader.clear()
         action = QAction("None", self)
         action.triggered.connect(lambda: self.set_vertical_header_option(VerticalHeaderOption.NONE))
@@ -210,7 +216,10 @@ class TwoDAEditor(Editor):
         self.source_model.clear()
         self.source_model.setRowCount(0)
 
-    def jump_to_row(self, row: int):
+    def jump_to_row(
+        self,
+        row: int,
+    ):
         if row < 0 or row >= self.source_model.rowCount():
             QMessageBox.warning(self, "Invalid Row", f"Row {row} is out of range.")
             return

@@ -55,11 +55,11 @@ class UTPEditor(Editor):
             6. Set up menus, signals and installation
             7. Update 3D preview and call new() to initialize editor.
         """
-        supported = [ResourceType.UTP, ResourceType.BTP]
+        supported: list[ResourceType] = [ResourceType.UTP, ResourceType.BTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
-        self._placeables2DA = installation.ht_get_cache_2da("placeables")
+        self._placeables2DA: TwoDA | None = installation.ht_get_cache_2da("placeables")
         self._utp = UTP()
 
         from toolset.uic.qtpy.editors.utp import Ui_MainWindow
@@ -96,7 +96,10 @@ class UTPEditor(Editor):
         self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
         self.ui.actionShowPreview.triggered.connect(self.toggle_preview)
 
-    def _setup_installation(self, installation: HTInstallation):
+    def _setup_installation(
+        self,
+        installation: HTInstallation,
+    ):
         """Sets up the installation for editing.
 
         Args:
@@ -118,14 +121,16 @@ class UTPEditor(Editor):
         required: list[str] = [HTInstallation.TwoDA_PLACEABLES, HTInstallation.TwoDA_FACTIONS]
         installation.ht_batch_cache_2da(required)
 
-        appearances: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLACEABLES)
-        factions: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
+        appearances: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLACEABLES)
+        factions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
 
         self.ui.appearanceSelect.set_context(appearances, installation, HTInstallation.TwoDA_PLACEABLES)
         self.ui.factionSelect.set_context(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
-        self.ui.appearanceSelect.set_items(appearances.get_column("label"))
-        self.ui.factionSelect.set_items(factions.get_column("label"))
+        if appearances is not None:
+            self.ui.appearanceSelect.set_items(appearances.get_column("label"))
+        if factions is not None:
+            self.ui.factionSelect.set_items(factions.get_column("label"))
 
         self.ui.notBlastableCheckbox.setVisible(installation.tsl)
         self.ui.difficultyModSpin.setVisible(installation.tsl)
@@ -373,6 +378,7 @@ class UTPEditor(Editor):
             QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec()
             return
 
+        assert self._installation is not None
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
         if search is None:
             msgbox: int = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec()
@@ -405,7 +411,7 @@ class UTPEditor(Editor):
             return
         capsules: list[Capsule] = []
         with suppress(Exception):
-            root = Module.find_root(self._filepath)
+            root: str = Module.filepath_to_root(self._filepath)
             moduleNames: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             newCapsules: list[Capsule] = [Capsule(self._installation.module_path() / mod_filename) for mod_filename in moduleNames]
             capsules.extend(newCapsules)

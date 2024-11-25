@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from collections.abc import Callable
 
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.misc import Game
     from pykotor.resource.formats.gff import GFF

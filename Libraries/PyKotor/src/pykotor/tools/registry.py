@@ -4,7 +4,7 @@ import os
 
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from loggerplus import RobustLogger
 
@@ -14,9 +14,12 @@ from utility.misc import ProcessorArchitecture
 if TYPE_CHECKING:
     import types
 
-    from typing_extensions import Self
+    from winreg import HKEYType
 
-KOTOR_REG_PATHS = {
+    from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
+
+
+KOTOR_REG_PATHS: dict[Game, dict[ProcessorArchitecture, list[tuple[str, str]]]] = {
     Game.K1: {
         ProcessorArchitecture.BIT_32: [
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 32370", "InstallLocation"),
@@ -59,7 +62,7 @@ def find_software_key(software_name: str) -> str | None:
             try:
                 # Enumerate through the SIDs
                 sid: str = winreg.EnumKey(hkey_users, i)
-                software_path = f"{sid}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{software_name}"
+                software_path: str = f"{sid}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{software_name}"
                 with suppress(FileNotFoundError), winreg.OpenKey(hkey_users, software_path) as software_key:
                     # If this point is reached, the software is installed under this SID
                     return winreg.QueryValue(software_key, "InstallLocation")
@@ -70,7 +73,10 @@ def find_software_key(software_name: str) -> str | None:
     return None
 
 
-def resolve_reg_key_to_path(reg_key: str, keystr: str) -> str | None:
+def resolve_reg_key_to_path(
+    reg_key: str,
+    keystr: str,
+) -> str | None:
     r"""Resolves a registry key to a file system path.
 
     Args:
@@ -100,37 +106,6 @@ def resolve_reg_key_to_path(reg_key: str, keystr: str) -> str | None:
         return None
 
 
-def check_reg_keys_existence_and_validity() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """Check registry keys for their existence and validity against default paths."""
-    import winreg
-
-    from pathlib import WindowsPath
-
-    from pykotor.tools.path import find_kotor_paths_from_default
-
-    non_existent_keys = []
-    invalid_path_keys = []
-
-    default_paths = find_kotor_paths_from_default()
-
-    # Determine the system's architecture
-    arch = ProcessorArchitecture.from_os()
-    for game, arch_paths in KOTOR_REG_PATHS.items():
-        game_defaults = default_paths[game]
-
-        for path, name in arch_paths[arch]:
-            reg_path = resolve_reg_key_to_path(winreg.HKEY_LOCAL_MACHINE, path, name)
-            if reg_path is None:
-                non_existent_keys.append((path, name))
-            else:
-                # Convert registry path to a proper WindowsPath and check existence and if it's a default path
-                reg_path_obj = WindowsPath(reg_path)
-                if not reg_path_obj.exists() or all(reg_path_obj != WindowsPath(default_path) for default_path in game_defaults):
-                    invalid_path_keys.append((path, name))
-
-    return non_existent_keys, invalid_path_keys
-
-
 def winreg_key(game: Game) -> list[tuple[str, str]]:
     """Returns a list of registry keys that are utilized by KOTOR.
 
@@ -155,7 +130,7 @@ def winreg_key(game: Game) -> list[tuple[str, str]]:
     return KOTOR_REG_PATHS[game][ProcessorArchitecture.from_os()]
 
 
-def get_winreg_path(game: Game):
+def get_winreg_path(game: Game) -> tuple[Any, int] | None | Literal[""]:
     """(untested) Returns the specified path value in the windows registry for the given game.
 
     Attributes:
@@ -167,19 +142,22 @@ def get_winreg_path(game: Game):
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.
     """
-    possible_kotor_reg_paths = winreg_key(game)
+    possible_kotor_reg_paths: list[tuple[str, str]] = winreg_key(game)
 
     try:
         import winreg
 
         for key_path, subkey in possible_kotor_reg_paths:
-            key = winreg.OpenKeyEx(winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_READ)
+            key: HKEYType = winreg.OpenKeyEx(winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_READ)
             return winreg.QueryValueEx(key, subkey)
     except (FileNotFoundError, PermissionError):
         return ""
 
 
-def set_winreg_path(game: Game, path: str):
+def set_winreg_path(
+    game: Game,
+    path: str,
+) -> None:
     """(untested) Sets the kotor install folder path value in the windows registry for the given game.
 
     Attributes:
@@ -192,12 +170,12 @@ def set_winreg_path(game: Game, path: str):
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.
     """
-    possible_kotor_reg_paths = winreg_key(game)
+    possible_kotor_reg_paths: list[tuple[str, str]] = winreg_key(game)
 
     import winreg
 
     for key_path, subkey in possible_kotor_reg_paths:
-        key = winreg.CreateKeyEx(
+        key: HKEYType = winreg.CreateKeyEx(
             winreg.HKEY_LOCAL_MACHINE,
             key_path,
             0,
@@ -206,13 +184,16 @@ def set_winreg_path(game: Game, path: str):
         winreg.SetValueEx(key, subkey, 1, winreg.REG_SZ, path)
 
 
-def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-error
+def create_registry_path(
+    hive: HKEYType | int,
+    path: str,
+) -> None:  # sourcery skip: raise-from-previous-error
     """Recursively creates the registry path if it doesn't exist."""
     log = RobustLogger()
     try:
         import winreg
 
-        current_path = ""
+        current_path: str = ""
         for part in path.split("\\"):
             current_path = f"{current_path}\\{part}" if current_path else part
             try:
@@ -225,21 +206,16 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
     except Exception:  # pylint: disable=W0718  # noqa: BLE001
         log.exception("An unexpected error occurred while creating a registry path.")
 
+
 def get_retail_key(game: Game) -> str:
     if ProcessorArchitecture.from_os() == ProcessorArchitecture.BIT_64:
-        return (
-            r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2"
-            if game.is_k2()
-            else r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR"
-        )
-    return (
-        r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2"
-        if game.is_k2()
-        else r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR"
-    )
+        return r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2" if game.is_k2() else r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR"
+    return r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2" if game.is_k2() else r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR"
+
 
 class SpoofKotorRegistry:
     """A context manager used to safely spoof the KOTOR 1/2 disk retail registry path temporarily."""
+
     def __init__(
         self,
         installation_path: os.PathLike | str,
@@ -280,7 +256,12 @@ class SpoofKotorRegistry:
             set_registry_key_value(self.registry_path, self.key, self.original_value)
         # TODO(th3w1zard1): Determine what to do if the regpath never existed, as deleting it isn't easy. Set it to ""?
 
-def set_registry_key_value(full_key_path: str, value_name: str, value_data: str):
+
+def set_registry_key_value(
+    full_key_path: str,
+    value_name: str,
+    value_data: str,
+) -> None:
     """Sets a registry key value, creating the key (and its parents, if necessary).
 
     Args:
@@ -299,7 +280,7 @@ def set_registry_key_value(full_key_path: str, value_name: str, value_data: str)
 
         # Parse the hive from the full key path
         hive_name, sub_key = full_key_path.split("\\", 1)
-        hive = {
+        hive: int | None = {
             "HKEY_CLASSES_ROOT": winreg.HKEY_CLASSES_ROOT,
             "HKEY_CURRENT_USER": winreg.HKEY_CURRENT_USER,
             "HKEY_LOCAL_MACHINE": winreg.HKEY_LOCAL_MACHINE,
@@ -331,13 +312,13 @@ def set_registry_key_value(full_key_path: str, value_name: str, value_data: str)
 
 def remove_winreg_path(game: Game):
     """(untested)."""
-    possible_kotor_reg_paths = winreg_key(game)
+    possible_kotor_reg_paths: list[tuple[str, str]] = winreg_key(game)
 
     try:
         import winreg
 
         for key_path, subkey in possible_kotor_reg_paths:
-            key = winreg.OpenKeyEx(
+            key: HKEYType = winreg.OpenKeyEx(
                 winreg.HKEY_LOCAL_MACHINE,
                 key_path,
                 0,

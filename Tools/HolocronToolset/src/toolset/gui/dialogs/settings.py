@@ -91,7 +91,7 @@ class SettingsDialog(QDialog):
         self.previous_page = page_item_text
 
     def on_reset_all_settings(self):
-        reply = QMessageBox.question(
+        reply: QMessageBox.StandardButton = QMessageBox.question(
             self,
             "Reset All Settings",
             "Are you sure you want to reset all settings to their default values? This action cannot be undone.",

@@ -17,16 +17,16 @@ from pykotor.resource.formats.tpc.tpc_auto import (
 )
 
 __all__ = [
-    "bytes_tpc",
-    "read_tpc",
     "TPC",
-    "TPCMipmap",
-    "TPCLayer",
     "TPCBMPWriter",
     "TPCBinaryReader",
     "TPCBinaryWriter",
-    "TPCTextureFormat",
+    "TPCLayer",
+    "TPCMipmap",
     "TPCTGAReader",
     "TPCTGAWriter",
-    "write_tpc"
+    "TPCTextureFormat",
+    "bytes_tpc",
+    "read_tpc",
+    "write_tpc",
 ]

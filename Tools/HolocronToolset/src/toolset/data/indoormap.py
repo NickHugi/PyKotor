@@ -62,13 +62,13 @@ class IndoorMap:
         self.name: LocalizedString = LocalizedString.from_english("New Module")
         self.lighting: Color = Color(0.5, 0.5, 0.5)
         self.skybox: str = ""
-        self.warpPoint: Vector3 = Vector3.from_null()
+        self.warp_point: Vector3 = Vector3.from_null()
 
     def rebuild_room_connections(self):
         for room in self.rooms:
             room.rebuildConnections(self.rooms)
 
-    def doorInsertions(self) -> list[DoorInsertion]:
+    def door_insertions(self) -> list[DoorInsertion]:
         """Generates door insertions between rooms.
 
         Used when determining when to place doors when building a map.
@@ -93,17 +93,17 @@ class IndoorMap:
 
         for room in self.rooms:
             for hook_index, connection in enumerate(room.hooks):
-                room1 = room
-                room2 = None
-                hook1 = room1.component.hooks[hook_index]
-                hook2 = None
-                door = hook1.door
-                position = room1.hook_position(hook1)
-                rotation = hook1.rotation + room1.rotation
+                room1: IndoorMapRoom = room
+                room2: IndoorMapRoom | None = None
+                hook1: KitComponentHook = room1.component.hooks[hook_index]
+                hook2: KitComponentHook | None = None
+                door: KitDoor = hook1.door
+                position: Vector3 = room1.hook_position(hook1)
+                rotation: float = hook1.rotation + room1.rotation
                 if connection is not None:
                     for otherHookIndex, otherRoom in enumerate(connection.hooks):
                         if otherRoom == room1:
-                            other_hook = connection.component.hooks[otherHookIndex]
+                            other_hook: KitComponentHook = connection.component.hooks[otherHookIndex]
                             if hook1.door.width < other_hook.door.width:
                                 door = other_hook.door
                                 hook2 = hook1
@@ -117,11 +117,11 @@ class IndoorMap:
 
                 if position not in points:
                     points.append(position)  # 47
-                    # if room2 is None:  # FIXME ??? why is this conditional ever hit
+                    # if room2 is None:  # FIXME(th3w1zard1) ??? why is this conditional ever hit
                     #    msg = "room2 cannot be None"
                     #    raise ValueError(msg)
 
-                    static = connection is None
+                    static: bool = connection is None
                     insertions.append(DoorInsertion(door, room1, room2, static, position, rotation, hook1, hook2))
 
         return insertions
@@ -167,12 +167,13 @@ class IndoorMap:
         """
         for mdl in self.scan_mdls:
             for texture in (texture for texture in model.iterate_textures(mdl) if texture not in self.tex_renames):
-                renamed = f"{self.module_id}_tex{len(self.tex_renames.keys())}"
+                renamed: str = f"{self.module_id}_tex{len(self.tex_renames.keys())}"
                 self.tex_renames[texture] = renamed
                 for kit in self.used_kits:
-                    if texture in kit.textures:
-                        self.mod.set_data(renamed, ResourceType.TGA, kit.textures[texture])
-                        self.mod.set_data(renamed, ResourceType.TXI, kit.txis[texture])
+                    if texture not in kit.textures:
+                        continue
+                    self.mod.set_data(renamed, ResourceType.TGA, kit.textures[texture])
+                    self.mod.set_data(renamed, ResourceType.TXI, kit.txis[texture])
 
     def handle_lightmaps(
         self,
@@ -194,7 +195,7 @@ class IndoorMap:
         """
         for i, room in enumerate(self.rooms):
             # Set model name
-            modelname = f"{self.module_id}_room{i}"
+            modelname: str = f"{self.module_id}_room{i}"
             self.room_names[room] = modelname
 
             # Add room to layout
@@ -292,7 +293,7 @@ class IndoorMap:
             lm_renames[lightmap.lower()] = renamed
             self.mod.set_data(renamed, ResourceType.TGA, room.component.kit.lightmaps[lightmap])
             self.mod.set_data(renamed, ResourceType.TXI, room.component.kit.txis[lightmap])
-        mdl_data = model.change_lightmaps(mdl_data, lm_renames)  # FIXME: Should this be returned and used throughout?
+        mdl_data = model.change_lightmaps(mdl_data, lm_renames)  # FIXME(th3w1zard1): Should this be returned and used throughout?
 
     def add_model_resources(
         self,
@@ -383,7 +384,7 @@ class IndoorMap:
     ):
         self.mod.set_data(modelname, ResourceType.WOK, bytes_bwm(bwm))
 
-    def handle_door_insertions(
+    def handle_door_insertions(  # noqa: PLR0915
         self,
         installation: HTInstallation,
     ):
@@ -403,7 +404,7 @@ class IndoorMap:
             5. Checks for height/width padding needs and adds if needed.
         """
         padding_count = 0
-        for i, insert in enumerate(self.doorInsertions()):
+        for i, insert in enumerate(self.door_insertions()):
             door = GITDoor(*insert.position)
             door_resname: str = f"{self.module_id}_dor{i:02}"
             door.resref = ResRef(door_resname)
@@ -422,14 +423,23 @@ class IndoorMap:
 
             if insert.hook1 and insert.hook2:
                 if insert.hook1.door.height != insert.hook2.door.height:
-                    c_room = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
-                    c_hook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
-                    alt_hook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
+                    c_room: IndoorMapRoom | None = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
+                    if c_room is None:
+                        continue
+                    c_hook: KitComponentHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
+                    alt_hook: KitComponentHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
 
-                    kit = c_room.component.kit
-                    door_index = kit.doors.index(c_hook.door)
-                    height = alt_hook.door.height * 100
-                    padding_key = min((i for i in kit.top_padding[door_index] if i > height), default=None) if door_index in kit.top_padding else None
+                    kit: Kit = c_room.component.kit
+                    door_index: int = kit.doors.index(c_hook.door)
+                    height: float = alt_hook.door.height * 100
+                    padding_key: int | None = (
+                        min(
+                            (i for i in kit.top_padding[door_index] if i > height),
+                            default=None,
+                        )
+                        if door_index in kit.top_padding
+                        else None
+                    )
                     if padding_key is not None:
                         padding_name = f"{self.module_id}_tpad{padding_count}"
                         padding_count += 1
@@ -453,7 +463,7 @@ class IndoorMap:
                         self.lyt.rooms.append(LYTRoom(padding_name, insert.position))
                         self.vis.add_room(padding_name)
                 if insert.hook1.door.width != insert.hook2.door.width:
-                    c_room: IndoorMapRoom | None = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
+                    c_room = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
                     c_hook: KitComponentHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
                     alt_hook: KitComponentHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
 
@@ -515,7 +525,7 @@ class IndoorMap:
         for kit in kits:
             if self.skybox not in kit.skyboxes:
                 continue
-            mdl, mdx = kit.skyboxes[self.skybox]
+            mdl, mdx = kit.skyboxes[self.skybox].mdl, kit.skyboxes[self.skybox].mdx
             model_name: str = f"{self.module_id}_sky"
             mdl: bytes = model.change_textures(mdl, self.tex_renames)
             self.mod.set_data(model_name, ResourceType.MDL, mdl)
@@ -543,7 +553,7 @@ class IndoorMap:
             pixel: QColor = QColor(minimap.image.pixel(x, y))
             tpc_data.extend([pixel.red(), pixel.green(), pixel.blue(), 255])
         minimap_tpc: TPC = TPC()
-        minimap_tpc.set_single(512, 256, [tpc_data], TPCTextureFormat.RGBA)
+        minimap_tpc.set_single(tpc_data, TPCTextureFormat.RGBA, 512, 256)
         self.mod.set_data(f"lbl_map{self.module_id}", ResourceType.TGA, bytes_tpc(minimap_tpc, ResourceType.TGA))
 
     def handle_loadscreen(
@@ -613,7 +623,7 @@ class IndoorMap:
         self.ifo.area_name = ResRef(self.module_id)
         self.ifo.resref = ResRef(self.module_id)
         self.vis.set_all_visible()
-        self.ifo.entry_position = self.warpPoint
+        self.ifo.entry_position = self.warp_point
 
     def finalize_module_data(
         self,
@@ -1014,12 +1024,12 @@ class IndoorMapRoom:
         self.hooks: list[IndoorMapRoom | None] = [None] * len(self.component.hooks)
 
         for hook in self.component.hooks:
-            hook_index = self.component.hooks.index(hook)
-            hook_pos = self.hook_position(hook)
+            hook_index: int = self.component.hooks.index(hook)
+            hook_pos: Vector3 = self.hook_position(hook)
             for otherRoom in (room for room in rooms if room is not self):
                 for other_hook in otherRoom.component.hooks:
-                    other_hook_pos = otherRoom.hook_position(other_hook)
-                    if hook_pos.distance(other_hook_pos) < 0.001:
+                    other_hook_pos: Vector3 = otherRoom.hook_position(other_hook)
+                    if hook_pos.distance(other_hook_pos) < 0.001:  # noqa: PLR2004
                         self.hooks[hook_index] = otherRoom
 
     def walkmesh(self) -> BWM:

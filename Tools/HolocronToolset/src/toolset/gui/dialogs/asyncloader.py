@@ -19,30 +19,37 @@ if TYPE_CHECKING:
 
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QWidget
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
 T = TypeVar("T")
 
-def human_readable_size(byte_size: float) -> str:
+
+def human_readable_size(
+    byte_size: float,
+) -> str:
     for unit in ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]:
         if byte_size < 1024:  # noqa: PLR2004
             return f"{round(byte_size, 2)} {unit}"
         byte_size /= 1024
     return str(byte_size)
 
+
 class ProgressDialog(QDialog):
-    def __init__(self, progress_queue: Queue, title: str = "Operation Progress"):
+    def __init__(
+        self,
+        progress_queue: Queue,
+        title: str = "Operation Progress",
+    ):
         super().__init__(None)
         self.progress_queue: Queue = progress_queue
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportGeneralTypeIssues]
             | Qt.WindowType.WindowCloseButtonHint
-            | Qt.WindowType.WindowStaysOnTopHint
-            & ~Qt.WindowType.WindowContextHelpButtonHint
-            & ~Qt.WindowType.WindowMinMaxButtonsHint
+            | Qt.WindowType.WindowStaysOnTopHint & ~Qt.WindowType.WindowContextHelpButtonHint & ~Qt.WindowType.WindowMinMaxButtonsHint
         )
         self.setWindowTitle(title)
-        self.setLayout(QVBoxLayout())
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
 
         self.status_label: QLabel = QLabel("Initializing...", self)
         self.bytes_label: QLabel = QLabel("")
@@ -50,10 +57,10 @@ class ProgressDialog(QDialog):
         self.progress_bar: QProgressBar = QProgressBar(self)
         self.progress_bar.setMaximum(100)
 
-        self.layout().addWidget(self.status_label)
-        self.layout().addWidget(self.bytes_label)
-        self.layout().addWidget(self.progress_bar)
-        self.layout().addWidget(self.time_label)
+        main_layout.addWidget(self.status_label)
+        main_layout.addWidget(self.bytes_label)
+        main_layout.addWidget(self.progress_bar)
+        main_layout.addWidget(self.time_label)
 
         # Timer to poll the queue for new progress updates
         self.timer: QTimer = QTimer()
@@ -67,12 +74,12 @@ class ProgressDialog(QDialog):
             if message["action"] == "update_progress":
                 # Handle progress updates
                 data: dict[str, Any] = message["data"]
-                total = data["total"]
-                downloaded = data["downloaded"]
-                progress = int((downloaded / total) * 100) if total else 0
+                total: int = data["total"]
+                downloaded: int = data["downloaded"]
+                progress: int = int((downloaded / total) * 100) if total else 0
                 self.progress_bar.setValue(progress)
                 self.status_label.setText(f"Downloading... {progress}%")
-                time_remaining = data.get("time", self.time_label.text().replace("Time remaining: ", ""))
+                time_remaining: str = data.get("time", self.time_label.text().replace("Time remaining: ", ""))
                 self.time_label.setText(f"Time remaining: {time_remaining}")
                 self.bytes_label.setText(f"{human_readable_size(downloaded)} / {human_readable_size(total)}")
             elif message["action"] == "update_status":
@@ -82,11 +89,17 @@ class ProgressDialog(QDialog):
             elif message["action"] == "shutdown":
                 self.close()
 
-    def update_status(self, text: str):
+    def update_status(
+        self,
+        text: str,
+    ):
         self.status_label.setText(text)
 
     @staticmethod
-    def monitor_and_terminate(process: Process, timeout: int = 5):
+    def monitor_and_terminate(
+        process: Process,
+        timeout: int = 5,
+    ):
         """Monitor and forcefully terminate if this doesn't exit gracefully."""
         process.join(timeout)  # Wait for the process to terminate for 'timeout' seconds
         if process.is_alive():  # Check if the process is still alive
@@ -157,11 +170,12 @@ class AsyncLoader(QDialog, Generic[T]):
         self._task_progress_text.setText("")
         self._task_progress_text.setVisible(isinstance(task, list))
 
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self._main_task_text)
-        self.layout().addWidget(self._progress_bar)
-        self.layout().addWidget(self._sub_task_text)
-        self.layout().addWidget(self._task_progress_text)
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
+        main_layout.addWidget(self._main_task_text)
+        main_layout.addWidget(self._progress_bar)
+        main_layout.addWidget(self._sub_task_text)
+        main_layout.addWidget(self._task_progress_text)
 
         self.setWindowTitle(title)
         self.setMinimumSize(260, 40)
@@ -197,9 +211,9 @@ class AsyncLoader(QDialog, Generic[T]):
     }
 """)
         self._progress_bar.setFixedHeight(20)  # Makes the progress bar taller
-        self._main_task_text.setAlignment(Qt.AlignCenter)  # Centers the main task text
-        self._sub_task_text.setAlignment(Qt.AlignCenter)  # Centers the sub task text
-        self._task_progress_text.setAlignment(Qt.AlignCenter)  # Centers the task progress text
+        self._main_task_text.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Centers the main task text
+        self._sub_task_text.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Centers the sub task text
+        self._task_progress_text.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Centers the task progress text
 
         self.value: T | None = None  # type: ignore[assignment]
         self.error: Exception | None = None
@@ -226,14 +240,23 @@ class AsyncLoader(QDialog, Generic[T]):
     def start_worker(self):
         self._worker.start()
 
-    def closeEvent(self, e: QCloseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def closeEvent(
+        self,
+        e: QCloseEvent,  # pyright: ignore[reportIncompatibleMethodOverride]
+    ):
         self._worker.terminate()
 
-    def _on_successful(self, result: Any):
+    def _on_successful(
+        self,
+        result: Any,
+    ):
         self.value = result
         self.optional_finish_hook.emit(result)
 
-    def _on_failed(self, error: Exception):
+    def _on_failed(
+        self,
+        error: Exception,
+    ):
         print("AsyncLoader._on_failed")
         self.errors.append(error)
         self.optional_error_hook.emit(error)
@@ -256,8 +279,8 @@ class AsyncLoader(QDialog, Generic[T]):
             for i, e in enumerate(self.errors):
                 this_err_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
                 error_msgs += f"<br>Error in task {i + 1}: {this_err_msg}"
-            error_msgs += " "*700 + "<br>"*2
-            msg_box = QMessageBox(QMessageBox.Icon.Critical, self.error_title + " "*700, error_msgs)
+            error_msgs += " " * 700 + "<br>" * 2
+            msg_box = QMessageBox(QMessageBox.Icon.Critical, self.error_title + " " * 700, error_msgs)
             msg_box.setDetailedText("\n\n".join(format_exception_with_variables(e) for e in self.errors))
             msg_box.exec()
 

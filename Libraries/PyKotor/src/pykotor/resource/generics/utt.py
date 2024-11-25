@@ -9,6 +9,7 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from pykotor.extract.installation import GFFStruct
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
@@ -82,7 +83,7 @@ class UTT:
         self.on_heartbeat: ResRef = ResRef.from_blank()
         self.on_enter: ResRef = ResRef.from_blank()
         self.on_exit: ResRef = ResRef.from_blank()
-        self.on_user_defined = ResRef.from_blank()
+        self.on_user_defined: ResRef = ResRef.from_blank()
 
         # Deprecated:
         self.portrait_id: int = 0
@@ -113,7 +114,7 @@ def construct_utt(
     """
     utt = UTT()
 
-    root = gff.root
+    root: GFFStruct = gff.root
 
     utt.tag = root.acquire("Tag", "")
     utt.resref = root.acquire("TemplateResRef", ResRef.from_blank())

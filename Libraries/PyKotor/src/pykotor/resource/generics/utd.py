@@ -80,7 +80,7 @@ class UTD:
 
     BINARY_TYPE = ResourceType.UTD
 
-    def __init__(
+    def __init__(  # noqa: PLR0915
         self,
     ):
         self.resref: ResRef = ResRef.from_blank()

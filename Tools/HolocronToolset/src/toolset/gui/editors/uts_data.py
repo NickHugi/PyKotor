@@ -7,16 +7,22 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.generics.uts import UTS, dismantle_uts
 
 if TYPE_CHECKING:
+    from qtpy.QtWidgets import QListWidgetItem
+
+    from pykotor.common.module import GFF
     from toolset.gui.editors.uts_editor import UTSEditor
 
 
 class UTSData:
     def __init__(self, editor: UTSEditor):
-        self.editor = editor
+        self.editor: UTSEditor = editor
         self.ui = editor.ui
         self._uts: UTS = UTS()
 
-    def load_uts(self, uts: UTS):
+    def load_uts(
+        self,
+        uts: UTS,
+    ):
         """Loads UTS data into UI controls."""
         self._uts = uts
 
@@ -51,6 +57,7 @@ class UTSData:
         for sound in uts.sounds:
             from qtpy import QtCore
             from qtpy.QtWidgets import QListWidgetItem
+
             item = QListWidgetItem(str(sound))
             item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
             self.ui.soundList.addItem(item)
@@ -99,8 +106,10 @@ class UTSData:
         # Sounds
         uts.sounds = []
         for i in range(self.ui.soundList.count()):
-            sound = ResRef(self.ui.soundList.item(i).text())
-            uts.sounds.append(sound)
+            sound: QListWidgetItem | None = self.ui.soundList.item(i)
+            if sound is None:
+                continue
+            uts.sounds.append(ResRef(sound.text()))
 
         # Positioning
         uts.continuous = self.ui.styleSeamlessRadio.isChecked()
@@ -116,6 +125,9 @@ class UTSData:
 
         return uts
 
-    def dismantle_uts(self, uts: UTS):
+    def dismantle_uts(
+        self,
+        uts: UTS,
+    ) -> GFF:
         """Convert UTS to GFF format."""
         return dismantle_uts(uts)

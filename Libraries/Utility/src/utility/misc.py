@@ -8,18 +8,22 @@ import platform
 import stat
 import sys
 
+from collections import OrderedDict
 from contextlib import suppress
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, OrderedDict, SupportsFloat, SupportsInt, TypeVar
+from typing import TYPE_CHECKING, Any, SupportsFloat, SupportsInt, TypeVar
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from xml.etree.ElementTree import Element
 
     from typing_extensions import Buffer, Literal, Self, SupportsIndex
 
 T = TypeVar("T")
 U = TypeVar("U")
+
+
 class ProcessorArchitecture(Enum):
     BIT_32 = "32bit"
     BIT_64 = "64bit"
@@ -35,7 +39,7 @@ class ProcessorArchitecture(Enum):
         return cls(platform.architecture()[0])
 
     @classmethod
-    def from_python(cls):
+    def from_python(cls) -> Literal[ProcessorArchitecture.BIT_64, ProcessorArchitecture.BIT_32]:
         return cls.BIT_64 if sys.maxsize > 2**32 else cls.BIT_32
 
     def get_machine_repr(self):
@@ -97,11 +101,7 @@ def print_excluding_base_classes(
     def print_filtered_attributes(obj: object, obj_name: str, exclude_attrs: Iterable[str]):
         print(f"{obj_name} Attributes:")
         for attr in dir(obj):
-            if (
-                not attr.startswith("_")
-                and not callable(getattr(obj, attr))
-                and attr not in exclude_attrs
-            ):
+            if not attr.startswith("_") and not callable(getattr(obj, attr)) and attr not in exclude_attrs:
                 try:
                     print(f"  {attr}: {getattr(obj, attr)}")
                 except Exception as ex:  # noqa: BLE001
@@ -175,10 +175,7 @@ def is_debug_mode() -> bool:
         ret = True
     if getattr(sys, "gettrace", None) is not None:
         ret = True
-    if (
-        getattr(sys, "frozen", False)
-        or getattr(sys, "_MEIPASS", False)
-    ):
+    if getattr(sys, "frozen", False) or getattr(sys, "_MEIPASS", False):
         ret = False
     if os.getenv("DEBUG_MODE", "0") == "1":
         ret = True
@@ -187,20 +184,25 @@ def is_debug_mode() -> bool:
 
 def is_frozen() -> bool:
     return (
-        getattr(sys, "frozen", False)
-        or getattr(sys, "_MEIPASS", False)
+        getattr(sys, "frozen", False) or getattr(sys, "_MEIPASS", False)
         # or tempfile.gettempdir() in sys.executable
     )
 
 
-def has_attr_excluding_object(cls: type, attr_name: str) -> bool:
+def has_attr_excluding_object(
+    cls: type,
+    attr_name: str,
+) -> bool:
     # Exclude the built-in 'object' class
-    mro_classes = [c for c in cls.mro() if c is not object]
+    mro_classes: list[type] = [c for c in cls.mro() if c is not object]
 
     return any(attr_name in base_class.__dict__ for base_class in mro_classes)
 
 
-def is_class_or_subclass_but_not_instance(cls: type, target_cls: type) -> bool:
+def is_class_or_subclass_but_not_instance(
+    cls: type,
+    target_cls: type,
+) -> bool:
     if cls is target_cls:
         return True
     if not hasattr(cls, "__bases__"):
@@ -208,7 +210,10 @@ def is_class_or_subclass_but_not_instance(cls: type, target_cls: type) -> bool:
     return any(is_class_or_subclass_but_not_instance(base, target_cls) for base in cls.__bases__)
 
 
-def is_instance_or_subinstance(instance: object, target_cls: type) -> bool:
+def is_instance_or_subinstance(
+    instance: object,
+    target_cls: type,
+) -> bool:
     if hasattr(instance, "__bases__"):  # instance is a class
         return False  # if instance is a class type, always return False
     # instance is not a class
@@ -245,8 +250,10 @@ def generate_hash(
     return hasher.hexdigest(64) if "shake" in hash_algo else hasher.hexdigest()  # type: ignore[call-arg]
 
 
-def get_file_attributes(path: Path) -> dict:
-    attributes = {
+def get_file_attributes(
+    path: Path,
+) -> dict[str, bool]:
+    attributes: dict[str, bool] = {
         "is_hidden": False,
         "is_system": False,
         "is_archive": False,
@@ -257,12 +264,7 @@ def get_file_attributes(path: Path) -> dict:
     }
 
     # Check if file is hidden
-    attributes["is_hidden"] = (
-        path.name.startswith(".")
-        or bool(path.stat().st_file_attributes & stat.FILE_ATTRIBUTE_HIDDEN)
-        if hasattr(stat, "FILE_ATTRIBUTE_HIDDEN")
-        else False
-    )
+    attributes["is_hidden"] = path.name.startswith(".") or bool(path.stat().st_file_attributes & stat.FILE_ATTRIBUTE_HIDDEN) if hasattr(stat, "FILE_ATTRIBUTE_HIDDEN") else False
 
     # Check if file is read-only
     attributes["is_readonly"] = not os.access(path, os.W_OK)
@@ -274,12 +276,13 @@ def get_file_attributes(path: Path) -> dict:
     if os.name == "nt":  # Windows
         try:
             import ctypes
+
             FILE_ATTRIBUTE_SYSTEM = 0x4
             FILE_ATTRIBUTE_ARCHIVE = 0x20
             FILE_ATTRIBUTE_COMPRESSED = 0x800
             FILE_ATTRIBUTE_ENCRYPTED = 0x4000
 
-            attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))
+            attrs: int = ctypes.windll.kernel32.GetFileAttributesW(str(path))
             if attrs != -1:
                 attributes["is_system"] = bool(attrs & FILE_ATTRIBUTE_SYSTEM)
                 attributes["is_archive"] = bool(attrs & FILE_ATTRIBUTE_ARCHIVE)
@@ -342,7 +345,9 @@ def indent(
         elem.tail = i
 
 
-def is_int(val: str | int | Buffer | SupportsInt | SupportsIndex) -> bool:
+def is_int(
+    val: str | int | Buffer | SupportsInt | SupportsIndex,
+) -> bool:
     """Can be cast to an int without raising an error.
 
     Args:
@@ -361,7 +366,9 @@ def is_int(val: str | int | Buffer | SupportsInt | SupportsIndex) -> bool:
         return True
 
 
-def is_float(val: str | float | Buffer | SupportsFloat | SupportsIndex) -> bool:
+def is_float(
+    val: str | float | Buffer | SupportsFloat | SupportsIndex,
+) -> bool:
     """Can be cast to a float without raising an error.
 
     Args:

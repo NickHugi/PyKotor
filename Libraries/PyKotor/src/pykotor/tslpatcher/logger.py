@@ -9,7 +9,10 @@ from typing import TYPE_CHECKING
 from utility.event_util import Observable
 
 if TYPE_CHECKING:
-    from typing_extensions import LiteralString
+    from datetime import time
+
+    from typing_extensions import LiteralString  # pyright: ignore[reportMissingModuleSource]
+
 
 class LogType(IntEnum):
     VERBOSE = 0
@@ -51,32 +54,48 @@ class PatchLogger:
     def complete_patch(self):
         self.patches_completed += 1
 
-    def add_verbose(self, message: str):
-        log_obj = PatchLog(message, LogType.VERBOSE)
+    def add_verbose(
+        self,
+        message: str,
+    ):
+        log_obj: PatchLog = PatchLog(message, LogType.VERBOSE)
         self.all_logs.append(log_obj)
         self.verbose_observable.fire(log_obj)
 
-    def add_note(self, message: str):
-        log_obj = PatchLog(message, LogType.NOTE)
+    def add_note(
+        self,
+        message: str,
+    ):
+        log_obj: PatchLog = PatchLog(message, LogType.NOTE)
         self.all_logs.append(log_obj)
         self.note_observable.fire(log_obj)
 
-    def add_warning(self, message: str):
-        log_obj = PatchLog(message, LogType.WARNING)
+    def add_warning(
+        self,
+        message: str,
+    ):
+        log_obj: PatchLog = PatchLog(message, LogType.WARNING)
         self.all_logs.append(log_obj)
         self.warning_observable.fire(log_obj)
 
-    def add_error(self, message: str):
-        log_obj = PatchLog(message, LogType.ERROR)
+    def add_error(
+        self,
+        message: str,
+    ):
+        log_obj: PatchLog = PatchLog(message, LogType.ERROR)
         self.all_logs.append(log_obj)
         self.error_observable.fire(log_obj)
 
 
 class PatchLog:
-    def __init__(self, message: str, ltype: LogType):
+    def __init__(
+        self,
+        message: str,
+        ltype: LogType,
+    ):
         self.message: str = message
         self.log_type: LogType = ltype
-        self.timestamp = datetime.now(tz=timezone.utc).astimezone().time()
+        self.timestamp: time = datetime.now(tz=timezone.utc).astimezone().time()
         print(self.formatted_message, file=sys.stderr if ltype is LogType.ERROR else sys.stdout)
 
     @property

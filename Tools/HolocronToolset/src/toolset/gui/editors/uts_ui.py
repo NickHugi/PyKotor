@@ -7,15 +7,20 @@ from qtpy.QtCore import QBuffer, QIODevice
 from qtpy.QtWidgets import QListWidgetItem, QMessageBox
 
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.editors.uts_editor import UTSEditor
 
 if TYPE_CHECKING:
     from toolset.gui.editors.uts_editor import UTSEditor
+    from toolset.uic.qtpy.editors.uts import Ui_MainWindow
 
 
 class UTSEditorUI:
-    def __init__(self, editor: UTSEditor):
-        self.editor = editor
-        self.ui = editor.ui
+    def __init__(
+        self,
+        editor: UTSEditor,
+    ):
+        self.editor: UTSEditor = editor
+        self.ui: Ui_MainWindow = editor.ui
         self._setup_signals()
 
     def _setup_signals(self):
@@ -41,7 +46,7 @@ class UTSEditorUI:
     def change_name(self):
         dialog = LocalizedStringDialog(self.editor, self.editor._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
-            self.editor._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+            self.editor._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # noqa: SLF001
 
     def generate_tag(self):
         if self.ui.resrefEdit.text() == "":
@@ -49,13 +54,13 @@ class UTSEditorUI:
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generate_resref(self):
-        if self.editor._resname is not None and self.editor._resname != "":
-            self.ui.resrefEdit.setText(self.editor._resname)
+        if self.editor._resname is not None and self.editor._resname != "":  # noqa: SLF001
+            self.ui.resrefEdit.setText(self.editor._resname)  # noqa: SLF001
         else:
             self.ui.resrefEdit.setText("m00xx_trg_000")
 
     def change_style(self):
-        def _set_ui_style_groups(boolean: bool):
+        def _set_ui_style_groups(boolean: bool):  # noqa: FBT001
             self.ui.intervalGroup.setEnabled(boolean)
             self.ui.orderGroup.setEnabled(boolean)
             self.ui.variationGroup.setEnabled(boolean)
@@ -69,7 +74,7 @@ class UTSEditorUI:
             self.ui.intervalGroup.setEnabled(False)
 
     def change_play(self):
-        def _set_ui_play_groups(boolean: bool):
+        def _set_ui_play_groups(boolean: bool):  # noqa: FBT001
             self.ui.rangeGroup.setEnabled(boolean)
             self.ui.heightGroup.setEnabled(boolean)
             self.ui.distanceGroup.setEnabled(boolean)
@@ -87,21 +92,22 @@ class UTSEditorUI:
     def play_sound(self):
         self.editor.player.stop()
 
-        curItem = self.ui.soundList.currentItem()
-        curItemText = curItem.text() if curItem else None
-        if not curItem or not curItemText:
+        cur_item: QListWidgetItem | None = self.ui.soundList.currentItem()
+        cur_item_text: str | None = cur_item.text() if cur_item else None
+        if not cur_item or not cur_item_text:
             return
 
-        resname: str = curItemText
-        data: bytes | None = self.editor._installation.sound(resname)
+        resname: str = cur_item_text
+        assert self.editor._installation is not None  # noqa: SLF001
+        data: bytes | None = self.editor._installation.sound(resname)  # noqa: SLF001
 
         if data:
             # PyQt5 and PySide2 code path
-            from qtpy.QtMultimedia import QMediaContent
+            from qtpy.QtMultimedia import QMediaContent  # pyright: ignore[reportAttributeAccessIssue]
             self.editor.buffer = QBuffer(self.editor)
             self.editor.buffer.setData(data)
-            self.editor.buffer.open(QIODevice.ReadOnly)
-            self.editor.player.setMedia(QMediaContent(), self.editor.buffer)
+            self.editor.buffer.open(QIODevice.ReadOnly)  # pyright: ignore[reportAttributeAccessIssue]
+            self.editor.player.setMedia(QMediaContent(), self.editor.buffer)  # pyright: ignore[reportAttributeAccessIssue]
             QtCore.QTimer.singleShot(0, self.editor.player.play)
         else:
             QMessageBox(QMessageBox.Icon.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
@@ -119,21 +125,31 @@ class UTSEditorUI:
     def move_sound_up(self):
         if self.ui.soundList.currentRow() == -1:
             return
-        resname: str = self.ui.soundList.currentItem().text()
+        cur_item: QListWidgetItem | None = self.ui.soundList.currentItem()
+        if cur_item is None:
+            return
+        resname: str = cur_item.text()
         row: int = self.ui.soundList.currentRow()
         self.ui.soundList.takeItem(self.ui.soundList.currentRow())
         self.ui.soundList.insertItem(row - 1, resname)
         self.ui.soundList.setCurrentRow(row - 1)
         item: QListWidgetItem | None = self.ui.soundList.item(row - 1)
+        if item is None:
+            return
         item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
 
     def move_sound_down(self):
         if self.ui.soundList.currentRow() == -1:
             return
-        resname: str = self.ui.soundList.currentItem().text()
+        cur_item: QListWidgetItem | None = self.ui.soundList.currentItem()
+        if cur_item is None:
+            return
+        resname: str = cur_item.text()
         row: int = self.ui.soundList.currentRow()
         self.ui.soundList.takeItem(self.ui.soundList.currentRow())
         self.ui.soundList.insertItem(row + 1, resname)
         self.ui.soundList.setCurrentRow(row + 1)
         item: QListWidgetItem | None = self.ui.soundList.item(row + 1)
+        if item is None:
+            return
         item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)

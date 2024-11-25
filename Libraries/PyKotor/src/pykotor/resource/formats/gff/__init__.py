@@ -1,19 +1,3 @@
-__all__ = [
-    "GFF",
-    "GFFList",
-    "GFFStruct",
-    "GFFFieldType",
-    "GFFContent",
-    "GFFBinaryReader",
-    "GFFBinaryWriter",
-    "GFFXMLReader",
-    "GFFXMLWriter",
-    "write_gff",
-    "read_gff",
-    "detect_gff",
-    "bytes_gff"
-]
-
 from pykotor.resource.formats.gff.gff_data import (
     GFF,
     GFFList,
@@ -30,3 +14,19 @@ from pykotor.resource.formats.gff.io_gff_xml import (
     GFFXMLWriter,
 )
 from pykotor.resource.formats.gff.gff_auto import write_gff, read_gff, detect_gff, bytes_gff
+
+__all__ = [
+    "GFF",
+    "GFFBinaryReader",
+    "GFFBinaryWriter",
+    "GFFContent",
+    "GFFFieldType",
+    "GFFList",
+    "GFFStruct",
+    "GFFXMLReader",
+    "GFFXMLWriter",
+    "bytes_gff",
+    "detect_gff",
+    "read_gff",
+    "write_gff",
+]

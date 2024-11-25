@@ -16,7 +16,11 @@ if TYPE_CHECKING:
 
 
 class SelectModuleDialog(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation):
+    def __init__(
+        self,
+        parent: QWidget,
+        installation: HTInstallation,
+    ):
         """Initializes the dialog to select a module.
 
         Args:
@@ -70,13 +74,13 @@ class SelectModuleDialog(QDialog):
         - If not already listed, adds to list widget with name and root in brackets
         - Sets root as item data for later retrieval.
         """
-        module_names = self._installation.module_names()
-        listed_modules = set()
+        module_names: dict[str, str] = self._installation.module_names()
+        listed_modules: set[str] = set()
 
         for module in self._installation.modules_list():
             casefold_module_file_name = str(
                 PurePath(module).with_name(
-                    Module.find_root(module)
+                    Module.filepath_to_root(module)
                     + PurePath(module).suffix
                 )
             ).casefold().strip()
@@ -98,7 +102,7 @@ class SelectModuleDialog(QDialog):
 
         if not filepath or not filepath.strip():
             return
-        self.module = Module.find_root(filepath)
+        self.module = Module.filepath_to_root(filepath)
         self.accept()
 
     def confirm(self):
@@ -110,7 +114,7 @@ class SelectModuleDialog(QDialog):
         - Gets the currently selected module from the module list widget
         - Calls accept to close the dialog and apply changes.
         """
-        cur_item = self.ui.moduleList.currentItem()
+        cur_item: QListWidgetItem | None = self.ui.moduleList.currentItem()
         if cur_item is None:
             RobustLogger().warning("currentItem() returned None in SelectModuleDialog.confirm()")
             return
@@ -134,7 +138,7 @@ class SelectModuleDialog(QDialog):
         """
         text = self.ui.filterEdit.text()
         for row in range(self.ui.moduleList.count()):
-            item = self.ui.moduleList.item(row)
+            item: QListWidgetItem | None = self.ui.moduleList.item(row)
             if item is None:
                 RobustLogger().warning(f"found None-typed item at row {row} while filtering text.")
                 continue

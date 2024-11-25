@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import requests
 
 from loggerplus import RobustLogger
@@ -7,7 +9,12 @@ from loggerplus import RobustLogger
 from utility.updater.github import GithubRelease
 
 
-def fetch_fork_releases(fork_full_name: str, *, include_all: bool = False, include_prerelease: bool = False) -> list[GithubRelease]:
+def fetch_fork_releases(
+    fork_full_name: str,
+    *,
+    include_all: bool = False,
+    include_prerelease: bool = False
+) -> list[GithubRelease]:
     """Fetch releases for a specific fork."""
     url = f"https://api.github.com/repos/{fork_full_name}/releases"
     try:
@@ -29,20 +36,23 @@ def fetch_and_cache_forks() -> dict[str, list[GithubRelease]]:
     forks_cache: dict[str, list[GithubRelease]] = {}
     forks_url = "https://api.github.com/repos/NickHugi/PyKotor/forks"
     try:
-        forks_response = requests.get(forks_url, timeout=15)
+        forks_response: requests.Response = requests.get(forks_url, timeout=15)
         forks_response.raise_for_status()
-        forks_json = forks_response.json()
+        forks_json: list[dict[str, Any]] = forks_response.json()
         for fork in forks_json:
-            fork_owner_login = fork["owner"]["login"]
-            fork_full_name = f"{fork_owner_login}/{fork['name']}"
+            fork_owner_login: str = fork["owner"]["login"]
+            fork_full_name: str = f"{fork_owner_login}/{fork['name']}"
             forks_cache[fork_full_name] = fetch_fork_releases(fork_full_name, include_all=True)
     except requests.HTTPError as e:
         RobustLogger().exception(f"Failed to fetch forks: {e}")
     return forks_cache
 
-def filter_releases(releases: list[GithubRelease], include_prerelease: bool = False) -> list[GithubRelease]:
+def filter_releases(
+    releases: list[GithubRelease],
+    include_prerelease: bool = False
+) -> list[GithubRelease]:
     """Filter releases based on criteria."""
-    filtered = [
+    filtered: list[GithubRelease] = [
         release for release in releases
         if not release.draft
         and "toolset" in release.tag_name.lower()

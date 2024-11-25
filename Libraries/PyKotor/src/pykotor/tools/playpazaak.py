@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import random
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import ClassVar
@@ -10,6 +12,7 @@ class CardType:
     NEGATIVE = "-"
     POS_OR_NEG = "+/-"
     YELLOW_SPECIAL = "Yellow"
+
 
 @dataclass
 class PazaakSideCard:
@@ -37,6 +40,7 @@ class PazaakSideCard:
 
         return value_map[self.card_type]
 
+
 @dataclass
 class Player:
     name: str
@@ -56,17 +60,18 @@ class Player:
         self.hand.clear()
         self.stands = False
 
+
 class PazaakGame:
-    MAIN_DECK_VALUES: list[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    MAX_HAND_VALUE: int = 20
-    SETS_TO_WIN: int = 3
+    MAIN_DECK_VALUES: ClassVar[list[int]] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    MAX_HAND_VALUE: ClassVar[int] = 20
+    SETS_TO_WIN: ClassVar[int] = 3
 
     def __init__(self):
-        self.deck = self.create_deck()
-        self.player = Player("Player")
-        self.ai = Player("AI")
-        self.current_player = self.player
-        self.winner = None
+        self.deck: list[int] = self.create_deck()
+        self.player: Player = Player("Player")
+        self.ai: Player = Player("AI")
+        self.current_player: Player = self.player
+        self.winner: Player | None = None
 
     def create_deck(self) -> list[int]:
         deck: list[int] = []
@@ -90,7 +95,7 @@ class PazaakGame:
         self.winner = None
 
     def choose_side_deck(self) -> list[PazaakSideCard]:
-        side_deck = [
+        side_deck: list[PazaakSideCard] = [
             PazaakSideCard(1, CardType.POS_OR_NEG),
             PazaakSideCard(2, CardType.POS_OR_NEG),
             PazaakSideCard(3, CardType.POS_OR_NEG),
@@ -143,17 +148,16 @@ class PazaakGame:
     def check_winner(self) -> Player | None:
         if self.player.is_bust():
             return self.ai
-        elif self.ai.is_bust():
+        if self.ai.is_bust():
             return self.player
-        elif self.player.stands and self.ai.stands:
-            player_value = self.player.calculate_hand_value()
-            ai_value = self.ai.calculate_hand_value()
+        if self.player.stands and self.ai.stands:
+            player_value: int = self.player.calculate_hand_value()
+            ai_value: int = self.ai.calculate_hand_value()
             if player_value > ai_value:
                 return self.player
-            elif ai_value > player_value:
+            if ai_value > player_value:
                 return self.ai
-            else:
-                return None  # Tie
+            return None  # Tie
         return None
 
     def update_score(
@@ -166,20 +170,20 @@ class PazaakGame:
             self.winner = winner
 
     def ai_strategy(self) -> tuple[str, PazaakSideCard | None]:
-        ai_value = self.ai.calculate_hand_value()
-        player_value = self.player.calculate_hand_value()
-        best_choice = None
-        min_value_diff = float("inf")
+        ai_value: int = self.ai.calculate_hand_value()
+        player_value: int = self.player.calculate_hand_value()
+        best_choice: tuple[PazaakSideCard, int] | None = None
+        min_value_diff: float = float("inf")
 
         for side_card in self.ai.active_side_hand:
             if side_card.card_type == CardType.YELLOW_SPECIAL:
-                simulated_hand = self.ai.hand.copy()
+                simulated_hand: list[int | PazaakSideCard] = self.ai.hand.copy()
                 self.apply_yellow_card_effect(Player("Simulated", simulated_hand), side_card)
-                simulated_value = sum(card.get_value() if isinstance(card, PazaakSideCard) else card for card in simulated_hand)
+                simulated_value: int = sum(card.get_value() if isinstance(card, PazaakSideCard) else card for card in simulated_hand)
             else:
-                simulated_value = ai_value + side_card.get_value()
+                simulated_value: int = ai_value + side_card.get_value()
 
-            value_diff = self.MAX_HAND_VALUE - simulated_value
+            value_diff: int = self.MAX_HAND_VALUE - simulated_value
             if 0 <= value_diff < min_value_diff:
                 best_choice = (side_card, simulated_value)
                 min_value_diff = value_diff
@@ -189,9 +193,10 @@ class PazaakGame:
             if new_value == self.MAX_HAND_VALUE or (ai_value < player_value and new_value > ai_value):
                 return "use_side_card", side_card
 
-        if ai_value >= 17 and ai_value >= player_value:
+        if ai_value >= 17 and ai_value >= player_value:  # noqa: PLR2004
             return "stand", None
         return "hit", None
+
 
 class PazaakInterface(ABC):
     @abstractmethod
@@ -199,16 +204,26 @@ class PazaakInterface(ABC):
         pass
 
     @abstractmethod
-    def play_turn(self, player: Player):
+    def play_turn(
+        self,
+        player: Player,
+    ):
         pass
 
     @abstractmethod
-    def end_round(self, winner: Player | None):
+    def end_round(
+        self,
+        winner: Player | None,
+    ):
         pass
 
     @abstractmethod
-    def end_game(self, winner: Player):
+    def end_game(
+        self,
+        winner: Player,
+    ):
         pass
+
 
 class ConsolePazaak(PazaakInterface):
     def __init__(self):
@@ -219,7 +234,10 @@ class ConsolePazaak(PazaakInterface):
         print("Game setup complete. Let's begin!")
         self.print_scores()
 
-    def play_turn(self, player: Player):
+    def play_turn(
+        self,
+        player: Player,
+    ):
         print(f"\n{player.name}'s turn:")
         self.print_hand(player)
 
@@ -229,7 +247,7 @@ class ConsolePazaak(PazaakInterface):
             self.ai_turn()
 
     def player_turn(self):
-        main_card = self.game.draw_card()
+        main_card: int = self.game.draw_card()
         self.game.play_card(self.game.player, main_card)
         print(f"You drew a {main_card} from the main deck.")
         self.print_hand(self.game.player)
@@ -239,18 +257,18 @@ class ConsolePazaak(PazaakInterface):
             return
 
         while True:
-            action = input("Do you want to hit (h), stand (s), end turn (e), or use a side card (u)? ").lower()
+            action: str = input("Do you want to hit (h), stand (s), end turn (e), or use a side card (u)? ").lower()
             if action == "s":
                 self.game.player.stands = True
                 print("You chose to stand.")
                 break
-            elif action == "h":
+            if action == "h":
                 print("You chose to hit.")
                 break
-            elif action == "e":
+            if action == "e":
                 print("You chose to end your turn.")
                 break
-            elif action == "u":
+            if action == "u":
                 if self.game.player.active_side_hand:
                     self.use_side_card(self.game.player)
                     if self.game.player.is_bust():
@@ -262,7 +280,7 @@ class ConsolePazaak(PazaakInterface):
                 print("Invalid input. Please enter 'h' for hit, 's' for stand, 'e' for end turn, or 'u' for using a side card.")
 
     def ai_turn(self):
-        main_card = self.game.draw_card()
+        main_card: int = self.game.draw_card()
         self.game.play_card(self.game.ai, main_card)
         print(f"AI drew a {main_card} from the main deck.")
         self.print_hand(self.game.ai)
@@ -278,6 +296,7 @@ class ConsolePazaak(PazaakInterface):
         elif action == "hit":
             print("AI chose to hit.")
         elif action == "use_side_card":
+            assert isinstance(side_card, PazaakSideCard)
             self.game.ai.active_side_hand.remove(side_card)
             if side_card.card_type == CardType.YELLOW_SPECIAL:
                 self.game.apply_yellow_card_effect(self.game.ai, side_card)
@@ -298,9 +317,9 @@ class ConsolePazaak(PazaakInterface):
             print(f"{i}. {card}")
 
         try:
-            choice = int(input("Choose a side card to use (1-4): ")) - 1
+            choice: int = int(input("Choose a side card to use (1-4): ")) - 1
             if 0 <= choice < len(player.active_side_hand):
-                chosen_card = player.active_side_hand.pop(choice)
+                chosen_card: PazaakSideCard = player.active_side_hand.pop(choice)
                 if chosen_card.card_type == CardType.YELLOW_SPECIAL:
                     self.game.apply_yellow_card_effect(player, chosen_card)
                     print(f"You used yellow card: {chosen_card}")
@@ -317,7 +336,7 @@ class ConsolePazaak(PazaakInterface):
         self,
         player: Player,
     ) -> None:
-        hand_str = ", ".join(str(card) for card in player.hand)
+        hand_str: str = ", ".join(str(card) for card in player.hand)
         print(f"{player.name}'s hand: {hand_str} (Total: {player.calculate_hand_value()})")
 
     def print_scores(self):
@@ -346,7 +365,7 @@ class ConsolePazaak(PazaakInterface):
             round_winner = None
             while round_winner is None:
                 self.play_turn(self.game.current_player)
-                round_winner = self.game.check_winner()
+                round_winner: Player | None = self.game.check_winner()
                 if round_winner is None:
                     self.game.switch_player()
 
@@ -359,6 +378,7 @@ class ConsolePazaak(PazaakInterface):
                 print("\nNew round started!")
 
         self.end_game(self.game.winner)
+
 
 def print_game_rules():
     print("""
@@ -378,6 +398,7 @@ Special Cards:
 Good luck and have fun!
 """)
 
+
 if __name__ == "__main__":
     print("Welcome to Pazaak!")
     print_game_rules()
@@ -385,7 +406,7 @@ if __name__ == "__main__":
     console_game = ConsolePazaak()
     while play_again:
         console_game.play_game()
-        choice = input("Do you want to play again? (y/n): ").lower()
+        choice: str = input("Do you want to play again? (y/n): ").lower()
         if choice != "y":
             play_again = False
         else:

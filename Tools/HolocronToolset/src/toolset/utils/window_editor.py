@@ -22,7 +22,7 @@ def create_editor_window(filepath: Path | str | None = None, parent: QWidget | N
 def get_editor_by_filepath(filepath: Path | str) -> Editor | None:
     """Get an editor window by its filepath."""
     from toolset.utils.window_base import TOOLSET_WINDOWS
-    
+
     if isinstance(filepath, str):
         filepath = Path(filepath)
     for window in TOOLSET_WINDOWS:
@@ -33,7 +33,7 @@ def get_editor_by_filepath(filepath: Path | str) -> Editor | None:
 def get_editor_by_title(title: str) -> Editor | None:
     """Get an editor window by its title."""
     from toolset.utils.window_base import TOOLSET_WINDOWS
-    
+
     for window in TOOLSET_WINDOWS:
         if isinstance(window, Editor) and window.windowTitle() == title:
             return window

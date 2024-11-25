@@ -49,7 +49,7 @@ class ReferenceChooserDialog(QDialog):
         self.label = QLabel()
         self.editor: DLGEditor = parent
         self.label.setTextFormat(Qt.TextFormat.RichText)
-        self.list_widget: DLGListWidget = DLGListWidget(parent)  # HACK: fix later (set editor attr properly in listWidget)
+        self.list_widget: DLGListWidget = DLGListWidget(parent)  # HACK(th3w1zard1): fix later (set editor attr properly in listWidget)
         self.list_widget.use_hover_text = True
         self.list_widget.setParent(self)
         self.list_widget.setItemDelegate(HTMLDelegate(self.list_widget))

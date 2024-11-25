@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from qtpy.QtGui import QColor, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QShortcut
+from qtpy.QtWidgets import QShortcut  # pyright: ignore[reportPrivateImportUsage]
 
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.jrl import JRL, dismantle_jrl, read_jrl
@@ -21,13 +21,17 @@ if TYPE_CHECKING:
 
 
 class SAVEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         supported: list[ResourceType] = [ResourceType.SAV, ResourceType.RES]
         super().__init__(parent, "Save Editor", "save", supported, supported, installation)
         self.resize(400, 250)
 
-
         from toolset.uic.qtpy.editors.sav import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
@@ -41,35 +45,46 @@ class SAVEditor(Editor):
         self.new()
 
     def _setup_signals(self):
-        QShortcut("Del", self).activated.connect(self.onDeleteShortcut)
+        QShortcut("Del", self).activated.connect(self.on_delete_shortcut)
 
-    def _setup_installation(self, installation: HTInstallation):
+    def _setup_installation(
+        self,
+        installation: HTInstallation,
+    ):
         self._installation = installation
 
-        planets: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLANETS)
+        planets: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLANETS)
+        if planets is None:
+            return
         for row in planets:
             (
-                self._installation.talktable().string(row.get_integer("name", 0))
+                installation.talktable().string(row.get_integer("name", 0))  # pyright: ignore[reportUnusedExpression]
                 or row.get_string("label").replace("_", " ").title()
             )
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         self._jrl = read_jrl(data)
 
         self._model.clear()
         for quest in self._jrl.quests:
-            questItem = QStandardItem()
-            questItem.setData(quest)
-            self.refreshQuestItem(questItem)
-            self._model.appendRow(questItem)
+            quest_item = QStandardItem()
+            quest_item.setData(quest)
+            self.refresh_quest_item(quest_item)
+            self._model.appendRow(quest_item)
 
             for entry in quest.entries:
-                entryItem = QStandardItem()
-                entryItem.setData(entry)
-                self.refreshEntryItem(entryItem)
-                questItem.appendRow(entryItem)
+                entry_item = QStandardItem()
+                entry_item.setData(entry)
+                self.refresh_entry_item(entry_item)
+                quest_item.appendRow(entry_item)
 
     def build(self) -> tuple[bytes, bytes]:
         data = bytearray()
@@ -81,39 +96,58 @@ class SAVEditor(Editor):
         self._jrl = JRL()
         self._model.clear()
 
-    def refreshEntryItem(self, entryItem: QStandardItem):
-        text: str = f"[{entryItem.data().entry_id}] {self._installation.string(entryItem.data().text)}"
-        entryItem.setForeground(QColor(0x880000 if entryItem.data().end else 0x000000))
-        entryItem.setText(text)
+    def refresh_entry_item(
+        self,
+        entry_item: QStandardItem,
+    ):
+        text: str = f"[{entry_item.data().entry_id}] {self._installation.string(entry_item.data().text)}"
+        entry_item.setForeground(QColor(0x880000 if entry_item.data().end else 0x000000))
+        entry_item.setText(text)
 
-    def refreshQuestItem(self, questItem: QStandardItem):
-        text: str = self._installation.string(questItem.data().name, "[Unnamed]")
-        questItem.setText(text)
+    def refresh_quest_item(
+        self,
+        quest_item: QStandardItem,
+    ):
+        text: str = self._installation.string(quest_item.data().name, "[Unnamed]")
+        quest_item.setText(text)
 
-    def removeQuest(self, questItem: QStandardItem):
-        quest: JRLQuest = questItem.data()
-        self._model.removeRow(questItem.row())
+    def remove_quest(
+        self,
+        quest_item: QStandardItem,
+    ):
+        quest: JRLQuest = quest_item.data()
+        self._model.removeRow(quest_item.row())
         self._jrl.quests.remove(quest)
 
-    def removeEntry(self, entryItem: QStandardItem):
-        entry: JRLEntry = entryItem.data()
-        entryItem.parent().removeRow(entryItem.row())
+    def remove_entry(
+        self,
+        entry_item: QStandardItem,
+    ):
+        entry: JRLEntry = entry_item.data()
+        entry_item.parent().removeRow(entry_item.row())
         for quest in self._jrl.quests:
             if entry in quest.entries:
                 quest.entries.remove(entry)
                 break
 
-    def addEntry(self, questItem: QStandardItem, newEntry: JRLEntry):
-        entryItem = QStandardItem()
-        entryItem.setData(newEntry)
-        self.refreshEntryItem(entryItem)
-        questItem.appendRow(entryItem)
-        quest: JRLQuest = questItem.data()
-        quest.entries.append(newEntry)
+    def add_entry(
+        self,
+        quest_item: QStandardItem,
+        new_entry: JRLEntry,
+    ):
+        entry_item = QStandardItem()
+        entry_item.setData(new_entry)
+        self.refresh_entry_item(entry_item)
+        quest_item.appendRow(entry_item)
+        quest: JRLQuest = quest_item.data()
+        quest.entries.append(new_entry)
 
-    def addQuest(self, newQuest: JRLQuest):
-        questItem = QStandardItem()
-        questItem.setData(newQuest)
-        self.refreshQuestItem(questItem)
-        self._model.appendRow(questItem)
-        self._jrl.quests.append(newQuest)
+    def add_quest(
+        self,
+        new_quest: JRLQuest,
+    ):
+        quest_item = QStandardItem()
+        quest_item.setData(new_quest)
+        self.refresh_quest_item(quest_item)
+        self._model.appendRow(quest_item)
+        self._jrl.quests.append(new_quest)

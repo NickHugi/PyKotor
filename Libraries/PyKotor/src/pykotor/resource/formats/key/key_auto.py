@@ -43,7 +43,8 @@ def read_key(
     file_format = detect_key(source, offset)
 
     if file_format is ResourceType.KEY:
-        return KEYBinaryReader(source, offset, size or 0).load()
+        reader = KEYBinaryReader(source, offset, size or 0)
+        return reader.load()
 
     # TODO(th3w1zard1):
     #if file_format is ResourceType.KEY_XML:
@@ -56,7 +57,13 @@ def read_key(
     return reader.read()
 
 
-def write_key(key: KEY, target: TARGET_TYPES):
+def write_key(
+    key: KEY,
+    target: TARGET_TYPES,
+    file_format: ResourceType = ResourceType.KEY,
+):
+    if file_format is not ResourceType.KEY:
+        raise ValueError(f"Unsupported file format: {file_format!r}, expected ResourceType.KEY")
     writer = KEYBinaryWriter(key, target)
     writer.write()
 

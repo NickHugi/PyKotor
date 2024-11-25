@@ -5,6 +5,7 @@ import pathlib
 import random
 import sys
 
+from pathlib import Path  # noqa: E402
 from typing import TYPE_CHECKING
 
 from qtpy.QtCore import QLineF, Qt
@@ -20,11 +21,14 @@ from qtpy.QtWidgets import (
     QMainWindow,
 )
 
+from toolset.gui.editors.dlg.model import DLGStandardItemModel
+
 
 def update_sys_path(path: pathlib.Path):
     working_dir = str(path)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
 
 file_absolute_path = pathlib.Path(__file__).resolve()
 utility_path = file_absolute_path.parents[6] / "Libraries" / "Utility" / "src"
@@ -34,26 +38,36 @@ pykotor_path = file_absolute_path.parents[6] / "Libraries" / "PyKotor" / "src"
 if pykotor_path.exists():
     update_sys_path(pykotor_path)
 
-from pathlib import Path  # noqa: E402
+from pykotor.common.language import LocalizedString  # noqa: E402
+from pykotor.resource.generics.dlg import DLG, DLGEntry, DLGLink, DLGReply  # noqa: E402
 
 # Working dir should always be 'toolset' when running this script.
 TOOLSET_DIR = Path(file_absolute_path.parents[3])
 if TOOLSET_DIR.joinpath("toolset").exists():
     update_sys_path(TOOLSET_DIR)
 
-from pykotor.common.language import LocalizedString  # noqa: E402
-from pykotor.resource.generics.dlg import DLG  # noqa: E402
-from toolset.gui.editors.dlg import DLGEditor, DLGEntry, DLGLink, DLGReply  # noqa: E402
+from toolset.gui.editors.dlg import DLGEditor  # noqa: E402
 
 if TYPE_CHECKING:
+    from PyQt6.QtCore import QPointF
+    from PyQt6.QtGui import QWheelEvent
+    from PyQt6.QtWidgets import QTreeView
 
-    from toolset.gui.editors.dlg import DLGNode, DLGStandardItemModel
+    from pykotor.resource.generics.dlg import DLGNode
+    from toolset.gui.editors.dlg import DLGStandardItemModel
 
 app = QApplication([])
 
+
 class GraphNode(QGraphicsEllipseItem):
-    def __init__(self, node: DLGNode, x: int, y: int, radius: int = 20):
-        super().__init__(-radius, -radius, 2*radius, 2*radius)
+    def __init__(
+        self,
+        node: DLGNode,
+        x: int,
+        y: int,
+        radius: int = 20,
+    ):
+        super().__init__(-radius, -radius, 2 * radius, 2 * radius)
         self.setPos(x, y)
         self.node: DLGNode = node
         if isinstance(node, DLGEntry):
@@ -64,21 +78,26 @@ class GraphNode(QGraphicsEllipseItem):
             raise TypeError(node)
         self.setBrush(QBrush(color))
         self.setPen(QPen(QColor(255, 255, 255)))  # White border
-        self.setFlag(QGraphicsItem.ItemIsMovable)
-        self.setFlag(QGraphicsItem.ItemSendsGeometryChanges)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
         self.edges: list[GraphEdge] = []
         self.text_item: QGraphicsTextItem = QGraphicsTextItem(str(node), self)
         self.text_item.setDefaultTextColor(QColor(255, 255, 255))
         self.text_item.setPos(-radius, -radius / 2)
 
     def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange:
+        if change == QGraphicsItem.GraphicsItemChange.ItemPositionChange:
             for edge in self.edges:
                 edge.adjust()
         return super().itemChange(change, value)
 
+
 class GraphEdge(QGraphicsLineItem):
-    def __init__(self, start_item: GraphNode, end_item: GraphNode):
+    def __init__(
+        self,
+        start_item: GraphNode,
+        end_item: GraphNode,
+    ):
         super().__init__()
         self.start_item: GraphNode = start_item
         self.end_item: GraphNode = end_item
@@ -90,48 +109,64 @@ class GraphEdge(QGraphicsLineItem):
 
     def adjust(self):
         """Adjust the line to connect the centers of start and end items."""
-        start_pos = self.start_item.scenePos()
-        end_pos = self.end_item.scenePos()
+        start_pos: QPointF = self.start_item.scenePos()
+        end_pos: QPointF = self.end_item.scenePos()
         line = QLineF(start_pos, end_pos)
         self.setLine(line)
 
+
 class GraphWidget(QGraphicsView):
-    def __init__(self, model: DLGStandardItemModel):
+    def __init__(
+        self,
+        model: DLGStandardItemModel,
+    ):
         super().__init__()
-        self.model = model
+        self.model: DLGStandardItemModel = model
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
-        self.setRenderHint(QPainter.Antialiasing)
+        self.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.setBackgroundBrush(QBrush(QColor(0, 0, 0)))
-        self.node_items = {}
+        self.node_items: dict[DLGNode, GraphNode] = {}
         self.layout_graph()
 
-    def wheelEvent(self, event):
-        if QApplication.keyboardModifiers() == Qt.ControlModifier:
-            zoomInFactor = 1.25
-            zoomOutFactor = 1 / zoomInFactor
-            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+    def wheelEvent(
+        self,
+        event: QWheelEvent,
+    ):
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
+            zoom_in_factor: float = 1.25
+            zoom_out_factor: float = 1 / zoom_in_factor
+            self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+            if event is None:
+                return
             if event.angleDelta().y() > 0:
-                self.scale(zoomInFactor, zoomInFactor)
+                self.scale(zoom_in_factor, zoom_in_factor)
             else:
-                self.scale(zoomOutFactor, zoomOutFactor)
+                self.scale(zoom_out_factor, zoom_out_factor)
         else:
             super().wheelEvent(event)
 
     def layout_graph(self):
-        starters = self.model.editor.core_dlg.starters
-        radius = 200
+        assert self.model.editor is not None
+        starters: list[DLGLink[DLGEntry]] = self.model.editor.core_dlg.starters
+        radius: int = 200
         center_x, center_y = 0, 0
-        angle_step = 2 * math.pi / len(starters)
+        angle_step: float = 2 * math.pi / len(starters)
 
         for i, starter in enumerate(starters):
             assert starter.node is not None
-            angle = i * angle_step
-            x = center_x + radius * math.cos(angle)
-            y = center_y + radius * math.sin(angle)
+            angle: float = i * angle_step
+            x: int = int(center_x + radius * math.cos(angle))
+            y: int = int(center_y + radius * math.sin(angle))
             self._layout_node(starter.node, x, y, {starter.node})
 
-    def _layout_node(self, node: DLGNode, x: int, y: int, visited: set[DLGNode]):
+    def _layout_node(
+        self,
+        node: DLGNode,
+        x: int,
+        y: int,
+        visited: set[DLGNode],
+    ):
         if node in self.node_items:
             return
 
@@ -139,50 +174,63 @@ class GraphWidget(QGraphicsView):
         self._scene.addItem(node_item)
         self.node_items[node] = node_item
 
-        child_radius = 100
+        child_radius: int = 100
         for link in node.links:
+            assert isinstance(link, DLGLink)
             assert link.node is not None
             if link.node in visited:
                 continue
             visited.add(link.node)
-            angle = random.uniform(0, 360)  # noqa: S311
-            child_x = x + child_radius * math.cos(math.radians(angle))
-            child_y = y + child_radius * math.sin(math.radians(angle))
+            angle: float = random.uniform(0, 360)  # noqa: S311
+            child_x: int = int(x + child_radius * math.cos(math.radians(angle)))
+            child_y: int = int(y + child_radius * math.sin(math.radians(angle)))
 
             self._layout_node(link.node, child_x, child_y, visited)
             edge = GraphEdge(node_item, self.node_items[link.node])
             self._scene.addItem(edge)
 
-    def _is_overlapping(self, x, y, other_pos):
+    def _is_overlapping(
+        self,
+        x: int,
+        y: int,
+        other_pos: QPointF,
+    ) -> bool:
         """Check if the proposed position overlaps with an existing node."""
-        min_distance = 50  # Minimum distance to consider non-overlapping
-        return (x - other_pos.x())**2 + (y - other_pos.y())**2 < min_distance**2
+        min_distance: int = 50  # Minimum distance to consider non-overlapping
+        return (x - other_pos.x()) ** 2 + (y - other_pos.y()) ** 2 < min_distance**2
+
 
 class MainWindow(QMainWindow):
-    def __init__(self, model: DLGStandardItemModel):
+    def __init__(
+        self,
+        model: DLGStandardItemModel,
+    ):
         super().__init__()
         self.graph_widget: GraphWidget = GraphWidget(model)
         self.setCentralWidget(self.graph_widget)
 
+
 def main():
     editor = DLGEditor(None, None)
-    tree_view = editor.ui.dialogTree
-    model = tree_view.model()
+    tree_view: QTreeView = editor.ui.dialogTree
+    model: DLGStandardItemModel | None = tree_view.model()
+    assert model is not None
 
     # Use the create_complex_tree method to generate the DLG structure
-    dlg = create_complex_tree()
-    editor._loadDLG(dlg)
+    dlg: DLG = create_complex_tree()
+    editor._load_dlg(dlg)  # noqa: SLF001
 
     window = MainWindow(model)
     window.show()
 
     sys.exit(app.exec())
 
+
 def create_complex_tree() -> DLG:
     # Create the DLG structure with entries and replies
-    dlg = DLG()
-    entries = [DLGEntry(comment=f"E{i}") for i in range(5)]
-    replies = [DLGReply(text=LocalizedString.from_english(f"R{i}")) for i in range(5, 10)]
+    dlg: DLG = DLG()
+    entries: list[DLGEntry] = [DLGEntry(comment=f"E{i}") for i in range(5)]
+    replies: list[DLGReply] = [DLGReply(text=LocalizedString.from_english(f"R{i}")) for i in range(5, 10)]
 
     # Create a nested structure
     def add_links(parent_node: DLGNode, children: list[DLGNode]):
@@ -207,7 +255,9 @@ def create_complex_tree() -> DLG:
     dlg.starters.append(DLGLink(node=entries[0], list_index=0))  # Start with the first entry
 
     # Manually update list_index
-    def update_list_index(links: list[DLGLink]):
+    def update_list_index(
+        links: list[DLGLink],
+    ):
         for i, link in enumerate(links):
             link.list_index = i
             if link.node:
@@ -216,6 +266,7 @@ def create_complex_tree() -> DLG:
     update_list_index(dlg.starters)
 
     return dlg
+
 
 if __name__ == "__main__":
     main()

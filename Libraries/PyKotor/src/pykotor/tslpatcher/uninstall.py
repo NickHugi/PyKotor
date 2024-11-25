@@ -19,23 +19,26 @@ from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
+    from pykotor.resource.formats.tlk import TLK
 
 
 # TODO: the aspyr patch contains some required files in the override folder, hardcode them and ignore those here.
-def uninstall_all_mods(installation: Installation):
+def uninstall_all_mods(
+    installation: Installation,
+):
     """Uninstalls all mods from the game.
 
     What this method really does is delete all the contents of the override folder and delete all .MOD files from
     the modules folder. Then it removes all appended TLK entries using
     the hardcoded number of entries depending on the game. There are 49,265 TLK entries in KOTOR 1, and 136,329 in TSL.
     """
-    root_path = installation.path()
-    override_path = installation.override_path()
-    modules_path = installation.module_path()
+    root_path: Path = installation.path()
+    override_path: Path = installation.override_path()
+    modules_path: Path = installation.module_path()
 
     # Remove any TLK changes
     dialog_tlk_path = CaseAwarePath(root_path, "dialog.tlk")
-    dialog_tlk = read_tlk(dialog_tlk_path)
+    dialog_tlk: TLK = read_tlk(dialog_tlk_path)
     dialog_tlk.entries = dialog_tlk.entries[:49265] if installation.game() == Game.K1 else dialog_tlk.entries[:136329]
     # TODO: With the new Replace TLK syntax, the above TLK reinstall isn't possible anymore.
     # Here, we should write the dialog.tlk and then check it's sha1 hash compared to vanilla.
@@ -44,11 +47,11 @@ def uninstall_all_mods(installation: Installation):
     write_tlk(dialog_tlk, dialog_tlk_path)
 
     # Remove all override files
-    for file_path in override_path.safe_iterdir():
+    for file_path in override_path.iterdir():
         file_path.unlink()
 
     # Remove any .MOD files
-    for file_path in modules_path.safe_iterdir():
+    for file_path in modules_path.iterdir():
         if is_mod_file(file_path.name):
             file_path.unlink()
 
@@ -82,13 +85,21 @@ class ModUninstaller:
             Uninstalls the selected mod using the most recent backup folder created during the last install.
     """
 
-    def __init__(self, backups_location_path: Path, game_path: Path, logger: PatchLogger | None = None):
+    def __init__(
+        self,
+        backups_location_path: Path,
+        game_path: Path,
+        logger: PatchLogger | None = None,
+    ):
         self.backups_location_path: Path = backups_location_path
         self.game_path: Path = game_path
         self.log: PatchLogger = logger or PatchLogger()
 
     @staticmethod
-    def is_valid_backup_folder(folder: Path, datetime_pattern="%Y-%m-%d_%H.%M.%S") -> bool:
+    def is_valid_backup_folder(
+        folder: Path,
+        datetime_pattern: str = "%Y-%m-%d_%H.%M.%S",
+    ) -> bool:
         """Check if a folder name is valid backup folder name based on datetime pattern.
 
         Args:
@@ -114,7 +125,9 @@ class ModUninstaller:
             return True
 
     @staticmethod
-    def get_most_recent_backup(backup_folder: os.PathLike | str) -> Path | None:
+    def get_most_recent_backup(
+        backup_folder: os.PathLike | str,
+    ) -> Path | None:
         """Returns the most recent valid backup folder.
 
         Args:
@@ -178,7 +191,7 @@ class ModUninstaller:
             file_path = Path(file)
             if file_path.name == "remove these files.txt":
                 continue
-            destination_path = self.game_path / file_path.relative_to(backup_folder)  # type: ignore[attr-defined]
+            destination_path: Path = self.game_path / file_path.relative_to(backup_folder)  # type: ignore[attr-defined]
             destination_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(file_path, destination_path)
             self.log.add_note(f"Restoring backup of '{file_path.name}' to '{destination_path.relative_to(self.game_path.parent)}'...")  # type: ignore[attr-defined]
@@ -189,7 +202,7 @@ class ModUninstaller:
         if not most_recent_backup_folder:
             return None, set(), [], 0
 
-        delete_list_file = most_recent_backup_folder / "remove these files.txt"
+        delete_list_file: Path = most_recent_backup_folder / "remove these files.txt"
         files_to_delete: set[str] = set()
         existing_files: set[str] = set()
         if delete_list_file.is_file():
@@ -208,12 +221,12 @@ class ModUninstaller:
             ):
                 return None, set(), [], 0
 
-        files_in_backup = list(filter(Path.is_file, most_recent_backup_folder.rglob("*")))
+        files_in_backup: list[Path] = list(filter(Path.is_file, most_recent_backup_folder.rglob("*")))
         folder_count: int = len(list(most_recent_backup_folder.rglob("*"))) - len(files_in_backup)
 
         return most_recent_backup_folder, existing_files, files_in_backup, folder_count
 
-    def uninstall_selected_mod(self) -> bool:
+    def uninstall_selected_mod(self) -> bool:  # noqa: C901
         """Uninstalls the selected mod using the most recent backup folder created during the last install.
 
         Processing Logic:
@@ -266,7 +279,7 @@ class ModUninstaller:
                 )
                 if result is True:
                     print("Gaining permission, please wait...")
-                    most_recent_backup_folder.gain_access(recurse=True)
+                    most_recent_backup_folder.chmod(0o755)
                     continue
                 if result is False:
                     continue

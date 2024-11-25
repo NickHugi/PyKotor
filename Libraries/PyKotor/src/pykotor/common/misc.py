@@ -1,11 +1,10 @@
-"""This module holds various unrelated classes and methods."""
-
 from __future__ import annotations
 
 import warnings
 
+from collections.abc import Iterable
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, ClassVar, Generic, Iterable, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
 from pykotor.common.geometry import Vector3
 
@@ -116,12 +115,6 @@ class ResRef(str):
 
     @classmethod
     def from_blank(cls) -> ResRef:
-        """Returns a blank ResRef.
-
-        Returns:
-        -------
-            A new ResRef instance.
-        """
         return cls("")
 
     @classmethod
@@ -129,23 +122,16 @@ class ResRef(str):
         cls,
         file_path: os.PathLike | str,
     ) -> ResRef:
-        """Returns a ResRef from the filename in the specified path.
-
-        Args:
-        ----
-            file_path (os.PathLike | str): The path to the file.
-
-        Returns:
-        -------
-            A new ResRef instance.
-        """
         from pykotor.extract.file import ResourceIdentifier  # Prevent circular imports
 
-        resname = ResourceIdentifier.from_path(file_path).resname
+        resname: str = ResourceIdentifier.from_path(file_path).resname
         return cls(resname)
 
     @classmethod
-    def is_valid(cls, text: str) -> bool:
+    def is_valid(
+        cls,
+        text: str,
+    ) -> bool:
         if not isinstance(text, str):
             return False
         return next(
@@ -248,11 +234,11 @@ class Game(IntEnum):
 
 class Color:
     # Listed here for hinting purposes
-    RED: Color
-    GREEN: Color
-    BLUE: Color
-    BLACK: Color
-    WHITE: Color
+    RED: ClassVar[Color]
+    GREEN: ClassVar[Color]
+    BLUE: ClassVar[Color]
+    BLACK: ClassVar[Color]
+    WHITE: ClassVar[Color]
 
     def __init__(
         self,
@@ -266,14 +252,10 @@ class Color:
         self.b: float = b
         self.a: float = a
 
-    def __repr__(
-        self,
-    ):
+    def __repr__(self):
         return f"Color({self})"
 
-    def __str__(
-        self,
-    ) -> str:
+    def __str__(self) -> str:
         """Returns a string of each color component separated by whitespace."""
         return f"{self.r} {self.g} {self.b} {self.a}"
 
@@ -289,9 +271,7 @@ class Color:
 
         return hash(self) == hash(other)
 
-    def __hash__(
-        self,
-    ):
+    def __hash__(self):
         return hash((self.r, self.g, self.b, self.a))
 
     @classmethod
@@ -309,9 +289,9 @@ class Color:
         -------
             A new Color instance.
         """
-        red = (0x000000FF & integer) / 255
-        green = ((0x0000FF00 & integer) >> 8) / 255
-        blue = ((0x00FF0000 & integer) >> 16) / 255
+        red: float = (0x000000FF & integer) / 255
+        green: float = ((0x0000FF00 & integer) >> 8) / 255
+        blue: float = ((0x00FF0000 & integer) >> 16) / 255
         return Color(red, green, blue)
 
     @classmethod
@@ -329,10 +309,10 @@ class Color:
         -------
             A new Color instance.
         """
-        red = (0x000000FF & integer) / 255
-        green = ((0x0000FF00 & integer) >> 8) / 255
-        blue = ((0x00FF0000 & integer) >> 16) / 255
-        alpha = ((0xFF000000 & integer) >> 24) / 255
+        red: float = (0x000000FF & integer) / 255
+        green: float = ((0x0000FF00 & integer) >> 8) / 255
+        blue: float = ((0x00FF0000 & integer) >> 16) / 255
+        alpha: float = ((0xFF000000 & integer) >> 24) / 255
         return Color(red, green, blue, alpha)
 
     @classmethod
@@ -350,9 +330,9 @@ class Color:
         -------
             A new Color instance.
         """
-        red = ((0x00FF0000 & integer) >> 16) / 255
-        green = ((0x0000FF00 & integer) >> 8) / 255
-        blue = (0x000000FF & integer) / 255
+        red: float = ((0x00FF0000 & integer) >> 16) / 255
+        green: float = ((0x0000FF00 & integer) >> 8) / 255
+        blue: float = (0x000000FF & integer) / 255
         return Color(red, green, blue)
 
     @classmethod
@@ -370,9 +350,9 @@ class Color:
         -------
             A new Color instance.
         """
-        red = vector3.x
-        green = vector3.y
-        blue = vector3.z
+        red: float = vector3.x
+        green: float = vector3.y
+        blue: float = vector3.z
         return Color(red, green, blue)
 
     @classmethod
@@ -390,10 +370,44 @@ class Color:
         -------
             A new Color instance.
         """
-        red = vector3.z
-        green = vector3.y
-        blue = vector3.x
+        red: float = vector3.z
+        green: float = vector3.y
+        blue: float = vector3.x
         return Color(red, green, blue)
+
+    @classmethod
+    def from_hex_string(
+        cls,
+        hex_string: str,
+    ) -> Self:
+        # Remove '#' if present and convert to lowercase
+        color_str: str = hex_string.lstrip("#").lower()
+        instance: Self = cls(0, 0, 0)
+
+        # Handle different hex color formats
+        if len(color_str) == 3:  # Short hex format (RGB)  # noqa: PLR2004
+            instance.r = int(color_str[0] * 2, 16)
+            instance.g = int(color_str[1] * 2, 16)
+            instance.b = int(color_str[2] * 2, 16)
+            instance.a = 255
+        elif len(color_str) == 4:  # Short hex format with alpha (RGBA)  # noqa: PLR2004
+            instance.r = int(color_str[0] * 2, 16)
+            instance.g = int(color_str[1] * 2, 16)
+            instance.b = int(color_str[2] * 2, 16)
+            instance.a = int(color_str[3] * 2, 16)
+        elif len(color_str) == 6:  # Full hex format (RGB)  # noqa: PLR2004
+            instance.r = int(color_str[0:2], 16)
+            instance.g = int(color_str[2:4], 16)
+            instance.b = int(color_str[4:6], 16)
+            instance.a = 255
+        elif len(color_str) == 8:  # Full hex format with alpha (RGBA)  # noqa: PLR2004
+            instance.r = int(color_str[0:2], 16)
+            instance.g = int(color_str[2:4], 16)
+            instance.b = int(color_str[4:6], 16)
+            instance.a = int(color_str[6:8], 16)
+        else:
+            raise ValueError(f"Invalid hex color format: {color_str}")
+        return instance
 
     def rgb_integer(
         self,
@@ -404,9 +418,9 @@ class Color:
         -------
             A integer representing a color.
         """
-        red = int(self.r * 0xFF) << 0
-        green = int(self.g * 0xFF) << 8
-        blue = int(self.b * 0xFF) << 16
+        red: int = int(self.r * 0xFF) << 0
+        green: int = int(self.g * 0xFF) << 8
+        blue: int = int(self.b * 0xFF) << 16
         return red + green + blue
 
     def rgba_integer(
@@ -418,10 +432,10 @@ class Color:
         -------
             A integer representing a color.
         """
-        red = int(self.r * 0xFF) << 0
-        green = int(self.g * 0xFF) << 8
-        blue = int(self.b * 0xFF) << 16
-        alpha = int(self.a * 0xFF) << 24
+        red: int = int(self.r * 0xFF) << 0
+        green: int = int(self.g * 0xFF) << 8
+        blue: int = int(self.b * 0xFF) << 16
+        alpha: int = int(self.a * 0xFF) << 24
         return red + green + blue + alpha
 
     def bgr_integer(
@@ -433,9 +447,9 @@ class Color:
         -------
             A integer representing a color.
         """
-        red = int(self.r * 255) << 16
-        green = int(self.g * 255) << 8
-        blue = int(self.b * 255)
+        red: int = int(self.r * 255) << 16
+        green: int = int(self.g * 255) << 8
+        blue: int = int(self.b * 255)
         return red + green + blue
 
     def rgb_vector3(
@@ -567,51 +581,79 @@ class EquipmentSlot(Enum):
 
 
 class CaseInsensitiveHashSet(set, Generic[T]):
-    def __init__(self, iterable: Iterable[T] | None = None):
+    def __init__(
+        self,
+        iterable: Iterable[T] | None = None,
+    ):
         super().__init__()
         if iterable is not None:
             for item in iterable:
                 self.add(item)
 
-    def _normalize_key(self, item: T):
+    def _normalize_key(
+        self,
+        item: T,
+    ) -> str | object:
         return item.casefold() if isinstance(item, str) else item
 
-    def add(self, item: T):
+    def add(
+        self,
+        item: T,
+    ):
         """Add an element to a set.
 
         This has no effect if the element is already present.
         """
         key: str | object = self._normalize_key(item)
-        if key not in self:
-            super().add(item)
+        if key in self:
+            return
+        super().add(item)
 
-    def remove(self, item: T):
+    def remove(
+        self,
+        item: T,
+    ):
         """Remove an element from a set; it must be a member.
 
         If the element is not a member, raise a KeyError.
         """
         super().remove(self._normalize_key(item))
 
-    def discard(self, item: T):
+    def discard(
+        self,
+        item: T,
+    ):
         """Remove an element from a set if it is a member.
 
         Unlike set.remove(), the discard() method does not raise an exception when an element is missing from the set.
         """
         super().discard(self._normalize_key(item))
 
-    def update(self, *others):
+    def update(
+        self,
+        *others,
+    ):
         """Update a set with the union of itself and others."""
         for other in others:
             for item in other:
                 self.add(item)
 
-    def __contains__(self, item):
+    def __contains__(
+        self,
+        item,
+    ):
         return super().__contains__(self._normalize_key(item))
 
-    def __eq__(self, other):
+    def __eq__(
+        self,
+        other,
+    ):
         if self is other:
             return True
         return super().__eq__({self._normalize_key(item) for item in other})
 
-    def __ne__(self, other):
+    def __ne__(
+        self,
+        other,
+    ):
         return super().__ne__({self._normalize_key(item) for item in other})

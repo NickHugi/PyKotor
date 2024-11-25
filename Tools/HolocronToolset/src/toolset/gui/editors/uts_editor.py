@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QWidget
 
+    from pykotor.common.module import GFF
     from toolset.data.installation import HTInstallation
 
 
@@ -34,20 +35,23 @@ class UTSEditor(Editor):
         self._uts: UTS = UTS()
         self.player = QMediaPlayer(self)
         self.buffer = QBuffer(self)
-        
+
         from toolset.uic.qtpy.editors.uts import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        
+
         self.ui_handler = UTSEditorUI(self)
         self.data_handler = UTSData(self)
-        
+
         if installation is not None:
             self._setup_installation(installation)
-        
+
         self.new()
 
-    def _setup_installation(self, installation: HTInstallation):
+    def _setup_installation(
+        self,
+        installation: HTInstallation,
+    ):
         self._installation = installation
         self.ui.nameEdit.set_installation(installation)
 
@@ -64,9 +68,9 @@ class UTSEditor(Editor):
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTS from UI fields."""
-        uts = self.data_handler.build_uts()
+        uts: UTS = self.data_handler.build_uts()
         data = bytearray()
-        gff = self.data_handler.dismantle_uts(uts)
+        gff: GFF = self.data_handler.dismantle_uts(uts)
         write_gff(gff, data)
         return data, b""
 
@@ -74,5 +78,8 @@ class UTSEditor(Editor):
         super().new()
         self.data_handler.load_uts(UTS())
 
-    def closeEvent(self, e: QCloseEvent):
+    def closeEvent(
+        self,
+        e: QCloseEvent,
+    ):
         self.player.stop()

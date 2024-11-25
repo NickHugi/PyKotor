@@ -17,7 +17,12 @@ if TYPE_CHECKING:
 
 
 class TriggerDialog(QDialog):
-    def __init__(self, parent: QWidget, trigger: GITTrigger, installation: HTInstallation):
+    def __init__(
+        self,
+        parent: QWidget,
+        trigger: GITTrigger,
+        installation: HTInstallation,
+    ):
         super().__init__(parent)
         self.setWindowFlags(
             Qt.WindowType.Dialog

@@ -17,7 +17,10 @@ class BifSaveOption(IntEnum):
 
 
 class BifSaveDialog(QDialog):
-    def __init__(self, parent: QWidget):
+    def __init__(
+        self,
+        parent: QWidget,
+    ):
         super().__init__(parent)
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]

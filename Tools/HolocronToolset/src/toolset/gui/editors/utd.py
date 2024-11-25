@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
     from qtpy.QtWidgets import QWidget
 
+    from pykotor.common.stream import BinaryWriterFile
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
@@ -57,11 +58,12 @@ class UTDEditor(Editor):
         supported: list[ResourceType] = [ResourceType.UTD, ResourceType.BTD]
         super().__init__(parent, "Door Editor", "door", supported, supported, installation)
 
-        self.globalSettings: GlobalSettings = GlobalSettings()
-        self._genericdoors2DA: TwoDA = installation.ht_get_cache_2da("genericdoors")
+        self.global_settings: GlobalSettings = GlobalSettings()
+        self._genericdoors_2da: TwoDA | None = installation.ht_get_cache_2da("genericdoors")
         self._utd: UTD = UTD()
 
         from toolset.uic.qtpy.editors.utd import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
@@ -126,11 +128,11 @@ class UTDEditor(Editor):
         self.ui.appearanceSelect.set_items(appearances.get_column("label"))
         self.ui.factionSelect.set_items(factions.get_column("label"))
 
-        self.handleWidgetWithTSL(self.ui.notBlastableCheckbox, installation)
-        self.handleWidgetWithTSL(self.ui.difficultyModSpin, installation)
-        self.handleWidgetWithTSL(self.ui.difficultySpin, installation)
-        self.handleWidgetWithTSL(self.ui.difficultyLabel, installation)
-        self.handleWidgetWithTSL(self.ui.difficultyModLabel, installation)
+        self.handle_widget_with_tsl(self.ui.notBlastableCheckbox, installation)
+        self.handle_widget_with_tsl(self.ui.difficultyModSpin, installation)
+        self.handle_widget_with_tsl(self.ui.difficultySpin, installation)
+        self.handle_widget_with_tsl(self.ui.difficultyLabel, installation)
+        self.handle_widget_with_tsl(self.ui.difficultyModLabel, installation)
 
         installation.setup_file_context_menu(self.ui.onClickEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setup_file_context_menu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
@@ -145,7 +147,11 @@ class UTDEditor(Editor):
         installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
         installation.setup_file_context_menu(self.ui.conversationEdit, [ResourceType.DLG])
 
-    def handleWidgetWithTSL(self, widget: QWidget, installation: HTInstallation):
+    def handle_widget_with_tsl(
+        self,
+        widget: QWidget,
+        installation: HTInstallation,
+    ):
         widget.setEnabled(installation.tsl)
         if not installation.tsl:
             widget.setToolTip("This widget is only available in KOTOR II.")
@@ -162,7 +168,10 @@ class UTDEditor(Editor):
         utd = read_utd(data)
         self._loadUTD(utd)
 
-    def _loadUTD(self, utd: UTD):
+    def _loadUTD(
+        self,
+        utd: UTD,
+    ):
         """Loads UTD data into UI elements.
 
         Args:
@@ -220,16 +229,7 @@ class UTDEditor(Editor):
         self.ui.onUnlockEdit.set_combo_box_text(str(utd.on_unlock))
         self.ui.onUserDefinedSelect.set_combo_box_text(str(utd.on_user_defined))
 
-        self.relevant_script_resnames = sorted(
-            iter(
-                {
-                    res.resname().lower()
-                    for res in self._installation.get_relevant_resources(
-                        ResourceType.NCS, self._filepath
-                    )
-                }
-            )
-        )
+        self.relevant_script_resnames: list[str] = sorted(iter({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.NCS, self._filepath)}))
         self.ui.onClickEdit.populate_combo_box(self.relevant_script_resnames)
         self.ui.onClosedEdit.populate_combo_box(self.relevant_script_resnames)
         self.ui.onDamagedEdit.populate_combo_box(self.relevant_script_resnames)
@@ -241,18 +241,7 @@ class UTDEditor(Editor):
         self.ui.onSpellEdit.populate_combo_box(self.relevant_script_resnames)
         self.ui.onUnlockEdit.populate_combo_box(self.relevant_script_resnames)
         self.ui.onUserDefinedSelect.populate_combo_box(self.relevant_script_resnames)
-        self.ui.conversationEdit.populate_combo_box(
-            sorted(
-                iter(
-                    {
-                        res.resname().lower()
-                        for res in self._installation.get_relevant_resources(
-                            ResourceType.DLG, self._filepath
-                        )
-                    }
-                )
-            )
-        )
+        self.ui.conversationEdit.populate_combo_box(sorted(iter({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.DLG, self._filepath)})))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utd.comment)
@@ -354,14 +343,15 @@ class UTDEditor(Editor):
             3. If not found, prompts to create a new file in the override folder
             4. If found or created, opens the resource editor window.
         """
-        resname = self.ui.conversationEdit.currentText()
-        data, filepath = None, None
+        resname: str = self.ui.conversationEdit.currentText()
+        data: bytes | None = None
+        filepath: os.PathLike | None = None
 
         if not resname or not resname.strip():
             QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec()
             return
 
-        search = self._installation.resource(resname, ResourceType.DLG)
+        search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
             msgbox = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec()
@@ -370,7 +360,7 @@ class UTDEditor(Editor):
 
                 write_gff(dismantle_dlg(DLG()), data)
                 filepath = self._installation.override_path() / f"{resname}.dlg"
-                writer = BinaryWriter.to_file(filepath)
+                writer: BinaryWriterFile = BinaryWriter.to_file(filepath)
                 writer.write_bytes(data)
                 writer.close()
         else:
@@ -380,7 +370,7 @@ class UTDEditor(Editor):
             open_resource_editor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
     def toggle_preview(self):
-        self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
+        self.global_settings.showPreviewUTP = not self.global_settings.showPreviewUTP
         self.update3dPreview()
 
     def update3dPreview(self):
@@ -392,10 +382,10 @@ class UTDEditor(Editor):
             - If True, calls _update_model() to update the 3D model preview
             - If False, sets the fixed size of the window without leaving space for preview.
         """
-        self.ui.previewRenderer.setVisible(self.globalSettings.showPreviewUTP)
-        self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTP)
+        self.ui.previewRenderer.setVisible(self.global_settings.showPreviewUTP)
+        self.ui.actionShowPreview.setChecked(self.global_settings.showPreviewUTP)
 
-        if self.globalSettings.showPreviewUTP:
+        if self.global_settings.showPreviewUTP:
             self._update_model()
         else:
             self.resize(max(374, self.sizeHint().width()), max(457, self.sizeHint().height()))
@@ -414,7 +404,7 @@ class UTDEditor(Editor):
         self.resize(max(674, self.sizeHint().width()), max(457, self.sizeHint().height()))
 
         data, _ = self.build()
-        modelname: str = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors2DA)
+        modelname: str = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors_2da)
         mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
         mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
         if mdl is not None and mdx is not None:

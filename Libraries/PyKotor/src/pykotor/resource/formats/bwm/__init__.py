@@ -10,3 +10,15 @@ from pykotor.resource.formats.bwm.io_bwm import (
     BWMBinaryReader,
     BWMBinaryWriter,
 )
+
+__all__ = [
+    "BWM",
+    "BWMBinaryReader",
+    "BWMBinaryWriter",
+    "BWMFace",
+    "BWMType",
+    "bytes_bwm",
+    "read_bwm",
+    "write_bwm",
+]
+

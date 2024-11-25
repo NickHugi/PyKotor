@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from pykotor.resource.generics.uts import UTS
 
 
-def clone_module(
+def clone_module(  # noqa: C901, PLR0915, PLR0912, PLR0913
     root: str,
     identifier: str,
     prefix: str,
@@ -121,8 +121,8 @@ def clone_module(
 
     if keep_doors:
         for i, door in enumerate(git.doors):
-            old_resname = str(door.resref)
-            new_resname = f"{identifier}_dor{i}"
+            old_resname: str = str(door.resref)
+            new_resname: str = f"{identifier}_dor{i}"
             door.resref.set_data(new_resname)
             door.tag = new_resname
 
@@ -190,8 +190,8 @@ def clone_module(
     new_textures: dict[str, str] = {}
     if lyt is not None:
         for room in lyt.rooms:
-            old_model_name = room.model
-            new_model_name = ireplace(old_model_name, str(old_resref), identifier)
+            old_model_name: str = room.model
+            new_model_name: str = ireplace(old_model_name, str(old_resref), identifier)
 
             room.model = new_model_name
             if vis is not None and vis.room_exists(old_model_name):
@@ -214,7 +214,7 @@ def clone_module(
                 for texture in model.iterate_textures(mdl_data):
                     if texture in new_textures:
                         continue
-                    new_texture_name = prefix + texture[3:]
+                    new_texture_name: str = prefix + texture[3:]
                     new_textures[texture] = new_texture_name
 
                     tpc: TPC | None = installation.texture(
@@ -241,7 +241,7 @@ def clone_module(
                 for lightmap in model.iterate_lightmaps(mdl_data):
                     if lightmap in new_lightmaps:
                         continue
-                    new_lightmap_name = f"{identifier}_lm_{len(new_lightmaps.keys())}"
+                    new_lightmap_name: str = f"{identifier}_lm_{len(new_lightmaps.keys())}"
                     new_lightmaps[lightmap] = new_lightmap_name
 
                     tpc = installation.texture(
@@ -309,7 +309,7 @@ def rim_to_mod(
         raise ValueError(msg)
 
     module_root = Installation.get_module_root(module_root or filepath)
-    r_rim_folderpath = Path(rim_folderpath) if rim_folderpath else r_outpath.parent
+    r_rim_folderpath: Path = Path(rim_folderpath) if rim_folderpath else r_outpath.parent
 
     filepath_rim: Path = r_rim_folderpath / f"{module_root}.rim"
     filepath_rim_s: Path = r_rim_folderpath / f"{module_root}_s.rim"

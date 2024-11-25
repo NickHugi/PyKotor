@@ -4,7 +4,7 @@ import math
 
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Generator, List, NoReturn, cast
+from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 from loggerplus import RobustLogger
 
@@ -24,6 +24,8 @@ from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
@@ -98,7 +100,7 @@ class GIT:
             A list of all stored instances.
         """
         return cast(
-            List[GITInstance],
+            list[GITInstance],
             [
                 *self.cameras,
                 *self.creatures,

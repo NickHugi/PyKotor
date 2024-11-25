@@ -12,7 +12,7 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     import os
 
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES

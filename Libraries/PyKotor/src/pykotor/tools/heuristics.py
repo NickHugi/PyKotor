@@ -9,7 +9,9 @@ if TYPE_CHECKING:
     import os
 
 
-def determine_game(path: os.PathLike | str) -> Game | None:
+def determine_game(
+    path: os.PathLike | str,
+) -> Game | None:
     """Determines the game based on files and folders.
 
     Args:
@@ -109,7 +111,7 @@ def determine_game(path: os.PathLike | str) -> Game | None:
         check("AppIcon50x50~ipad.png"),
     ]
 
-    game1_android_checks: list[bool] = [  # TODO:
+    game1_android_checks: list[bool] = [  # TODO(th3w1zard1): Implement
     ]
 
     game2_pc_checks: list[bool] = [
@@ -189,7 +191,7 @@ def determine_game(path: os.PathLike | str) -> Game | None:
         check("GoogleService-Info.plist"),
     ]
 
-    game2_android_checks: list[bool] = [  # TODO:
+    game2_android_checks: list[bool] = [  # TODO(th3w1zard1): Implement
     ]
 
     # Determine the game with the most checks passed

@@ -67,7 +67,10 @@ class UTMEditor(Editor):
         self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
         self.ui.inventoryButton.clicked.connect(self.open_inventory)
 
-    def _setup_installation(self, installation: HTInstallation):
+    def _setup_installation(
+        self,
+        installation: HTInstallation,
+    ):
         """Sets up the installation for editing.
 
         Args:
@@ -95,7 +98,10 @@ class UTMEditor(Editor):
         utm: UTM = read_utm(data)
         self._loadUTM(utm)
 
-    def _loadUTM(self, utm: UTM):
+    def _loadUTM(
+        self,
+        utm: UTM,
+    ):
         """Loads UTM data into UI elements.
 
         Args:
@@ -184,13 +190,14 @@ class UTMEditor(Editor):
         capsules: list[Capsule] = []
 
         try:
-            root: str = Module.find_root(self._filepath)
+            root: str = Module.filepath_to_root(self._filepath)
             case_root = root.casefold()
+            assert self._installation is not None
             module_names: CaseInsensitiveDict[str] = self._installation.module_names()
             filepath_str = str(self._filepath)
             capsulesPaths: list[str] = [path for path in module_names if case_root in path and path != filepath_str]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(format_exception_with_variables(e, message="This exception has been suppressed."))
 
         inventoryEditor = InventoryEditor(

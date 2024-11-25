@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Tuple, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, Game
@@ -1322,7 +1322,7 @@ class MDLBinaryReader:
             node.mesh.radius = bin_node.trimesh.radius
             node.mesh.average = bin_node.trimesh.average
             node.mesh.area = bin_node.trimesh.total_area
-            node.mesh.saber_unknowns = cast(Tuple[int, int, int, int, int, int, int, int], bin_node.trimesh.saber_unknowns)
+            node.mesh.saber_unknowns = cast(tuple[int, int, int, int, int, int, int, int], bin_node.trimesh.saber_unknowns)
 
             node.mesh.vertex_positions = bin_node.trimesh.vertices
 

@@ -14,11 +14,16 @@ from utility.gui.base import UserCommunication
 if TYPE_CHECKING:
     from qtpy.QtGui import QIcon
     from qtpy.QtWidgets import QStatusBar
-    from typing_extensions import Self
+    from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
 
 class CustomQPushButton(QtWidgets.QPushButton):
-    def __init__(self, enum_member: MessageBoxButton, *args, **kwargs):
+    def __init__(
+        self,
+        enum_member: MessageBoxButton,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.enum_member: MessageBoxButton = enum_member
         self.setProperty("standardButtonRole", enum_member.value)

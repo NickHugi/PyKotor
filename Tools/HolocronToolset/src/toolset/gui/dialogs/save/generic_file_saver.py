@@ -3,13 +3,13 @@ from __future__ import annotations
 import shutil
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Generic, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, Generic, Literal, Sequence, TypeVar, Union
 
 from loggerplus import RobustLogger
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QFileDialog, QMessageBox
 
-from pykotor.extract.file import FileResource, ResourceResult
+from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
 from pykotor.resource.formats.erf.erf_data import ERFResource
 from pykotor.resource.formats.rim.rim_data import RIMResource
 from utility.error_handling import universal_simplify_exception
@@ -33,7 +33,7 @@ class FileSaveHandler(Generic[T]):
         parent: QWidget | None = None,
     ):
         self.parent: QWidget | None = parent
-        self.resources: list[T] = resources
+        self.resources: list[T] = list(resources)
 
     def get_resource_data(
         self,
@@ -59,10 +59,10 @@ class FileSaveHandler(Generic[T]):
 
         for resource, path in successfully_saved_paths.items():
             try:
-                data = self.get_resource_data(resource)
+                data: bytes = self.get_resource_data(resource)
                 with path.open("wb") as file:
                     file.write(data)
-            except Exception as e:  # noqa: PERF203
+            except Exception as e:  # noqa: PERF203, BLE001
                 failed_extractions[path] = e
                 del successfully_saved_paths[resource]
             else:
@@ -71,19 +71,19 @@ class FileSaveHandler(Generic[T]):
         if failed_extractions:
             self._handle_failed_extractions(failed_extractions)
 
-        return successfully_saved_paths, failed_extractions
+        return successfully_saved_paths
 
     def build_paths_to_write(self) -> dict[T, Path]:
         paths_to_write: dict[T, Path] = {}
         if len(self.resources) == 1:
-            resource = self.resources[0]
+            resource: T = self.resources[0]
             identifier = self.get_resource_ident(resource)
             dialog = QFileDialog(self.parent, "Save File", str(identifier), "Files (*.*)")
-            dialog.setAcceptMode(QFileDialog.AcceptSave)
-            dialog.setOption(QFileDialog.DontConfirmOverwrite)
-            response = dialog.exec()
-            if response == QFileDialog.Accepted:
-                filepath_str = dialog.selectedFiles()[0]
+            dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)  # pyright: ignore[reportArgumentType]
+            dialog.setOption(QFileDialog.Option.DontConfirmOverwrite)  # pyright: ignore[reportArgumentType]
+            response: int = dialog.exec()
+            if response == QFileDialog.DialogCode.Accepted:
+                filepath_str: str = dialog.selectedFiles()[0]
                 if not filepath_str or not filepath_str.strip():
                     RobustLogger().debug("QFileDialog was accepted but no filepath str passed.")
                     return {}
@@ -98,8 +98,8 @@ class FileSaveHandler(Generic[T]):
             # Build intended destination filepaths dict
             folder_path = Path(folderpath_str)
             for resource in self.resources:
-                identifier = self.get_resource_ident(resource)
-                file_path = folder_path / str(identifier)
+                identifier: ResourceIdentifier = self.get_resource_ident(resource)
+                file_path: Path = folder_path / str(identifier)
                 paths_to_write[resource] = file_path
 
         else:
@@ -107,7 +107,7 @@ class FileSaveHandler(Generic[T]):
 
         return paths_to_write
 
-    def determine_save_paths(
+    def determine_save_paths(  # noqa: C901, PLR0912
         self,
         paths_to_write: dict[T, Path],
         failed_extractions: dict[Path, Exception] | None = None,
@@ -145,7 +145,7 @@ class FileSaveHandler(Generic[T]):
         if not existing_files_and_folders:
             choice = QMessageBox.StandardButton.No  # Default to rename, useful when not executing the save immediately.
         else:
-            choice = self._prompt_existence_choice(existing_files_and_folders)
+            choice: int = self._prompt_existence_choice(existing_files_and_folders)
 
         # Build new_paths_to_write based on the choice.
         new_paths_to_write: dict[T, Path] = {}
@@ -156,7 +156,7 @@ class FileSaveHandler(Generic[T]):
                 next(iter(paths_to_write.values())).parent,
             )
             for resource, path in paths_to_write.items():
-                is_overwrite = "overwriting existing file" if path.is_file() else "saving as"
+                is_overwrite: Literal["overwriting existing file", "saving as"] = "overwriting existing file" if path.is_file() else "saving as"
                 RobustLogger().info("Extracting '%s' to '%s' and %s '%s'", path.name, path.parent, is_overwrite, path.name)
                 try:
                     if path.is_dir():
@@ -178,9 +178,9 @@ class FileSaveHandler(Generic[T]):
                 new_path = path
                 try:
                     i = 1
-                    while new_path.safe_exists():
+                    while new_path.exists():
                         i += 1
-                        new_path = new_path.with_stem(f"{path.stem} ({i})")
+                        new_path: Path = path.parent / f"{path.stem} ({i}){path.suffix}"
                 except Exception as e:  # noqa: BLE001
                     if failed_extractions is not None:
                         failed_extractions[new_path] = e
@@ -201,33 +201,30 @@ class FileSaveHandler(Generic[T]):
         self,
         existing_files_and_folders: list[str],
     ) -> int:
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Icon.Warning)
-        msgBox.setWindowTitle("Existing files/folders found.")
-        msgBox.setText(f"The following {len(existing_files_and_folders)} files and folders already exist in the selected folder.<br><br>How would you like to handle this?")
-        msgBox.setDetailedText("\n".join(existing_files_and_folders))
-        msgBox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Abort)  # pyright: ignore[reportArgumentType]
-        yesButton, noButton = msgBox.button(QMessageBox.StandardButton.Yes), msgBox.button(QMessageBox.StandardButton.No)
-        assert yesButton is not None, "Did not call setStandardButtons with the QMessageBox yes button."
-        assert noButton is not None, "Did not call setStandardButtons with the QMessageBox yes button."
-        yesButton.setText("Overwrite")
-        noButton.setText("Auto-Rename")
-        msgBox.setDefaultButton(QMessageBox.StandardButton.Abort)
-        msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
-        return msgBox.exec()
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle("Existing files/folders found.")
+        msg_box.setText(f"The following {len(existing_files_and_folders)} files and folders already exist in the selected folder.<br><br>How would you like to handle this?")
+        msg_box.setDetailedText("\n".join(existing_files_and_folders))
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Abort)  # pyright: ignore[reportArgumentType]
+        yes_button, no_button = msg_box.button(QMessageBox.StandardButton.Yes), msg_box.button(QMessageBox.StandardButton.No)
+        assert yes_button is not None, "Did not call setStandardButtons with the QMessageBox yes button."
+        assert no_button is not None, "Did not call setStandardButtons with the QMessageBox yes button."
+        yes_button.setText("Overwrite")
+        no_button.setText("Auto-Rename")
+        msg_box.setDefaultButton(QMessageBox.StandardButton.Abort)
+        msg_box.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
+        return msg_box.exec()
 
     def _handle_failed_extractions(
         self,
         failed_extractions: dict[Path, Exception],
     ):
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Icon.Critical)
-        msgBox.setWindowTitle("Failed to extract files to disk.")
-        msgBox.setText(f"{len(failed_extractions)} files FAILED to to be saved<br><br>Press 'show details' for information.")
-        detailed_info = "\n".join(
-            f"{file}: {universal_simplify_exception(exc)}"
-            for file, exc in failed_extractions.items()
-        )
-        msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
-        msgBox.setDetailedText(detailed_info)
-        msgBox.exec()
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Icon.Critical)
+        msg_box.setWindowTitle("Failed to extract files to disk.")
+        msg_box.setText(f"{len(failed_extractions)} files FAILED to to be saved<br><br>Press 'show details' for information.")
+        detailed_info = "\n".join(f"{file}: {universal_simplify_exception(exc)}" for file, exc in failed_extractions.items())
+        msg_box.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
+        msg_box.setDetailedText(detailed_info)
+        msg_box.exec()

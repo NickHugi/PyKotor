@@ -628,7 +628,8 @@ class DLGTreeView(RobustTreeView):
         return (
             isinstance(dragged_node, DLGReply)  # pyright: ignore[reportOptionalMemberAccess]
             and isinstance(target_node, DLGReply)
-            or isinstance(dragged_node, DLGEntry)
+        ) or (
+            isinstance(dragged_node, DLGEntry)
             and isinstance(target_node, DLGEntry)
         )
 

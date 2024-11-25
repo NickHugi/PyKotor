@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from qtpy.QtWidgets import QWidget
 
+    from pykotor.common.module import GFF
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
@@ -78,11 +79,14 @@ class UTTEditor(Editor):
         if traps:
             self.ui.trapSelect.set_context(traps, installation, HTInstallation.TwoDA_TRAPS)
 
-        self.ui.cursorSelect.set_items(cursors.get_column("label"))
-        self.ui.factionSelect.set_items(factions.get_column("label"))
-        self.ui.trapSelect.set_items(traps.get_column("label"))
+        if cursors:
+            self.ui.cursorSelect.set_items(cursors.get_column("label"))
+        if factions:
+            self.ui.factionSelect.set_items(factions.get_column("label"))
+        if traps:
+            self.ui.trapSelect.set_items(traps.get_column("label"))
 
-        self.relevant_script_resnames = sorted(
+        self.relevant_script_resnames: list[str] = sorted(
             iter(
                 {
                     res.resname().lower()
@@ -224,7 +228,7 @@ class UTTEditor(Editor):
         utt.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
-        gff = dismantle_utt(utt)
+        gff: GFF = dismantle_utt(utt)
         write_gff(gff, data)
 
         return data, b""
@@ -234,6 +238,7 @@ class UTTEditor(Editor):
         self._loadUTT(UTT())
 
     def change_name(self):
+        assert self._installation is not None
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)

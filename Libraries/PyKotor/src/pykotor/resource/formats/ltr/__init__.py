@@ -5,3 +5,13 @@ from pykotor.resource.formats.ltr.io_ltr import (
     LTRBinaryReader,
     LTRBinaryWriter,
 )
+
+__all__ = [
+    "LTR",
+    "LTRBinaryReader",
+    "LTRBinaryWriter",
+    "LTRBlock",
+    "bytes_ltr",
+    "read_ltr",
+    "write_ltr",
+]

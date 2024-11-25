@@ -17,7 +17,10 @@ class RimSaveOption(IntEnum):
 
 
 class RimSaveDialog(QDialog):
-    def __init__(self, parent: QWidget):
+    def __init__(
+        self,
+        parent: QWidget,
+    ):
         super().__init__(parent)
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
@@ -32,15 +35,15 @@ class RimSaveDialog(QDialog):
         self.ui.setupUi(self)
 
         self.ui.cancelButton.clicked.connect(self.reject)
-        self.ui.modSaveButton.clicked.connect(self.saveAsMod)
-        self.ui.overrideSaveButton.clicked.connect(self.saveAsOverride)
+        self.ui.modSaveButton.clicked.connect(self.save_as_mod)
+        self.ui.overrideSaveButton.clicked.connect(self.save_as_override)
 
         self.option: RimSaveOption = RimSaveOption.Nothing
 
-    def saveAsMod(self):
+    def save_as_mod(self):
         self.option = RimSaveOption.MOD
         self.accept()
 
-    def saveAsOverride(self):
+    def save_as_override(self):
         self.option = RimSaveOption.Override
         self.accept()

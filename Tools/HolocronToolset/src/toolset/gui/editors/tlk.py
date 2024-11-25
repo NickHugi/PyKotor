@@ -2,19 +2,28 @@
 from __future__ import annotations
 
 from time import sleep
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from qtpy.QtCore import (
+    QModelIndex,
     QSortFilterProxyModel,
     QThread,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QSpinBox, QVBoxLayout
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QDialog,
+    QMenu,
+    QMessageBox,
+    QProgressBar,
+    QVBoxLayout,
+)
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
+from pykotor.extract.file import FileResource
 from pykotor.resource.formats.tlk import TLK, TLKEntry, bytes_tlk, read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -22,26 +31,24 @@ from toolset.gui.dialogs.search import FileResults
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import add_window, open_resource_editor
+from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QModelIndex
+    from qtpy.QtCore import (
+        QAbstractItemModel,
+        QItemSelection,
+        QItemSelectionModel,  # pyright: ignore[reportPrivateImportUsage]
+        QModelIndex,
+        QPoint,
+    )
     from qtpy.QtGui import QKeyEvent
     from qtpy.QtWidgets import QWidget
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
-
-
-class EnterSpinBox(QSpinBox):
-    sig_enter_key_pressed: Signal = Signal()  # pyright: ignore[reportPrivateImportUsage]
-
-    def keyPressEvent(self, event: QKeyEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
-        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
-            self.sig_enter_key_pressed.emit()
-        super().keyPressEvent(event)
 
 
 class TLKEditor(Editor):
@@ -50,27 +57,12 @@ class TLKEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
     ):
-        """Initialize the TLK Editor.
-
-        Args:
-        ----
-            parent: QWidget - Parent widget
-            installation: HTInstallation | None - Installation object
-
-        Processing Logic:
-        ----------------
-            - Set up the UI from the designer file
-            - Connect menu and signal handlers
-            - Hide search/jump boxes
-            - Set up the data model and proxy model for the table view
-            - Make bottom panel take minimal space
-            - Create a new empty TLK file.
-        """
         supported: list[ResourceType] = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 
         from toolset.uic.qtpy.editors.tlk import Ui_MainWindow
-        self.ui = Ui_MainWindow()
+
+        self.ui: Ui_MainWindow = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
         self._setup_signals()
@@ -80,8 +72,8 @@ class TLKEditor(Editor):
 
         self.language: Language = Language.ENGLISH
 
-        self.source_model = QStandardItemModel(self)
-        self.proxy_model = QSortFilterProxyModel(self)
+        self.source_model: QStandardItemModel = QStandardItemModel(self)
+        self.proxy_model: QSortFilterProxyModel = QSortFilterProxyModel(self)
         self.proxy_model.setSourceModel(self.source_model)
         self.ui.talkTable.setModel(self.proxy_model)
 
@@ -91,45 +83,51 @@ class TLKEditor(Editor):
         self.new()
 
     def _setup_signals(self):
-        """Set up signal connections for UI actions and widgets.
+        def _on_jump_spinbox_goto(*args, **kwargs):
+            table_view: RobustTableView = self.ui.talkTable
+            assert isinstance(table_view, RobustTableView)
+            proxy_table_model: QAbstractItemModel | None = table_view.model()
+            assert isinstance(proxy_table_model, QSortFilterProxyModel)
+            proxy_index: QModelIndex = proxy_table_model.index(self.ui.jumpSpinbox.value(), 0)
+            self.ui.talkTable.scrollTo(proxy_index)
+            self.ui.talkTable.setCurrentIndex(proxy_index)
 
-        Processing Logic:
-        ----------------
-            - Connect action triggers to slot functions
-            - Connect button clicks to slot functions
-            - Connect table and text edits to update functions
-            - Set up keyboard shortcuts to trigger actions.
-        """
+        def _on_search_button_clicked(*args, **kwargs):
+            self.do_filter(self.ui.searchEdit.text())
+
         self.ui.actionGoTo.triggered.connect(self.toggle_goto_box)
-        self.ui.jumpButton.clicked.connect(lambda: self.goto_line(self.ui.jumpSpinbox.value()))
-        #self.ui.jumpSpinbox.editingFinished.connect(lambda: self.goto_line(self.ui.jumpSpinbox.value()))
-        self.ui.jumpSpinbox.__class__ = EnterSpinBox
-        assert isinstance(self.ui.jumpSpinbox, EnterSpinBox)
-        self.ui.jumpSpinbox.sig_enter_key_pressed.connect(lambda: self.goto_line(self.ui.jumpSpinbox.value()))
+        self.ui.actionGoTo.setShortcut("Ctrl+G")
+        self.ui.jumpButton.clicked.connect(_on_jump_spinbox_goto)
+
+        orig_key_press_event: Callable[[QKeyEvent], None] = self.ui.jumpSpinbox.keyPressEvent
+
+        def keyPressEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
+            event: QKeyEvent,
+        ):
+            if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                _on_jump_spinbox_goto()
+            orig_key_press_event(event)
+
+        self.ui.jumpSpinbox.keyPressEvent = keyPressEvent  # pyright: ignore[reportAttributeAccessIssue]
+        self.ui.jumpSpinbox.valueChanged.connect(_on_jump_spinbox_goto)
         self.ui.actionFind.triggered.connect(self.toggle_filter_box)
-        self.ui.searchButton.clicked.connect(lambda: self.do_filter(self.ui.searchEdit.text()))
+        self.ui.actionFind.setShortcut("Ctrl+F")
+        self.ui.searchButton.clicked.connect(_on_search_button_clicked)
         self.ui.actionInsert.triggered.connect(self.insert)
-        # self.ui.actionAuto_detect_slower.triggered.connect()
+        self.ui.actionInsert.setShortcut("Ctrl+I")
+        # self.ui.actionDelete.triggered.connect(self.delete)
+        # self.ui.actionDelete.setShortcut("Ctrl+D")
 
         self.ui.talkTable.clicked.connect(self.selection_changed)
-        self.ui.textEdit.textChanged.connect(self.updateEntry)
-        self.ui.soundEdit.textChanged.connect(self.updateEntry)
+        self.ui.textEdit.textChanged.connect(self.update_entry)
+        self.ui.soundEdit.textChanged.connect(self.update_entry)
         self.ui.talkTable.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.ui.talkTable.customContextMenuRequested.connect(self.showContextMenu)
+        self.ui.talkTable.customContextMenuRequested.connect(self.on_context_menu)
 
-        self.populateLanguageMenu()
+        self.populate_language_menu()
 
-        QShortcut("Ctrl+F", self).activated.connect(self.toggle_filter_box)
-        QShortcut("Ctrl+G", self).activated.connect(self.toggle_goto_box)
-        QShortcut("Ctrl+I", self).activated.connect(self.insert)
-
-    def populateLanguageMenu(self):
+    def populate_language_menu(self):
         self.ui.menuLanguage.clear()
-
-        # Add 'Auto_Detect_slower' action first
-        auto_detect_action = QAction("Auto_detect_slower", self)
-        auto_detect_action.triggered.connect(lambda: self.onLanguageSelected("auto_detect"))
-        self.ui.menuLanguage.addAction(auto_detect_action)
 
         # Separator
         self.ui.menuLanguage.addSeparator()
@@ -137,10 +135,10 @@ class TLKEditor(Editor):
         # Add languages from the enum
         for language in Language:
             action = QAction(language.name.replace("_", " "), self)
-            action.triggered.connect(lambda _checked=None, lang=language: self.onLanguageSelected(lang))
+            action.triggered.connect(lambda _checked=None, lang=language: self.on_language_selected(lang))
             self.ui.menuLanguage.addAction(action)
 
-    def onLanguageSelected(
+    def on_language_selected(
         self,
         language: Language | Literal["auto_detect"],
     ):
@@ -172,25 +170,6 @@ class TLKEditor(Editor):
         restype: ResourceType,
         data: bytes,
     ):
-        """Loads data into the resource from a file.
-
-        Args:
-        ----
-            filepath: The path to the file to load from.
-            resref: The resource reference.
-            restype: The resource type.
-            data: The raw data bytes.
-
-        Processing Logic:
-        ----------------
-            - Clears existing model data
-            - Sets column count to 2 and hides second column
-            - Opens dialog to process loading data
-            - Sets loaded data as model
-            - Sets sorting proxy model
-            - Connects selection changed signal
-            - Sets max rows in spinbox.
-        """
         super().load(filepath, resref, restype, data)  # sourcery skip: class-extract-method
         self.source_model.clear()
         self.source_model.setColumnCount(2)
@@ -203,40 +182,54 @@ class TLKEditor(Editor):
         dialog: LoaderDialog,
     ):
         dialog.exec()
-        self.source_model = dialog.source_model
-        self.proxy_model = QSortFilterProxyModel(self)
+        self.source_model: QStandardItemModel = dialog.source_model
+        self.proxy_model: QSortFilterProxyModel = QSortFilterProxyModel(self)
         self.proxy_model.setSourceModel(self.source_model)
         self.ui.talkTable.setModel(self.proxy_model)
-        self.ui.talkTable.selectionModel().selectionChanged.connect(self.selection_changed)
+        sel_model: QItemSelectionModel | None = self.ui.talkTable.selectionModel()
+        assert sel_model is not None
+        sel_model.selectionChanged.connect(self.selection_changed)
         self.ui.jumpSpinbox.setMaximum(self.source_model.rowCount())
 
-    def showContextMenu(self, position):
-        index = self.ui.talkTable.indexAt(position)
-        if not index.isValid():
-            return
+    def on_context_menu(
+        self,
+        position: QPoint,
+    ):
+        index: QModelIndex = self.ui.talkTable.indexAt(position)
         menu = QMenu()
         findAction = QAction("Find LocalizedString references", self)
-        findAction.triggered.connect(lambda: self.findReferences(index))
+        findAction.triggered.connect(lambda: self.find_references(index))
         menu.addAction(findAction)
-        menu.exec(self.ui.talkTable.viewport().mapToGlobal(position))
+        viewport: QWidget | None = self.ui.talkTable.viewport()
+        assert viewport is not None
+        menu.exec(viewport.mapToGlobal(position))
 
-    def findReferences(
+    def find_references(
         self,
         index: QModelIndex,
     ):
         # Implement the logic to find references based on the provided index
-        stringref = index.row()
+        stringref: int = index.row()
         print(f"Finding references to stringref: {stringref}")
+        assert self._installation is not None
+
+        def search_fn() -> set[FileResource]:
+            assert self._installation is not None
+            return self._installation.find_tlk_entry_references(stringref)
+
         loader = AsyncLoader(
             self,
             f"Looking for stringref '{stringref}' in {self._installation.path()}...",
-            lambda: self._installation.find_tlk_entry_references(stringref),
+            search_fn,
             error_title="An unexpected error occurred searching the installation.",
             start_immediately=False,
         )
         loader.setModal(False)
         loader.show()
-        def handle_search_completed(results_list: list[FileResource] | set[FileResource]):
+
+        def handle_search_completed(
+            results_list: list[FileResource] | set[FileResource],
+        ):
             if not results_list:
                 QMessageBox(
                     QMessageBox.Icon.Information,
@@ -245,6 +238,7 @@ class TLKEditor(Editor):
                     parent=self,
                 ).exec()
                 return
+            assert self._installation is not None
             results_dialog = FileResults(self, results_list, self._installation)
             results_dialog.show()
             results_dialog.activateWindow()
@@ -281,26 +275,16 @@ class TLKEditor(Editor):
         self.ui.soundEdit.setEnabled(False)
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds a TLK file from the model data.
-
-        Returns:
-        -------
-            tuple[bytes, bytes]: A tuple containing the TLK data and an empty bytes object
-
-        Processing Logic:
-        ----------------
-            - Iterate through each row in the model
-            - Extract the text and sound from each item
-            - Add an entry to the TLK object with the text and sound
-            - Write the TLK object to a byte array
-            - Return the byte array and an empty bytes object as a tuple.
-        """
         tlk = TLK()
         tlk.language = self.language
 
         for i in range(self.source_model.rowCount()):
-            text = self.source_model.item(i, 0).text()
-            sound = ResRef(self.source_model.item(i, 1).text())
+            col_zero_cell: QStandardItem | None = self.source_model.item(i, 0)
+            col_one_cell: QStandardItem | None = self.source_model.item(i, 1)
+            if col_zero_cell is None or col_one_cell is None:
+                continue
+            text: str = col_zero_cell.text()
+            sound: ResRef = ResRef(col_one_cell.text())
             tlk.entries.append(TLKEntry(text, sound))
 
         data = bytearray()
@@ -310,7 +294,10 @@ class TLKEditor(Editor):
     def insert(self):
         self.source_model.appendRow([QStandardItem(""), QStandardItem("")])
 
-    def do_filter(self, text: str):
+    def do_filter(
+        self,
+        text: str,
+    ):
         self.proxy_model.setFilterFixedString(text)
 
     def toggle_filter_box(self):
@@ -320,12 +307,6 @@ class TLKEditor(Editor):
             self.ui.searchEdit.setFocus()  # Activate the spinbox for immediate typing
             self.ui.searchEdit.selectAll()
 
-    def goto_line(self, line: int):
-        index = self.source_model.index(line, 0)
-        proxy_index: QModelIndex = self.proxy_model.mapFromSource(index)
-        self.ui.talkTable.scrollTo(proxy_index)
-        self.ui.talkTable.setCurrentIndex(proxy_index)
-
     def toggle_goto_box(self):
         is_visible: bool = self.ui.jumpBox.isVisible()
         self.ui.jumpBox.setVisible(not is_visible)
@@ -334,19 +315,12 @@ class TLKEditor(Editor):
             self.ui.jumpSpinbox.selectAll()
 
     def selection_changed(self):
-        """Handle selection changes in the talk table.
+        sel_model: QItemSelectionModel | None = self.ui.talkTable.selectionModel()
+        if sel_model is None:
+            return
+        selected: QItemSelection | None = sel_model.selection()
 
-        Processing Logic:
-        ----------------
-            - Check if any rows are selected in the talk table
-            - If no rows selected, disable text and sound editors
-            - If rows selected, enable text and sound editors
-            - Get selected row data from model
-            - Populate text and sound editors with data from selected row.
-        """
-        selected = self.ui.talkTable.selectionModel().selection()
-
-        if not selected.indexes():
+        if selected is None or not selected.indexes():
             self.ui.textEdit.setEnabled(False)
             self.ui.soundEdit.setEnabled(False)
             return
@@ -354,22 +328,33 @@ class TLKEditor(Editor):
         self.ui.textEdit.setEnabled(True)
         self.ui.soundEdit.setEnabled(True)
 
-        proxy_index = selected.indexes()[0]
-        source_index = self.proxy_model.mapToSource(proxy_index)
+        proxy_index: QModelIndex = selected.indexes()[0]
+        source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
         item: QStandardItem | None = self.source_model.itemFromIndex(source_index)
-
+        if item is None:
+            return
         text: str = item.text()
-        sound: str = self.source_model.item(source_index.row(), 1).text()
+        col_one_cell: QStandardItem | None = self.source_model.item(source_index.row(), 1)
+        if col_one_cell is None:
+            return
+        sound: str = col_one_cell.text()
 
         self.ui.textEdit.setPlainText(text)
         self.ui.soundEdit.setText(sound)
 
-    def updateEntry(self):
-        proxy_index = self.ui.talkTable.selectedIndexes()[0]
-        source_index = self.proxy_model.mapToSource(proxy_index)
+    def update_entry(self):
+        proxy_index: QModelIndex = self.ui.talkTable.selectedIndexes()[0]
+        source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
 
-        self.source_model.item(source_index.row(), 0).setText(self.ui.textEdit.toPlainText())
-        self.source_model.item(source_index.row(), 1).setText(self.ui.soundEdit.text())
+        col_zero_cell: QStandardItem | None = self.source_model.item(source_index.row(), 0)
+        if col_zero_cell is None:
+            return
+        col_zero_cell.setText(self.ui.textEdit.toPlainText())
+
+        col_one_cell: QStandardItem | None = self.source_model.item(source_index.row(), 1)
+        if col_one_cell is None:
+            return
+        col_one_cell.setText(self.ui.soundEdit.text())
 
 
 class LoaderDialog(QDialog):
@@ -379,37 +364,21 @@ class LoaderDialog(QDialog):
         file_data: bytes,
         model: QStandardItemModel,
     ):
-        """Initializes the loading dialog.
-
-        Args:
-        ----
-            parent: {The parent widget of the dialog}
-            file_data: {The data to load}
-            model: {The model to populate}.
-
-        Processing Logic:
-        ----------------
-            - Creates a progress bar to display loading progress
-            - Sets up the dialog layout and adds progress bar
-            - Starts a worker thread to load the data in the background
-            - Connects signals from worker to update progress bar.
-        """
         super().__init__(parent)
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
             | Qt.WindowType.WindowCloseButtonHint
-            | Qt.WindowType.WindowStaysOnTopHint
-            & ~Qt.WindowType.WindowContextHelpButtonHint
-            & ~Qt.WindowType.WindowMinMaxButtonsHint
+            | Qt.WindowType.WindowStaysOnTopHint & ~Qt.WindowType.WindowContextHelpButtonHint & ~Qt.WindowType.WindowMinMaxButtonsHint
         )
 
-        self._progress_bar = QProgressBar(self)
+        self._progress_bar: QProgressBar = QProgressBar(self)
         self._progress_bar.setMinimum(0)
         self._progress_bar.setMaximum(0)
         self._progress_bar.setTextVisible(False)
 
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self._progress_bar)
+        layout = QVBoxLayout()
+        layout.addWidget(self._progress_bar)
+        self.setLayout(layout)
 
         self.setWindowTitle("Loading...")
         self.setFixedSize(200, 40)
@@ -420,7 +389,7 @@ class LoaderDialog(QDialog):
         self.source_model: QStandardItemModel = QStandardItemModel()
         self.source_model.setColumnCount(2)
 
-        self.worker = LoaderWorker(file_data, model)
+        self.worker: LoaderWorker = LoaderWorker(file_data, model)
         self.worker.entryCount.connect(self.on_entry_count)
         self.worker.batch.connect(self.on_batch)
         self.worker.loaded.connect(self.on_loaded)
@@ -447,7 +416,7 @@ class LoaderDialog(QDialog):
         self,
         language: Language,
     ):
-        self.language = language
+        self.language: Language = language
 
     def on_loaded(self):
         self.close()
@@ -482,15 +451,4 @@ class LoaderWorker(QThread):
         self.loaded.emit()
 
     def run(self):
-        """Load tlk data from file in batches.
-
-        Processing Logic:
-        ----------------
-            - Reads timeline data from file
-            - Counts number of entries and emits count
-            - Loops through entries and batches data into lists of 200
-            - Emits batches and sleeps to allow UI to update
-            - Emits final batch
-            - Signals loading is complete.
-        """
         self.load_data()

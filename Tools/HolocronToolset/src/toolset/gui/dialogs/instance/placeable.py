@@ -4,8 +4,6 @@ import math
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
 from qtpy.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox
@@ -20,28 +18,19 @@ if TYPE_CHECKING:
 
 
 class PlaceableDialog(QDialog):
-    def __init__(self, parent: QWidget, placeable: GITPlaceable):
+    def __init__(
+        self,
+        parent: QWidget,
+        placeable: GITPlaceable,
+    ):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.WindowStaysOnTopHint & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint & ~QtCore.Qt.WindowType.WindowMinimizeButtonHint
+        )
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.instance.placeable import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.instance.placeable import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.instance.placeable import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.instance.placeable import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.dialogs.instance.placeable import Ui_Dialog
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -74,14 +63,21 @@ class PlaceableDialog(QDialog):
         self.placeable.bearing = math.radians(self.ui.bearingSpin.value())
         self.placeable.tweak_color = Color.from_rgb_integer(self.ui.colorSpin.value()) if self.ui.colorSpin.value() != 0 else None
 
-    def changeColor(self, colorSpin: LongSpinBox):
-        qcolor = QColorDialog.getColor(QColor(colorSpin.value()))
-        color = Color.from_rgb_integer(qcolor.rgb())
+    def changeColor(
+        self,
+        colorSpin: LongSpinBox,
+    ):
+        qcolor: QColor = QColorDialog.getColor(QColor(colorSpin.value()))
+        color: Color = Color.from_rgb_integer(qcolor.rgb())
         colorSpin.setValue(color.rgb_integer())
 
-    def redoColorImage(self, value: int, colorLabel: QLabel):
-        color = Color.from_bgr_integer(value)
+    def redoColorImage(
+        self,
+        value: int,
+        colorLabel: QLabel,
+    ):
+        color: Color = Color.from_bgr_integer(value)
         r, g, b = int(color.r * 255), int(color.g * 255), int(color.b * 255)
         data = bytes([r, g, b] * 16 * 16)
-        pixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format_RGB888))
+        pixmap: QPixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format_RGB888))
         colorLabel.setPixmap(pixmap)

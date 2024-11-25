@@ -7,19 +7,20 @@ from qtpy.QtWidgets import QFileDialog, QMenu, QMenuBar
 
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
+from toolset.gui.editor.base import Editor
 
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.type import ResourceType
     from toolset.gui.editor.base import Editor
 
 
 class EditorFile:
     def __init__(self, editor: Editor):
-        self.editor = editor
+        self.editor: Editor = editor
 
     def open(self):
         filepath_str, _filter = QFileDialog.getOpenFileName(self.editor, "Open file", "", self.editor._open_filter, "")

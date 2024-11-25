@@ -10,7 +10,7 @@ from holocron_ai.core.self_alignment import SelfAlignmentProcessor
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from typing_extensions import Self
+    from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.extract.installation import Installation
 
@@ -30,7 +30,7 @@ class CharacterAgent:
 
         # Load existing state if provided
         if save_dir:
-            self.load_state(save_dir)
+            self.load_state(installation, save_dir)
         else:
             # Process installation dialogs
             self.dialog_processor.process_installation()
@@ -62,7 +62,7 @@ class CharacterAgent:
 
         if aligned_response and alignment_score > 0.8:
             # High confidence in aligned response
-            response: str = aligned_response
+            response = aligned_response
         else:
             # Fallback to contextual response
             response: str | None = self.dialog_processor.get_contextual_response(query, len(recent_context))
@@ -100,26 +100,21 @@ class CharacterAgent:
         cls,
         installation: Installation,
         save_dir: Path,
-    ) -> Self | None:
+    ) -> Self:
         """Load agent state from disk."""
-        try:
-            instance: Self = cls(installation, None)  # Initialize without processing
+        instance: Self = cls(installation, None)  # Initialize without processing
 
-            # Load processor states
-            instance.dialog_processor = DialogProcessor.load_state(installation, save_dir)
-            instance.alignment_processor = SelfAlignmentProcessor.load_state(save_dir)
+        # Load processor states
+        instance.dialog_processor = DialogProcessor.load_state(installation, save_dir)
+        instance.alignment_processor = SelfAlignmentProcessor.load_state(save_dir)
 
-            # Load conversation history
-            state: dict[str, Any] = json.loads(save_dir.joinpath("agent_state.json").read_bytes())
+        # Load conversation history
+        state: dict[str, Any] = json.loads(save_dir.joinpath("agent_state.json").read_bytes())
 
-            instance.conversation_history = state["conversation_history"]
-            instance.context_window = state["context_window"]
+        instance.conversation_history = state["conversation_history"]
+        instance.context_window = state["context_window"]
 
-            return instance
-
-        except Exception as e:
-            print(f"Error loading agent state: {e}")
-            return None
+        return instance
 
     def reset_conversation(self) -> None:
         """Reset the conversation history."""

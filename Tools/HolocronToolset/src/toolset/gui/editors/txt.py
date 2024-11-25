@@ -42,7 +42,7 @@ class TXTEditor(Editor):
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        self._wordWrap: bool = False
+        self._word_wrap: bool = False
 
         from toolset.uic.qtpy.editors.txt import Ui_MainWindow
         self.ui = Ui_MainWindow()
@@ -53,7 +53,7 @@ class TXTEditor(Editor):
         self.new()
 
     def _setup_signals(self):
-        self.ui.actionWord_Wrap.triggered.connect(self.toggleWordWrap)
+        self.ui.actionWord_Wrap.triggered.connect(self.toggle_word_wrap)
 
     def load(
         self,
@@ -72,7 +72,11 @@ class TXTEditor(Editor):
         super().new()
         self.ui.textEdit.setPlainText("")
 
-    def toggleWordWrap(self):
-        self._wordWrap = not self._wordWrap
-        self.ui.actionWord_Wrap.setChecked(self._wordWrap)
-        self.ui.textEdit.setLineWrapMode(QPlainTextEdit.WidgetWidth if self._wordWrap else QPlainTextEdit.NoWrap)
+    def toggle_word_wrap(self):
+        self._word_wrap = not self._word_wrap
+        self.ui.actionWord_Wrap.setChecked(self._word_wrap)
+        self.ui.textEdit.setLineWrapMode(
+            QPlainTextEdit.LineWrapMode.WidgetWidth
+            if self._word_wrap
+            else QPlainTextEdit.LineWrapMode.NoWrap
+        )

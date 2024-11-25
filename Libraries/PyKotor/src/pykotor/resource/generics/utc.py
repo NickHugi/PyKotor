@@ -95,7 +95,7 @@ class UTC:
 
     BINARY_TYPE = ResourceType.UTC
 
-    def __init__(
+    def __init__(  # noqa: PLR0915
         self,
     ):
         # internal use only, to preserve the original order:

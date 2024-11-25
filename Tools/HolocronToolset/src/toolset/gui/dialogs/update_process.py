@@ -27,17 +27,20 @@ def run_progress_dialog(
 ) -> NoReturn:
     """Call this with multiprocessing.Process."""
     app = QApplication(sys.argv)
-    dialog = ProgressDialog(progress_queue, title)
-    icon = app.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation)
+    dialog: ProgressDialog = ProgressDialog(progress_queue, title)
+    icon: QIcon | None = app.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation)
     dialog.setWindowIcon(QIcon(icon))
     dialog.show()
     sys.exit(app.exec())
 
 
-def start_update_process(release: GithubRelease, download_url: str) -> None:
+def start_update_process(
+    release: GithubRelease,
+    download_url: str,
+) -> None:
     """Start the update process with progress dialog."""
-    progress_queue = Queue()
-    progress_process = multiprocessing.Process(
+    progress_queue: Queue = Queue()
+    progress_process: multiprocessing.Process = multiprocessing.Process(
         target=run_progress_dialog,
         args=(
             progress_queue,
@@ -53,7 +56,7 @@ def start_update_process(release: GithubRelease, download_url: str) -> None:
         progress_queue.put(data)
 
     def exitapp(kill_self_here: bool):  # noqa: FBT001
-        packaged_data = {"action": "shutdown", "data": {}}
+        packaged_data: dict[str, Any] = {"action": "shutdown", "data": {}}
         progress_queue.put(packaged_data)
         ProgressDialog.monitor_and_terminate(progress_process)
         gc.collect()

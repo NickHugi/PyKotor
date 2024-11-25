@@ -11,14 +11,14 @@ from sentence_transformers import SentenceTransformer
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from typing_extensions import Self
+    from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
 
 class SelfAlignmentProcessor:
     """Dynamic self-alignment processor without hardcoded patterns."""
 
     def __init__(self):
-        self.embedding_model = SentenceTransformer("all-mpnet-base-v2")
+        self.embedding_model: SentenceTransformer = SentenceTransformer("all-mpnet-base-v2")
         self.dialog_memory: list[tuple[str, np.ndarray]] = []
         self.context_memory: list[tuple[str, np.ndarray]] = []
         self.alignment_threshold: float = 0.75
@@ -109,20 +109,14 @@ class SelfAlignmentProcessor:
     def load_state(
         cls,
         save_path: Path,
-    ) -> Self | None:
+    ) -> Self:
         """Load alignment state from disk."""
-        try:
-            instance: Self = cls()
+        instance: Self = cls()
 
-            state: dict[str, Any] = json.loads(save_path.joinpath("alignment_state.json").read_bytes())
+        state: dict[str, Any] = json.loads(save_path.joinpath("alignment_state.json").read_bytes())
 
-            instance.dialog_memory = [(text, np.array(emb)) for text, emb in state["dialog_memory"]]
-            instance.context_memory = [(text, np.array(emb)) for text, emb in state["context_memory"]]
-            instance.alignment_threshold = state["alignment_threshold"]
+        instance.dialog_memory = [(text, np.array(emb)) for text, emb in state["dialog_memory"]]
+        instance.context_memory = [(text, np.array(emb)) for text, emb in state["context_memory"]]
+        instance.alignment_threshold = state["alignment_threshold"]
 
-        except Exception as e:  # noqa: BLE001
-            print(f"Error loading alignment state: {e}")
-            return None
-
-        else:
-            return instance
+        return instance

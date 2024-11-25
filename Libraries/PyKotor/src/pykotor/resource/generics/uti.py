@@ -13,30 +13,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFStruct
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
-ARMOR_BASE_ITEMS = {
-    35,
-    36,
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43,
-    53,
-    58,
-    63,
-    64,
-    65,
-    69,
-    71,
-    85,
-    89,
-    98,
-    100,
-    102,
-    103,
-}
+ARMOR_BASE_ITEMS: set[int] = {35, 36, 37, 38, 39, 40, 41, 42, 43, 53, 58, 63, 64, 65, 69, 71, 85, 89, 98, 100, 102, 103}
 """ Base Item IDs that are considered armor as per the 2DA files. """
 
 
@@ -45,9 +22,7 @@ class UTI:
 
     BINARY_TYPE = ResourceType.UTI
 
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         self.resref: ResRef = ResRef.from_blank()
         self.base_item: int = 0
         self.name: LocalizedString = LocalizedString.from_invalid()
@@ -82,9 +57,7 @@ class UTI:
 
 
 class UTIProperty:
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         self.cost_table: int = 0
         self.cost_value: int = 0
         self.param1: int = 0
@@ -95,17 +68,13 @@ class UTIProperty:
         self.upgrade_type: int | None = None
 
 
-def construct_uti_from_struct(
-    struct: GFFStruct,
-) -> UTI:
+def construct_uti_from_struct(struct: GFFStruct) -> UTI:
     new_gff = GFF(GFFContent.UTI)
     new_gff.root = deepcopy(struct)
     return construct_uti(new_gff)
 
 
-def construct_uti(
-    gff: GFF,
-) -> UTI:
+def construct_uti(gff: GFF) -> UTI:
     uti = UTI()
 
     root = gff.root

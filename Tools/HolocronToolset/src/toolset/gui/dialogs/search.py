@@ -16,6 +16,8 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.utils.window import open_resource_editor
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from qtpy.QtWidgets import QWidget
 
 
@@ -37,7 +39,11 @@ class FileSearchQuery:
 class FileSearcher(QDialog):
     file_results = Signal(list, HTInstallation)  # pyright: ignore[reportPrivateImportUsage]
 
-    def __init__(self, parent: QWidget | None, installations: dict[str, HTInstallation]):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installations: dict[str, HTInstallation],
+    ):
         super().__init__(parent)
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
@@ -58,9 +64,12 @@ class FileSearcher(QDialog):
         # Connect the Select All checkbox signal to the slot
         self.ui.selectAllCheck.stateChanged.connect(self.toggle_all_checkboxes)
 
-    def toggle_all_checkboxes(self, state: Qt.CheckState):
+    def toggle_all_checkboxes(
+        self,
+        state: Qt.CheckState,
+    ):
         """Toggles the state of all checkboxes based on the Select All checkbox state."""
-        check_state = state == Qt.CheckState.Checked
+        check_state: bool = state == Qt.CheckState.Checked
         self.ui.typeARECheck.setChecked(check_state)
         self.ui.typeGITCheck.setChecked(check_state)
         self.ui.typeIFOCheck.setChecked(check_state)
@@ -133,7 +142,10 @@ class FileSearcher(QDialog):
 
         self.search(query)
 
-    def search(self, query: FileSearchQuery):
+    def search(
+        self,
+        query: FileSearchQuery,
+    ):
         """Searches files and resources for text.
 
         Args:
@@ -218,10 +230,10 @@ class FileResults(QDialog):
         self.installation: HTInstallation = installation
 
         for result in results:
-            filename = result.filename()
-            filepath = result.filepath()
-            parent_name = filepath.name if filename != filepath.name else f"{filepath.parent.name}"
-            item = QListWidgetItem(f"{parent_name}/{filename}")
+            filename: str = result.filename()
+            filepath: Path = result.filepath()
+            parent_name: str = filepath.name if filename != filepath.name else f"{filepath.parent.name}"
+            item: QListWidgetItem = QListWidgetItem(f"{parent_name}/{filename}")
             item.setData(Qt.ItemDataRole.UserRole, result)
             item.setToolTip(str(result.filepath()))
             self.ui.resultList.addItem(item)  # type: ignore[arg-type]
@@ -241,7 +253,7 @@ class FileResults(QDialog):
             - Sets the selection attribute to the data
             - Calls the parent accept method.
         """
-        item = self.ui.resultList.currentItem()
+        item: QListWidgetItem | None = self.ui.resultList.currentItem()
         if item:
             self.selection = item.data(Qt.ItemDataRole.UserRole)
             self.sig_searchresults_selected.emit(self.selection)

@@ -7,11 +7,16 @@ from pykotor.resource.formats.key.key_data import KEY, BifEntry, KeyEntry
 from pykotor.resource.type import ResourceReader, ResourceType, ResourceWriter, autoclose
 
 if TYPE_CHECKING:
-    from pykotor.resource.type import TARGET_TYPES
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class KEYBinaryReader(ResourceReader):
-    def __init__(self, source: str, offset: int, size: int):
+    def __init__(
+        self,
+        source: SOURCE_TYPES,
+        offset: int,
+        size: int,
+    ):
         super().__init__(source, offset, size)
         self.key.bif_entries = []
         self.key: KEY = KEY()
@@ -63,6 +68,7 @@ class KEYBinaryWriter(ResourceWriter):
         self.key_entries: list[KEY] = []
         self.key: KEY = key
 
+    @autoclose
     def write(self):
         self._write_header()
         self._write_file_table()

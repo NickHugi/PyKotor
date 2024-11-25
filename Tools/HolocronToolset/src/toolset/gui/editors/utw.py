@@ -16,11 +16,16 @@ if TYPE_CHECKING:
 
     from qtpy.QtWidgets import QWidget
 
+    from pykotor.common.module import GFF
     from toolset.data.installation import HTInstallation
 
 
 class UTWEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initialize Waypoint Editor window.
 
         Args:
@@ -54,16 +59,22 @@ class UTWEditor(Editor):
     def _setup_signals(self):
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
-        self.ui.noteChangeButton.clicked.connect(self.changeNote)
+        self.ui.noteChangeButton.clicked.connect(self.change_note)
 
     def _setup_installation(self, installation: HTInstallation):
         self._installation = installation
         self.ui.nameEdit.set_installation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
-        utw = read_utw(data)
+        utw: UTW = read_utw(data)
         self._loadUTW(utw)
 
     def _loadUTW(self, utw: UTW):
@@ -80,7 +91,7 @@ class UTWEditor(Editor):
             - Load comment text into plain text edit
             - No return, simply loads UI elements from UTW object.
         """
-        self._utw = utw
+        self._utw: UTW = utw
 
         # Basic
         self.ui.nameEdit.set_locstring(utw.name)
@@ -127,7 +138,7 @@ class UTWEditor(Editor):
         utw.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
-        gff = dismantle_utw(utw)
+        gff: GFF = dismantle_utw(utw)
         write_gff(gff, data)
 
         return data, b""
@@ -142,7 +153,7 @@ class UTWEditor(Editor):
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
-    def changeNote(self):
+    def change_note(self):
         assert self._installation is not None
         try:
             dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)  # pyright: ignore[reportArgumentType]

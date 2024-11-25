@@ -20,26 +20,51 @@ if TYPE_CHECKING:
 BUILTIN_TYPES = (TypeVar, type, object, int, float, str, list, dict, set, tuple, frozenset, bool, bytes, complex, range, slice, type(Ellipsis), type(None))
 BUILTIN_IDS = tuple(id(t) for t in BUILTIN_TYPES)
 SENTINEL = object()
+
+
 # Safe utility functions
-def safe_type_getattr(obj: object, name: str) -> Any | object:
+def safe_type_getattr(
+    obj: object,
+    name: str,
+) -> Any | object:
     try:
         return type.__getattribute__(obj, name)
     except (AttributeError, TypeError):
         return SENTINEL
-def safe_object_getattr(cls: type, name: str) -> Any | object:
+
+
+def safe_object_getattr(
+    cls: type,
+    name: str,
+) -> Any | object:
     try:
         return object.__getattribute__(cls, name)
     except (AttributeError, TypeError):
         return SENTINEL
 
-def safe_type_setattr(cls: Any, name: str, value: Any):
+
+def safe_type_setattr(
+    cls: Any,
+    name: str,
+    value: Any,
+):
     with contextlib.suppress(AttributeError, TypeError):
         type.__setattr__(cls, name, value)
-def safe_object_setattr(obj: Any, name: str, value: Any):
+
+
+def safe_object_setattr(
+    obj: Any,
+    name: str,
+    value: Any,
+):
     with contextlib.suppress(AttributeError, TypeError):
         object.__setattr__(obj, name, value)
 
-def fallback_unknown_getattr(unk: Any, name: str) -> Any | object:
+
+def fallback_unknown_getattr(
+    unk: Any,
+    name: str,
+) -> Any | object:
     test1 = safe_object_getattr(unk, name)
     if test1 is not SENTINEL:
         return test1
@@ -52,17 +77,24 @@ def fallback_unknown_getattr(unk: Any, name: str) -> Any | object:
         return SENTINEL
     else:
         return test3
+
+
 def fallback_unknown_getmro(unk: Any) -> tuple[type, ...] | object:
     obj_cls = fallback_unknown_getattr(unk, "__class__")
     return fallback_unknown_getattr(obj_cls, "__mro__") if obj_cls is SENTINEL else obj_cls
 
-def safe_isinstance(obj: Any, cls: type) -> bool | object:  # sourcery skip: assign-if-exp, reintroduce-else
+
+def safe_isinstance(
+    obj: Any,
+    cls: type,
+) -> bool | object:  # sourcery skip: assign-if-exp, reintroduce-else
     assert isinstance(cls, type)
     obj_cls_mro: tuple[type, ...] | object = fallback_unknown_getmro(obj)
     try:
         return cls in obj_cls_mro
     except Exception:  # noqa: BLE001
         return SENTINEL
+
 
 def safe_dir(obj_or_cls: Any) -> list[str]:  # sourcery skip: assign-if-exp, reintroduce-else
     obj_or_cls_dict: dict[str, Any] | object = fallback_unknown_getattr(obj_or_cls, "__dict__")
@@ -92,10 +124,10 @@ def get_app_start_time() -> float:
         return win_get_interpreter_start_time()
     # On Unix-based systems, read /proc/self/stat for process start time
     with open("/proc/self/stat", errors="replace") as f:  # noqa: PTH123
-        fields = f.read().split()
-        start_time_ticks = int(fields[21])
-        clock_ticks_per_second = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
-        start_time = start_time_ticks / clock_ticks_per_second
+        fields: list[str] = f.read().split()
+        start_time_ticks: int = int(fields[21])
+        clock_ticks_per_second: int = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
+        start_time: float = start_time_ticks / clock_ticks_per_second
         return time.time() - (time.time() - start_time)
 
 
@@ -148,28 +180,27 @@ def win_get_interpreter_start_time() -> float:
         raise ctypes.WinError(ctypes.get_last_error())
 
     # Combine the low and high parts of the FILETIME structure to get the creation time in 100-nanosecond intervals
-    creation_time_100ns = (creation_time.dwLowDateTime + (creation_time.dwHighDateTime << 32))
+    creation_time_100ns: int = creation_time.dwLowDateTime + (creation_time.dwHighDateTime << 32)
 
     # Convert to seconds by dividing by 10,000,000 (100-nanosecond intervals per second)
-    creation_time_seconds = creation_time_100ns / 1e7
+    creation_time_seconds: float = creation_time_100ns / 1e7
 
     # Convert from FILETIME epoch (January 1, 1601) to Unix epoch (January 1, 1970)
     unix_epoch_offset = 11644473600  # Seconds between FILETIME epoch and Unix epoch
-    creation_time_unix = creation_time_seconds - unix_epoch_offset
+    creation_time_unix: float = creation_time_seconds - unix_epoch_offset
 
     return creation_time_unix
 
 
 def is_builtin_class_instance(obj: object) -> bool:
     """Check if the object is an instance of a built-in class."""
-    return (
-        obj.__class__.__module__ in ("builtins", "__builtin__")
-        or obj.__class__.__name__ == "builtin_function_or_method"
-    )
+    return obj.__class__.__module__ in ("builtins", "__builtin__") or obj.__class__.__name__ == "builtin_function_or_method"
+
 
 def is_builtin_module(module: ModuleType) -> bool:
     """Check if the module is a built-in module."""
     return module.__name__ in sys.builtin_module_names
+
 
 def is_standard_library_module(module: ModuleType) -> bool:
     """Check if the module is part of the standard library."""
@@ -179,28 +210,27 @@ def is_standard_library_module(module: ModuleType) -> bool:
         return file_path.startswith(sys.base_prefix) and "site-packages" not in file_path.lower()
     return False
 
+
 def is_site_packages_module(file_path_str: str) -> bool:
     lower_filepath = file_path_str.lower()
-    return (
-        "site-packages" in lower_filepath
-        or "dist-packages" in lower_filepath
-    )
+    return "site-packages" in lower_filepath or "dist-packages" in lower_filepath
 
-def reimport_dependencies(reloaded_module: ModuleType, importing_module: ModuleType):
+
+def reimport_dependencies(
+    reloaded_module: ModuleType,
+    importing_module: ModuleType,
+):
     for name, value in vars(reloaded_module).items():
         if name in importing_module.__dict__:
             importing_module.__dict__[name] = value
 
-def find_importing_modules(target_module_name: str) -> list[ModuleType]:
-    importing_modules: list[ModuleType] = [
-        name
-        for name, module in sys.modules.items()
-        if module
-        and hasattr(module, "__file__")
-        and target_module_name in sys.modules
-        and target_module_name in module.__dict__.values()
-    ]
+
+def find_importing_modules(
+    target_module_name: str,
+) -> list[ModuleType]:
+    importing_modules: list[ModuleType] = [name for name, module in sys.modules.items() if module and hasattr(module, "__file__") and target_module_name in sys.modules and target_module_name in module.__dict__.values()]
     return importing_modules
+
 
 def debug_reload_pymodules():
     """Reload all imported modules that have changed on disk and log their names and file paths."""
@@ -210,10 +240,13 @@ def debug_reload_pymodules():
         mtime = os.path.getmtime(file_path)  # noqa: PTH204
         return mtime
 
-    def update_class_instances(old_module: ModuleType, new_module: ModuleType):
+    def update_class_instances(
+        old_module: ModuleType,
+        new_module: ModuleType,
+    ):
         """Update instances of classes from the old module to use the new class definitions from the reloaded module."""
         # Mapping from old classes to new classes
-        class_map = {}
+        class_map: dict[int, type] = {}
 
         # Populate the class mapping using id() to avoid unhashable issues
         for attr_name in safe_dir(old_module):
@@ -235,10 +268,10 @@ def debug_reload_pymodules():
                     object.__setattr__(obj, "__class__", new_class)
                 except TypeError:
                     type.__setattr__(obj, "__class__", new_class)
-                #if obj_cls.__name__ not in {"TypeVar", "PurePathType"}:
+                # if obj_cls.__name__ not in {"TypeVar", "PurePathType"}:
                 #    print(f"Reloaded class '{new_class.__name__}'")
             except TypeError as e:
-                ... #print(f"Failed to update instance of type '{obj_cls.__name__}': {e}", file=sys.__stderr__)
+                ...  # print(f"Failed to update instance of type '{obj_cls.__name__}': {e}", file=sys.__stderr__)
             except Exception as e:  # noqa: BLE001
                 print(f"Unexpected error occurred while updating instance of {obj_cls.__name__}: {e}", file=sys.__stderr__)
 
@@ -288,30 +321,33 @@ def debug_reload_pymodules():
                 continue
             if is_builtin_class_instance(obj):
                 continue
-            #try:
+            # try:
             #    update_referents(obj)
-            #except Exception as e:  # noqa: PERF203, BLE001
+            # except Exception as e:  # noqa: PERF203, BLE001
             #    print(f"Error updating referents for object of type '{obj.__class__.__name__}'): {e}", file=sys.__stderr__)
 
-    def quick_update_class_instances(old_module: ModuleType, new_module: ModuleType):
-        old_classes = {}
-        new_classes = {}
+    def quick_update_class_instances(  # noqa: C901
+        old_module: ModuleType,
+        new_module: ModuleType,
+    ):
+        old_classes: dict[str, type] = {}
+        new_classes: dict[str, type] = {}
         for name in dir(old_module):
-            old_cls = fallback_unknown_getattr(old_module, name)
+            old_cls: type | object = fallback_unknown_getattr(old_module, name)
             if not isinstance(old_cls, type):
                 continue
         for name in dir(new_module):
-            new_cls = fallback_unknown_getattr(new_module, name)
+            new_cls: type | object = fallback_unknown_getattr(new_module, name)
             if safe_isinstance(new_cls, type):
                 continue
         for obj in gc.get_objects():
             for name, old_class in old_classes.items():
-                new_class = new_classes.get(name)
+                new_class: type | None = new_classes.get(name)
                 if new_class:
                     if safe_isinstance(obj, old_class):
                         obj.__class__ = new_class
                     obj_dict: dict[str, Any] | object = fallback_unknown_getattr(obj, "__dict__")
-                    if obj_dict is not SENTINEL:
+                    if obj_dict is not SENTINEL and isinstance(obj_dict, dict):
                         for attr_name, old_cls in obj_dict.items():
                             if old_cls is old_class:
                                 setattr(obj, attr_name, new_class)
@@ -338,7 +374,7 @@ def debug_reload_pymodules():
             if current_mtime is SENTINEL:
                 current_mtime = app_start_time
                 safe_object_setattr(loaded_module, "__mtime__", last_file_modified_time)
-            if last_file_modified_time <= current_mtime:
+            if isinstance(last_file_modified_time, float) and isinstance(current_mtime, float) and last_file_modified_time <= current_mtime:
                 continue  # No changes on disk, skip reloading
             logic_to_use = 0
             if logic_to_use < 1:

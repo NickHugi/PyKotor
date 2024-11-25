@@ -14,12 +14,16 @@ if TYPE_CHECKING:
 
     from qtpy.QtWidgets import QLineEdit, QWidget
 
-    from pykotor.extract.installation import Installation
     from pykotor.extract.talktable import StringResult
+    from toolset.data.installation import HTInstallation
 
 
 class SSFEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: Installation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initialize Soundset Editor window.
 
         Args:
@@ -41,6 +45,7 @@ class SSFEditor(Editor):
         self._talktable: TalkTable | None = installation.talktable() if installation else None
 
         from toolset.uic.qtpy.editors.ssf import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
@@ -61,38 +66,44 @@ class SSFEditor(Editor):
             - Connects valueChanged signals from spin boxes to updateTextBoxes method
             - Connects triggered signal from actionSetTLK to selectTalkTable method
         """
-        self.ui.battlecry1StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.battlecry2StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.battlecry3StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.battlecry4StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.battlecry5StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.battlecry6StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.select1StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.select2StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.select3StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.attack1StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.attack2StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.attack3StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.pain1StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.pain2StrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.lowHpStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.deadStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.criticalStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.immuneStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.layMineStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.disarmMineStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.beginStealthStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.beginSearchStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.beginUnlockStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.unlockFailedStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.unlockSuccessStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.partySeparatedStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.rejoinPartyStrrefSpin.valueChanged.connect(self.updateTextBoxes)
-        self.ui.poisonedStrrefSpin.valueChanged.connect(self.updateTextBoxes)
+        self.ui.battlecry1StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.battlecry2StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.battlecry3StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.battlecry4StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.battlecry5StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.battlecry6StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.select1StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.select2StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.select3StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.attack1StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.attack2StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.attack3StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.pain1StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.pain2StrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.lowHpStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.deadStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.criticalStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.immuneStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.layMineStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.disarmMineStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.beginStealthStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.beginSearchStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.beginUnlockStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.unlockFailedStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.unlockSuccessStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.partySeparatedStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.rejoinPartyStrrefSpin.valueChanged.connect(self.update_text_boxes)
+        self.ui.poisonedStrrefSpin.valueChanged.connect(self.update_text_boxes)
 
-        self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
+        self.ui.actionSetTLK.triggered.connect(self.select_talk_table)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads sound data from an SSF file.
 
         Args:
@@ -110,34 +121,34 @@ class SSFEditor(Editor):
         super().load(filepath, resref, restype, data)
         ssf: SSF = read_ssf(data)
 
-        self.ui.battlecry1StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_1))
-        self.ui.battlecry2StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_2))
-        self.ui.battlecry3StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_3))
-        self.ui.battlecry4StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_4))
-        self.ui.battlecry5StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_5))
-        self.ui.battlecry6StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_6))
-        self.ui.select1StrrefSpin.setValue(ssf.get(SSFSound.SELECT_1))
-        self.ui.select2StrrefSpin.setValue(ssf.get(SSFSound.SELECT_2))
-        self.ui.select3StrrefSpin.setValue(ssf.get(SSFSound.SELECT_3))
-        self.ui.attack1StrrefSpin.setValue(ssf.get(SSFSound.ATTACK_GRUNT_1))
-        self.ui.attack2StrrefSpin.setValue(ssf.get(SSFSound.ATTACK_GRUNT_2))
-        self.ui.attack3StrrefSpin.setValue(ssf.get(SSFSound.ATTACK_GRUNT_3))
-        self.ui.pain1StrrefSpin.setValue(ssf.get(SSFSound.PAIN_GRUNT_1))
-        self.ui.pain2StrrefSpin.setValue(ssf.get(SSFSound.PAIN_GRUNT_2))
-        self.ui.lowHpStrrefSpin.setValue(ssf.get(SSFSound.LOW_HEALTH))
-        self.ui.deadStrrefSpin.setValue(ssf.get(SSFSound.DEAD))
-        self.ui.criticalStrrefSpin.setValue(ssf.get(SSFSound.CRITICAL_HIT))
-        self.ui.immuneStrrefSpin.setValue(ssf.get(SSFSound.TARGET_IMMUNE))
-        self.ui.layMineStrrefSpin.setValue(ssf.get(SSFSound.LAY_MINE))
-        self.ui.disarmMineStrrefSpin.setValue(ssf.get(SSFSound.DISARM_MINE))
-        self.ui.beginSearchStrrefSpin.setValue(ssf.get(SSFSound.BEGIN_SEARCH))
-        self.ui.beginUnlockStrrefSpin.setValue(ssf.get(SSFSound.BEGIN_UNLOCK))
-        self.ui.beginStealthStrrefSpin.setValue(ssf.get(SSFSound.BEGIN_STEALTH))
-        self.ui.unlockSuccessStrrefSpin.setValue(ssf.get(SSFSound.UNLOCK_SUCCESS))
-        self.ui.unlockFailedStrrefSpin.setValue(ssf.get(SSFSound.UNLOCK_FAILED))
-        self.ui.partySeparatedStrrefSpin.setValue(ssf.get(SSFSound.SEPARATED_FROM_PARTY))
-        self.ui.rejoinPartyStrrefSpin.setValue(ssf.get(SSFSound.REJOINED_PARTY))
-        self.ui.poisonedStrrefSpin.setValue(ssf.get(SSFSound.POISONED))
+        self.ui.battlecry1StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_1) or 0)
+        self.ui.battlecry2StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_2) or 0)
+        self.ui.battlecry3StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_3) or 0)
+        self.ui.battlecry4StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_4) or 0)
+        self.ui.battlecry5StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_5) or 0)
+        self.ui.battlecry6StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_6) or 0)
+        self.ui.select1StrrefSpin.setValue(ssf.get(SSFSound.SELECT_1) or 0)
+        self.ui.select2StrrefSpin.setValue(ssf.get(SSFSound.SELECT_2) or 0)
+        self.ui.select3StrrefSpin.setValue(ssf.get(SSFSound.SELECT_3) or 0)
+        self.ui.attack1StrrefSpin.setValue(ssf.get(SSFSound.ATTACK_GRUNT_1) or 0)
+        self.ui.attack2StrrefSpin.setValue(ssf.get(SSFSound.ATTACK_GRUNT_2) or 0)
+        self.ui.attack3StrrefSpin.setValue(ssf.get(SSFSound.ATTACK_GRUNT_3) or 0)
+        self.ui.pain1StrrefSpin.setValue(ssf.get(SSFSound.PAIN_GRUNT_1) or 0)
+        self.ui.pain2StrrefSpin.setValue(ssf.get(SSFSound.PAIN_GRUNT_2) or 0)
+        self.ui.lowHpStrrefSpin.setValue(ssf.get(SSFSound.LOW_HEALTH) or 0)
+        self.ui.deadStrrefSpin.setValue(ssf.get(SSFSound.DEAD) or 0)
+        self.ui.criticalStrrefSpin.setValue(ssf.get(SSFSound.CRITICAL_HIT) or 0)
+        self.ui.immuneStrrefSpin.setValue(ssf.get(SSFSound.TARGET_IMMUNE) or 0)
+        self.ui.layMineStrrefSpin.setValue(ssf.get(SSFSound.LAY_MINE) or 0)
+        self.ui.disarmMineStrrefSpin.setValue(ssf.get(SSFSound.DISARM_MINE) or 0)
+        self.ui.beginSearchStrrefSpin.setValue(ssf.get(SSFSound.BEGIN_SEARCH) or 0)
+        self.ui.beginUnlockStrrefSpin.setValue(ssf.get(SSFSound.BEGIN_UNLOCK) or 0)
+        self.ui.beginStealthStrrefSpin.setValue(ssf.get(SSFSound.BEGIN_STEALTH) or 0)
+        self.ui.unlockSuccessStrrefSpin.setValue(ssf.get(SSFSound.UNLOCK_SUCCESS) or 0)
+        self.ui.unlockFailedStrrefSpin.setValue(ssf.get(SSFSound.UNLOCK_FAILED) or 0)
+        self.ui.partySeparatedStrrefSpin.setValue(ssf.get(SSFSound.SEPARATED_FROM_PARTY) or 0)
+        self.ui.rejoinPartyStrrefSpin.setValue(ssf.get(SSFSound.REJOINED_PARTY) or 0)
+        self.ui.poisonedStrrefSpin.setValue(ssf.get(SSFSound.POISONED) or 0)
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds sound data from UI values.
@@ -224,7 +235,7 @@ class SSFEditor(Editor):
         self.ui.rejoinPartyStrrefSpin.setValue(0)
         self.ui.poisonedStrrefSpin.setValue(0)
 
-    def updateTextBoxes(self):
+    def update_text_boxes(self):
         """Updates text boxes with sound and text from talktable.
 
         Args:
@@ -278,8 +289,8 @@ class SSFEditor(Editor):
             pair[0].setText(str(sound))
             pair[1].setText(text)
 
-    def selectTalkTable(self):
+    def select_talk_table(self):
         filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
         if filepath:
             self._talktable = TalkTable(filepath)
-        self.updateTextBoxes()
+        self.update_text_boxes()

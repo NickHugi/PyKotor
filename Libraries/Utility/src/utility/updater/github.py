@@ -105,9 +105,9 @@ class AbstractAPIResult(ABC):  # noqa: B024
             if isinstance(node, ast.Name):
                 # Map 'list', 'dict' to typing versions when used in type annotations
                 if node.id == "list":
-                    return typing.List
+                    return list
                 if node.id == "dict":
-                    return typing.Dict
+                    return dict
                 if node.id == "None":
                     return type(None)
                 # Check builtins and typing module for other types

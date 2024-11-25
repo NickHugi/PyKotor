@@ -12,3 +12,16 @@ from pykotor.resource.formats.mdl.io_mdl_ascii import (
     MDLAsciiWriter,
 )
 from pykotor.resource.formats.mdl.mdl_auto import bytes_mdl, write_mdl, read_mdl
+
+__all__ = [
+    "MDL",
+    "MDLAsciiReader",
+    "MDLAsciiWriter",
+    "MDLBinaryReader",
+    "MDLBinaryWriter",
+    "MDLMesh",
+    "MDLNode",
+    "bytes_mdl",
+    "read_mdl",
+    "write_mdl",
+]

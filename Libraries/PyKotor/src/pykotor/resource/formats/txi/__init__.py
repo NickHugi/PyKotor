@@ -4,11 +4,11 @@ from .io_txi import TXIBinaryReader, TXIBinaryWriter
 
 __all__ = [
     "TXI",
-    "TXIFeatures",
-    "TXICommand",
-    "read_txi",
-    "write_txi",
-    "bytes_txi",
     "TXIBinaryReader",
-    "TXIBinaryWriter"
+    "TXIBinaryWriter",
+    "TXICommand",
+    "TXIFeatures",
+    "bytes_txi",
+    "read_txi",
+    "write_txi"
 ]

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from torch import Tensor
-    from typing_extensions import Self
+    from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
 
 @dataclass
@@ -70,11 +70,11 @@ class DITTOFramework:
 
         # Calculate average similarity with preceding context
         prec_scores: list[float] = [np.dot(dialog_emb, p_emb) / (np.linalg.norm(dialog_emb) * np.linalg.norm(p_emb)) for p_emb in preceding_emb]
-        prec_alignment: float = np.mean(prec_scores) if prec_scores else 0.0
+        prec_alignment: float = float(np.mean(prec_scores)) if prec_scores else 0.0
 
         # Calculate average similarity with following context
         foll_scores: list[float] = [np.dot(dialog_emb, f_emb) / (np.linalg.norm(dialog_emb) * np.linalg.norm(f_emb)) for f_emb in following_emb]
-        foll_alignment: float = np.mean(foll_scores) if foll_scores else 0.0
+        foll_alignment: float = float(np.mean(foll_scores)) if foll_scores else 0.0
 
         # Combine scores with weights favoring preceding context slightly more
         alignment_score: float = 0.6 * prec_alignment + 0.4 * foll_alignment
@@ -129,28 +129,25 @@ class DITTOFramework:
             json.dump(self.alignment_scores, f)
 
     @classmethod
-    def load_framework_state(cls, save_path: Path) -> DITTOFramework | None:
+    def load_framework_state(
+        cls,
+        save_path: Path,
+    ) -> Self:
         """Load the framework state from disk."""
-        try:
-            instance: Self = cls()
+        instance: Self = cls()
 
-            # Load dialog contexts
-            with save_path.joinpath("dialog_contexts.json").open() as f:
-                contexts_data: list[dict[str, Any]] = json.load(f)
-                instance.dialog_contexts = [DialogContext(**ctx_data) for ctx_data in contexts_data]
+        # Load dialog contexts
+        with save_path.joinpath("dialog_contexts.json").open() as f:
+            contexts_data: list[dict[str, Any]] = json.load(f)
+            instance.dialog_contexts = [DialogContext(**ctx_data) for ctx_data in contexts_data]
 
-            # Load embeddings
-            with save_path.joinpath("dialog_embeddings.json").open() as f:
-                embeddings_data: dict[str, list[float]] = json.load(f)
-                instance.dialog_embeddings = {text: np.array(emb) for text, emb in embeddings_data.items()}
+        # Load embeddings
+        with save_path.joinpath("dialog_embeddings.json").open() as f:
+            embeddings_data: dict[str, list[float]] = json.load(f)
+            instance.dialog_embeddings = {text: np.array(emb) for text, emb in embeddings_data.items()}
 
-            # Load alignment scores
-            with save_path.joinpath("alignment_scores.json").open() as f:
-                instance.alignment_scores = json.load(f)
+        # Load alignment scores
+        with save_path.joinpath("alignment_scores.json").open() as f:
+            instance.alignment_scores = json.load(f)
 
-        except Exception as e:  # noqa: BLE001
-            print(f"Error loading framework state: {e}")
-            return None
-
-        else:
-            return instance
+        return instance

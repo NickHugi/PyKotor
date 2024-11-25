@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import json
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pykotor.resource.formats.lip.lip_data import LIP, LIPShape
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict
+    from typing_extensions import TypedDict  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
@@ -30,7 +30,7 @@ class LIPJSONReader(ResourceReader):
         size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._json: dict = {}
+        self._json: dict[str, Any] = {}
         self._lip: LIP | None = None
 
     @autoclose

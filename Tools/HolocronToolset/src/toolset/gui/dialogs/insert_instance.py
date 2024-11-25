@@ -27,6 +27,8 @@ from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
+    from PyQt6.QtGui import QColor
+    from PyQt6.QtWidgets import QPushButton
     from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
@@ -35,7 +37,13 @@ if TYPE_CHECKING:
 
 
 class InsertInstanceDialog(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation, module: Module, restype: ResourceType):
+    def __init__(
+        self,
+        parent: QWidget,
+        installation: HTInstallation,
+        module: Module,
+        restype: ResourceType,
+    ):
         """Initialize a resource editor dialog.
 
         Args:
@@ -107,8 +115,8 @@ class InsertInstanceDialog(QDialog):
             - Loops through module capsules and nested resources, adding matching type
             - Selects first item if list is populated.
         """
-        palette = self.palette()  # Get the current application palette if needed
-        text_color = palette.color(QPalette.ColorRole.WindowText)
+        palette: QPalette = self.palette()  # Get the current application palette if needed
+        text_color: QColor = palette.color(QPalette.ColorRole.WindowText)
         for resource in self._installation.core_resources():
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
@@ -199,7 +207,7 @@ class InsertInstanceDialog(QDialog):
         self.ui.resrefEdit.setEnabled(not self.ui.reuseResourceRadio.isChecked())
 
         if self.ui.reuseResourceRadio.isChecked():
-            button = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
+            button: QPushButton | None = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
             assert button is not None, "buttonBox does not have an OK button assigned."
             button.setEnabled(True)
 
@@ -215,10 +223,10 @@ class InsertInstanceDialog(QDialog):
 
     def on_resource_selected(self):
         """Updates the dynamic text label when a resource is selected."""
-        selected_items = self.ui.resourceList.selectedItems()
+        selected_items: list[QListWidgetItem] = self.ui.resourceList.selectedItems()
         if selected_items:
             resource: FileResource = selected_items[0].data(Qt.ItemDataRole.UserRole)
-            summary_text = self.generate_resource_summary(resource)
+            summary_text: str = self.generate_resource_summary(resource)
             self.ui.dynamicTextLabel.setText(summary_text)
             if resource.restype() is ResourceType.UTC and self.global_settings.showPreviewUTC:
                 self.ui.previewRenderer.setCreature(read_utc(resource.data()))
@@ -249,7 +257,9 @@ class InsertInstanceDialog(QDialog):
                             rim = read_rim(resource.filepath())
                             mdx_data = rim.get(resource.resname(), ResourceType.MDX)
                         elif is_bif_file(resource.filepath().name):
-                            mdx_data = self._installation.resource(resource.resname(), ResourceType.MDX).data
+                            mdx_res: ResourceResult | None = self._installation.resource(resource.resname(), ResourceType.MDX)
+                            if mdx_res is not None:
+                                mdx_data = mdx_res.data
                         else:
                             mdx_data = resource.filepath().with_suffix(".mdx").read_bytes()
                     elif resource.restype() is ResourceType.MDX:
@@ -261,7 +271,9 @@ class InsertInstanceDialog(QDialog):
                             rim = read_rim(resource.filepath())
                             mdl_data = rim.get(resource.resname(), ResourceType.MDL)
                         elif is_bif_file(resource.filepath().name):
-                            mdl_data = self._installation.resource(resource.resname(), ResourceType.MDL).data
+                            mdl_res: ResourceResult | None = self._installation.resource(resource.resname(), ResourceType.MDL)
+                            if mdl_res is not None:
+                                mdl_data = mdl_res.data
                         else:
                             mdl_data = resource.filepath().with_suffix(".mdl").read_bytes()
 
@@ -270,7 +282,10 @@ class InsertInstanceDialog(QDialog):
                     else:
                         self.ui.previewRenderer.clearModel()
 
-    def set_render_model(self, modelname):
+    def set_render_model(
+        self,
+        modelname: str,
+    ):
         mdl: ResourceResult | None = self._installation.resource(
             modelname, ResourceType.MDL
         )
@@ -282,7 +297,10 @@ class InsertInstanceDialog(QDialog):
         else:
             self.ui.previewRenderer.clearModel()
 
-    def generate_resource_summary(self, resource: FileResource) -> str:
+    def generate_resource_summary(
+        self,
+        resource: FileResource,
+    ) -> str:
         """Generates a summary of the selected resource.
 
         Args:
@@ -293,7 +311,7 @@ class InsertInstanceDialog(QDialog):
         -------
             str: Summary text.
         """
-        summary = [
+        summary: list[str] = [
             f"Name: {resource.resname()}",
             f"Type: {resource.restype().name}",
             f"Size: {len(resource.data())} bytes",
@@ -301,19 +319,25 @@ class InsertInstanceDialog(QDialog):
         ]
         return "\n".join(summary)
 
-    def on_resref_edited(self, text: str):
-        button = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
+    def on_resref_edited(
+        self,
+        text: str,
+    ):
+        button: QPushButton | None = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
         assert button is not None, "ok button is not setup on the buttonBox"
         button.setEnabled(self.is_valid_resref(text))
 
     def on_resource_filter_changed(self):
-        text = self.ui.resourceFilter.text()
+        text: str = self.ui.resourceFilter.text()
         for row in range(self.ui.resourceList.count()):
-            item = self.ui.resourceList.item(row)
+            item: QListWidgetItem | None = self.ui.resourceList.item(row)
             if item is None:
                 RobustLogger().warning(f"item at row {row} was None!")
                 continue
             item.setHidden(text not in item.text())
 
-    def is_valid_resref(self, text: str) -> bool:
+    def is_valid_resref(
+        self,
+        text: str,
+    ) -> bool:
         return self._module.resource(text, self._restype) is None and ResRef.is_valid(text)

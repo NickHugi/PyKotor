@@ -22,7 +22,7 @@ from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCS
@@ -44,7 +44,7 @@ class ModificationsNSS(PatcherModifications):
         super().__init__(filename, replace, modifiers)
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
-        self.nwnnsscomp_path: Path  # TODO: fix type. Default None or Path?
+        self.nwnnsscomp_path: Path | None  # TODO(th3w1zard1): fix type. Default None or Path?
         self.backup_nwnnsscomp_path: Path
         self.temp_script_folder: Path
         self.skip_if_not_replace = True
@@ -153,6 +153,7 @@ class ModificationsNSS(PatcherModifications):
             - Searches string for #StrRef# patterns and replaces with string reference value
             - Repeats searches until no matches remain.
         """
+
         def iterate_and_replace_tokens(token_name: str, memory_dict: dict[int, Any]):
             search_pattern = rf"#{token_name}\d+#"
             match = re.search(search_pattern, nss_source.value)

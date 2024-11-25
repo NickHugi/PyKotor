@@ -47,14 +47,14 @@ class LYTEditor(QWidget):
         self.scene = QGraphicsScene(self)
         self.selected_element: Optional[QGraphicsItem] = None
         self.current_tool: str = "select"
-        
+
         self.undo_stack: QUndoStack = QUndoStack(self)
-        
+
         self.texture_browser: TextureBrowser = TextureBrowser(self)
         self.textures: Dict[str, str] = {}
-        
+
         self.walkmesh: Optional[BWM] = None
-        
+
         self.initUI()
         self.init_connections()
 
@@ -62,25 +62,25 @@ class LYTEditor(QWidget):
         loadUi("Tools/HolocronToolset/src/ui/widgets/renderer/lyt_editor.ui", self)
         self.graphicsView.setScene(self.scene)
         self.graphicsView.setRenderHint(QPainter.Antialiasing)
-        
+
         self.add_room_button.clicked.connect(self.add_room)
         self.editRoomButton.clicked.connect(self.editRoom)
         self.deleteRoomButton.clicked.connect(self.deleteRoom)
-        
+
         self.add_track_button.clicked.connect(self.add_track)
         self.editTrackButton.clicked.connect(self.editTrack)
         self.deleteTrackButton.clicked.connect(self.deleteTrack)
-        
+
         self.addObstacleButton.clicked.connect(self.add_obstacle)
         self.editObstacleButton.clicked.connect(self.editObstacle)
         self.deleteObstacleButton.clicked.connect(self.deleteObstacle)
-        
+
         self.addDoorhookButton.clicked.connect(self.add_door_hook)
         self.editDoorhookButton.clicked.connect(self.editDoorHook)
         self.deleteDoorhookButton.clicked.connect(self.deleteDoorHook)
-        
+
         self.generateWalkmeshButton.clicked.connect(self.generate_walkmesh)
-        
+
         self.zoom_slider.valueChanged.connect(self.update_zoom)
 
     def init_connections(self):
@@ -117,11 +117,11 @@ class LYTEditor(QWidget):
                 old_room.position = room.position
                 old_room.size = room.size
                 old_room.model = room.model
-                
+
                 room.position = dialog.position
                 room.size = dialog.size
                 room.model = dialog.model
-                
+
                 command = EditRoomCommand(self, room, old_room)
                 self.undo_stack.push(command)
 
@@ -151,10 +151,10 @@ class LYTEditor(QWidget):
                 old_track = LYTTrack()
                 old_track.start_room = track.start_room
                 old_track.end_room = track.end_room
-                
+
                 track.start_room = dialog.start_room
                 track.end_room = dialog.end_room
-                
+
                 command = EditTrackCommand(self, track, old_track)
                 self.undo_stack.push(command)
 
@@ -181,10 +181,10 @@ class LYTEditor(QWidget):
                 old_obstacle = LYTObstacle()
                 old_obstacle.position = obstacle.position
                 old_obstacle.radius = obstacle.radius
-                
+
                 obstacle.position = dialog.position
                 obstacle.radius = dialog.radius
-                
+
                 command = EditObstacleCommand(self, obstacle, old_obstacle)
                 self.undo_stack.push(command)
 
@@ -216,11 +216,11 @@ class LYTEditor(QWidget):
                 old_doorhook.room = doorhook.room
                 old_doorhook.position = doorhook.position
                 old_doorhook.orientation = doorhook.orientation
-                
+
                 doorhook.room = dialog.room
                 doorhook.position = dialog.position
                 doorhook.orientation = dialog.orientation
-                
+
                 command = EditDoorHookCommand(self, doorhook, old_doorhook)
                 self.undo_stack.push(command)
 
@@ -242,19 +242,19 @@ class LYTEditor(QWidget):
         # Create a simple rectangular walkmesh for the room
         x, y, z = room.position.x, room.position.y, room.position.z
         width, height = room.size.x, room.size.y
-        
+
         vertices = [
             (x, y, z),
             (x + width, y, z),
             (x + width, y + height, z),
             (x, y + height, z)
         ]
-        
+
         faces = [
             (0, 1, 2),
             (0, 2, 3)
         ]
-        
+
         for face in faces:
             self.walkmesh.add_face([Vector3(*vertices[i]) for i in face])
 
@@ -263,17 +263,17 @@ class LYTEditor(QWidget):
         x, y, z = obstacle.position.x, obstacle.position.y, obstacle.position.z
         radius = obstacle.radius
         num_segments = 16
-        
+
         vertices = []
         for i in range(num_segments):
             angle = 2 * math.pi * i / num_segments
             vx = x + radius * math.cos(angle)
             vy = y + radius * math.sin(angle)
             vertices.append((vx, vy, z))
-        
+
         center = (x, y, z)
         vertices.append(center)
-        
+
         for i in range(num_segments):
             j = (i + 1) % num_segments
             self.walkmesh.add_face([
@@ -292,16 +292,16 @@ class LYTEditor(QWidget):
         self.tracksList.clear()
         self.obstaclesList.clear()
         self.doorhooksList.clear()
-        
+
         for room in self.lyt.rooms:
             self.roomsList.addItem(QListWidgetItem(room.model))
-        
+
         for track in self.lyt.tracks:
             self.tracksList.addItem(QListWidgetItem(f"Track {self.lyt.tracks.index(track)}"))
-        
+
         for obstacle in self.lyt.obstacles:
             self.obstaclesList.addItem(QListWidgetItem(f"Obstacle {self.lyt.obstacles.index(obstacle)}"))
-        
+
         for doorhook in self.lyt.doorhooks:
             self.doorhooksList.addItem(QListWidgetItem(f"Door Hook {self.lyt.doorhooks.index(doorhook)}"))
 

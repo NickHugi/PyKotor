@@ -9,6 +9,7 @@ __all__ = [
     "Kit",
     "KitComponent",
     "KitComponentHook",
+    "KitComponentHook",
     "KitDoor",
     "load_kits",
 ]

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtWidgets import QDialog
@@ -17,28 +15,21 @@ if TYPE_CHECKING:
 
 
 class SoundDialog(QDialog):
-    def __init__(self, parent: QWidget, sound: GITSound):
+    def __init__(
+        self,
+        parent: QWidget,
+        sound: GITSound,
+    ):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.WindowStaysOnTopHint
+            & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
+            & ~QtCore.Qt.WindowType.WindowMinimizeButtonHint
+        )
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.instance.sound import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.instance.sound import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.instance.sound import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.instance.sound import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.dialogs.instance.sound import Ui_Dialog
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

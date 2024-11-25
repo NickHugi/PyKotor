@@ -6,11 +6,13 @@ import json
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.geometry import Vector2
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from pykotor.common.misc import Color
     from pykotor.resource.generics.dlg.base import DLG
 
@@ -226,7 +228,7 @@ class FormatConverter:
             dlg: The KotOR dialog to store metadata in
         """
         # Store Twine metadata in dialog's comment field as JSON
-        twine_data = {
+        twine_data: dict[str, Any] = {
             "style": story.metadata.style,
             "script": story.metadata.script,
             "tag_colors": {k: str(v) for k, v in story.metadata.tag_colors.items()},
@@ -258,15 +260,15 @@ class FormatConverter:
             return
 
         try:
-            twine_data = json.loads(dlg.comment)
+            twine_data: dict[str, Any] = json.loads(dlg.comment)
             story.metadata.style = twine_data.get("style", "")
             story.metadata.script = twine_data.get("script", "")
-            story.metadata.tag_colors = {k: v for k, v in twine_data.get("tag_colors", {}).items()}
+            story.metadata.tag_colors = dict(twine_data.get("tag_colors", {}).items())
             story.metadata.format = twine_data.get("format", "Harlowe")
             story.metadata.format_version = twine_data.get("format_version", "3.3.7")
             story.metadata.creator = twine_data.get("creator", "PyKotor")
             story.metadata.creator_version = twine_data.get("creator_version", "1.0.0")
             story.metadata.zoom = float(twine_data.get("zoom", 1.0))
-        except (json.JSONDecodeError, ValueError, KeyError, TypeError):
+        except (json.JSONDecodeError, ValueError, KeyError, TypeError):  # noqa: S110
             # If metadata restoration fails, keep defaults
             pass

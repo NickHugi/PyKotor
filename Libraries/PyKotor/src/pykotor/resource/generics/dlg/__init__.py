@@ -1,39 +1,34 @@
 """Dialog system for handling game conversations."""
 
-from __future__ import annotations
-
 from pykotor.resource.generics.dlg.base import DLG, DLGComputerType, DLGConversationType
 from pykotor.resource.generics.dlg.nodes import DLGAnimation, DLGEntry, DLGNode, DLGReply
 from pykotor.resource.generics.dlg.links import DLGLink
 from pykotor.resource.generics.dlg.stunts import DLGStunt
 from pykotor.resource.generics.dlg.io.gff import construct_dlg, dismantle_dlg, read_dlg, write_dlg, bytes_dlg
 from pykotor.resource.generics.dlg.io.twine import read_twine, write_twine
+from pykotor.resource.generics.dlg.io.twine_data import TwineLink, TwinePassage, TwineStory, PassageMetadata, TwineMetadata, FormatConverter
 
 __all__ = [
-    # Base classes
     "DLG",
+    "DLGAnimation",
     "DLGComputerType",
     "DLGConversationType",
-    # Node types
-    "DLGNode",
     "DLGEntry",
-    "DLGReply",
-    "DLGAnimation",
-    # Links
     "DLGLink",
-    # Stunts
+    "DLGNode",
+    "DLGReply",
     "DLGStunt",
-    # GFF format
+    "FormatConverter",
+    "PassageMetadata",
+    "TwineLink",
+    "TwineMetadata",
+    "TwinePassage",
+    "TwineStory",
+    "bytes_dlg",
     "construct_dlg",
     "dismantle_dlg",
     "read_dlg",
-    "write_dlg",
-    "bytes_dlg",
-    # Twine format
     "read_twine",
+    "write_dlg",
     "write_twine",
 ]
-
-# Version info
-__version__ = "1.0.0"
-__author__ = "PyKotor Team"

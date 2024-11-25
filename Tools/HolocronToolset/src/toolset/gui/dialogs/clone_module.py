@@ -54,10 +54,10 @@ class CloneModuleDialog(QDialog):
         """
         super().__init__(parent)
         self.setWindowFlags(
-            QtCore.Qt.Dialog  # pyright: ignore[reportArgumentType]
-            | QtCore.Qt.WindowCloseButtonHint
-            & ~QtCore.Qt.WindowContextHelpButtonHint
-            & ~QtCore.Qt.WindowMinMaxButtonsHint
+            QtCore.Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+            & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
+            & ~QtCore.Qt.WindowType.WindowMinMaxButtonsHint
         )
 
         from toolset.uic.qtpy.dialogs.clone_module import Ui_Dialog
@@ -69,10 +69,10 @@ class CloneModuleDialog(QDialog):
 
         self.ui.createButton.clicked.connect(self.ok)
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.filenameEdit.textChanged.connect(self.setPrefixFromFilename)
-        self.ui.moduleSelect.currentIndexChanged.connect(self.changedModule)
+        self.ui.filenameEdit.textChanged.connect(self.set_prefix_from_filename)
+        self.ui.moduleSelect.currentIndexChanged.connect(self.changed_module)
 
-        self.loadModules()
+        self.load_modules()
 
     def ok(self):
         """Clones a module once user accepted the dialog query.
@@ -93,18 +93,18 @@ class CloneModuleDialog(QDialog):
             - Runs cloning asynchronously and displays status
             - Shows success message if clone completed.
         """
-        installation = self.ui.moduleSelect.currentData().installation
-        root = self.ui.moduleSelect.currentData().root
-        identifier = self.ui.filenameEdit.text().lower()
-        prefix = self.ui.prefixEdit.text().lower()
-        name = self.ui.nameEdit.text()
+        installation: HTInstallation = self.ui.moduleSelect.currentData().installation
+        root: str = self.ui.moduleSelect.currentData().root
+        identifier: str = self.ui.filenameEdit.text().lower()
+        prefix: str = self.ui.prefixEdit.text().lower()
+        name: str = self.ui.nameEdit.text()
 
-        copyTextures = self.ui.copyTexturesCheckbox.isChecked()
-        copyLightmaps = self.ui.copyLightmapsCheckbox.isChecked()
-        keepDoors = self.ui.keepDoorsCheckbox.isChecked()
-        keepPlaceables = self.ui.keepPlaceablesCheckbox.isChecked()
-        keepSounds = self.ui.keepSoundsCheckbox.isChecked()
-        keepPathing = self.ui.keepPathingCheckbox.isChecked()
+        copy_textures: bool = self.ui.copyTexturesCheckbox.isChecked()
+        copy_lightmaps: bool = self.ui.copyLightmapsCheckbox.isChecked()
+        keep_doors: bool = self.ui.keepDoorsCheckbox.isChecked()
+        keep_placeables: bool = self.ui.keepPlaceablesCheckbox.isChecked()
+        keep_sounds: bool = self.ui.keepSoundsCheckbox.isChecked()
+        keep_pathing: bool = self.ui.keepPathingCheckbox.isChecked()
 
         def task():
             return module.clone_module(
@@ -113,15 +113,15 @@ class CloneModuleDialog(QDialog):
                 prefix,
                 name,
                 installation,
-                copy_textures=copyTextures,
-                copy_lightmaps=copyLightmaps,
-                keep_doors=keepDoors,
-                keep_placeables=keepPlaceables,
-                keep_sounds=keepSounds,
-                keep_pathing=keepPathing,
+                copy_textures=copy_textures,
+                copy_lightmaps=copy_lightmaps,
+                keep_doors=keep_doors,
+                keep_placeables=keep_placeables,
+                keep_sounds=keep_sounds,
+                keep_pathing=keep_pathing,
             )
 
-        if copyTextures:
+        if copy_textures:
             QMessageBox(
                 QMessageBox.Icon.Information,
                 "This may take a while",
@@ -139,7 +139,7 @@ class CloneModuleDialog(QDialog):
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         ).exec()
 
-    def loadModules(self):
+    def load_modules(self):
         """Loads module options from installed modules.
 
         Args:
@@ -157,7 +157,7 @@ class CloneModuleDialog(QDialog):
         options: dict[str, ModuleOption] = {}
         for installation in self._installations.values():
             for filename, name in installation.module_names().items():
-                root = Module.find_root(filename)
+                root: str = Module.filepath_to_root(filename)
                 if root not in options:
                     options[root] = ModuleOption(name, root, [], installation)
                 options[root].files.append(filename)
@@ -165,9 +165,12 @@ class CloneModuleDialog(QDialog):
         for option in options.values():
             self.ui.moduleSelect.addItem(option.name, option)
 
-    def changedModule(self, index: int):
-        root = self.ui.moduleSelect.currentData().root
+    def changed_module(
+        self,
+        index: int,
+    ):
+        root: str = self.ui.moduleSelect.currentData().root
         self.ui.moduleRootEdit.setText(root)
 
-    def setPrefixFromFilename(self):
+    def set_prefix_from_filename(self):
         self.ui.prefixEdit.setText(self.ui.filenameEdit.text().upper()[:3])

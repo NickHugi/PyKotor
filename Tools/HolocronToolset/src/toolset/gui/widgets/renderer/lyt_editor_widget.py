@@ -132,14 +132,14 @@ class LYTEditorWidget(QWidget):
         self.setupRealTimePreview()
         self.setupUndoView()
         self.setupErrorHandler()
-        
+
         self.current_lyt: Optional[LYT] = None
         self.room_templates: dict[str, LYTRoom] = {}
         self.custom_textures: dict[str, QPixmap] = {}
         self.selected_room: Optional[LYTRoom] = None
-        
+
         self.setup_lyt_tools()
-        
+
         # Initialize LYT rendering
         self.loadCurrentLYT()
 
@@ -955,31 +955,31 @@ class LYTEditorWidget(QWidget):
         # Update the preview based on the current LYT state
         self.lyt_editor.update_preview()  # FIXME: update_preview attribute not found
         self.walkmesh_editor.update_preview()  # FIXME: update_preview attribute not found
-    
+
     def setup_lyt_tools(self):
         self.lyt_toolbar = QToolBar("LYT Tools")  # FIXME: QToolBar attribute not found
         self.addToolBar(self.lyt_toolbar)  # FIXME: addToolBar attribute not found
-        
+
         self.add_room_action = QAction("Add Room", self)
         self.add_room_action.triggered.connect(self.add_room)
         self.lyt_toolbar.addAction(self.add_room_action)
-        
+
         self.edit_room_action = QAction("Edit Room", self)
         self.edit_room_action.triggered.connect(self.editRoom)
         self.lyt_toolbar.addAction(self.edit_room_action)
-        
+
         self.add_track_action = QAction("Add Track", self)
         self.add_track_action.triggered.connect(self.add_track)
         self.lyt_toolbar.addAction(self.add_track_action)
-        
+
         self.add_obstacle_action = QAction("Add Obstacle", self)
         self.add_obstacle_action.triggered.connect(self.add_obstacle)
         self.lyt_toolbar.addAction(self.add_obstacle_action)
-        
+
         self.add_doorhook_action = QAction("Add Doorhook", self)
         self.add_doorhook_action.triggered.connect(self.add_door_hook)
         self.lyt_toolbar.addAction(self.add_doorhook_action)
-    
+
     def add_room(self):
         room = LYTRoom()
         room.position = Vector3(0, 0, 0)  # Default position
@@ -987,14 +987,14 @@ class LYTEditorWidget(QWidget):
         self.current_lyt.rooms.append(room)
         self.selected_room = room
         self.updateLYTPreview()
-    
+
     def editRoom(self):
         if self.selected_room:
             # Open a dialog to edit room properties
             dialog = RoomPropertiesDialog(self.selected_room, self)  # FIXME: RoomPropertiesDialog needs to be created
             if dialog.exec():
                 self.updateLYTPreview()
-    
+
     def add_track(self):
         if self.selected_room:
             track = LYTTrack()
@@ -1004,7 +1004,7 @@ class LYTEditorWidget(QWidget):
             if dialog.exec():
                 self.current_lyt.tracks.append(track)
                 self.updateLYTPreview()
-    
+
     def add_obstacle(self):
         obstacle = LYTObstacle()
         # Open a dialog to set obstacle properties
@@ -1012,7 +1012,7 @@ class LYTEditorWidget(QWidget):
         if dialog.exec():
             self.current_lyt.obstacles.append(obstacle)
             self.updateLYTPreview()
-    
+
     def add_door_hook(self):
         if self.selected_room:
             doorhook = LYTDoorHook()
@@ -1022,21 +1022,21 @@ class LYTEditorWidget(QWidget):
             if dialog.exec():
                 self.current_lyt.doorhooks.append(doorhook)
                 self.updateLYTPreview()
-    
+
     def updateLYTPreview(self):
         if self.current_lyt:
             self.lyt_editor.set_lyt(self.current_lyt)
             self.sig_lyt_updated.emit(self.current_lyt)
             self.parent_ref.scene.set_lyt(self.current_lyt)
             self.walkmesh_editor.set_lyt(self.current_lyt)
-    
+
     def importCustomTexture(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Import Texture", "", "Image Files (*.png *.jpg *.bmp)")
         if file_path:
             texture_name = os.path.basename(file_path)
             self.custom_textures[texture_name] = QPixmap(file_path)
             self.texture_browser.addTexture(texture_name, self.custom_textures[texture_name])  # FIXME: addTexture attribute not found
-    
+
     def loadCurrentLYT(self):
         if self.parent_ref.module:
             lyt_resource = self.parent_ref.module.layout()
@@ -1049,7 +1049,7 @@ class LYTEditorWidget(QWidget):
                 self.current_lyt.rooms[0].position = Vector3(0, 0, 0)
                 self.current_lyt.rooms[0].model = "default_room"
         self.updateLYTPreview()
-    
+
     def saveLYT(self):
         if self.current_lyt and self.parent_ref.module:
             lyt_resource = self.parent_ref.module.layout()

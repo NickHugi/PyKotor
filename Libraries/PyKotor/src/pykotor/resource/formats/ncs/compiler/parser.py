@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Collection, List, NoReturn, cast
+from typing import TYPE_CHECKING, Collection, NoReturn, cast
 
 from ply import yacc
 
@@ -149,7 +149,7 @@ class NssParser:
                        |
         """  # noqa: D415, D400, D212, D205
         if len(p) == 3:  # noqa: PLR2004
-            cast(List, p[1]).append(p[2])
+            cast(list, p[1]).append(p[2])
             p[0] = p[1]
         else:
             p[0] = []
@@ -205,7 +205,7 @@ class NssParser:
                                    |
         """  # noqa: D400, D212, D415, D205
         if len(p) == 4:
-            cast(List, p[1]).append(p[3])
+            cast(list, p[1]).append(p[3])
             p[0] = p[1]
         elif len(p) == 2:
             p[0] = [p[1]]

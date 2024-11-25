@@ -11,7 +11,9 @@ if TYPE_CHECKING:
     from typing import NoReturn
 
 
-def display_metrics(metrics: dict[str, float]) -> None:
+def display_metrics(
+    metrics: dict[str, float],
+) -> None:
     """Display evaluation metrics in a readable format."""
     print("\nResponse Metrics:")
     print("-" * 40)

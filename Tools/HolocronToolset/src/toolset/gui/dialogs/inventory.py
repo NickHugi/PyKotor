@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 
     from typing import Sequence
 
+    from PyQt6.QtCore import QObject
     from qtpy.QtCore import (
         QAbstractItemModel,  # pyright: ignore[reportPrivateImportUsage]
         QModelIndex,
@@ -225,7 +226,7 @@ class InventoryEditor(QDialog):
             self.inventory.append(InventoryItem(ResRef(table_item.resname), table_item.droppable, table_item.infinite))
 
         self.equipment.clear()
-        widget: DropFrame
+        widget: DropFrame | QObject
         for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():  # pyright: ignore[reportGeneralTypeIssues]
             # HACK: isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
             # Also make sure there is an item in the slot otherwise the GFF will create a struct for each slot.
@@ -255,7 +256,7 @@ class InventoryEditor(QDialog):
             if self._installation.cache_core_items is None:
                 self._installation.cache_core_items = core_model = item_builder_dialog.core_model
             else:
-                core_model = self._installation.cache_core_items
+                core_model: ItemModel = self._installation.cache_core_items
             self.ui.coreTree.setModel(core_model.proxy_model())
 
             self.ui.modulesTree.setModel(item_builder_dialog.modules_model.proxy_model())
@@ -263,7 +264,10 @@ class InventoryEditor(QDialog):
         else:
             self.reject()
 
-    def get_item_image(self, uti: UTI) -> QPixmap:
+    def get_item_image(
+        self,
+        uti: UTI,
+    ) -> QPixmap:
         return self._installation.get_item_icon_from_uti(uti)
 
     def get_item(
@@ -308,7 +312,7 @@ class InventoryEditor(QDialog):
             uti = read_uti(uti_resource)
             name = self._installation.string(uti.name, "[No Name]")
         elif is_bif_file(filepath):
-            bif_result = self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN])
+            bif_result: ResourceResult | None = self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN])
             if bif_result is None:
                 raise FileNotFoundError
             uti = read_uti(bif_result.data)
@@ -361,7 +365,10 @@ class InventoryEditor(QDialog):
             slot_picture.setToolTip("")
             slot_picture.setPixmap(QPixmap(image))
 
-    def do_search(self, text: str):
+    def do_search(
+        self,
+        text: str,
+    ):
         self.ui.coreSearchEdit.setText(text)
         cast(QSortFilterProxyModel, self.ui.coreTree.model()).setFilterFixedString(text)
         self.ui.modulesSearchEdit.setText(text)
@@ -414,8 +421,11 @@ class InventoryEditor(QDialog):
         assert isinstance(widget, DropFrame), f"Expected DropFrame widget, got {type(widget).__name__}"
         menu.exec(widget.mapToGlobal(point))
 
-    def prompt_set_item_resref_dialog(self, widget: DropFrame):
-        dialog = SetItemResRefDialog(self)
+    def prompt_set_item_resref_dialog(
+        self,
+        widget: DropFrame,
+    ):
+        dialog: SetItemResRefDialog = SetItemResRefDialog(self)
 
         if not dialog.exec():
             return
@@ -470,14 +480,20 @@ class ItemContainer:
 class DropFrame(ItemContainer, QFrame):
     sig_item_dropped = QtCore.Signal(object, object, object)  # pyright: ignore[reportPrivateImportUsage]
 
-    def __init__(self, parent: QWidget | None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+    ):
         QFrame.__init__(self)
         ItemContainer.__init__(self)
         self.setFrameShape(QFrame.Shape.Box)
         self.setAcceptDrops(True)
         self.slot: EquipmentSlot = EquipmentSlot.HIDE
 
-    def dragEnterEvent(self, event: QDragEnterEvent):
+    def dragEnterEvent(
+        self,
+        event: QDragEnterEvent,
+    ):
         """Handle drag enter events for slots.
 
         Args:
@@ -503,7 +519,10 @@ class DropFrame(ItemContainer, QFrame):
             return
         event.accept()
 
-    def dragMoveEvent(self, event: QDragMoveEvent):
+    def dragMoveEvent(
+        self,
+        event: QDragMoveEvent,
+    ):
         """Moves an item between slots if the drag and drop events match.
 
         Args:
@@ -519,7 +538,7 @@ class DropFrame(ItemContainer, QFrame):
             - Check if item's slots match the target slot
             - Accept the drag move event if slots match.
         """
-        src_object = event.source()
+        src_object: QObject | None = event.source()
         if not isinstance(src_object, QTreeView):
             return
         tree: QTreeView = src_object
@@ -533,7 +552,10 @@ class DropFrame(ItemContainer, QFrame):
             return
         event.accept()
 
-    def dropEvent(self, event: QDropEvent):
+    def dropEvent(
+        self,
+        event: QDropEvent,
+    ):
         """Handles dropped items from a tree view onto the widget.
 
         Args:
@@ -551,7 +573,7 @@ class DropFrame(ItemContainer, QFrame):
             - Sets the new item on the widget
             - Emits a signal with the new item details.
         """
-        src_object = event.source()
+        src_object: QObject | None = event.source()
         if not isinstance(src_object, QTreeView):
             return
         event.setDropAction(Qt.DropAction.CopyAction)
@@ -561,8 +583,10 @@ class DropFrame(ItemContainer, QFrame):
         assert isinstance(proxy_model, QSortFilterProxyModel), f"Expected QSortFilterProxyModel, got {type(proxy_model).__name__}"
         model: QAbstractItemModel = proxy_model.sourceModel()
         assert isinstance(model, ItemModel), f"Expected ItemModel, got {type(model).__name__}"
-        index = proxy_model.mapToSource(tree.selectedIndexes()[0])
+        index: QModelIndex = proxy_model.mapToSource(tree.selectedIndexes()[0])
         item: QStandardItem | None = model.itemFromIndex(index)
+        if item is None:
+            return
         if item.data(_SLOTS_ROLE) & self.slot.value:
             event.accept()
             self.set_item(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), droppable=False, infinite=False)
@@ -577,7 +601,10 @@ class DropFrame(ItemContainer, QFrame):
 
 
 class InventoryTable(QTableWidget):
-    def __init__(self, parent: QWidget):
+    def __init__(
+        self,
+        parent: QWidget,
+    ):
         super().__init__(parent)
         self.itemChanged.connect(self.resname_changed)
         self.customContextMenuRequested.connect(self.open_context_menu)
@@ -615,7 +642,10 @@ class InventoryTable(QTableWidget):
         resname_item = InventoryTableResnameItem(resname, filepath, name, droppable=droppable, infinite=infinite)
         self._set_row(rowID, icon_item, resname_item, name_item)
 
-    def dropEvent(self, event: QDropEvent):
+    def dropEvent(
+        self,
+        event: QDropEvent,
+    ):
         """Handles drag and drop events on the inventory table.
 
         Args:
@@ -633,7 +663,7 @@ class InventoryTable(QTableWidget):
         if isinstance(event.source(), QTreeView):
             event.setDropAction(Qt.DropAction.CopyAction)
 
-            tree = event.source()
+            tree: QObject | None = event.source()
             if not isinstance(tree, QTreeView):
                 return
             proxy_model: QAbstractItemModel = tree.model()
@@ -663,14 +693,20 @@ class InventoryTable(QTableWidget):
         self.setItem(row_id, 1, resname_item)
         self.setItem(row_id, 2, name_item)
 
-    def _set_uti(self, uti: UTI) -> QTableWidgetItem:
-        pixmap = cast(InventoryEditor, self.window()).get_item_image(uti)
-        result = QTableWidgetItem(QIcon(pixmap), "")
+    def _set_uti(
+        self,
+        uti: UTI,
+    ) -> QTableWidgetItem:
+        pixmap: QPixmap = cast(InventoryEditor, self.window()).get_item_image(uti)
+        result: QTableWidgetItem = QTableWidgetItem(QIcon(pixmap), "")
         result.setSizeHint(QSize(48, 48))
         result.setFlags(result.flags() ^ Qt.ItemFlag.ItemIsEditable)
         return result
 
-    def resname_changed(self, table_item: QTableWidgetItem):
+    def resname_changed(
+        self,
+        table_item: QTableWidgetItem,
+    ):
         """Changes the name of an item in the inventory table.
 
         Args:
@@ -698,7 +734,10 @@ class InventoryTable(QTableWidget):
             name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
             self.setItem(table_item.row(), 2, name_item)
 
-    def open_context_menu(self, point: QPoint):
+    def open_context_menu(
+        self,
+        point: QPoint,
+    ):
         """Opens context menu for selected item.
 
         Args:
@@ -755,7 +794,10 @@ class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
         self.set_item(resname, filepath, name, droppable=droppable, infinite=infinite)
 
     def remove_item(self):
-        self.tableWidget().removeRow(self.row())
+        tbl_widget: QTableWidget | None = self.tableWidget()
+        if tbl_widget is None:
+            return
+        tbl_widget.removeRow(self.row())
 
 
 class ItemBuilderDialog(QDialog):
@@ -781,8 +823,9 @@ class ItemBuilderDialog(QDialog):
         self._progress_bar.setTextVisible(False)
 
         self.resize(250, 40)
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self._progress_bar)
+        main_layout: QVBoxLayout = QVBoxLayout()
+        self.setLayout(main_layout)
+        main_layout.addWidget(self._progress_bar)
 
         self.setWindowTitle("Building Item Lists...")
         self.core_model: ItemModel = ItemModel(parent)
@@ -797,7 +840,11 @@ class ItemBuilderDialog(QDialog):
         self._worker.sig_finished.connect(self.on_finished)
         self._worker.start()
 
-    def on_uti_loaded(self, uti: UTI, result: ResourceResult):
+    def on_uti_loaded(
+        self,
+        uti: UTI,
+        result: ResourceResult,
+    ):
         baseitems: TwoDA | None = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_BASEITEMS)
         if baseitems is None:
             return
@@ -822,7 +869,10 @@ class ItemBuilderDialog(QDialog):
     def on_finished(self):
         self.accept()
 
-    def get_category(self, uti: UTI | None) -> str:
+    def get_category(
+        self,
+        uti: UTI | None,
+    ) -> str:
         """Gets the category for an item based on its equipable slots.
 
         Args:
@@ -878,7 +928,11 @@ class ItemBuilderWorker(QThread):
     sig_uti_loaded: Signal = Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
     sig_finished: Signal = Signal()  # pyright: ignore[reportPrivateImportUsage]
 
-    def __init__(self, installation: HTInstallation, capsules: list[LazyCapsule]):
+    def __init__(
+        self,
+        installation: HTInstallation,
+        capsules: list[LazyCapsule],
+    ):
         super().__init__()
         self._installation: HTInstallation = installation
         self._capsules: list[LazyCapsule] = capsules
@@ -929,7 +983,10 @@ class ItemBuilderWorker(QThread):
 
 
 class ItemModel(QStandardItemModel):
-    def __init__(self, parent: QWidget):
+    def __init__(
+        self,
+        parent: QWidget,
+    ):
         super().__init__(parent)
 
         self._category_items: dict[str, QStandardItem] = {}
@@ -941,9 +998,12 @@ class ItemModel(QStandardItemModel):
     def proxy_model(self) -> QSortFilterProxyModel:
         return self._proxy_model
 
-    def _get_category_item(self, category: str) -> QStandardItem:
+    def _get_category_item(
+        self,
+        category: str,
+    ) -> QStandardItem:
         if category not in self._category_items:
-            category_item = QStandardItem(category)
+            category_item: QStandardItem = QStandardItem(category)
             category_item.setSelectable(False)
             self._category_items[category] = category_item
             self.appendRow(category_item)
@@ -986,7 +1046,10 @@ class ItemModel(QStandardItemModel):
 
 
 class SetItemResRefDialog(QDialog):
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+    ):
         super().__init__(parent)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
 

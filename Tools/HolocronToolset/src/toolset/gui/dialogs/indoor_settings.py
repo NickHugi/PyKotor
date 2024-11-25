@@ -14,7 +14,13 @@ if TYPE_CHECKING:
 
 
 class IndoorMapSettings(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation, indoor_map: IndoorMap, kits: list[Kit]):
+    def __init__(
+        self,
+        parent: QWidget,
+        installation: HTInstallation,
+        indoor_map: IndoorMap,
+        kits: list[Kit],
+    ):
         """Initializes the indoor map editor dialog.
 
         Args:
@@ -36,8 +42,9 @@ class IndoorMapSettings(QDialog):
         """
         super().__init__(parent)
         self.setWindowFlags(
-            Qt.Dialog  # pyright: ignore[reportArgumentType]
-            | Qt.WindowCloseButtonHint & ~Qt.WindowContextHelpButtonHint
+            Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | Qt.WindowType.WindowCloseButtonHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
         )
 
         from toolset.uic.qtpy.dialogs.indoor_settings import Ui_Dialog
@@ -50,7 +57,7 @@ class IndoorMapSettings(QDialog):
 
         self.ui.nameEdit.set_locstring(indoor_map.name)
         self.ui.colorEdit.setColor(indoor_map.lighting)
-        self.ui.warpCodeEdit.setText(indoor_map.moduleId)
+        self.ui.warpCodeEdit.setText(indoor_map.module_id)
 
         self.ui.skyboxSelect.addItem("[None]", "")
         for kit in kits:
@@ -65,5 +72,5 @@ class IndoorMapSettings(QDialog):
 
         self._indoorMap.name = self.ui.nameEdit.locstring()
         self._indoorMap.lighting = self.ui.colorEdit.color()
-        self._indoorMap.moduleId = self.ui.warpCodeEdit.text()
+        self._indoorMap.module_id = self.ui.warpCodeEdit.text()
         self._indoorMap.skybox = self.ui.skyboxSelect.currentData()

@@ -9,7 +9,12 @@ from pykotor.resource.type import ResourceType
 class SaveToModuleDialog(QDialog):
     """SaveToModuleDialog lets the user specify a ResRef and a resource type when saving to a module."""
 
-    def __init__(self, resname: str, restype: ResourceType, supported: list[ResourceType]):
+    def __init__(
+        self,
+        resname: str,
+        restype: ResourceType,
+        supported: list[ResourceType],
+    ):
         super().__init__()
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]

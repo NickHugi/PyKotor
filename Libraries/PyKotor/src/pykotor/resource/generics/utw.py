@@ -76,9 +76,9 @@ def construct_utw(
 
 def dismantle_utw(
     utw: UTW,
-    game: Game = Game.K2,
+    game: Game = Game.K2,  # noqa: ARG001
     *,
-    use_deprecated: bool = True,
+    use_deprecated: bool = True,  # noqa: ARG001
 ) -> GFF:
     gff = GFF(GFFContent.UTW)
 

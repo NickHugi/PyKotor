@@ -25,7 +25,7 @@ class ColorEdit(QWidget):
         initQColor = QColor(int(initColor.r * 255), int(initColor.g * 255), int(initColor.b * 255), int(initColor.a * 255))
 
         dialog = QColorDialog(QColor(initQColor.red(), initQColor.green(), initQColor.blue(), initQColor.alpha()))
-        dialog.setOption(QColorDialog.ShowAlphaChannel, on=self.allowAlpha)
+        dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, on=self.allowAlpha)
 
         if dialog.exec():
             qcolor = dialog.selectedColor()
@@ -43,7 +43,7 @@ class ColorEdit(QWidget):
             self._color.a = 0.0
         r, g, b = int(color.r * 255), int(color.g * 255), int(color.b * 255)
         data = bytes([b, g, r] * 16 * 16)
-        pixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format_BGR888))
+        pixmap: QPixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format.Format_BGR888))
         self.ui.colorLabel.setPixmap(pixmap)
 
     def setColor(self, color: Color):

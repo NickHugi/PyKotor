@@ -20,28 +20,22 @@ if TYPE_CHECKING:
 
 
 class WaypointDialog(QDialog):
-    def __init__(self, parent: QWidget, waypoint: GITWaypoint, installation: HTInstallation):
+    def __init__(
+        self,
+        parent: QWidget,
+        waypoint: GITWaypoint,
+        installation: HTInstallation,
+    ):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.WindowStaysOnTopHint
+            & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
+            & ~QtCore.Qt.WindowType.WindowMinimizeButtonHint
+        )
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.instance.waypoint import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.instance.waypoint import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.instance.waypoint import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.instance.waypoint import (
-                Ui_Dialog,  # noqa: PLC0415  # pylint: disable=C0415
-            )
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.dialogs.instance.waypoint import Ui_Dialog
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

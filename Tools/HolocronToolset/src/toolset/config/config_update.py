@@ -58,12 +58,7 @@ def get_remote_toolset_update_info(
         result: int | QMessageBox.StandardButton = silent or QMessageBox.question(
             None,
             "Error occurred fetching update information.",
-            (
-                "An error occurred while fetching the latest toolset information.<br><br>"
-                + err_msg.replace("\n", "<br>")
-                + "<br><br>"
-                + "Would you like to check against the local database instead?"
-            ),
+            ("An error occurred while fetching the latest toolset information.<br><br>" + err_msg.replace("\n", "<br>") + "<br><br>" + "Would you like to check against the local database instead?"),  # noqa: E501
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.Yes,
         )

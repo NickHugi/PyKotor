@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 import requests
 import requests.structures
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QTimer, Qt
 from qtpy.QtGui import QBrush
@@ -35,10 +36,12 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
+from utility.updater.github import CompleteRepoData, TreeInfoData, extract_owner_repo, get_api_url, get_forks_url, get_main_url
+
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QClipboard, QIcon
     from qtpy.QtWidgets import QWidget
-
 
 
 if __name__ == "__main__":
@@ -66,18 +69,6 @@ if __name__ == "__main__":
             if __name__ == "__main__":
                 os.chdir(toolset_path)
 
-
-from loggerplus import RobustLogger
-
-from utility.updater.github import (
-    CompleteRepoData,
-    TreeInfoData,
-    extract_owner_repo,
-    get_api_url,
-    get_forks_url,
-    get_main_url,
-)
-
 logger = RobustLogger
 
 
@@ -85,12 +76,15 @@ class GitHubFileSelector(QDialog):
     def __init__(  # noqa: PLR0915
         self,
         *args,
-        selectedFiles: list[str] | None = None,
+        selected_files: list[str] | None = None,
         parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setWindowFlags(
-            QtCore.Qt.WindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+            QtCore.Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+            & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
+            & ~QtCore.Qt.WindowType.WindowMinMaxButtonsHint
         )
         self.setWindowTitle("Select a GitHub Repository File")
         self.setMinimumSize(600, 400)
@@ -98,88 +92,91 @@ class GitHubFileSelector(QDialog):
 
         if len(args) == 1:
             owner, repo = extract_owner_repo(args[0])
-        elif len(args) == 2:
+        elif len(args) == 2:  # noqa: PLR2004
             owner, repo = args
         else:
             raise ValueError(repr(args))
 
         # Set the window icon using a standard QStyle icon
-        icon = self.style().standardIcon(QStyle.SP_FileIcon)
+        self_style: QStyle | None = self.style()
+        if self_style is None:
+            raise RuntimeError("Failed to get QStyle")
+        icon: QIcon = self_style.standardIcon(QStyle.StandardPixmap.SP_FileIcon)
         self.setWindowIcon(icon)
 
         self.owner: str = owner
         self.repo: str = repo
-        self.forksUrl: str = get_forks_url(owner, repo)
-        self.apiUrl: str = get_api_url(owner, repo)
-        self.mainUrl: str = get_main_url(owner, repo)
-        self.selectedFiles: list[str] = selectedFiles or []
+        self.forks_url: str = get_forks_url(owner, repo)
+        self.api_url: str = get_api_url(owner, repo)
+        self.main_url: str = get_main_url(owner, repo)
+        self.selected_files: list[str] = selected_files or []
 
-        self.repoData: CompleteRepoData | None = None
+        self.repo_data: CompleteRepoData | None = None
         self.rate_limit_reset: int | None = None
         self.rate_limit_remaining: int | None = None
 
-        mainLayout = QVBoxLayout(self)
-        self.setLayout(mainLayout)
+        main_layout = QVBoxLayout(self)
+        self.setLayout(main_layout)
 
         self.label: QLabel = QLabel("Please select the correct script path or enter manually:")
-        mainLayout.addWidget(self.label)
+        main_layout.addWidget(self.label)
 
-        self.forkComboBox: QComboBox = QComboBox(self)
-        self.forkComboBox.setFixedWidth(300)
-        self.forkComboBox.currentIndexChanged.connect(self.onForkChanged)
-        mainLayout.addWidget(QLabel("Select Fork:"))
-        mainLayout.addWidget(self.forkComboBox)
+        self.fork_combo_box: QComboBox = QComboBox(self)
+        self.fork_combo_box.setFixedWidth(300)
+        self.fork_combo_box.currentIndexChanged.connect(self.on_fork_changed)
+        main_layout.addWidget(QLabel("Select Fork:"))
+        main_layout.addWidget(self.fork_combo_box)
 
-        filterLayout = QHBoxLayout()
-        self.filterEdit: QLineEdit = QLineEdit(self)
-        self.filterEdit.setPlaceholderText("Type to filter paths...")
-        self.filterEdit.setFocusPolicy(Qt.StrongFocus)
-        self.filterEdit.textChanged.connect(self.onFilterEditChanged)
-        filterLayout.addWidget(self.filterEdit)
+        filter_layout = QHBoxLayout()
+        self.filter_edit: QLineEdit = QLineEdit(self)
+        self.filter_edit.setPlaceholderText("Type to filter paths...")
+        self.filter_edit.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # pyright: ignore[reportArgumentType]
+        self.filter_edit.textChanged.connect(self.on_filter_edit_changed)
+        filter_layout.addWidget(self.filter_edit)
 
-        self.searchButton: QPushButton = QPushButton("Search", self)
-        self.searchButton.clicked.connect(self.searchFiles)
-        filterLayout.addWidget(self.searchButton)
+        self.search_button: QPushButton = QPushButton("Search", self)
+        self.search_button.clicked.connect(self.search_files)
+        filter_layout.addWidget(self.search_button)
 
-        self.refreshButton: QPushButton = QPushButton("Refresh", self)
-        self.refreshButton.clicked.connect(self.refresh_data)
-        filterLayout.addWidget(self.refreshButton)
+        self.refresh_button: QPushButton = QPushButton("Refresh", self)
+        self.refresh_button.clicked.connect(self.refresh_data)
+        filter_layout.addWidget(self.refresh_button)
 
-        mainLayout.addLayout(filterLayout)
+        main_layout.addLayout(filter_layout)
 
-        self.repoTreeWidget: QTreeWidget = QTreeWidget(self)
-        self.repoTreeWidget.setColumnCount(1)
-        self.repoTreeWidget.setHeaderLabel("GitHub Repository")
-        self.repoTreeWidget.setSelectionMode(QTreeWidget.ExtendedSelection)
-        self.repoTreeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.repoTreeWidget.customContextMenuRequested.connect(self.show_context_menu)
-        self.repoTreeWidget.itemDoubleClicked.connect(self.onItemDoubleClicked)
-        mainLayout.addWidget(self.repoTreeWidget)
+        self.repo_tree_widget: QTreeWidget = QTreeWidget(self)
+        self.repo_tree_widget.setColumnCount(1)
+        self.repo_tree_widget.setHeaderLabel("GitHub Repository")
+        self.repo_tree_widget.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)  # pyright: ignore[reportArgumentType]
+        self.repo_tree_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
+        self.repo_tree_widget.customContextMenuRequested.connect(self.show_context_menu)
+        self.repo_tree_widget.itemDoubleClicked.connect(self.on_item_double_clicked)
+        main_layout.addWidget(self.repo_tree_widget)
 
-        self.buttonBox: QDialogButtonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        mainLayout.addWidget(self.buttonBox)
+        self.button_box: QDialogButtonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)  # pyright: ignore[reportArgumentType]
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        main_layout.addWidget(self.button_box)
 
         self.cloneButton: QPushButton = QPushButton("Clone Repository", self)
         self.cloneButton.clicked.connect(self.clone_repository)
-        mainLayout.addWidget(self.cloneButton)
+        main_layout.addWidget(self.cloneButton)
 
         self.statusBar: QStatusBar = QStatusBar(self)
-        mainLayout.addWidget(self.statusBar)
+        main_layout.addWidget(self.statusBar)
 
         self.timer: QTimer = QTimer(self)
         self.timer.timeout.connect(self.update_rate_limit_status)
 
-        self.selectedPath: str | None = None
-        self.initializeRepoData()
+        self.selected_path: str | None = None
+        self.initialize_repo_data()
 
         # Initialize filterEdit with selectedFiles and call searchFiles
-        if self.selectedFiles and self.repoData is not None:
-            self.filterEdit.setText(";".join(self.selectedFiles))
-            self.searchFiles()
+        if self.selected_files and self.repo_data is not None:
+            self.filter_edit.setText(";".join(self.selected_files))
+            self.search_files()
 
-    def initializeRepoData(self) -> CompleteRepoData | None:
+    def initialize_repo_data(self) -> CompleteRepoData | None:
         try:
             repo_data = CompleteRepoData.load_repo(self.owner, self.repo)
         except requests.exceptions.HTTPError as e:
@@ -192,16 +189,18 @@ class GitHubFileSelector(QDialog):
             QMessageBox.critical(self, "Repository Not Found", f"The repository '{self.owner}/{self.repo}' had an unexpected error:<br><br>{e}")
             forks_url = f"https://api.github.com/repos/{self.owner}/{self.repo}/forks"
             try:
-                response = requests.get(forks_url, timeout=15)
+                response: requests.Response = requests.get(forks_url, timeout=15)
                 response.raise_for_status()
-                forks_data = response.json()
+                forks_data: list[dict[str, Any]] = response.json()
                 if forks_data:
                     first_fork = forks_data[0]["full_name"]
                     QMessageBox.information(self, "Using Fork", f"The main repository is not available. Using the fork: {first_fork}")
                     fork_owner, fork_repo = first_fork.split("/")
-                    fork_repo_data = CompleteRepoData.load_repo(fork_owner, fork_repo)
-                    self.forkComboBox.addItem(first_fork)
-                    self._load_repo_data(fork_repo_data, doForkComboUpdate=False)
+                    fork_repo_data: CompleteRepoData | None = CompleteRepoData.load_repo(fork_owner, fork_repo)
+                    if fork_repo_data is None:
+                        raise RuntimeError(f"Failed to load fork '{first_fork}'")
+                    self.fork_combo_box.addItem(first_fork)
+                    self._load_repo_data(fork_repo_data, do_fork_combo_update=False)
                     return fork_repo_data
                 QMessageBox.critical(self, "No Forks Available", "No forks are available to load.")
             except requests.exceptions.RequestException as fork_e:
@@ -212,30 +211,35 @@ class GitHubFileSelector(QDialog):
             return repo_data
         return None
 
-    def _load_repo_data(self, data: CompleteRepoData, *, doForkComboUpdate: bool = True):
-        self.repoData = data
-        if doForkComboUpdate:
-            self.populateForkComboBox()
-        selectedFork = self.forkComboBox.itemText(self.forkComboBox.currentIndex())
-        if not selectedFork or selectedFork == f"{self.owner}/{self.repo} (main)":
-            self.loadMainBranchFiles()
+    def _load_repo_data(
+        self,
+        data: CompleteRepoData,
+        *,
+        do_fork_combo_update: bool = True,
+    ) -> None:
+        self.repo_data = data
+        if do_fork_combo_update:
+            self.populate_fork_combobox()
+        selected_fork = self.fork_combo_box.itemText(self.fork_combo_box.currentIndex())
+        if not selected_fork or selected_fork == f"{self.owner}/{self.repo} (main)":
+            self.load_main_branch_files()
         else:
-            self.loadFork(selectedFork)
+            self.load_fork(selected_fork)
 
-    def loadMainBranchFiles(self) -> None:
-        if self.repoData:
-            self.repoTreeWidget.clear()
-            self.populateTreeWidget()
+    def load_main_branch_files(self) -> None:
+        if self.repo_data:
+            self.repo_tree_widget.clear()
+            self.populate_tree_widget()
 
-    def populateTreeWidget(
+    def populate_tree_widget(
         self,
         files: list[TreeInfoData] | None = None,
         parent_item: QTreeWidgetItem | None = None,
     ) -> None:
         if files is None:
-            if self.repoData is None or self.repoData.tree is None:
+            if self.repo_data is None or self.repo_data.tree is None:
                 return
-            files = self.repoData.tree
+            files = self.repo_data.tree
 
         # Dictionary to hold the tree items by their paths
         path_to_item: dict[str, QTreeWidgetItem] = {}
@@ -245,7 +249,7 @@ class GitHubFileSelector(QDialog):
             item_path = item.path
             tree_item = QTreeWidgetItem([PurePosixPath(item_path).name])
             tree_item.setToolTip(0, item.url)
-            tree_item.setData(0, Qt.UserRole, item)
+            tree_item.setData(0, Qt.ItemDataRole.UserRole, item)
             path_to_item[item_path] = tree_item
 
         # Add the tree items to their parents
@@ -255,75 +259,85 @@ class GitHubFileSelector(QDialog):
                 parent_item = path_to_item[parent_path]
                 parent_item.addChild(tree_item)
             else:
-                self.repoTreeWidget.addTopLevelItem(tree_item)
+                self.repo_tree_widget.addTopLevelItem(tree_item)
 
-    def loadDirectoryContents(self, parent_item: QTreeWidgetItem, path: str):
-        self.populateTreeWidget(parent_item=parent_item)
+    def load_directory_contents(
+        self,
+        parent_item: QTreeWidgetItem,
+        path: str,
+    ) -> None:
+        self.populate_tree_widget(parent_item=parent_item)
 
-    def populateForkComboBox(self) -> None:
-        self.forkComboBox.clear()
-        self.forkComboBox.addItem(f"{self.owner}/{self.repo} (main)")
-        if self.repoData is None or self.repoData.forks is None:
+    def populate_fork_combobox(self) -> None:
+        self.fork_combo_box.clear()
+        self.fork_combo_box.addItem(f"{self.owner}/{self.repo} (main)")
+        if self.repo_data is None or self.repo_data.forks is None:
             return
-        for fork in self.repoData.forks:
-            self.forkComboBox.addItem(fork.full_name)
+        for fork in self.repo_data.forks:
+            self.fork_combo_box.addItem(fork.full_name)
 
-    def searchFiles(self):
-        self.onFilterEditChanged()
+    def search_files(self):
+        self.on_filter_edit_changed()
 
-    def onFilterEditChanged(self):
-        filter_text = self.filterEdit.text()
+    def on_filter_edit_changed(self):
+        filter_text: str = self.filter_edit.text()
         if filter_text:
-            file_names = filter_text.lower().split(";")
-            self.searchAndHighlight(file_names)
-            self.expandAllItems()
+            file_names: list[str] = filter_text.lower().split(";")
+            self.search_and_highlight(file_names)
+            self.expand_all_items()
         else:
 
-            def unhideItem(item: QTreeWidgetItem):
+            def unhide_item(item: QTreeWidgetItem):
                 item.setHidden(False)
                 for i in range(item.childCount()):
                     child = item.child(i)
-                    unhideItem(child)
+                    unhide_item(child)
 
-            for i in range(self.repoTreeWidget.topLevelItemCount()):
-                topLevelItem = self.repoTreeWidget.topLevelItem(i)
-                if topLevelItem is None:
+            for i in range(self.repo_tree_widget.topLevelItemCount()):
+                top_level_item = self.repo_tree_widget.topLevelItem(i)
+                if top_level_item is None:
                     continue
-                unhideItem(topLevelItem)
-            self.collapseAllItems()
+                unhide_item(top_level_item)
+            self.collapse_all_items()
 
-    def searchAndHighlight(self, partial_file_or_folder_names: list[str]):
-        if self.repoData is None or self.repoData.tree is None:
+    def search_and_highlight(
+        self,
+        partial_file_or_folder_names: list[str],
+    ) -> None:
+        if self.repo_data is None or self.repo_data.tree is None:
             return
-        paths_to_highlight = [
-            item.path
-            for item in self.repoData.tree
-            for partial_file_or_folder_name in partial_file_or_folder_names
-            if partial_file_or_folder_name in item.path.split("/")[-1].lower()
-        ]
-        self.expandAndHighlightPaths(set(paths_to_highlight))
+        paths_to_highlight: list[str] = [item.path for item in self.repo_data.tree for partial_file_or_folder_name in partial_file_or_folder_names if partial_file_or_folder_name in item.path.split("/")[-1].lower()]
+        self.expand_and_highlight_paths(set(paths_to_highlight))
 
-    def expandAndHighlightPaths(self, paths: set[str]):
-        def find_item(parent: QTreeWidgetItem, text: str) -> QTreeWidgetItem | None:
+    def expand_and_highlight_paths(
+        self,
+        paths: set[str],
+    ) -> None:
+        def find_item(
+            parent: QTreeWidgetItem,
+            text: str,
+        ) -> QTreeWidgetItem | None:
             for i in range(parent.childCount()):
-                child = parent.child(i)
+                child: QTreeWidgetItem | None = parent.child(i)
+                if child is None:
+                    continue
                 if child.text(0) == text:
                     child.setHidden(False)
                     return child
             return None
 
         def highlight_path(path: str):
-            parts = path.split("/")
+            parts: list[str] = path.split("/")
             current_item = None
             for part in parts:
                 if current_item:
-                    next_item = find_item(current_item, part)
+                    next_item: QTreeWidgetItem | None = find_item(current_item, part)
                     if next_item is None:
                         return  # Stop if the expected part is not found
-                    current_item = next_item
+                    current_item: QTreeWidgetItem = next_item
                 else:  # Top level
-                    for i in range(self.repoTreeWidget.topLevelItemCount()):
-                        child = self.repoTreeWidget.topLevelItem(i)
+                    for i in range(self.repo_tree_widget.topLevelItemCount()):
+                        child: QTreeWidgetItem | None = self.repo_tree_widget.topLevelItem(i)
                         if child is not None and child.text(0) == part:
                             current_item = child
                             child.setHidden(False)
@@ -332,87 +346,103 @@ class GitHubFileSelector(QDialog):
                         return  # Stop if the expected part is not found
 
             if current_item:
-                current_item.setBackground(0, QBrush(Qt.yellow))
+                current_item.setBackground(0, QBrush(Qt.GlobalColor.yellow))
                 current_item.setExpanded(True)
-                item_data = current_item.data(0, Qt.UserRole)
+                item_data: TreeInfoData | None = current_item.data(0, Qt.ItemDataRole.UserRole)
                 if item_data and item_data.type == "tree":
-                    unhideAllChildren(current_item)
+                    unhide_all_children(current_item)
 
-        def unhideAllChildren(item: QTreeWidgetItem):
+        def unhide_all_children(item: QTreeWidgetItem):
             for i in range(item.childCount()):
-                child = item.child(i)
+                child: QTreeWidgetItem | None = item.child(i)
+                if child is None:
+                    continue
                 child.setHidden(False)
-                unhideAllChildren(child)
+                unhide_all_children(child)
 
-        def hideAllItems():
-            for i in range(self.repoTreeWidget.topLevelItemCount()):
-                topLevelItem = self.repoTreeWidget.topLevelItem(i)
-                if topLevelItem is not None:
-                    hideItem(topLevelItem)
+        def hide_all_items():
+            for i in range(self.repo_tree_widget.topLevelItemCount()):
+                top_level_item: QTreeWidgetItem | None = self.repo_tree_widget.topLevelItem(i)
+                if top_level_item is not None:
+                    hide_item(top_level_item)
 
-        def hideItem(item: QTreeWidgetItem):
+        def hide_item(item: QTreeWidgetItem):
             item.setHidden(True)
-            item.setBackground(0, QBrush(Qt.NoBrush))
+            item.setBackground(0, QBrush(Qt.GlobalColor.transparent))
             for i in range(item.childCount()):
-                child = item.child(i)
-                hideItem(child)
+                child: QTreeWidgetItem | None = item.child(i)
+                if child is None:
+                    continue
+                hide_item(child)
 
-        hideAllItems()
+        hide_all_items()
         for path in paths:
             highlight_path(path)
 
-    def expandAllItems(self):  # sourcery skip: class-extract-method
-        root = self.repoTreeWidget.invisibleRootItem()
-        stack = [root]
+    def expand_all_items(self):  # sourcery skip: class-extract-method
+        root: QTreeWidgetItem | None = self.repo_tree_widget.invisibleRootItem()
+        if root is None:
+            return
+        stack: list[QTreeWidgetItem] = [root]
         while stack:
-            item = stack.pop()
+            item: QTreeWidgetItem = stack.pop()
             item.setExpanded(True)
             stack.extend(item.child(i) for i in range(item.childCount()))
 
-    def collapseAllItems(self):
-        root = self.repoTreeWidget.invisibleRootItem()
-        stack = [root]
+    def collapse_all_items(self):
+        root: QTreeWidgetItem | None = self.repo_tree_widget.invisibleRootItem()
+        stack: list[QTreeWidgetItem | None] = [root]
         while stack:
-            item = stack.pop()
+            item: QTreeWidgetItem | None = stack.pop()
             item.setExpanded(False)
             stack.extend(item.child(i) for i in range(item.childCount()))
 
-    def getSelectedPath(self) -> str | None:
-        selected_items = self.repoTreeWidget.selectedItems()
+    def get_selected_path(self) -> str | None:
+        selected_items: list[QTreeWidgetItem] = self.repo_tree_widget.selectedItems()
         if not selected_items:
             return None
 
-        item = selected_items[0]
-        item_info: TreeInfoData | None = item.data(0, Qt.UserRole)
+        item: QTreeWidgetItem = selected_items[0]
+        item_info: TreeInfoData | None = item.data(0, Qt.ItemDataRole.UserRole)
         if item_info and item_info.type == "blob":
             return item_info.path
 
         return None
 
     def accept(self) -> None:
-        self.selectedPath = self.getSelectedPath()
-        if not self.selectedPath:
+        self.selected_path = self.get_selected_path()
+        if not self.selected_path:
             QMessageBox.warning(self, "No Selection", "You must select a file.")
             return
-        RobustLogger().info(f"{self.__class__.__name__}: User selected '{self.selectedPath}'")
+        RobustLogger().info(f"{self.__class__.__name__}: User selected '{self.selected_path}'")
         super().accept()
 
-    def onForkChanged(self, index: int) -> None:
-        if self.repoData is not None:
-            self._load_repo_data(self.repoData, doForkComboUpdate=False)
+    def on_fork_changed(
+        self,
+        index: int,
+    ) -> None:
+        if self.repo_data is not None:
+            self._load_repo_data(self.repo_data, do_fork_combo_update=False)
 
-    def loadFork(self, forkName: str):
-        self.repoTreeWidget.clear()
-        full_name = forkName
+    def load_fork(
+        self,
+        fork_name: str,
+    ) -> None:
+        self.repo_tree_widget.clear()
+        full_name: str = fork_name
         # Format the contents_url with the proper path and add the recursive parameter
-        tree_url = f"https://api.github.com/repos/{full_name}/git/trees/master?recursive=1"
-        contents_dict = self.api_get(tree_url)
-        repoIndex = [TreeInfoData.from_dict(item) for item in contents_dict["tree"]]
-        self.populateTreeWidget(repoIndex)
-        self.searchFiles()
-    def api_get(self, url: str) -> dict:
+        tree_url: str = f"https://api.github.com/repos/{full_name}/git/trees/master?recursive=1"
+        contents_dict: dict[str, Any] = self.api_get(tree_url)
+        repo_index: list[TreeInfoData] = [TreeInfoData.from_dict(item) for item in contents_dict["tree"]]
+        self.populate_tree_widget(repo_index)
+        self.search_files()
+
+    def api_get(
+        self,
+        url: str,
+    ) -> dict[str, Any]:
         try:
-            response = requests.get(url, timeout=15)
+            response: requests.Response = requests.get(url, timeout=15)
             response.raise_for_status()
             self.update_rate_limit_info(response.headers)
             return response.json()
@@ -426,9 +456,12 @@ class GitHubFileSelector(QDialog):
         finally:
             self.stop_rate_limit_timer()
 
-    def start_rate_limit_timer(self, e: requests.exceptions.HTTPError | None = None) -> None:
+    def start_rate_limit_timer(
+        self,
+        e: requests.exceptions.HTTPError | None = None,
+    ) -> None:
         if e:
-            response = e.response
+            response: requests.Response = e.response
             if response.status_code == 403 and "X-RateLimit-Reset" in response.headers:  # noqa: PLR2004
                 self.rate_limit_reset = int(response.headers["X-RateLimit-Reset"])
                 self.rate_limit_remaining = 0
@@ -455,14 +488,21 @@ class GitHubFileSelector(QDialog):
                 self.refresh_data()
                 self.stop_rate_limit_timer()
 
-    def update_rate_limit_info(self, headers: dict[str, Any] | requests.structures.CaseInsensitiveDict[str]) -> None:
+    def update_rate_limit_info(
+        self,
+        headers: dict[str, Any] | requests.structures.CaseInsensitiveDict[str],
+    ) -> None:
         if "X-RateLimit-Reset" in headers:
             self.rate_limit_reset = int(headers["X-RateLimit-Reset"])
         if "X-RateLimit-Remaining" in headers:
             self.rate_limit_remaining = int(headers["X-RateLimit-Remaining"])
 
-    def onItemDoubleClicked(self, item: QTreeWidgetItem, column: int):
-        item_info: TreeInfoData | None = item.data(0, Qt.UserRole)
+    def on_item_double_clicked(
+        self,
+        item: QTreeWidgetItem,
+        column: int,
+    ) -> None:
+        item_info: TreeInfoData | None = item.data(0, Qt.ItemDataRole.UserRole)
         if item_info is None:
             print("No item info")
             return
@@ -472,69 +512,90 @@ class GitHubFileSelector(QDialog):
         self.accept()
 
     def clone_repository(self) -> None:
-        selectedFork = self.forkComboBox.currentText().replace(" (main)", "")
-        if not selectedFork:
+        selected_fork = self.fork_combo_box.currentText().replace(" (main)", "")
+        if not selected_fork:
             QMessageBox.warning(self, "No Fork Selected", "Please select a fork to clone.")
             return
 
-        url = f"https://github.com/{selectedFork}.git"
+        url = f"https://github.com/{selected_fork}.git"
         try:
             import shlex
-            command = shlex.split(f"git clone {url}")
+
+            command: list[str] = shlex.split(f"git clone {url}")
             subprocess.run(command, check=True)  # noqa: S603
-            QMessageBox.information(self, "Clone Successful", f"Repository {selectedFork} cloned successfully.")
+            QMessageBox.information(self, "Clone Successful", f"Repository {selected_fork} cloned successfully.")
         except subprocess.CalledProcessError as e:
             QMessageBox.critical(self, "Clone Failed", f"Failed to clone repository: {e!s}")
 
-    def show_context_menu(self, position: QPoint):
-        item = self.repoTreeWidget.itemAt(position)
-        if not item:
+    def show_context_menu(
+        self,
+        position: QPoint,
+    ) -> None:
+        item: QTreeWidgetItem | None = self.repo_tree_widget.itemAt(position)
+        if item is None:
             return
         context_menu = QMenu(self)
         context_menu.addAction("Open in Web Browser").triggered.connect(lambda: self.open_in_web_browser(item))
         context_menu.addAction("Copy URL").triggered.connect(lambda: self.copy_url(item))
         context_menu.addAction("Download").triggered.connect(lambda: self.download(item))
-        context_menu.exec(self.repoTreeWidget.viewport().mapToGlobal(position))
+        viewport: QWidget | None = self.repo_tree_widget.viewport()
+        if viewport is None:
+            return
+        context_menu.exec(viewport.mapToGlobal(position))
 
-    def convert_item_to_web_url(self, item: QTreeWidgetItem) -> str:
+    def convert_item_to_web_url(
+        self,
+        item: QTreeWidgetItem,
+    ) -> str:
         # Extract owner and repo from self
-        owner = self.owner
-        repo = self.repo
+        owner: str = self.owner
+        repo: str = self.repo
 
         # Extract the file path from the item
-        item_info: TreeInfoData = item.data(0, Qt.UserRole)
+        item_info: TreeInfoData | None = item.data(0, Qt.ItemDataRole.UserRole)
         if item_info is None or item_info.type != "blob":
             return ""
 
-        file_path = item_info.path
-        if self.repoData is None or not self.repoData.branches:
+        file_path: str = item_info.path
+        if self.repo_data is None or not self.repo_data.branches:
             return ""
 
         # Construct the web URL
-        web_url = f"https://github.com/{owner}/{repo}/blob/{self.repoData.branches[0].name}/{file_path}"
+        web_url: str = f"https://github.com/{owner}/{repo}/blob/{self.repo_data.branches[0].name}/{file_path}"
         return web_url
 
-    def open_in_web_browser(self, item: QTreeWidgetItem) -> None:
-        web_url = self.convert_item_to_web_url(item)
+    def open_in_web_browser(
+        self,
+        item: QTreeWidgetItem,
+    ) -> None:
+        web_url: str = self.convert_item_to_web_url(item)
         if web_url:
             import webbrowser
 
             webbrowser.open(web_url)
 
-    def copy_url(self, item: QTreeWidgetItem) -> None:
-        url = self.convert_item_to_web_url(item)
+    def copy_url(
+        self,
+        item: QTreeWidgetItem,
+    ) -> None:
+        url: str = self.convert_item_to_web_url(item)
         if url:
-            QApplication.clipboard().setText(url)
+            clipboard: QClipboard | None = QApplication.clipboard()
+            if clipboard is not None:
+                clipboard.setText(url)
 
-    def download(self, item: QTreeWidgetItem) -> None:
+    def download(
+        self,
+        item: QTreeWidgetItem,
+    ) -> None:
         urls: list[str] = []
         self.collect_urls(item, urls)
         for url in urls:
             try:
-                response = self.api_get(url)
+                response: dict[str, Any] = self.api_get(url)
                 if isinstance(response, dict) and "content" in response:
-                    content = base64.b64decode(response["content"])
-                    filename = self.convert_item_to_web_url(item).split("/")[-1]
+                    content: bytes = base64.b64decode(response["content"])
+                    filename: str = self.convert_item_to_web_url(item).split("/")[-1]
                     with open(filename, "wb") as file:  # noqa: PTH123
                         file.write(content)
                     QMessageBox.information(self, "Download Successful", f"Downloaded {filename} to {os.path.join(os.path.curdir, filename)}")  # noqa: PTH118
@@ -543,15 +604,22 @@ class GitHubFileSelector(QDialog):
             except requests.exceptions.RequestException as e:  # noqa: PERF203
                 QMessageBox.critical(self, "Download Failed", f"Failed to download {url.split('/')[-1]}: {e!s}")
 
-    def collect_urls(self, item: QTreeWidgetItem, urls: list[str]):
-        url = item.toolTip(0)
+    def collect_urls(
+        self,
+        item: QTreeWidgetItem,
+        urls: list[str],
+    ) -> None:
+        url: str = item.toolTip(0)
         if url:
             urls.append(url)
         for i in range(item.childCount()):
-            self.collect_urls(item.child(i), urls)
+            child: QTreeWidgetItem | None = item.child(i)
+            if child is None:
+                continue
+            self.collect_urls(child, urls)
 
     def refresh_data(self) -> None:
-        data: CompleteRepoData | None = self.initializeRepoData()
+        data: CompleteRepoData | None = self.initialize_repo_data()
         if data is not None:
             self._load_repo_data(data)
 
@@ -561,13 +629,13 @@ if __name__ == "__main__":
 
     from qtpy.QtWidgets import QApplication
 
-    from toolset.__main__ import onAppCrash
+    from toolset.main_init import on_app_crash
 
-    sys.excepthook = onAppCrash
+    sys.excepthook = on_app_crash
 
     owner = "KOTORCommunityPatches"
     repo = "Vanilla_KOTOR_Script_Source"
 
     app = QApplication(sys.argv)
-    dialog = GitHubFileSelector(owner, repo, selectedFiles=["k_act_com33.nss"], parent=None)
+    dialog = GitHubFileSelector(owner, repo, selected_files=["k_act_com33.nss"], parent=None)
     dialog.exec()

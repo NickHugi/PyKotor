@@ -11,6 +11,8 @@ from toolset.data.installation import HTInstallation
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
 
+    from pykotor.resource.formats.twoda import TwoDA
+
 
 class EditAnimationDialog(QDialog):
     def __init__(
@@ -33,7 +35,7 @@ class EditAnimationDialog(QDialog):
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
-        anim_list = installation.ht_get_cache_2da(HTInstallation.TwoDA_DIALOG_ANIMS)
+        anim_list: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_DIALOG_ANIMS)
         assert anim_list is not None
         self.ui.animationSelect.set_items(anim_list.get_column("name"), sort_alphabetically=True, cleanup_strings=True, ignore_blanks=True)
 

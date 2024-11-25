@@ -11,3 +11,18 @@ from pykotor.resource.formats.ncs.io_ncs import (
     NCSBinaryWriter,
 )
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss, read_ncs, write_ncs
+
+__all__ = [
+    "NCS",
+    "NCSBinaryReader",
+    "NCSBinaryWriter",
+    "NCSByteCode",
+    "NCSInstruction",
+    "NCSInstructionQualifier",
+    "NCSInstructionType",
+    "NCSInstructionTypeValue",
+    "bytes_ncs",
+    "compile_nss",
+    "read_ncs",
+    "write_ncs",
+]

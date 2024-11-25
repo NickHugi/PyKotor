@@ -27,16 +27,16 @@ def calculate_character_metrics(
     temp_draw: ImageDraw.ImageDraw = ImageDraw.Draw(temp_image)
 
     # Get the bounding box of the baseline character
-    baseline_bbox: tuple[int, int, int, int] = temp_draw.textbbox((0, 0), baseline_char, font=pil_font)
-    baseline_height: int = baseline_bbox[3] - baseline_bbox[1]
+    baseline_bbox: tuple[float, float, float, float] = temp_draw.textbbox((0, 0), baseline_char, font=pil_font)
+    baseline_height: int = int(baseline_bbox[3] - baseline_bbox[1])
 
     max_underhang_height: int = 0
     max_char_height: int = 0
     for char in charset_list:
-        char_bbox: tuple[int, int, int, int] = temp_draw.textbbox((0, 0), char, font=pil_font)
+        char_bbox: tuple[float, float, float, float] = temp_draw.textbbox((0, 0), char, font=pil_font)
 
-        underhang_height: int = char_bbox[3] - baseline_bbox[3]
-        char_height: int = char_bbox[3] - char_bbox[1]
+        underhang_height: int = int(char_bbox[3] - baseline_bbox[3])
+        char_height: int = int(char_bbox[3] - char_bbox[1])
 
         max_underhang_height = max(max_underhang_height, underhang_height)
         max_char_height = max(max_char_height, char_height + underhang_height)
@@ -71,7 +71,7 @@ def write_bitmap_fonts(
         )
 
 
-def write_bitmap_font(
+def write_bitmap_font(  # noqa: PLR0913, PLR0915
     target: os.PathLike | str,
     font_path: os.PathLike | str,
     resolution: tuple[int, int],
@@ -86,7 +86,7 @@ def write_bitmap_font(
         raise ZeroDivisionError(msg)
 
     font_path, target_path = (Path(p) for p in (font_path, target))
-    charset_list: list[str] = get_charset_from_singlebyte_encoding(lang.get_encoding())
+    charset_list: list[str] = get_charset_from_singlebyte_encoding(lang.get_encoding() or "")
     numchars: int = len([char for char in charset_list if char])
 
     # Calculate grid cell size
@@ -146,8 +146,8 @@ def write_bitmap_font(
         pixel_y2: float = norm_y2 * resolution[1]
 
         # Calculate character height and width
-        char_bbox: tuple[int, int, int, int] = draw.textbbox((pixel_x1, pixel_y1), char, font=pil_font)
-        char_width: int = char_bbox[2] - char_bbox[0]
+        char_bbox: tuple[float, float, float, float] = draw.textbbox((pixel_x1, pixel_y1), char, font=pil_font)
+        char_width: int = int(char_bbox[2] - char_bbox[0])
 
         # Draw character. Adjust Y coordinates to move one cell downwards
         if char == "\n":

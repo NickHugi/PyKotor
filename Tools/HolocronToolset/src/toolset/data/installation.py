@@ -251,13 +251,7 @@ class HTInstallation(Installation):
             return self._saves
         self._saves = {  # pylint: disable=attribute-defined-outside-init
             save_location: {
-                save_path: [
-                    FileResource(ResourceIdentifier.from_path(file).resname, ResourceIdentifier.from_path(file).restype, file.stat().st_size, 0, file)
-                    for file in save_path.iterdir()
-                    if file.is_file()
-                ]
-                for save_path in save_location.iterdir()
-                if save_path.is_dir()
+                save_path: [FileResource(ResourceIdentifier.from_path(file).resname, ResourceIdentifier.from_path(file).restype, file.stat().st_size, 0, file) for file in save_path.iterdir() if file.is_file()] for save_path in save_location.iterdir() if save_path.is_dir()
             }
             for save_location in self.save_locations()
             if save_location.is_dir()
@@ -346,9 +340,7 @@ class HTInstallation(Installation):
         @Slot(QPoint)
         def extend_context_menu(pos: QPoint):
             root_menu = QMenu(widget) if isinstance(widget, QComboBox) else widget.createStandardContextMenu()
-            widget_text: str = (
-                widget.currentText().strip() if isinstance(widget, QComboBox) else (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).strip()
-            )
+            widget_text: str = widget.currentText().strip() if isinstance(widget, QComboBox) else (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).strip()
 
             build_file_context_menu(root_menu, widget_text)
             root_menu.exec(widget.mapToGlobal(pos))
@@ -517,9 +509,7 @@ class HTInstallation(Installation):
         if os.path.commonpath([src_filepath.absolute(), self.module_path()]) == self.module_path():
             relevant_resources.update(res for cap in Module.find_capsules(self, src_filepath.name, strict=True) for res in cap if res.restype() is restype)
         elif os.path.commonpath([src_filepath.absolute(), self.override_path()]) == self.override_path():
-            relevant_resources.update(
-                res for reslist in self._modules.values() if any(r.identifier() == src_filepath.name for r in reslist) for res in reslist if res.restype() is restype
-            )  # noqa: E501
+            relevant_resources.update(res for reslist in self._modules.values() if any(r.identifier() == src_filepath.name for r in reslist) for res in reslist if res.restype() is restype)  # noqa: E501
 
         return relevant_resources
 

@@ -14,7 +14,11 @@ if TYPE_CHECKING:
 class LoadFromModuleDialog(QDialog):
     """LoadFromModuleDialog lets the user select a resource from a ERF or RIM."""
 
-    def __init__(self, capsule: Capsule, supported: list[ResourceType]):
+    def __init__(
+        self,
+        capsule: Capsule,
+        supported: list[ResourceType],
+    ):
         """Initialize a dialog to load resources from a capsule.
 
         Args:
@@ -51,25 +55,25 @@ class LoadFromModuleDialog(QDialog):
             self.ui.resourceList.addItem(item)
 
     def resname(self) -> str | None:
-        currentItem: QListWidgetItem | None = self.ui.resourceList.currentItem()
-        if currentItem:
-            resource: FileResource = currentItem.data(Qt.ItemDataRole.UserRole)
+        cur_item: QListWidgetItem | None = self.ui.resourceList.currentItem()
+        if cur_item:
+            resource: FileResource = cur_item.data(Qt.ItemDataRole.UserRole)
             if resource:
                 return resource.resname()
         return None
 
     def restype(self) -> ResourceType | None:
-        currentItem: QListWidgetItem | None = self.ui.resourceList.currentItem()
-        if currentItem:
-            resource: FileResource = currentItem.data(Qt.ItemDataRole.UserRole)
+        cur_item: QListWidgetItem | None = self.ui.resourceList.currentItem()
+        if cur_item:
+            resource: FileResource = cur_item.data(Qt.ItemDataRole.UserRole)
             if resource:
                 return resource.restype()
         return None
 
     def data(self) -> bytes | None:
-        currentItem: QListWidgetItem | None = self.ui.resourceList.currentItem()
-        if currentItem:
-            resource: FileResource = currentItem.data(Qt.ItemDataRole.UserRole)
+        cur_item: QListWidgetItem | None = self.ui.resourceList.currentItem()
+        if cur_item:
+            resource: FileResource = cur_item.data(Qt.ItemDataRole.UserRole)
             if resource:
                 return resource.data()
         return None

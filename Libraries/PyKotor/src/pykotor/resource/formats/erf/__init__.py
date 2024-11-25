@@ -9,3 +9,15 @@ from pykotor.resource.formats.erf.io_erf import (
     ERFBinaryWriter,
 )
 from pykotor.resource.formats.erf.erf_auto import bytes_erf, read_erf, write_erf
+
+__all__ = [
+    "ERF",
+    "ERFBinaryReader",
+    "ERFBinaryWriter",
+    "ERFResource",
+    "ERFType",
+    "bytes_erf",
+    "read_erf",
+    "write_erf",
+]
+

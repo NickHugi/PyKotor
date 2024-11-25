@@ -23,7 +23,6 @@ logs/
 .mypy_cache/
 Tools/HolocronToolset/src/toolset/kits/
 src/toolset/kits/
-vendor/
 powershell-bin/
 typings/
 Tools/HoloPatcher/src/holopatcher/node_modules/

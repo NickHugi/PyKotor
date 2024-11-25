@@ -73,10 +73,10 @@ class UTEEditor(Editor):
         """
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
-        self.ui.infiniteRespawnCheckbox.stateChanged.connect(self.setInfiniteRespawn)
-        self.ui.spawnSelect.currentIndexChanged.connect(self.setContinuous)
-        self.ui.addCreatureButton.clicked.connect(self.addCreature)
-        self.ui.removeCreatureButton.clicked.connect(self.remove_selectedCreature)
+        self.ui.infiniteRespawnCheckbox.stateChanged.connect(self.set_infinite_respawn)
+        self.ui.spawnSelect.currentIndexChanged.connect(self.set_continuous)
+        self.ui.addCreatureButton.clicked.connect(self.add_creature)
+        self.ui.removeCreatureButton.clicked.connect(self.remove_selected_creature)
 
     def _setup_installation(
         self,
@@ -98,12 +98,12 @@ class UTEEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.set_installation(installation)
 
-        difficulties: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        difficulties: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_ENC_DIFFICULTIES)
         self.ui.difficultySelect.clear()
         self.ui.difficultySelect.set_items(difficulties.get_column("label"))
         self.ui.difficultySelect.set_context(difficulties, installation, HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
-        factions: TwoDA = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
+        factions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
         self.ui.factionSelect.clear()
         self.ui.factionSelect.set_items(factions.get_column("label"))
         self.ui.factionSelect.set_context(factions, installation, HTInstallation.TwoDA_FACTIONS)
@@ -133,7 +133,7 @@ class UTEEditor(Editor):
     ):
         super().load(filepath, resref, restype, data)
 
-        ute = read_ute(data)
+        ute: UTE = read_ute(data)
         self._loadUTE(ute)
 
     def _loadUTE(self, ute: UTE):
@@ -176,9 +176,9 @@ class UTEEditor(Editor):
         for _ in range(self.ui.creatureTable.rowCount()):
             self.ui.creatureTable.removeRow(0)
         for creature in ute.creatures:
-            self.addCreature(
+            self.add_creature(
                 resname=str(creature.resref),
-                appearanceId=creature.appearance_id,
+                appearance_id=creature.appearance_id,
                 challenge=creature.challenge_rating,
                 single=creature.single_spawn,
             )
@@ -247,12 +247,12 @@ class UTEEditor(Editor):
         # Creatures
         ute.creatures = []
         for i in range(self.ui.creatureTable.rowCount()):
-            singleCheckbox = cast(QCheckBox, self.ui.creatureTable.cellWidget(i, 0))
-            challengeSpin = cast(QDoubleSpinBox, self.ui.creatureTable.cellWidget(i, 1))
-            appearanceSpin = cast(QSpinBox, self.ui.creatureTable.cellWidget(i, 2))
+            singleCheckbox: QCheckBox = cast(QCheckBox, self.ui.creatureTable.cellWidget(i, 0))
+            challengeSpin: QDoubleSpinBox = cast(QDoubleSpinBox, self.ui.creatureTable.cellWidget(i, 1))
+            appearanceSpin: QSpinBox = cast(QSpinBox, self.ui.creatureTable.cellWidget(i, 2))
 
             creature = UTECreature()
-            creature.resref = ResRef(cast(FilterComboBox, self.ui.creatureTable.item(i, 3)).currentText())
+            creature.resref = ResRef(cast(FilterComboBox, self.ui.creatureTable.cellWidget(i, 3)).currentText())
             creature.single_spawn = singleCheckbox.isChecked()
             creature.appearance_id = appearanceSpin.value()
             creature.challenge_rating = challengeSpin.value()
@@ -279,7 +279,7 @@ class UTEEditor(Editor):
         self._loadUTE(UTE())
 
     def change_name(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
+        dialog: LocalizedStringDialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
@@ -294,13 +294,13 @@ class UTEEditor(Editor):
         else:
             self.ui.resrefEdit.setText("m00xx_enc_000")
 
-    def setInfiniteRespawn(self):
+    def set_infinite_respawn(self):
         if self.ui.infiniteRespawnCheckbox.isChecked():
-            self._setInfiniteRespawnMain(val=-1, enabled=False)
+            self._set_infinite_respawn_main(val=-1, enabled=False)
         else:
-            self._setInfiniteRespawnMain(val=0, enabled=True)
+            self._set_infinite_respawn_main(val=0, enabled=True)
 
-    def _setInfiniteRespawnMain(
+    def _set_infinite_respawn_main(
         self,
         val: int,
         *,
@@ -310,18 +310,18 @@ class UTEEditor(Editor):
         self.ui.respawnCountSpin.setValue(val)
         self.ui.respawnCountSpin.setEnabled(enabled)
 
-    def setContinuous(self, *args, **kwargs):
-        isContinuous = self.ui.spawnSelect.currentIndex() == 1
-        self.ui.respawnsCheckbox.setEnabled(isContinuous)
-        self.ui.infiniteRespawnCheckbox.setEnabled(isContinuous)
-        self.ui.respawnCountSpin.setEnabled(isContinuous)
-        self.ui.respawnTimeSpin.setEnabled(isContinuous)
+    def set_continuous(self, *args, **kwargs):
+        is_continuous: bool = self.ui.spawnSelect.currentIndex() == 1
+        self.ui.respawnsCheckbox.setEnabled(is_continuous)
+        self.ui.infiniteRespawnCheckbox.setEnabled(is_continuous)
+        self.ui.respawnCountSpin.setEnabled(is_continuous)
+        self.ui.respawnTimeSpin.setEnabled(is_continuous)
 
-    def addCreature(
+    def add_creature(
         self,
         *args,
         resname: str = "",
-        appearanceId: int = 0,
+        appearance_id: int = 0,
         challenge: float = 0.0,
         single: bool = False,
     ):
@@ -330,7 +330,7 @@ class UTEEditor(Editor):
         Args:
         ----
             resname (str): Name of the creature
-            appearanceId (int): ID number for the creature's appearance
+            appearance_id (int): ID number for the creature's appearance
             challenge (float): Difficulty rating for the creature
             single (bool): Whether the creature is a single creature encounter
 
@@ -343,29 +343,29 @@ class UTEEditor(Editor):
             - Sets the widgets as the cell widgets in the appropriate columns
             - Sets the creature name as the item in the name column.
         """
-        rowId: int = self.ui.creatureTable.rowCount()
-        self.ui.creatureTable.insertRow(rowId)
+        row_id: int = self.ui.creatureTable.rowCount()
+        self.ui.creatureTable.insertRow(row_id)
 
-        singleCheckbox = QCheckBox()
-        singleCheckbox.setChecked(single)
-        challengeSpin = QDoubleSpinBox()
-        challengeSpin.setValue(challenge)
-        appearanceSpin = QSpinBox()
-        appearanceSpin.setValue(appearanceId)
-        resrefCombo = FilterComboBox()
-        resrefCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        resrefCombo.setMinimumWidth(20)
-        resrefCombo.populate_combo_box(self.relevant_creature_resnames)
-        resrefCombo.set_combo_box_text(resname)
+        single_checkbox = QCheckBox()
+        single_checkbox.setChecked(single)
+        challenge_spin = QDoubleSpinBox()
+        challenge_spin.setValue(challenge)
+        appearance_spin = QSpinBox()
+        appearance_spin.setValue(appearance_id)
+        resref_combo = FilterComboBox()
+        resref_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        resref_combo.setMinimumWidth(20)
+        resref_combo.populate_combo_box(self.relevant_creature_resnames)
+        resref_combo.set_combo_box_text(resname)
         if self._installation is not None:
-            self._installation.setup_file_context_menu(resrefCombo, [ResourceType.UTC])
+            self._installation.setup_file_context_menu(resref_combo, [ResourceType.UTC])
 
-        self.ui.creatureTable.setCellWidget(rowId, 0, singleCheckbox)
-        self.ui.creatureTable.setCellWidget(rowId, 1, challengeSpin)
-        self.ui.creatureTable.setCellWidget(rowId, 2, appearanceSpin)
-        self.ui.creatureTable.setCellWidget(rowId, 3, resrefCombo)
+        self.ui.creatureTable.setCellWidget(row_id, 0, single_checkbox)
+        self.ui.creatureTable.setCellWidget(row_id, 1, challenge_spin)
+        self.ui.creatureTable.setCellWidget(row_id, 2, appearance_spin)
+        self.ui.creatureTable.setCellWidget(row_id, 3, resref_combo)
 
-    def remove_selectedCreature(self):
+    def remove_selected_creature(self):
         if self.ui.creatureTable.selectedItems():
             item: QTableWidgetItem = self.ui.creatureTable.selectedItems()[0]
             self.ui.creatureTable.removeRow(item.row())

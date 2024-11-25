@@ -4,15 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.resource.formats.tpc.manipulate.swizzle import deswizzle, swizzle  # noqa: F401
 from pykotor.resource.formats.tpc.manipulate.rotate import rotate_rgb_rgba  # noqa: F401
-from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat, TPCLayer, TPCMipmap
+from pykotor.resource.formats.tpc.manipulate.swizzle import deswizzle, swizzle  # noqa: F401
+from pykotor.resource.formats.tpc.tpc_data import TPC, TPCLayer, TPCMipmap, TPCTextureFormat
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
-from pykotor.resource.formats.txi.txi_data import TXI
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 if TYPE_CHECKING:
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
+
+    from pykotor.resource.formats.txi.txi_data import TXI
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 

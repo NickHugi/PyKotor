@@ -12,8 +12,10 @@ from pykotor.common.misc import Color, ResRef
 
 if TYPE_CHECKING:
     from collections import deque
-    from pykotor.resource.generics.dlg.links import DLGLink
+
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
+
+    from pykotor.resource.generics.dlg.links import DLGLink
 
 
 class DLGAnimation:

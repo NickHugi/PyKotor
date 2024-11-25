@@ -8,13 +8,16 @@ from typing import TYPE_CHECKING, Any, TypeVar
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from typing_extensions import LiteralString, Self, SupportsIndex
+    from typing_extensions import LiteralString, Self, SupportsIndex  # pyright: ignore[reportMissingModuleSource]
 
 
-def insert_newlines(text: str, length: int = 100) -> str:
-    words = text.split(" ")
-    new_string = ""
-    current_line = ""
+def insert_newlines(
+    text: str,
+    length: int = 100,
+) -> str:
+    words: list[str] = text.split(" ")
+    new_string: str = ""
+    current_line: str = ""
 
     for word in words:
         if len(current_line) + len(word) + 1 <= length:
@@ -30,12 +33,16 @@ def insert_newlines(text: str, length: int = 100) -> str:
     return new_string
 
 
-def ireplace(original: str, target: str, replacement: str) -> str:
+def ireplace(
+    original: str,
+    target: str,
+    replacement: str,
+) -> str:
     if not original or not target:
         return original
     # Initialize an empty result string and a pointer to traverse the original string
     result: str = ""
-    i = 0
+    i: int = 0
 
     # Length of the target string
     target_length: int = len(target)
@@ -58,28 +65,40 @@ def ireplace(original: str, target: str, replacement: str) -> str:
     return result
 
 
-def format_text(text: object, max_chars_before_newline: int = 20) -> str:
-    text_str = str(text)
+def format_text(
+    text: object,
+    max_chars_before_newline: int = 20,
+) -> str:
+    text_str: str = str(text)
     if "\n" in text_str or len(text_str) > max_chars_before_newline:
         return f'"""{os.linesep}{text_str}{os.linesep}"""'
     return f"'{text_str}'"
 
 
-def first_char_diff_index(str1: str, str2: str) -> int:
+def first_char_diff_index(
+    str1: str,
+    str2: str,
+) -> int:
     """Find the index of the first differing character in two strings."""
-    min_length = min(len(str1), len(str2))
+    min_length: int = min(len(str1), len(str2))
     return next(
         (i for i in range(min_length) if str1[i] != str2[i]),
         min_length if len(str1) != len(str2) else -1,
     )
 
 
-def generate_diff_marker_line(index: int, length: int) -> str:
+def generate_diff_marker_line(
+    index: int,
+    length: int,
+) -> str:
     """Generate a line of spaces with a '^' at the specified index."""
     return "" if index == -1 else " " * index + "^" + " " * (length - index - 1)
 
 
-def compare_and_format(old_value: object, new_value: object) -> tuple[str, str]:
+def compare_and_format(
+    old_value: object,
+    new_value: object,
+) -> tuple[str, str]:
     """Compares and formats two values for diff display.
 
     Args:
@@ -100,8 +119,8 @@ def compare_and_format(old_value: object, new_value: object) -> tuple[str, str]:
         - Appends lines and marker lines to formatted outputs
         - Joins lines with line separators and returns a tuple.
     """
-    old_text = str(old_value)
-    new_text = str(new_value)
+    old_text: str = str(old_value)
+    new_text: str = str(new_value)
     old_lines: list[str] = old_text.split("\n")
     new_lines: list[str] = new_text.split("\n")
     formatted_old: list[str] = []
@@ -143,28 +162,300 @@ def striprtf(text: str) -> str:  # noqa: C901, PLR0915, PLR0912
     # control words which specify a "destination".
     destinations = frozenset(
         (
-            "aftncn", "aftnsep", "aftnsepc", "annotation", "atnauthor", "atndate", "atnicn", "atnid", "atnparent", "atnref", "atntime", "atrfend", "atrfstart",
-            "author", "background", "bkmkend", "bkmkstart", "blipuid", "buptim", "category", "colorschememapping", "colortbl", "comment", "company", "creatim",
-            "datafield", "datastore", "defchp", "defpap", "do", "doccomm", "docvar", "dptxbxtext", "ebcend", "ebcstart", "factoidname", "falt", "fchars", "ffdeftext",
-            "ffentrymcr", "ffexitmcr", "ffformat", "ffhelptext", "ffl", "ffname", "ffstattext", "field", "file", "filetbl", "fldinst", "fldrslt", "fldtype", "fname",
-            "fontemb", "fontfile", "fonttbl", "footer", "footerf", "footerl", "footerr", "footnote", "formfield", "ftncn", "ftnsep", "ftnsepc", "g", "generator", "gridtbl",
-            "header", "headerf", "headerl", "headerr", "hl", "hlfr", "hlinkbase", "hlloc", "hlsrc", "hsv", "htmltag", "info", "keycode", "keywords", "latentstyles",
-            "lchars", "levelnumbers", "leveltext", "lfolevel", "linkval", "list", "listlevel", "listname", "listoverride", "listoverridetable", "listpicture", "liststylename",
-            "listtable", "listtext", "lsdlockedexcept", "macc", "maccPr", "mailmerge", "maln", "malnScr", "manager", "margPr", "mbar", "mbarPr", "mbaseJc", "mbegChr",
-            "mborderBox", "mborderBoxPr", "mbox", "mboxPr", "mchr", "mcount", "mctrlPr", "md", "mdeg", "mdegHide", "mden", "mdiff", "mdPr", "me", "mendChr", "meqArr",
-            "meqArrPr", "mf", "mfName", "mfPr", "mfunc", "mfuncPr", "mgroupChr", "mgroupChrPr", "mgrow", "mhideBot", "mhideLeft", "mhideRight", "mhideTop", "mhtmltag",
-            "mlim", "mlimloc", "mlimlow", "mlimlowPr", "mlimupp", "mlimuppPr", "mm", "mmaddfieldname", "mmath", "mmathPict", "mmathPr", "mmaxdist", "mmc", "mmcJc",
-            "mmconnectstr", "mmconnectstrdata", "mmcPr", "mmcs", "mmdatasource", "mmheadersource", "mmmailsubject", "mmodso", "mmodsofilter", "mmodsofldmpdata",
-            "mmodsomappedname", "mmodsoname", "mmodsorecipdata", "mmodsosort", "mmodsosrc", "mmodsotable", "mmodsoudl", "mmodsoudldata", "mmodsouniquetag", "mmPr",
-            "mmquery", "mmr", "mnary", "mnaryPr", "mnoBreak", "mnum", "mobjDist", "moMath", "moMathPara", "moMathParaPr", "mopEmu", "mphant", "mphantPr", "mplcHide",
-            "mpos", "mr", "mrad", "mradPr", "mrPr", "msepChr", "mshow", "mshp", "msPre", "msPrePr", "msSub", "msSubPr", "msSubSup", "msSubSupPr", "msSup", "msSupPr",
-            "mstrikeBLTR", "mstrikeH", "mstrikeTLBR", "mstrikeV", "msub", "msubHide", "msup", "msupHide", "mtransp", "mtype", "mvertJc", "mvfmf", "mvfml", "mvtof",
-            "mvtol", "mzeroAsc", "mzeroDesc", "mzeroWid", "nesttableprops", "nextfile", "nonesttables", "objalias", "objclass", "objdata", "object", "objname", "objsect",
-            "objtime", "oldcprops", "oldpprops", "oldsprops", "oldtprops", "oleclsid", "operator", "panose", "password", "passwordhash", "pgp", "pgptbl", "picprop",
-            "pict", "pn", "pnseclvl", "pntext", "pntxta", "pntxtb", "printim", "private", "propname", "protend", "protstart", "protusertbl", "pxe", "result", "revtbl",
-            "revtim", "rsidtbl", "rxe", "shp", "shpgrp", "shpinst", "shppict", "shprslt", "shptxt", "sn", "sp", "staticval", "stylesheet", "subject", "sv", "svb", "tc",
-            "template", "themedata", "title", "txe", "ud", "upr", "userprops", "wgrffmtfilter", "windowcaption", "writereservation", "writereservhash", "xe", "xform",
-            "xmlattrname", "xmlattrvalue", "xmlclose", "xmlname", "xmlnstbl", "xmlopen"
+            "aftncn",
+            "aftnsep",
+            "aftnsepc",
+            "annotation",
+            "atnauthor",
+            "atndate",
+            "atnicn",
+            "atnid",
+            "atnparent",
+            "atnref",
+            "atntime",
+            "atrfend",
+            "atrfstart",
+            "author",
+            "background",
+            "bkmkend",
+            "bkmkstart",
+            "blipuid",
+            "buptim",
+            "category",
+            "colorschememapping",
+            "colortbl",
+            "comment",
+            "company",
+            "creatim",
+            "datafield",
+            "datastore",
+            "defchp",
+            "defpap",
+            "do",
+            "doccomm",
+            "docvar",
+            "dptxbxtext",
+            "ebcend",
+            "ebcstart",
+            "factoidname",
+            "falt",
+            "fchars",
+            "ffdeftext",
+            "ffentrymcr",
+            "ffexitmcr",
+            "ffformat",
+            "ffhelptext",
+            "ffl",
+            "ffname",
+            "ffstattext",
+            "field",
+            "file",
+            "filetbl",
+            "fldinst",
+            "fldrslt",
+            "fldtype",
+            "fname",
+            "fontemb",
+            "fontfile",
+            "fonttbl",
+            "footer",
+            "footerf",
+            "footerl",
+            "footerr",
+            "footnote",
+            "formfield",
+            "ftncn",
+            "ftnsep",
+            "ftnsepc",
+            "g",
+            "generator",
+            "gridtbl",
+            "header",
+            "headerf",
+            "headerl",
+            "headerr",
+            "hl",
+            "hlfr",
+            "hlinkbase",
+            "hlloc",
+            "hlsrc",
+            "hsv",
+            "htmltag",
+            "info",
+            "keycode",
+            "keywords",
+            "latentstyles",
+            "lchars",
+            "levelnumbers",
+            "leveltext",
+            "lfolevel",
+            "linkval",
+            "list",
+            "listlevel",
+            "listname",
+            "listoverride",
+            "listoverridetable",
+            "listpicture",
+            "liststylename",
+            "listtable",
+            "listtext",
+            "lsdlockedexcept",
+            "macc",
+            "maccPr",
+            "mailmerge",
+            "maln",
+            "malnScr",
+            "manager",
+            "margPr",
+            "mbar",
+            "mbarPr",
+            "mbaseJc",
+            "mbegChr",
+            "mborderBox",
+            "mborderBoxPr",
+            "mbox",
+            "mboxPr",
+            "mchr",
+            "mcount",
+            "mctrlPr",
+            "md",
+            "mdeg",
+            "mdegHide",
+            "mden",
+            "mdiff",
+            "mdPr",
+            "me",
+            "mendChr",
+            "meqArr",
+            "meqArrPr",
+            "mf",
+            "mfName",
+            "mfPr",
+            "mfunc",
+            "mfuncPr",
+            "mgroupChr",
+            "mgroupChrPr",
+            "mgrow",
+            "mhideBot",
+            "mhideLeft",
+            "mhideRight",
+            "mhideTop",
+            "mhtmltag",
+            "mlim",
+            "mlimloc",
+            "mlimlow",
+            "mlimlowPr",
+            "mlimupp",
+            "mlimuppPr",
+            "mm",
+            "mmaddfieldname",
+            "mmath",
+            "mmathPict",
+            "mmathPr",
+            "mmaxdist",
+            "mmc",
+            "mmcJc",
+            "mmconnectstr",
+            "mmconnectstrdata",
+            "mmcPr",
+            "mmcs",
+            "mmdatasource",
+            "mmheadersource",
+            "mmmailsubject",
+            "mmodso",
+            "mmodsofilter",
+            "mmodsofldmpdata",
+            "mmodsomappedname",
+            "mmodsoname",
+            "mmodsorecipdata",
+            "mmodsosort",
+            "mmodsosrc",
+            "mmodsotable",
+            "mmodsoudl",
+            "mmodsoudldata",
+            "mmodsouniquetag",
+            "mmPr",
+            "mmquery",
+            "mmr",
+            "mnary",
+            "mnaryPr",
+            "mnoBreak",
+            "mnum",
+            "mobjDist",
+            "moMath",
+            "moMathPara",
+            "moMathParaPr",
+            "mopEmu",
+            "mphant",
+            "mphantPr",
+            "mplcHide",
+            "mpos",
+            "mr",
+            "mrad",
+            "mradPr",
+            "mrPr",
+            "msepChr",
+            "mshow",
+            "mshp",
+            "msPre",
+            "msPrePr",
+            "msSub",
+            "msSubPr",
+            "msSubSup",
+            "msSubSupPr",
+            "msSup",
+            "msSupPr",
+            "mstrikeBLTR",
+            "mstrikeH",
+            "mstrikeTLBR",
+            "mstrikeV",
+            "msub",
+            "msubHide",
+            "msup",
+            "msupHide",
+            "mtransp",
+            "mtype",
+            "mvertJc",
+            "mvfmf",
+            "mvfml",
+            "mvtof",
+            "mvtol",
+            "mzeroAsc",
+            "mzeroDesc",
+            "mzeroWid",
+            "nesttableprops",
+            "nextfile",
+            "nonesttables",
+            "objalias",
+            "objclass",
+            "objdata",
+            "object",
+            "objname",
+            "objsect",
+            "objtime",
+            "oldcprops",
+            "oldpprops",
+            "oldsprops",
+            "oldtprops",
+            "oleclsid",
+            "operator",
+            "panose",
+            "password",
+            "passwordhash",
+            "pgp",
+            "pgptbl",
+            "picprop",
+            "pict",
+            "pn",
+            "pnseclvl",
+            "pntext",
+            "pntxta",
+            "pntxtb",
+            "printim",
+            "private",
+            "propname",
+            "protend",
+            "protstart",
+            "protusertbl",
+            "pxe",
+            "result",
+            "revtbl",
+            "revtim",
+            "rsidtbl",
+            "rxe",
+            "shp",
+            "shpgrp",
+            "shpinst",
+            "shppict",
+            "shprslt",
+            "shptxt",
+            "sn",
+            "sp",
+            "staticval",
+            "stylesheet",
+            "subject",
+            "sv",
+            "svb",
+            "tc",
+            "template",
+            "themedata",
+            "title",
+            "txe",
+            "ud",
+            "upr",
+            "userprops",
+            "wgrffmtfilter",
+            "windowcaption",
+            "writereservation",
+            "writereservhash",
+            "xe",
+            "xform",
+            "xmlattrname",
+            "xmlattrvalue",
+            "xmlclose",
+            "xmlname",
+            "xmlnstbl",
+            "xmlopen",
         )
     )
     # Translation of some special characters.
@@ -225,7 +516,7 @@ def striprtf(text: str) -> str:  # noqa: C901, PLR0915, PLR0912
                 if c < 0:
                     c += 0x10000
                 out.append(chr(c))
-                curskip = ucskip
+                curskip: int = ucskip
         elif hexcode:  # \'xx
             if curskip > 0:
                 curskip -= 1
@@ -306,6 +597,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         __x: Self | str,
         __y: Self | str,
         __z: Self | str,
+        /,
     ) -> dict[int, int | None]:
         return super().maketrans(cls._assert_str_type(__x), cls._assert_str_type(__y), cls._assert_str_type(__z))
 
@@ -313,6 +605,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         self,
         __name: str,
         __value: Any,
+        /,
     ):
         if hasattr(self, __name):
             msg = f"{self.__class__.__name__} is immutable, cannot evaluate `{self!r}.setattr({__name!r}, {__value!r})`"
@@ -331,10 +624,11 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def __eq__(
         self,
         __value: object,
+        /,
     ):
         if self is __value:
             return True
-        return self._content == self._assert_str_type(__value)
+        return self._content == self._assert_str_type(__value)  # pyright: ignore[reportArgumentType]
 
     def __hash__(self):
         return hash(self._content)
@@ -342,8 +636,9 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def __ne__(
         self,
         __value: object,
+        /,
     ):
-        return self._content != self._assert_str_type(__value)
+        return self._content != self._assert_str_type(__value)  # pyright: ignore[reportArgumentType]
 
     def __iter__(self):
         for i in range(len(self._content)):
@@ -362,30 +657,35 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def __getitem__(
         self,
         __key: SupportsIndex | slice,
+        /,
     ):
         return self.__class__(self._content[__key])
 
     def __contains__(
         self,
         __key: str | WrappedStr,  # type: ignore[override]
+        /,
     ) -> bool:
         return self._assert_str_type(__key) in self._content
 
     def __add__(
         self,
         __value: LiteralString | str | WrappedStr,
+        /,
     ):
         return self.__class__(self._content + self._assert_str_type(__value))
 
     def __radd__(
         self,
         __value: LiteralString | str | WrappedStr,
+        /,
     ):
         return self.__class__(self._assert_str_type(__value) + self._content)
 
     def __mod__(
         self,
         __value: LiteralString | str | WrappedStr | tuple[LiteralString, ...] | tuple[str, ...] | tuple[WrappedStr, ...],
+        /,
     ):
         parsed_value: tuple[str, ...] | str = tuple(self._assert_str_type(s) for s in __value) if isinstance(__value, tuple) else self._assert_str_type(__value)
         return self.__class__(self._content % parsed_value)
@@ -393,36 +693,42 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def __mul__(
         self,
         __value: SupportsIndex,
+        /,
     ):
         return self.__class__(self._content * __value)
 
     def __rmul__(
         self,
         __value: SupportsIndex,
+        /,
     ):
         return self.__class__(__value * self._content)
 
     def __lt__(
         self,
         __value: str | WrappedStr,
+        /,
     ):
         return self._content < self._assert_str_type(__value)
 
     def __le__(
         self,
         __value: str | WrappedStr,
+        /,
     ):
         return self._content <= self._assert_str_type(__value)
 
     def __gt__(
         self,
         __value: str | WrappedStr,
+        /,
     ):
         return self._content > self._assert_str_type(__value)
 
     def __ge__(
         self,
         __value: str | WrappedStr,
+        /,
     ):
         return self._content >= self._assert_str_type(__value)
 
@@ -442,6 +748,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         self,
         __width: SupportsIndex,
         __fillchar: WrappedStr | str = " ",
+        /,
     ) -> Self:
         """Return a centered string of length width.
 
@@ -454,6 +761,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         x: WrappedStr | str,
         __start: SupportsIndex | None = None,
         __end: SupportsIndex | None = None,
+        /,
     ) -> int:
         """S.count(sub[, start[, end]]) -> int
 
@@ -466,6 +774,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         self,
         encoding: WrappedStr | str = "utf-8",
         errors: WrappedStr | str = "strict",
+        /,
     ) -> bytes:
         """Encode the string using the codec registered for encoding.
 
@@ -473,7 +782,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
             The encoding in which to encode the string.
         errors
             The error handling scheme to use for encoding errors. The default is 'strict' meaning that encoding errors raise a UnicodeEncodeError. Other possible values are 'ignore', 'replace' and 'xmlcharrefreplace' as well as any other name registered with codecs.register_error that can handle UnicodeEncodeErrors.
-        """
+        """  # noqa: E501, W505
         return self._content.encode(self._assert_str_type(encoding), self._assert_str_type(errors))
 
     def endswith(
@@ -481,17 +790,19 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         __suffix: WrappedStr | str | tuple[WrappedStr | str, ...],
         __start: SupportsIndex | None = None,
         __end: SupportsIndex | None = None,
+        /,
     ) -> bool:
         """S.endswith(suffix[, start[, end]]) -> bool
 
         Return True if S ends with the specified suffix, False otherwise. With optional start, test S beginning at that position. With optional end, stop comparing S at that position. suffix can also be a tuple of strings to try.
-        """  # noqa: D415, D400, D402
+        """  # noqa: D415, D400, D402, E501, W505
         parsed_suffix: tuple[str, ...] | str = tuple(self._assert_str_type(s) for s in __suffix) if isinstance(__suffix, tuple) else self._assert_str_type(__suffix)
         return self._content.endswith(parsed_suffix, __start, __end)
 
     def expandtabs(
         self,
         tabsize: int = 8,
+        /,
     ) -> Self:
         """Return a copy where all tab characters are expanded using spaces.
 
@@ -504,6 +815,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         __sub: WrappedStr | str,
         __start: SupportsIndex | None = None,
         __end: SupportsIndex | None = None,
+        /,
     ) -> int:
         """S.find(sub[, start[, end]]) -> int
 
@@ -540,6 +852,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         __sub: WrappedStr | str,
         __start: SupportsIndex | None = None,
         __end: SupportsIndex | None = None,
+        /,
     ) -> int:
         """S.index(sub[, start[, end]]) -> int
 
@@ -637,6 +950,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def join(
         self,
         __iterable: Iterable[str] | Iterable[WrappedStr] | Iterable[str | WrappedStr],
+        /,
     ) -> Self:
         """Concatenate any number of strings.
 
@@ -650,6 +964,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         self,
         __width: SupportsIndex,
         __fillchar: WrappedStr | str = " ",
+        /,
     ) -> Self:
         """Return a left-justified string of length width.
 
@@ -664,16 +979,18 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def lstrip(
         self,
         __chars: WrappedStr | str | None = None,
+        /,
     ) -> Self:
         """Return a copy of the string with leading whitespace removed.
 
         If chars is given and not None, remove characters in chars instead.
         """
-        return self.__class__(self._content.lstrip(self._assert_str_type(__chars)))
+        return self.__class__(self._content.lstrip(self._assert_str_type(__chars or "")))
 
     def partition(
         self,
         __sep: WrappedStr | str,
+        /,
     ) -> tuple[Self, Self, Self]:
         """Partition the string into three parts using the given separator.
 
@@ -687,6 +1004,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def removeprefix(
         self,
         __prefix: WrappedStr | str,
+        /,
     ) -> Self:
         parsed_prefix: str = self._assert_str_type(__prefix)
         if self._content.startswith(parsed_prefix):
@@ -696,6 +1014,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def removesuffix(
         self,
         __suffix: WrappedStr | str,
+        /,
     ) -> Self:
         parsed_suffix: str = self._assert_str_type(__suffix)
         if self._content.endswith(parsed_suffix):
@@ -707,6 +1026,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         __old: WrappedStr | str,
         __new: WrappedStr | str,
         __count: SupportsIndex = -1,
+        /,
     ) -> Self:
         """Return a copy with all occurrences of substring old replaced by new.
 
@@ -728,6 +1048,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         __sub: WrappedStr | str,
         __start: SupportsIndex | None = None,
         __end: SupportsIndex | None = None,
+        /,
     ) -> int:
         """S.rfind(sub[, start[, end]]) -> int
 
@@ -743,6 +1064,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         __sub: WrappedStr | str,
         __start: SupportsIndex | None = None,
         __end: SupportsIndex | None = None,
+        /,
     ) -> int:
         """S.rindex(sub[, start[, end]]) -> int
 
@@ -757,6 +1079,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         self,
         __width: SupportsIndex,
         __fillchar: WrappedStr | str = " ",
+        /,
     ) -> Self:
         """Return a right-justified string of length width.
 
@@ -767,6 +1090,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def rpartition(
         self,
         __sep: WrappedStr | str,
+        /,
     ) -> tuple[Self, Self, Self]:
         """Partition the string into three parts using the given separator.
 
@@ -781,6 +1105,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         self,
         __sep: WrappedStr | str | None = None,
         __maxsplit: SupportsIndex = -1,
+        /,
     ) -> list[Self]:
         """Return a list of the words in the string, using sep as the delimiter string.
 
@@ -792,22 +1117,24 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         Splits are done starting at the end of the string and working to the front.
         """
         cls: type[Self] = self.__class__
-        return [cls(s) for s in self._content.rsplit(self._assert_str_type(__sep), __maxsplit)]
+        return [cls(s) for s in self._content.rsplit(self._assert_str_type(__sep or ""), __maxsplit)]
 
     def rstrip(
         self,
         __chars: WrappedStr | str | None = None,
+        /,
     ) -> Self:
         """Return a copy of the string with trailing whitespace removed.
 
         If chars is given and not None, remove characters in chars instead.
         """
-        return self.__class__(self._content.rstrip(self._assert_str_type(__chars)))
+        return self.__class__(self._content.rstrip(self._assert_str_type(__chars or "")))
 
     def split(  # type: ignore[override]
         self,
         sep: WrappedStr | str | None = None,
         maxsplit: SupportsIndex = -1,
+        /,
     ) -> list[Self]:
         """Return a list of the words in the string, using sep as the delimiter string.
 
@@ -816,11 +1143,12 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         maxsplit
           Maximum number of splits to do. -1 (the default value) means no limit.
         """
-        return [self.__class__(s) for s in self._content.split(self._assert_str_type(sep), maxsplit)]
+        return [self.__class__(s) for s in self._content.split(self._assert_str_type(sep or ""), maxsplit)]
 
     def splitlines(  # type: ignore[override]
         self,
-        keepends: bool = False,
+        keepends: bool = False,  # noqa: FBT001, FBT002
+        /,
     ) -> list[Self]:
         """Return a list of the lines in the string, breaking at line boundaries.
 
@@ -833,6 +1161,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         __prefix: WrappedStr | str | tuple[WrappedStr | str, ...],
         __start: SupportsIndex | None = None,
         __end: SupportsIndex | None = None,
+        /,
     ) -> bool:
         """S.startswith(prefix[, start[, end]]) -> bool
 
@@ -847,12 +1176,13 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def strip(
         self,
         __chars: WrappedStr | str | None = None,
+        /,
     ) -> Self:
         """Return a copy of the string with leading and trailing whitespace removed.
 
         If chars is given and not None, remove characters in chars instead.
         """
-        return self.__class__(self._content.strip(self._assert_str_type(__chars)))
+        return self.__class__(self._content.strip(self._assert_str_type(__chars or "")))
 
     def swapcase(self) -> Self:
         """Convert uppercase characters to lowercase and lowercase characters to uppercase."""
@@ -885,6 +1215,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     def zfill(
         self,
         __width: SupportsIndex,
+        /,
     ) -> Self:
         """Pad a numeric string with zeros on the left, to fill a field of the given width.
 
@@ -906,10 +1237,10 @@ class CaseInsensitiveWrappedStr(WrappedStr):
     @classmethod
     def _coerce_str(
         cls,
-        item,
+        item: Any,
     ) -> str:  # sourcery skip: assign-if-exp, reintroduce-else
         if isinstance(item, WrappedStr):
-            return str(item._content).casefold()
+            return str(item._content).casefold()  # noqa: SLF001
         if isinstance(item, str):
             return str(item).casefold()
         return item
@@ -924,12 +1255,14 @@ class CaseInsensitiveWrappedStr(WrappedStr):
     def __contains__(
         self,
         __key,
+        /,
     ):
         return self._lower_content.__contains__(self._coerce_str(__key))
 
     def __eq__(
         self,
         __value,
+        /,
     ):
         if self is __value:
             return True
@@ -938,6 +1271,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
     def __ne__(
         self,
         __value,
+        /,
     ):
         return self._lower_content.__ne__(self._coerce_str(__value))
 
@@ -949,12 +1283,14 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         sub,
         start=0,
         end=None,
+        /,
     ):
         return self._lower_content.find(self._coerce_str(sub), start, end)
 
     def partition(
         self,
         __sep,
+        /,
     ):
         # Find the position of the separator in a case-insensitive manner
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
@@ -975,6 +1311,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         __old,
         __new,
         __count=-1,
+        /,
     ):
         """Case-insensitive replace function matching the builtin str.replace's functionality."""
         # Replace each backslash in __new with two backslashes
@@ -990,6 +1327,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
     def rpartition(
         self,
         __sep,
+        /,
     ):
         # Find the position of the separator in a case-insensitive manner
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
@@ -1010,6 +1348,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         __sub,
         __start=None,
         __end=None,
+        /,
     ):  # sourcery skip: remove-unnecessary-cast
         return self._lower_content.rfind(self._coerce_str(__sub), __start, __end)
 
@@ -1017,6 +1356,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         self,
         __sep=None,
         __maxsplit=-1,
+        /,
     ):
         if __sep is None:
             # Default split behavior on whitespace
@@ -1031,6 +1371,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         self,
         sep=None,
         maxsplit=-1,
+        /,
     ):
         if sep is None:
             # Default split behavior on whitespace
@@ -1041,7 +1382,12 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         split_parts: list[int] = [m.start() for m in pattern.finditer(self._content)]
         return self._split_by_indices(split_parts, int(maxsplit))
 
-    def _split_by_indices(self, indices: list[int], maxsplit: int, reverse: bool = False) -> list[Self]:
+    def _split_by_indices(
+        self,
+        indices: list[int],
+        maxsplit: int,
+        reverse: bool = False,  # noqa: FBT001, FBT002
+    ) -> list[Self]:
         # Split the string using indices from the regular expression
         if maxsplit > 0:
             indices = indices[-maxsplit:] if reverse else indices[:maxsplit]

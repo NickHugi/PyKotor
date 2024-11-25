@@ -2,17 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from toolset.data.indoorkit_base import MDLMDXTuple
+from toolset.data.indoorkit.indoorkit_base import MDLMDXTuple
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from toolset.data.indoorkit_base import Kit
+    from toolset.data.indoorkit import Kit
 
 
 def process_padding_file(
     kit: Kit,
-    doorway_path: Path,
+    doorway_path: Path,  # noqa: ARG001
     padding_id: str,
     door_id: int,
     padding_size: int,
@@ -54,9 +54,9 @@ def process_texture_file(
         textures_path: Path to the textures directory
         texture_file: Path to the texture file
     """
-    texture = texture_file.stem.upper()
+    texture: str = texture_file.stem.upper()
     kit.textures[texture] = texture_file.read_bytes()
-    txi_path = textures_path / f"{texture}.txi"
+    txi_path: Path = textures_path / f"{texture}.txi"
     kit.txis[texture] = txi_path.read_bytes() if txi_path.is_file() else b""
 
 
@@ -73,9 +73,9 @@ def process_lightmap_file(
         lightmaps_path: Path to the lightmaps directory
         lightmap_file: Path to the lightmap file
     """
-    lightmap = lightmap_file.stem.upper()
+    lightmap: str = lightmap_file.stem.upper()
     kit.lightmaps[lightmap] = lightmap_file.read_bytes()
-    txi_path = lightmaps_path / f"{lightmap_file.stem}.txi"
+    txi_path: Path = lightmaps_path / f"{lightmap_file.stem}.txi"
     kit.txis[lightmap] = txi_path.read_bytes() if txi_path.is_file() else b""
 
 
@@ -92,7 +92,7 @@ def process_skybox_file(
         skyboxes_path: Path to the skyboxes directory
         skybox_resref_str: Skybox resource reference string
     """
-    mdl_path = skyboxes_path / f"{skybox_resref_str}.mdl"
-    mdx_path = skyboxes_path / f"{skybox_resref_str}.mdx"
+    mdl_path: Path = skyboxes_path / f"{skybox_resref_str}.mdl"
+    mdx_path: Path = skyboxes_path / f"{skybox_resref_str}.mdx"
     mdl, mdx = mdl_path.read_bytes(), mdx_path.read_bytes()
     kit.skyboxes[skybox_resref_str] = MDLMDXTuple(mdl, mdx)

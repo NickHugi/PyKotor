@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QWidget
 
+    from pykotor.resource.formats.gff.gff_data import GFF
     from toolset.data.installation import HTInstallation
 
 
@@ -79,23 +80,23 @@ class UTSEditor(Editor):
             - Connects style radio buttons toggled signals to changeStyle method
             - Connects play random/specific/everywhere radio buttons toggled signals to changePlay method.
         """
-        self.ui.addSoundButton.clicked.connect(self.addSound)
-        self.ui.removeSoundButton.clicked.connect(self.removeSound)
+        self.ui.addSoundButton.clicked.connect(self.add_sound)
+        self.ui.removeSoundButton.clicked.connect(self.remove_sound)
         self.ui.playSoundButton.clicked.connect(self.play_sound)
         self.ui.stopSoundButton.clicked.connect(self.player.stop)
-        self.ui.moveUpButton.clicked.connect(self.moveSoundUp)
-        self.ui.moveDownButton.clicked.connect(self.moveSoundDown)
+        self.ui.moveUpButton.clicked.connect(self.move_sound_up)
+        self.ui.moveDownButton.clicked.connect(self.move_sound_down)
 
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
 
-        self.ui.styleOnceRadio.toggled.connect(self.changeStyle)
-        self.ui.styleSeamlessRadio.toggled.connect(self.changeStyle)
-        self.ui.styleRepeatRadio.toggled.connect(self.changeStyle)
+        self.ui.styleOnceRadio.toggled.connect(self.change_style)
+        self.ui.styleSeamlessRadio.toggled.connect(self.change_style)
+        self.ui.styleRepeatRadio.toggled.connect(self.change_style)
 
-        self.ui.playRandomRadio.toggled.connect(self.changePlay)
-        self.ui.playSpecificRadio.toggled.connect(self.changePlay)
-        self.ui.playEverywhereRadio.toggled.connect(self.changePlay)
+        self.ui.playRandomRadio.toggled.connect(self.change_play)
+        self.ui.playSpecificRadio.toggled.connect(self.change_play)
+        self.ui.playEverywhereRadio.toggled.connect(self.change_play)
 
     def _setup_installation(self, installation: HTInstallation):
         self._installation = installation
@@ -113,7 +114,10 @@ class UTSEditor(Editor):
         uts: UTS = read_uts(data)
         self._loadUTS(uts)
 
-    def _loadUTS(self, uts: UTS):
+    def _loadUTS(
+        self,
+        uts: UTS,
+    ):
         """Loads UTS data into UI controls.
 
         Args:
@@ -219,7 +223,10 @@ class UTSEditor(Editor):
         # Sounds
         uts.sounds = []
         for i in range(self.ui.soundList.count()):
-            sound = ResRef(self.ui.soundList.item(i).text())
+            cur_item: QListWidgetItem | None = self.ui.soundList.item(i)
+            if cur_item is None:
+                continue
+            sound = ResRef(cur_item.text())
             uts.sounds.append(sound)
 
         # Positioning
@@ -235,7 +242,7 @@ class UTSEditor(Editor):
         uts.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
-        gff = dismantle_uts(uts)
+        gff: GFF = dismantle_uts(uts)
         write_gff(gff, data)
 
         return data, b""
@@ -245,6 +252,7 @@ class UTSEditor(Editor):
         self._loadUTS(UTS())
 
     def change_name(self):
+        assert self._installation is not None
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
@@ -260,8 +268,8 @@ class UTSEditor(Editor):
         else:
             self.ui.resrefEdit.setText("m00xx_trg_000")
 
-    def changeStyle(self):
-        def _set_ui_style_groups(boolean: bool):
+    def change_style(self):
+        def _set_ui_style_groups(boolean: bool):  # noqa: FBT001
             self.ui.intervalGroup.setEnabled(boolean)
             self.ui.orderGroup.setEnabled(boolean)
             self.ui.variationGroup.setEnabled(boolean)
@@ -274,8 +282,8 @@ class UTSEditor(Editor):
         elif self.ui.styleOnceRadio.isChecked():
             self.ui.intervalGroup.setEnabled(False)
 
-    def changePlay(self):
-        def _set_ui_play_groups(boolean: bool):
+    def change_play(self):
+        def _set_ui_play_groups(boolean: bool):  # noqa: FBT001
             self.ui.rangeGroup.setEnabled(boolean)
             self.ui.heightGroup.setEnabled(boolean)
             self.ui.distanceGroup.setEnabled(boolean)
@@ -293,55 +301,67 @@ class UTSEditor(Editor):
     def play_sound(self):
         self.player.stop()
 
-        curItem = self.ui.soundList.currentItem()
-        curItemText = curItem.text() if curItem else None
-        if not curItem or not curItemText:
+        cur_item: QListWidgetItem | None = self.ui.soundList.currentItem()
+        cur_item_text: str | None = cur_item.text() if cur_item else None
+        if not cur_item or not cur_item_text:
             return
 
-        resname: str = curItemText
+        resname: str = cur_item_text
+        assert self._installation is not None
         data: bytes | None = self._installation.sound(resname)
 
         if data:
             # PyQt5 and PySide2 code path
-            from qtpy.QtMultimedia import QMediaContent
+            from qtpy.QtMultimedia import QMediaContent  # pyright: ignore[reportAttributeAccessIssue]
+
             self.buffer = QBuffer(self)
             self.buffer.setData(data)
-            self.buffer.open(QIODevice.ReadOnly)
-            self.player.setMedia(QMediaContent(), self.buffer)
+            self.buffer.open(QIODevice.ReadOnly)  # pyright: ignore[reportAttributeAccessIssue]
+            self.player.setMedia(QMediaContent(), self.buffer)  # pyright: ignore[reportAttributeAccessIssue]
             QtCore.QTimer.singleShot(0, self.player.play)
         else:
             QMessageBox(QMessageBox.Icon.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
 
-    def addSound(self):
+    def add_sound(self):
         item = QListWidgetItem("new sound")
         item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
         self.ui.soundList.addItem(item)
 
-    def removeSound(self):
+    def remove_sound(self):
         if self.ui.soundList.currentRow() == -1:
             return
         self.ui.soundList.takeItem(self.ui.soundList.currentRow())
 
-    def moveSoundUp(self):
+    def move_sound_up(self):
         if self.ui.soundList.currentRow() == -1:
             return
-        resname: str = self.ui.soundList.currentItem().text()
+        cur_item: QListWidgetItem | None = self.ui.soundList.currentItem()
+        if cur_item is None:
+            return
+        resname: str = cur_item.text()
         row: int = self.ui.soundList.currentRow()
         self.ui.soundList.takeItem(self.ui.soundList.currentRow())
         self.ui.soundList.insertItem(row - 1, resname)
         self.ui.soundList.setCurrentRow(row - 1)
         item: QListWidgetItem | None = self.ui.soundList.item(row - 1)
+        if item is None:
+            return
         item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
 
-    def moveSoundDown(self):
+    def move_sound_down(self):
         if self.ui.soundList.currentRow() == -1:
             return
-        resname: str = self.ui.soundList.currentItem().text()
+        cur_item: QListWidgetItem | None = self.ui.soundList.currentItem()
+        if cur_item is None:
+            return
+        resname: str = cur_item.text()
         row: int = self.ui.soundList.currentRow()
         self.ui.soundList.takeItem(self.ui.soundList.currentRow())
         self.ui.soundList.insertItem(row + 1, resname)
         self.ui.soundList.setCurrentRow(row + 1)
         item: QListWidgetItem | None = self.ui.soundList.item(row + 1)
+        if item is None:
+            return
         item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
 
     def closeEvent(self, e: QCloseEvent):

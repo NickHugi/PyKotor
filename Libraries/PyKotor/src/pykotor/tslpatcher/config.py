@@ -103,7 +103,10 @@ class PatcherConfig:
         ConfigReader(ini, mod_path, logger, tslpatchdata_path).load(self)
 
     @classmethod
-    def as_namespace(cls, filepath: CaseAwarePath) -> PatcherNamespace:
+    def as_namespace(
+        cls,
+        filepath: CaseAwarePath,
+    ) -> PatcherNamespace:
         """Builds a changes.ini file as PatcherNamespace object.
 
         When a changes.ini is loaded when no namespaces.ini is created, we create a namespace internally with this single entry.
@@ -133,7 +136,10 @@ class PatcherConfig:
 
         return namespace
 
-    def get_nested_gff_patches(self, arg_gff_modifier: ModifyGFF) -> list[ModifyGFF]:
+    def get_nested_gff_patches(
+        self,
+        arg_gff_modifier: ModifyGFF,
+    ) -> list[ModifyGFF]:
         nested_modifiers: list[ModifyGFF] = copy(getattr(arg_gff_modifier, "modifiers", []))
         for gff_modifier in nested_modifiers:
             nested_modifiers.extend(self.get_nested_gff_patches(gff_modifier))

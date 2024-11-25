@@ -6,22 +6,26 @@ from typing import TYPE_CHECKING, Iterable
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QPainter, QPalette, QPen
-from qtpy.QtWidgets import QAction, QComboBox, QMenu, QMessageBox
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QComboBox,
+    QMenu,
+    QMessageBox,
+)
 
-from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
-    from qtpy.QtGui import QPaintEvent, QStandardItemModel
+    from qtpy.QtGui import QColor, QPaintEvent, QStandardItemModel
     from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from toolset.data.installation import HTInstallation
 
 
-_ROW_INDEX_DATA_ROLE = QtCore.Qt.ItemDataRole.UserRole + 4
-_REAL_2DA_TEXT_ROLE = QtCore.Qt.ItemDataRole.UserRole + 5
+_ROW_INDEX_DATA_ROLE: int = QtCore.Qt.ItemDataRole.UserRole + 4
+_REAL_2DA_TEXT_ROLE: int = QtCore.Qt.ItemDataRole.UserRole + 5
 
 
 class ComboBox2DA(QComboBox):
@@ -41,11 +45,11 @@ class ComboBox2DA(QComboBox):
     def paintEvent(self, event: QPaintEvent):
         super().paintEvent(event)
         if super().currentIndex() == -1:
-            painter = QPainter(self)
+            painter: QPainter = QPainter(self)
             # Fetch the text color from the palette
-            text_color = self.palette().color(QPalette.ColorRole.Text)
+            text_color: QColor = self.palette().color(QPalette.ColorRole.Text)
             painter.setPen(QPen(text_color))
-            text_rect = self.rect().adjusted(2, 0, 0, 0)
+            text_rect: QtCore.QRect = self.rect().adjusted(2, 0, 0, 0)
             painter.drawText(text_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, self.placeholderText())
             painter.end()
 
@@ -62,7 +66,7 @@ class ComboBox2DA(QComboBox):
         row_index = self.itemData(current_index, _ROW_INDEX_DATA_ROLE)
         return row_index or 0
 
-    def setCurrentIndex(self, rowIn2DA: int):
+    def setCurrentIndex(self, row_in_2da: int):
         """Selects the item with the specified row index: This is NOT the index into the combobox like it would be with a normal QCombobox.
 
         If the index cannot be found, it will create an item with the matching index.
@@ -73,11 +77,11 @@ class ComboBox2DA(QComboBox):
         """
         index = None
         for i in range(self.count()):
-            if self.itemData(i, _ROW_INDEX_DATA_ROLE) == rowIn2DA:
+            if self.itemData(i, _ROW_INDEX_DATA_ROLE) == row_in_2da:
                 index = i
 
         if index is None:
-            self.addItem(f"[Modded Entry #{rowIn2DA}]", rowIn2DA)
+            self.addItem(f"[Modded Entry #{row_in_2da}]", row_in_2da)
             index = self.count() - 1
 
         super().setCurrentIndex(index)
@@ -125,14 +129,9 @@ class ComboBox2DA(QComboBox):
         self.update_tool_tip()
 
     def on_context_menu(self, point: QPoint):
-        menu = QMenu(self)
-        if (
-            self._installation is not None
-            and self._resname is not None
-            and self._this2DA is not None
-        ):
+        menu: QMenu = QMenu(self)
+        if self._installation is not None and self._resname is not None and self._this2DA is not None:
             menu.addAction(f"Open '{self._resname}.2da' in 2DAEditor").triggered.connect(self.open_in_2da_editor)
-        menu.addAction("Set Modded Value").triggered.connect(self.open_modded_value_dialog)
         toggle_sort_action = QAction("Toggle Sorting", self)
         toggle_sort_action.setCheckable(True)
         toggle_sort_action.setChecked(self._sort_alphabetically)
@@ -158,22 +157,17 @@ class ComboBox2DA(QComboBox):
                 new_text = text.replace("TRAP_", "")
                 new_text = text.replace("GENDER_", "")
                 new_text = text.replace("_", " ")
-            if not ignore_blanks or new_text and new_text.strip():
+            if not ignore_blanks or (new_text and new_text.strip()):
                 self.addItem(new_text, index)
 
         self.enable_sort() if self._sort_alphabetically else self.disable_sort()
 
     def update_tool_tip(self):
-        row_index_display = (f"<b>Row Index:</b> {self.currentIndex()}<br>" if self.currentIndex() != -1 else "")
+        row_index_display = f"<b>Row Index:</b> {self.currentIndex()}<br>" if self.currentIndex() != -1 else ""
         if self._resname and self._this2DA:
-            tooltip_text = (
-                f"<b>Filename:</b> {self._resname}.2da<br>"
-                f"{row_index_display}<br><i>Right-click for more options.</i>"
-            )
+            tooltip_text = f"<b>Filename:</b> {self._resname}.2da<br>" f"{row_index_display}<br><i>Right-click for more options.</i>"
         else:
-            tooltip_text = (
-                f"{row_index_display}<br><i>Right-click for more options.</i>"
-            )
+            tooltip_text = f"{row_index_display}<br><i>Right-click for more options.</i>"
         self.setToolTip(tooltip_text)
 
     def set_context(self, data: TwoDA | None, install: HTInstallation, resname: str):
@@ -200,22 +194,19 @@ class ComboBox2DA(QComboBox):
         model.sort(0)
 
     def open_in_2da_editor(self):
-        if (
-            self._installation is None
-            or self._resname is None
-            or self._this2DA is None
-        ):
+        if self._installation is None or self._resname is None or self._this2DA is None:
             return
         from pykotor.resource.formats.twoda.twoda_auto import bytes_2da
         from toolset.gui.editors.twoda import TwoDAEditor
         from toolset.utils.window import add_window
+
         editor = TwoDAEditor(None, self._installation)
         editor.new()
         try:
-            bytes_data = bytes_2da(self._this2DA)
+            bytes_data: bytes = bytes_2da(self._this2DA)
             editor._load_main(bytes_data)  # noqa: SLF001
         except (ValueError, OSError) as e:
-            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            error_msg: str = str(universal_simplify_exception(e)).replace("\n", "<br>")
             QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec()
             return
         else:
@@ -224,9 +215,3 @@ class ComboBox2DA(QComboBox):
         add_window(editor)
         editor.show()
         editor.activateWindow()
-
-    def open_modded_value_dialog(self):
-        """Opens a dialog where the player can manually set the index into the 2DA file."""
-        dialog = ModdedValueSpinboxDialog(self)
-        if dialog.exec():
-            self.setCurrentIndex(dialog.value())

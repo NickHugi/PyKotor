@@ -29,10 +29,10 @@ class HelpWindow(QMainWindow):
         from toolset.uic.qtpy.windows import help as toolset_help
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
-        
+
         self.help_content = HelpContent(self)
         self.help_updater = HelpUpdater(self)
-        
+
         self._setup_signals()
         self.help_content.setup_contents()
         self.starting_page: str | None = startingPage

@@ -160,7 +160,10 @@ class Scene:
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().debug(f"Completed pre-initialize Scene{module_id_part}")
 
-    def set_installation(self, installation: Installation):
+    def set_installation(
+        self,
+        installation: Installation,
+    ):
         def load_2da(name: str) -> TwoDA:
             resource: ResourceResult | None = installation.resource(name, ResourceType.TwoDA, SEARCH_ORDER_2DA)
             if resource is None:
@@ -770,7 +773,7 @@ class Scene:
         self.textures[name] = blank if tpc is None else Texture.from_tpc(tpc)
         return self.textures[name]
 
-    def model(
+    def model(  # noqa: C901, PLR0912
         self,
         name: str,
     ) -> Model:
@@ -956,8 +959,8 @@ class RenderObject:
         max_point: vec3,
     ):
         obj_min, obj_max = scene.model(obj.model).box()
-        obj_min = transform * obj_min
-        obj_max = transform * obj_max
+        obj_min: vec3 = transform * obj_min
+        obj_max: vec3 = transform * obj_max
         min_point.x = min(min_point.x, obj_min.x, obj_max.x)
         min_point.y = min(min_point.y, obj_min.y, obj_max.y)
         min_point.z = min(min_point.z, obj_min.z, obj_max.z)
@@ -1095,12 +1098,11 @@ class Camera:
         cross: vec3 = glm.cross(forward, sideward)
         return glm.normalize(cross)
 
-# Updated code snippet
     def true_position(self) -> vec3:
-        cos_yaw = math.cos(self.yaw)
-        cos_pitch = math.cos(self.pitch - math.pi / 2)
-        sin_yaw = math.sin(self.yaw)
-        sin_pitch = math.sin(self.pitch - math.pi / 2)
+        cos_yaw: float = math.cos(self.yaw)
+        cos_pitch: float = math.cos(self.pitch - math.pi / 2)
+        sin_yaw: float = math.sin(self.yaw)
+        sin_pitch: float = math.sin(self.pitch - math.pi / 2)
         return vec3(
             self.x + cos_yaw * cos_pitch * self.distance,
             self.y + sin_yaw * cos_pitch * self.distance,

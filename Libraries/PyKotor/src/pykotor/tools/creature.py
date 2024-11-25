@@ -1,29 +1,31 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from loggerplus import RobustLogger
 
 from pykotor.common.misc import EquipmentSlot
 from pykotor.resource.formats.twoda import read_2da
-from pykotor.resource.generics.uti import read_uti
+from pykotor.resource.generics.uti import UTI, read_uti
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-
+    from pykotor.common.misc import InventoryItem, ResRef
+    from pykotor.extract.file import ResourceResult
     from pykotor.extract.installation import Installation
+    from pykotor.extract.twoda import TwoDARow
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.utc import UTC
     from pykotor.resource.generics.uti import UTI
 
 
-def get_body_model(
+def get_body_model(  # noqa: C901, PLR0912, PLR0915
     utc: UTC,
     installation: Installation,
     *,
     appearance: TwoDA | None = None,
     baseitems: TwoDA | None = None,
-) -> tuple[str | None, str | None]:    # sourcery skip: extract-duplicate-method
+) -> tuple[str | None, str | None]:  # sourcery skip: extract-duplicate-method
     """Returns the body model and texture names for the given creature utc.
 
     The values for the model/texture may be None and the default texture provided by the model should be used instead.
@@ -60,26 +62,26 @@ def get_body_model(
             - process override texture based on alignment
     """
     if appearance is None:
-        appearance_lookup = installation.resource("appearance", ResourceType.TwoDA)
+        appearance_lookup: ResourceResult | None = installation.resource("appearance", ResourceType.TwoDA)
         if not appearance_lookup:
             raise ValueError("appearance.2da missing from installation.")
         appearance = read_2da(appearance_lookup.data)
 
     if baseitems is None:
-        baseitems_lookup = installation.resource("baseitems", ResourceType.TwoDA)
+        baseitems_lookup: ResourceResult | None = installation.resource("baseitems", ResourceType.TwoDA)
         if not baseitems_lookup:
             raise ValueError("baseitems.2da missing from installation.")
         baseitems = read_2da(baseitems_lookup.data)
 
-    first_name = installation.string(utc.first_name)
-    context_base = f" for UTC '{first_name}'"
+    first_name: str = installation.string(utc.first_name)
+    context_base: str = f" for UTC '{first_name}'"
 
     print(f"Lookup appearance row {utc.appearance_id} for get_body_model call.")
-    utc_appearance_row = appearance.get_row(utc.appearance_id, context=f"Fetching row based on appearance_id{context_base}")
+    utc_appearance_row: TwoDARow = appearance.get_row(utc.appearance_id, context=f"Fetching row based on appearance_id{context_base}")
     body_model: str | None = None
     override_texture: str | None = None
 
-    modeltype = utc_appearance_row.get_string("modeltype", context=f"Fetching model type{context_base}")
+    modeltype: str = utc_appearance_row.get_string("modeltype", context=f"Fetching model type{context_base}")
     if modeltype != "B":
         print(f"appearance.2da: utc 'modeltype' is '{modeltype}', fetching 'race' model{context_base}")
         body_model = utc_appearance_row.get_string("race", context=context_base)
@@ -89,7 +91,7 @@ def get_body_model(
         if EquipmentSlot.ARMOR not in utc.equipment or not utc.equipment[EquipmentSlot.ARMOR].resref:
             model_column = "modela"
             body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model 'modela'{context_base}")
-            tex_column = "texaevil" if utc.alignment <= 25 else "texa"  # noqa: PLR2004
+            tex_column: Literal["texaevil", "texa"] = "texaevil" if utc.alignment <= 25 else "texa"  # noqa: PLR2004
             tex_append = "01"
             override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching default texture{context_base}")
         else:
@@ -100,17 +102,22 @@ def get_body_model(
                 RobustLogger().error(f"'{armor_resref}.uti' missing from installation{context_base}")
                 model_column, body_model, tex_column, tex_append, override_texture = lookup_no_armor()  # fallback
             else:
-                armor_uti = read_uti(armor_res_lookup.data)
+                armor_uti: UTI = read_uti(armor_res_lookup.data)
                 RobustLogger().debug(f"baseitems.2da: get body row {armor_uti.base_item} for their armor")
-                body_row = baseitems.get_row(armor_uti.base_item, context=f"Fetching armor base item row{context_base}")
-                body_cell = body_row.get_string("bodyvar", context=f"Fetching 'bodyvar'{context_base}")
+                body_row: TwoDARow = baseitems.get_row(armor_uti.base_item, context=f"Fetching armor base item row{context_base}")
+                body_cell: str = body_row.get_string("bodyvar", context=f"Fetching 'bodyvar'{context_base}")
                 RobustLogger().debug(f"baseitems.2da: 'bodyvar' cell: {body_cell}")
 
-                armor_variation = body_cell.lower()
-                model_column = f"model{armor_variation}"
-                evil_tex_column = f"tex{armor_variation}evil"
-                tex_column = evil_tex_column if utc.alignment <= 25 and evil_tex_column in appearance.get_headers() else f"tex{armor_variation}"
-                tex_append = str(armor_uti.texture_variation).rjust(2, "0")  # Ensure one-digit numerics are proceeded by '0'. 5 -> 05, 100 -> 100.
+                armor_variation: str = body_cell.lower()
+                model_column: str = f"model{armor_variation}"
+                evil_tex_column: str = f"tex{armor_variation}evil"
+                tex_column: Literal["texaevil", "texa"] = (
+                    evil_tex_column  # pyright: ignore[reportAssignmentType]
+                    if utc.alignment <= 25  # noqa: PLR2004
+                    and evil_tex_column in appearance.get_headers()
+                    else f"tex{armor_variation}"
+                )
+                tex_append: str = str(armor_uti.texture_variation).rjust(2, "0")  # Ensure one-digit numerics are proceeded by '0'. 5 -> 05, 100 -> 100.
 
                 body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model column{context_base}")
                 override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching texture column{context_base}")
@@ -119,7 +126,7 @@ def get_body_model(
         print(f"override_texture name: '{override_texture}'")
 
         if override_texture and override_texture.strip() and override_texture != "****":
-            fallback_override_texture = override_texture + tex_append
+            fallback_override_texture: str = override_texture + tex_append
             if tex_append != "01" and installation.texture(fallback_override_texture) is None:  # e.g. g_lena.utc which uses the twi'lek stripper model (i.e. should be n_twilekfc01 not n_twilekfc05)
                 fallback_override_texture = f"{override_texture}01"
                 print(f"override texture '{fallback_override_texture}' not found, appending '01' to the end like the game itself would do.")
@@ -144,28 +151,20 @@ def get_weapon_models(
     baseitems: TwoDA | None = None,
 ) -> tuple[str | None, str | None]:  # sourcery skip: extract-duplicate-method
     if appearance is None:
-        appearance_lookup = installation.resource("appearance", ResourceType.TwoDA)
+        appearance_lookup: ResourceResult | None = installation.resource("appearance", ResourceType.TwoDA)
         if not appearance_lookup:
             RobustLogger().error("appearance.2da missing from installation.")
             return None, None
         appearance = read_2da(appearance_lookup.data)
     if baseitems is None:
-        baseitems_lookup = installation.resource("baseitems", ResourceType.TwoDA)
+        baseitems_lookup: ResourceResult | None = installation.resource("baseitems", ResourceType.TwoDA)
         if not baseitems_lookup:
             RobustLogger().error("baseitems.2da missing from installation.")
             return None, None
         baseitems = read_2da(baseitems_lookup.data)
 
-    right_hand_model: str | None = _load_hand_uti(
-        installation,
-        str(utc.equipment[EquipmentSlot.RIGHT_HAND].resref),
-        baseitems
-    ) if EquipmentSlot.RIGHT_HAND in utc.equipment else None
-    left_hand_model: str | None = _load_hand_uti(
-        installation,
-        str(utc.equipment[EquipmentSlot.LEFT_HAND].resref),
-        baseitems
-    ) if EquipmentSlot.LEFT_HAND in utc.equipment else None
+    right_hand_model: str | None = _load_hand_uti(installation, str(utc.equipment[EquipmentSlot.RIGHT_HAND].resref), baseitems) if EquipmentSlot.RIGHT_HAND in utc.equipment else None
+    left_hand_model: str | None = _load_hand_uti(installation, str(utc.equipment[EquipmentSlot.LEFT_HAND].resref), baseitems) if EquipmentSlot.LEFT_HAND in utc.equipment else None
     return right_hand_model, left_hand_model
 
 
@@ -174,7 +173,7 @@ def _load_hand_uti(
     hand_resref: str,
     baseitems: TwoDA,
 ) -> str | None:
-    hand_lookup = installation.resource(hand_resref, ResourceType.UTI)
+    hand_lookup: ResourceResult | None = installation.resource(hand_resref, ResourceType.UTI)
     if not hand_lookup:
         RobustLogger().error(f"{hand_resref}.uti missing from installation.")
         return None
@@ -186,7 +185,7 @@ def _load_hand_uti(
     ).strip()
 
 
-def get_head_model(
+def get_head_model(  # noqa: C901, PLR0912
     utc: UTC,
     installation: Installation,
     *,
@@ -212,13 +211,13 @@ def get_head_model(
         Returns a tuple containing the name of the model and the texture to apply to the model.
     """
     if appearance is None:
-        appearance_lookup = installation.resource("appearance", ResourceType.TwoDA)
+        appearance_lookup: ResourceResult | None = installation.resource("appearance", ResourceType.TwoDA)
         if not appearance_lookup:
             RobustLogger().error("appearance.2da missing from installation.")
             return None, None
         appearance = read_2da(appearance_lookup.data)
     if heads is None:
-        heads_lookup = installation.resource("heads", ResourceType.TwoDA)
+        heads_lookup: ResourceResult | None = installation.resource("heads", ResourceType.TwoDA)
         if not heads_lookup:
             RobustLogger().error("heads.2da missing from installation.")
             return None, None
@@ -227,10 +226,10 @@ def get_head_model(
     model: str | None = None
     texture: str | None = None
 
-    head_id = appearance.get_row(utc.appearance_id).get_integer("normalhead")
+    head_id: int | None = appearance.get_row(utc.appearance_id).get_integer("normalhead")
     if head_id is not None:
         try:
-            head_row = heads.get_row(head_id)
+            head_row: TwoDARow = heads.get_row(head_id)
         except IndexError:
             RobustLogger().error(
                 "Row %s missing from heads.2da, defined in appearance.2da under the column 'normalhead' row %s",
@@ -240,13 +239,13 @@ def get_head_model(
             )
         model = head_row.get_string("head")
         head_column_name: str | None = None
-        if utc.alignment < 10:
+        if utc.alignment < 10:  # noqa: PLR2004
             head_column_name = "headtexvvve"
-        elif utc.alignment < 20:
+        elif utc.alignment < 20:  # noqa: PLR2004
             head_column_name = "headtexvve"
-        elif utc.alignment < 30:
+        elif utc.alignment < 30:  # noqa: PLR2004
             head_column_name = "headtexve"
-        elif utc.alignment < 40:
+        elif utc.alignment < 40:  # noqa: PLR2004
             head_column_name = "headtexe"
         elif "alttexture" in heads.get_headers():
             if not installation.game().is_k2():  # TSL only override.
@@ -269,12 +268,12 @@ def get_mask_model(
 ) -> str | None:
     model: str | None = None
 
-    head_equip = utc.equipment.get(EquipmentSlot.HEAD)
+    head_equip: InventoryItem | None = utc.equipment.get(EquipmentSlot.HEAD)
     if head_equip is not None:
-        resref = head_equip.resref
+        resref: ResRef = head_equip.resref
         if not resref:
             return None
-        resource = installation.resource(str(resref), ResourceType.UTI)
+        resource: ResourceResult | None = installation.resource(str(resref), ResourceType.UTI)
         if resource is None:
             return None
         uti: UTI = read_uti(resource.data)

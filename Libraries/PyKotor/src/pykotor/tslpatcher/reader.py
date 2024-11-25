@@ -57,18 +57,12 @@ from utility.misc import is_float, is_int
 if TYPE_CHECKING:
     import os
 
-    from typing_extensions import Literal
+    from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.memory import TokenUsage
-    from pykotor.tslpatcher.mods.gff import (
-        FieldValue,
-        ModifyGFF,
-    )
-    from pykotor.tslpatcher.mods.twoda import (
-        Modify2DA,
-        RowValue,
-    )
+    from pykotor.tslpatcher.mods.gff import FieldValue, ModifyGFF
+    from pykotor.tslpatcher.mods.twoda import Modify2DA, RowValue
 
 SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
@@ -82,7 +76,10 @@ class NamespaceReader:
         self.namespaces: list[PatcherNamespace] = []
 
     @classmethod
-    def from_filepath(cls, path: os.PathLike | str) -> list[PatcherNamespace]:
+    def from_filepath(
+        cls,
+        path: os.PathLike | str,
+    ) -> list[PatcherNamespace]:
         ini = ConfigParser(
             delimiters=("="),
             allow_no_value=True,
@@ -136,10 +133,10 @@ class ConfigReader:
         logger: PatchLogger | None = None,
         tslpatchdata_path: os.PathLike | str | None = None,
     ):
-        self.previously_parsed_sections = set()
+        self.previously_parsed_sections: set[str] = set()
         self.ini: ConfigParser = ini
         self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
-        self.tslpatchdata_path: CaseAwarePath | None = tslpatchdata_path  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
+        self.tslpatchdata_path: CaseAwarePath | None = CaseAwarePath(tslpatchdata_path) if tslpatchdata_path else None  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
 
@@ -148,7 +145,7 @@ class ConfigReader:
         cls,
         file_path: os.PathLike | str,
         logger: PatchLogger | None = None,
-    ):
+    ) -> Self:
         """Load PatcherConfig from an INI file path.
 
         Args:
@@ -187,13 +184,16 @@ class ConfigReader:
             e.source = str(resolved_file_path)
             raise e  # noqa: TRY201  # don't `raise from e` here!
 
-        instance = cls(ini, resolved_file_path.parent, logger)
+        instance: Self = cls(ini, resolved_file_path.parent, logger)
         instance.config = PatcherConfig()
         return instance
 
-    def load(self, config: PatcherConfig) -> PatcherConfig:
-        self.config = config
-        self.previously_parsed_sections = set()
+    def load(
+        self,
+        config: PatcherConfig,
+    ) -> PatcherConfig:
+        self.config: PatcherConfig = config
+        self.previously_parsed_sections: set[str] = set()
 
         self.load_settings()
         self.load_tlk_list()
@@ -212,7 +212,10 @@ class ConfigReader:
 
         return self.config
 
-    def get_section_name(self, section_name: str) -> str | None:
+    def get_section_name(
+        self,
+        section_name: str,
+    ) -> str | None:
         """Resolves the case-insensitive section name string if found and returns the case-sensitive correct section name."""
         s: str | None = next(
             (section for section in self.ini.sections() if section.lower() == section_name.lower()),
@@ -236,20 +239,14 @@ class ConfigReader:
         self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         for key, value in settings_ini.items():
             lower_key = key.lower()
-            if (
-                lower_key == "required"
-                or lower_key.startswith("required") and len(key) > len("required") and not key[len("required"):].lower().startswith("msg")
-            ):
-                if lower_key != "required" and not key[len("required"):].isdigit():
+            if lower_key == "required" or (lower_key.startswith("required") and len(key) > len("required") and not key[len("required") :].lower().startswith("msg")):
+                if lower_key != "required" and not key[len("required") :].isdigit():
                     raise ValueError(f"Key '{key}' improperly defined in settings ini. Expected (Required) or (RequiredMsg)")
                 these_files = tuple(filename.strip() for filename in value.split(","))
                 self.config.required_files.append(these_files)
 
-            if (
-                lower_key == "requiredmsg"
-                or lower_key.startswith("requiredmsg") and len(key) > len("requiredmsg")
-            ):
-                if lower_key != "requiredmsg" and not key[len("requiredmsg"):].isdigit():
+            if lower_key == "requiredmsg" or (lower_key.startswith("requiredmsg") and len(key) > len("requiredmsg")):
+                if lower_key != "requiredmsg" and not key[len("requiredmsg") :].isdigit():
                     raise ValueError(f"Key '{key}' improperly defined in settings ini. Expected (Required) or (RequiredMsg)")
                 self.config.required_messages.append(value.strip())
         if len(self.config.required_files) != len(self.config.required_messages):
@@ -310,7 +307,7 @@ class ConfigReader:
                     file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
                     file_install.pop_tslpatcher_vars(file_section_dict, foldername, sourcefolder)
 
-    def load_tlk_list(self):
+    def load_tlk_list(self):  # noqa: PLR0915
         """Loads TLK patches from the ini file into memory.
 
         Processing Logic:
@@ -328,8 +325,8 @@ class ConfigReader:
         self.log.add_note("Loading [TLKList] patches from ini...")
         tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section])
 
-        default_destination = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
-        default_sourcefolder = tlk_list_edits.pop("!DefaultSourceFolder", ".")
+        default_destination: str = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
+        default_sourcefolder: str = tlk_list_edits.pop("!DefaultSourceFolder", ".")
         self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination, default_sourcefolder)
 
         modifier_dict: dict[int, dict[str, str]] = {}
@@ -457,7 +454,7 @@ class ConfigReader:
 
                 modification_ids_dict = CaseInsensitiveDict(self.ini[modification_id])
                 manipulation: Modify2DA | None = self.discern_2da(key, modification_id, modification_ids_dict)
-                if not manipulation:  # TODO: Does this denote an error occurred? If so we should raise.
+                if not manipulation:  # TODO(th3w1zard1): Does this denote an error occurred? If so we should raise.
                     continue
                 modifications.modifiers.append(manipulation)
 
@@ -484,7 +481,7 @@ class ConfigReader:
 
         ssf_section_dict = CaseInsensitiveDict(self.ini[ssf_list_section])
         default_destination: str = ssf_section_dict.pop("!DefaultDestination", ModificationsSSF.DEFAULT_DESTINATION)
-        default_source_folder = ssf_section_dict.pop("!DefaultSourceFolder", ".")
+        default_source_folder: str = ssf_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in ssf_section_dict.items():
             ssf_file_section: str | None = self.get_section_name(file)
@@ -608,7 +605,7 @@ class ConfigReader:
         default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNSS.DEFAULT_DESTINATION)
         default_source_folder = compilelist_section_dict.pop("!DefaultSourceFolder", ".")
 
-        nwnnsscomp_exepath = self.mod_path / default_source_folder / "nwnnsscomp.exe"
+        nwnnsscomp_exepath: CaseAwarePath | None = self.mod_path / default_source_folder / "nwnnsscomp.exe"
         if not nwnnsscomp_exepath.is_file():
             nwnnsscomp_exepath = None if self.tslpatchdata_path is None else self.tslpatchdata_path / "nwnnsscomp.exe"  # TSLPatcher default
 
@@ -626,7 +623,7 @@ class ConfigReader:
             modifications.nwnnsscomp_path = nwnnsscomp_exepath
             self.config.patches_nss.append(modifications)
 
-    def load_hack_list(self):
+    def load_hack_list(self):  # noqa: C901, PLR0912
         """Loads [HACKList] patches from ini file into memory.
 
         Processing Logic:
@@ -645,7 +642,7 @@ class ConfigReader:
         self.log.add_note("Loading [HACKList] patches from ini...")
         hacklist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
         default_destination: str = hacklist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
-        default_source_folder = hacklist_section_dict.pop("!DefaultSourceFolder", ".")
+        default_source_folder: str = hacklist_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in hacklist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
@@ -742,7 +739,7 @@ class ConfigReader:
 
         return ModifyFieldGFF(PureWindowsPath(key), value, identifier)
 
-    def add_field_gff(
+    def add_field_gff(  # noqa: C901
         self,
         identifier: str,
         ini_data: CaseInsensitiveDict[str],
@@ -793,10 +790,10 @@ class ConfigReader:
                 if lower_iterated_value == "listindex":
                     index_in_list_token = int(key[9:])
                 elif lower_iterated_value == "!fieldpath":
-                    modifier = Memory2DAModifierGFF(identifier, dst_token_id=int(key[9:]), path=path/label)  # Assign current path to 2damemory.
+                    modifier = Memory2DAModifierGFF(identifier, dst_token_id=int(key[9:]), path=path / label)  # Assign current path to 2damemory.
                     modifiers.insert(0, modifier)
                 elif lower_iterated_value.startswith("2damemory"):
-                    modifier = Memory2DAModifierGFF(identifier, dst_token_id=int(key[9:]), src_token_id=int(iterated_value[9:]), path=path) # Assign field at path to a value or (path to field's value)
+                    modifier = Memory2DAModifierGFF(identifier, dst_token_id=int(key[9:]), src_token_id=int(iterated_value[9:]), path=path)  # Assign field at path to a value or (path to field's value)
                     modifiers.insert(0, modifier)
 
             # Handle nested AddField's and recurse
@@ -888,7 +885,10 @@ class ConfigReader:
         return value
 
     @classmethod
-    def field_value_from_localized_string(cls, ini_section_dict: CaseInsensitiveDict) -> FieldValueConstant:
+    def field_value_from_localized_string(
+        cls,
+        ini_section_dict: CaseInsensitiveDict,
+    ) -> FieldValueConstant:
         """Parses a localized string from an INI section dictionary (usually a GFF section).
 
         Args:
@@ -955,7 +955,9 @@ class ConfigReader:
         return None
 
     @staticmethod
-    def field_value_from_unknown(raw_value: str) -> FieldValue:
+    def field_value_from_unknown(  # noqa: PLR0911
+        raw_value: str,
+    ) -> FieldValue:
         """Extracts a field value from an unknown string representation.
 
             This section determines how to parse ini key/value pairs in gfflist such as:
@@ -1013,18 +1015,21 @@ class ConfigReader:
             return FieldValueConstant(ConfigReader.normalize_tslpatcher_crlf(raw_value))
 
         # Three floats
-        if num_pipe_seps == 2:
+        if num_pipe_seps == 2:  # noqa: PLR2004
             return FieldValueConstant(Vector3(*components))
 
         # Four floats
-        if num_pipe_seps == 3:
+        if num_pipe_seps == 3:  # noqa: PLR2004
             return FieldValueConstant(Vector4(*components))
 
         msg = f"Cannot determine type/value from '{raw_value}'"
         raise ValueError(msg)
 
     @staticmethod
-    def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
+    def field_value_from_type(  # noqa: C901, PLR0912
+        raw_value: str,
+        field_type: GFFFieldType,
+    ) -> FieldValue | None:
         # sourcery skip: assign-if-exp, reintroduce-else
         """Extracts field value from raw string based on field type.
 
@@ -1050,10 +1055,10 @@ class ConfigReader:
         components: list[float]
         value: ResRef | str | int | float | Vector3 | Vector4 | bytes | None = None
 
-        if field_type.return_type() == ResRef:
+        if field_type.return_type() is ResRef:
             value = ResRef(raw_value)
 
-        elif field_type.return_type() == str:
+        elif field_type.return_type() is str:
             value = ConfigReader.normalize_tslpatcher_crlf(raw_value)
 
         elif issubclass(field_type.return_type(), int):
@@ -1062,19 +1067,19 @@ class ConfigReader:
         elif issubclass(field_type.return_type(), float):
             value = float(ConfigReader.normalize_tslpatcher_float(raw_value))
 
-        elif field_type.return_type() == Vector3:
+        elif field_type.return_type() is Vector3:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
             value = Vector3(*components)
 
-        elif field_type.return_type() == Vector4:
+        elif field_type.return_type() is Vector4:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
             value = Vector4(*components)
 
-        elif field_type.return_type() == bytes:
+        elif field_type.return_type() is bytes:
             if not raw_value.strip().replace("1", "").replace("0", ""):
-                value = bytes(int(raw_value[i : i+8], 2) for i in range(0, len(raw_value), 8))
+                value = bytes(int(raw_value[i : i + 8], 2) for i in range(0, len(raw_value), 8))
             elif raw_value.strip().lower().startswith("0x"):
-                hex_string = raw_value[2:]
+                hex_string: str = raw_value[2:]
                 if len(hex_string) % 2:
                     hex_string = f"0{hex_string}"
                 value = bytes.fromhex(hex_string.strip())
@@ -1088,6 +1093,7 @@ class ConfigReader:
             return None
 
         return FieldValueConstant(value)
+
     #################
 
     def discern_2da(
@@ -1239,10 +1245,10 @@ class ConfigReader:
             if raw_value is None:
                 msg = f"[2DAList] parse error: '{key}' missing from [{identifier}] in ini."
                 raise ValueError(msg)
-            lower_raw_value = raw_value.lower()
-            if lower_raw_value.startswith("strref") and len(raw_value) > "strref" and raw_value[6:].isdigit():
+            lower_raw_value: str = raw_value.lower()
+            if lower_raw_value.startswith("strref") and len(raw_value) > len("strref") and raw_value[6:].isdigit():
                 value: str | int | RowValue2DAMemory | RowValueTLKMemory = RowValueTLKMemory(int(raw_value[6:]))
-            elif lower_raw_value.startswith("2damemory") and len(raw_value) > "2damemory" and raw_value[9:].isdigit():
+            elif lower_raw_value.startswith("2damemory") and len(raw_value) > len("2damemory") and raw_value[9:].isdigit():
                 value = RowValue2DAMemory(int(raw_value[9:]))
             else:
                 value = int(raw_value) if is_int else raw_value
@@ -1258,7 +1264,7 @@ class ConfigReader:
         self.log.add_warning(f"No line set to be modified in [{identifier}].")
         return None
 
-    def cells_2da(
+    def cells_2da(  # noqa: C901
         self,
         identifier: str,
         modifiers: CaseInsensitiveDict[str],
@@ -1289,16 +1295,8 @@ class ConfigReader:
             lower_modifier: str = modifier.lower().strip()
             lower_value: str = value.lower()
 
-            is_store_2da: bool = (
-                lower_modifier.startswith("2damemory")
-                and len(lower_modifier) > len("2damemory")
-                and modifier[9:].isdigit()
-            )
-            is_store_tlk: bool = (
-                modifier.startswith("strref")
-                and len(lower_modifier) > len("strref")
-                and modifier[6:].isdigit()
-            )
+            is_store_2da: bool = lower_modifier.startswith("2damemory") and len(lower_modifier) > len("2damemory") and modifier[9:].isdigit()
+            is_store_tlk: bool = modifier.startswith("strref") and len(lower_modifier) > len("strref") and modifier[6:].isdigit()
             is_row_label: bool = lower_modifier in {"rowlabel", "newrowlabel"}
 
             row_value: RowValue | None = None
@@ -1418,7 +1416,9 @@ class ConfigReader:
     #################
 
     @staticmethod
-    def normalize_tslpatcher_float(value_str: str) -> str:
+    def normalize_tslpatcher_float(
+        value_str: str,
+    ) -> str:
         """Normalize a float value string by replacing commas with periods.
 
         Args:
@@ -1432,7 +1432,9 @@ class ConfigReader:
         return value_str.replace(",", ".")
 
     @staticmethod
-    def normalize_tslpatcher_crlf(value_str: str) -> str:
+    def normalize_tslpatcher_crlf(
+        value_str: str,
+    ) -> str:
         r"""Normalize line endings in a string value.
 
         Args:
@@ -1451,7 +1453,9 @@ class ConfigReader:
         return value_str.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
 
     @staticmethod
-    def resolve_tslpatcher_ssf_sound(name: str) -> SSFSound:
+    def resolve_tslpatcher_ssf_sound(
+        name: str,
+    ) -> SSFSound:
         """Resolves a config string to an SSFSound enum value.
 
         Args:
@@ -1502,7 +1506,9 @@ class ConfigReader:
         return configstr_to_ssfsound[name]
 
     @staticmethod
-    def resolve_tslpatcher_gff_field_type(field_type_num_str: str) -> GFFFieldType:
+    def resolve_tslpatcher_gff_field_type(
+        field_type_num_str: str,
+    ) -> GFFFieldType:
         """Resolves a TSLPatcher GFF field type to a PyKotor GFFFieldType enum.
 
         Use this function to work with the ini's FieldType= values in PyKotor.

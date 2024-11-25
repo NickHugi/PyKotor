@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import uuid
 
-from typing import Any, Generator, Generic, Sequence, TypeVar, cast
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast
 
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.generics.dlg.nodes import DLGNode
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
 # Make T covariant to allow DLGLink[DLGEntry] to be used where DLGLink[DLGNode] is expected
 T_co = TypeVar("T_co", bound=DLGNode, covariant=True)
@@ -104,6 +110,17 @@ class DLGLink(Generic[T_co]):
 
     def __hash__(self) -> int:
         return self._hash_cache
+
+    def partial_path(self, *, is_starter: bool) -> str:
+        if is_starter:
+            p1 = "StartingList"
+        else:
+            p1: Literal["EntriesList", "RepliesList", "StartingList"] = (
+                "EntriesList"
+                if self.node.__class__.__name__ == "DLGEntry"
+                else "RepliesList"
+            )
+        return f"{p1}\\{self.list_index}"
 
     def to_dict(  # noqa: C901, PLR0912
         self,

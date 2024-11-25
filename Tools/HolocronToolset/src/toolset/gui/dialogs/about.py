@@ -13,7 +13,10 @@ if TYPE_CHECKING:
 
 
 class About(QDialog):
-    def __init__(self, parent: QWidget):
+    def __init__(
+        self,
+        parent: QWidget,
+    ):
         """Initializes the About dialog box.
 
         Args:
@@ -27,8 +30,13 @@ class About(QDialog):
             - Replaces the version placeholder in the about text with the actual version.
         """
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
-
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.WindowStaysOnTopHint
+            & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
+            & ~QtCore.Qt.WindowType.WindowMinMaxButtonsHint
+        )
 
         from toolset.uic.qtpy.dialogs.about import Ui_Dialog
         self.ui = Ui_Dialog()

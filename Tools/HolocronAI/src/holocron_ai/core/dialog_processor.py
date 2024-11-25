@@ -201,19 +201,14 @@ class DialogProcessor:
         cls,
         installation: Installation,
         save_path: Path,
-    ) -> Self | None:
+    ) -> Self:
         """Load state from disk."""
-        try:
-            instance: Self = cls(installation)
+        instance: Self = cls(installation)
 
-            state: dict[str, Any] = json.loads(save_path.joinpath("dialog_state.json").read_bytes())
+        state: dict[str, Any] = json.loads(save_path.joinpath("dialog_state.json").read_bytes())
 
-            instance.dialog_embeddings = {k: np.array(v) for k, v in state["dialog_embeddings"].items()}
-            instance.dialog_sequence = state["dialog_sequence"]
-            instance.temporal_memory = [(text, np.array(emb)) for text, emb in state["temporal_memory"]]
-
-        except Exception as e:  # noqa: BLE001
-            print(f"Error loading state: {e}")
-            return None
+        instance.dialog_embeddings = {k: np.array(v) for k, v in state["dialog_embeddings"].items()}
+        instance.dialog_sequence = state["dialog_sequence"]
+        instance.temporal_memory = [(text, np.array(emb)) for text, emb in state["temporal_memory"]]
 
         return instance

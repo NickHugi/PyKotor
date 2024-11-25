@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.talktable import TalkTable
@@ -11,7 +11,7 @@ from pykotor.tslpatcher.mods.template import PatcherModifications
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.misc import Game
     from pykotor.resource.formats.tlk import TLK
@@ -21,23 +21,23 @@ if TYPE_CHECKING:
 
 
 class ModificationsTLK(PatcherModifications):
-    DEFAULT_DESTINATION = "."
-    DEFAULT_SOURCEFILE = "append.tlk"
-    DEFAULT_SOURCEFILE_F = "appendf.tlk"
-    DEFAULT_SAVEAS_FILE = "dialog.tlk"
-    DEFAULT_SAVEAS_FILE_F = "dialogf.tlk"
+    DEFAULT_DESTINATION: ClassVar[str] = "."
+    DEFAULT_SOURCEFILE: ClassVar[str] = "append.tlk"
+    DEFAULT_SOURCEFILE_F: ClassVar[str] = "appendf.tlk"
+    DEFAULT_SAVEAS_FILE: ClassVar[str] = "dialog.tlk"
+    DEFAULT_SAVEAS_FILE_F: ClassVar[str] = "dialogf.tlk"
 
     def __init__(
         self,
         filename: str = DEFAULT_SOURCEFILE,
         replace: bool | None = None,
-        modifiers=None,
+        modifiers: list[ModifyTLK] | None = None,
     ):
         super().__init__(filename)
-        self.destination = self.DEFAULT_DESTINATION
+        self.destination: str = self.DEFAULT_DESTINATION
         self.modifiers: list[ModifyTLK] = [] if modifiers is None else modifiers
         self.sourcefile_f: str = self.DEFAULT_SOURCEFILE_F  # Polish version of k1
-        self.saveas = self.DEFAULT_SAVEAS_FILE
+        self.saveas: str = self.DEFAULT_SAVEAS_FILE
 
     def pop_tslpatcher_vars(
         self,

@@ -19,7 +19,7 @@ from utility.common.misc_string.mutable_str import WrappedStr
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from typing_extensions import Literal, Self
+    from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.stream import BinaryWriterBytearray, BinaryWriterFile
 
@@ -67,7 +67,7 @@ class ResourceReader:
             self._size: int = size or self._reader.remaining()
         else:
             if isinstance(source, memoryview):
-                loaded_src = bytearray(source)
+                loaded_src: bytearray = bytearray(source)
             elif isinstance(source, (bytes, bytearray)):
                 loaded_src = source if isinstance(source, bytearray) else bytearray(source)
             elif isinstance(source, (os.PathLike, str)):
@@ -282,16 +282,20 @@ class ResourceType(Enum):
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext", target_member="LIP")  # pyright: ignore[reportCallIssue]
     RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext", target_member="RES")  # pyright: ignore[reportCallIssue]
 
-    def __new__(cls, *args, **kwargs) -> Self:
+    def __new__(
+        cls,
+        *args,
+        **kwargs,
+    ) -> Self:
         obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
-        name = args[1].upper() or "INVALID"
+        name: str = str(args[1]).upper() or "INVALID"
         while name in cls.__members__:
             name = f"{name}_{uuid.uuid4().hex}"
         obj._name_ = name
         obj.__init__(*args, **kwargs)  # type: ignore[misc]
         return super().__new__(cls, obj)
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         type_id: int,
         extension: str,
@@ -370,8 +374,8 @@ class ResourceType(Enum):
     ) -> Self | Literal[ResourceType.INVALID]:
         if not kwargs:
             return cls.INVALID
-        instance = object.__new__(cls)
-        name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension)) or uuid.uuid4().hex}"
+        instance: Self = object.__new__(cls)
+        name: str = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension)) or uuid.uuid4().hex}"
         while name in cls.__members__:
             name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
         instance._name_ = name
@@ -409,11 +413,7 @@ class ResourceType(Enum):
             return f"{self.__class__.__name__}.{self.name}"
 
         return (  # For dynamically constructed invalid members
-            f"{self.__class__.__name__}.from_invalid("
-            f"{f'type_id={self.type_id}, '}"
-            f"{f'extension={self.extension}, ' if self.extension else ''}"
-            f"{f'category={self.category}, ' if self.category else ''}"
-            f"contents={self.contents})"
+            f"{self.__class__.__name__}.from_invalid(" f"{f'type_id={self.type_id}, '}" f"{f'extension={self.extension}, ' if self.extension else ''}" f"{f'category={self.category}, ' if self.category else ''}" f"contents={self.contents})"
         )
 
     def __str__(

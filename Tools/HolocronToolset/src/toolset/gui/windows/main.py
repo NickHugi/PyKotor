@@ -491,7 +491,7 @@ class ToolWindow(QMainWindow):
 
         def create_installation_task(loader: AsyncLoader) -> HTInstallation:
             """Creates and returns a new HTInstallation instance.
-            
+
             Returns:
             -------
                 HTInstallation: The newly created installation instance

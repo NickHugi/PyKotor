@@ -1,36 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
-import tempfile
-import uuid
-
-from abc import abstractmethod
-from pathlib import Path
-from typing import TYPE_CHECKING, Callable
-
-from loggerplus import RobustLogger
-from qtpy.QtCore import (
-    QTimer,
-    Signal,  # pyright: ignore[reportPrivateImportUsage]
-)
-from qtpy.QtGui import QIcon, QPixmap
-from qtpy.QtWidgets import (
-    QApplication,
-    QFileDialog,
-    QLineEdit,
-    QMainWindow,
-    QMenu,
-    QPlainTextEdit,
-    QShortcut,  # pyright: ignore[reportPrivateImportUsage]
-)
-
-from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_capsule_file
-from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
-from toolset.gui.widgets.media_player_widget import MediaPlayerWidget
-from toolset.gui.widgets.settings.installations import GlobalSettings
-
-
 import tempfile
 import traceback
 import uuid
@@ -49,7 +18,7 @@ from qtpy.QtCore import (
     QTimer,
     QUrl,
     Qt,
-    Signal,  # pyright: ignore[reportPrivateImportUsage]
+    Signal,  # pyright: ignore[reportPrivateImportUsage]  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtMultimedia import QMediaPlayer
@@ -62,7 +31,7 @@ from qtpy.QtWidgets import (
     QMenuBar,
     QMessageBox,
     QPlainTextEdit,
-    QShortcut,  # pyright: ignore[reportPrivateImportUsage]
+    QShortcut,  # pyright: ignore[reportPrivateImportUsage]  # pyright: ignore[reportPrivateImportUsage]
 )
 
 from pykotor.common.module import Module
@@ -96,24 +65,13 @@ if TYPE_CHECKING:
     from qtpy.QtCore import QRect
     from qtpy.QtGui import QScreen
     from qtpy.QtWidgets import QWidget
-    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
 
-
-    from qtpy.QtCore import QRect
-    from qtpy.QtGui import QScreen
-    from qtpy.QtWidgets import (
-        QMenuBar,
-        QWidget,
-    )
-    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
-
-    from pykotor.common.language import LocalizedString
-    from toolset.data.installation import HTInstallation
 
 class Editor(QMainWindow):
     sig_new_file: Signal = Signal()
@@ -224,12 +182,8 @@ class Editor(QMainWindow):
         write_supported = read_supported.copy() if read_supported is write_supported else write_supported
         additional_formats: set[str] = {"XML", "JSON", "CSV", "ASCII", "YAML"}
         for add_format in additional_formats:
-            read_supported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in read_supported if f"{restype.name}_{add_format}" in ResourceType.__members__
-            )
-            write_supported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in write_supported if f"{restype.name}_{add_format}" in ResourceType.__members__
-            )
+            read_supported.extend(ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in read_supported if f"{restype.name}_{add_format}" in ResourceType.__members__)
+            write_supported.extend(ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in write_supported if f"{restype.name}_{add_format}" in ResourceType.__members__)
         self._read_supported: list[ResourceType] = read_supported
         self._write_supported: list[ResourceType] = write_supported
 
@@ -309,13 +263,7 @@ class Editor(QMainWindow):
                 return
             from toolset.gui.editors.gff import GFFEditor
 
-            if (
-                self._global_settings.attemptKeepOldGFFFields
-                and self._restype is not None
-                and self._restype.is_gff()
-                and not isinstance(self, GFFEditor)
-                and self._revert is not None
-            ):
+            if self._global_settings.attemptKeepOldGFFFields and self._restype is not None and self._restype.is_gff() and not isinstance(self, GFFEditor) and self._revert is not None:
                 old_gff: GFF = read_gff(self._revert)
                 new_gff: GFF = read_gff(data)
                 new_gff.root.add_missing(old_gff.root)
@@ -547,7 +495,9 @@ class Editor(QMainWindow):
         self._resname = resref
         self._restype = restype
         self._revert = data
-        for action in cast(QMenu, cast(QMenuBar, self.menuBar()).actions()[0].menu()).actions():
+        menu_bar: QMenuBar | None = cast(Optional[QMenuBar], self.menuBar())
+        assert menu_bar is not None, "Menu bar is None somehow? This should be impossible."
+        for action in cast(QMenu, menu_bar.actions()[0].menu()).actions():
             if action.text() == "Revert":
                 action.setEnabled(True)
                 break

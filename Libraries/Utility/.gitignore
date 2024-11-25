@@ -2,5 +2,5 @@
 src/utility/ui_libraries/qt/filesystem/common/deprecated
 src/utility/ui_libraries/qt/filesystem/common/untested
 .history
-/.*
+.*
 __pycache__
