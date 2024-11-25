@@ -136,3 +136,6 @@ Tools/HolocronToolset/src/ui/**/*.py
 *.tpc
 Libraries\PyKotor\src\pykotor\common\scriptdefs.py
 Libraries\PyKotor\src\pykotor\common\scriptlib.py
+
+vendor/**
+vendor
