@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import struct
 import time
 
@@ -7,7 +8,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import BinaryIO
 
-from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 
 
@@ -28,7 +28,11 @@ class KEYDataWriter(ABC):
         """
 
     @abstractmethod
-    def add(self, data: BinaryIO, type: ResourceType):
+    def add(
+        self,
+        data: BinaryIO,
+        restype: ResourceType,
+    ) -> None:
         """Add a stream of the specified type to the data writer.
 
         Args:
@@ -41,7 +45,12 @@ class KEYWriter:
     def __init__(self):
         self._entries: list[Entry] = []
 
-    def add_bif(self, file_name: str, files: list[str], size: int):
+    def add_bif(
+        self,
+        file_name: str,
+        files: list[str],
+        size: int,
+    ) -> None:
         """Add a reference to a specific BIF/BZF file to this KEY file.
 
         Args:
@@ -51,7 +60,10 @@ class KEYWriter:
         """
         self._entries.append(Entry(file_name, files, size))
 
-    def write(self, write_stream: BinaryIO):
+    def write(
+        self,
+        write_stream: BinaryIO,
+    ) -> None:
         """Write the collected information as KEY file to the specified WriteStream.
 
         Args:
@@ -63,8 +75,8 @@ class KEYWriter:
         # Number of BIF/BZF files
         write_stream.write(struct.pack("<I", len(self._entries)))
 
-        total_count = sum(len(entry.files) for entry in self._entries)
-        total_filename_size = sum(len(entry.file_name) for entry in self._entries)
+        total_count: int = sum(len(entry.files) for entry in self._entries)
+        total_filename_size: int = sum(len(entry.file_name) for entry in self._entries)
 
         # Number of resources in all BIF/BZF files
         write_stream.write(struct.pack("<I", total_count))
@@ -73,20 +85,20 @@ class KEYWriter:
         write_stream.write(struct.pack("<I", 64))
 
         # Calculate the key table offset
-        key_table_offset = 64 + len(self._entries) * 12 + total_filename_size
+        key_table_offset: int = 64 + len(self._entries) * 12 + total_filename_size
 
         # Offset to the keytable
         write_stream.write(struct.pack("<I", key_table_offset))
 
         # Write the creation time of the file
-        now = time.localtime()
+        now: time.struct_time = time.localtime()
         write_stream.write(struct.pack("<II", now.tm_year, now.tm_yday))
 
         # Reserved padding
         write_stream.write(b"\0" * 32)
 
         # Write file table
-        filename_offset = 64 + len(self._entries) * 12
+        filename_offset: int = 64 + len(self._entries) * 12
         for entry in self._entries:
             write_stream.write(struct.pack("<III", entry.file_size, filename_offset, len(entry.file_name)))
             filename_offset += len(entry.file_name)
@@ -98,5 +110,5 @@ class KEYWriter:
         # Write Key table
         for x, entry in enumerate(self._entries):
             for y, file in enumerate(entry.files):
-                ResRef(file).write_to(write_stream)
+                write_stream.write(os.path.basename(file).encode("ascii"))  # noqa: PTH119
                 write_stream.write(struct.pack("<HI", ResourceType.from_extension(file.split(".")[-1]).type_id, (x << 20) + y))

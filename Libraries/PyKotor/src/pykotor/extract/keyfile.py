@@ -24,7 +24,11 @@ class KEYDataFile(ArchiveResource):
         """Return the number of internal resources (including unmerged ones)."""
 
     @abstractmethod
-    def merge_key(self, key: KEYFile, data_file_index: int) -> None:
+    def merge_key(
+        self,
+        key: KEYFile,
+        data_file_index: int,
+    ) -> None:
         """Merge information from the KEY into the data file.
 
         Without this step, this data file archive does not contain any
@@ -37,7 +41,10 @@ class KEYDataFile(ArchiveResource):
 
 
 class KEYFile:
-    def __init__(self, key: BinaryIO):
+    def __init__(
+        self,
+        key: BinaryIO,
+    ) -> None:
         self._bifs: list[str] = []
         self._resources: list[BIFResource] = []
         self.load(key)
@@ -50,17 +57,23 @@ class KEYFile:
         """Return a list of all containing resources."""
         return self._resources
 
-    def load(self, key: BinaryIO):
+    def load(
+        self,
+        key: BinaryIO,
+    ) -> None:
         self._read_header(key)
-        bif_offset = struct.unpack("<I", key.read(4))[0]
-        resource_offset = struct.unpack("<I", key.read(4))[0]
-
+        bif_offset: int = struct.unpack("<I", key.read(4))[0]
         self._read_bif_list(key, bif_offset)
+
+        resource_offset: int = struct.unpack("<I", key.read(4))[0]
         self._read_res_list(key, resource_offset)
 
-    def _read_header(self, key: BinaryIO):
-        file_type = key.read(4)
-        file_version = key.read(4)
+    def _read_header(
+        self,
+        key: BinaryIO,
+    ) -> None:
+        file_type: bytes = key.read(4)
+        file_version: bytes = key.read(4)
 
         if file_type != b"KEY ":
             raise ValueError("Not a KEY file")
@@ -68,30 +81,38 @@ class KEYFile:
         if file_version not in [b"V1  ", b"V1.1"]:
             raise ValueError(f"Unsupported KEY file version: {file_version}")
 
-        self.bif_count = struct.unpack("<I", key.read(4))[0]
-        self.resource_count = struct.unpack("<I", key.read(4))[0]
+        self.bif_count: int = struct.unpack("<I", key.read(4))[0]
+        self.resource_count: int = struct.unpack("<I", key.read(4))[0]
 
-    def _read_bif_list(self, key: BinaryIO, offset: int):
+    def _read_bif_list(
+        self,
+        key: BinaryIO,
+        offset: int,
+    ) -> None:
         key.seek(offset)
         for _ in range(self.bif_count):
-            size = struct.unpack("<I", key.read(4))[0]
-            data_offset = struct.unpack("<I", key.read(4))[0]
+            size: int = struct.unpack("<I", key.read(4))[0]
+            data_offset: int = struct.unpack("<I", key.read(4))[0]
 
-            current_pos = key.tell()
+            current_pos: int = key.tell()
             key.seek(data_offset)
-            bif_name = key.read(size).decode("ascii").rstrip("\0")
+            bif_name: str = key.read(size).decode("ascii").rstrip("\0")
             self._bifs.append(bif_name)
             key.seek(current_pos)
 
-    def _read_res_list(self, key: BinaryIO, offset: int):
+    def _read_res_list(
+        self,
+        key: BinaryIO,
+        offset: int,
+    ) -> None:
         key.seek(offset)
         for _ in range(self.resource_count):
-            name = key.read(16).decode("ascii").rstrip("\0")
-            res_type = struct.unpack("<H", key.read(2))[0]
-            res_id = struct.unpack("<I", key.read(4))[0]
+            name: str = key.read(16).decode("ascii").rstrip("\0")
+            res_type: int = struct.unpack("<H", key.read(2))[0]
+            res_id: int = struct.unpack("<I", key.read(4))[0]
 
-            bif_index = res_id >> 20
-            res_index = res_id & 0xFFFFF
+            bif_index: int = res_id >> 20
+            res_index: int = res_id & 0xFFFFF
 
-            resource = BIFResource(name, ResourceType(res_type), bif_index, res_index)
+            resource: BIFResource = BIFResource(name, ResourceType(res_type), bif_index, res_index)
             self._resources.append(resource)

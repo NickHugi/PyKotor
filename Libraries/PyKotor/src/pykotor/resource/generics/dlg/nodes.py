@@ -73,7 +73,7 @@ class DLGNode:
 
         self._hash_cache: int = hash(uuid.uuid4().hex)
         self.comment: str = ""
-        self.links = []
+        self.links: list[DLGLink] = []
         self.list_index: int = -1
 
         self.camera_angle: int = 0

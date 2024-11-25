@@ -42,9 +42,12 @@ class TestDLGStandardItemModel(unittest.TestCase):
     def tearDown(self):
         self.model.clear()
 
-    def create_item(self, node) -> DLGStandardItem:
-        link = DLGLink(node=node)
-        item = DLGStandardItem(link=link)
+    def create_item(
+        self,
+        node: DLGNode,
+    ) -> DLGStandardItem:
+        link: DLGLink = DLGLink(node=node)
+        item: DLGStandardItem = DLGStandardItem(link=link)
         self.model.load_dlg_item_rec(item)
         return item
 
@@ -55,7 +58,10 @@ class TestDLGStandardItemModel(unittest.TestCase):
         replies: list[DLGReply] = [DLGReply(text=LocalizedString.from_english(f"R{i}")) for i in range(5, 10)]
 
         # Create a nested structure
-        def add_links(parent_node: DLGNode, children: list[DLGNode]):
+        def add_links(
+            parent_node: DLGNode,
+            children: list[DLGNode],
+        ):
             for i, child in enumerate(children):
                 if isinstance(parent_node, DLGEntry):
                     assert isinstance(child, DLGReply)
@@ -63,35 +69,45 @@ class TestDLGStandardItemModel(unittest.TestCase):
                     assert isinstance(child, DLGEntry)
                 else:
                     assert False, f"{parent_node.__class__.__name__}: {parent_node}"
-                link = DLGLink(node=child, list_index=i)
+                link: DLGLink = DLGLink(node=child, list_index=i)
                 parent_node.links.append(link)
 
-        add_links(entries[0], [replies[0]])
-        add_links(replies[0], [entries[1]])
-        add_links(entries[1], [replies[1]])
-        add_links(replies[1], [entries[2]])
-        add_links(entries[2], [replies[2]])
-        add_links(replies[2], [entries[3]])
-        add_links(entries[3], [replies[3]])
-        add_links(replies[3], [entries[4]])
+        # Create primary path
+        add_links(entries[0], [replies[0]])  # E0 -> R5
+        add_links(replies[0], [entries[1]])  # R5 -> E1
+        add_links(entries[1], [replies[1]])  # E1 -> R6
+        add_links(replies[1], [entries[2]])  # R6 -> E2
+        add_links(entries[2], [replies[2]])  # E2 -> R7
+        add_links(replies[2], [entries[3]])  # R7 -> E3
+        add_links(entries[3], [replies[3]])  # E3 -> R8
+        add_links(replies[3], [entries[4]])  # R8 -> E4
 
-        # Reuse nodes/links
-        entries[2].links.append(DLGLink(node=entries[4], list_index=1))  # reuse E4
-        replies[0].links.append(DLGLink(node=replies[1], list_index=1))  # reuse R7
+        # Add cross-links that create cycles but avoid infinite recursion
+        # Since DLGLink instances are unique (they have unique hashes),
+        # this creates new edges to existing nodes
+        entries[2].links.append(DLGLink(node=replies[1], list_index=1))  # E2 -> R6 (creates cycle)
+        replies[0].links.append(DLGLink(node=entries[4], list_index=1))  # R5 -> E4 (shortcut)
 
         # Set starters
-        dlg.starters.append(DLGLink(node=entries[0], list_index=0))  # Start with the first entry
-        dlg.starters.append(DLGLink(node=entries[1], list_index=1))  # Then the second entry
+        dlg.starters.append(DLGLink(node=entries[0], list_index=0))  # Start with E0
+        dlg.starters.append(DLGLink(node=entries[1], list_index=1))  # Alternative start with E1
 
         # Manually update list_index
-        def update_list_index(links: list[DLGLink]):
+        def update_list_index(
+            links: list[DLGLink],
+            seen_nodes: set[DLGNode] | None = None,
+        ):
+            if seen_nodes is None:
+                seen_nodes = set()
+
             for i, link in enumerate(links):
                 link.list_index = i
-                if link.node:
-                    update_list_index(link.node.links)
+                if link.node is None or link.node in seen_nodes:
+                    continue
+                seen_nodes.add(link.node)
+                update_list_index(link.node.links, seen_nodes)
 
         update_list_index(dlg.starters)
-
         return dlg
 
     def test_dictionaries_filled_correctly(self):
@@ -122,10 +138,19 @@ class TestDLGStandardItemModel(unittest.TestCase):
     def test_link_list_index_sync(self):
         dlg: DLG = self.create_complex_tree()
 
-        def verify_list_index(node: DLGNode):
+        def verify_list_index(
+            node: DLGNode,
+            seen_nodes: set[DLGNode] | None = None,
+        ):
+            if seen_nodes is None:
+                seen_nodes = set()
+            
             for i, link in enumerate(node.links):
                 assert link.list_index == i, f"Link list_index {link.list_index} == {i} before loading to the model"
-                verify_list_index(link.node)
+                if link.node is None or link.node in seen_nodes:
+                    continue
+                seen_nodes.add(link.node)
+                verify_list_index(link.node, seen_nodes)
 
         for i, link in enumerate(dlg.starters):
             assert link.list_index == i, f"Starter link list_index {link.list_index} == {i} before loading to the model"
@@ -196,12 +221,15 @@ class TestDLGStandardItemModel(unittest.TestCase):
         # Step 1: Generate a flat list of all QModelIndex objects
         all_indices: list[QModelIndex] = []
 
-        def collect_indices(parent_index: QModelIndex = QModelIndex()):
+        def collect_indices(
+            parent_index: QModelIndex = QModelIndex(),
+        ):
             for row in range(self.model.rowCount(parent_index)):
                 index: QModelIndex = self.model.index(row, 0, parent_index)
-                if index.isValid():
-                    all_indices.append(index)
-                    collect_indices(index)
+                if not index.isValid():
+                    continue
+                all_indices.append(index)
+                collect_indices(index)
 
         collect_indices()
 
@@ -213,11 +241,9 @@ class TestDLGStandardItemModel(unittest.TestCase):
             item: QStandardItem | None = self.model.itemFromIndex(index)  # pyright: ignore[reportArgumentType]
             if item is None:
                 invalid_indices.append(index)
-            else:
-                assert isinstance(
-                    item, DLGStandardItem
-                ), f"item is {item.__class__.__name__}, {item} for index {index} ({index.row()}, {index.column()}) expected DLGStandardItem"
-                all_items.append(item)
+                continue
+            assert isinstance(item, DLGStandardItem), f"item is {item.__class__.__name__}, {item} for index {index} ({index.row()}, {index.column()}) expected DLGStandardItem"
+            all_items.append(item)
 
         mime_data: QMimeData = self.model.mimeData([item.index() for item in all_items])
 
@@ -248,8 +274,8 @@ class TestDLGStandardItemModel(unittest.TestCase):
 
 if __name__ == "__main__":
     try:
-        import pytest
-
-        pytest.main(["-v", "-s", __file__])
+        import pytest  # pyright: ignore[reportMissingImports]
     except ImportError:
         unittest.main()
+    else:
+        pytest.main(["-v", "-s", __file__])

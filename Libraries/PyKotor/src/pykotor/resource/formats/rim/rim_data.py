@@ -83,19 +83,27 @@ class RIM(BiowareArchive):
             erf.set_data(str(resource.resref), resource.restype, resource.data)
         return erf
 
-    def get_resource_offset(self, resource: RIMResource) -> int:
+    def get_resource_offset(
+        self,
+        resource: ArchiveResource,
+    ) -> int:
+        if not isinstance(resource, RIMResource):
+            raise TypeError("Resource is not a RIMResource")
         from pykotor.resource.formats.rim.io_rim import RIMBinaryWriter
 
-        entry_count = len(self._resources)
-        offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
-        data_start = offset_to_keys + RIMBinaryWriter.KEY_ELEMENT_SIZE * entry_count
+        entry_count: int = len(self._resources)
+        offset_to_keys: int = RIMBinaryWriter.FILE_HEADER_SIZE
+        data_start: int = offset_to_keys + RIMBinaryWriter.KEY_ELEMENT_SIZE * entry_count
 
-        resource_index = self._resources.index(resource)
-        offset = data_start + sum(len(res.data) for res in self._resources[:resource_index])
+        resource_index: int = self._resources.index(resource)
+        offset: int = data_start + sum(len(res.data) for res in self._resources[:resource_index])
 
         return offset
 
-    def __eq__(self, other):
+    def __eq__(
+        self,
+        other,
+    ):
         from pykotor.resource.formats.rim import RIM
 
         if not isinstance(other, (ERF, RIM)):

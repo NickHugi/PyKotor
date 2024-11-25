@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import sys
+from typing import TYPE_CHECKING
 import unittest
 from unittest import TestCase
 
@@ -12,8 +13,12 @@ try:
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
-absolute_file_path = pathlib.Path(__file__).resolve()
-TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "test_toolset/test_files"
+
+if TYPE_CHECKING:
+    from qtpy.QtWidgets import QApplication
+
+absolute_file_path: pathlib.Path = pathlib.Path(__file__).resolve()
+TESTS_FILES_PATH: pathlib.Path = next(f for f in absolute_file_path.parents if f.name == "tests") / "test_toolset/test_files"
 
 if getattr(sys, "frozen", False) is False:
 
@@ -38,9 +43,10 @@ if getattr(sys, "frozen", False) is False:
         add_sys_path(toolset_path.parent)
 
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
 
+from pykotor.common.module import GFF
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.resource.type import ResourceType
@@ -63,10 +69,11 @@ class AREEditorTest(TestCase):
         cls.AREEditor = AREEditor
         from toolset.data.installation import HTInstallation
 
-        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
+        assert K2_PATH is not None
+        cls.INSTALLATION: HTInstallation = HTInstallation(K2_PATH, "", tsl=True)  # pyright: ignore[reportOptionalCall]
 
     def setUp(self):
-        self.app = QApplication([])
+        self.app = QApplication(sys.argv)  # pyright: ignore[reportOptionalCall]
         self.editor = self.AREEditor(None, self.INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
 
@@ -77,16 +84,16 @@ class AREEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "tat001.are"
+        filepath: pathlib.Path = TESTS_FILES_PATH / "tat001.are"
 
-        data = filepath.read_bytes()
-        old = read_gff(data)
+        data: bytes = filepath.read_bytes()
+        old: GFF = read_gff(data)
         self.editor.load(filepath, "tat001", ResourceType.ARE, data)
 
         data, _ = self.editor.build()
-        new = read_gff(data)
+        new: GFF = read_gff(data)
 
-        diff = old.compare(new, self.log_func)
+        diff: bool = old.compare(new, self.log_func)
         assert diff, os.linesep.join(self.log_messages)
 
     @unittest.skipIf(
@@ -97,13 +104,13 @@ class AREEditorTest(TestCase):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() is ResourceType.ARE):
             print("Load ", are_resource.resname())
-            old = read_gff(are_resource.data())
+            old: GFF = read_gff(are_resource.data())
             self.editor.load(are_resource.filepath(), are_resource.resname(), are_resource.restype(), are_resource.data())
 
             data, _ = self.editor.build()
-            new = read_gff(data)
+            new: GFF = read_gff(data)
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            diff: bool = old.compare(new, self.log_func, ignore_default_changes=True)
             assert diff, f"{are_resource.identifier()} failed to diff.{os.linesep.join(self.log_messages)}"
 
     @unittest.skipIf(
@@ -113,13 +120,13 @@ class AREEditorTest(TestCase):
     def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() is ResourceType.ARE):
-            old = read_gff(are_resource.data())
+            old: GFF = read_gff(are_resource.data())
             self.editor.load(are_resource.filepath(), are_resource.resname(), are_resource.restype(), are_resource.data())
 
             data, _ = self.editor.build()
-            new = read_gff(data)
+            new: GFF = read_gff(data)
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            diff: bool = old.compare(new, self.log_func, ignore_default_changes=True)
             assert diff, os.linesep.join(self.log_messages)
 
     def test_placeholder(self): ...
