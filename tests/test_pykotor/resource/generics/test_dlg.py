@@ -46,8 +46,8 @@ if TYPE_CHECKING:
 
     from pykotor.resource.formats.gff import GFF
 
-TEST_FILE = "tests/test_files/test.dlg"
-TEST_K1_FILE = "tests/test_files/test_k1.dlg"
+TEST_FILE = "tests/test_pykotor/test_files/test.dlg"
+TEST_K1_FILE = "tests/test_pykotor/test_files/test_k1.dlg"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

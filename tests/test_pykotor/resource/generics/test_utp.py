@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.utp import UTP
 
-TEST_FILE = "tests/test_files/test.utp"
+TEST_FILE = "tests/test_pykotor/test_files/test.utp"
 
 K1_PATH: str | None = os.environ.get("K1_PATH")
 K2_PATH: str | None = os.environ.get("K2_PATH")

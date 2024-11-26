@@ -1,0 +1,6 @@
+panda3d>=1.10.13
+pykotor>=0.1.0
+numpy>=1.24.0
+pillow>=10.0.0
+moderngl>=5.8.2
+loguru>=0.7.0

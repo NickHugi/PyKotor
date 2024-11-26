@@ -229,5 +229,7 @@ class UTCEditorTest(TestCase):
         assert utc.security == 7
         assert utc.treat_injury == 8
 
+    def test_placeholder(self): ...
+
 if __name__ == "__main__":
     unittest.main()

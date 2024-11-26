@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff import GFF
     from pykotor.resource.generics.are import ARE
 
-TEST_FILE = "tests/test_files/test.are"
+TEST_FILE = "tests/test_pykotor/test_files/test.are"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

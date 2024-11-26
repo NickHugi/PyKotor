@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.ifo import IFO
 
-TEST_FILE = "tests/test_files/test.ifo"
+TEST_FILE = "tests/test_pykotor/test_files/test.ifo"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

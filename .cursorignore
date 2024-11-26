@@ -624,4 +624,8 @@ AUTHORS
 BUILDDEP.md
 autogen.sh
 ChangeLog
-!vendor
+MANIFEST.in
+COPYING
+PKGBUILD.md
+LICENSE
+LICENSE.md

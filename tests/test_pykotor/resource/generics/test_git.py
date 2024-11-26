@@ -34,9 +34,9 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.git import GIT
 
-TEST_FILE = "tests/test_files/test.git"
-K1_SAME_TEST = "tests/test_files/k1_same_git_test.git"
-K1_LAST_GOOD_EXTRACT = "tests/test_files/k1_extracted_git_test.git"
+TEST_FILE = "tests/test_pykotor/test_files/test.git"
+K1_SAME_TEST = "tests/test_pykotor/test_files/k1_same_git_test.git"
+K1_LAST_GOOD_EXTRACT = "tests/test_pykotor/test_files/k1_extracted_git_test.git"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

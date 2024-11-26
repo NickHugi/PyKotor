@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.utw import UTW
 
-TEST_FILE = "tests/test_files/test.utw"
+TEST_FILE = "tests/test_pykotor/test_files/test.utw"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

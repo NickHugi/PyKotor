@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff import GFF
     from pykotor.resource.generics.jrl import JRL, JRLEntry
 
-TEST_FILE = "tests/test_files/test.jrl"
+TEST_FILE = "tests/test_pykotor/test_files/test.jrl"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

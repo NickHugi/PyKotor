@@ -19,11 +19,13 @@ if TYPE_CHECKING:
     from typing import Any
 
 
-def test_empty_dialog(tmp_path: Path):
+def test_empty_dialog(
+    tmp_path: Path,
+) -> None:
     """Test handling of empty dialog with no nodes."""
     dlg = DLG()
     json_file: Path = tmp_path / "empty.json"
-    write_twine(dlg, json_file, format="json")
+    write_twine(dlg, json_file)
 
     # Verify JSON structure
     with open(json_file, encoding="utf-8") as f:
@@ -57,15 +59,15 @@ def test_circular_references():
 
     # Should not cause infinite recursion
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as f:
-        write_twine(dlg, f.name, format="json")
+        write_twine(dlg, f.name)
         loaded_dlg: DLG = read_twine(f.name)
 
         # Verify structure preserved
         assert len(loaded_dlg.starters) == 1
-        loaded_entry: DLGEntry = loaded_dlg.starters[0].node
+        loaded_entry: DLGEntry = cast(DLGEntry, loaded_dlg.starters[0].node)
         assert isinstance(loaded_entry, DLGEntry)
         assert len(loaded_entry.links) == 1
-        loaded_reply: DLGReply = loaded_entry.links[0].node
+        loaded_reply: DLGReply = cast(DLGReply, loaded_entry.links[0].node)
         assert isinstance(loaded_reply, DLGReply)
         assert len(loaded_reply.links) == 1
         assert isinstance(loaded_reply.links[0].node, DLGEntry)
@@ -82,11 +84,11 @@ def test_special_characters():
 
     # Write and read back
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as f:
-        write_twine(dlg, f.name, format="json")
+        write_twine(dlg, f.name)
         loaded_dlg: DLG = read_twine(f.name)
 
         # Verify special chars preserved
-        loaded_entry: DLGEntry = loaded_dlg.starters[0].node
+        loaded_entry: DLGEntry = cast(DLGEntry, loaded_dlg.starters[0].node)
         assert isinstance(loaded_entry, DLGEntry)
         assert loaded_entry.speaker == "NPC <with> special & chars"
         assert loaded_entry.text.get(Language.ENGLISH, Gender.MALE) == "Text with <tags> & special chars"
@@ -106,11 +108,11 @@ def test_multiple_languages():
 
     # Write and read back
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as f:
-        write_twine(dlg, f.name, format="json")
+        write_twine(dlg, f.name)
         loaded_dlg: DLG = read_twine(f.name)
 
         # Verify all languages preserved
-        loaded_entry: DLGEntry = loaded_dlg.starters[0].node
+        loaded_entry: DLGEntry = cast(DLGEntry, loaded_dlg.starters[0].node)
         assert isinstance(loaded_entry, DLGEntry)
         assert loaded_entry.text.get(Language.ENGLISH, Gender.MALE) == "English text"
         assert loaded_entry.text.get(Language.FRENCH, Gender.MALE) == "French text"
@@ -127,7 +129,7 @@ def test_invalid_metadata():
 
     # Should not raise exception
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as f:
-        write_twine(dlg, f.name, format="json")
+        write_twine(dlg, f.name)
         loaded_dlg: DLG = read_twine(f.name)
         assert len(loaded_dlg.starters) == 1
 
@@ -175,7 +177,7 @@ def test_duplicate_passage_names():
 
     # Write and read back
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as f:
-        write_twine(dlg, f.name, format="json")
+        write_twine(dlg, f.name)
         loaded_dlg: DLG = read_twine(f.name)
 
         # Verify structure preserved
@@ -195,11 +197,11 @@ def test_empty_text():
 
     # Write and read back
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as f:
-        write_twine(dlg, f.name, format="json")
+        write_twine(dlg, f.name)
         loaded_dlg: DLG = read_twine(f.name)
 
         # Verify empty text handled
-        loaded_entry: DLGEntry = loaded_dlg.starters[0].node
+        loaded_entry: DLGEntry = cast(DLGEntry, loaded_dlg.starters[0].node)
         assert isinstance(loaded_entry, DLGEntry)
         assert loaded_entry.text.get(Language.ENGLISH, Gender.MALE) == ""
 
@@ -227,7 +229,7 @@ def test_large_dialog():
 
     # Write and read back
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as f:
-        write_twine(dlg, f.name, format="json")
+        write_twine(dlg, f.name)
         loaded_dlg: DLG = read_twine(f.name)
 
         # Verify structure preserved
@@ -252,11 +254,11 @@ def test_unicode_characters():
 
     # Write and read back
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as f:
-        write_twine(dlg, f.name, format="json")
+        write_twine(dlg, f.name)
         loaded_dlg: DLG = read_twine(f.name)
 
         # Verify Unicode preserved
-        loaded_entry: DLGEntry = loaded_dlg.starters[0].node
+        loaded_entry: DLGEntry = cast(DLGEntry, loaded_dlg.starters[0].node)
         assert isinstance(loaded_entry, DLGEntry)
         assert loaded_entry.speaker == "NPC 🚀"
         assert loaded_entry.text.get(Language.ENGLISH, Gender.MALE) == "Hello 世界"

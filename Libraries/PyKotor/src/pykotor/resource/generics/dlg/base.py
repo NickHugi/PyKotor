@@ -81,6 +81,7 @@ class DLG:
         self.unequip_items: bool = False
         self.unequip_hands: bool = False
         self.vo_id: str = ""
+        self.comment: str = ""
 
         # KotOR 2:
         self.alien_race_owner: int = 0

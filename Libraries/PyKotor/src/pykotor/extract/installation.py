@@ -10,7 +10,7 @@ from copy import copy
 from enum import Enum, IntEnum
 from functools import lru_cache
 from pathlib import Path, PurePath
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence, overload
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, overload
 
 from loggerplus import RobustLogger
 
@@ -31,6 +31,8 @@ from utility.common.more_collections import CaseInsensitiveDict
 
 if TYPE_CHECKING:
     import io
+
+    from collections.abc import Generator, Iterable, Sequence
 
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 

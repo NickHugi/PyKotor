@@ -34,8 +34,8 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.utd import UTD
 
-TEST_FILE = "tests/test_files/test.utd"
-K1_SAME_TEST_FILE = "tests/test_files/k1_utd_same_test.utd"
+TEST_FILE = "tests/test_pykotor/test_files/test.utd"
+K1_SAME_TEST_FILE = "tests/test_pykotor/test_files/k1_utd_same_test.utd"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
