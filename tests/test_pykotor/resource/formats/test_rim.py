@@ -5,9 +5,9 @@ import pathlib
 import sys
 import unittest
 
-THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
+THIS_SCRIPT_PATH: pathlib.Path = pathlib.Path(__file__).resolve()
+PYKOTOR_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[3].resolve()
+UTILITY_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
 
 
 def add_sys_path(p: pathlib.Path):
@@ -24,26 +24,29 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.resource.formats.rim import RIM, RIMBinaryReader, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "tests/test_files/test.rim"
+BINARY_TEST_FILE = "tests/test_pykotor/test_files/test.rim"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "tests/test_files/test_corrupted.rim"
+CORRUPT_BINARY_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.rim"
 
 
 class TestRIM(unittest.TestCase):
     def test_binary_io(self):
-        rim = RIMBinaryReader(BINARY_TEST_FILE).load()
+        rim: RIM = RIMBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(rim)
 
-        data = bytearray()
+        data: bytearray = bytearray()
         write_rim(rim, data)
         rim = read_rim(data)
         self.validate_io(rim)
 
-    def validate_io(self, rim: RIM):
-        assert len(rim) == 3
-        assert rim.get("1", ResourceType.TXT) == b"abc"
-        assert rim.get("2", ResourceType.TXT) == b"def"
-        assert rim.get("3", ResourceType.TXT) == b"ghi"
+    def validate_io(
+        self,
+        rim: RIM,
+    ):
+        assert len(rim) == 3, f"{len(rim)!r} != 3"
+        assert rim.get("1", ResourceType.TXT) == b"abc", f"{rim.get('1', ResourceType.TXT)!r} != b'abc'"
+        assert rim.get("2", ResourceType.TXT) == b"def", f"{rim.get('2', ResourceType.TXT)!r} != b'def'"
+        assert rim.get("3", ResourceType.TXT) == b"ghi", f"{rim.get('3', ResourceType.TXT)!r} != b'ghi'"
 
     def test_read_raises(self):
         if os.name == "nt":

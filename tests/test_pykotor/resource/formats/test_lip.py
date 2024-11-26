@@ -6,9 +6,9 @@ import sys
 import unittest
 from unittest import TestCase
 
-THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
+THIS_SCRIPT_PATH: pathlib.Path = pathlib.Path(__file__).resolve()
+PYKOTOR_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[3].resolve()
+UTILITY_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
 
 
 def add_sys_path(p: pathlib.Path):
@@ -22,29 +22,22 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.resource.formats.lip import (
-    LIP,
-    LIPBinaryReader,
-    LIPShape,
-    LIPXMLReader,
-    detect_lip,
-    read_lip,
-    write_lip,
-)
+from pykotor.resource.formats.lip import LIP, LIPBinaryReader, LIPShape, LIPXMLReader, detect_lip, read_lip, write_lip
+
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "tests/test_files/test.lip"
-XML_TEST_FILE = "tests/test_files/test.lip.xml"
+BINARY_TEST_FILE = "tests/test_pykotor/test_files/test.lip"
+XML_TEST_FILE = "tests/test_pykotor/test_files/test.lip.xml"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "tests/test_files/test_corrupted.lip"
-CORRUPT_XML_TEST_FILE = "tests/test_files/test_corrupted.lip.xml"
+CORRUPT_BINARY_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.lip"
+CORRUPT_XML_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.lip.xml"
 
 
 class TestLIP(TestCase):
     def test_binary_io(self):
         assert detect_lip(BINARY_TEST_FILE) == ResourceType.LIP
 
-        lip = LIPBinaryReader(BINARY_TEST_FILE).load()
+        lip: LIP = LIPBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(lip)
 
         data = bytearray()
@@ -55,7 +48,7 @@ class TestLIP(TestCase):
     def test_xml_io(self):
         assert detect_lip(XML_TEST_FILE) == ResourceType.LIP_XML
 
-        lip = LIPXMLReader(XML_TEST_FILE).load()
+        lip: LIP = LIPXMLReader(XML_TEST_FILE).load()
         self.validate_io(lip)
 
         data = bytearray()
@@ -63,7 +56,10 @@ class TestLIP(TestCase):
         lip = LIPXMLReader(data).load()
         self.validate_io(lip)
 
-    def validate_io(self, lip: LIP):
+    def validate_io(
+        self,
+        lip: LIP,
+    ):
         self.assertAlmostEqual(lip.length, 1.50, 3)
         assert lip.get(0).shape == LIPShape.EE
         assert lip.get(1).shape == LIPShape.OOH

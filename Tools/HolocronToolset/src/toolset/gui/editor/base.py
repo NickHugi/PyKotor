@@ -78,7 +78,7 @@ class Editor(QMainWindow):
     sig_saved_file: Signal = Signal(str, str, ResourceType, bytes)
     sig_loaded_file: Signal = Signal(str, str, ResourceType, bytes)
 
-    CAPSULE_FILTER: str = "*.mod *.erf *.rim *.sav"
+    CAPSULE_FILTER: str = "*.mod *.erf *.rim *.sav *.bif"
 
     def __init__(  # noqa: PLR0913
         self,

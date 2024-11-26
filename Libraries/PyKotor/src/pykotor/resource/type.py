@@ -6,10 +6,10 @@ import io
 import mmap
 import os
 import struct
-import uuid
 
 from enum import Enum
 from functools import lru_cache
+from io import BytesIO
 from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
@@ -25,15 +25,17 @@ if TYPE_CHECKING:
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
 BASE_SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview]
-SOURCE_TYPES = Union[BASE_SOURCE_TYPES, STREAM_TYPES]
-TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
+SOURCE_TYPES = Union[BASE_SOURCE_TYPES, STREAM_TYPES, BytesIO, BinaryWriter]
+TARGET_TYPES = Union[os.PathLike, str, bytearray, BytesIO, BinaryWriter]
 
 
 R = TypeVar("R")
 
 
 def autoclose(func: Callable[..., R]) -> Callable[..., R]:
-    def wrapper(self: ResourceReader | ResourceWriter) -> R:  # noqa: FBT002, FBT001
+    def wrapper(
+        self: ResourceReader | ResourceWriter,
+    ) -> R:  # noqa: FBT002, FBT001
         try:
             resource: R = func(self)
         except (
@@ -81,6 +83,7 @@ class ResourceReader:
             elif isinstance(source, mmap.mmap):
                 loaded_src = bytearray(source)
             else:
+                assert isinstance(source, BinaryReader)
                 data: bytes | None = source.read()
                 if data is None:
                     raise ValueError("Could not read from source")
@@ -282,19 +285,6 @@ class ResourceType(Enum):
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext", target_member="LIP")  # pyright: ignore[reportCallIssue]
     RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext", target_member="RES")  # pyright: ignore[reportCallIssue]
 
-    def __new__(
-        cls,
-        *args,
-        **kwargs,
-    ) -> Self:
-        obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
-        name: str = str(args[1]).upper() or "INVALID"
-        while name in cls.__members__:
-            name = f"{name}_{uuid.uuid4().hex}"
-        obj._name_ = name
-        obj.__init__(*args, **kwargs)  # type: ignore[misc]
-        return super().__new__(cls, obj)
-
     def __init__(  # noqa: PLR0913
         self,
         type_id: int,
@@ -371,35 +361,12 @@ class ResourceType(Enum):
     def from_invalid(
         cls,
         **kwargs,
-    ) -> Self | Literal[ResourceType.INVALID]:
-        if not kwargs:
-            return cls.INVALID
-        instance: Self = object.__new__(cls)
-        name: str = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension)) or uuid.uuid4().hex}"
-        while name in cls.__members__:
-            name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
-        instance._name_ = name
-        instance._value_ = ResourceTuple(
-            type_id=kwargs.get("type_id", cls.INVALID.type_id),
-            extension=kwargs.get("extension", cls.INVALID.extension),
-            category=kwargs.get("category", cls.INVALID.category),
-            contents=kwargs.get("contents", cls.INVALID.contents),
-            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
-            target_member=kwargs.get("target_member", cls.INVALID.target_member),
-        )
-        instance.__init__(
-            type_id=kwargs.get("type_id", cls.INVALID.type_id),
-            extension=kwargs.get("extension", cls.INVALID.extension),
-            category=kwargs.get("category", cls.INVALID.category),
-            contents=kwargs.get("contents", cls.INVALID.contents),
-            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
-            target_member=kwargs.get("target_member", cls.INVALID.target_member),
-        )
-        return super().__new__(cls, instance)
+    ) -> Literal[ResourceType.INVALID]:
+        return cls.INVALID
 
     def validate(self) -> Self:
         if not self:
-            msg = f"Invalid ResourceType: '{self!r}'"
+            msg: str = f"Invalid ResourceType: '{self!r}'"
             raise ValueError(msg)
         return self
 

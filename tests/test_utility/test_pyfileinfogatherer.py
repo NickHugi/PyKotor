@@ -6,6 +6,7 @@ import tempfile
 
 from unittest.mock import MagicMock, patch
 
+from PyQt6.QtCore import QCoreApplication
 import pytest
 
 from qtpy.QtCore import QDir, QFileInfo
@@ -17,7 +18,7 @@ from utility.ui_libraries.qt.adapters.filesystem.pyfileinfogatherer import PyFil
 @pytest.fixture(scope="session", autouse=True)
 def app() -> QApplication:
     """Ensure QApplication is initialized."""
-    app = QApplication(sys.argv) if QApplication.instance() is None else QApplication.instance()
+    app: QApplication | QCoreApplication | None = QApplication(sys.argv) if QApplication.instance() is None else QApplication.instance()
     assert app is not None
     assert isinstance(app, QApplication)
     return app

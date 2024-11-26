@@ -33,11 +33,11 @@ from pykotor.resource.formats.gff import (
 )
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "tests/test_files/test.gff"
-XML_TEST_FILE = "tests/test_files/test.gff.xml"
+BINARY_TEST_FILE = "tests/test_pykotor/test_files/test.gff"
+XML_TEST_FILE = "tests/test_pykotor/test_files/test.gff.xml"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "tests/test_files/test_corrupted.gff"
-CORRUPT_XML_TEST_FILE = "tests/test_files/test_corrupted.gff.xml"
+CORRUPT_BINARY_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.gff"
+CORRUPT_XML_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.gff.xml"
 
 
 class TestGFF(TestCase):

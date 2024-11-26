@@ -6,4 +6,10 @@ import qtpy
 
 
 def sip_enum_to_int(obj: Any) -> int:
-    return int(obj) if qtpy.QT5 else int(obj.value)
+    if qtpy.QT5:
+        return int(obj)
+    if isinstance(obj, int):
+        return obj
+    if hasattr(obj, "value"):
+        return sip_enum_to_int(obj.value)
+    return int(obj)

@@ -32,26 +32,29 @@ from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
 if TYPE_CHECKING:
     from pykotor.resource.formats.ncs import NCS
 
-BINARY_TEST_FILE = "tests/test_files/test.ncs"
+BINARY_TEST_FILE = "tests/test_pykotor/test_files/test.ncs"
 
 
 class TestNCS(TestCase):
     def test_binary_io(self):
         """This test fails due to reading unknown bytecode 0x00. No idea why it fails so far into the NCS."""
-        ncs = NCSBinaryReader(BINARY_TEST_FILE).load()
+        ncs: NCS = NCSBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(ncs)
 
-        user_profile_path = os.environ.get("USERPROFILE")
+        user_profile_path: str | None = os.environ.get("USERPROFILE")
         if not user_profile_path:
             raise ValueError("USERPROFILE environment variable not set")
         file_path = Path(user_profile_path, "Documents", "ext", "output.ncs")
 
         write_ncs(ncs, file_path)
-        data = bytes_ncs(ncs)
+        data: bytearray = bytes_ncs(ncs)
         ncs = read_ncs(data)
         self.validate_io(ncs)
 
-    def validate_io(self, ncs: NCS):
+    def validate_io(
+        self,
+        ncs: NCS,
+    ):
         assert len(ncs.instructions) == 8
 
         assert Path(BINARY_TEST_FILE).read_bytes() == bytes_ncs(ncs)

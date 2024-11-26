@@ -30,9 +30,9 @@ from pathlib import Path
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = Path("tests/test_files/test.erf").resolve()
+BINARY_TEST_FILE = Path("tests/test_pykotor/test_files/test.erf").resolve()
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = Path("tests/test_files/test_corrupted.gff")
+CORRUPT_BINARY_TEST_FILE = Path("tests/test_pykotor/test_files/test_corrupted.gff")
 
 
 class TestERF(TestCase):

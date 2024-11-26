@@ -1,8 +1,10 @@
+"""This module handles reading and writing KEY files."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.extract.file import ResRef
+from pykotor.common.misc import ResRef
 from pykotor.resource.formats.key.key_data import KEY, BifEntry, KeyEntry
 from pykotor.resource.type import ResourceReader, ResourceType, ResourceWriter, autoclose
 
@@ -11,91 +13,139 @@ if TYPE_CHECKING:
 
 
 class KEYBinaryReader(ResourceReader):
+    """Reads KEY files."""
+
     def __init__(
         self,
         source: SOURCE_TYPES,
-        offset: int,
-        size: int,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self.key.bif_entries = []
         self.key: KEY = KEY()
 
     @autoclose
     def load(self) -> KEY:
-        self._read_header()
-        self._read_file_table()
-        self._read_key_table()
-        return self.key
-
-    def _read_header(self):
+        """Load KEY data from source."""
+        # Read signature
         self.key.file_type = self._reader.read_string(4)
         self.key.file_version = self._reader.read_string(4)
-        self.key.bif_count = self._reader.read_uint32()
-        self.key.key_count = self._reader.read_uint32()
-        self.key.offset_to_file_table = self._reader.read_uint32()
-        self.key.offset_to_key_table = self._reader.read_uint32()
+
+        if self.key.file_type != KEY.FILE_TYPE:
+            msg = f"Invalid KEY file type: {self.key.file_type}"
+            raise ValueError(msg)
+
+        if self.key.file_version != KEY.FILE_VERSION:
+            msg = f"Unsupported KEY version: {self.key.file_version}"
+            raise ValueError(msg)
+
+        # Read counts and offsets
+        bif_count: int = self._reader.read_uint32()
+        key_count: int = self._reader.read_uint32()
+        file_table_offset: int = self._reader.read_uint32()
+        key_table_offset: int = self._reader.read_uint32()
+
+        # Read build info
         self.key.build_year = self._reader.read_uint32()
         self.key.build_day = self._reader.read_uint32()
 
-    def _read_file_table(self):
-        self._reader.seek(self.key.offset_to_file_table)
-        for _ in range(self.key.bif_count):
-            entry = BifEntry()
-            entry.filesize = self._reader.read_uint32()
-            entry.filename_offset = self._reader.read_uint32()
-            entry.filename_size = self._reader.read_uint16()
-            entry.drives = self._reader.read_uint16()
-            self.key.bif_entries.append(entry)
+        # there's 32 bytes of reserved bytes here.
 
-        for entry in self.key.bif_entries:
-            self._reader.seek(entry.filename_offset)
-            entry.filename = self._reader.read_string(entry.filename_size)
+        # Read file table
+        self._reader.seek(file_table_offset)
+        for _ in range(bif_count):
+            bif: BifEntry = BifEntry()
+            bif.filesize = self._reader.read_uint32()
+            filename_offset: int = self._reader.read_uint32()
+            filename_size: int = self._reader.read_uint16()
+            bif.drives = self._reader.read_uint16()
 
-    def _read_key_table(self):
-        self._reader.seek(self.key.offset_to_key_table)
-        for _ in range(self.key.key_count):
-            entry = KeyEntry()
-            entry.resref = ResRef(self._reader.read_string(16).strip("\0"))
-            entry.type = ResourceType(self._reader.read_uint16())
+            # Save current position
+            current_pos: int = self._reader.position()
+
+            # Read filename
+            self._reader.seek(filename_offset)
+            bif.filename = self._reader.read_string(filename_size).rstrip("\0").replace("\\", "/").lstrip("/")
+
+            # Restore position
+            self._reader.seek(current_pos)
+            self.key.bif_entries.append(bif)
+
+        # Read key table
+        self._reader.seek(key_table_offset)
+        for _ in range(key_count):
+            entry: KeyEntry = KeyEntry()
+            entry.resref = ResRef(self._reader.read_string(16).rstrip("\0"))
+            entry.restype = ResourceType.from_id(self._reader.read_uint16())
             entry.resource_id = self._reader.read_uint32()
             self.key.key_entries.append(entry)
 
+        self.key.build_lookup_tables()
+
+        return self.key
+
 
 class KEYBinaryWriter(ResourceWriter):
-    def __init__(self, key: KEY, target: TARGET_TYPES):
+    """Writes KEY files."""
+
+    def __init__(
+        self,
+        key: KEY,
+        target: TARGET_TYPES,
+    ):
         super().__init__(target)
-        self.key_entries: list[KEY] = []
         self.key: KEY = key
 
     @autoclose
-    def write(self):
+    def write(self) -> None:
+        """Write KEY data to target."""
         self._write_header()
         self._write_file_table()
         self._write_key_table()
 
-    def _write_header(self):
+    def _write_header(self) -> None:
+        """Write KEY file header."""
+        # Write signature
         self._writer.write_string(self.key.file_type)
         self._writer.write_string(self.key.file_version)
-        self._writer.write_uint32(self.key.bif_count)
-        self._writer.write_uint32(self.key.key_count)
-        self._writer.write_uint32(self.key.offset_to_file_table)
-        self._writer.write_uint32(self.key.offset_to_key_table)
+
+        # Write counts
+        self._writer.write_uint32(len(self.key.bif_entries))
+        self._writer.write_uint32(len(self.key.key_entries))
+
+        # Write table offsets
+        self._writer.write_uint32(self.key.calculate_file_table_offset())
+        self._writer.write_uint32(self.key.calculate_key_table_offset())
+
+        # Write build info
         self._writer.write_uint32(self.key.build_year)
         self._writer.write_uint32(self.key.build_day)
 
-    def _write_file_table(self):
-        for entry in self.key.bif_entries:
-            self._writer.write_uint32(entry.filesize)
-            self._writer.write_uint32(entry.filename_offset)
-            self._writer.write_uint16(entry.filename_size)
-            self._writer.write_uint16(entry.drives)
+        # Write reserved bytes
+        self._writer.write_bytes(b"\0" * 32)
 
-        for entry in self.key.bif_entries:
-            self._writer.write_string(entry.filename)
+    def _write_file_table(self) -> None:
+        """Write BIF file table."""
+        # Write file entries
+        for i, bif in enumerate(self.key.bif_entries):
+            self._writer.write_uint32(bif.filesize)
+            self._writer.write_uint32(self.key.calculate_filename_offset(i))
+            self._writer.write_uint16(len(bif.filename) + 1)  # +1 for null terminator
+            self._writer.write_uint16(bif.drives)
 
-    def _write_key_table(self):
+        # Write filenames
+        for bif in self.key.bif_entries:
+            self._writer.write_string(bif.filename)
+            self._writer.write_uint8(0)  # Null terminator
+
+    def _write_key_table(self) -> None:
+        """Write resource key table."""
         for entry in self.key.key_entries:
-            self._writer.write_string(str(entry.resref).ljust(16, "\0"))
-            self._writer.write_uint16(entry.type.value)
+            # Write ResRef (padded with nulls to 16 bytes)
+            resref: str = str(entry.resref)
+            self._writer.write_string(resref)
+            self._writer.write_bytes(b"\0" * (16 - len(resref)))
+
+            # Write type and ID
+            self._writer.write_uint16(entry.restype.type_id)
             self._writer.write_uint32(entry.resource_id)

@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+import importlib
 import os
 import pathlib
 import sys
+from typing import TYPE_CHECKING
 import unittest
 from unittest import TestCase
 
-try:
-    from qtpy.QtTest import QTest
-    from qtpy.QtWidgets import QApplication
-except (ImportError, ModuleNotFoundError):
-    QTest, QApplication = None, None  # type: ignore[misc, assignment]
+if TYPE_CHECKING:
+    from toolset.data.installation import HTInstallation
+    from toolset.gui.editors.tpc import TPCEditor
 
 absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "test_toolset/test_files"
@@ -36,6 +36,12 @@ if getattr(sys, "frozen", False) is False:
     if toolset_path.exists():
         add_sys_path(toolset_path.parent)
 
+if importlib.util.find_spec("qtpy.QtWidgets") is None:  # pyright: ignore[reportAttributeAccessIssue]
+    raise ImportError("qtpy.QtWidgets is required for this test. Install PyQt/PySide with qtpy before running this test.")
+
+from qtpy.QtTest import QTest
+from qtpy.QtWidgets import QApplication
+
 K1_PATH = os.environ.get("K1_PATH")
 
 
@@ -48,15 +54,19 @@ K1_PATH = os.environ.get("K1_PATH")
     "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class TPCEditorTest(TestCase):
+    TPCEditor: type[TPCEditor]
+    INSTALLATION: HTInstallation
+
     @classmethod
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
+        assert K1_PATH is not None
         from toolset.gui.editors.tpc import TPCEditor
 
         cls.TPCEditor = TPCEditor
         from toolset.data.installation import HTInstallation
 
-        cls.INSTALLATION = HTInstallation(K1_PATH, "", None, tsl=False)
+        cls.INSTALLATION = HTInstallation(K1_PATH, "", tsl=False)
 
     def setUp(self):
         self.app = QApplication([])

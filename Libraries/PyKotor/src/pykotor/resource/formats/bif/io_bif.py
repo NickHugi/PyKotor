@@ -1,110 +1,191 @@
 from __future__ import annotations
 
+import lzma
+
 from typing import TYPE_CHECKING
 
+from pykotor.common.misc import ResRef
+from pykotor.resource.formats.bif.bif_data import BIF, BIFResource, BIFType
 from pykotor.resource.type import ResourceReader, ResourceType, ResourceWriter, autoclose
 
 if TYPE_CHECKING:
-    from pykotor.resource.formats.bif.bif_data import BIF, BIFResource
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
-
-BIFF_ID = b"BIFF"
-V1_ID = b"V1  "
 
 
 class BIFBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    """Reads BIF/BZF files."""
+
+    def __init__(
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
+    ):
         super().__init__(source, offset, size)
-        self._bif: BIF | None = None
+        self.bif: BIF = BIF()
+        self.var_res_count: int = 0
+        self.fixed_res_count: int = 0
+        self.data_offset: int = 0
 
     @autoclose
     def load(self) -> BIF:
-        from pykotor.resource.formats.bif.bif_data import BIF, BIFResource, BIFType
+        """Load BIF/BZF data from source."""
+        self._check_signature()
+        self._read_header()
+        self._read_resource_table()
+        self._read_resource_data()
+        return self.bif
 
-        self._bif = BIF()
+    def _check_signature(self) -> None:
+        """Check BIF/BZF signature."""
+        signature: str = self._reader.read_string(8)  # "BIFFV1  " or "BZF V1  "
 
-        # Read header
-        file_type = self._reader.read_bytes(4)
-        file_version = self._reader.read_bytes(4)
+        # Check file type
+        if signature[:4] == BIFType.BIF.value:
+            self.bif.bif_type = BIFType.BIF
+        elif signature[:4] == BIFType.BZF.value:
+            self.bif.bif_type = BIFType.BZF
+        else:
+            msg = f"Invalid BIF/BZF file type: {signature[:4]}"
+            raise ValueError(msg)
 
-        if file_type not in (BIFF_ID, b"BZF "):
-            raise ValueError(f"Not a BIF/BZF file: {file_type}")
-        if file_version != V1_ID:
-            raise ValueError(f"Unsupported BIF/BZF version: {file_version}")
+        # Check version
+        if signature[4:] != "V1  ":
+            msg = f"Unsupported BIF/BZF version: {signature[4:]}"
+            raise ValueError(msg)
 
-        self._bif.bif_type = BIFType.BZF if file_type == b"BZF " else BIFType.BIF
+    def _read_header(self) -> None:
+        """Read BIF/BZF file header."""
+        self.var_res_count = self._reader.read_uint32()
+        self.fixed_res_count = self._reader.read_uint32()
+        self.data_offset = self._reader.read_uint32()
+        self._reader.read_uint32()  # Skip reserved 4 bytes
 
-        var_res_count = self._reader.read_uint32()
-        fix_res_count = self._reader.read_uint32()
-        offset_to_resource_table = self._reader.read_uint32()
+        if self.fixed_res_count > 0:
+            msg = "Fixed resources not supported"
+            raise ValueError(msg)
 
-        if fix_res_count != 0:
-            raise NotImplementedError("Fixed BIF/BZF resources are not supported yet")
+    def _read_resource_table(self) -> None:
+        """Read BIF/BZF resource table."""
+        self._reader.seek(self.data_offset)
 
-        # Read resource table
-        self._reader.seek(offset_to_resource_table)
-        for _ in range(var_res_count):
-            resource = BIFResource()
-            resource.offset = self._reader.read_uint32()
-            resource.size = self._reader.read_uint32()
-            resource.restype = ResourceType(self._reader.read_uint32())
-            self._bif._resources.append(resource)
+        for i in range(self.var_res_count):
+            res_id: int = self._reader.read_uint32()
+            offset: int = self._reader.read_uint32()
+            size: int = self._reader.read_uint32()
+            res_type: ResourceType = ResourceType.from_id(self._reader.read_uint32())
 
-        # Calculate packed sizes for BZF
-        if self._bif.bif_type == BIFType.BZF:
-            for i in range(len(self._bif._resources) - 1):
-                self._bif._resources[i].packed_size = self._bif._resources[i + 1].offset - self._bif._resources[i].offset
+            # Create empty resource with placeholder data
+            resource = BIFResource(ResRef(""), res_type, b"", res_id)
+            resource.offset = offset
+            resource.size = size
 
-            if self._bif._resources:
-                self._bif._resources[-1].packed_size = self._reader.size() - self._bif._resources[-1].offset
+            # For BZF, calculate packed size from offset differences
+            if self.bif.bif_type == BIFType.BZF and i > 0:
+                prev_resource: BIFResource = self.bif.resources[-1]
+                prev_resource.packed_size = offset - prev_resource.offset
 
-        return self._bif
+            self.bif.resources.append(resource)
+
+        # Set packed size for last resource in BZF
+        if self.bif.bif_type == BIFType.BZF and self.bif.resources:
+            last_resource: BIFResource = self.bif.resources[-1]
+            last_resource.packed_size = self._reader.size() - last_resource.offset
+
+    def _read_resource_data(self) -> None:
+        """Read BIF/BZF resource data."""
+        for resource in self.bif.resources:
+            if resource.size <= 0:
+                continue
+
+            self._reader.seek(self.data_offset + resource.offset)
+
+            if self.bif.bif_type == BIFType.BZF:
+                # For BZF, decompress the data
+                compressed: bytes = self._reader.read_bytes(resource.packed_size)
+                try:
+                    resource.data = lzma.decompress(compressed)
+                    if len(resource.data) != resource.size:
+                        msg: str = f"Decompressed size mismatch: got {len(resource.data)}, expected {resource.size}"
+                        raise ValueError(msg)
+                except lzma.LZMAError as e:
+                    msg = f"Failed to decompress BZF resource: {e}"
+                    raise ValueError(msg) from e
+            else:
+                # For BIF, read raw data
+                resource.data = self._reader.read_bytes(resource.size)
+
+        self.bif.build_lookup_tables()
 
 
 class BIFBinaryWriter(ResourceWriter):
-    FILE_HEADER_SIZE = 20
-    RESOURCE_ELEMENT_SIZE = 12
+    """Writes BIF/BZF files."""
 
-    def __init__(self, bif: BIF, target: TARGET_TYPES):
+    def __init__(
+        self,
+        bif: BIF,
+        target: TARGET_TYPES,
+    ):
         super().__init__(target)
-        self._bif: BIF = bif
-        self._max_files: int = len(self._bif._resources)
-        self._current_files: int = 0
+        self.bif: BIF = bif
         self._data_offset: int = 0
 
     @autoclose
-    def write(self):
-        # Write header
-        self._writer.write_bytes(BIFF_ID if self._bif.bif_type == self._bif.BIFType.BIF else b"BZF ")
-        self._writer.write_bytes(V1_ID)
-        self._writer.write_uint32(self._max_files)
-        self._writer.write_uint32(0)  # Fixed resource count
-        self._writer.write_uint32(self.FILE_HEADER_SIZE)
+    def write(self) -> None:
+        """Write BIF/BZF data to target."""
+        self._write_header()
+        self._write_resource_table()
+        self._write_resource_data()
 
-        # Reserve space for resource table
-        self._writer.write_bytes(b"\0" * (self._max_files * self.RESOURCE_ELEMENT_SIZE))
+    def _write_header(self) -> None:
+        """Write BIF/BZF file header."""
+        # Write signature
+        self._writer.write_string(self.bif.bif_type.value)
+        self._writer.write_string("V1  ")
 
-        # Write resource data
-        for resource in self._bif._resources:
-            self._write_resource(resource)
+        # Write counts and offset
+        self._writer.write_uint32(self.bif.var_count)
+        self._writer.write_uint32(self.bif.fixed_count)
+        self._writer.write_uint32(BIF.HEADER_SIZE + (self.bif.var_count * BIF.VAR_ENTRY_SIZE))
+        self._writer.write_uint32(0)  # Reserved 4 bytes
 
-    def _write_resource(self, resource: BIFResource):
-        if self._current_files >= self._max_files:
-            raise ValueError("Attempt to write more files than maximum")
+    def _write_resource_table(self) -> None:
+        """Write BIF/BZF resource table."""
+        # Calculate data offsets
+        current_offset = 0
+        for resource in self.bif.resources:
+            # Align resource data to 4-byte boundary
+            if current_offset % 4 != 0:
+                current_offset += 4 - (current_offset % 4)
+            resource.offset = current_offset
 
-        # Write resource data
-        self._writer.seek(0, 2)  # Seek to end of file
-        data_offset = self._writer.position()
-        self._writer.write_bytes(resource.data)
+            if self.bif.bif_type == BIFType.BZF:
+                # For BZF, compress the data to get size
+                compressed: bytes = lzma.compress(resource.data)
+                resource.packed_size = len(compressed)
+                current_offset += resource.packed_size
+            else:
+                current_offset += resource.size
 
-        # Write resource table entry
-        self._writer.seek(self.FILE_HEADER_SIZE + self._current_files * self.RESOURCE_ELEMENT_SIZE)
-        self._writer.write_uint32(data_offset)  # Data offset
-        self._writer.write_uint32(len(resource.data))  # File size
-        self._writer.write_uint32(resource.restype.value)  # Type
+        # Write resource table
+        for resource in self.bif.resources:
+            self._writer.write_uint32(resource.resource_id)
+            self._writer.write_uint32(resource.offset)
+            self._writer.write_uint32(resource.size)
+            self._writer.write_uint32(resource.restype.type_id)
 
-        self._current_files += 1
-        self._data_offset += len(resource.data)
+    def _write_resource_data(self) -> None:
+        """Write BIF/BZF resource data."""
+        for resource in self.bif.resources:
+            # Align to 4-byte boundary
+            current_pos: int = self._writer.position()
+            calc: int = current_pos % 4
+            if calc != 0:
+                self._writer.write_bytes(bytes(4 - calc))
 
-    def size(self) -> int:
-        return self._writer.position()
+            if self.bif.bif_type == BIFType.BZF:
+                # Write compressed data for BZF
+                self._writer.write_bytes(lzma.compress(resource.data))
+            else:
+                # Write raw data for BIF
+                self._writer.write_bytes(resource.data)

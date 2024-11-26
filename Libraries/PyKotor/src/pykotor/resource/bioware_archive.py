@@ -43,6 +43,13 @@ class ArchiveResource:
             data = bytes(data)
         self.data: bytes = data
 
+    @property
+    def size(self) -> int:
+        return len(self.data)
+
+    @size.setter
+    def size(self, value: int) -> None: ...
+
     def __eq__(
         self,
         other,  # noqa: ANN001
@@ -193,7 +200,7 @@ class BiowareArchive(ABC):
 
         bif = BIF()
         for resource in cast(list[ArchiveResource], self._resources):
-            bif.set_data(str(resource.resref), resource.restype, resource.data)
+            bif.set_data(ResRef(resource.resref), resource.restype, resource.data)
         return bif
 
     def to_erf(self) -> ERF:
@@ -201,7 +208,7 @@ class BiowareArchive(ABC):
 
         erf = ERF()
         for resource in cast(list[ArchiveResource], self._resources):
-            erf.set_data(str(resource.resref), resource.restype, resource.data)
+            erf.set_data(ResRef(resource.resref), resource.restype, resource.data)
         return erf
 
     def to_rim(self) -> RIM:
@@ -209,5 +216,5 @@ class BiowareArchive(ABC):
 
         rim = RIM()
         for resource in cast(list[ArchiveResource], self._resources):
-            rim.set_data(str(resource.resref), resource.restype, resource.data)
+            rim.set_data(ResRef(resource.resref), resource.restype, resource.data)
         return rim

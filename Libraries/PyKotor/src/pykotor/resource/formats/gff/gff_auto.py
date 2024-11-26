@@ -37,7 +37,9 @@ def detect_gff(
         The format of the GFF data.
     """
 
-    def check(first4: str) -> ResourceType:
+    def check(
+        first4: str,
+    ) -> ResourceType:
         if any(x.value == first4 for x in GFFContent):
             return ResourceType.GFF
         if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
@@ -86,7 +88,7 @@ def read_gff(
     -------
         A GFF instance.
     """
-    file_format = detect_gff(source, offset)
+    file_format: ResourceType = detect_gff(source, offset)
 
     if file_format is ResourceType.GFF:
         return GFFBinaryReader(source, offset, size or 0).load()

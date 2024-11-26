@@ -34,9 +34,9 @@ from pykotor.resource.formats.lyt import (
 from pykotor.resource.formats.lyt.lyt_auto import read_lyt, write_lyt
 from pykotor.resource.type import ResourceType
 
-ASCII_TEST_FILE = "tests/test_files/test.lyt"
+ASCII_TEST_FILE = "tests/test_pykotor/test_files/test.lyt"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "tests/test_files/test_corrupted.lyt"
+CORRUPT_BINARY_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.lyt"
 
 
 class TestLYT(TestCase):

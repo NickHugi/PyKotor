@@ -595,3 +595,5 @@ Libraries\PyKotor\src\pykotor\common\scriptlib.py
 tests\results
 *.ttf
 .archivist
+output/*.*
+vendor

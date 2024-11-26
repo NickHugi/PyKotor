@@ -1,24 +1,24 @@
 from __future__ import annotations
 
+import importlib
 import os
 import pathlib
 import sys
+from typing import TYPE_CHECKING
 import unittest
 from unittest import TestCase
 
-try:
-    from qtpy.QtTest import QTest
-    from qtpy.QtWidgets import QApplication
-except (ImportError, ModuleNotFoundError):
-    QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
-absolute_file_path = pathlib.Path(__file__).resolve()
-TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "test_toolset/test_files"
+absolute_file_path: pathlib.Path = pathlib.Path(__file__).resolve()
+TESTS_FILES_PATH: pathlib.Path = next(f for f in absolute_file_path.parents if f.name == "tests") / "test_toolset/test_files"
 
-if (
-    __name__ == "__main__"
-    and getattr(sys, "frozen", False) is False
-):
+if TYPE_CHECKING:
+    from toolset.data.installation import HTInstallation
+    from toolset.gui.editors.tlk import TLKEditor
+    from pykotor.resource.formats.tlk.tlk_data import TLK
+
+if __name__ == "__main__" and getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -38,9 +38,15 @@ if (
     if toolset_path.exists():
         add_sys_path(toolset_path.parent)
 
+if importlib.util.find_spec("qtpy.QtWidgets") is None:  # pyright: ignore[reportAttributeAccessIssue]
+    raise ImportError("qtpy.QtWidgets is required for this test. Install PyQt/PySide with qtpy before running this test.")
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+from loggerplus import Any
+from qtpy.QtTest import QTest
+from qtpy.QtWidgets import QApplication
+
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
 
 from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.resource.type import ResourceType
@@ -58,6 +64,7 @@ class TLKEditorTest(TestCase):
     @classmethod
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
+        assert K2_PATH is not None, "K2_PATH environment variable is not set."
         from toolset.gui.editors.tlk import TLKEditor
 
         cls.TLKEditor = TLKEditor
@@ -77,24 +84,30 @@ class TLKEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "../test_toolset/files/dialog.tlk"
+        filepath: pathlib.Path = TESTS_FILES_PATH / "dialog.tlk"
 
-        data = filepath.read_bytes()
-        old = read_tlk(data)
-        self.editor.load(filepath, "dialog", ResourceType.TLK, data)
+        data1: bytes = filepath.read_bytes()
+        old: TLK = read_tlk(data1)
+        self.editor.load(filepath, "dialog", ResourceType.TLK, data1)
 
-        data, _ = self.editor.build()
-        new = read_tlk(data)
+        data2, _ = self.editor.build()
+        assert data2 is not None, "Failed to build TLK"
+        new: TLK = read_tlk(data2)
 
-        diff = old.compare(new, self.log_func)
+        diff: bool = old.compare(new, self.log_func)
         assert diff
         self.assertDeepEqual(old, new)
 
-    def assertDeepEqual(self, obj1, obj2, context=""):
+    def assertDeepEqual(
+        self,
+        obj1: Any,
+        obj2: Any,
+        context: str = "",
+    ) -> None:
         if isinstance(obj1, dict) and isinstance(obj2, dict):
             assert set(obj1.keys()) == set(obj2.keys()), context
             for key in obj1:
-                new_context = f"{context}.{key}" if context else str(key)
+                new_context: str = f"{context}.{key}" if context else str(key)
                 self.assertDeepEqual(obj1[key], obj2[key], new_context)
 
         elif isinstance(obj1, (list, tuple)) and isinstance(obj2, (list, tuple)):

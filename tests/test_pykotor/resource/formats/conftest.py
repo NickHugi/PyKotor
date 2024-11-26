@@ -11,6 +11,7 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import pytest
+from pykotor.extract.file import FileResource, ResourceIdentifier
 from utility.error_handling import format_exception_with_variables
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
@@ -61,7 +62,10 @@ CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
 }
 
 
-def pytest_report_teststatus(report: pytest.TestReport, config: pytest.Config) -> tuple[Literal["failed"], Literal["F"], str] | None:
+def pytest_report_teststatus(
+    report: pytest.TestReport,
+    config: pytest.Config,
+) -> tuple[Literal["failed"], Literal["F"], str] | None:
     if report.failed:
         if report.longrepr is None:
             return "failed", "F", "FAILED: <unknown error>"
@@ -75,10 +79,13 @@ def pytest_report_teststatus(report: pytest.TestReport, config: pytest.Config) -
     return None
 
 
-def save_profiler_output(profiler: cProfile.Profile, filepath: os.PathLike | str):
+def save_profiler_output(
+    profiler: cProfile.Profile,
+    filepath: os.PathLike | str,
+):
     profiler.disable()
-    profiler_output_file = Path(filepath)
-    profiler_output_file_str = str(profiler_output_file)
+    profiler_output_file: Path = Path(filepath)
+    profiler_output_file_str: str = str(profiler_output_file)
     profiler.dump_stats(profiler_output_file_str)
     # Generate reports from the profile stats
     # stats = pstats.Stats(profiler_output_file_str).sort_stats('cumulative')
@@ -134,20 +141,20 @@ def populate_all_gffs(
         for resource in installation:
             if resource.restype().contents != "gff":
                 continue
-            res_ident = resource.identifier()
-            filename = str(res_ident)
-            filepath = resource.filepath()
+            res_ident: ResourceIdentifier = resource.identifier()
+            filename: str = str(res_ident)
+            filepath: Path = resource.filepath()
 
             if resource.inside_capsule:
-                subfolder = Installation.get_module_root(filepath)
+                subfolder: str = Installation.get_module_root(filepath)
             elif resource.inside_bif:
                 subfolder = filepath.name
             else:
                 subfolder = filepath.parent.name
 
-            subfolder_path = gff_convert_dir / subfolder
+            subfolder_path: Path = gff_convert_dir / subfolder
             subfolder_path.mkdir(parents=True, exist_ok=True)
-            gff_convert_filepath = subfolder_path / filename
+            gff_convert_filepath: Path = subfolder_path / filename
             all_gffs[game].append((resource, gff_convert_filepath))
 
     return all_gffs
@@ -164,18 +171,18 @@ def populate_all_scripts(
     symlink_map: dict[Path, FileResource] = {}
 
     for game, installation in ALL_INSTALLATIONS.items():
-        game_name = "K1" if game.is_k1() else "TSL"
+        game_name: Literal["K1", "TSL"] = "K1" if game.is_k1() else "TSL"
         print(f"Populating all {game_name} scripts...")
         for resource in installation:
-            res_ident = resource.identifier()
+            res_ident: ResourceIdentifier = resource.identifier()
             if res_ident.restype != restype:
                 continue
             res_ident = resource.identifier()
             filename = str(res_ident)
-            filepath = resource.filepath()
+            filepath: Path = resource.filepath()
 
             if resource.inside_capsule:
-                subfolder = Installation.get_module_root(filepath)
+                subfolder: str = Installation.get_module_root(filepath)
             elif resource.inside_bif:
                 subfolder = filepath.name
             else:
@@ -197,14 +204,14 @@ def populate_all_scripts(
                 assert nss_path not in symlink_map, f"'{nss_path.name}' is a bif script name that should not exist in symlink_map yet?"
                 symlink_map[nss_path] = resource
 
-            entry = (resource, nss_path, ncs_path)
+            entry: tuple[FileResource, Path, Path] = (resource, nss_path, ncs_path)
             if nss_path.is_file():
                 if entry not in all_scripts[game]:
                     continue
                 all_scripts[game].append(entry)
                 continue  # No idea why this happens
 
-            resdata = resource.data()
+            resdata: bytes = resource.data()
             with nss_path.open("wb") as f:
                 f.write(resdata)
 
@@ -224,7 +231,7 @@ def populate_all_scripts(
             print(f"Symlinking {len(symlink_map)} bif scripts into {working_folder}...")
 
             for bif_nss_path in symlink_map:
-                link_path = working_folder.joinpath(bif_nss_path.name)
+                link_path: Path = working_folder.joinpath(bif_nss_path.name)
                 if link_path.exists():
                     print(f"'{link_path}' is a bif script that should not exist at this path yet? Symlink test: {link_path.is_symlink()}")
                     continue
@@ -256,7 +263,7 @@ def gff_data(request: pytest.FixtureRequest):
 # TODO: function isn't called early enough.
 def cleanup_before_tests():
     # List of paths for temporary directories and log files
-    log_files = [
+    log_files: list[str] = [
         f"*{LOG_FILENAME}.txt",
         "*FAILED_TESTS*.log",
         "*_incompatible*.txt",
@@ -283,7 +290,7 @@ def cleanup_before_tests():
 
 
 def cleanup_temp_dirs():
-    temp_dirs = [
+    temp_dirs: list[str] = [
         TEMP_NSS_DIRS[Game.K1].name,
         TEMP_NCS_DIRS[Game.K1].name,
         TEMP_NSS_DIRS[Game.K2].name,
@@ -294,7 +301,7 @@ def cleanup_temp_dirs():
     for temp_dir in temp_dirs:
         temp_dirpath = Path(temp_dir)
         # temp_dirpath.gain_access(recurse=True)
-        for temp_file in temp_dirpath.safe_rglob("*"):
+        for temp_file in temp_dirpath.rglob("*"):
             with suppress(Exception):
                 temp_file.unlink(missing_ok=True)
         with suppress(Exception):
@@ -319,7 +326,10 @@ def pytest_sessionfinish(
 
 
 # pytest hook to check test outcomes
-def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> pytest.TestReport | None:
+def pytest_runtest_makereport(
+    item: pytest.Item,
+    call: pytest.CallInfo,
+) -> pytest.TestReport | None:
     if "setup" in call.when:
         # Skip setup phase
         return None
@@ -328,7 +338,7 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> pytes
         # Construct and return a TestReport object
 
         # longrepr = call.excinfo.getrepr()
-        longrepr = format_exception_with_variables(call.excinfo.value, call.excinfo.type, call.excinfo.tb)
+        longrepr: str = format_exception_with_variables(call.excinfo.value, call.excinfo.type, call.excinfo.tb)
         report = pytest.TestReport(
             nodeid=item.nodeid,
             location=item.location,
@@ -344,18 +354,20 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> pytes
     return None
 
 
-def pytest_generate_tests(metafunc: pytest.Metafunc):
+def pytest_generate_tests(
+    metafunc: pytest.Metafunc,
+):
     if "script_data" in metafunc.fixturenames:
         print("Generating NSS compile tests...")
         # Load the data prepared in the session start
-        test_script_data = [
+        test_script_data: list[tuple[Game, tuple[FileResource, Path, Path]]] = [
             (game, script)
             for game, scripts in ALL_SCRIPTS.items()
             for script in scripts
             if not script[1].is_symlink()  # and not print(f"Skipping test collection for '{script[1]}', already symlinked to '{script[1].resolve()}'")
         ]
         print(f"Test data collected. Total tests: {len(test_script_data)}")
-        ids = sorted([f"{game}_{script[0].identifier()}" for game, script in test_script_data])
+        ids: list[str] = sorted([f"{game}_{script[0].identifier()}" for game, script in test_script_data])
         print(f"Test IDs collected. Total IDs: {len(ids)}")
         metafunc.parametrize("script_data", test_script_data, ids=ids, indirect=True)
         print("Tests have finished parametrizing!")
@@ -363,15 +375,13 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
     if "gff_data" in metafunc.fixturenames:
         print("Generating GFF conversion tests...")
         # Step 1: Generate IDs along with their corresponding data
-        combined_data = [
-            (f"{game}_{resource._path_ident_obj}", (game, resource, conversion_path)) for game, gff_info in ALL_GFFS.items() for resource, conversion_path in gff_info
-        ]
+        combined_data: list[tuple[str, tuple[Game, FileResource, Path]]] = [(f"{game}_{resource._path_ident_obj}", (game, resource, conversion_path)) for game, gff_info in ALL_GFFS.items() for resource, conversion_path in gff_info]
 
         # Step 2 and 3: Sort combined data alphabetically by the ID
-        sorted_combined_data = sorted(combined_data, key=lambda x: x[0])
+        sorted_combined_data: list[tuple[str, tuple[Game, FileResource, Path]]] = sorted(combined_data, key=lambda x: x[0])
 
         # Step 4: Separate the sorted IDs and their corresponding data back into their respective lists
-        sorted_ids = [item[0] for item in sorted_combined_data]
-        sorted_test_gff_data = [item[1] for item in sorted_combined_data]
+        sorted_ids: list[str] = [item[0] for item in sorted_combined_data]
+        sorted_test_gff_data: list[tuple[Game, FileResource, Path]] = [item[1] for item in sorted_combined_data]
         metafunc.parametrize("gff_data", sorted_test_gff_data, ids=sorted_ids, indirect=True)
         print("Tests have finished parametrizing!")

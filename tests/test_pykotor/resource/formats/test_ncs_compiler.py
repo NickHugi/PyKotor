@@ -1890,12 +1890,12 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
     def test_include_lookup(self):
-        includetest_script_path = Path("./tests/test_files").resolve()
+        includetest_script_path: Path = Path("./tests/test_pykotor/test_files").resolve()
         if not includetest_script_path.is_dir():
             import errno
             msg = "Could not find includetest.nss in the include folder!"
             raise FileNotFoundError(errno.ENOENT, msg, str(includetest_script_path))
-        ncs = self.compile(
+        ncs: NCS = self.compile(
             """
             #include "includetest"
 
@@ -1911,7 +1911,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter.run()
 
     def test_nested_include(self):
-        first_script = """
+        first_script: bytes = """
             int SOME_COST = 13;
 
             void TestFunc(int value)
@@ -1920,11 +1920,11 @@ class TestNSSCompiler(unittest.TestCase):
             }
         """.encode(encoding="windows-1252")
 
-        second_script = """
+        second_script: bytes = """
             #include "first_script"
         """.encode(encoding="windows-1252")
 
-        ncs = self.compile(
+        ncs: NCS = self.compile(
             """
             #include "second_script"
 

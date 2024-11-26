@@ -123,7 +123,7 @@ class UTIEditorTest(TestCase):
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
             assert diff, os.linesep.join(self.log_messages)
 
-    def test_open_and_save(self):
+    def test_placeholder(self):
         self.UTIEditor(None, self.INSTALLATION)
 
 

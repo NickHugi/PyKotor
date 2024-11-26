@@ -451,4 +451,4 @@ class ResourceIdentifier:
                 resname = ".".join(name_parts[:-len(extension_parts)])
                 return cls(resname, restype)
             extension_parts.pop(0)
-        return cls(path_obj.stem, ResourceType.from_invalid(extension=path_obj.suffix))
+        return cls(path_obj.stem, ResourceType.from_invalid(extension=path_obj.suffix.lstrip(".")))

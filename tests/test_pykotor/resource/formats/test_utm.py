@@ -28,7 +28,7 @@ from pykotor.resource.generics.utm import construct_utm, dismantle_utm
 if TYPE_CHECKING:
     from pykotor.resource.generics.utm import UTM
 
-TEST_FILE = "tests/test_files/test.utm"
+TEST_FILE = "tests/test_pykotor/test_files/test.utm"
 
 
 class TestUTM(unittest.TestCase):

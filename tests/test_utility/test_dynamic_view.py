@@ -22,10 +22,10 @@ class TestIsSizeSuitableForView(unittest.TestCase):
         cls.app.quit()
 
     def setUp(self):
-        self.view_manager = DynamicStackedView()
-        self.current_view = Mock()
-        self.viewport = Mock()
-        self.model = Mock()
+        self.view_manager: DynamicStackedView = DynamicStackedView()
+        self.current_view: Mock = Mock()
+        self.viewport: Mock = Mock()
+        self.model: Mock = Mock()
 
         self.current_view.viewport.return_value = self.viewport
         self.current_view.model.return_value = self.model
@@ -34,21 +34,21 @@ class TestIsSizeSuitableForView(unittest.TestCase):
         self.viewport.size.return_value = QSize(1000, 800)
         self.current_view.visualRect.return_value = QRect(0, 0, 100, 80)
 
-        result = self.view_manager.is_size_suitable_for_view(12, 0.2)
+        result: bool = self.view_manager.is_size_suitable_for_view(12)
         assert result, "The size should be suitable for the view"
 
         self.current_view.visualRect.return_value = QRect(0, 0, 300, 240)
-        result = self.view_manager.is_size_suitable_for_view(12, 0.2)
+        result = self.view_manager.is_size_suitable_for_view(12)
         assert not result, "The size should not be suitable for the view"
 
     def test_is_size_suitable_for_view_custom_max_percent(self):
         self.viewport.size.return_value = QSize(1000, 800)
         self.current_view.visualRect.return_value = QRect(0, 0, 200, 160)
 
-        result = self.view_manager.is_size_suitable_for_view(12, 0.3)
+        result = self.view_manager.is_size_suitable_for_view(12)
         assert result
 
-        result = self.view_manager.is_size_suitable_for_view(12, 0.1)
+        result = self.view_manager.is_size_suitable_for_view(12)
         assert not result
 
 

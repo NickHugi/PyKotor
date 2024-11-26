@@ -16,7 +16,10 @@ from typing import Any, Callable, ClassVar, cast
 import qtpy
 
 from loggerplus import RobustLogger
-from qtpy.QtCore import QObject, Signal
+from qtpy.QtCore import (
+    QObject,
+    Signal,  # pyright: ignore[reportPrivateImportUsage]
+)
 
 from utility.ui_libraries.qt.common.expensive_functions import FileOperations
 
@@ -100,7 +103,7 @@ class FileActionsExecutor(QObject):
 
     @property
     def completed_tasks(self) -> int:
-        completed = sum(
+        completed: int = sum(
             task.status
             in (
                 TaskStatus.COMPLETED,
@@ -113,7 +116,7 @@ class FileActionsExecutor(QObject):
 
     @property
     def total_tasks(self) -> int:
-        total = len(self.tasks)
+        total: int = len(self.tasks)
         RobustLogger().debug(f"Total tasks: {total}")
         return total
 
@@ -141,15 +144,15 @@ class FileActionsExecutor(QObject):
         task.status = TaskStatus.PENDING
         self.tasks[task_id] = task
 
-        progress_queue = self.manager.Queue()
-        pause_flag = self.manager.Value("b", False)  # noqa: FBT003
-        cancel_flag = self.manager.Value("b", False)  # noqa: FBT003
+        progress_queue: Queue[Any] = self.manager.Queue()
+        pause_flag: ValueProxy[bool] = self.manager.Value("b", False)  # noqa: FBT003
+        cancel_flag: ValueProxy[bool] = self.manager.Value("b", False)  # noqa: FBT003
 
         kwargs["progress_queue"] = progress_queue
         kwargs["pause_flag"] = pause_flag
         kwargs["cancel_flag"] = cancel_flag
 
-        future = self.process_pool.submit(self._execute_task, operation, custom_function, *args, **kwargs)
+        future: Future[Any] = self.process_pool.submit(self._execute_task, operation, custom_function, *args, **kwargs)
         self.futures[task_id] = future
         future.add_done_callback(lambda f: self._task_completed(task_id, f))
         self.TaskStarted.emit(task_id)
@@ -170,21 +173,27 @@ class FileActionsExecutor(QObject):
         RobustLogger().debug(f"Executing task: operation={operation}, args={args}, kwargs={kwargs}")
         if custom_function:
             return custom_function(*args, **kwargs)
-        func = getattr(FileOperations, operation)
+        func: FileOperations | None = getattr(FileOperations, operation, None)
+        if not func:
+            raise ValueError(f"Invalid operation: {operation}")
         if hasattr(func, "handle_operation"):
             return func(*args, **kwargs)
         if hasattr(func, "handle_multiple"):
-            paths = args[0] if args else kwargs.get("paths", [])
+            paths: list[str] = args[0] if args else kwargs.get("paths", [])
             return func(paths, **kwargs)
         return func(*args, **kwargs)
 
-    def _monitor_progress(self, task_id: str, progress_queue: Queue[int]):
+    def _monitor_progress(
+        self,
+        task_id: str,
+        progress_queue: Queue[int],
+    ) -> None:
         while True:
             try:
-                progress = progress_queue.get(timeout=1)
+                progress: int = progress_queue.get(timeout=1)
                 self.update_task_progress(task_id, progress)
             except queue.Empty:  # noqa: PERF203
-                task = self.get_task(task_id)
+                task: Task | None = self.get_task(task_id)
                 if task and task.status in (
                     TaskStatus.COMPLETED,
                     TaskStatus.FAILED,
@@ -192,14 +201,20 @@ class FileActionsExecutor(QObject):
                 ):
                     break
 
-    def get_task(self, task_id: str) -> Task | None:
-        task = self.tasks.get(task_id)
+    def get_task(
+        self,
+        task_id: str,
+    ) -> Task | None:
+        task: Task | None = self.tasks.get(task_id)
         RobustLogger().debug(f"Getting task: {task_id}, result: {task}")
         return task
 
-    def cancel_task(self, task_id: str) -> None:
+    def cancel_task(
+        self,
+        task_id: str,
+    ) -> None:
         RobustLogger().debug(f"Attempting to cancel task: {task_id}")
-        task = self.get_task(task_id)
+        task: Task | None = self.get_task(task_id)
         if task and task.status in (TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.PAUSED):
             task.kwargs["cancel_flag"].value = True
             self.futures[task_id].cancel()
@@ -211,9 +226,12 @@ class FileActionsExecutor(QObject):
         else:
             RobustLogger().debug(f"Unable to cancel task: {task_id}")
 
-    def pause_task(self, task_id: str) -> None:
+    def pause_task(
+        self,
+        task_id: str,
+    ) -> None:
         RobustLogger().debug(f"Attempting to pause task: {task_id}")
-        task = self.get_task(task_id)
+        task: Task | None = self.get_task(task_id)
         if task and task.status == TaskStatus.RUNNING:
             cast(ValueProxy, task.kwargs["pause_flag"]).value = True
             task.status = TaskStatus.PAUSED
@@ -223,9 +241,12 @@ class FileActionsExecutor(QObject):
         else:
             RobustLogger().debug(f"Unable to pause task: {task_id}")
 
-    def resume_task(self, task_id: str) -> None:
+    def resume_task(
+        self,
+        task_id: str,
+    ) -> None:
         RobustLogger().debug(f"Attempting to resume task: {task_id}")
-        task = self.get_task(task_id)
+        task: Task | None = self.get_task(task_id)
         if task and task.status == TaskStatus.PAUSED:
             cast(ValueProxy, task.kwargs["pause_flag"]).value = False
             task.status = TaskStatus.RUNNING
@@ -235,11 +256,14 @@ class FileActionsExecutor(QObject):
         else:
             RobustLogger().debug(f"Unable to resume task: {task_id}")
 
-    def retry_task(self, task_id: str) -> str | None:
+    def retry_task(
+        self,
+        task_id: str,
+    ) -> str | None:
         RobustLogger().debug(f"Attempting to retry task: {task_id}")
-        task = self.get_task(task_id)
+        task: Task | None = self.get_task(task_id)
         if task and task.status in (TaskStatus.FAILED, TaskStatus.CANCELLED):
-            new_task_id = self.queue_task(task.operation, task.args, task.kwargs, task.priority, task.description)
+            new_task_id: str = self.queue_task(task.operation, task.args, task.kwargs, task.priority, task.description)
             del self.tasks[task_id]
             self.futures.pop(task_id, None)
             RobustLogger().debug(f"Task retried: {task_id}, new task id: {new_task_id}")
@@ -248,8 +272,8 @@ class FileActionsExecutor(QObject):
         return None
 
     def _update_progress(self):
-        completed = self.completed_tasks
-        total = self.total_tasks
+        completed: int = self.completed_tasks
+        total: int = self.total_tasks
         RobustLogger().debug(f"Updating progress: {completed}/{total}")
         RobustLogger().debug(f"Task statuses: {[task.status.name for task in self.tasks.values()]}")
         self.ProgressUpdated.emit(completed, total)
@@ -259,9 +283,13 @@ class FileActionsExecutor(QObject):
         RobustLogger().debug(f"Getting all tasks, count: {len(tasks)}")
         return tasks
 
-    def update_task_progress(self, task_id: str, progress: float) -> None:
+    def update_task_progress(
+        self,
+        task_id: str,
+        progress: float,
+    ) -> None:
         RobustLogger().debug(f"Updating task progress: {task_id}, progress: {progress}")
-        task = self.get_task(task_id)
+        task: Task | None = self.get_task(task_id)
         if task:
             task.progress = progress
             self.tasks[task_id] = task  # Update the task in the shared dictionary
@@ -269,40 +297,52 @@ class FileActionsExecutor(QObject):
         else:
             RobustLogger().debug(f"Task not found for progress update: {task_id}")
 
-    def cleanup_tasks(self, max_age: timedelta = timedelta(days=1)):
+    def cleanup_tasks(
+        self,
+        max_age: timedelta = timedelta(days=1),
+    ) -> None:
         RobustLogger().debug(f"Cleaning up tasks older than {max_age}")
-        current_time = datetime.now().astimezone()
+        current_time: datetime = datetime.now().astimezone()
         for task_id, task in list(self.tasks.items()):
-            if task.end_time and (current_time - task.end_time) > max_age:
-                del self.tasks[task_id]
-                self.futures.pop(task_id, None)
-                RobustLogger().debug(f"Removed old task: {task_id}")
+            if not task.end_time:
+                continue
+            if (current_time - task.end_time) <= max_age:
+                continue
+            del self.tasks[task_id]
+            self.futures.pop(task_id, None)
+            RobustLogger().debug(f"Removed old task: {task_id}")
         self._update_progress()
 
-    def get_task_details(self, task_id: str) -> TaskDetails | None:
+    def get_task_details(
+        self,
+        task_id: str,
+    ) -> TaskDetails | None:
         RobustLogger().debug(f"Getting task details for: {task_id}")
-        task = self.get_task(task_id)
-        if task:
-            details = TaskDetails(
-                id=task.id,
-                operation=task.operation,
-                status=task.status.name,
-                progress=task.progress,
-                priority=task.priority,
-                start_time=task.start_time.isoformat() if task.start_time else None,
-                end_time=task.end_time.isoformat() if task.end_time else None,
-                description=task.description,
-                error=task.error,
-                result=str(task.result) if task.result is not None else None,
-            )
-            RobustLogger().debug(f"Task details retrieved: {details}")
-            return details
-        RobustLogger().debug(f"No task found for id: {task_id}")
-        return None
+        task: Task | None = self.get_task(task_id)
+        if not task:
+            return None
+        details: TaskDetails = TaskDetails(
+            id=task.id,
+            operation=task.operation,
+            status=task.status.name,
+            progress=task.progress,
+            priority=task.priority,
+            start_time=task.start_time.isoformat() if task.start_time else None,
+            end_time=task.end_time.isoformat() if task.end_time else None,
+            description=task.description,
+            error=task.error,
+            result=str(task.result) if task.result is not None else None,
+        )
+        RobustLogger().debug(f"Task details retrieved: {details}")
+        return details
 
-    def _task_completed(self, task_id: str, future: Future) -> None:
+    def _task_completed(
+        self,
+        task_id: str,
+        future: Future,
+    ) -> None:
         RobustLogger().debug(f"Task completed callback for: {task_id}")
-        task = self.get_task(task_id)
+        task: Task | None = self.get_task(task_id)
         if task:
             task.end_time = datetime.now().astimezone()
             if future.cancelled():

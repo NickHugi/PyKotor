@@ -108,7 +108,7 @@ class BinaryReader:
         stream: io.RawIOBase | io.BufferedIOBase,
         offset: int = 0,
         size: int | None = None,
-    ):
+    ) -> Self:
         if not stream.seekable():
             msg = "Stream must be seekable"
             raise ValueError(msg)
@@ -189,7 +189,7 @@ class BinaryReader:
                 raise TypeError(msg)
 
         elif isinstance(source, BinaryReader):  # is already a BinaryReader instance
-            reader = cls(source._stream, source.offset(), source.size())
+            reader = cls(source._stream, source.offset(), source.size())  # noqa: SLF001
 
         else:
             msg = f"Must specify a path, bytes-like object, stream, io. or an existing BinaryReader instance, got type ({source.__class__})."
@@ -638,9 +638,9 @@ class BinaryReader:
             A string read from the stream.
         """
         self.exceed_check(length)
-        string_byte_data = self._stream.read(length) or b""
+        string_byte_data: bytes = self._stream.read(length) or b""
         if encoding is None:
-            string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
+            string: str = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
             RobustLogger().warning(f"decode_bytes_with_fallbacks called and returned '{string}'")
         else:
             string = string_byte_data.decode(encoding=encoding, errors=errors)
@@ -707,12 +707,12 @@ class BinaryReader:
         locstring: LocalizedString = LocalizedString.from_invalid()
         self.skip(4)  # total number of bytes of the localized string
         locstring.stringref = self.read_uint32(max_neg1=True)
-        string_count = self.read_uint32()
+        string_count: int = self.read_uint32()
         for _ in range(string_count):
-            string_id = self.read_uint32()
+            string_id: int = self.read_uint32()
             language, gender = LocalizedString.substring_pair(string_id)
-            length = self.read_uint32()
-            string = self.read_string(length, encoding=language.get_encoding())
+            length: int = self.read_uint32()
+            string: str = self.read_string(length, encoding=language.get_encoding())
             locstring.set_data(language, gender, string)
         return locstring
 
@@ -725,7 +725,7 @@ class BinaryReader:
         self,
         length: int = 1,
     ) -> bytes:
-        data = self._stream.read(length)
+        data: bytes | None = self._stream.read(length)
         self._stream.seek(-length, 1)
         return b"" if data is None else data
 
@@ -743,7 +743,7 @@ class BinaryReader:
         ------
             OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
-        attempted_seek = self.position() + num
+        attempted_seek: int = self.position() + num
         if attempted_seek < 0:
             msg = f"Cannot seek to a negative value {attempted_seek}, abstracted seek value: {num}"
             raise OSError(msg)
@@ -813,7 +813,9 @@ class BinaryWriter(ABC):
             return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
         if isinstance(source, BinaryWriterBytearray):
             return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
-        msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
+        if isinstance(source, (io.RawIOBase, io.BufferedIOBase, mmap.mmap)):
+            return BinaryWriterFile(source, 0)
+        msg = f"Must specify a path, bytes object or an existing BinaryWriter instance. Instead got: {source.__class__.__name__}"
         raise NotImplementedError(msg)
 
     @staticmethod
@@ -1107,7 +1109,7 @@ class BinaryWriter(ABC):
         """
 
     @abstractmethod
-    def write_string(
+    def write_string(  # noqa: PLR0913
         self,
         value: str,
         encoding: str | None = "windows-1252",
@@ -1171,7 +1173,7 @@ class BinaryWriterFile(BinaryWriter):
         offset: int = 0,
     ):
         self._stream: io.BufferedIOBase | io.RawIOBase = stream
-        self.offset: int = offset  # FIXME: rename to _offset like all the other classes in this file.
+        self.offset: int = offset  # FIXME(th3w1zard1): rename to _offset like all the other classes in this file.
         self.auto_close: bool = True
 
         self._stream.seek(offset)
@@ -1473,7 +1475,7 @@ class BinaryWriterFile(BinaryWriter):
 
     def write_bytes(
         self,
-        value: bytes | bytearray,
+        value: bytes,
     ):
         """Writes the specified bytes to the stream.
 
@@ -1483,7 +1485,7 @@ class BinaryWriterFile(BinaryWriter):
         """
         self._stream.write(value)
 
-    def write_string(
+    def write_string(  # noqa: PLR0913
         self,
         value: str,
         encoding: str | None = "windows-1252",
@@ -1510,19 +1512,19 @@ class BinaryWriterFile(BinaryWriter):
         if prefix_length == 0:
             pass
         elif prefix_length == 1:
-            if len(value) > 0xFF:
+            if len(value) > 0xFF:  # noqa: PLR2004
                 msg = "The string length is too large for a prefix length of 1."
                 raise ValueError(msg)
             self.write_uint8(len(value), big=big)
 
-        elif prefix_length == 2:
-            if len(value) > 0xFFFF:
+        elif prefix_length == 2:  # noqa: PLR2004
+            if len(value) > 0xFFFF:  # noqa: PLR2004
                 msg = "The string length is too large for a prefix length of 2."
                 raise ValueError(msg)
             self.write_uint16(len(value), big=big)
 
-        elif prefix_length == 4:
-            if len(value) > 0xFFFFFFFF:
+        elif prefix_length == 4:  # noqa: PLR2004
+            if len(value) > 0xFFFFFFFF:  # noqa: PLR2004
                 msg = "The string length is too large for a prefix length of 4."
                 raise ValueError(msg)
             self.write_uint32(len(value), big=big)
@@ -1962,7 +1964,7 @@ class BinaryWriterBytearray(BinaryWriter):
         self._ba[self._position : self._position + len(value)] = value
         self._position += len(value)
 
-    def write_string(
+    def write_string(  # noqa: PLR0913
         self,
         value: str,
         encoding: str | None = "windows-1252",
@@ -1989,17 +1991,17 @@ class BinaryWriterBytearray(BinaryWriter):
         if prefix_length == 0:
             pass
         elif prefix_length == 1:
-            if len(value) > 0xFF:
+            if len(value) > 0xFF:  # noqa: PLR2004
                 msg = "The string length is too large for a prefix length of 1."
                 raise ValueError(msg)
             self.write_uint8(len(value), big=big)
-        elif prefix_length == 2:
-            if len(value) > 0xFFFF:
+        elif prefix_length == 2:  # noqa: PLR2004
+            if len(value) > 0xFFFF:  # noqa: PLR2004
                 msg = "The string length is too large for a prefix length of 2."
                 raise ValueError(msg)
             self.write_uint16(len(value), big=big)
-        elif prefix_length == 4:
-            if len(value) > 0xFFFFFFFF:
+        elif prefix_length == 4:  # noqa: PLR2004
+            if len(value) > 0xFFFFFFFF:  # noqa: PLR2004
                 msg = "The string length is too large for a prefix length of 4."
                 raise ValueError(msg)
             self.write_uint32(len(value), big=big)
@@ -2072,6 +2074,7 @@ class BinaryWriterBytearray(BinaryWriter):
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
 
+
 if __name__ == "__main__":
     import random
     import time
@@ -2087,15 +2090,18 @@ if __name__ == "__main__":
     FILE_DATA: bytes | None = None
 
     # Function to perform the I/O operations
-    def test_io_performance(stream_class: type, mode: str = "rb") -> tuple[int, int, int]:
+    def test_io_performance(  # noqa: C901, PLR0912, PLR0915
+        stream_class: type,
+        mode: str = "rb",
+    ) -> tuple[float, float, float]:
         print(f"Testing {stream_class.__name__}, mode={mode}")
         assert FILE_DATA is not None
-        instantiation_times = []
-        operation_times = []
+        instantiation_times: list[float] = []
+        operation_times: list[float] = []
 
         for i in range(NUM_INSTANTIATIONS):
             try:
-                instantiation_start_time = time.time()
+                instantiation_start_time: float = time.time()
                 if stream_class is BinaryReader:
                     if mode == "file":
                         stream = BinaryReader.from_file(TEST_FILE)
@@ -2103,18 +2109,18 @@ if __name__ == "__main__":
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_bytes(FILE_DATA)
                     elif mode == "mmap":
-                        raw_raw_stream = open(TEST_FILE, "rb")
-                        raw_stream = mmap.mmap(raw_raw_stream.fileno(), os.stat(TEST_FILE).st_size, access=mmap.ACCESS_READ)
+                        raw_raw_stream = open(TEST_FILE, "rb")  # noqa: PTH123, SIM115
+                        raw_stream = mmap.mmap(raw_raw_stream.fileno(), os.stat(TEST_FILE).st_size, access=mmap.ACCESS_READ)  # noqa: PTH116
                         instantiation_start_time = time.time()
                         stream = BinaryReader(raw_stream)
                     elif mode == "stream(io.BufferedReader)":
-                        raw_raw_stream = open(TEST_FILE, "rb")
-                        raw_stream = io.BufferedReader(raw_raw_stream)
+                        raw_raw_stream = open(TEST_FILE, "rb")  # noqa: PTH123, SIM115
+                        raw_stream = io.BufferedReader(raw_raw_stream)  # pyright: ignore[reportArgumentType]
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_stream(raw_stream)
                     elif mode == "stream(io.BufferedRandom)":
-                        raw_raw_stream = open(TEST_FILE, "r+b")
-                        raw_stream = io.BufferedRandom(raw_raw_stream)
+                        raw_raw_stream = open(TEST_FILE, "r+b")  # noqa: PTH123, SIM115
+                        raw_stream = io.BufferedRandom(raw_raw_stream)  # pyright: ignore[reportArgumentType]
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_stream(raw_stream)
                     elif mode == "stream(io.BytesIO)":
@@ -2127,7 +2133,7 @@ if __name__ == "__main__":
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_stream(raw_stream)
                     elif mode == "stream(raw)":
-                        raw_stream = open(TEST_FILE, "rb")
+                        raw_stream = open(TEST_FILE, "rb")  # noqa: PTH123, SIM115
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_stream(raw_stream)
                     else:
@@ -2136,33 +2142,33 @@ if __name__ == "__main__":
                     # Special handling for BytesIO
                     stream = io.BytesIO(FILE_DATA)
                 else:
-                    raw_stream = open(TEST_FILE, mode)
+                    raw_stream = open(TEST_FILE, mode)  # noqa: PTH123, SIM115
                     if stream_class is io.BufferedReader:
-                        stream = io.BufferedReader(raw_stream)
+                        stream = io.BufferedReader(raw_stream)  # pyright: ignore[reportArgumentType]
                     elif stream_class is io.BufferedRandom:
-                        stream = io.BufferedRandom(raw_stream)
+                        stream = io.BufferedRandom(raw_stream)  # pyright: ignore[reportArgumentType]
                     else:
-                        stream = stream_class(TEST_FILE, mode)
-                instantiation_end_time = time.time()
+                        stream = stream_class(TEST_FILE, mode)  # pyright: ignore[reportArgumentType, reportCallIssue]
+                instantiation_end_time: float = time.time()
                 instantiation_times.append(instantiation_end_time - instantiation_start_time)
             finally:
-                if i != NUM_INSTANTIATIONS-1:
+                if i != NUM_INSTANTIATIONS - 1:
                     stream.close()
 
         try:
-            operation_start_time = time.time()
+            operation_start_time: float = time.time()
             for _ in range(NUM_OPERATIONS):
-                seek_position = random.randint(0, os.path.getsize(TEST_FILE) - 1)
+                seek_position: int = random.randint(0, os.path.getsize(TEST_FILE) - 1)  # noqa: S311, PTH202
                 stream.seek(seek_position)
                 stream.read(1)
-            operation_end_time = time.time()
+            operation_end_time: float = time.time()
             operation_times.append(operation_end_time - operation_start_time)
         finally:
             stream.close()
 
-        total_instantiation_time = sum(instantiation_times)
-        total_operation_time = sum(operation_times)
-        total_time = total_instantiation_time + total_operation_time
+        total_instantiation_time: float = sum(instantiation_times)
+        total_operation_time: float = sum(operation_times)
+        total_time: float = total_instantiation_time + total_operation_time
 
         return total_instantiation_time, total_operation_time, total_time
 
@@ -2170,13 +2176,13 @@ if __name__ == "__main__":
     def main():
         global FILE_DATA  # noqa: PLW0603
 
-        results = []
+        results: list[list[int | float]] = []
         # Test using different stream types
-        stream_types = [
-            (io.FileIO, "rb"),            # Raw access
-            (io.BytesIO, "rb"),           # In-memory stream (needs special handling)
-            (io.BufferedReader, "rb"),    # Buffered reading
-            (io.BufferedRandom, "r+b"),   # Buffered random access
+        stream_types: list[tuple[type, str]] = [
+            (io.FileIO, "rb"),  # Raw access
+            (io.BytesIO, "rb"),  # In-memory stream (needs special handling)
+            (io.BufferedReader, "rb"),  # Buffered reading
+            (io.BufferedRandom, "r+b"),  # Buffered random access
             (BinaryReader, "file"),
             (BinaryReader, "mmap"),
             (BinaryReader, "stream(io.BufferedReader)"),
@@ -2187,35 +2193,44 @@ if __name__ == "__main__":
         ]
 
         # Ensure the test file exists and is the correct size
-        if not os.path.exists(TEST_FILE) or os.path.getsize(TEST_FILE) != FILE_SIZE:
+        if not os.path.exists(TEST_FILE) or os.path.getsize(TEST_FILE) != FILE_SIZE:  # noqa: PTH110, PTH202
             FILE_DATA = os.urandom(FILE_SIZE)
             print("Creating test file...")
-            with open(TEST_FILE, "wb") as f:
+            with open(TEST_FILE, "wb") as f:  # noqa: PTH123
                 f.write(FILE_DATA)
         if FILE_DATA is None:
-            with open(TEST_FILE, "rb") as f:
+            with open(TEST_FILE, "rb") as f:  # noqa: PTH123
                 FILE_DATA = f.read()
 
         # Run the tests
         for stream_class, mode in stream_types:
+            print(f"Testing {stream_class.__name__}, mode={mode}")
             total_instantiation_time, total_operation_time, total_time = test_io_performance(stream_class, mode)
-            results.append([f"{stream_class.__name__}({mode})", total_instantiation_time, total_operation_time, total_time])
+            results.append(
+                [
+                    f"{stream_class.__name__}({mode})",  # pyright: ignore[reportArgumentType]
+                    total_instantiation_time,
+                    total_operation_time,
+                    total_time,
+                ]
+            )
 
         # Sort by total performance (fastest first)
         results.sort(key=lambda x: x[3])
-        fastest_total_time = results[0][3]
-        fastest_instantiation_time = min(results, key=lambda x: x[1])[1]
-        fastest_operation_time = min(results, key=lambda x: x[2])[2]
+        fastest_total_time: float = results[0][3]
+        fastest_instantiation_time: float = min(results, key=lambda x: x[1])[1]
+        fastest_operation_time: float = min(results, key=lambda x: x[2])[2]
 
         for result in results:
             for i, elem in enumerate(result):
-                if elem == 0:
-                    result[i] = 0.0001
+                if elem != 0:
+                    continue
+                result[i] = 0.0001
 
         # Print the results with additional statistics
         print("------------------------------------------------------\n\nInstantiation Statistics (sorted by fastest to slowest):\n")
         for result in results:
-            speed_percent = (fastest_instantiation_time / result[1]) * 100
+            speed_percent: float = (fastest_instantiation_time / result[1]) * 100
             print(f"{result[0]}: {result[1]:.4f} seconds ({speed_percent:.2f}% of fastest, {result[1] / NUM_INSTANTIATIONS:.2f}s per)")
 
         print("------------------------------------------------------\n\nOperation Statistics (sorted by fastest to slowest):")
@@ -2230,9 +2245,9 @@ if __name__ == "__main__":
         print("------------------------------------------------------\n")
 
         # Calculate average times
-        avg_instantiation_time = sum(r[1] for r in results) / len(results)
-        avg_operation_time = sum(r[2] for r in results) / len(results)
-        avg_total_time = sum(r[3] for r in results) / len(results)
+        avg_instantiation_time: float = sum(r[1] for r in results) / len(results)
+        avg_operation_time: float = sum(r[2] for r in results) / len(results)
+        avg_total_time: float = sum(r[3] for r in results) / len(results)
 
         print(f"Average Instantiation Time: {avg_instantiation_time:.4f} seconds")
         print(f"Average Operation Time: {avg_operation_time:.4f} seconds")

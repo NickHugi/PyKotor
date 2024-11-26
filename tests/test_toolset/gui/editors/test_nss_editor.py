@@ -1,24 +1,24 @@
 from __future__ import annotations
 
+import importlib
 import os
 import pathlib
 import sys
+from typing import TYPE_CHECKING
 import unittest
 from unittest import TestCase
 
-try:
-    from qtpy.QtTest import QTest
-    from qtpy.QtWidgets import QApplication
-except (ImportError, ModuleNotFoundError):
-    QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
-absolute_file_path = pathlib.Path(__file__).resolve()
-TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "test_toolset/test_files"
+if TYPE_CHECKING:
+    from toolset.data.installation import HTInstallation
+    from toolset.gui.editors.nss import NSSEditor
+    from pykotor.resource.formats.ncs.ncs_data import NCS
 
-if (
-    __name__ == "__main__"
-    and getattr(sys, "frozen", False) is False
-):
+absolute_file_path: pathlib.Path = pathlib.Path(__file__).resolve()
+TESTS_FILES_PATH: pathlib.Path = next(f for f in absolute_file_path.parents if f.name == "tests") / "test_toolset/test_files"
+
+if __name__ == "__main__" and getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -38,9 +38,15 @@ if (
     if toolset_path.exists():
         add_sys_path(toolset_path.parent)
 
+if importlib.util.find_spec("qtpy.QtWidgets") is None:  # pyright: ignore[reportAttributeAccessIssue]
+    raise ImportError("qtpy.QtWidgets is required for this test. Install PyQt/PySide with qtpy before running this test.")
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+from qtpy.QtTest import QTest
+from qtpy.QtWidgets import QApplication
+
+
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import read_ncs
@@ -56,6 +62,9 @@ from pykotor.resource.type import ResourceType
     "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class NSSEditorTest(TestCase):
+    INSTALLATION: HTInstallation
+    NSSEditor: type[NSSEditor]
+
     @classmethod
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
@@ -79,14 +88,15 @@ class NSSEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "../test_toolset/files/90sk99.ncs"
+        filepath: pathlib.Path = TESTS_FILES_PATH / "90sk99.ncs"
 
-        data = filepath.read_bytes()
-        old = read_ncs(data)
-        self.editor.load(filepath, "90sk99", ResourceType.NCS, data)
+        data1: bytes = filepath.read_bytes()
+        old: NCS = read_ncs(data1)
+        self.editor.load(filepath, "90sk99", ResourceType.NCS, data1)
 
-        data, _ = self.editor.build()
-        new = read_ncs(data)
+        data2, _ = self.editor.build()
+        assert data2 is not None, "Failed to build NCS"
+        new: NCS = read_ncs(data2)
 
         self.assertDeepEqual(old, new)
 

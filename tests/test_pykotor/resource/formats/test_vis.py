@@ -25,9 +25,9 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.resource.formats.vis import VIS, VISAsciiReader, read_vis, write_vis
 from pykotor.resource.type import ResourceType
 
-ASCII_TEST_FILE = "tests/test_files/test.vis"
+ASCII_TEST_FILE = "tests/test_pykotor/test_files/test.vis"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_ASCII_TEST_FILE = "tests/test_files/test_corrupted.vis"
+CORRUPT_ASCII_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.vis"
 
 
 class TestVIS(TestCase):

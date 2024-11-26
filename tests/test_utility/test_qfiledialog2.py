@@ -8,27 +8,12 @@ import unittest
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
+from qtpy.QtCore import QAbstractItemModel, QItemSelectionModel, QSize
+from qtpy.QtWidgets import QAbstractItemView, QCompleter, QHeaderView, QLayout
 import qtpy
 
-from qtpy.QtCore import (
-    QAbstractProxyModel,
-    QCoreApplication,
-    QDataStream,
-    QDir,
-    QFile,
-    QFileInfo,
-    QIODevice,
-    QModelIndex,
-    QPoint,
-    QRandomGenerator,
-    QSettings,
-    QSortFilterProxyModel,
-    QStandardPaths,
-    QTemporaryFile,
-    QTimer,
-    QUrl,
-    Qt,
-)
+from qtpy.QtCore import QAbstractProxyModel, QCoreApplication, QDataStream, QDir, QFile, QFileInfo, QIODevice, QModelIndex, QPoint, QRandomGenerator, QSettings, QSortFilterProxyModel, QStandardPaths, QTemporaryFile, QTimer, QUrl, Qt
+
 from qtpy.QtGui import QCursor
 from qtpy.QtTest import QSignalSpy, QTest
 from qtpy.QtWidgets import (
@@ -58,58 +43,85 @@ if TYPE_CHECKING:
 class FilterDirModel(QAbstractProxyModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._sourceModel = None
+        self._source_model: QAbstractItemModel | None = None
 
-    def setSourceModel(self, sourceModel: QAbstractItemModel):  # noqa: N803
-        self._sourceModel = sourceModel
-        super().setSourceModel(sourceModel)
+    def setSourceModel(
+        self,
+        source_model: QAbstractItemModel,
+    ):  # noqa: N803
+        self._source_model = source_model
+        super().setSourceModel(source_model)
 
-    def mapToSource(self, proxyIndex: QModelIndex) -> QModelIndex:  # noqa: N803
-        if not self._sourceModel:
+    def mapToSource(self, proxy_index: QModelIndex) -> QModelIndex:  # noqa: N803
+        if not self._source_model:
             return QModelIndex()
-        return self._sourceModel.index(proxyIndex.row(), proxyIndex.column(), proxyIndex.parent())
+        return self._source_model.index(proxy_index.row(), proxy_index.column(), proxy_index.parent())
 
-    def mapFromSource(self, sourceIndex: QModelIndex) -> QModelIndex:  # noqa: N803
-        if not sourceIndex.isValid():
+    def mapFromSource(
+        self,
+        source_index: QModelIndex,
+    ) -> QModelIndex:  # noqa: N803
+        if not source_index.isValid():
             return QModelIndex()
-        return self.index(sourceIndex.row(), sourceIndex.column(), sourceIndex.parent())
+        return self.index(source_index.row(), source_index.column(), source_index.parent())
 
-    def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:  # noqa: B008
-        if not self._sourceModel:
+    def index(
+        self,
+        row: int,
+        column: int,
+        parent: QModelIndex = QModelIndex(),
+    ) -> QModelIndex:  # noqa: B008
+        if not self._source_model:
             return QModelIndex()
-        return self.createIndex(row, column, self._sourceModel.index(row, column, parent).internalPointer())
+        return self.createIndex(row, column, self._source_model.index(row, column, parent).internalPointer())
 
-    def parent(self, child: QModelIndex = QModelIndex()) -> QModelIndex:  # pyright: ignore[reportIncompatibleMethodOverride]  # noqa: B008
-        if not self._sourceModel:
+    def parent(
+        self,
+        child: QModelIndex = QModelIndex(),
+    ) -> QModelIndex:  # pyright: ignore[reportIncompatibleMethodOverride]  # noqa: B008
+        if not self._source_model:
             return QModelIndex()
-        return self._sourceModel.parent(self.mapToSource(child))
+        return self._source_model.parent(self.mapToSource(child))
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: B008
-        if not self._sourceModel:
+    def rowCount(
+        self,
+        parent: QModelIndex = QModelIndex(),
+    ) -> int:  # noqa: B008
+        if not self._source_model:
             return 0
-        return self._sourceModel.rowCount(self.mapToSource(parent))
+        return self._source_model.rowCount(self.mapToSource(parent))
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: B008
-        if not self._sourceModel:
+    def columnCount(
+        self,
+        parent: QModelIndex = QModelIndex(),
+    ) -> int:  # noqa: B008
+        if not self._source_model:
             return 0
-        return self._sourceModel.columnCount(self.mapToSource(parent))
+        return self._source_model.columnCount(self.mapToSource(parent))
 
-    def data(self, proxyIndex: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any | None:  # noqa: N803
-        if not self._sourceModel:
+    def data(
+        self,
+        proxy_index: QModelIndex,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any | None:  # noqa: N803
+        if not self._source_model:
             return None
-        sourceIndex = self.mapToSource(proxyIndex)
+        sourceIndex = self.mapToSource(proxy_index)
         if not sourceIndex.isValid():
             return None
-        if not isinstance(self._sourceModel, QFileSystemModel):
+        if not isinstance(self._source_model, QFileSystemModel):
             return None
-        if self._sourceModel.isDir(sourceIndex):
-            return self._sourceModel.data(sourceIndex, role)
+        if self._source_model.isDir(sourceIndex):
+            return self._source_model.data(sourceIndex, role)
         return None
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags | Qt.ItemFlag:  # pyright: ignore[reportIncompatibleMethodOverride]
-        if not self._sourceModel:
+    def flags(
+        self,
+        index: QModelIndex,
+    ) -> Qt.ItemFlag:  # pyright: ignore[reportIncompatibleMethodOverride]
+        if not self._source_model:
             return Qt.ItemFlag.NoItemFlags
-        return self._sourceModel.flags(self.mapToSource(index))
+        return self._source_model.flags(self.mapToSource(index))
 
 
 class TestQFileDialog2(unittest.TestCase):
@@ -165,8 +177,8 @@ class TestQFileDialog2(unittest.TestCase):
         fileInfoGatherer.start()
         self._qtest.qWait(1500)
         # qt_test_resetFetchedRoot()  # TODO
-        dir = QDir.currentPath()  # noqa: A001
-        fd = self.fd_class(None, "", dir)
+        dir: str = QDir.currentPath()  # noqa: A001
+        fd: PythonQFileDialog = self.fd_class(None, "", dir)
         fd.show()
         # self.assertFalse(qt_test_isFetchedRoot())  # TODO
         fd.setDirectory("")
@@ -181,36 +193,36 @@ class TestQFileDialog2(unittest.TestCase):
             dialog.deleteLater()
 
     def test_deleteDirAndFiles(self):
-        tempPath = self.temp_path / "QFileDialogTestDir4FullDelete"
-        tempPath.mkdir(parents=True, exist_ok=True)
-        (tempPath / "foo").mkdir(parents=True, exist_ok=True)
-        (tempPath / "foo/B").mkdir(parents=True, exist_ok=True)
-        (tempPath / "foo/c").mkdir(parents=True, exist_ok=True)
-        (tempPath / "bar").mkdir(parents=True, exist_ok=True)
-        t = tempfile.NamedTemporaryFile(dir=tempPath / "foo", delete=False)
+        temp_path: Path = self.temp_path / "QFileDialogTestDir4FullDelete"
+        temp_path.mkdir(parents=True, exist_ok=True)
+        (temp_path / "foo").mkdir(parents=True, exist_ok=True)
+        (temp_path / "foo/B").mkdir(parents=True, exist_ok=True)
+        (temp_path / "foo/c").mkdir(parents=True, exist_ok=True)
+        (temp_path / "bar").mkdir(parents=True, exist_ok=True)
+        t = tempfile.NamedTemporaryFile(dir=temp_path / "foo", delete=False)
         t.close()
-        t = tempfile.NamedTemporaryFile(dir=tempPath / "foo/B", delete=False)
+        t = tempfile.NamedTemporaryFile(dir=temp_path / "foo/B", delete=False)
         t.close()
         fd = self.fd_class()
-        fd.setDirectory(str(tempPath))
+        fd.setDirectory(str(temp_path))
         fd.show()
-        fd.d_func().removeDirectory(str(tempPath))
-        assert not QFileInfo.exists(str(tempPath))
+        fd.d_func().removeDirectory(str(temp_path))
+        assert not QFileInfo.exists(str(temp_path))
 
     def test_filter(self):
-        fd = self.fd_class()
-        hiddenAction = fd.findChild(QAction, "qt_show_hidden_action")
-        assert hiddenAction is not None, "qt_show_hidden_action was None, expected QAction"
-        assert hiddenAction.isEnabled(), "qt_show_hidden_action was not enabled"
-        assert not hiddenAction.isChecked(), "qt_show_hidden_action was checked"
-        filter = fd.filter()
+        fd: PythonQFileDialog = self.fd_class()
+        hidden_action = fd.findChild(QAction, "qt_show_hidden_action")
+        assert hidden_action is not None, "qt_show_hidden_action was None, expected QAction"
+        assert hidden_action.isEnabled(), "qt_show_hidden_action was not enabled"
+        assert not hidden_action.isChecked(), "qt_show_hidden_action was checked"
+        filter: QDir.Filter = fd.filter()
         filter |= QDir.Filter.Hidden
         fd.setFilter(filter)
-        assert hiddenAction.isChecked(), "qt_show_hidden_action was not checked"
+        assert hidden_action.isChecked(), "qt_show_hidden_action was not checked"
 
     def test_showNameFilterDetails(self):
-        fd = self.fd_class()
-        filters = fd.findChild(QComboBox, "fileTypeCombo")
+        fd: PythonQFileDialog = self.fd_class()
+        filters: QComboBox | None = fd.findChild(QComboBox, "fileTypeCombo")
         assert filters is not None, "Filter combobox fileTypeCombo was None"
         assert not fd.testOption(self.fd_class.Option.HideNameFilterDetails), "HideNameFilterDetails was not False"
 
@@ -228,32 +240,32 @@ class TestQFileDialog2(unittest.TestCase):
         assert filters.itemText(2) == filterChoices[2]
 
     def test_unc(self):
-        dir = QDir.currentPath()
+        dir: str = QDir.currentPath()
         assert QFile.exists(dir), f"Directory DoesNotExist: {dir}"
-        fd = self.fd_class(None, "", dir)
-        model = fd.findChild(QFileSystemModel, "qt_filesystem_model")
+        fd: PythonQFileDialog = self.fd_class(None, "", dir)
+        model: QFileSystemModel | None = fd.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "qt_filesystem_model was None"
-        fd_dir_path = fd.directory().absolutePath()
-        model_index_fd = model.index(fd_dir_path)
-        model_index_dir = model.index(dir)
+        fd_dir_path: str = fd.directory().absolutePath()
+        model_index_fd: QModelIndex = model.index(fd_dir_path)
+        model_index_dir: QModelIndex = model.index(dir)
         assert model_index_fd == model_index_dir, f"qt_filesystem_model index was not equal to directory: {model_index_fd} != {model_index_dir}"
 
     def test_emptyUncPath(self):
         fd = self.fd_class()
         fd.show()
-        lineEdit = fd.findChild(QLineEdit, "fileNameEdit")
-        assert lineEdit is not None, "Line edit was not found with name 'fileNameEdit'"
-        for i in range(3):
-            self._qtest.keyPress(lineEdit, Qt.Key.Key_Backslash)
-        model = fd.findChild(QFileSystemModel, "qt_filesystem_model")
+        line_edit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
+        assert line_edit is not None, "Line edit was not found with name 'fileNameEdit'"
+        for _ in range(3):
+            self._qtest.keyPress(line_edit, Qt.Key.Key_Backslash)
+        model: QFileSystemModel | None = fd.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "qt_filesystem_model was None"
 
     def test_task143519_deleteAndRenameActionBehavior(self):
         class TestContext:
-            def __init__(self, path):
-                self.current = QDir(str(path))
-                self.test = QDir()
-                self.file = QFile()
+            def __init__(self, path: Path):
+                self.current: QDir = QDir(str(path))
+                self.test: QDir = QDir()
+                self.file: QFile = QFile()
 
             def __del__(self):
                 self.file.remove()
@@ -289,46 +301,36 @@ class TestQFileDialog2(unittest.TestCase):
         # defaults
         assert self.open_context_menu(fd), "Failed to open context menu"
         assert fd.selectedFiles() == [ctx.file.fileName()], f"Selected files were not correct, expected: {ctx.file.fileName()}, got: {fd.selectedFiles()}"
-        assert rm.isEnabled() != fd.testOption(
-            self.fd_class.Option.ReadOnly
-        ), f"Delete action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {rm.isEnabled()}"
-        assert mv.isEnabled() != fd.testOption(
-            self.fd_class.Option.ReadOnly
-        ), f"Rename action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {mv.isEnabled()}"
+        assert rm.isEnabled() != fd.testOption(self.fd_class.Option.ReadOnly), f"Delete action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {rm.isEnabled()}"
+        assert mv.isEnabled() != fd.testOption(self.fd_class.Option.ReadOnly), f"Rename action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {mv.isEnabled()}"
 
         # change to non-defaults:
         fd.setOption(self.fd_class.Option.ReadOnly, not fd.testOption(self.fd_class.Option.ReadOnly))  # noqa: FBT003
 
         assert self.open_context_menu(fd), "Failed to open context menu"
         assert len(fd.selectedFiles()) == 1, f"Selected files were not correct, expected: 1, got: {len(fd.selectedFiles())}"
-        assert rm.isEnabled() != fd.testOption(
-            self.fd_class.Option.ReadOnly
-        ), f"Delete action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {rm.isEnabled()}"
-        assert mv.isEnabled() != fd.testOption(
-            self.fd_class.Option.ReadOnly
-        ), f"Rename action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {mv.isEnabled()}"
+        assert rm.isEnabled() != fd.testOption(self.fd_class.Option.ReadOnly), f"Delete action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {rm.isEnabled()}"
+        assert mv.isEnabled() != fd.testOption(self.fd_class.Option.ReadOnly), f"Rename action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {mv.isEnabled()}"
 
         # and changed back to defaults:
         fd.setOption(self.fd_class.Option.ReadOnly, not fd.testOption(self.fd_class.Option.ReadOnly))
 
         assert self.open_context_menu(fd), "Failed to open context menu"
         assert len(fd.selectedFiles()) == 1, f"Selected files were not correct, expected: 1, got: {len(fd.selectedFiles())}"
-        assert rm.isEnabled() != fd.testOption(
-            self.fd_class.Option.ReadOnly
-        ), f"Delete action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {rm.isEnabled()}"
-        assert mv.isEnabled() != fd.testOption(
-            self.fd_class.Option.ReadOnly
-        ), f"Rename action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {mv.isEnabled()}"
+        assert rm.isEnabled() != fd.testOption(self.fd_class.Option.ReadOnly), f"Delete action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {rm.isEnabled()}"
+        assert mv.isEnabled() != fd.testOption(self.fd_class.Option.ReadOnly), f"Rename action was not enabled, expected: {not fd.testOption(self.fd_class.Option.ReadOnly)}, got: {mv.isEnabled()}"
 
     def test_task178897_minimumSize(self):
-        fd = self.fd_class()
-        oldMs = fd.layout().minimumSize()
-        history = fd.history()
+        fd: PythonQFileDialog = self.fd_class()
+        q_layout: QLayout | None = fd.layout()
+        assert q_layout is not None, "Layout was not found"
+        old_ms: QSize = q_layout.minimumSize()
+        history: QHistoryModel = fd.history()
         history.append(QDir.toNativeSeparators("/verylongdirectory/aaaaaaaaaabbbbbbbbcccccccccccddddddddddddddeeeeeeeeeeeeffffffffffgggtggggggggghhhhhhhhiiiiiijjjk"))
         fd.setHistory(history)
         fd.show()
-        ms = fd.layout().minimumSize()
-        assert ms.width() <= oldMs.width(), f"Minimum size was not correct, expected: {oldMs.width()}, got: {ms.width()}"
+        ms: QSize = q_layout.minimumSize()
+        assert ms.width() <= old_ms.width(), f"Minimum size was not correct, expected: {old_ms.width()}, got: {ms.width()}"
 
     def test_task180459_lastDirectory_data(self):
         self.addColumn("path", str)
@@ -343,32 +345,26 @@ class TestQFileDialog2(unittest.TestCase):
 
     @unittest.skipIf(sys.platform == "darwin", "Insignificant on OSX")
     def test_task180459_lastDirectory(self):
-        dlg = self.fd_class(None, "", str(self.temp_path))
-        model = dlg.findChild(QFileSystemModel, "qt_filesystem_model")
+        dlg: PythonQFileDialog = self.fd_class(None, "", str(self.temp_path))
+        model: QFileSystemModel | None = dlg.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "File system model was not found with name 'qt_filesystem_model'"
-        assert model.index(str(self.temp_path)) == model.index(
-            dlg.directory().absolutePath()
-        ), f"Selected file was not correct, expected: {dlg.directory().absolutePath()}, got: {dlg.selectedFiles().first()}"
+        assert model.index(str(self.temp_path)) == model.index(dlg.directory().absolutePath()), f"Selected file was not correct, expected: {dlg.directory().absolutePath()}, got: {dlg.selectedFiles().first()}"
         dlg.deleteLater()
-        path = self.getData("path")
-        directory = self.getData("directory")
-        isEnabled = self.getData("isEnabled")
-        result = self.getData("result")
+        path: str = self.getData("path")
+        directory: str = self.getData("directory")
+        is_enabled: bool = self.getData("isEnabled")
+        result: str = self.getData("result")
         dlg = self.fd_class(None, "", path)
         model: QFileSystemModel | None = dlg.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "File system model was not found with name 'qt_filesystem_model'"
         dlg.setAcceptMode(self.fd_class.AcceptSave)
-        assert model.index(dlg.directory().absolutePath()) == model.index(
-            str(directory)
-        ), f"Selected file was not correct, expected: {directory}, got: {dlg.directory().absolutePath()}"
-        buttonBox: QDialogButtonBox | None = dlg.findChild(QDialogButtonBox, "buttonBox")
-        button: QPushButton = buttonBox.button(QDialogButtonBox.Save)
+        assert model.index(dlg.directory().absolutePath()) == model.index(str(directory)), f"Selected file was not correct, expected: {directory}, got: {dlg.directory().absolutePath()}"
+        button_box: QDialogButtonBox | None = dlg.findChild(QDialogButtonBox, "buttonBox")
+        button: QPushButton = button_box.button(QDialogButtonBox.StandardButton.Save)
         assert button is not None, "Save button was not found with name 'Save'"
-        assert button.isEnabled() == isEnabled, f"Save button was not enabled, expected: {isEnabled}, got: {button.isEnabled()}"
-        if isEnabled:
-            assert model.index(str(result)) == model.index(
-                dlg.selectedFiles().first()
-            ), f"Selected file was not correct, expected: {result}, got: {dlg.selectedFiles().first()}"
+        assert button.isEnabled() == is_enabled, f"Save button was not enabled, expected: {is_enabled}, got: {button.isEnabled()}"
+        if is_enabled:
+            assert model.index(str(result)) == model.index(dlg.selectedFiles()[0]), f"Selected file was not correct, expected: {result}, got: {dlg.selectedFiles()[0]}"
         dlg.deleteLater()
 
     def test_settingsCompatibility_data(self):
@@ -390,7 +386,7 @@ class TestQFileDialog2(unittest.TestCase):
 
         fd.setProxyModel(FilterDirModel(QDir.currentPath()))
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        assert self._qtest.qWaitForWindowExposed(fd), "File dialog was not exposed"
         edit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
         assert edit is not None, "File name edit was not found with name 'fileNameEdit'"
         self._qtest.keyClick(edit, Qt.Key.Key_T)
@@ -399,18 +395,18 @@ class TestQFileDialog2(unittest.TestCase):
         dialog = CrashDialog(None, "crash dialog test", QDir.homePath(), "*")
         dialog.show()
         dialog.show()
-        self._qtest.qWaitForWindowExposed(dialog)
-        _list = dialog.findChild(QListView, "listView")
+        assert self._qtest.qWaitForWindowExposed(dialog), "Crash dialog was not exposed"
+        _list: QListView | None = dialog.findChild(QListView, "listView")
         assert _list is not None, "List view was not found with name 'listView'"
         self._qtest.keyClick(_list, Qt.Key.Key_Down)
         self._qtest.keyClick(_list, Qt.Key.Key_Return)
         dialog.close()
         fd.close()
-        fd2 = self.fd_class(None, "I should not crash with a proxy", str(self.temp_path), Qt.KeyboardModifier.NoModifier)
+        fd2: PythonQFileDialog = self.fd_class(None, "I should not crash with a proxy", str(self.temp_path))
         pm = QSortFilterProxyModel()
         fd2.setProxyModel(pm)
         fd2.show()
-        sidebar = fd2.findChild(QSidebar, "sidebar")
+        sidebar: QSidebar | None = fd2.findChild(QSidebar, "sidebar")
         assert sidebar is not None, "Sidebar was not found with name 'sidebar'"
         sidebar.setFocus()
         sidebar.selectUrl(QUrl.fromLocalFile(QDir.homePath()))
@@ -432,18 +428,18 @@ class TestQFileDialog2(unittest.TestCase):
         fd.setViewMode(self.fd_class.ViewMode.List)
         fd.setDirectory(current.absolutePath())
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        assert self._qtest.qWaitForWindowExposed(fd), "File dialog was not exposed"
         QCoreApplication.processEvents()
-        listView: QListView | None = fd.findChild(QListView, "listView")
-        assert listView is not None, "List view was not found with name 'listView'"
-        self._qtest.keyClick(listView, Qt.Key.Key_Down)
-        self._qtest.keyClick(listView, Qt.Key.Key_Return)
-        self._qtest.mouseClick(listView.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
-        self._qtest.keyClick(listView, Qt.Key.Key_Down)
-        self._qtest.keyClick(listView, Qt.Key.Key_Backspace)
-        self._qtest.keyClick(listView, Qt.Key.Key_Down)
-        self._qtest.keyClick(listView, Qt.Key.Key_Down)
-        self._qtest.keyClick(listView, Qt.Key.Key_Return)
+        list_view: QListView | None = fd.findChild(QListView, "listView")
+        assert list_view is not None, "List view was not found with name 'listView'"
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Return)
+        self._qtest.mouseClick(list_view.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Backspace)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Return)
         assert fd.isVisible(), "File dialog was not visible"
         file.close()
         file2.close()
@@ -457,31 +453,33 @@ class TestQFileDialog2(unittest.TestCase):
         fd.setDirectory(QDir.root().path())
         fd.show()
         edit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
-        buttonParent: QToolButton | None = fd.findChild(QToolButton, "toParentButton")
+        button_parent: QToolButton | None = fd.findChild(QToolButton, "toParentButton")
         assert edit is not None, "File name edit was not found with name 'fileNameEdit'"
-        assert buttonParent is not None, "To parent button was not found with name 'toParentButton'"
+        assert button_parent is not None, "To parent button was not found with name 'toParentButton'"
         self._qtest.qWait(200)
-        self._qtest.mouseClick(buttonParent, Qt.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(0, 0))
+        self._qtest.mouseClick(button_parent, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(0, 0))
         self._qtest.qWait(2000)
-        self._qtest.keyClick(edit, Qt.Key_C)
+        self._qtest.keyClick(edit, Qt.Key.Key_C)
         self._qtest.qWait(200)
-        self._qtest.keyClick(edit.completer().popup(), Qt.Key_Down)
+        completer: QCompleter | None = edit.completer()
+        assert completer is not None, "Completer was not found"
+        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)
         self._qtest.qWait(200)
         assert edit.text() == "C:/", f"File name edit was not correct, expected: 'C:/', got: {edit.text()!r}"
         self._qtest.qWait(2000)
-        self._qtest.keyClick(edit.completer().popup(), Qt.Key_Down)
+        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)
         edit.clear()
-        self._qtest.keyClick(edit, Qt.Key_C, Qt.ShiftModifier)
+        self._qtest.keyClick(edit, Qt.Key.Key_C, Qt.KeyboardModifier.ShiftModifier)
         self._qtest.qWait(200)
-        self._qtest.keyClick(edit.completer().popup(), Qt.Key_Down)
+        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)
         assert edit.text() == "C:/", f"File name edit was not correct, expected: 'C:/', got: {edit.text()!r}"
 
     def test_completionOnLevelAfterRoot(self):  # noqa: C901
         fd = self.fd_class()
         fd.setDirectory("C:/")
         current: QDir = fd.directory()
-        entryList: list[str] = current.entryList([], QDir.Dirs)
-        testDir = ""
+        entryList: list[str] = current.entryList([], QDir.Filter.Dirs)
+        test_dir: str = ""
         for entry in entryList:
             if len(entry) > 5 and entry.isascii() and entry.isalpha():
                 invalid = False
@@ -495,20 +493,22 @@ class TestQFileDialog2(unittest.TestCase):
                             invalid = True
                             break
                 if not invalid:
-                    testDir = entry
+                    test_dir = entry
                     break
-        if not testDir:
+        if not test_dir:
             self.skipTest("This test requires to have a unique directory of at least six ascii characters under c:/")
         fd.show()
         edit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
         assert edit is not None, "File name edit was not found with name 'fileNameEdit'"
         self._qtest.qWait(2000)
         for i in range(5):
-            self._qtest.keyClick(edit, testDir[i].lower())
+            self._qtest.keyClick(edit, test_dir[i].lower())
         self._qtest.qWait(200)
-        self._qtest.keyClick(edit.completer().popup(), Qt.Key_Down)
+        completer: QCompleter | None = edit.completer()
+        assert completer is not None, "Completer was not found"
+        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)
         self._qtest.qWait(200)
-        assert edit.text() == testDir, f"File name edit was not correct, expected: {testDir!r}, got: {edit.text()!r}"
+        assert edit.text() == test_dir, f"File name edit was not correct, expected: {test_dir!r}, got: {edit.text()!r}"
 
     def test_task233037_selectingDirectory(self):
         current = QDir(QDir.currentPath())
@@ -518,13 +518,13 @@ class TestQFileDialog2(unittest.TestCase):
         fd.setDirectory(current.absolutePath())
         fd.setAcceptMode(self.fd_class.AcceptSave)
         fd.show()
-        listView: QListView | None = fd.findChild(QListView, "listView")
-        assert listView is not None, "List view was not found with name 'listView'"
+        list_view: QListView | None = fd.findChild(QListView, "listView")
+        assert list_view is not None, "List view was not found with name 'listView'"
         self._qtest.qWait(3000)
-        self._qtest.keyClick(listView, Qt.Key.Key_Down)
-        buttonBox: QDialogButtonBox | None = fd.findChild(QDialogButtonBox, "buttonBox")
-        assert buttonBox is not None, "Button box was not found with name 'buttonBox'"
-        button: QPushButton = buttonBox.button(QDialogButtonBox.Save)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
+        button_box: QDialogButtonBox | None = fd.findChild(QDialogButtonBox, "buttonBox")
+        assert button_box is not None, "Button box was not found with name 'buttonBox'"
+        button: QPushButton | None = button_box.button(QDialogButtonBox.StandardButton.Save)
         assert button is not None, "Save button was not found with name 'Save'"
         assert button.isEnabled(), "Save button was not enabled"
         current.rmdir("test")
@@ -537,26 +537,26 @@ class TestQFileDialog2(unittest.TestCase):
         self.newRow("treeView").setData("treeView", self.fd_class.Detail)
 
     def test_task235069_hideOnEscape(self):
-        childName = str(self.getData("childName"))
-        viewMode = self.getData("viewMode")
-        assert isinstance(viewMode, self.fd_class.ViewMode), f"View mode was not correct, expected: {self.fd_class.ViewMode}, got: {viewMode}"
-        current = QDir(QDir.currentPath())
-        fd = self.fd_class()
-        spyFinished = QSignalSpy(fd, fd.finished)
-        assert spyFinished.isValid(), f"QSignalSpy was not valid for {childName}, expected valid fd.finished signal"
-        spyRejected = QSignalSpy(fd, fd.rejected)
-        assert spyRejected.isValid(), f"QSignalSpy was not valid for {childName}, expected valid fd.rejected signal"
-        fd.setViewMode(viewMode)
+        child_name: str = str(self.getData("childName"))
+        view_mode: self.fd_class.ViewMode = self.getData("viewMode")
+        assert isinstance(view_mode, self.fd_class.ViewMode), f"View mode was not correct, expected: {self.fd_class.ViewMode}, got: {view_mode}"
+        current: QDir = QDir(QDir.currentPath())
+        fd: PythonQFileDialog = self.fd_class()
+        spy_finished: QSignalSpy = QSignalSpy(fd, fd.finished)
+        assert spy_finished.isValid(), f"QSignalSpy was not valid for {child_name}, expected valid fd.finished signal"
+        spy_rejected: QSignalSpy = QSignalSpy(fd, fd.rejected)
+        assert spy_rejected.isValid(), f"QSignalSpy was not valid for {child_name}, expected valid fd.rejected signal"
+        fd.setViewMode(view_mode)
         fd.setDirectory(current.absolutePath())
         fd.setAcceptMode(self.fd_class.AcceptSave)
         fd.show()
         self._qtest.qWaitForWindowExposed(fd)
-        child: QWidget | None = fd.findChild(QWidget, childName)
-        assert child is not None, f"Child widget was not found with name '{childName}'"
+        child: QWidget | None = fd.findChild(QWidget, child_name)
+        assert child is not None, f"Child widget was not found with name '{child_name}'"
         child.setFocus()
-        self._qtest.keyClick(child, Qt.Key_Escape)
+        self._qtest.keyClick(child, Qt.Key.Key_Escape)
         assert not fd.isVisible(), "File dialog was visible"
-        assert len(spyFinished) == 1, "QTBUG-7690"  # reject(), don't hide()
+        assert len(spy_finished) == 1, "QTBUG-7690"  # reject(), don't hide()
 
     def test_task236402_dontWatchDeletedDir(self):
         # THIS TEST SHOULD NOT DISPLAY WARNINGS
@@ -569,12 +569,12 @@ class TestQFileDialog2(unittest.TestCase):
         fd.setAcceptMode(self.fd_class.AcceptSave)
         fd.show()
         self._qtest.qWaitForWindowExposed(fd)
-        listView: QListView | None = fd.findChild(QListView, "listView")
-        assert listView is not None, "List view was not found"
-        listView.setFocus()
-        self._qtest.keyClick(listView, Qt.Key.Key_Return)
-        self._qtest.keyClick(listView, Qt.Key.Key_Backspace)
-        self._qtest.keyClick(listView, Qt.Key.Key_Down)
+        list_view: QListView | None = fd.findChild(QListView, "listView")
+        assert list_view is not None, "List view was not found"
+        list_view.setFocus()
+        self._qtest.keyClick(list_view, Qt.Key.Key_Return)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Backspace)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
         fd.d_func().removeDirectory(os.path.join(current.absolutePath(), "aaaaaaaaaa"))  # noqa: PTH118
         self._qtest.qWait(1000)
 
@@ -587,13 +587,13 @@ class TestQFileDialog2(unittest.TestCase):
         fd.setFileMode(self.fd_class.Directory)
         fd.show()
         self._qtest.qWaitForWindowExposed(fd)
-        listView: QListView | None = fd.findChild(QListView, "listView")
-        assert listView is not None, "List view was not found with name 'listView'"
-        listView.setFocus()
-        self._qtest.keyClick(listView, Qt.Key.Key_Return)
-        buttonBox: QDialogButtonBox | None = fd.findChild(QDialogButtonBox, "buttonBox")
-        assert buttonBox is not None, "Button box was not found with name 'buttonBox'"
-        button = buttonBox.button(QDialogButtonBox.Cancel)
+        list_view: QListView | None = fd.findChild(QListView, "listView")
+        assert list_view is not None, "List view was not found with name 'listView'"
+        list_view.setFocus()
+        self._qtest.keyClick(list_view, Qt.Key.Key_Return)
+        button_box: QDialogButtonBox | None = fd.findChild(QDialogButtonBox, "buttonBox")
+        assert button_box is not None, "Button box was not found with name 'buttonBox'"
+        button: QPushButton | None = button_box.button(QDialogButtonBox.StandardButton.Cancel)
         assert button is not None, "Cancel button was not found with name 'Cancel'"
         self._qtest.keyClick(button, Qt.Key.Key_Return)
         result: str = fd.selectedFiles()[0]
@@ -623,10 +623,12 @@ class TestQFileDialog2(unittest.TestCase):
         self._qtest.qWaitForWindowExposed(fd)
         tree: QTreeView | None = fd.findChild(QTreeView, "treeView")
         assert tree is not None, "Tree view was not found with name 'treeView'"
-        tree.header().setSortIndicator(3, Qt.SortOrder.DescendingOrder)
-        buttonBox: QDialogButtonBox | None = fd.findChild(QDialogButtonBox, "buttonBox")
-        assert buttonBox is not None, "Button box was not found with name 'buttonBox'"
-        button: QPushButton = buttonBox.button(QDialogButtonBox.StandardButton.Open)
+        header: QHeaderView | None = tree.header()
+        assert header is not None, "Header was not found"
+        header.setSortIndicator(3, Qt.SortOrder.DescendingOrder)
+        button_box: QDialogButtonBox | None = fd.findChild(QDialogButtonBox, "buttonBox")
+        assert button_box is not None, "Button box was not found with name 'buttonBox'"
+        button: QPushButton | None = button_box.button(QDialogButtonBox.StandardButton.Open)
         assert button is not None, "Open button was not found with name 'Open'"
         self._qtest.mouseClick(button, Qt.MouseButton.LeftButton)
         fd2 = self.fd_class()
@@ -640,19 +642,15 @@ class TestQFileDialog2(unittest.TestCase):
         assert tree2 is not None, "Tree view was not found with name 'treeView'"
         tree2.setFocus()
 
-        assert (
-            tree2.rootIndex().data(QFileSystemModel.Roles.FilePathRole) == current.absolutePath()
-        ), f"Root index was not correct, expected: {current.absolutePath()!r}, got: {tree2.rootIndex().data(QFileSystemModel.Roles.FilePathRole)!r}"
+        assert tree2.rootIndex().data(QFileSystemModel.Roles.FilePathRole) == current.absolutePath(), f"Root index was not correct, expected: {current.absolutePath()!r}, got: {tree2.rootIndex().data(QFileSystemModel.Roles.FilePathRole)!r}"
 
-        buttonBox2: QDialogButtonBox | None = fd2.findChild(QDialogButtonBox, "buttonBox")
-        assert buttonBox2 is not None, "Button box was not found with name 'buttonBox'"
-        button2: QPushButton = buttonBox2.button(QDialogButtonBox.StandardButton.Open)
+        button_box2: QDialogButtonBox | None = fd2.findChild(QDialogButtonBox, "buttonBox")
+        assert button_box2 is not None, "Button box was not found with name 'buttonBox'"
+        button2: QPushButton | None = button_box2.button(QDialogButtonBox.StandardButton.Open)
         assert button2 is not None, "Open button was not found with name 'Open'"
         fd2.selectFile("g")
         self._qtest.mouseClick(button2, Qt.MouseButton.LeftButton)
-        assert (
-            fd2.selectedFiles()[0] == current.absolutePath() + "/g"
-        ), f"Selected file was not correct, expected: {current.absolutePath() + '/g'!r}, got: {fd2.selectedFiles()[0]!r}"
+        assert fd2.selectedFiles()[0] == current.absolutePath() + "/g", f"Selected file was not correct, expected: {current.absolutePath() + '/g'!r}, got: {fd2.selectedFiles()[0]!r}"
 
         fd3 = self.fd_class(None, "This is a third file dialog", tempFile.fileName())
         fd3.restoreState(fd.saveState())
@@ -663,13 +661,11 @@ class TestQFileDialog2(unittest.TestCase):
         assert tree3 is not None, "Tree view was not found with name 'treeView'"
         tree3.setFocus()
 
-        assert (
-            tree3.rootIndex().data(QFileSystemModel.Roles.FilePathRole) == current.absolutePath()
-        ), f"Root index was not correct, expected: {current.absolutePath()!r}, got: {tree3.rootIndex().data(QFileSystemModel.Roles.FilePathRole)!r}"
+        assert tree3.rootIndex().data(QFileSystemModel.Roles.FilePathRole) == current.absolutePath(), f"Root index was not correct, expected: {current.absolutePath()!r}, got: {tree3.rootIndex().data(QFileSystemModel.Roles.FilePathRole)!r}"
 
-        buttonBox3: QDialogButtonBox | None = fd3.findChild(QDialogButtonBox, "buttonBox")
-        assert buttonBox3 is not None, "Button box was not found with name 'buttonBox'"
-        button3: QPushButton = buttonBox3.button(QDialogButtonBox.StandardButton.Open)
+        button_box3: QDialogButtonBox | None = fd3.findChild(QDialogButtonBox, "buttonBox")
+        assert button_box3 is not None, "Button box was not found with name 'buttonBox'"
+        button3: QPushButton | None = button_box3.button(QDialogButtonBox.StandardButton.Open)
         assert button3 is not None, "Open button was not found with name 'Open'"
         self._qtest.mouseClick(button3, Qt.MouseButton.LeftButton)
         assert fd3.selectedFiles()[0] == tempFile.fileName(), f"Selected file was not correct, expected: {tempFile.fileName()!r}, got: {fd3.selectedFiles()[0]!r}"
@@ -693,17 +689,17 @@ class TestQFileDialog2(unittest.TestCase):
         d.show()
         self._qtest.qWaitForWindowExposed(d)
 
-        comboList: list[QComboBox] = d.findChildren(QComboBox)
-        filterCombo: QComboBox | None = None
-        for combo in comboList:
+        combo_list: list[QComboBox] = d.findChildren(QComboBox)
+        filter_combo: QComboBox | None = None
+        for combo in combo_list:
             if combo.objectName() == "fileTypeCombo":
-                filterCombo = combo
+                filter_combo = combo
                 break
-        assert filterCombo is not None, "Filter combo was not found with name 'fileTypeCombo'"
-        filterCombo.setEditable(True)
-        self._qtest.mouseClick(filterCombo, Qt.MouseButton.LeftButton)
-        self._qtest.keyPress(filterCombo, Qt.Key.Key_X)
-        self._qtest.keyPress(filterCombo, Qt.Key.Key_Enter)  # should not trigger assertion failure
+        assert filter_combo is not None, "Filter combo was not found with name 'fileTypeCombo'"
+        filter_combo.setEditable(True)
+        self._qtest.mouseClick(filter_combo, Qt.MouseButton.LeftButton)
+        self._qtest.keyPress(filter_combo, Qt.Key.Key_X)
+        self._qtest.keyPress(filter_combo, Qt.Key.Key_Enter)  # should not trigger assertion failure
 
     def test_task218353_relativePaths(self):
         appDir: QDir = QDir.current()
@@ -740,14 +736,14 @@ class TestQFileDialog2(unittest.TestCase):
         assert sidebar is not None, "Sidebar was not found with name 'sidebar'"
         sidebar.setFocus()
         sidebar.selectUrl(QUrl.fromLocalFile(hiddenSubDir.absolutePath()))
-        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar.model().index(0, 0)).center())
+        sidebar_model: QAbstractItemModel | None = sidebar.model()
+        assert sidebar_model is not None, "Sidebar model was not found"
+        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar_model.index(0, 0)).center())
         self._qtest.qWait(250)
 
         model: QFileSystemModel | None = fd.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "Model was not found with name 'qt_filesystem_model'"
-        assert (
-            model.rowCount(model.index(hiddenSubDir.absolutePath())) == 2
-        ), f"Row count was not correct, expected: 2, got: {model.rowCount(model.index(hiddenSubDir.absolutePath()))!r}"
+        assert model.rowCount(model.index(hiddenSubDir.absolutePath())) == 2, f"Row count was not correct, expected: 2, got: {model.rowCount(model.index(hiddenSubDir.absolutePath()))!r}"
 
         hiddenSubDir.rmdir("happy2")
         hiddenSubDir.rmdir("happy")
@@ -759,9 +755,9 @@ class TestQFileDialog2(unittest.TestCase):
 
         current = QDir(QDir.currentPath())
         current.mkdir("testDir")
-        testSubDir = QDir("testDir")
+        test_sub_dir = QDir("testDir")
 
-        urls: list[QUrl] = [QUrl.fromLocalFile(testSubDir.absolutePath()), QUrl.fromLocalFile("NotFound")]
+        urls: list[QUrl] = [QUrl.fromLocalFile(test_sub_dir.absolutePath()), QUrl.fromLocalFile("NotFound")]
         fd.setSidebarUrls(urls)
         fd.show()
         self._qtest.qWaitForWindowExposed(fd)
@@ -769,42 +765,42 @@ class TestQFileDialog2(unittest.TestCase):
         sidebar: QSidebar | None = fd.findChild(QSidebar, "sidebar")
         assert sidebar is not None, "Sidebar was not found with name 'sidebar'"
         sidebar.setFocus()
-        sidebar.selectUrl(QUrl.fromLocalFile(testSubDir.absolutePath()))
-        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar.model().index(0, 0)).center())
+        sidebar.selectUrl(QUrl.fromLocalFile(test_sub_dir.absolutePath()))
+        sidebar_model: QAbstractItemModel | None = sidebar.model()
+        assert sidebar_model is not None, "Sidebar model was not found"
+        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar_model.index(0, 0)).center())
 
         model: QFileSystemModel | None = fd.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "Model was not found with name 'qt_filesystem_model'"
-        assert (
-            model.rowCount(model.index(testSubDir.absolutePath())) == 0
-        ), f"Row count was not correct, expected: 0, got: {model.rowCount(model.index(testSubDir.absolutePath()))!r}"
-        value = sidebar.model().index(0, 0).data(Qt.ItemDataRole.UserRole + 2)
+        assert model.rowCount(model.index(test_sub_dir.absolutePath())) == 0, f"Row count was not correct, expected: 0, got: {model.rowCount(model.index(test_sub_dir.absolutePath()))!r}"
+        sidebar_model: QAbstractItemModel | None = sidebar.model()
+        assert sidebar_model is not None, "Sidebar model was not found"
+        value = sidebar_model.index(0, 0).data(Qt.ItemDataRole.UserRole + 2)
         assert value, "Value was not correct"
 
         sidebar.setFocus()
         sidebar.selectUrl(QUrl.fromLocalFile("NotFound"))
-        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar.model().index(1, 0)).center())
+        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar_model.index(1, 0)).center())
 
-        assert model.rowCount(model.index("NotFound")) == model.rowCount(
-            model.index(model.rootPath())
-        ), f"Row count was not correct, expected: {model.rowCount(model.index(model.rootPath()))!r}, got: {model.rowCount(model.index('NotFound'))!r}"
-        value = sidebar.model().index(1, 0).data(Qt.ItemDataRole.UserRole + 2)
+        assert model.rowCount(model.index("NotFound")) == model.rowCount(model.index(model.rootPath())), f"Row count was not correct, expected: {model.rowCount(model.index(model.rootPath()))!r}, got: {model.rowCount(model.index('NotFound'))!r}"
+        value = sidebar_model.index(1, 0).data(Qt.ItemDataRole.UserRole + 2)
         assert not value, "Value was not correct"
 
-        mySideBar: QSidebar | None = QSidebar()  # MyQSideBar
-        mySideBar.setModelAndUrls(model, urls)
-        mySideBar.show()
-        mySideBar.selectUrl(QUrl.fromLocalFile(testSubDir.absolutePath()))
+        my_side_bar: QSidebar | None = QSidebar()  # MyQSideBar
+        my_side_bar.setModelAndUrls(model, urls)
+        my_side_bar.show()
+        my_side_bar.selectUrl(QUrl.fromLocalFile(test_sub_dir.absolutePath()))
         self._qtest.qWait(1000)
-        mySideBar.removeSelection()
+        my_side_bar.removeSelection()
 
         expected: list[QUrl] = [QUrl.fromLocalFile("NotFound")]
-        assert mySideBar.urls() == expected, f"Urls were not correct, got: {mySideBar.urls()!r}, expected: {expected!r}"
+        assert my_side_bar.urls() == expected, f"Urls were not correct, got: {my_side_bar.urls()!r}, expected: {expected!r}"
 
-        mySideBar.selectUrl(QUrl.fromLocalFile("NotFound"))
-        mySideBar.removeSelection()
+        my_side_bar.selectUrl(QUrl.fromLocalFile("NotFound"))
+        my_side_bar.removeSelection()
 
         expected = []
-        assert mySideBar.urls() == expected, f"Urls were not correct, got: {mySideBar.urls()!r}, expected: {expected!r}"
+        assert my_side_bar.urls() == expected, f"Urls were not correct, got: {my_side_bar.urls()!r}, expected: {expected!r}"
 
         current.rmdir("testDir")
 
@@ -826,12 +822,14 @@ class TestQFileDialog2(unittest.TestCase):
         fd.show()
         self._qtest.qWaitForWindowExposed(fd)
 
-        lineEdit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
-        assert lineEdit is not None, "Line edit was not found"
-        assert lineEdit.text() == "new_file.txt", "Line edit text was not correct"
-        listView: QListView | None = fd.findChild(QListView, "listView")
-        assert listView is not None, "List view was not found"
-        assert listView.selectionModel().selectedRows(0) == [], "Selected rows were not correct"
+        line_edit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
+        assert line_edit is not None, "Line edit was not found"
+        assert line_edit.text() == "new_file.txt", "Line edit text was not correct"
+        list_view: QListView | None = fd.findChild(QListView, "listView")
+        assert list_view is not None, "List view was not found"
+        sel_model: QItemSelectionModel | None = list_view.selectionModel()
+        assert sel_model is not None, "Selection model was not found"
+        assert sel_model.selectedRows(0) == [], "Selected rows were not correct"
 
         t.close()
 
@@ -840,7 +838,7 @@ class TestQFileDialog2(unittest.TestCase):
         dirname = "autotest_task257579"
         qdir.rmdir(dirname)
         assert qdir.mkdir(dirname)
-        url = os.path.join(qdir.absolutePath(), dirname, "..")  # noqa: FBT003
+        url: str = os.path.join(qdir.absolutePath(), dirname, "..")  # noqa: FBT003
         fd = self.fd_class()
         fd.setSidebarUrls([QUrl.fromLocalFile(url)])
         sidebar: QSidebar | None = fd.findChild(QSidebar, "sidebar")
@@ -849,7 +847,9 @@ class TestQFileDialog2(unittest.TestCase):
         assert sidebar.urls()[0].toLocalFile() != url, "Sidebar urls were not correct"
         assert sidebar.urls()[0].toLocalFile() == QDir.cleanPath(url), "Sidebar urls were not correct"
 
-        assert str(sidebar.model().index(0, 0).data()).lower() == qdir.dirName().lower(), "Sidebar model index was not correct"
+        sidebar_model: QAbstractItemModel | None = sidebar.model()
+        assert sidebar_model is not None, "Sidebar model was not found"
+        assert str(sidebar_model.index(0, 0).data()).lower() == qdir.dirName().lower(), "Sidebar model index was not correct"
 
         assert qdir.rmdir(dirname), "Directory was not removed"
 
@@ -887,12 +887,12 @@ class TestQFileDialog2(unittest.TestCase):
         # if not QGuiApplicationPrivate.platformIntegration().hasCapability(QPlatformIntegration.WindowActivation):
         #    self.skipTest("Window activation is not supported")
 
-        tempPath = self.temp_path
-        temporaryFile = QTemporaryFile(str(tempPath / "tst_qfiledialog2_lineEditSelectAll.XXXXXX"))
-        assert temporaryFile.open(), f"Temporary file was not opened, got: {temporaryFile.errorString()!r}"
-        fd = self.fd_class(None, "TestFileDialog", temporaryFile.fileName())
+        temp_path: Path = self.temp_path
+        temporary_file = QTemporaryFile(str(temp_path / "tst_qfiledialog2_lineEditSelectAll.XXXXXX"))
+        assert temporary_file.open(), f"Temporary file was not opened, got: {temporary_file.errorString()!r}"
+        fd = self.fd_class(None, "TestFileDialog", temporary_file.fileName())
 
-        fd.setDirectory(str(tempPath))
+        fd.setDirectory(str(temp_path))
         fd.setViewMode(self.fd_class.ViewMode.List)
         fd.setAcceptMode(self.fd_class.AcceptMode.AcceptSave)
         fd.setFileMode(self.fd_class.FileMode.AnyFile)
@@ -907,22 +907,24 @@ class TestQFileDialog2(unittest.TestCase):
         assert lineEdit is not None, "Line edit was not found"
 
         self.app.processEvents()  # Equivalent to QTRY_COMPARE
-        assert tempPath / lineEdit.text() == Path(temporaryFile.fileName()), f"Line edit text was not correct: '{lineEdit.text()!r}'"
-        assert tempPath / lineEdit.selectedText() == Path(temporaryFile.fileName()), f"Line edit selected text was not correct: '{lineEdit.selectedText()!r}'"
+        assert temp_path / lineEdit.text() == Path(temporary_file.fileName()), f"Line edit text was not correct: '{lineEdit.text()!r}'"
+        assert temp_path / lineEdit.selectedText() == Path(temporary_file.fileName()), f"Line edit selected text was not correct: '{lineEdit.selectedText()!r}'"
 
     def test_QTBUG6558_showDirsOnly(self):
         # if not QGuiApplicationPrivate.platformIntegration().hasCapability(QPlatformIntegration.WindowActivation):
         #    self.skipTest("Window activation is not supported")
 
-        temp_path = self.temp_path
+        temp_path: Path = self.temp_path
         dir_temp = QDir(str(temp_path))
-        temp_name = f"showDirsOnly.{QRandomGenerator.global_().generate()}"
+        q_rand_gen: QRandomGenerator | None = QRandomGenerator.global_()
+        assert q_rand_gen is not None, "Random generator was not found"
+        temp_name: str = f"showDirsOnly.{q_rand_gen.generate()}"
         dir_temp.mkdir(temp_name)
         dir_temp.cd(temp_name)
         self.app.processEvents()  # Equivalent to QTRY_VERIFY
         assert dir_temp.exists(), "Directory was not created"
 
-        dir_path = dir_temp.absolutePath()
+        dir_path: str = dir_temp.absolutePath()
         qdirpath = QDir(dir_path)
 
         # Create two dirs
@@ -983,7 +985,7 @@ class TestQFileDialog2(unittest.TestCase):
         assert fd.isVisible(), "File dialog was not visible"
         assert self.app.activeWindow() == fd, "Active window was not correct"
 
-        filters = fd.findChild(QComboBox, "fileTypeCombo")
+        filters: QComboBox = fd.findChild(QComboBox, "fileTypeCombo")
         assert filters is not None, "Filters were not found"
         assert filters.currentText() == "Text files", f"Filters were not correct: '{filters.currentText()!r}'"
 
@@ -998,7 +1000,7 @@ class TestQFileDialog2(unittest.TestCase):
         assert fd2.isVisible(), "File dialog was not visible"
         assert self.app.activeWindow() == fd2, "Active window was not correct"
 
-        filters2 = fd2.findChild(QComboBox, "fileTypeCombo")
+        filters2: QComboBox = fd2.findChild(QComboBox, "fileTypeCombo")
         assert filters2 is not None, "Filters were not found"
         assert filters2.currentText() == chosenFilterString, f"Filters were not correct: '{filters2.currentText()!r}'"
 
@@ -1016,7 +1018,7 @@ class TestQFileDialog2(unittest.TestCase):
         assert self.app.activeWindow() == fd, "Active window was not correct"
 
         fd.setDirectory("")
-        lineEdit = fd.findChild(QLineEdit, "fileNameEdit")
+        lineEdit: QLineEdit = fd.findChild(QLineEdit, "fileNameEdit")
         assert lineEdit is not None, "Line edit was not found"
         self.app.processEvents()  # Equivalent to QTRY_VERIFY
         assert lineEdit.text() == "", f"Line edit text was not correct: '{lineEdit.text()!r}'"
@@ -1024,9 +1026,11 @@ class TestQFileDialog2(unittest.TestCase):
         self.app.processEvents()
 
         self.app.processEvents()  # Equivalent to QTRY_VERIFY
-        completer = lineEdit.completer()
+        completer: QCompleter | None = lineEdit.completer()
         assert completer is not None, "Completer was not found"
-        assert completer.popup().isHidden(), "Completer was not hidden"
+        popup_for_completer: QAbstractItemView | None = completer.popup()
+        assert popup_for_completer is not None, "Popup for completer was not found"
+        assert popup_for_completer.isHidden(), "Completer was not hidden"
 
     def test_nameFilterParsing_data(self):
         fd = self.fd_class()
@@ -1041,9 +1045,9 @@ class TestQFileDialog2(unittest.TestCase):
             "HTML document (*.html *.htm)",
             ["*.html", "*.htm"],
         )
-        filterString = self.getData("filterString")
-        filters = self.getData("filters")
-        assert QPlatformFileDialogHelper.cleanFilterList(filterString) == filters, "Filters were not correct"
+        filter_string: str = self.getData("filterString")
+        filters: list[str] = self.getData("filters")
+        assert QPlatformFileDialogHelper.cleanFilterList(filter_string) == filters, "Filters were not correct"
 
 
 FORCE_UNITTEST = False

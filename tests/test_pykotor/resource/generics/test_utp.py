@@ -37,13 +37,13 @@ if TYPE_CHECKING:
 
 TEST_FILE = "tests/test_files/test.utp"
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
 
 
 class Test(TestCase):
     def setUp(self):
-        self.log_messages = [os.linesep]
+        self.log_messages: list[str] = [os.linesep]
 
     def log_func(self, *msgs):
         self.log_messages.append("\t".join(msgs))

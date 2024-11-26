@@ -615,3 +615,13 @@ cmudict.dict
 tests\test_pykotor\test_files
 tests\test_pykotor_font\test_files
 tests\test_toolset\test_files
+*.pb
+*.so
+*.exe
+*.fbx
+AUTHORS
+*.cmake
+BUILDDEP.md
+autogen.sh
+ChangeLog
+!vendor

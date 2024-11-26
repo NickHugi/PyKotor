@@ -28,6 +28,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import FileResource, ResourceIdentifier
+from pykotor.resource.formats.bif import read_bif
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
@@ -53,6 +54,8 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
     from qtpy.QtWidgets import QAbstractButton, QHeaderView, QWidget
 
+    from pykotor.extract.keyfile import BIFResource
+    from pykotor.resource.formats.bif import BIF
     from pykotor.resource.formats.rim import RIMResource
     from toolset.data.installation import HTInstallation
 
@@ -96,7 +99,7 @@ class ERFEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
     ):
-        supported: list[ResourceType] = [ResourceType.RIM, ResourceType.ERF, ResourceType.MOD, ResourceType.SAV]
+        supported: list[ResourceType] = [ResourceType.RIM, ResourceType.ERF, ResourceType.MOD, ResourceType.SAV, ResourceType.BIF]
         super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
@@ -206,12 +209,12 @@ class ERFEditor(Editor):
         if restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):
             erf: ERF = read_erf(data)
             for resource in erf:
-                res_offset = erf.get_resource_offset(resource)
+                res_offset: int = erf.get_resource_offset(resource)
                 resref_item: QStandardItem = QStandardItem(str(resource.resref))
                 resref_item.setData(resource)
                 restype_item: QStandardItem = QStandardItem(resource.restype.extension.upper())
                 size_item: QStandardItem = QStandardItem(human_readable_size(len(resource.data)))
-                offset_item: QStandardItem = QStandardItem(f"0x{res_offset:X}")
+                offset_item: QStandardItem = QStandardItem(f"0x{res_offset[0]:X}")
                 self.source_model.appendRow([resref_item, restype_item, size_item, offset_item])
 
         elif restype is ResourceType.RIM:
@@ -221,7 +224,17 @@ class ERFEditor(Editor):
                 resref_item.setData(resource)
                 restype_item: QStandardItem = QStandardItem(resource.restype.extension.upper())
                 size_item: QStandardItem = QStandardItem(human_readable_size(len(resource.data)))
-                offset_item: QStandardItem = QStandardItem(f"0x{rim.get_resource_offset(resource):X}")
+                offset_item: QStandardItem = QStandardItem(f"0x{rim.get_resource_offset(resource)[0]:X}")
+                self.source_model.appendRow([resref_item, restype_item, size_item, offset_item])
+
+        elif restype is ResourceType.BIF:
+            bif: BIF = read_bif(data)
+            for resource in bif:
+                resref_item: QStandardItem = QStandardItem(str(resource.resref))
+                resref_item.setData(resource)
+                restype_item: QStandardItem = QStandardItem(resource.restype.extension.upper())
+                size_item: QStandardItem = QStandardItem(human_readable_size(len(resource.data)))
+                offset_item: QStandardItem = QStandardItem(f"0x{bif.get_resource_offset(resource)[0]:X}")
                 self.source_model.appendRow([resref_item, restype_item, size_item, offset_item])
 
         else:
@@ -235,7 +248,7 @@ class ERFEditor(Editor):
 
     def build(self) -> tuple[bytes, bytes]:
         data = bytearray()
-        resource: ERFResource | RIMResource
+        resource: ERFResource | RIMResource | BIFResource
 
         if self._restype is ResourceType.RIM:
             rim = RIM()
@@ -243,13 +256,13 @@ class ERFEditor(Editor):
                 source_index: QModelIndex = self._proxy_model.mapToSource(self._proxy_model.index(i, 0))
                 item: QStandardItem | None = self.source_model.itemFromIndex(source_index)
                 if item is None:
-                    RobustLogger().warning("item was None in ERFEditor.build() at index %s", source_index)
+                    RobustLogger().warning(f"item was None in ERFEditor.build() at index {source_index}")
                     continue
-                resource = item.data()
+                resource: ERFResource = item.data()
                 rim.set_data(str(resource.resref), resource.restype, resource.data)
             write_rim(rim, data)
 
-        elif self._restype in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):  # sourcery skip: split-or-ifs
+        elif self._restype in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV, ResourceType.BIF):  # sourcery skip: split-or-ifs
             erf = ERF(ERFType.from_extension(self._restype.extension))
             if self._restype is ResourceType.SAV:
                 erf.is_save = True
@@ -371,7 +384,7 @@ class ERFEditor(Editor):
             return
         resource: ERFResource = item.data()
 
-        erfrim_filename: str = "ERF/RIM" if self._resname is None or self._restype is None else f"{self._resname}.{self._restype.extension}"
+        erfrim_filename: str = "ERF/RIM/BIF" if self._resname is None or self._restype is None else f"{self._resname}.{self._restype.extension}"
         new_resname, ok = self.get_validated_resref(erfrim_filename, resource)
         if ok:
             resource.resref = ResRef(new_resname)
