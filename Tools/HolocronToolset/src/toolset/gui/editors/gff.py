@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from qtpy import QtCore
-from qtpy.QtCore import QSortFilterProxyModel
+from qtpy.QtCore import QItemSelectionRange, QModelIndex, QSortFilterProxyModel, Qt
 from qtpy.QtGui import QBrush, QColor, QFont, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import (
     QApplication,
@@ -16,6 +15,7 @@ from qtpy.QtWidgets import (
     QShortcut,  # pyright: ignore[reportPrivateImportUsage]
     QSizePolicy,
     QVBoxLayout,
+    QWidget,
 )
 
 from pykotor.common.geometry import Vector3, Vector4
@@ -29,17 +29,18 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QItemSelectionRange, QModelIndex, QPoint
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtCore import QAbstractItemModel, QItemSelectionModel, QItemSelectionRange, QModelIndex, QPoint
+    from qtpy.QtGui import QPalette
+    from qtpy.QtWidgets import QLayout, QLayoutItem, QWidget, _QMenu
 
     from toolset.data.installation import HTInstallation
 
-_VALUE_NODE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
-_TYPE_NODE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
-_LABEL_NODE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 3
+_VALUE_NODE_ROLE: int = Qt.ItemDataRole.UserRole + 1
+_TYPE_NODE_ROLE: int = Qt.ItemDataRole.UserRole + 2
+_LABEL_NODE_ROLE: int = Qt.ItemDataRole.UserRole + 3
 
-_ID_SUBSTRING_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
-_TEXT_SUBSTRING_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
+_ID_SUBSTRING_ROLE: int = Qt.ItemDataRole.UserRole + 1
+_TEXT_SUBSTRING_ROLE: int = Qt.ItemDataRole.UserRole + 2
 
 
 class GFFEditor(Editor):
@@ -56,14 +57,15 @@ class GFFEditor(Editor):
         self._gff_content: GFFContent | None = None
 
         from toolset.uic.qtpy.editors.gff import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
         self._setup_signals()
 
-        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.treeView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
 
-        self.ui.treeView.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
+        self.ui.treeView.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         self.ui.treeView.setSortingEnabled(True)
 
         # Make the right panel take as little space possible
@@ -79,9 +81,9 @@ class GFFEditor(Editor):
         self.proxy_model.setSourceModel(self.model)
         self.ui.treeView.setModel(self.proxy_model)
 
-        selectionModel = self.ui.treeView.selectionModel()
-        assert selectionModel is not None
-        selectionModel.selectionChanged.connect(self.selection_changed)
+        sel_model: QItemSelectionModel | None = self.ui.treeView.selectionModel()
+        assert sel_model is not None
+        sel_model.selectionChanged.connect(self.selection_changed)
         self.ui.intSpin.editingFinished.connect(self.update_data)
         self.ui.floatSpin.editingFinished.connect(self.update_data)
         self.ui.lineEdit.editingFinished.connect(self.update_data)
@@ -104,11 +106,17 @@ class GFFEditor(Editor):
 
         self.ui.treeView.customContextMenuRequested.connect(self.on_context_menu)
 
-        self.ui.typeCombo.activated.connect(self.typeChanged)
+        self.ui.typeCombo.activated.connect(self.type_changed)
 
-        QShortcut("Del", self).activated.connect(self.remove_selectedNodes)
+        QShortcut("Del", self).activated.connect(self.remove_selected_nodes)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
         gff: GFF = read_gff(data)
         self._gff_content = gff.content
@@ -118,15 +126,19 @@ class GFFEditor(Editor):
 
         root_node = QStandardItem("[ROOT]")
         self.apply_palette(root_node, GFFFieldType.Struct)
-        #root_node.setForeground(QBrush(QColor(0x660000)))
+        # root_node.setForeground(QBrush(QColor(0x660000)))
         self.model.appendRow(root_node)
         self._load_struct(root_node, gff.root)
 
-        source_index = self.model.indexFromItem(root_node)
-        proxy_index = self.proxy_model.mapFromSource(source_index)
+        source_index: QModelIndex = self.model.indexFromItem(root_node)
+        proxy_index: QModelIndex = self.proxy_model.mapFromSource(source_index)
         self.ui.treeView.expand(proxy_index)
 
-    def _load_struct(self, node: QStandardItem, gff_struct: GFFStruct):
+    def _load_struct(
+        self,
+        node: QStandardItem,
+        gff_struct: GFFStruct,
+    ):
         for label, ftype, value in gff_struct:
             child_node = QStandardItem("")
             child_node.setData(ftype, _TYPE_NODE_ROLE)
@@ -134,12 +146,12 @@ class GFFEditor(Editor):
 
             if ftype == GFFFieldType.List:
                 self.apply_palette(child_node, GFFFieldType.List)
-                #child_node.setForeground(QBrush(QColor(0x000088)))
+                # child_node.setForeground(QBrush(QColor(0x000088)))
                 self._load_list(child_node, value)
             elif ftype == GFFFieldType.Struct:
                 assert isinstance(value, GFFStruct)
                 self.apply_palette(child_node, GFFFieldType.Struct)
-                #child_node.setForeground(QBrush(QColor(0x660000)))
+                # child_node.setForeground(QBrush(QColor(0x660000)))
                 child_node.setData(value.struct_id, _VALUE_NODE_ROLE)
                 self._load_struct(child_node, value)
             else:
@@ -149,11 +161,15 @@ class GFFEditor(Editor):
             self.refresh_item_text(child_node)
             node.appendRow(child_node)
 
-    def _load_list(self, node: QStandardItem, gff_list: GFFList):
+    def _load_list(
+        self,
+        node: QStandardItem,
+        gff_list: GFFList,
+    ):
         for gff_struct in gff_list:
             child_node = QStandardItem("")
             self.apply_palette(child_node, GFFFieldType.Struct)
-            #child_node.setForeground(QBrush(QColor(0x660000)))
+            # child_node.setForeground(QBrush(QColor(0x660000)))
             child_node.setData(gff_struct.struct_id, _VALUE_NODE_ROLE)
             node.appendRow(child_node)
             self.refresh_item_text(child_node)
@@ -162,24 +178,36 @@ class GFFEditor(Editor):
         self.apply_palette(node, GFFFieldType.List)
 
     def build(self) -> tuple[bytes, bytes]:
-        gff_content = self._gff_content or GFFContent.from_res(self._resname or "")
+        gff_content: GFFContent | None = self._gff_content or GFFContent.from_res(self._resname or "")
         assert gff_content is not None
-        gff_type = ResourceType.GFF
+
+        # Determine if we should write as XML based on file extension
+        gff_type: ResourceType = ResourceType.GFF
+        if self._filepath is not None:
+            suffix = self._filepath.suffix.lower()
+            if suffix.endswith(".xml"):
+                gff_type = ResourceType.GFF_XML
 
         gff = GFF(gff_content)
-        self._build_struct(self.model.item(0, 0), gff.root)
+        item: QStandardItem | None = self.model.item(0, 0)
+        assert item is not None, "item cannot be None"
+        self._build_struct(item, gff.root)
 
         data = bytearray()
         write_gff(gff, data, gff_type)
         return bytes(data), b""
 
-    def _build_struct(self, item: QStandardItem, gff_struct: GFFStruct):
+    def _build_struct(
+        self,
+        item: QStandardItem,
+        gff_struct: GFFStruct,
+    ):
         for i in range(item.rowCount()):
             child: QStandardItem | None = item.child(i, 0)
             assert child is not None
-            label = child.data(_LABEL_NODE_ROLE)
-            value = child.data(_VALUE_NODE_ROLE)
-            ftype = child.data(_TYPE_NODE_ROLE)
+            label: str = child.data(_LABEL_NODE_ROLE)
+            value: Any = child.data(_VALUE_NODE_ROLE)
+            ftype: GFFFieldType | None = child.data(_TYPE_NODE_ROLE)
 
             if ftype == GFFFieldType.UInt8:
                 gff_struct.set_uint8(label, value)
@@ -224,9 +252,13 @@ class GFFEditor(Editor):
                 gff_struct.set_list(label, childGffList)
                 self._build_list(child, childGffList)
 
-    def _build_list(self, item: QStandardItem, gff_list: GFFList):
+    def _build_list(
+        self,
+        item: QStandardItem,
+        gff_list: GFFList,
+    ):
         for i in range(item.rowCount()):
-            child = item.child(i, 0)
+            child: QStandardItem | None = item.child(i, 0)
             assert child is not None, f"child cannot be None in {self!r}._build_list({item!r}, {gff_list!r})"
             struct_id = child.data(_VALUE_NODE_ROLE)
             gff_struct: GFFStruct = gff_list.add(struct_id)
@@ -239,17 +271,23 @@ class GFFEditor(Editor):
 
         root_node = QStandardItem("[ROOT]")
         self.apply_palette(root_node, GFFFieldType.Struct)
-        #root_node.setForeground(QBrush(QColor(0x660000)))
+        # root_node.setForeground(QBrush(QColor(0x660000)))
         self.model.appendRow(root_node)
 
-    def selection_changed(self, selected: QItemSelectionRange):
+    def selection_changed(
+        self,
+        selected: QItemSelectionRange,
+    ):
         for proxy_index in selected.indexes():
-            source_index = self.proxy_model.mapToSource(proxy_index)
-            tree_item = self.model.itemFromIndex(source_index)
+            source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
+            tree_item: QStandardItem | None = self.model.itemFromIndex(source_index)
             assert tree_item is not None
             self.load_item(tree_item)
 
-    def load_item(self, item: QStandardItem):
+    def load_item(
+        self,
+        item: QStandardItem,
+    ):
         def set_spinbox(minv: int, maxv: int, item: QStandardItem):
             self.ui.pages.setCurrentWidget(self.ui.intPage)
             self.ui.intSpin.setRange(minv, maxv)
@@ -259,15 +297,19 @@ class GFFEditor(Editor):
             self.ui.fieldBox.setEnabled(False)
             set_spinbox(-1, 0xFFFFFFFF, item)
             return
-        black_page_layout = self.ui.blankPage.layout()
+        black_page_layout: QLayout | None = self.ui.blankPage.layout()
         if black_page_layout is not None:
             while black_page_layout.count():
-                child = black_page_layout.takeAt(0)
-                if child is not None and child.widget() is not None:
-                    child.widget().deleteLater()
+                child: QLayoutItem | None = black_page_layout.takeAt(0)
+                if child is None:
+                    continue
+                widget_of_child: QWidget | None = child.widget()
+                if widget_of_child is None:
+                    continue
+                widget_of_child.deleteLater()
 
         self.ui.fieldBox.setEnabled(True)
-        item_type = cast(GFFFieldType, item.data(_TYPE_NODE_ROLE))
+        item_type: GFFFieldType = cast(GFFFieldType, item.data(_TYPE_NODE_ROLE))
         self.ui.typeCombo.setCurrentText(item_type.name)
         self.ui.labelEdit.setText(item.data(_LABEL_NODE_ROLE))
 
@@ -320,19 +362,25 @@ class GFFEditor(Editor):
                 layout = QVBoxLayout(self.ui.blankPage)
                 self.ui.blankPage.setLayout(layout)
             else:
-                while self.ui.blankPage.layout().count():
-                    child = self.ui.blankPage.layout().takeAt(0)
+                layout: QLayout | None = self.ui.blankPage.layout()
+                assert layout is not None, "layout cannot be None"
+                while layout.count():
+                    child: QLayoutItem | None = layout.takeAt(0)
                     if child is not None and child.widget() is not None:
-                        child.widget().deleteLater()
+                        widget_of_child: QWidget | None = child.widget()
+                        if widget_of_child is None:
+                            continue
+                        widget_of_child.deleteLater()
             hex_data_str = " ".join(f"{b:02X}" for b in binaryData)
             binary_data_label = QLabel(f"{hex_data_str}")
             binary_data_label.setWordWrap(True)
             binary_data_label.setFont(QFont("Courier New", 7))
             binary_data_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
             binary_data_label.setMaximumWidth(self.ui.blankPage.width() - 20)  # -20 otherwise the pane grows for some reason.
-            self.ui.blankPage.layout().addWidget(binary_data_label)
-            copy_button = QPushButton("Copy Binary Data")
-            self.ui.blankPage.layout().addWidget(copy_button)
+            layout.addWidget(binary_data_label)
+            copy_button: QPushButton | None = QPushButton("Copy Binary Data")
+            assert copy_button is not None, "copy_button cannot be None"
+            layout.addWidget(copy_button)
             copy_button.clicked.connect(lambda: QApplication.clipboard().setText(hex_data_str))
         elif item_type == GFFFieldType.LocalizedString:
             locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
@@ -347,14 +395,15 @@ class GFFEditor(Editor):
                 self.ui.substringList.addItem(listItem)
 
     def update_data(self):
-        selected_indices = self.ui.treeView.selectedIndexes()
+        selected_indices: list[QModelIndex] = self.ui.treeView.selectedIndexes()
         if not selected_indices:
             return
 
-        proxy_index = selected_indices[0]
-        source_index = self.proxy_model.mapToSource(proxy_index)
-        item: QStandardItem = self.model.itemFromIndex(source_index)
-        item_type = cast(GFFFieldType, item.data(_TYPE_NODE_ROLE))
+        proxy_index: QModelIndex = selected_indices[0]
+        source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
+        item: QStandardItem | None = self.model.itemFromIndex(source_index)
+        assert item is not None, "item cannot be None"
+        item_type: GFFFieldType = cast(GFFFieldType, item.data(_TYPE_NODE_ROLE))
 
         item.setData(self.ui.labelEdit.text(), _LABEL_NODE_ROLE)
 
@@ -382,7 +431,7 @@ class GFFEditor(Editor):
             vec4 = Vector4(self.ui.xVec4Spin.value(), self.ui.yVec4Spin.value(), self.ui.zVec4Spin.value(), self.ui.wVec4Spin.value())
             item.setData(vec4, _VALUE_NODE_ROLE)
         elif item_type == GFFFieldType.LocalizedString:
-            value_locstring = cast(LocalizedString, item.data(_VALUE_NODE_ROLE))
+            value_locstring: LocalizedString = cast(LocalizedString, item.data(_VALUE_NODE_ROLE))
             value_locstring.stringref = self.ui.stringrefSpin.value()
         elif item_type == GFFFieldType.Struct or item_type is None:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
@@ -404,18 +453,19 @@ class GFFEditor(Editor):
 
             language, gender = LocalizedString.substring_pair(item.data(_ID_SUBSTRING_ROLE))
             proxy_index: QModelIndex = self.ui.treeView.selectedIndexes()[0]
-            tree_source_index = self.proxy_model.mapToSource(proxy_index)
-            tree_item = self.model.itemFromIndex(tree_source_index)
+            tree_source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
+            tree_item: QStandardItem | None = self.model.itemFromIndex(tree_source_index)
+            assert tree_item is not None, "tree_item cannot be None"
             locstring: LocalizedString = tree_item.data(_VALUE_NODE_ROLE)
             locstring.set_data(language, gender, text)
 
     def add_substring(self):
         language = Language(self.ui.substringLangCombo.currentIndex())
         gender = Gender(self.ui.substringGenderCombo.currentIndex())
-        substring_id = LocalizedString.substring_id(language, gender)
+        substring_id: int = LocalizedString.substring_id(language, gender)
 
         for i in range(self.ui.substringList.count()):
-            item = self.ui.substringList.item(i)
+            item: QListWidgetItem | None = self.ui.substringList.item(i)
             if item is None:
                 self._logger.warning(f"substringList item at index {i} was None, skipping")
                 continue
@@ -429,17 +479,18 @@ class GFFEditor(Editor):
         self.ui.substringList.addItem(item)
 
         proxy_index: QModelIndex = self.ui.treeView.selectedIndexes()[0]
-        tree_source_index = self.proxy_model.mapToSource(proxy_index)
-        tree_item = self.model.itemFromIndex(tree_source_index)
+        tree_source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
+        tree_item: QStandardItem | None = self.model.itemFromIndex(tree_source_index)
+        assert tree_item is not None, "tree_item cannot be None"
         locstring: LocalizedString = tree_item.data(_VALUE_NODE_ROLE)
         locstring.set_data(language, gender, "")
 
     def remove_substring(self):
         language = Language(self.ui.substringLangCombo.currentIndex())
         gender = Gender(self.ui.substringGenderCombo.currentIndex())
-        substring_id = LocalizedString.substring_id(language, gender)
+        substring_id: int = LocalizedString.substring_id(language, gender)
         for i in range(self.ui.substringList.count())[::-1]:
-            item = self.ui.substringList.item(i)
+            item: QListWidgetItem | None = self.ui.substringList.item(i)
             if item is None:
                 self._logger.warning(f"substringList item at index {i} was None, skipping")
                 continue
@@ -447,8 +498,9 @@ class GFFEditor(Editor):
                 self.ui.substringList.takeItem(i)
 
         proxy_index: QModelIndex = self.ui.treeView.selectedIndexes()[0]
-        tree_source_index = self.proxy_model.mapToSource(proxy_index)
-        tree_item = self.model.itemFromIndex(tree_source_index)
+        tree_source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
+        tree_item: QStandardItem | None = self.model.itemFromIndex(tree_source_index)
+        assert tree_item is not None, "tree_item cannot be None"
         locstring: LocalizedString = tree_item.data(_VALUE_NODE_ROLE)
         locstring.remove(language, gender)
 
@@ -473,23 +525,27 @@ class GFFEditor(Editor):
             text = f'{label.ljust(16)} {f"[{ftype.name}]".ljust(17)} = {value}'
         self.apply_palette(item, ftype)
 
-        #if ftype == GFFFieldType.Struct or ftype is None:
+        # if ftype == GFFFieldType.Struct or ftype is None:
         #    item.setForeground(QBrush(QColor(0x660000)))
-        #elif ftype == GFFFieldType.List:
+        # elif ftype == GFFFieldType.List:
         #    item.setForeground(QBrush(QColor(0x000088)))
-        #else:
+        # else:
         #    item.setForeground(QBrush(QColor(0x000000)))
 
         item.setText(text)
 
-    def typeChanged(self, ftype_enum_value: int):
+    def type_changed(
+        self,
+        ftype_enum_value: int,
+    ):
         ftype = GFFFieldType(ftype_enum_value)
-        proxy_index = self.ui.treeView.selectedIndexes()[0]
-        source_index = self.proxy_model.mapToSource(proxy_index)
-        item = self.model.itemFromIndex(source_index)
+        proxy_index: QModelIndex = self.ui.treeView.selectedIndexes()[0]
+        source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
+        item: QStandardItem | None = self.model.itemFromIndex(source_index)
+        assert item is not None, f"item at src index {source_index.row()} is None"
         item.setData(ftype, _TYPE_NODE_ROLE)
 
-        numeric = isinstance(item.data(_VALUE_NODE_ROLE), (float, int))
+        numeric: bool = isinstance(item.data(_VALUE_NODE_ROLE), (float, int))
 
         if not numeric and ftype in {
             GFFFieldType.UInt8,
@@ -526,7 +582,13 @@ class GFFEditor(Editor):
         self.load_item(item)  # type: ignore[]
         self.refresh_item_text(item)
 
-    def insert_node(self, parent: QStandardItem, label: str, ftype: GFFFieldType, value: Any) -> QStandardItem:
+    def insert_node(
+        self,
+        parent: QStandardItem,
+        label: str,
+        ftype: GFFFieldType,
+        value: Any,
+    ) -> QStandardItem:
         item = QStandardItem("")
         item.setData(label, _LABEL_NODE_ROLE)
         item.setData(ftype, _TYPE_NODE_ROLE)
@@ -535,7 +597,10 @@ class GFFEditor(Editor):
         self.refresh_item_text(item)
         return item
 
-    def addNode(self, item: QStandardItem):
+    def add_node(
+        self,
+        item: QStandardItem,
+    ):
         def set_spinbox(minv: int, maxv: int, item: QStandardItem):
             self.ui.pages.setCurrentWidget(self.ui.intPage)
             self.ui.intSpin.setRange(minv, maxv)
@@ -546,56 +611,55 @@ class GFFEditor(Editor):
         new_label = "[New Struct]"
         if parent_type == GFFFieldType.List:
             self.ui.fieldBox.setEnabled(False)
-            new_value = new_value.struct_id
+            new_value: int = new_value.struct_id
             new_label = str(item.rowCount())
-        new_item = self.insert_node(item, new_label, GFFFieldType.Struct, new_value)
+        new_item: QStandardItem = self.insert_node(item, new_label, GFFFieldType.Struct, new_value)
         set_spinbox(-1, 0xFFFFFFFF, new_item)
 
-    def remove_node(self, item: QStandardItem):
-        parent_item = item.parent()
+    def remove_node(
+        self,
+        item: QStandardItem,
+    ):
+        parent_item: QStandardItem | None = item.parent()
         if parent_item is None:
             QMessageBox(QMessageBox.Icon.Critical, "Invalid action attempted", "Cannot remove the top-level [ROOT] item.").exec()
             return
         parent_item.removeRow(item.row())
         self.refresh_item_text(item)
 
-    def remove_selectedNodes(self):
+    def remove_selected_nodes(self):
         for proxy_index in self.ui.treeView.selectedIndexes():
-            source_index = self.proxy_model.mapToSource(proxy_index)
-            item = self.model.itemFromIndex(source_index)
+            source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
+            item: QStandardItem | None = self.model.itemFromIndex(source_index)
             assert item is not None
             self.remove_node(item)
 
-    def on_context_menu(self, point: QPoint):
-        proxy_index = self.ui.treeView.indexAt(point)
-        source_index = self.proxy_model.mapToSource(proxy_index)
-        item = self.model.itemFromIndex(source_index)
+    def on_context_menu(
+        self,
+        point: QPoint,
+    ):
+        proxy_index: QModelIndex = self.ui.treeView.indexAt(point)
+        source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)
+        item: QStandardItem | None = self.model.itemFromIndex(source_index)
         if item is None:
             return
 
         menu = QMenu(self)
         nested_type = item.data(_TYPE_NODE_ROLE)
         if nested_type == GFFFieldType.List:
-            menu.addAction("Add Struct").triggered.connect(lambda: self.addNode(item))
+            menu.addAction("Add Struct").triggered.connect(lambda: self.add_node(item))
         elif nested_type in {GFFFieldType.Struct, None}:
             self._build_context_menu_gff_struct(menu, item)
         menu.addAction("Remove").triggered.connect(lambda: self.remove_node(item))
-        menu.popup(self.ui.treeView.viewport().mapToGlobal(point))
+        viewport: QWidget | None = self.ui.treeView.viewport()
+        assert viewport is not None, "Viewport is None"
+        menu.popup(viewport.mapToGlobal(point))
 
-    def _build_context_menu_gff_struct(self, menu: QMenu, item: QStandardItem):
-        """Builds a context menu for a GFF node item.
-
-        Args:
-        ----
-            menu: QMenu - The menu to build actions on
-            item: QStandardItem - The item node for the menu
-
-        Processing Logic:
-        ----------------
-            - Adds actions to add primitive numeric, string and vector node types
-            - Adds actions to add struct and list node types
-            - Connects each action to call self.insertNode() and pass relevant args.
-        """
+    def _build_context_menu_gff_struct(
+        self,
+        menu: _QMenu,  # pyright: ignore[reportInvalidTypeForm]
+        item: QStandardItem,
+    ):
         menu.addAction("Add UInt8").triggered.connect(lambda: self.insert_node(item, "New UInt8", GFFFieldType.UInt8, 0))
         menu.addAction("Add UInt16").triggered.connect(lambda: self.insert_node(item, "New UInt16", GFFFieldType.UInt16, 0))
         menu.addAction("Add UInt32").triggered.connect(lambda: self.insert_node(item, "New UInt32", GFFFieldType.UInt32, 0))
@@ -625,102 +689,95 @@ class GFFEditor(Editor):
         menu.addSeparator()
 
     def select_talk_table(self):
-        """Select a TLK file using a file dialog.
-
-        Args:
-        ----
-            self: The class instance
-        """
         filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
         if not filepath:
             return
         self._talktable = TalkTable(filepath)
 
     def change_locstring_text(self):
-        """Changes the text displayed based on the selected string reference.
-
-        Args:
-        ----
-            self: The class instance
-
-        Processing Logic:
-        ----------------
-            - Checks if talktable is not None
-            - Gets the string from talktable based on the selected string reference value
-            - Sets the text edit plain text to the retrieved string
-            - If talktable is None, sets the text edit plain text to empty string.
-        """
         if self._talktable is not None:
             text = self._talktable.string(self.ui.stringrefSpin.value())
             self.ui.tlkTextEdit.setPlainText(text)
         else:
             self.ui.tlkTextEdit.setPlainText("")
 
-    def adjustColor(
+    def adjust_color(
         self,
         base_color: QColor,
         hue_shift: int = 0,
         saturation_factor: float = 1.0,
         value_factor: float = 1.0,
     ) -> QColor:
-        color = base_color if isinstance(base_color, QColor) else QColor(base_color)
+        color: QColor = base_color if isinstance(base_color, QColor) else QColor(base_color)
         h, s, v, a = color.getHsv()
 
         # Calculate new HSV values
-        h = (h + hue_shift) % 360
-        s = min(max(int(s * saturation_factor), 0), 255)
-        v = min(max(int(v * value_factor), 0), 255)
+        h = ((h or 0) + hue_shift) % 360
+        s = min(max(int((s or 0) * saturation_factor), 0), 255)
+        v = min(max(int((v or 0) * value_factor), 0), 255)
 
         # Ensure HSV values are within valid ranges
-        if h < 0 or h > 359:
+        if h < 0 or h > 359:  # noqa: PLR2004
             h = max(0, min(h, 359))
-        if s < 0 or s > 255:
+        if s < 0 or s > 255:  # noqa: PLR2004
             s = max(0, min(s, 255))
-        if v < 0 or v > 255:
+        if v < 0 or v > 255:  # noqa: PLR2004
             v = max(0, min(v, 255))
 
-        color.setHsv(h, s, v, a)
+        color.setHsv(h, s, v, a or 255)
         return color
 
-    def apply_palette(self, item: QStandardItem, ftype: GFFFieldType):
-        palette = self.palette()
-        #number_base_color = palette.highlight().color()
-        field_type_colors = {
-            #GFFFieldType.UInt8: self.adjustColor(number_base_color, saturation_factor=1.0, value_factor=1.0),
-            #GFFFieldType.Int8: self.adjustColor(number_base_color, saturation_factor=0.8, value_factor=0.9),
-            #GFFFieldType.UInt16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=1.0, value_factor=1.0),
-            #GFFFieldType.Int16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=0.8, value_factor=0.9),
-            #GFFFieldType.UInt32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=1.0, value_factor=1.2),
-            #GFFFieldType.Int32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=0.9, value_factor=1.1),
-            #GFFFieldType.UInt64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=1.0, value_factor=1.0),
-            #GFFFieldType.Int64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=0.8, value_factor=0.9),
-            #GFFFieldType.Single: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=1.0, value_factor=1.0),
-            #GFFFieldType.Double: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=0.8, value_factor=0.9),
-            #GFFFieldType.ResRef: palette.windowText().color(),
-            #GFFFieldType.String: palette.text().color(),
-            #GFFFieldType.LocalizedString: palette.buttonText().color(),
-            #GFFFieldType.Vector3: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.1),
-            #GFFFieldType.Vector4: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.3),
+    def apply_palette(
+        self,
+        item: QStandardItem,
+        ftype: GFFFieldType,
+    ):
+        palette: QPalette = self.palette()
+        # number_base_color = palette.highlight().color()
+        field_type_colors: dict[GFFFieldType, QColor] = {
+            # GFFFieldType.UInt8: self.adjustColor(number_base_color, saturation_factor=1.0, value_factor=1.0),
+            # GFFFieldType.Int8: self.adjustColor(number_base_color, saturation_factor=0.8, value_factor=0.9),
+            # GFFFieldType.UInt16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=1.0, value_factor=1.0),
+            # GFFFieldType.Int16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=0.8, value_factor=0.9),
+            # GFFFieldType.UInt32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=1.0, value_factor=1.2),
+            # GFFFieldType.Int32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=0.9, value_factor=1.1),
+            # GFFFieldType.UInt64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=1.0, value_factor=1.0),
+            # GFFFieldType.Int64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=0.8, value_factor=0.9),
+            # GFFFieldType.Single: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=1.0, value_factor=1.0),
+            # GFFFieldType.Double: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=0.8, value_factor=0.9),
+            # GFFFieldType.ResRef: palette.windowText().color(),
+            # GFFFieldType.String: palette.text().color(),
+            # GFFFieldType.LocalizedString: palette.buttonText().color(),
+            # GFFFieldType.Vector3: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.1),
+            # GFFFieldType.Vector4: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.3),
             GFFFieldType.Struct: QColor("darkGreen"),
-            GFFFieldType.List: self.adjustColor(palette.highlight().color(), hue_shift=120, saturation_factor=0.8, value_factor=1.1),
-            #GFFFieldType.Binary: palette.midlight().color(),
+            GFFFieldType.List: self.adjust_color(palette.highlight().color(), hue_shift=120, saturation_factor=0.8, value_factor=1.1),
+            # GFFFieldType.Binary: palette.midlight().color(),
         }
         if ftype in field_type_colors:
             item.setForeground(QBrush(field_type_colors[ftype]))
 
 
 class GFFSortFilterProxyModel(QSortFilterProxyModel):
-    def __init__(self, parent: QWidget):
+    def __init__(
+        self,
+        parent: QWidget,
+    ):
         super().__init__(parent)
 
-    def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
-        source_model = self.sourceModel()
+    def lessThan(
+        self,
+        left: QModelIndex,
+        right: QModelIndex,
+    ) -> bool:
+        source_model: QAbstractItemModel | None = self.sourceModel()
         assert isinstance(source_model, QStandardItemModel), f"Source model is not a QStandardItemModel, was: {type(source_model).__name__}"
-        left_text: str = source_model.itemFromIndex(left).data(_LABEL_NODE_ROLE)
-        right_text: str = source_model.itemFromIndex(right).data(_LABEL_NODE_ROLE)
-
-        left_text = left_text or str(source_model.itemFromIndex(left).data(_VALUE_NODE_ROLE))
-        right_text = right_text or str(source_model.itemFromIndex(right).data(_VALUE_NODE_ROLE))
+        left_item: QStandardItem | None = source_model.itemFromIndex(left)
+        right_item: QStandardItem | None = source_model.itemFromIndex(right)
+        assert left_item is not None, f"Left item at index {left.row()} is None"
+        assert right_item is not None, f"Right item at index {right.row()} is None"
+        left_text: str = left_item.data(_LABEL_NODE_ROLE) or str(left_item.data(_VALUE_NODE_ROLE))
+        right_text: str = right_item.data(_LABEL_NODE_ROLE) or str(right_item.data(_VALUE_NODE_ROLE))
 
         if left_text.isdigit() and right_text.isdigit():
             left_int = int(left_text)
