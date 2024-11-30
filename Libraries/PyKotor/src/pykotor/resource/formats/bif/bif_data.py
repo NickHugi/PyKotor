@@ -262,7 +262,6 @@ class BIF(BiowareArchive):
                     resref=resource.resref,
                     restype=resource.restype,
                     resid=resource.resource_id,
-                    bif_index=bif_idx,
                 )
             )
 
