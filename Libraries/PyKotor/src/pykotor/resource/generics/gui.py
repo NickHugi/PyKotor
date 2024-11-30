@@ -4,7 +4,6 @@ from enum import IntEnum
 from typing import TYPE_CHECKING, Literal, TypeVar
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
-from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFList, GFFStruct, bytes_gff, read_gff, write_gff
 from pykotor.resource.type import ResourceType
@@ -12,6 +11,7 @@ from pykotor.resource.type import ResourceType
 if TYPE_CHECKING:
     from typing_extensions import Literal
 
+    from pykotor.common.language import LocalizedString
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
@@ -314,13 +314,13 @@ class GUIProgressBar(GUIControl):
 def construct_gui(gff: GFF) -> GUI:
     """Construct a GUI object from a GFF."""
     gui = GUI()
-    
+
     def read_text(struct: GFFStruct) -> GUIText | None:
         """Read text values from a GFF struct."""
         text_struct: GFFStruct | None = struct.get_struct("TEXT", None)
         if text_struct is None:
             return None
-            
+
         text = GUIText()
         text.text = text_struct.get_string("TEXT", None)
         text.font = text_struct.get_resref("FONT", ResRef.from_blank())
@@ -329,7 +329,7 @@ def construct_gui(gff: GFF) -> GUI:
         if pulsing is not None:
             text.pulsing = bool(pulsing)
         text.strref = text_struct.get_uint32("STRREF", 0xFFFFFFFF)
-        
+
         color: Vector3 | None = text_struct.get_vector3("COLOR", None)
         if color:
             text.color = Color(color.x, color.y, color.z, 1.0)
@@ -340,7 +340,7 @@ def construct_gui(gff: GFF) -> GUI:
         moveto_struct: GFFStruct | None = struct.get_struct("MOVETO", None)
         if moveto_struct is None:
             return None
-            
+
         moveto = GUIMoveTo()
         moveto.up = moveto_struct.get_int32("UP", -1)
         moveto.down = moveto_struct.get_int32("DOWN", -1)
@@ -353,7 +353,7 @@ def construct_gui(gff: GFF) -> GUI:
         hilight_struct: GFFStruct | None = struct.get_struct("HILIGHT", None)
         if hilight_struct is None:
             return None
-            
+
         hilight = GUIBorder()
         color: Vector3 | None = hilight_struct.get_vector3("COLOR", None)
         if color:
@@ -401,13 +401,13 @@ def construct_gui(gff: GFF) -> GUI:
             extent.get_int32("WIDTH", 0),
             extent.get_int32("HEIGHT", 0)
         )
-    
+
     def read_border(struct: GFFStruct) -> GUIBorder | None:
         """Read border values from a GFF struct."""
         border_struct: GFFStruct | None = struct.get_struct("BORDER", None)
         if border_struct is None:
             return None
-            
+
         border = GUIBorder()
         color: Vector3 | None = border_struct.get_vector3("COLOR", None)
         if color:
@@ -429,7 +429,7 @@ def construct_gui(gff: GFF) -> GUI:
         control_type: type[T],
     ) -> T | None:
         """Read scrollbar thumb or direction struct values."""
-        field_name: Literal['THUMB', 'DIR'] = "THUMB" if control_type == GUIScrollbarThumb else "DIR"
+        field_name: Literal["THUMB", "DIR"] = "THUMB" if control_type == GUIScrollbarThumb else "DIR"
         thumb_struct: GFFStruct | None = struct.get_struct(field_name, None)
         if thumb_struct is None:
             return None
@@ -446,20 +446,20 @@ def construct_gui(gff: GFF) -> GUI:
         proto_struct: GFFStruct | None = struct.get_struct("PROTOITEM", None)
         if proto_struct is None:
             return None
-            
+
         proto = GUIProtoItem()
         proto.type = GUIControlType.ProtoItem
         proto.tag = "PROTOITEM"
         proto.parent_tag = parent.tag
         proto.parent_id = parent.id
-        
+
         # Basic properties
         proto.gui_text = read_text(proto_struct)
         proto.font = proto_struct.get_resref("FONT", ResRef.from_blank())
         color: Vector3 | None = proto_struct.get_vector3("COLOR", None)
         if color:
             proto.text_color = Color(color.x, color.y, color.z, 1.0)
-        
+
         # Extent
         left, top, width, height = read_extent(proto_struct)
         proto.position.x = left
@@ -477,13 +477,13 @@ def construct_gui(gff: GFF) -> GUI:
         scroll_struct: GFFStruct | None = struct.get_struct("SCROLLBAR", None)
         if scroll_struct is None:
             return None
-            
+
         scroll = GUIScrollbar()
         scroll.type = GUIControlType.ScrollBar
         scroll.tag = "SCROLLBAR"
         scroll.parent_tag = parent.tag
         scroll.parent_id = parent.id
-        
+
         # Basic properties
         scroll.max_value = scroll_struct.get_int32("MAXVALUE", 99)
         scroll.visible_value = scroll_struct.get_int32("VISIBLEVALUE", 1)
@@ -491,21 +491,21 @@ def construct_gui(gff: GFF) -> GUI:
         locked: int | None = scroll_struct.get_uint8("Obj_Locked", None)
         if locked is not None:
             scroll.locked = bool(locked)
-        
+
         draw_mode: int | None = scroll_struct.get_uint8("DRAWMODE", None)
         if draw_mode is not None:
             scroll.draw_mode = draw_mode
-        
+
         # Extent
         left, top, width, height = read_extent(scroll_struct)
         scroll.position.x = left
         scroll.position.y = top
         scroll.size.x = width
         scroll.size.y = height
-        
+
         # Border
         scroll.border = read_border(scroll_struct)
-        
+
         # Direction and thumb
         scroll.gui_direction = read_scrollbar_thumb_or_dir(scroll_struct, GUIScrollbarDir)
         scroll.gui_thumb = read_scrollbar_thumb_or_dir(scroll_struct, GUIScrollbarThumb)
@@ -516,7 +516,7 @@ def construct_gui(gff: GFF) -> GUI:
         control_type = GUIControlType(struct.acquire("CONTROLTYPE", GUIControlType.Invalid.value))
         control: GUIControl = _create_control_by_type(control_type)
         control.type = control_type
-        
+
         # Basic properties
         control.id = struct.get_int32("ID", None)
         control.tag = struct.get_string("TAG", None)
@@ -540,39 +540,39 @@ def construct_gui(gff: GFF) -> GUI:
             alpha: float | None = struct.get_single("ALPHA", None)
             if alpha is not None:
                 control.color.a = alpha
-        
+
         # Extent
         left, top, width, height = read_extent(struct)
         control.position.x = left
         control.position.y = top
         control.size.x = width
         control.size.y = height
-        
-        
+
+
         # Border
         control.border = read_border(struct)
-        
+
         # Text
         control.gui_text = read_text(struct)
-        
+
         # Hilight
         control.hilight = read_hilight(struct)
-        
+
         # MoveTo
         control.moveto = read_moveto(struct)
-        
+
         # ListBox specific
         if isinstance(control, GUIListBox):
             control.proto_item = read_proto_item(struct, control)
             control.scroll_bar = read_scrollbar(struct, control)
-        
+
         # Handle child controls
         controls_list = struct.get_list("CONTROLS", GFFList())
         if controls_list:
             for child_struct in controls_list:
                 child = construct_control(child_struct)
                 control.children.append(child)
-        
+
         return control
 
     # Read root control
@@ -582,7 +582,7 @@ def construct_gui(gff: GFF) -> GUI:
 def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
     """Convert a GUI instance to a GFF."""
     gff = GFF()
-    
+
     def write_extent(struct: GFFStruct, x: int, y: int, width: int, height: int) -> None:
         """Write extent values to a GFF struct."""
         extent = struct.set_struct("EXTENT", GFFStruct(0))
@@ -612,7 +612,7 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
 
     def write_scrollbar_thumb_or_dir(struct: GFFStruct, thumb_or_dir: GUIScrollbarThumb | GUIScrollbarDir) -> None:
         """Write scrollbar thumb values."""
-        field_name: Literal['THUMB', 'DIR'] = "THUMB" if isinstance(thumb_or_dir, GUIScrollbarThumb) else "DIR"
+        field_name: Literal["THUMB", "DIR"] = "THUMB" if isinstance(thumb_or_dir, GUIScrollbarThumb) else "DIR"
         thumb_struct: GFFStruct = struct.set_struct(field_name, GFFStruct(0))
         thumb_struct.set_resref("IMAGE", thumb_or_dir.image)
         thumb_struct.set_int32("ALIGNMENT", thumb_or_dir.alignment)
@@ -632,7 +632,7 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
             proto_struct.set_string("Obj_Parent", proto.parent_tag)
         if proto.parent_id is not None:
             proto_struct.set_int32("Obj_ParentID", proto.parent_id)
-        
+
         # Basic properties
         if proto.gui_text is not None:
             write_text(proto_struct, proto.gui_text)
@@ -641,7 +641,7 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
 
         # Extent
         write_extent(proto_struct, int(proto.position.x), int(proto.position.y), int(proto.size.x), int(proto.size.y))
-        
+
         # Border (boolean flag)
         if proto.border is not None:
             write_border(proto_struct, proto.border)
@@ -651,7 +651,7 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
         scroll_struct: GFFStruct = struct.set_struct("SCROLLBAR", GFFStruct(0))
         if scroll.draw_mode is not None:
             scroll_struct.set_uint8("DRAWMODE", scroll.draw_mode)
-        scroll_struct.set_int32("CONTROLTYPE", int(GUIControlType.ScrollBar))
+        scroll_struct.set_int32("CONTROLTYPE", GUIControlType.ScrollBar.value)
         scroll_struct.set_string("TAG", "SCROLLBAR")
         if scroll.parent_tag is not None:
             scroll_struct.set_string("Obj_Parent", scroll.parent_tag)
@@ -665,14 +665,14 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
             scroll_struct.set_int32("CURVALUE", scroll.current_value)
         if scroll.padding is not None:
             scroll_struct.set_int32("PADDING", scroll.padding)
-        
+
         # Extent
         write_extent(scroll_struct, int(scroll.position.x), int(scroll.position.y), int(scroll.size.x), int(scroll.size.y))
-        
+
         # Border
         if scroll.border is not None:
             write_border(scroll_struct, scroll.border)
-        
+
         # Direction and thumb
         if scroll.gui_direction is not None:
             write_scrollbar_thumb_or_dir(scroll_struct, scroll.gui_direction)
@@ -726,7 +726,7 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
     def dismantle_control(control: GUIControl) -> GFFStruct:
         """Convert a GUI control to a GFF struct."""
         struct = GFFStruct(0)
-        
+
         # Basic properties
         struct.set_int32("CONTROLTYPE", int(control.type))
         if control.id is not None:
@@ -750,33 +750,33 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
             struct.set_uint8("LOOPING", int(control.looping))
         if control.left_scrollbar is not None:
             struct.set_uint8("LEFTSCROLLBAR", int(control.left_scrollbar))
-        
+
         # Extent
         write_extent(struct, int(control.position.x), int(control.position.y), int(control.size.x), int(control.size.y))
-        
+
         # Border
         if control.border is not None:
             write_border(struct, control.border)
-        
+
         # Text
         if control.gui_text is not None:
             write_text(struct, control.gui_text)
-        
+
         # Hilight
         if control.hilight is not None:
             write_hilight(struct, control.hilight)
-        
+
         # MoveTo
         if control.moveto is not None:
             write_moveto(struct, control.moveto)
-        
+
         # ListBox specific
         if isinstance(control, GUIListBox):
             if control.proto_item is not None:
                 write_proto_item(struct, control.proto_item)
             if control.scroll_bar is not None:
                 write_scrollbar(struct, control.scroll_bar)
-        
+
         # Handle child controls
         if control.children:
             controls_list = GFFList()
@@ -784,7 +784,7 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
                 child_struct = dismantle_control(child)
                 controls_list._structs.append(child_struct)
             struct.set_list("CONTROLS", controls_list)
-        
+
         return struct
 
     if gui.root:

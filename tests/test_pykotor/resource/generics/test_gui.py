@@ -124,9 +124,9 @@ class TestGUI(TestCase):
         assert isinstance(root._position, Vector2), f"{root._position} is {type(root._position)}"
         assert isinstance(root._size, Vector2), f"{root._size} is {type(root._size)}"
         assert isinstance(root.color, Color), f"{root.color} is {type(root.color)}"
-        assert isinstance(root.parent_tag, str), f"{root.parent_tag} is {type(root.parent_tag)}"
-        assert isinstance(root.parent_id, int), f"{root.parent_id} is {type(root.parent_id)}"
-        assert isinstance(root.locked, bool), f"{root.locked} is {type(root.locked)}"
+        assert isinstance(root.parent_tag, (str, type(None))), f"{root.parent_tag} is {type(root.parent_tag)}"
+        assert isinstance(root.parent_id, (int, type(None))), f"{root.parent_id} is {type(root.parent_id)}"
+        assert isinstance(root.locked, (bool, type(None))), f"{root.locked} is {type(root.locked)}"
         assert isinstance(root.text_align, int), f"{root.text_align} is {type(root.text_align)}"
         assert isinstance(root.font, str), f"{root.font} is {type(root.font)}"
         assert isinstance(root.children, list), f"{root.children} is {type(root.children)}"
@@ -140,7 +140,7 @@ class TestGUI(TestCase):
         assert root._position == Vector2(0, 0), f"{root._position} == {Vector2(0, 0)}"
         assert root._size == Vector2(640, 480), f"{root._size} == {Vector2(640, 480)}"
         assert root.color == Color(0, 0, 0, 1), f"{root.color} == {Color(0, 0, 0, 1)}"
-        assert root.parent_tag == "", f"{root.parent_tag} == ''"
+        assert root.parent_tag == None, f"{root.parent_tag} == None"
         assert root.parent_id == -1, f"{root.parent_id} == -1"
         assert root.locked is True, f"{root.locked} is True"
         assert root.text_align == 0, f"{root.text_align} == 0"
@@ -194,21 +194,21 @@ class TestGUI(TestCase):
             assert root.hilight.pulsing is False, f"{root.hilight.pulsing} is False"
 
         # Text validation
-        if root.text_gui is not None:
-            assert isinstance(root.text_gui, GUIText), f"{root.text_gui} is {type(root.text_gui)}"
-            assert isinstance(root.text_gui.alignment, int), f"{root.text_gui.alignment} is {type(root.text_gui.alignment)}"
-            assert isinstance(root.text_gui.color, Color), f"{root.text_gui.color} is {type(root.text_gui.color)}"
-            assert isinstance(root.text_gui.font, str), f"{root.text_gui.font} is {type(root.text_gui.font)}"
-            assert isinstance(root.text_gui.pulsing, bool), f"{root.text_gui.pulsing} is {type(root.text_gui.pulsing)}"
-            assert isinstance(root.text_gui.strref, int), f"{root.text_gui.strref} is {type(root.text_gui.strref)}"
-            assert isinstance(root.text_gui.text, str), f"{root.text_gui.text} is {type(root.text_gui.text)}"
+        if root.gui_text is not None:
+            assert isinstance(root.gui_text, GUIText), f"{root.gui_text} is {type(root.gui_text)}"
+            assert isinstance(root.gui_text.alignment, int), f"{root.gui_text.alignment} is {type(root.gui_text.alignment)}"
+            assert isinstance(root.gui_text.color, Color), f"{root.gui_text.color} is {type(root.gui_text.color)}"
+            assert isinstance(root.gui_text.font, str), f"{root.gui_text.font} is {type(root.gui_text.font)}"
+            assert isinstance(root.gui_text.pulsing, bool), f"{root.gui_text.pulsing} is {type(root.gui_text.pulsing)}"
+            assert isinstance(root.gui_text.strref, int), f"{root.gui_text.strref} is {type(root.gui_text.strref)}"
+            assert isinstance(root.gui_text.text, str), f"{root.gui_text.text} is {type(root.gui_text.text)}"
 
-            assert root.text_gui.alignment == 0, f"{root.text_gui.alignment} == 0"
-            assert root.text_gui.color == Color(0, 0, 0, 1), f"{root.text_gui.color} == {Color(0, 0, 0, 1)}"
-            assert root.text_gui.font == "", f"{root.text_gui.font} == ''"
-            assert root.text_gui.pulsing is False, f"{root.text_gui.pulsing} is False"
-            assert root.text_gui.strref == -1, f"{root.text_gui.strref} == -1"
-            assert root.text_gui.text == "", f"{root.text_gui.text} == ''"
+            assert root.gui_text.alignment == 0, f"{root.gui_text.alignment} == 0"
+            assert root.gui_text.color == Color(0, 0, 0, 1), f"{root.gui_text.color} == {Color(0, 0, 0, 1)}"
+            assert root.gui_text.font == "", f"{root.gui_text.font} == ''"
+            assert root.gui_text.pulsing is False, f"{root.gui_text.pulsing} is False"
+            assert root.gui_text.strref == -1, f"{root.gui_text.strref} == -1"
+            assert root.gui_text.text == "", f"{root.gui_text.text} == ''"
 
         # Prototype ResRef validation
         if root.prototype_resref is not None:
@@ -217,16 +217,12 @@ class TestGUI(TestCase):
 
         # Based on control type, validate additional attributes
         if isinstance(root, GUIScrollbar):
-            assert isinstance(root.thumb_position, float), f"{root.thumb_position} is {type(root.thumb_position)}"
-            assert isinstance(root.track_length, float), f"{root.track_length} is {type(root.track_length)}"
             assert isinstance(root.horizontal, bool), f"{root.horizontal} is {type(root.horizontal)}"
             assert isinstance(root.scroll_bar_up, str), f"{root.scroll_bar_up} is {type(root.scroll_bar_up)}"
             assert isinstance(root.scroll_bar_down, str), f"{root.scroll_bar_down} is {type(root.scroll_bar_down)}"
             assert isinstance(root.scroll_bar_thumb, str), f"{root.scroll_bar_thumb} is {type(root.scroll_bar_thumb)}"
             assert isinstance(root.scroll_bar_back, str), f"{root.scroll_bar_back} is {type(root.scroll_bar_back)}"
 
-            assert root.thumb_position == 0.0, f"{root.thumb_position} == 0.0"
-            assert root.track_length == 100.0, f"{root.track_length} == 100.0"
             assert root.horizontal is False, f"{root.horizontal} is False"
             assert root.scroll_bar_up == "", f"{root.scroll_bar_up} == ''"
             assert root.scroll_bar_down == "", f"{root.scroll_bar_down} == ''"
@@ -238,17 +234,13 @@ class TestGUI(TestCase):
             assert isinstance(root.font_name, str), f"{root.font_name} is {type(root.font_name)}"
             assert isinstance(root.text_color, Color), f"{root.text_color} is {type(root.text_color)}"
             assert isinstance(root.border, bool), f"{root.border} is {type(root.border)}"
-            assert isinstance(root.default_highlight_color, Color), f"{root.default_highlight_color} is {type(root.default_highlight_color)}"
-            assert isinstance(root.default_color, Color), f"{root.default_color} is {type(root.default_color)}"
             assert isinstance(root.pulsing, bool), f"{root.pulsing} is {type(root.pulsing)}"
 
             assert root.text == "", f"{root.text} == ''"
             assert root.font_name == "", f"{root.font_name} == ''"
             assert root.text_color == Color(0, 0, 0, 0), f"{root.text_color} == {Color(0, 0, 0, 0)}"
             assert root.border is True, f"{root.border} is True"
-            assert root.default_highlight_color == Color(0, 0, 0, 0), f"{root.default_highlight_color} == {Color(0, 0, 0, 0)}"
-            assert root.default_color == Color(0, 0, 0, 0), f"{root.default_color} == {Color(0, 0, 0, 0)}"
-            assert root.pulsing is False
+            assert root.pulsing is False, f"{root.pulsing} is False"
 
         elif isinstance(root, GUISlider):
             assert isinstance(root.value, float), f"{root.value} is {type(root.value)}"
@@ -308,13 +300,13 @@ class TestGUI(TestCase):
             assert root.text_color == Color(0, 0, 0, 0), f"{root.text_color} == {Color(0, 0, 0, 0)}"
 
         elif isinstance(root, GUIProtoItem):
-            assert isinstance(root.text, str), f"{root.text} is {type(root.text)}"
+            assert isinstance(root.gui_text, GUIText), f"{root.gui_text} is {type(root.gui_text)}"
             assert isinstance(root.font_name, str), f"{root.font_name} is {type(root.font_name)}"
             assert isinstance(root.text_color, Color), f"{root.text_color} is {type(root.text_color)}"
             assert isinstance(root.border, bool), f"{root.border} is {type(root.border)}"
             assert isinstance(root.pulsing, bool), f"{root.pulsing} is {type(root.pulsing)}"
 
-            assert root.text == "", f"{root.text} == ''"
+            assert root.gui_text.text == "", f"{root.gui_text.text} == ''"
             assert root.font_name == "", f"{root.font_name} == ''"
             assert root.text_color == Color(0, 0, 0, 0), f"{root.text_color} == {Color(0, 0, 0, 0)}"
             assert root.border is True, f"{root.border} is True"

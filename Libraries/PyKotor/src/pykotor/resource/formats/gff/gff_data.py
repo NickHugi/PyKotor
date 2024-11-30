@@ -507,7 +507,7 @@ class GFFStruct:
         def is_ignorable_value(label: str, v: Any) -> bool:
             """Check if a value is ignorable for a specific label."""
             return (
-                not v 
+                not v
                 or str(v) in {"0", "-1"}
                 or (label in ignore_values and v in ignore_values[label])
             )
