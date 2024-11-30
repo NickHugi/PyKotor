@@ -347,7 +347,7 @@ class BIF(BiowareArchive):
 
         # Add all resources to the KEY
         for resource in self._resources:
-            key_res = KeyEntry(resref=resource.resref, restype=resource.restype, resid=resource.resource_id, bif_index=0)
+            key_res = KeyEntry(resref=resource.resref, restype=resource.restype, resid=resource.resource_id)
             key.key_entries.append(key_res)
 
         return key
