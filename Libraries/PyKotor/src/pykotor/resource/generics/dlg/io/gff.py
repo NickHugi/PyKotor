@@ -11,9 +11,10 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
+from pykotor.resource.generics.dlg.anims import DLGAnimation
 from pykotor.resource.generics.dlg.base import DLG, DLGComputerType, DLGConversationType
 from pykotor.resource.generics.dlg.links import DLGLink
-from pykotor.resource.generics.dlg.nodes import DLGAnimation, DLGEntry, DLGNode, DLGReply
+from pykotor.resource.generics.dlg.nodes import DLGEntry, DLGNode, DLGReply
 from pykotor.resource.generics.dlg.stunts import DLGStunt
 from pykotor.resource.type import ResourceType
 

@@ -14,9 +14,9 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
-    from pykotor.resource.formats.bif.bif_data import BIF
-    from pykotor.resource.formats.erf.erf_data import ERF
-    from pykotor.resource.formats.rim.rim_data import RIM
+    from pykotor.resource.formats.bif import BIF
+    from pykotor.resource.formats.erf import ERF
+    from pykotor.resource.formats.rim import RIM
     from pykotor.resource.type import ResourceType
 
 B = TypeVar("B")

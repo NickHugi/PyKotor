@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from __future__ import annotations
 
 import multiprocessing
@@ -25,6 +24,7 @@ from qtpy.QtCore import (
 )
 from qtpy.QtGui import QCursor, QIcon, QImage, QImageReader, QPixmap, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import (
+    QAbstractItemView,
     QAction,  # pyright: ignore[reportPrivateImportUsage]
     QApplication,
     QFileDialog,
@@ -103,6 +103,10 @@ class ResourceList(MainWindowList):
         self.ui.resourceTree.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         self.section_model: QStandardItemModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.section_model)
+
+        # Set context menu policy and selection mode
+        self.ui.resourceTree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.resourceTree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
 
         # Connect the header context menu request signal
         tree_view_header: QHeaderView | None = self.ui.resourceTree.header()
@@ -278,17 +282,27 @@ class ResourceList(MainWindowList):
 class ResourceProxyModel(QSortFilterProxyModel):
     """A proxy model for the resource model."""
 
-    def __init__(self, parent: QObject | None = None):
+    def __init__(
+        self,
+        parent: QObject | None = None,
+    ):
         """Initialize the resource proxy model."""
         super().__init__(parent)
         self.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.filter_string: str = ""
 
-    def set_filter_string(self, filter_string: str):
+    def set_filter_string(
+        self,
+        filter_string: str,
+    ):
         self.filter_string = filter_string.lower()
         self.invalidateFilter()
 
-    def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
+    def filterAcceptsRow(
+        self,
+        source_row: int,
+        source_parent: QModelIndex,
+    ) -> bool:
         model: QAbstractItemModel | None = self.sourceModel()  # pyright: ignore[reportAssignmentType]
         assert isinstance(model, QStandardItemModel)
         resref_index: QModelIndex = model.index(source_row, 0, source_parent)
@@ -410,6 +424,7 @@ class TextureList(MainWindowList):
         self.ui.resourceList.setUniformItemSizes(False)  # should be default
         self.ui.resourceList.setResizeMode(QListView.ResizeMode.Adjust)
         self.ui.resourceList.setMovement(QListView.Movement.Snap)
+        self.ui.resourceList.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.setup_signals()
 
         self._installation: HTInstallation | None = None
@@ -682,7 +697,7 @@ class TextureList(MainWindowList):
             future: Future[tuple[tuple[str, int], TPCMipmap]] = self._executor.submit(get_image_from_resource, (section_name, row), item.resource, icon_size)
         except BrokenProcessPool as e:
             RobustLogger().error("Broken process pool, recreating...", exc_info=e)
-            self._executor = ProcessPoolExecutor(max_workers=GlobalSettings().maxChildProcesses)
+            self._executor = ProcessPoolExecutor(max_workers=multiprocessing.cpu_count())
             future = self._executor.submit(get_image_from_resource, (section_name, row), item.resource, icon_size)
         future.add_done_callback(self.sig_icon_loaded.emit)
 

@@ -113,10 +113,11 @@ class UTCEditor(Editor):
         return tooltip
 
     def _portrait_context_menu(self, position: QPoint):
-        context_menu: QMenu = QMenu(self)
+        context_menu = QMenu(self)
 
         portrait = self._get_portrait_resref()
-        file_menu: QMenu = context_menu.addMenu("File...")
+        file_menu = context_menu.addMenu("File...")
+        assert file_menu is not None, f"`file_menu = context_menu.addMenu('File...')` {file_menu.__class__.__name__}: {file_menu}"
         locations: dict[str, list[LocationResult]] = self._installation.locations(
             ([portrait], [ResourceType.TGA, ResourceType.TPC]),
             order=[SearchLocation.OVERRIDE, SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_TPB, SearchLocation.TEXTURES_TPC],
@@ -129,7 +130,9 @@ class UTCEditor(Editor):
                 resource_menu_builder = ResourceItems(resources=[location])
                 resource_menu_builder.build_menu(loc_menu)
 
-            file_menu.addAction("Details...").triggered.connect(lambda: self._open_details(flat_locations))
+            action = file_menu.addAction("Details...")
+            assert action is not None, f"`action = file_menu.addAction('Details...')` {action.__class__.__name__}: {action}"
+            action.triggered.connect(lambda: self._open_details(flat_locations))
 
         context_menu.exec(self.ui.portraitPicture.mapToGlobal(position))  # pyright: ignore[reportCallIssue, reportArgumentType]  # type: ignore[call-overload]
 

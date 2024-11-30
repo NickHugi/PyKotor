@@ -87,12 +87,12 @@ from utility.tricks import debug_reload_pymodules
 if TYPE_CHECKING:
     from qtpy import QtGui
     from qtpy.QtCore import QPoint
-    from qtpy.QtGui import QCloseEvent, QKeyEvent, QMouseEvent, QPalette
+    from qtpy.QtGui import QCloseEvent, QKeyEvent, QMouseEvent, QPalette, _QAction
     from qtpy.QtWidgets import QComboBox, QStyle, QWidget
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.extract.file import LocationResult, ResourceResult
-    from pykotor.resource.formats.mdl.mdl_data import MDL
+    from pykotor.resource.formats.mdl import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import TextureList
@@ -137,7 +137,10 @@ class ToolWindow(QMainWindow):
         self.reload_settings()
         self.unset_installation()
 
-    def handle_change(self, path: str):
+    def handle_change(
+        self,
+        path: str,
+    ):
         if self.active is None:
             return
 
@@ -145,13 +148,13 @@ class ToolWindow(QMainWindow):
         if os.path.isdir(modified_path):  # noqa: PTH112
             return
 
-        now = datetime.now(tz=timezone.utc).astimezone()
+        now: datetime = datetime.now(tz=timezone.utc).astimezone()
         if now - self.last_modified < timedelta(seconds=1):
             return
-        self.last_modified = now
+        self.last_modified: datetime = now
 
-        module_path = os.path.normpath(self.active.module_path())
-        override_path = os.path.normpath(self.active.override_path())
+        module_path: str = os.path.normpath(self.active.module_path())
+        override_path: str = os.path.normpath(self.active.override_path())
 
         if module_path.lower() in modified_path.lower():
             self.sig_module_files_updated.emit(modified_path, "modified")
@@ -178,10 +181,10 @@ class ToolWindow(QMainWindow):
         self.erf_editor_button = QPushButton("ERF Editor", self)
         self.erf_editor_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.erf_editor_button.clicked.connect(self._open_module_tab_erf_editor)  # Connect to the ERF Editor functionality
-        self.ui.verticalLayoutRightPanel.insertWidget(2, self.erf_editor_button)  # pyright: ignore[reportArgumentType]
+        #self.ui.verticalLayoutRightPanel.insertWidget(2, self.erf_editor_button)  # pyright: ignore[reportArgumentType]
         self.erf_editor_button.hide()
         modules_resource_list = self.ui.modulesWidget.ui
-        modules_section_combo: QComboBox = modules_resource_list.sectionCombo  # type: ignore[]
+        modules_section_combo: QComboBox = modules_resource_list.sectionCombo  # type: ignore[attr-defined]
         refresh_button: QPushButton = modules_resource_list.refreshButton  # type: ignore[attr-defined]
         designer_button: QPushButton = self.ui.specialActionButton  # type: ignore[attr-defined]
         modules_resource_list.horizontalLayout_2.removeWidget(modules_section_combo)  # type: ignore[arg-type]
@@ -296,7 +299,9 @@ class ToolWindow(QMainWindow):
         for theme_name in self.theme_manager.get_supported_themes():  # loop through the themes defined in the theme manager
             def change_theme(*args, theme=theme_name):
                 self.theme_manager.change_theme(theme)
-            cast(QAction, self.ui.menuTheme.addAction(theme_name)).triggered.connect(change_theme)
+            theme_action: _QAction | None = self.ui.menuTheme.addAction(theme_name)
+            assert theme_action is not None
+            theme_action.triggered.connect(change_theme)
 
         self.ui.menuRecentFiles.aboutToShow.connect(self.populate_recent_files_menu)
 
@@ -325,7 +330,10 @@ class ToolWindow(QMainWindow):
         erf_resource = FileResource(res_ident.resname, res_ident.restype, os.path.getsize(erf_filepath), 0x0, erf_filepath)  # noqa: PTH202
         _filepath, _editor = open_resource_editor(erf_resource, self.active, self, gff_specialized=use_specialized_editor)
 
-    def populate_recent_files_menu(self, _checked: bool | None = None):
+    def populate_recent_files_menu(
+        self,
+        _checked: bool | None = None,
+    ):
         recent_files_setting: list[str] = self.settings.recentFiles
         recent_files: list[Path] = [Path(file) for file in recent_files_setting]
         self.ui.menuRecentFiles.clear()
@@ -335,7 +343,11 @@ class ToolWindow(QMainWindow):
             action.triggered.connect(lambda *args, a=action: self.open_recent_file(action=a))
             self.ui.menuRecentFiles.addAction(action)  # type: ignore[arg-type]
 
-    def open_recent_file(self, *args, action: QAction):
+    def open_recent_file(
+        self,
+        *args,
+        action: _QAction,
+    ):
         file = action.data()
         if not file or not isinstance(file, Path):
             return
@@ -347,11 +359,17 @@ class ToolWindow(QMainWindow):
         self.refresh_core_list(reload=True)
 
     @Slot(str)
-    def on_module_changed(self, new_module_file: str):
+    def on_module_changed(
+        self,
+        new_module_file: str,
+    ):
         self.on_module_reload(new_module_file)
 
     @Slot(str)
-    def on_module_reload(self, module_file: str):
+    def on_module_reload(
+        self,
+        module_file: str,
+    ):
         assert self.active is not None, "No active installation selected"
         if not module_file or not module_file.strip():
             return
@@ -368,7 +386,11 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.set_resources(resources)
 
     @Slot(str, str)
-    def on_module_file_updated(self, changed_file: str, event_type: str):
+    def on_module_file_updated(
+        self,
+        changed_file: str,
+        event_type: str,
+    ):
         assert self.active is not None, "No active installation selected"
         if event_type == "deleted":
             self.refresh_module_list()
@@ -381,7 +403,10 @@ class ToolWindow(QMainWindow):
         self.refresh_module_list()
 
     @Slot(str)
-    def on_savepath_changed(self, new_save_dir: str):
+    def on_savepath_changed(
+        self,
+        new_save_dir: str,
+    ):
         assert self.active is not None, "No active installation selected"
         self.ui.savesWidget.modules_model.invisibleRootItem().removeRows(0, self.ui.savesWidget.modules_model.rowCount())  # pyright: ignore[reportOptionalMemberAccess]
         new_save_dir_path = Path(new_save_dir)
@@ -419,7 +444,10 @@ class ToolWindow(QMainWindow):
                         ]
                     )
 
-    def on_save_reload(self, save_dir: str):
+    def on_save_reload(
+        self,
+        save_dir: str,
+    ):
         RobustLogger().info(f"Reloading save directory '{save_dir}'")
         self.on_savepath_changed(save_dir)
 
@@ -427,17 +455,27 @@ class ToolWindow(QMainWindow):
         RobustLogger().info("Refreshing save list")
         self.refresh_saves_list()
 
-    def on_override_file_updated(self, changed_file: str, event_type: str):
+    def on_override_file_updated(
+        self,
+        changed_file: str,
+        event_type: str,
+    ):
         if event_type == "deleted":
             self.refresh_override_list(reload=True)
         else:
             self.on_override_reload(changed_file)
 
-    def on_override_changed(self, new_directory: str):
+    def on_override_changed(
+        self,
+        new_directory: str,
+    ):
         assert self.active is not None, "No active installation selected"
         self.ui.overrideWidget.set_resources(self.active.override_resources(new_directory))
 
-    def on_override_reload(self, file_or_folder: str):
+    def on_override_reload(
+        self,
+        file_or_folder: str,
+    ):
         assert self.active is not None, "No active installation selected"
         override_path = self.active.override_path()
 
@@ -458,7 +496,10 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.set_resources(self.active.texturepack_resources(texturepackName))
 
     @Slot(int)
-    def change_active_installation(self, index: int):  # noqa: PLR0915, C901, PLR0912
+    def change_active_installation(
+        self,
+        index: int,  # noqa: PLR0915, C901, PLR0912
+    ):
         if index < 0:  # self.ui.gameCombo.clear() will call this function with -1
             return
 
@@ -487,7 +528,6 @@ class ToolWindow(QMainWindow):
 
         # KEEP UI CODE IN MAIN THREAD!
         self.ui.resourceTabs.setEnabled(True)
-        self.ui.sidebar.setEnabled(True)
 
         def create_installation_task(loader: AsyncLoader) -> HTInstallation:
             """Creates and returns a new HTInstallation instance.
@@ -500,7 +540,7 @@ class ToolWindow(QMainWindow):
                 return HTInstallation(Path(path), name, tsl=tsl, progress_callback=loader.progress_callback_api)
             return HTInstallation(Path(path), name, tsl=tsl)
 
-        active = self.installations.get(name)
+        active: HTInstallation | None = self.installations.get(name)
         if active is None:
             installation_loader = AsyncLoader.__new__(AsyncLoader)
             installation_loader.__init__(
@@ -617,13 +657,13 @@ class ToolWindow(QMainWindow):
         if event.buttons() == Qt.MouseButton.LeftButton:
             if self._mouse_move_pos is None:
                 return
-            globalPos = event.globalPos()
+            globalPos = event.globalPos() if qtpy.QT5 else event.globalPosition().toPoint()  # pyright: ignore[reportAttributeAccessIssue]
             self.move(self.mapFromGlobal(self.mapToGlobal(self.pos()) + (globalPos - self._mouse_move_pos)))
             self._mouse_move_pos = globalPos
 
     def mousePressEvent(self, event: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         if event.button() == Qt.MouseButton.LeftButton:
-            self._mouse_move_pos = event.globalPos()
+            self._mouse_move_pos = event.globalPos() if qtpy.QT5 else event.globalPosition().toPoint()  # pyright: ignore[reportAttributeAccessIssue]
 
     def mouseReleaseEvent(self, event: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         if event.button() == Qt.MouseButton.LeftButton:
@@ -635,9 +675,12 @@ class ToolWindow(QMainWindow):
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None):  # pyright: ignore[reportIncompatibleMethodOverride]
         if e is None:
             return
-        if not e.mimeData().hasUrls():
+        event_mimedata = e.mimeData()
+        if event_mimedata is None:
             return
-        for url in e.mimeData().urls():
+        if not event_mimedata.hasUrls():
+            return
+        for url in event_mimedata.urls():
             try:
                 filepath = url.toLocalFile()
                 _resref, restype = ResourceIdentifier.from_path(filepath).unpack()
@@ -654,7 +697,10 @@ class ToolWindow(QMainWindow):
     def dropEvent(self, e: QtGui.QDropEvent | None):  # pyright: ignore[reportIncompatibleMethodOverride]
         if e is None:
             return
-        for url in e.mimeData().urls():
+        event_mimedata = e.mimeData()
+        if event_mimedata is None:
+            return
+        for url in event_mimedata.urls():
             filepath: str = url.toLocalFile()
             resname, restype = ResourceIdentifier.from_path(filepath).unpack()
             if not restype:
@@ -922,7 +968,6 @@ class ToolWindow(QMainWindow):
         self.ui.overrideWidget.set_resources([])
 
         self.ui.resourceTabs.setEnabled(False)
-        self.ui.sidebar.setEnabled(False)
         self.update_menus()
         self.active = None
 
@@ -1033,7 +1078,10 @@ class ToolWindow(QMainWindow):
                 RobustLogger().exception(f"Unexpected exception thrown while parsing module '{module_name}', skipping...")
         return modules
 
-    def change_override_folder(self, subfolder: str):
+    def change_override_folder(
+        self,
+        subfolder: str,
+    ):
         self.ui.overrideWidget.change_section(subfolder)
 
     def _get_override_list(self, *, reload: bool = True) -> list[QStandardItem]:
@@ -1072,7 +1120,11 @@ class ToolWindow(QMainWindow):
             texture_pack_list.append(section)
         return texture_pack_list
 
-    def refresh_saves_list(self, *, reload: bool = True):
+    def refresh_saves_list(
+        self,
+        *,
+        reload: bool = True,
+    ):
         assert self.active is not None, "No installation set, this should never happen!"
         try:
             if reload:
@@ -1252,7 +1304,7 @@ class ToolWindow(QMainWindow):
                 loader.errors.append(e)
         if resource.restype() is ResourceType.MDL:
             if self.ui.mdlTexturesCheckbox.isChecked():
-                self._extract_mdl_textures(resource, r_folderpath, loader, data, seen_resources)
+                self._extract_mdl_textures(resource, r_folderpath, loader, data, seen_resources)  # pyright: ignore[reportArgumentType]
             if self.ui.mdlDecompileCheckbox.isChecked():
                 data = bytes(self._decompile_mdl(resource, data))
         with save_path.open("wb") as file:

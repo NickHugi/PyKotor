@@ -71,6 +71,6 @@ def main():
     tool_window.show()
     tool_window.update_manager.check_for_updates(silent=True)
     with suppress(ImportError):
-        from qasync import QEventLoop  # pyright: ignore[reportMissingTypeStubs]
+        from qasync import QEventLoop  # pyright: ignore[reportMissingImports, reportMissingTypeStubs]
         asyncio.set_event_loop(QEventLoop(app))
     sys.exit(app.exec())

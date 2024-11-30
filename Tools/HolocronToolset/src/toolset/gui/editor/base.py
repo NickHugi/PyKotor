@@ -30,17 +30,16 @@ from qtpy.QtWidgets import (
     QMenu,
     QMenuBar,
     QMessageBox,
-    QPlainTextEdit,
-    QShortcut,  # pyright: ignore[reportPrivateImportUsage]  # pyright: ignore[reportPrivateImportUsage]
+    QPlainTextEdit,  # pyright: ignore[reportPrivateImportUsage]  # pyright: ignore[reportPrivateImportUsage]
 )
 
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
-from pykotor.resource.formats.erf.erf_data import ERF
-from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
+from pykotor.resource.formats.bif import read_bif
+from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
+from pykotor.resource.formats.gff import bytes_gff, read_gff
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
@@ -64,10 +63,14 @@ if TYPE_CHECKING:
     from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
     from qtpy.QtCore import QRect
     from qtpy.QtGui import QScreen
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtWidgets import (
+        QWidget,
+        _QMenu,
+    )
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.language import LocalizedString
+    from pykotor.resource.formats.bif import BIF
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
@@ -114,7 +117,7 @@ class Editor(QMainWindow):
     def _setup_menus(self):
         menubar: QMenuBar | None = self.menuBar()
         assert menubar is not None, "menubar is somehow None"
-        menubar_menu: QMenu | None = menubar.actions()[0].menu()
+        menubar_menu = menubar.actions()[0].menu()
         if not isinstance(menubar_menu, QMenu):
             raise TypeError(f"self.menuBar().actions()[0].menu() returned a {type(menubar_menu).__name__} object, expected QMenu.")
         for action in menubar_menu.actions():
@@ -136,12 +139,6 @@ class Editor(QMainWindow):
             if action.text() == "Exit":
                 action.triggered.connect(self.close)
                 action.setShortcut("Ctrl+Q")
-        QShortcut("Ctrl+N", self).activated.connect(self.new)
-        QShortcut("Ctrl+O", self).activated.connect(self.open)
-        QShortcut("Ctrl+S", self).activated.connect(self.save)
-        QShortcut("Ctrl+Shift+S", self).activated.connect(self.save_as)
-        QShortcut("Ctrl+R", self).activated.connect(self.revert)
-        QShortcut("Ctrl+Q", self).activated.connect(self.close)
 
     def _setup_icon(
         self,
@@ -153,12 +150,13 @@ class Editor(QMainWindow):
 
     def setup_extract_path(self) -> Path:
         extract_path: Path = Path(GlobalSettings().extractPath)
-        if not extract_path.exists() or not extract_path.is_dir():
-            extract_path_str: str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
-            if not extract_path_str.strip():
-                extract_path_str = tempfile.gettempdir()
-            GlobalSettings().extractPath = extract_path_str
-            extract_path = Path(extract_path_str)
+        if extract_path.exists() and extract_path.is_dir():
+            return extract_path
+        extract_path_str: str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
+        if not extract_path_str.strip():
+            extract_path_str = tempfile.gettempdir()
+        GlobalSettings().extractPath = extract_path_str
+        extract_path = Path(extract_path_str)
         return extract_path
 
     def refresh_window_title(self):
@@ -182,8 +180,8 @@ class Editor(QMainWindow):
         write_supported = read_supported.copy() if read_supported is write_supported else write_supported
         additional_formats: set[str] = {"XML", "JSON", "CSV", "ASCII", "YAML"}
         for add_format in additional_formats:
-            read_supported.extend(ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in read_supported if f"{restype.name}_{add_format}" in ResourceType.__members__)
-            write_supported.extend(ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in write_supported if f"{restype.name}_{add_format}" in ResourceType.__members__)
+            read_supported.extend(ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in read_supported if f"{restype.name}_{add_format}" in ResourceType.__members__)  # noqa: E501
+            write_supported.extend(ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in write_supported if f"{restype.name}_{add_format}" in ResourceType.__members__)  # noqa: E501
         self._read_supported: list[ResourceType] = read_supported
         self._write_supported: list[ResourceType] = write_supported
 
@@ -227,7 +225,7 @@ class Editor(QMainWindow):
                 return
         except ValueError as e:
             exc = e
-            RobustLogger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
+            RobustLogger().exception(f"ValueError raised, assuming invalid filename/extension '{filepath_str}'")
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             show_invalid(exc, error_msg)
             return
@@ -248,7 +246,11 @@ class Editor(QMainWindow):
         self.save()
 
         self.refresh_window_title()
-        for action in cast(QMenu, cast(QMenuBar, self.menuBar()).actions()[0].menu()).actions():
+        menu_bar: QMenuBar | None = self.menuBar()
+        assert menu_bar is not None, "menu_bar is somehow None"
+        menu: _QMenu | None = menu_bar.actions()[0].menu()
+        assert menu is not None, "menu is somehow None"
+        for action in menu.actions():
             if action.text() == "Revert":
                 action.setEnabled(True)
 
@@ -263,7 +265,13 @@ class Editor(QMainWindow):
                 return
             from toolset.gui.editors.gff import GFFEditor
 
-            if self._global_settings.attemptKeepOldGFFFields and self._restype is not None and self._restype.is_gff() and not isinstance(self, GFFEditor) and self._revert is not None:
+            if (
+                self._global_settings.attemptKeepOldGFFFields
+                and self._restype is not None
+                and self._restype.is_gff()
+                and not isinstance(self, GFFEditor)
+                and self._revert is not None
+            ):  # noqa: E501
                 old_gff: GFF = read_gff(self._revert)
                 new_gff: GFF = read_gff(data)
                 new_gff.root.add_missing(old_gff.root)
@@ -289,7 +297,7 @@ class Editor(QMainWindow):
             msg_box.setDetailedText(format_exception_with_variables(e))
             msg_box.exec()
         else:
-            self.setWindowModified(False)  # Set modified to False after successful save
+            self.setWindowModified(False)
 
     def _save_ends_with_bif(
         self,
@@ -362,6 +370,7 @@ class Editor(QMainWindow):
                     ResourceType.MOD,
                     ResourceType.SAV,
                     ResourceType.RIM,
+                    ResourceType.BIF,
                 )
             )
             and not r_parent_filepath.exists()
@@ -371,15 +380,23 @@ class Editor(QMainWindow):
             self._filepath = r_parent_filepath
             r_parent_filepath = self._filepath.parent
 
-        erf_or_rim: ERF | RIM = read_rim(self._filepath) if ResourceType.from_extension(r_parent_filepath.suffix) is ResourceType.RIM else read_erf(self._filepath)
-        nested_capsules: list[tuple[PurePath, ERF | RIM]] = [
+        det_restype: ResourceType = ResourceType.from_extension(r_parent_filepath.suffix)
+        if det_restype is ResourceType.RIM:
+            bioware_archive = read_rim(self._filepath)
+        elif det_restype is ResourceType.ERF:
+            bioware_archive = read_erf(self._filepath)
+        elif det_restype is ResourceType.BIF:
+            bioware_archive = read_bif(self._filepath)
+        else:
+            raise ValueError(f"Unexpected resource type: {det_restype}")
+        nested_capsules: list[tuple[PurePath, ERF | RIM | BIF]] = [
             (
                 self._filepath,
-                erf_or_rim,
+                bioware_archive,
             )
         ]
         for capsule_path in reversed(nested_paths[:-1]):
-            nested_erf_or_rim_data: bytes | None = erf_or_rim.get(
+            nested_erf_or_rim_data: bytes | None = bioware_archive.get(
                 capsule_path.stem,
                 ResourceType.from_extension(capsule_path.suffix),
             )
@@ -387,8 +404,8 @@ class Editor(QMainWindow):
                 msg: str = f"You must save the ERFEditor for '{capsule_path.relative_to(r_parent_filepath)}' to before modifying its nested resources. Do so and try again."
                 raise ValueError(msg)
 
-            erf_or_rim = read_rim(nested_erf_or_rim_data) if ResourceType.from_extension(capsule_path.suffix) is ResourceType.RIM else read_erf(nested_erf_or_rim_data)
-            nested_capsules.append((capsule_path, erf_or_rim))
+            bioware_archive = read_rim(nested_erf_or_rim_data) if ResourceType.from_extension(capsule_path.suffix) is ResourceType.RIM else read_erf(nested_erf_or_rim_data)
+            nested_capsules.append((capsule_path, bioware_archive))
 
         this_erf_or_rim = None
         for index, (_capsule_path, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
@@ -497,7 +514,9 @@ class Editor(QMainWindow):
         self._revert = data
         menu_bar: QMenuBar | None = cast(Optional[QMenuBar], self.menuBar())
         assert menu_bar is not None, "Menu bar is None somehow? This should be impossible."
-        for action in cast(QMenu, menu_bar.actions()[0].menu()).actions():
+        menu: _QMenu | None = menu_bar.actions()[0].menu()
+        assert menu is not None, "Menu is somehow None"
+        for action in menu.actions():
             if action.text() == "Revert":
                 action.setEnabled(True)
                 break
@@ -509,7 +528,9 @@ class Editor(QMainWindow):
         self._filepath = self.setup_extract_path() / f"{self._resname}.{self._restype.extension}"
         menu_bar: QMenuBar | None = cast(Optional[QMenuBar], self.menuBar())
         assert menu_bar is not None, "Menu bar is None somehow? This should be impossible."
-        for action in cast(QMenu, menu_bar.actions()[0].menu()).actions():
+        menu: _QMenu | None = menu_bar.actions()[0].menu()
+        assert menu is not None, "Menu is somehow None"
+        for action in menu.actions():
             if action.text() != "Revert":
                 continue
             action.setEnabled(False)
@@ -572,18 +593,17 @@ class Editor(QMainWindow):
         elif qtpy.QT6:
             from qtpy.QtMultimedia import QAudioOutput
 
-            temp_file: tempfile._TemporaryFileWrapper[bytes] = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
             temp_file.write(data)  # pyright: ignore[reportArgumentType, reportCallIssue]
             temp_file.flush()
-            temp_file.seek(0)
-            temp_file.close()
+            temp_file_path: str = temp_file.name
 
             player: PyQt6MediaPlayer | PySide6MediaPlayer = cast(Any, self.media_player.player)
             audio_output = QAudioOutput(self)  # pyright: ignore[reportCallIssue, reportArgumentType]
             audio_output.setVolume(1)
             player.setAudioOutput(audio_output)  # pyright: ignore[reportArgumentType]
-            player.setSource(QUrl.fromLocalFile(temp_file.name))  # pyright: ignore[reportArgumentType]
-            player.mediaStatusChanged.connect(lambda status, file_name=temp_file.name: self.remove_temp_audio_file(status, file_name))
+            player.setSource(QUrl.fromLocalFile(temp_file_path))  # pyright: ignore[reportArgumentType]
+            player.mediaStatusChanged.connect(lambda status, file_name=temp_file_path: self.remove_temp_audio_file(status, file_name))
             player.play()
         return True
 

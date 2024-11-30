@@ -635,7 +635,7 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
             if isinstance(new_value, QMargins):
                 value_str: str = f"{new_value.left()},{new_value.top()},{new_value.right()},{new_value.bottom()}"
             else:
-                value_str = format_qt_obj(new_value)
+                value_str = str(new_value)
             value_str = value_str[:10]  # Limit to 10 characters
             action.setText(f"{title}: {value_str}")
 

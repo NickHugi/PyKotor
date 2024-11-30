@@ -1,7 +1,8 @@
 """Dialog system for handling game conversations."""
 
+from pykotor.resource.generics.dlg.anims import DLGAnimation
 from pykotor.resource.generics.dlg.base import DLG, DLGComputerType, DLGConversationType
-from pykotor.resource.generics.dlg.nodes import DLGAnimation, DLGEntry, DLGNode, DLGReply
+from pykotor.resource.generics.dlg.nodes import DLGEntry, DLGNode, DLGReply
 from pykotor.resource.generics.dlg.links import DLGLink
 from pykotor.resource.generics.dlg.stunts import DLGStunt
 from pykotor.resource.generics.dlg.io.gff import construct_dlg, dismantle_dlg, read_dlg, write_dlg, bytes_dlg

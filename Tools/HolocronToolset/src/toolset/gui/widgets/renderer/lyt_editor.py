@@ -27,7 +27,7 @@ from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.module import ModuleResource
 from pykotor.resource.formats.bwm import BWM, BWMFace
 from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
-from pykotor.resource.formats.mdl.mdl_data import MDL
+from pykotor.resource.formats.mdl import MDL
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.gui.widgets.renderer.walkmesh_editor import AddRoomCommand, MoveRoomCommand, RotateRoomCommand
 
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
     from pykotor.common.module import ModuleResource
     from pykotor.gl.scene import Scene
-    from pykotor.resource.formats.mdl.mdl_data import MDL
+    from pykotor.resource.formats.mdl import MDL
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 

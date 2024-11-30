@@ -114,14 +114,14 @@ class ResRef(str):
         return str(self._value)
 
     @classmethod
-    def from_blank(cls) -> ResRef:
+    def from_blank(cls) -> Self:
         return cls("")
 
     @classmethod
     def from_path(
         cls,
         file_path: os.PathLike | str,
-    ) -> ResRef:
+    ) -> Self:
         from pykotor.extract.file import ResourceIdentifier  # Prevent circular imports
 
         resname: str = ResourceIdentifier.from_path(file_path).resname
@@ -245,19 +245,19 @@ class Color:
         r: float,
         g: float,
         b: float,
-        a: float = 1.0,
+        a: float | None = None,
     ):
         self.r: float = r
         self.g: float = g
         self.b: float = b
-        self.a: float = a
+        self.a: float | None = None
 
     def __repr__(self):
         return f"Color({self})"
 
     def __str__(self) -> str:
         """Returns a string of each color component separated by whitespace."""
-        return f"{self.r} {self.g} {self.b} {self.a}"
+        return f"{self.r} {self.g} {self.b} {self.a or 1.0}"
 
     def __eq__(
         self,
@@ -272,13 +272,13 @@ class Color:
         return hash(self) == hash(other)
 
     def __hash__(self):
-        return hash((self.r, self.g, self.b, self.a))
+        return hash((self.r, self.g, self.b, self.a or 1.0))
 
     @classmethod
     def from_rgb_integer(
         cls,
         integer: int,
-    ) -> Color:
+    ) -> Self:
         """Returns a Color by decoding the specified integer.
 
         Args:
@@ -292,13 +292,13 @@ class Color:
         red: float = (0x000000FF & integer) / 255
         green: float = ((0x0000FF00 & integer) >> 8) / 255
         blue: float = ((0x00FF0000 & integer) >> 16) / 255
-        return Color(red, green, blue)
+        return cls(red, green, blue)
 
     @classmethod
     def from_rgba_integer(
         cls,
         integer: int,
-    ) -> Color:
+    ) -> Self:
         """Returns a Color by decoding the specified integer.
 
         Args:
@@ -313,13 +313,13 @@ class Color:
         green: float = ((0x0000FF00 & integer) >> 8) / 255
         blue: float = ((0x00FF0000 & integer) >> 16) / 255
         alpha: float = ((0xFF000000 & integer) >> 24) / 255
-        return Color(red, green, blue, alpha)
+        return cls(red, green, blue, alpha)
 
     @classmethod
     def from_bgr_integer(
         cls,
         integer: int,
-    ) -> Color:
+    ) -> Self:
         """Returns a Color by decoding the specified integer.
 
         Args:
@@ -333,7 +333,7 @@ class Color:
         red: float = ((0x00FF0000 & integer) >> 16) / 255
         green: float = ((0x0000FF00 & integer) >> 8) / 255
         blue: float = (0x000000FF & integer) / 255
-        return Color(red, green, blue)
+        return cls(red, green, blue)
 
     @classmethod
     def from_rgb_vector3(
@@ -359,7 +359,7 @@ class Color:
     def from_bgr_vector3(
         cls,
         vector3: Vector3,
-    ) -> Color:
+    ) -> Self:
         """Returns a Color from the specified vector components.
 
         Args:
@@ -373,7 +373,7 @@ class Color:
         red: float = vector3.z
         green: float = vector3.y
         blue: float = vector3.x
-        return Color(red, green, blue)
+        return cls(red, green, blue)
 
     @classmethod
     def from_hex_string(
@@ -409,9 +409,7 @@ class Color:
             raise ValueError(f"Invalid hex color format: {color_str}")
         return instance
 
-    def rgb_integer(
-        self,
-    ) -> int:
+    def rgb_integer(self) -> int:
         """Returns a RGB integer encoded from the color components.
 
         Returns:
@@ -423,9 +421,7 @@ class Color:
         blue: int = int(self.b * 0xFF) << 16
         return red + green + blue
 
-    def rgba_integer(
-        self,
-    ) -> int:
+    def rgba_integer(self) -> int:
         """Returns a RGB integer encoded from the color components.
 
         Returns:
@@ -435,12 +431,10 @@ class Color:
         red: int = int(self.r * 0xFF) << 0
         green: int = int(self.g * 0xFF) << 8
         blue: int = int(self.b * 0xFF) << 16
-        alpha: int = int(self.a * 0xFF) << 24
+        alpha: int = int((self.a or 1.0) * 0xFF) << 24
         return red + green + blue + alpha
 
-    def bgr_integer(
-        self,
-    ) -> int:
+    def bgr_integer(self) -> int:
         """Returns a BGR integer encoded from the color components.
 
         Returns:
@@ -452,9 +446,7 @@ class Color:
         blue: int = int(self.b * 255)
         return red + green + blue
 
-    def rgb_vector3(
-        self,
-    ) -> Vector3:
+    def rgb_vector3(self) -> Vector3:
         """Returns a Vector3 representing a color with its components.
 
         Returns:
@@ -463,9 +455,7 @@ class Color:
         """
         return Vector3(self.r, self.g, self.b)
 
-    def bgr_vector3(
-        self,
-    ) -> Vector3:
+    def bgr_vector3(self) -> Vector3:
         """Returns a Vector3 representing a color with its components.
 
         Returns:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from qtpy.QtCore import QItemSelectionRange, QModelIndex, QSortFilterProxyModel, Qt
-from qtpy.QtGui import QBrush, QColor, QFont, QStandardItem, QStandardItemModel
+from qtpy.QtGui import QBrush, QClipboard, QColor, QFont, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -197,7 +197,7 @@ class GFFEditor(Editor):
         write_gff(gff, data, gff_type)
         return bytes(data), b""
 
-    def _build_struct(
+    def _build_struct(  # noqa: C901, PLR0912
         self,
         item: QStandardItem,
         gff_struct: GFFStruct,
@@ -260,7 +260,7 @@ class GFFEditor(Editor):
         for i in range(item.rowCount()):
             child: QStandardItem | None = item.child(i, 0)
             assert child is not None, f"child cannot be None in {self!r}._build_list({item!r}, {gff_list!r})"
-            struct_id = child.data(_VALUE_NODE_ROLE)
+            struct_id: int = cast(int, child.data(_VALUE_NODE_ROLE))
             gff_struct: GFFStruct = gff_list.add(struct_id)
             self._build_struct(child, gff_struct)
 
@@ -366,11 +366,12 @@ class GFFEditor(Editor):
                 assert layout is not None, "layout cannot be None"
                 while layout.count():
                     child: QLayoutItem | None = layout.takeAt(0)
-                    if child is not None and child.widget() is not None:
-                        widget_of_child: QWidget | None = child.widget()
-                        if widget_of_child is None:
-                            continue
-                        widget_of_child.deleteLater()
+                    if child is None:
+                        continue
+                    widget_of_child: QWidget | None = child.widget()
+                    if widget_of_child is None:
+                        continue
+                    widget_of_child.deleteLater()
             hex_data_str = " ".join(f"{b:02X}" for b in binaryData)
             binary_data_label = QLabel(f"{hex_data_str}")
             binary_data_label.setWordWrap(True)
@@ -381,7 +382,7 @@ class GFFEditor(Editor):
             copy_button: QPushButton | None = QPushButton("Copy Binary Data")
             assert copy_button is not None, "copy_button cannot be None"
             layout.addWidget(copy_button)
-            copy_button.clicked.connect(lambda: QApplication.clipboard().setText(hex_data_str))
+            copy_button.clicked.connect(lambda: cast(QClipboard, QApplication.clipboard()).setText(hex_data_str))
         elif item_type == GFFFieldType.LocalizedString:
             locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
             self.ui.pages.setCurrentWidget(self.ui.substringPage)
@@ -607,11 +608,12 @@ class GFFEditor(Editor):
             self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
 
         parent_type = item.data(_TYPE_NODE_ROLE)
-        new_value = GFFStruct()
+        new_value: GFFStruct | int = GFFStruct()
         new_label = "[New Struct]"
         if parent_type == GFFFieldType.List:
+            assert isinstance(new_value, GFFStruct), "new_value must be a GFFStruct"
             self.ui.fieldBox.setEnabled(False)
-            new_value: int = new_value.struct_id
+            new_value = new_value.struct_id
             new_label = str(item.rowCount())
         new_item: QStandardItem = self.insert_node(item, new_label, GFFFieldType.Struct, new_value)
         set_spinbox(-1, 0xFFFFFFFF, new_item)
