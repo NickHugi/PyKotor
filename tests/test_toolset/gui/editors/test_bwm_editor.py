@@ -68,7 +68,7 @@ class BWMEditorTest(TestCase):
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
 
     def setUp(self):
-        self.app = QApplication([])
+        self.app: QApplication = QApplication(sys.argv)
         self.editor = self.BWMEditor(None, self.K2_INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
 

@@ -27,7 +27,12 @@ from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 if TYPE_CHECKING:
     from qtpy.QtCore import QAbstractItemModel, QItemSelectionModel, QObject, QPoint
     from qtpy.QtGui import QFont, QPainter, QResizeEvent, QStandardItemModel, QWheelEvent
-    from qtpy.QtWidgets import QScrollBar, QStyledItemDelegate, QWidget
+    from qtpy.QtWidgets import (
+        QScrollBar,
+        QStyledItemDelegate,
+        QWidget,
+        _QMenu,
+    )
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
 
@@ -46,7 +51,6 @@ class RobustTreeView(QTreeView):
         self.original_stylesheet: str = self.styleSheet()
         self.header_visible: bool = self.settings.get("headerVisible", False)
         self.setup_menu_extras()
-        h: QHeaderView | None = self.header()
         if not use_columns:
             self.toggle_header_visible(self.header_visible)
 
@@ -79,11 +83,11 @@ class RobustTreeView(QTreeView):
     def show_header_context_menu(
         self,
         pos: QPoint,
-        menu: QMenu | None = None,  # noqa: FBT001  # pyright: ignore[reportInvalidTypeForm]
+        menu: _QMenu | None = None,  # noqa: FBT001
     ):
         menu = self.header_menu if menu is None else menu
         h: QHeaderView | None = self.header()
-        if h is None:
+        if h is None or menu is None:
             return
         menu.exec(h.mapToGlobal(pos))
 
@@ -194,7 +198,7 @@ class RobustTreeView(QTreeView):
             response = self._wheel_changes_horizontal_scroll(event)
         elif bool(modifiers & Qt.KeyboardModifier.AltModifier):
             response = self._wheel_changes_indent_size(event)
-        elif (not int(modifiers or Qt.KeyboardModifier.NoModifier)) if qtpy.QT5 else (modifiers != Qt.KeyboardModifier.NoModifier):
+        elif (not int(modifiers or Qt.KeyboardModifier.NoModifier)) if qtpy.QT5 else (modifiers != Qt.KeyboardModifier.NoModifier):  # pyright: ignore[reportArgumentType]
             response = self._wheel_changes_vertical_scroll(event)
         if response is not True:
             super().wheelEvent(event)
@@ -220,7 +224,10 @@ class RobustTreeView(QTreeView):
             delta = self.indentation() * (1 if delta > 0 else -1)
         else:
             delta = -self.get_text_size() if delta > 0 else self.get_text_size()
-        self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + delta)
+        horizontal_scroll_bar: QScrollBar | None = self.horizontalScrollBar()
+        if horizontal_scroll_bar is None:
+            return True
+        horizontal_scroll_bar.setValue(horizontal_scroll_bar.value() + delta)
         return True
 
     def _wheel_changes_vertical_scroll(
@@ -231,10 +238,10 @@ class RobustTreeView(QTreeView):
         # print("wheelVerticalScroll, delta: ", delta)
         if not delta:
             return True
-        self.scrollMultipleSteps("up" if delta > 0 else "down")
+        self.scroll_multiple_steps("up" if delta > 0 else "down")
         return True
 
-    def setScrollStepSize(
+    def set_scroll_step_size(
         self,
         value: int,  # noqa: FBT001
     ):
@@ -242,7 +249,7 @@ class RobustTreeView(QTreeView):
         print(f"scrollStepSize set to {value}")
         self.settings.set("scrollStepSize", value)
 
-    def scrollMultipleSteps(
+    def scroll_multiple_steps(
         self,
         direction: Literal["up", "down"],  # noqa: FBT001
     ):
@@ -277,8 +284,8 @@ class RobustTreeView(QTreeView):
         item_delegate: HTMLDelegate | QStyledItemDelegate | None = self.itemDelegate()
         if isinstance(item_delegate, HTMLDelegate):
             single_step: Literal[-1, 1] = 1 if delta > 0 else -1
-            newVerticalSpacing: int = max(0, item_delegate.custom_vertical_spacing + single_step)
-            item_delegate.setVerticalSpacing(newVerticalSpacing)
+            new_vertical_spacing: int = max(0, item_delegate.custom_vertical_spacing + single_step)
+            item_delegate.setVerticalSpacing(new_vertical_spacing)
             self.emit_layout_changed()  # Requires immediate update
             return True
         return False
@@ -303,10 +310,10 @@ class RobustTreeView(QTreeView):
         header: QHeaderView | None = self.header()
         if header is not None:
             header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.header_menu: QMenu | None = QMenu(self)
-        self.view_menu: QMenu | None = self.header_menu.addMenu("View")
-        self.settings_menu: QMenu | None = self.header_menu.addMenu("Settings")
-        self.tools_menu: QMenu | None = self.header_menu.addMenu("Tools")
+        self.header_menu: _QMenu | None = QMenu(self)
+        self.view_menu: _QMenu | None = self.header_menu.addMenu("View")  # pyright: ignore[reportAttributeAccessIssue]
+        self.settings_menu: _QMenu | None = self.header_menu.addMenu("Settings")  # pyright: ignore[reportAttributeAccessIssue]
+        self.tools_menu: _QMenu | None = self.header_menu.addMenu("Tools")  # pyright: ignore[reportAttributeAccessIssue]
 
         # Common view settings
         self._add_menu_action(
@@ -347,9 +354,9 @@ class RobustTreeView(QTreeView):
         )
 
         # Text and Icon Display Settings
-        displaySettingsMenu: QMenu | None = self.view_menu.addMenu("Display Settings")
+        display_settings_menu: _QMenu | None = self.view_menu.addMenu("Display Settings")  # pyright: ignore[reportAttributeAccessIssue]
         self._add_menu_action(
-            displaySettingsMenu,
+            display_settings_menu,
             "Text Elide Mode",
             self.textElideMode,
             lambda x: self.setTextElideMode(Qt.TextElideMode(x)),
@@ -362,7 +369,7 @@ class RobustTreeView(QTreeView):
             settings_key="textElideMode",
         )
         self._add_menu_action(
-            displaySettingsMenu,
+            display_settings_menu,
             "Font Size",
             self.get_text_size,
             self.set_text_size,
@@ -370,15 +377,15 @@ class RobustTreeView(QTreeView):
             param_type=int,
         )
         self._add_menu_action(
-            displaySettingsMenu,
+            display_settings_menu,
             "Vertical Spacing",
-            lambda: self.itemDelegate().custom_vertical_spacing,
-            lambda x: self.itemDelegate().setVerticalSpacing(x),
+            lambda: self.itemDelegate().custom_vertical_spacing,  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
+            lambda x: self.itemDelegate().setVerticalSpacing(x),  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
             settings_key="verticalSpacing",
             param_type=int,
         )
         self._add_color_menu_action(
-            displaySettingsMenu,
+            display_settings_menu,
             "Set Text Color",
             lambda: QColor(self.settings.get("textColor", QColor(0, 0, 0))),
             settings_key="textColor",
@@ -446,7 +453,7 @@ class RobustTreeView(QTreeView):
             self.settings_menu,
             "Items Scrolled Per Wheel",
             lambda: self.settings.get("scrollStepSize", 1),
-            self.setScrollStepSize,
+            self.set_scroll_step_size,
             settings_key="scrollStepSize",
             param_type=int,
         )
@@ -458,11 +465,11 @@ class RobustTreeView(QTreeView):
         self._add_simple_action(self.tools_menu, "Reset", self.reset)
 
         # Help or Miscellaneous actions
-        self.helpMenu = self.header_menu.addMenu("Help")
-        whats_this_action = QAction(self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarContextHelpButton), "What's This?", self)
+        self.help_menu: _QMenu | None = self.header_menu.addMenu("Help")  # pyright: ignore[reportAttributeAccessIssue]
+        whats_this_action = QAction(self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarContextHelpButton), "What's This?", self)  # pyright: ignore[reportOptionalMemberAccess]
         whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
         whats_this_action.setToolTip("Enter 'What's This?' mode.")
-        self.helpMenu.addAction(whats_this_action)
+        self.help_menu.addAction(whats_this_action)  # pyright: ignore[reportOptionalMemberAccess]
 
         # Add the horizontal scrollbar toggle to the view menu
         self._add_menu_action(
@@ -493,14 +500,13 @@ class RobustTreeView(QTreeView):
         color = QColorDialog.getColor(get_func(), self, title)
         if color.isValid():
             self.settings.set(settings_key, color.name())
-            self.debounce_layout_changed(preChangeEmit=True)
+            self.debounce_layout_changed(pre_change_emit=True)
             model: QStandardItemModel | QAbstractItemModel | None = self.model()
             if model is None:
                 return
-            for item in model:
-                if item is None:
-                    continue
-                if item.isDeleted():
+            for row in range(model.rowCount()):  # Corrected iteration over model
+                item: QStandardItem | None = model.item(row)  # Get the item at the current row
+                if item is None or item.isDeleted():
                     continue
                 self.debounce_layout_changed()
             viewport: QWidget | None = self.viewport()
@@ -510,7 +516,7 @@ class RobustTreeView(QTreeView):
 
     def _add_simple_action(
         self,
-        menu: QMenu,
+        menu: _QMenu,
         title: str,
         func: Callable[[], Any],
     ):
@@ -520,7 +526,7 @@ class RobustTreeView(QTreeView):
 
     def _add_menu_action(  # noqa: PLR0913
         self,
-        menu: QMenu,
+        menu: _QMenu,
         title: str,
         current_state_func: Callable[[], Any],
         set_func: Callable[[Any], Any],
@@ -554,7 +560,7 @@ class RobustTreeView(QTreeView):
 
     def _add_exclusive_menu_action(  # noqa: PLR0913
         self,
-        menu: QMenu,
+        menu: _QMenu,
         title: str,
         current_state_func: Callable[[], Any],
         set_func: Callable[[Any], Any],
@@ -571,12 +577,12 @@ class RobustTreeView(QTreeView):
             action.setCheckable(True)
             action.setChecked(initial_value == option_value)
             action.triggered.connect(lambda checked, val=option_value: [set_func(val), self.settings.set(settings_key, val)] if checked else None)
-            sub_menu.addAction(action)
+            sub_menu.addAction(action)  # pyright: ignore[reportOptionalMemberAccess]
             actionGroup.addAction(action)
 
     def _add_multi_select_menu_action(  # noqa: PLR0913
         self,
-        menu: QMenu,
+        menu: _QMenu,
         title: str,
         current_state_func: Callable[[], Any],
         set_func: Callable[[Any], Any],
@@ -589,7 +595,7 @@ class RobustTreeView(QTreeView):
 
         def apply_filters():
             combined_filter = zero_value
-            for action in sub_menu.actions():
+            for action in sub_menu.actions():  # pyright: ignore[reportOptionalMemberAccess]
                 if action.isChecked():
                     combined_filter |= options[action.text()]
             set_func(combined_filter)
@@ -600,7 +606,7 @@ class RobustTreeView(QTreeView):
             action.setCheckable(True)
             action.setChecked(bool(initial_value & option_value))
             action.triggered.connect(apply_filters)
-            sub_menu.addAction(action)
+            sub_menu.addAction(action)  # pyright: ignore[reportOptionalMemberAccess]
 
         # Apply the filters initially based on settings
         apply_filters()
@@ -688,7 +694,7 @@ class RobustTreeView(QTreeView):
         if not index_or_item.isValid():
             return f"(invalid index at row '{index_or_item.row()}', column '{index_or_item.column()}')"
 
-        item = self.model().itemFromIndex(index_or_item)
+        item = self.model().itemFromIndex(index_or_item)  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
         if item is None:
             return f"(no item associated with index at row '{index_or_item.row()}', column '{index_or_item.column()}')"
 

@@ -368,7 +368,9 @@ def construct_gui(gff: GFF) -> GUI:
         hilight.pulsing = bool(hilight_struct.get_uint8("PULSING", 0))
         return hilight
 
-    def _create_control_by_type(control_type: GUIControlType) -> GUIControl:
+    def _create_control_by_type(
+        control_type: GUIControlType,
+    ) -> GUIControl:
         """Create appropriate control based on type."""
         if control_type == GUIControlType.ScrollBar:
             return GUIScrollbar()
@@ -472,7 +474,10 @@ def construct_gui(gff: GFF) -> GUI:
         proto.hilight = read_hilight(proto_struct)
         return proto
 
-    def read_scrollbar(struct: GFFStruct, parent: GUIControl) -> GUIScrollbar | None:
+    def read_scrollbar(
+        struct: GFFStruct,
+        parent: GUIControl,
+    ) -> GUIScrollbar | None:
         """Read scrollbar from a GFF struct."""
         scroll_struct: GFFStruct | None = struct.get_struct("SCROLLBAR", None)
         if scroll_struct is None:
@@ -579,11 +584,22 @@ def construct_gui(gff: GFF) -> GUI:
     gui.root = construct_control(gff.root)
     return gui
 
-def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_gui(
+    gui: GUI,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
+) -> GFF:
     """Convert a GUI instance to a GFF."""
     gff = GFF()
 
-    def write_extent(struct: GFFStruct, x: int, y: int, width: int, height: int) -> None:
+    def write_extent(
+        struct: GFFStruct,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+    ) -> None:
         """Write extent values to a GFF struct."""
         extent = struct.set_struct("EXTENT", GFFStruct(0))
         extent.set_int32("LEFT", x)
@@ -591,7 +607,10 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
         extent.set_int32("WIDTH", width)
         extent.set_int32("HEIGHT", height)
 
-    def write_border(struct: GFFStruct, border: GUIBorder) -> None:
+    def write_border(
+        struct: GFFStruct,
+        border: GUIBorder,
+    ) -> None:
         """Write border values to a GFF struct."""
         border_struct = struct.set_struct("BORDER", GFFStruct(0))
         if border.color is not None:
@@ -610,7 +629,10 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
         if border.pulsing is not None:
             border_struct.set_uint8("PULSING", int(border.pulsing))
 
-    def write_scrollbar_thumb_or_dir(struct: GFFStruct, thumb_or_dir: GUIScrollbarThumb | GUIScrollbarDir) -> None:
+    def write_scrollbar_thumb_or_dir(
+        struct: GFFStruct,
+        thumb_or_dir: GUIScrollbarThumb | GUIScrollbarDir,
+    ) -> None:
         """Write scrollbar thumb values."""
         field_name: Literal["THUMB", "DIR"] = "THUMB" if isinstance(thumb_or_dir, GUIScrollbarThumb) else "DIR"
         thumb_struct: GFFStruct = struct.set_struct(field_name, GFFStruct(0))
@@ -623,7 +645,10 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
         if thumb_or_dir.draw_style is not None:
             thumb_struct.set_int32("DRAWSTYLE", thumb_or_dir.draw_style)
 
-    def write_proto_item(struct: GFFStruct, proto: GUIProtoItem) -> None:
+    def write_proto_item(
+        struct: GFFStruct,
+        proto: GUIProtoItem,
+    ) -> None:
         """Write proto item to a GFF struct."""
         proto_struct: GFFStruct = struct.set_struct("PROTOITEM", GFFStruct(0))
         proto_struct.set_int32("CONTROLTYPE", GUIControlType.ProtoItem.value)
@@ -646,7 +671,10 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
         if proto.border is not None:
             write_border(proto_struct, proto.border)
 
-    def write_scrollbar(struct: GFFStruct, scroll: GUIScrollbar) -> None:
+    def write_scrollbar(
+        struct: GFFStruct,
+        scroll: GUIScrollbar,
+    ) -> None:
         """Write scrollbar to a GFF struct."""
         scroll_struct: GFFStruct = struct.set_struct("SCROLLBAR", GFFStruct(0))
         if scroll.draw_mode is not None:
@@ -782,7 +810,7 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
             controls_list = GFFList()
             for child in control.children:
                 child_struct = dismantle_control(child)
-                controls_list._structs.append(child_struct)
+                controls_list._structs.append(child_struct)  # noqa: SLF001
             struct.set_list("CONTROLS", controls_list)
 
         return struct
@@ -792,7 +820,11 @@ def dismantle_gui(gui: GUI, game: Game = Game.K2, *, use_deprecated: bool = True
         gff.root.struct_id = -1
     return gff
 
-def read_gui(source: SOURCE_TYPES, offset: int = 0, size: int | None = None) -> GUI:
+def read_gui(
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
+) -> GUI:
     """Read GUI data from bytes and return a GUI instance.
 
     Args:
@@ -805,7 +837,14 @@ def read_gui(source: SOURCE_TYPES, offset: int = 0, size: int | None = None) -> 
     gff: GFF = read_gff(source, offset, size)
     return construct_gui(gff)
 
-def write_gui(gui: GUI, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *, use_deprecated: bool = True):
+def write_gui(
+    gui: GUI,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
+):
     """Write GUI instance to bytes.
 
     Args:

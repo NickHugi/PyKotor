@@ -175,7 +175,7 @@ class TestQFileDialog2(unittest.TestCase):
     def test_listRoot(self):
         fileInfoGatherer = QFileInfoGatherer()
         fileInfoGatherer.start()
-        self._qtest.qWait(1500)
+        self._qtest.qWait(1500)  # pyright: ignore[reportCallIssue]
         # qt_test_resetFetchedRoot()  # TODO
         dir: str = QDir.currentPath()  # noqa: A001
         fd: PythonQFileDialog = self.fd_class(None, "", dir)
@@ -256,7 +256,7 @@ class TestQFileDialog2(unittest.TestCase):
         line_edit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
         assert line_edit is not None, "Line edit was not found with name 'fileNameEdit'"
         for _ in range(3):
-            self._qtest.keyPress(line_edit, Qt.Key.Key_Backslash)
+            self._qtest.keyPress(line_edit, Qt.Key.Key_Backslash)  # pyright: ignore[reportCallIssue]
         model: QFileSystemModel | None = fd.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "qt_filesystem_model was None"
 
@@ -288,7 +288,7 @@ class TestQFileDialog2(unittest.TestCase):
         fd.selectFile(ctx.file.fileName())
         fd.show()
 
-        assert self._qtest.qWaitForWindowExposed(fd), "File dialog was not exposed"
+        assert self._qtest.qWaitForWindowExposed(fd), "File dialog was not exposed"  # pyright: ignore[reportCallIssue]
 
         # grab some internals:
         rm = fd.findChild(QAction, "qt_delete_action")
@@ -386,20 +386,22 @@ class TestQFileDialog2(unittest.TestCase):
 
         fd.setProxyModel(FilterDirModel(QDir.currentPath()))
         fd.show()
-        assert self._qtest.qWaitForWindowExposed(fd), "File dialog was not exposed"
+        assert self._qtest.qWaitForWindowExposed(fd), "File dialog was not exposed"  # pyright: ignore[reportCallIssue]
         edit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
         assert edit is not None, "File name edit was not found with name 'fileNameEdit'"
-        self._qtest.keyClick(edit, Qt.Key.Key_T)
-        self._qtest.keyClick(edit, Qt.Key.Key_S)
-        self._qtest.keyClick(edit.completer().popup(), Qt.Key.Key_Down)
+        self._qtest.keyClick(edit, Qt.Key.Key_T)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(edit, Qt.Key.Key_S)  # pyright: ignore[reportCallIssue]
+        popup_completer = edit.completer()
+        assert popup_completer is not None, "Completer was not found"
+        self._qtest.keyClick(popup_completer.popup(), Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
         dialog = CrashDialog(None, "crash dialog test", QDir.homePath(), "*")
         dialog.show()
         dialog.show()
-        assert self._qtest.qWaitForWindowExposed(dialog), "Crash dialog was not exposed"
+        assert self._qtest.qWaitForWindowExposed(dialog), "Crash dialog was not exposed"  # pyright: ignore[reportCallIssue]
         _list: QListView | None = dialog.findChild(QListView, "listView")
         assert _list is not None, "List view was not found with name 'listView'"
-        self._qtest.keyClick(_list, Qt.Key.Key_Down)
-        self._qtest.keyClick(_list, Qt.Key.Key_Return)
+        self._qtest.keyClick(_list, Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(_list, Qt.Key.Key_Return)  # pyright: ignore[reportCallIssue]
         dialog.close()
         fd.close()
         fd2: PythonQFileDialog = self.fd_class(None, "I should not crash with a proxy", str(self.temp_path))
@@ -410,8 +412,8 @@ class TestQFileDialog2(unittest.TestCase):
         assert sidebar is not None, "Sidebar was not found with name 'sidebar'"
         sidebar.setFocus()
         sidebar.selectUrl(QUrl.fromLocalFile(QDir.homePath()))
-        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar.model().index(1, 0)).center())
-        self._qtest.qWait(250)
+        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar.model().index(1, 0)).center())  # pyright: ignore[reportCallIssue, reportArgumentType]
+        self._qtest.qWait(250)  # pyright: ignore[reportCallIssue]
 
     def test_task227930_correctNavigationKeyboardBehavior(self):
         current = QDir(QDir.currentPath())
@@ -428,18 +430,20 @@ class TestQFileDialog2(unittest.TestCase):
         fd.setViewMode(self.fd_class.ViewMode.List)
         fd.setDirectory(current.absolutePath())
         fd.show()
-        assert self._qtest.qWaitForWindowExposed(fd), "File dialog was not exposed"
+        assert self._qtest.qWaitForWindowExposed(fd), "File dialog was not exposed"  # pyright: ignore[reportCallIssue]
         QCoreApplication.processEvents()
         list_view: QListView | None = fd.findChild(QListView, "listView")
         assert list_view is not None, "List view was not found with name 'listView'"
-        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
-        self._qtest.keyClick(list_view, Qt.Key.Key_Return)
-        self._qtest.mouseClick(list_view.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
-        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
-        self._qtest.keyClick(list_view, Qt.Key.Key_Backspace)
-        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
-        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
-        self._qtest.keyClick(list_view, Qt.Key.Key_Return)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(list_view, Qt.Key.Key_Return)  # pyright: ignore[reportCallIssue]
+        viewport: QWidget | None = list_view.viewport()
+        assert viewport is not None, "Viewport was not found"
+        self._qtest.mouseClick(viewport, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)  # pyright: ignore[reportArgumentType]
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(list_view, Qt.Key.Key_Backspace)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(list_view, Qt.Key.Key_Return)  # pyright: ignore[reportCallIssue]
         assert fd.isVisible(), "File dialog was not visible"
         file.close()
         file2.close()
@@ -456,22 +460,22 @@ class TestQFileDialog2(unittest.TestCase):
         button_parent: QToolButton | None = fd.findChild(QToolButton, "toParentButton")
         assert edit is not None, "File name edit was not found with name 'fileNameEdit'"
         assert button_parent is not None, "To parent button was not found with name 'toParentButton'"
-        self._qtest.qWait(200)
-        self._qtest.mouseClick(button_parent, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(0, 0))
-        self._qtest.qWait(2000)
-        self._qtest.keyClick(edit, Qt.Key.Key_C)
-        self._qtest.qWait(200)
+        self._qtest.qWait(200)  # pyright: ignore[reportCallIssue]
+        self._qtest.mouseClick(button_parent, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(0, 0))  # pyright: ignore[reportArgumentType, reportCallIssue, reportArgumentType]
+        self._qtest.qWait(2000)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(edit, Qt.Key.Key_C)  # pyright: ignore[reportCallIssue]
+        self._qtest.qWait(200)  # pyright: ignore[reportCallIssue]
         completer: QCompleter | None = edit.completer()
         assert completer is not None, "Completer was not found"
-        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)
-        self._qtest.qWait(200)
+        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
+        self._qtest.qWait(200)  # pyright: ignore[reportCallIssue]
         assert edit.text() == "C:/", f"File name edit was not correct, expected: 'C:/', got: {edit.text()!r}"
-        self._qtest.qWait(2000)
-        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)
+        self._qtest.qWait(2000)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
         edit.clear()
-        self._qtest.keyClick(edit, Qt.Key.Key_C, Qt.KeyboardModifier.ShiftModifier)
-        self._qtest.qWait(200)
-        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)
+        self._qtest.keyClick(edit, Qt.Key.Key_C, Qt.KeyboardModifier.ShiftModifier)  # pyright: ignore[reportArgumentType, reportCallIssue]
+        self._qtest.qWait(200)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
         assert edit.text() == "C:/", f"File name edit was not correct, expected: 'C:/', got: {edit.text()!r}"
 
     def test_completionOnLevelAfterRoot(self):  # noqa: C901
@@ -500,14 +504,14 @@ class TestQFileDialog2(unittest.TestCase):
         fd.show()
         edit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
         assert edit is not None, "File name edit was not found with name 'fileNameEdit'"
-        self._qtest.qWait(2000)
+        self._qtest.qWait(2000)  # pyright: ignore[reportCallIssue]
         for i in range(5):
-            self._qtest.keyClick(edit, test_dir[i].lower())
-        self._qtest.qWait(200)
+            self._qtest.keyClick(edit, test_dir[i].lower())  # pyright: ignore[reportCallIssue]
+        self._qtest.qWait(200)  # pyright: ignore[reportCallIssue]
         completer: QCompleter | None = edit.completer()
         assert completer is not None, "Completer was not found"
-        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)
-        self._qtest.qWait(200)
+        self._qtest.keyClick(completer.popup(), Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
+        self._qtest.qWait(200)  # pyright: ignore[reportCallIssue]
         assert edit.text() == test_dir, f"File name edit was not correct, expected: {test_dir!r}, got: {edit.text()!r}"
 
     def test_task233037_selectingDirectory(self):
@@ -520,8 +524,8 @@ class TestQFileDialog2(unittest.TestCase):
         fd.show()
         list_view: QListView | None = fd.findChild(QListView, "listView")
         assert list_view is not None, "List view was not found with name 'listView'"
-        self._qtest.qWait(3000)
-        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
+        self._qtest.qWait(3000)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
         button_box: QDialogButtonBox | None = fd.findChild(QDialogButtonBox, "buttonBox")
         assert button_box is not None, "Button box was not found with name 'buttonBox'"
         button: QPushButton | None = button_box.button(QDialogButtonBox.StandardButton.Save)
@@ -542,19 +546,19 @@ class TestQFileDialog2(unittest.TestCase):
         assert isinstance(view_mode, self.fd_class.ViewMode), f"View mode was not correct, expected: {self.fd_class.ViewMode}, got: {view_mode}"
         current: QDir = QDir(QDir.currentPath())
         fd: PythonQFileDialog = self.fd_class()
-        spy_finished: QSignalSpy = QSignalSpy(fd, fd.finished)
+        spy_finished: QSignalSpy = QSignalSpy(fd, fd.finished)  # pyright: ignore[reportArgumentType]
         assert spy_finished.isValid(), f"QSignalSpy was not valid for {child_name}, expected valid fd.finished signal"
-        spy_rejected: QSignalSpy = QSignalSpy(fd, fd.rejected)
+        spy_rejected: QSignalSpy = QSignalSpy(fd, fd.rejected)  # pyright: ignore[reportArgumentType]
         assert spy_rejected.isValid(), f"QSignalSpy was not valid for {child_name}, expected valid fd.rejected signal"
         fd.setViewMode(view_mode)
         fd.setDirectory(current.absolutePath())
         fd.setAcceptMode(self.fd_class.AcceptSave)
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
         child: QWidget | None = fd.findChild(QWidget, child_name)
         assert child is not None, f"Child widget was not found with name '{child_name}'"
         child.setFocus()
-        self._qtest.keyClick(child, Qt.Key.Key_Escape)
+        self._qtest.keyClick(child, Qt.Key.Key_Escape)  # pyright: ignore[reportCallIssue]
         assert not fd.isVisible(), "File dialog was visible"
         assert len(spy_finished) == 1, "QTBUG-7690"  # reject(), don't hide()
 
@@ -568,15 +572,15 @@ class TestQFileDialog2(unittest.TestCase):
         fd.setDirectory(current.absolutePath())
         fd.setAcceptMode(self.fd_class.AcceptSave)
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
         list_view: QListView | None = fd.findChild(QListView, "listView")
         assert list_view is not None, "List view was not found"
         list_view.setFocus()
-        self._qtest.keyClick(list_view, Qt.Key.Key_Return)
-        self._qtest.keyClick(list_view, Qt.Key.Key_Backspace)
-        self._qtest.keyClick(list_view, Qt.Key.Key_Down)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Return)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(list_view, Qt.Key.Key_Backspace)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyClick(list_view, Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
         fd.d_func().removeDirectory(os.path.join(current.absolutePath(), "aaaaaaaaaa"))  # noqa: PTH118
-        self._qtest.qWait(1000)
+        self._qtest.qWait(1000)  # pyright: ignore[reportCallIssue]
 
     def test_task203703_returnProperSeparator(self):
         current = QDir(QDir.currentPath())
@@ -586,16 +590,16 @@ class TestQFileDialog2(unittest.TestCase):
         fd.setViewMode(self.fd_class.List)
         fd.setFileMode(self.fd_class.Directory)
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
         list_view: QListView | None = fd.findChild(QListView, "listView")
         assert list_view is not None, "List view was not found with name 'listView'"
         list_view.setFocus()
-        self._qtest.keyClick(list_view, Qt.Key.Key_Return)
+        self._qtest.keyClick(list_view, Qt.Key.Key_Return)  # pyright: ignore[reportCallIssue]
         button_box: QDialogButtonBox | None = fd.findChild(QDialogButtonBox, "buttonBox")
         assert button_box is not None, "Button box was not found with name 'buttonBox'"
         button: QPushButton | None = button_box.button(QDialogButtonBox.StandardButton.Cancel)
         assert button is not None, "Cancel button was not found with name 'Cancel'"
-        self._qtest.keyClick(button, Qt.Key.Key_Return)
+        self._qtest.keyClick(button, Qt.Key.Key_Return)  # pyright: ignore[reportCallIssue]
         result: str = fd.selectedFiles()[0]
         assert result[-1] != "/", f"Result was not a directory, got: {result!r}"
         assert "\\" not in result, f"Result was not a directory, got: {result!r}"
@@ -620,7 +624,7 @@ class TestQFileDialog2(unittest.TestCase):
         fd.setDirectory(current.absolutePath())
         fd.setViewMode(self.fd_class.Detail)
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
         tree: QTreeView | None = fd.findChild(QTreeView, "treeView")
         assert tree is not None, "Tree view was not found with name 'treeView'"
         header: QHeaderView | None = tree.header()
@@ -630,14 +634,14 @@ class TestQFileDialog2(unittest.TestCase):
         assert button_box is not None, "Button box was not found with name 'buttonBox'"
         button: QPushButton | None = button_box.button(QDialogButtonBox.StandardButton.Open)
         assert button is not None, "Open button was not found with name 'Open'"
-        self._qtest.mouseClick(button, Qt.MouseButton.LeftButton)
+        self._qtest.mouseClick(button, Qt.MouseButton.LeftButton)  # pyright: ignore[reportCallIssue]
         fd2 = self.fd_class()
         fd2.setFileMode(self.fd_class.Directory)
         fd2.restoreState(fd.saveState())
         current.cd("aaaaaaaaaaaaaaaaaa")
         fd2.setDirectory(current.absolutePath())
         fd2.show()
-        self._qtest.qWaitForWindowExposed(fd2)
+        self._qtest.qWaitForWindowExposed(fd2)  # pyright: ignore[reportCallIssue]
         tree2: QTreeView | None = fd2.findChild(QTreeView, "treeView")
         assert tree2 is not None, "Tree view was not found with name 'treeView'"
         tree2.setFocus()
@@ -649,14 +653,14 @@ class TestQFileDialog2(unittest.TestCase):
         button2: QPushButton | None = button_box2.button(QDialogButtonBox.StandardButton.Open)
         assert button2 is not None, "Open button was not found with name 'Open'"
         fd2.selectFile("g")
-        self._qtest.mouseClick(button2, Qt.MouseButton.LeftButton)
+        self._qtest.mouseClick(button2, Qt.MouseButton.LeftButton)  # pyright: ignore[reportCallIssue]
         assert fd2.selectedFiles()[0] == current.absolutePath() + "/g", f"Selected file was not correct, expected: {current.absolutePath() + '/g'!r}, got: {fd2.selectedFiles()[0]!r}"
 
         fd3 = self.fd_class(None, "This is a third file dialog", tempFile.fileName())
         fd3.restoreState(fd.saveState())
         fd3.setFileMode(self.fd_class.Directory)
         fd3.show()
-        self._qtest.qWaitForWindowExposed(fd3)
+        self._qtest.qWaitForWindowExposed(fd3)  # pyright: ignore[reportCallIssue]
         tree3: QTreeView | None = fd3.findChild(QTreeView, "treeView")
         assert tree3 is not None, "Tree view was not found with name 'treeView'"
         tree3.setFocus()
@@ -667,7 +671,7 @@ class TestQFileDialog2(unittest.TestCase):
         assert button_box3 is not None, "Button box was not found with name 'buttonBox'"
         button3: QPushButton | None = button_box3.button(QDialogButtonBox.StandardButton.Open)
         assert button3 is not None, "Open button was not found with name 'Open'"
-        self._qtest.mouseClick(button3, Qt.MouseButton.LeftButton)
+        self._qtest.mouseClick(button3, Qt.MouseButton.LeftButton)  # pyright: ignore[reportCallIssue]
         assert fd3.selectedFiles()[0] == tempFile.fileName(), f"Selected file was not correct, expected: {tempFile.fileName()!r}, got: {fd3.selectedFiles()[0]!r}"
 
         current.cd("aaaaaaaaaaaaaaaaaa")
@@ -687,7 +691,7 @@ class TestQFileDialog2(unittest.TestCase):
         d = self.fd_class()
         d.setNameFilter("*.cpp *.h")
         d.show()
-        self._qtest.qWaitForWindowExposed(d)
+        self._qtest.qWaitForWindowExposed(d)  # pyright: ignore[reportCallIssue]
 
         combo_list: list[QComboBox] = d.findChildren(QComboBox)
         filter_combo: QComboBox | None = None
@@ -697,9 +701,9 @@ class TestQFileDialog2(unittest.TestCase):
                 break
         assert filter_combo is not None, "Filter combo was not found with name 'fileTypeCombo'"
         filter_combo.setEditable(True)
-        self._qtest.mouseClick(filter_combo, Qt.MouseButton.LeftButton)
-        self._qtest.keyPress(filter_combo, Qt.Key.Key_X)
-        self._qtest.keyPress(filter_combo, Qt.Key.Key_Enter)  # should not trigger assertion failure
+        self._qtest.mouseClick(filter_combo, Qt.MouseButton.LeftButton)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyPress(filter_combo, Qt.Key.Key_X)  # pyright: ignore[reportCallIssue]
+        self._qtest.keyPress(filter_combo, Qt.Key.Key_Enter)  # should not trigger assertion failure  # pyright: ignore[reportCallIssue]
 
     def test_task218353_relativePaths(self):
         appDir: QDir = QDir.current()
@@ -730,7 +734,7 @@ class TestQFileDialog2(unittest.TestCase):
         urls: list[QUrl] = [QUrl.fromLocalFile(hiddenSubDir.absolutePath())]
         fd.setSidebarUrls(urls)
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         sidebar: QSidebar | None = fd.findChild(QSidebar, "sidebar")
         assert sidebar is not None, "Sidebar was not found with name 'sidebar'"
@@ -738,8 +742,8 @@ class TestQFileDialog2(unittest.TestCase):
         sidebar.selectUrl(QUrl.fromLocalFile(hiddenSubDir.absolutePath()))
         sidebar_model: QAbstractItemModel | None = sidebar.model()
         assert sidebar_model is not None, "Sidebar model was not found"
-        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar_model.index(0, 0)).center())
-        self._qtest.qWait(250)
+        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar_model.index(0, 0)).center())  # pyright: ignore[reportArgumentType, reportCallIssue]
+        self._qtest.qWait(250)  # pyright: ignore[reportCallIssue]
 
         model: QFileSystemModel | None = fd.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "Model was not found with name 'qt_filesystem_model'"
@@ -760,7 +764,7 @@ class TestQFileDialog2(unittest.TestCase):
         urls: list[QUrl] = [QUrl.fromLocalFile(test_sub_dir.absolutePath()), QUrl.fromLocalFile("NotFound")]
         fd.setSidebarUrls(urls)
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         sidebar: QSidebar | None = fd.findChild(QSidebar, "sidebar")
         assert sidebar is not None, "Sidebar was not found with name 'sidebar'"
@@ -768,7 +772,7 @@ class TestQFileDialog2(unittest.TestCase):
         sidebar.selectUrl(QUrl.fromLocalFile(test_sub_dir.absolutePath()))
         sidebar_model: QAbstractItemModel | None = sidebar.model()
         assert sidebar_model is not None, "Sidebar model was not found"
-        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar_model.index(0, 0)).center())
+        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar_model.index(0, 0)).center())  # pyright: ignore[reportCallIssue, reportArgumentType]
 
         model: QFileSystemModel | None = fd.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "Model was not found with name 'qt_filesystem_model'"
@@ -780,7 +784,7 @@ class TestQFileDialog2(unittest.TestCase):
 
         sidebar.setFocus()
         sidebar.selectUrl(QUrl.fromLocalFile("NotFound"))
-        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar_model.index(1, 0)).center())
+        self._qtest.mouseClick(sidebar.viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sidebar.visualRect(sidebar_model.index(1, 0)).center())  # pyright: ignore[reportCallIssue, reportArgumentType]
 
         assert model.rowCount(model.index("NotFound")) == model.rowCount(model.index(model.rootPath())), f"Row count was not correct, expected: {model.rowCount(model.index(model.rootPath()))!r}, got: {model.rowCount(model.index('NotFound'))!r}"
         value = sidebar_model.index(1, 0).data(Qt.ItemDataRole.UserRole + 2)
@@ -790,8 +794,8 @@ class TestQFileDialog2(unittest.TestCase):
         my_side_bar.setModelAndUrls(model, urls)
         my_side_bar.show()
         my_side_bar.selectUrl(QUrl.fromLocalFile(test_sub_dir.absolutePath()))
-        self._qtest.qWait(1000)
-        my_side_bar.removeSelection()
+        self._qtest.qWait(1000)  # pyright: ignore[reportCallIssue]
+        my_side_bar.removeSelection()  # pyright: ignore[reportCallIssue]
 
         expected: list[QUrl] = [QUrl.fromLocalFile("NotFound")]
         assert my_side_bar.urls() == expected, f"Urls were not correct, got: {my_side_bar.urls()!r}, expected: {expected!r}"

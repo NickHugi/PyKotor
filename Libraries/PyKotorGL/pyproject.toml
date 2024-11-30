@@ -1,30 +1,113 @@
 [build-system]
-requires = [
-    "setuptools>=42,<70",
-    "wheel"
-]
+requires = ["setuptools>=42,<70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="PyKotorGL"
-version="1.7"
-description="A Python library that can render most modules from the game Knights of the Old Republic and its sequel."
-authors = [{name = "NickHugi"}]
-maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
-readme = {file = "README.md", content-type = "text/markdown"}
-license = {text = "LGPL-3.0-or-later License"}
-keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
-requires-python = ">= 3.7"
-dependencies = ["ply>=3.11,<4"]  # required for the nss compiler lexer
+name = "PyKotorGL"
+version = "1.0.0"
+description = "A Python library that can render most modules from the game Knights of the Old Republic and its sequel."
+authors = [
+    { name = "NickHugi" },
+    { name = "Benjamin Auquite", email = "halomastar@gmail.com" },
+]
+maintainers = [{ name = "Benjamin Auquite", email = "halomastar@gmail.com" }]
+requires-python = ">= 3.8"
+dependencies = [
+    "pykotor>=1.7",
+    "utility>=0.0.1",
+    "numpy>=1.24.3",
+    "PyOpenGL>=3.1.7",
+    "PyGLM>=2.0",
+]
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { text = "LGPL-3.0-or-later License" }
+keywords = [
+    "kotor",
+    "library",
+    "holocron",
+    "toolset",
+    "pykotor",
+    "editor",
+    "holopatcher",
+    "tslpatcher",
+    "opengl",
+    "3d",
+    "rendering",
+    "mdl",
+    "mdx",
+]
+
+
+# Optional Poetry configuration
+[tool.poetry]
+name = "pykotorgl"
+version = "1.0.0"
+description = "OpenGL rendering extension for PyKotor"
+authors = ["NickHugi", "Benjamin Auquite <halomastar@gmail.com>"]
+maintainers = ["Benjamin Auquite <halomastar@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "pykotorgl", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pykotor = "^1.7"
+utility = "^0.0.1"
+numpy = "^1.21"
+PyOpenGL = "^3.1.7"
+PyGLM = "^2.0"
 
 [project.optional-dependencies]
-font                 = ["Pillow>=9.5"]    # required for TXI/TGA fonts
-secure_xml           = ["defusedxml~=0.7"]    # secure XML parsing
-encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodings
+gl_accel = ["PyOpenGL-accelerate>=3.1.7"]
+
+[tool.poetry.optional-dependencies]
+PyOpenGL_accelerate = "^3.1.7"
+
 
 [project.urls]
-Homepage = "https://github.com/NickHugi/PyKotor"
-Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
-Repository = "https://github.com/NickHugi/PyKotor.git"
-Issues = "https://github.com/NickHugi/PyKotor/issues"
-#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"
+Homepage = "https://github.com/th3w1zard1/PyKotor"
+Documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
+Repository = "https://github.com/th3w1zard1/PyKotor.git"
+Issues = "https://github.com/th3w1zard1/PyKotor/issues"
+#Changelog = "https://github.com/th3w1zard1/PyKotor/blob/master/CHANGELOG.md"
+
+[tool.poetry.urls]
+Homepage = "https://github.com/th3w1zard1/PyKotor"
+Documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
+Repository = "https://github.com/th3w1zard1/PyKotor.git"
+Issues = "https://github.com/th3w1zard1/PyKotor/issues"
+#Changelog = "https://github.com/th3w1zard1/PyKotor/blob/master/CHANGELOG.md"
+
+
+########################################################
+## define only linter configurations below this point ##
+########################################################
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint]
+ignore = [
+    "N", # disable snake_case vs PascalCase/camelCase checks
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["ALL"]
+"__init__.py" = ["I001", "F401"]
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.mccabe]
+max-complexity = 25
+
+[tool.style]
+based_on_style = "pep8"
+split_before_named_assigns = true
+split_complex_comprehension = true
+split_arguments_when_comma_terminated = true
+
+[tool.pylintrc]
+max-line-length = 175

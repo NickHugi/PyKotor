@@ -10,9 +10,8 @@ from typing import TYPE_CHECKING, cast
 
 import qtpy
 
-from PyQt6.QtCore import QObject
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
-from qtpy.QtCore import QByteArray, QDir, QFile, QFileInfo, QItemSelectionModel, QModelIndex, QPersistentModelIndex, QSettings, QSize, QUrl, Qt
+from qtpy.QtCore import QByteArray, QDir, QFile, QFileInfo, QItemSelectionModel, QModelIndex, QObject, QPersistentModelIndex, QSettings, QSize, QUrl, Qt
 from qtpy.QtGui import QFontMetrics, QKeyEvent, QKeySequence, QPainter, QStandardItemModel
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -45,10 +44,8 @@ from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qplatformdial
 from utility.ui_libraries.qt.tools.unifiers import sip_enum_to_int
 
 if TYPE_CHECKING:
-    from PyQt6.QtCore import QCoreApplication
-    from PyQt6.QtGui import QStandardItem
-    from qtpy.QtCore import QAbstractItemModel, QAbstractProxyModel, QObject, QPoint, QRect
-    from qtpy.QtGui import QKeyEvent, QPaintEvent
+    from qtpy.QtCore import QAbstractItemModel, QAbstractProxyModel, QCoreApplication, QObject, QPoint, QRect
+    from qtpy.QtGui import QKeyEvent, QPaintEvent, QStandardItem
     from qtpy.QtWidgets import QHeaderView, QPushButton
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 

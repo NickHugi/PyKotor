@@ -27,9 +27,8 @@ from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
-    from PyQt6.QtGui import QColor
-    from PyQt6.QtWidgets import QPushButton
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtGui import QColor
+    from qtpy.QtWidgets import QPushButton, QWidget
 
     from pykotor.common.module import Module
     from pykotor.extract.file import FileResource, ResourceResult

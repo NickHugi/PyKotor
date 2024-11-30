@@ -1,3 +1,21 @@
+[build-system]
+requires = ["setuptools>=67.8.0,<70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pykotor-workspace"
+version = "1.0.0"
+description = "PyKotor Workspace"
+authors = [{name = "Benjamin Auquite", email = "halomastar@gmail.com"}, {name = "NickHugi"}]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "charset-normalizer>=2.0,<3.4",  # optional but recommended, auto-detect encoding of INI files
+    "pykotor>=1.7",
+]
+license = {text = "LGPL-3.0-or-later License"}
+keywords = ["kotor", "library", "holo", "patcher", "pykotor", "star", "wars", "knights", "holopatcher", "tslpatcher"]
+
 [tool.poetry]
 name = "pykotor-workspace"
 version = "1.0.0"
@@ -15,14 +33,26 @@ packages = [
 python = "^3.8"
 loggerplus = "^0.1.3"
 pykotor = { path = "Libraries/PyKotor", develop = true }
-pykotorfont = { path = "Libraries/PyKotorFont", develop = true }
-pykotorgl = { path = "Libraries/PyKotorGL", develop = true }
+utility = { path = "Libraries/Utility", develop = true }
+pykotorfont = { path = "Libraries/PyKotorFont", develop = true, optional = true }
+pykotorgl = { path = "Libraries/PyKotorGL", develop = true, optional = true }
+holocrontoolset = { path = "Tools/HolocronToolset", develop = true, optional = true }
+holopatcher = { path = "Tools/HoloPatcher", develop = true, optional = true }
+kotor-diff = { path = "Tools/KotorDiff", develop = true, optional = true }
+batch-patcher = { path = "Tools/BatchPatcher", develop = true, optional = true }
+gui-converter = { path = "Tools/GuiConverter", develop = true, optional = true }
 
-holocrontoolset = { path = "Tools/HolocronToolset", develop = true }
-holopatcher = { path = "Tools/HoloPatcher", develop = true }
-kotor-diff = { path = "Tools/KotorDiff", develop = true }
-batch-patcher = { path = "Tools/BatchPatcher", develop = true }
-gui-converter = { path = "Tools/GuiConverter", develop = true }
+[tool.poetry.extras]
+# Individual tool extras
+holocrontoolset = ["holocrontoolset"]
+holopatcher = ["holopatcher"]
+kotor-diff = ["kotor-diff"]
+batch-patcher = ["batch-patcher"]
+gui-converter = ["gui-converter"]
+
+# Convenience groups
+all-tools = ["holocrontoolset", "holopatcher", "kotor-diff", "batch-patcher", "gui-converter"]
+all-extensions = ["pykotorfont", "pykotorgl"]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "*"
@@ -33,24 +63,16 @@ autoflake = "*"
 pytest = "*"
 pytest-xdist = "*"
 pytest-html = "*"
-types-Pillow = "*"
-types-Send2Trash = "*"
-send2trash = "*"
+pytest-cov = "*"
 black = "*"
 flake8 = "*"
 
-[tool.poetry.group.qt_tools]
-optional = true
-
-[tool.poetry.group.qt_tools.dependencies]
-pyqt5 = "^5.15.2"
-pyqt6 = "^6.6.1"
-pyside2 = { version = "^5.15.2", python = ">=3.8,<3.11" }
-pyside6 = { version = "^6.6.3.1", python = ">=3.8,<3.13" }
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[project.urls]
+homepage = "https://github.com/th3w1zard1/PyKotor"
+documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
+repository = "https://github.com/th3w1zard1/PyKotor.git"
+issues = "https://github.com/th3w1zard1/PyKotor/issues"
+#Changelog = "https://github.com/th3w1zard1/PyKotor/blob/master/CHANGELOG.md"
 
 [tool.poetry.urls]
 homepage = "https://github.com/th3w1zard1/PyKotor"

@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm, read_bwm, write_bwm

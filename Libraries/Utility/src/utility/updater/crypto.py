@@ -6,11 +6,16 @@ import codecs
 import json
 import struct
 
+from typing import TYPE_CHECKING, Any
+
 from Crypto.Cipher import AES
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 def a32_to_str(a) -> bytes:
-    return struct.pack(">%dI" % len(a), *a)
+    return struct.pack(">I" * len(a), *a)
 
 
 def str_to_a32(b):
@@ -19,7 +24,7 @@ def str_to_a32(b):
     if len(b) % 4:
         # pad to multiple of 4
         b += b"\0" * (4 - len(b) % 4)
-    return struct.unpack(">%dI" % (len(b) / 4), b)
+    return struct.unpack(">I" * (len(b) // 4), b)
 
 
 def mpi_to_int(s) -> int:
@@ -45,7 +50,7 @@ def base64_url_encode(data) -> str:
     return data
 
 
-def aes_cbc_decrypt(data, key):
+def aes_cbc_decrypt(data: bytes, key: bytes) -> bytes:
     aes_cipher = AES.new(key, AES.MODE_CBC, codecs.latin_1_encode("\0" * 16)[0])
     return aes_cipher.decrypt(data)
 
@@ -54,14 +59,17 @@ def a32_to_base64(a) -> str:
     return base64_url_encode(a32_to_str(a))
 
 
-def decrypt_mega_attr(attr, key):
+def decrypt_mega_attr(
+    attr: bytes,
+    key: list[int],
+) -> dict[str, Any] | bool:
     attr = aes_cbc_decrypt(attr, a32_to_str(key))
-    attr = codecs.latin_1_decode(attr)[0]
-    attr = attr.rstrip("\0")
-    return json.loads(attr[4:]) if attr[:6] == 'MEGA{"' else False
+    attr_str: str = codecs.latin_1_decode(attr)[0]
+    attr_str = attr_str.rstrip("\0")
+    return json.loads(attr_str[4:]) if attr_str[:6] == "MEGA{" else False
 
 
-def get_chunks(size):
+def get_chunks(size) -> Iterator[tuple[int, int] | tuple[int, Any]]:
     p = 0
     s = 0x20000
     while p + s < size:

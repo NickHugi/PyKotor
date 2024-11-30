@@ -84,10 +84,9 @@ from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from PyQt6.QtCore import QModelIndex, QRect
-    from PyQt6.QtGui import QScreen
-    from PyQt6.QtWidgets import QTableWidgetSelectionRange
-    from qtpy.QtCore import QPoint
+    from qtpy.QtCore import QModelIndex, QPoint, QRect
+    from qtpy.QtGui import QScreen
+    from qtpy.QtWidgets import QTableWidgetSelectionRange
 
     from pykotor.common.module import ERF, RIM
     from pykotor.extract.file import LocationResult, ResourceResult

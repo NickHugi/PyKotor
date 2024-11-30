@@ -600,6 +600,47 @@ class BinaryReader:
         )
         return Vector4(x, y, z, w)
 
+    def read_line(
+        self,
+        encoding: str = "ascii",
+        errors: str = "ignore",
+    ) -> str:
+        """Reads a line from the stream up to a line ending character.
+
+        Args:
+        ----
+            encoding: The encoding to use for decoding the line.
+            errors: How to handle encoding errors.
+
+        Returns:
+        -------
+            A string representing the line read from the stream.
+        """
+        line_bytes = bytearray()
+        while True:
+            char: bytes | None = self._stream.read(1)
+
+            if not char:  # End of stream
+                break
+
+            line_bytes.extend(char)
+
+            # Check for line endings
+            if char == b"\n":
+                break
+
+            if char == b"\r":
+                # Check for \r\n
+                next_char: bytes | None = self._stream.read(1)
+                if not next_char or next_char == b"\n":
+                    break
+
+                # If not \r\n, go back one character
+                self._stream.seek(-1, 1)
+                break
+
+        return bytes(line_bytes).decode(encoding=encoding, errors=errors).rstrip("\r\n")
+
     def read_bytes(
         self,
         length: int,

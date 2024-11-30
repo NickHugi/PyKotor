@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 
-from typing import TYPE_CHECKING, Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Sequence, cast
 
 import qtpy
 
@@ -37,7 +37,7 @@ class FilterProxyModel(QSortFilterProxyModel):
         self.filter_timer.stop()
         self.filter_timer.start(self.debounce_delay)
 
-    def filterAcceptsRow(
+    def filterAcceptsRow(  # noqa: PLR0911
         self,
         source_row: int,
         source_parent: QModelIndex,
@@ -49,6 +49,8 @@ class FilterProxyModel(QSortFilterProxyModel):
         if index is None:
             return False
         item_text: str | None = index.data(Qt.ItemDataRole.DisplayRole)
+        if self.combo_box is None:
+            return False
         line_edit: QLineEdit | None = self.combo_box.filter_line_edit
         if line_edit is None:
             return True
@@ -137,7 +139,7 @@ class CustomListView(QListView):
         self,
         event: QKeyEvent,
     ):  # pyright: ignore[reportIncompatibleMethodOverride]
-        if self.combobox.isPoppedUp:
+        if self.combobox.is_popped_up:
             self.combobox.filter_line_edit.keyPressEvent(event)
         else:
             super().keyPressEvent(event)
@@ -159,17 +161,19 @@ class CustomListView(QListView):
         )
         index: QModelIndex | None = self.indexAt(viewport_pos)
         if index is not None and index.isValid():
-            option: QStyleOptionViewItem = self.viewOptions()  # pyright: ignore[reportAttributeAccessIssue]
+            # In Qt6, viewOptions() was removed, so we create the style option directly
+            if hasattr(self, "viewOptions"):
+                option = self.viewOptions()  # type: ignore[attr-defined]
+            else:
+                from qtpy.QtWidgets import QStyleOptionViewItem
+                option = QStyleOptionViewItem()
+                option.initFrom(self)
+
             option.rect = self.visualRect(index)
             button_width: int = QFontMetrics(option.font).horizontalAdvance(self.button_text) + 20
-            left_limit: int = min(option.rect.right() - button_width, self.parent().width() - button_width)
-
-            # print(f"Clicked item '{index.data(Qt.DisplayRole)}', row {index.row()}, mouse position: ({viewport_pos.x()}, {viewport_pos.y()})")
-            # print(f"Item rect: ({option.rect.x()}, {option.rect.y()}, {option.rect.width()}, {option.rect.height()})")
-            # print(f"Check range: {left_limit} to {option.rect.right()}")
+            left_limit: int = min(option.rect.right() - button_width, cast(QWidget, self.parent()).width() - button_width)
 
             if left_limit <= viewport_pos.x() <= option.rect.right():
-                # print("Click inside button range")
                 self.combobox.force_stay_popped_up = True
                 self.button_callback(index.data(Qt.ItemDataRole.DisplayRole))
         super().mousePressEvent(event)
@@ -198,9 +202,9 @@ class FilterComboBox(QComboBox):
         super().setModel(self.proxy_model)
 
         self.items: list[str] = []
-        self.itemsLoaded: bool = False
-        self.isPoppedUp: bool = False
-        self.origText: str = ""
+        self.items_loaded: bool = False
+        self.is_popped_up: bool = False
+        self.orig_text: str = ""
         self.force_stay_popped_up: bool = False
         self.old_width = self.width()
 
@@ -211,9 +215,9 @@ class FilterComboBox(QComboBox):
         self.filter_line_edit.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.filter_line_edit.hide()
         self.filter_line_edit.keyPressEvent = lambda event: filterLineEditKeyPressEvent(self.filter_line_edit, event, self)  # type: ignore[method-assign, assignment]
-        mainView = CustomListView(self)
-        mainView.combobox = self
-        self.setView(mainView)
+        main_view = CustomListView(self)
+        main_view.combobox = self
+        self.setView(main_view)
         # Make room for the filterbox
         view: QAbstractItemView | None = self.view()
         if view is None:
@@ -241,7 +245,7 @@ class FilterComboBox(QComboBox):
             self.setLineEdit(line_edit)
         line_edit.setReadOnly(not self._editable)
         if not self._editable:
-            line_edit.mousePressEvent = lambda *args: self.hidePopup() if self.isPoppedUp else self.showPopup()  # type: ignore[attr-value]
+            line_edit.mousePressEvent = lambda *args: self.hidePopup() if self.is_popped_up else self.showPopup()  # type: ignore[attr-value]
         else:
             line_edit.mousePressEvent = lambda *args: QLineEdit.mousePressEvent(line_edit, *args)  # type: ignore[attr-value]
         line_edit.home(False)
@@ -259,7 +263,7 @@ class FilterComboBox(QComboBox):
         self,
         event: QKeyEvent,
     ):  # pyright: ignore[reportIncompatibleMethodOverride]  # noqa: ARG002
-        if self.isPoppedUp:
+        if self.is_popped_up:
             self.filter_line_edit.keyPressEvent(event)
         else:
             super().keyPressEvent(event)
@@ -274,12 +278,12 @@ class FilterComboBox(QComboBox):
         if alwaysOnTop:
             if index != -1:  # Text found
                 self.removeItem(index)
-            newIndex = 0
-            self.insertItem(newIndex, text)
+            new_index = 0
+            self.insertItem(new_index, text)
         elif index == -1:  # Text not found
             self.addItem(text)
-            newIndex = self.findText(text)
-        self.setCurrentIndex(newIndex)
+            new_index = self.findText(text)
+        self.setCurrentIndex(new_index)
         line_edit: QLineEdit = self.lineEdit()
         if line_edit is not None:
             line_edit.setText(text)
@@ -287,16 +291,16 @@ class FilterComboBox(QComboBox):
             self.setCurrentText(text)
 
     def showPopup(self):
-        self.origText = self.currentText()
-        if not self.itemsLoaded and self.items:
+        self.orig_text = self.currentText()
+        if not self.items_loaded and self.items:
             if isinstance(self.source_model, QStringListModel):
                 self.source_model.setStringList(self.items)
             elif isinstance(self.source_model, QStandardItemModel):
                 self.source_model.clear()
                 for item in self.items:
                     self.source_model.appendRow(QStandardItem(item))
-            self.set_combo_box_text(self.origText)
-            self.itemsLoaded = True
+            self.set_combo_box_text(self.orig_text)
+            self.items_loaded = True
 
         self.old_width: int = self.width()
         max_width: int = self.old_width
@@ -320,7 +324,7 @@ class FilterComboBox(QComboBox):
         self.filter_line_edit.setFocus()
         super().showPopup()
         self.resize(self.old_width, self.height())
-        self.isPoppedUp = True
+        self.is_popped_up = True
         self.filter_line_edit.setFocus()
         view: QAbstractItemView | None = self.view()
         if view is not None:
@@ -331,7 +335,7 @@ class FilterComboBox(QComboBox):
             self.force_stay_popped_up = False
             return
         super().hidePopup()
-        self.isPoppedUp = False
+        self.is_popped_up = False
         self.resize(self.old_width, self.height())
 
     def populate_combo_box(
@@ -339,7 +343,7 @@ class FilterComboBox(QComboBox):
         items: Sequence[str],
     ):
         self.items = list(items)
-        self.itemsLoaded = False
+        self.items_loaded = False
 
     def filter_items(
         self,

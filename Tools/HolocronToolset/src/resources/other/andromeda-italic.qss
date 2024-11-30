@@ -1,0 +1,127 @@
+QWidget {
+    background-color: #23262E;
+    color: #D5CED9;
+    font-style: italic;
+}
+
+QMainWindow {
+    background-color: #23262E;
+}
+
+QPushButton {
+    background-color: #2d313b;
+    border: 1px solid #373941;
+    border-radius: 4px;
+    padding: 5px 15px;
+    color: #D5CED9;
+    font-style: normal;
+}
+
+QPushButton:hover {
+    background-color: #373941;
+    border-color: #00e8c6;
+}
+
+QPushButton:pressed {
+    background-color: #2A2D44;
+}
+
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #1A1C22;
+    border: 1px solid #373941;
+    border-radius: 4px;
+    padding: 3px;
+    color: #D5CED9;
+    font-style: normal;
+}
+
+QComboBox {
+    background-color: #2d313b;
+    border: 1px solid #373941;
+    border-radius: 4px;
+    padding: 3px;
+    color: #D5CED9;
+    font-style: normal;
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icons/down_arrow.png);
+    width: 12px;
+    height: 12px;
+}
+
+QScrollBar:vertical {
+    border: none;
+    background-color: #2A2D44;
+    width: 14px;
+    margin: 15px 0 15px 0;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #373941;
+    min-height: 30px;
+    border-radius: 7px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #00e8c6;
+}
+
+QMenuBar {
+    background-color: #23262E;
+    color: #D5CED9;
+    font-style: normal;
+}
+
+QMenuBar::item:selected {
+    background-color: #373941;
+}
+
+QMenu {
+    background-color: #1A1C22;
+    border: 1px solid #373941;
+    font-style: normal;
+}
+
+QMenu::item:selected {
+    background-color: #373941;
+}
+
+QTabWidget::pane {
+    border: 1px solid #373941;
+}
+
+QTabBar::tab {
+    background-color: #23262E;
+    color: #D5CED9;
+    border: 1px solid #373941;
+    padding: 5px 10px;
+    font-style: normal;
+}
+
+QTabBar::tab:selected {
+    background-color: #1A1C22;
+    border-bottom-color: #00e8c6;
+}
+
+QStatusBar {
+    background-color: #23262E;
+    color: #D5CED9;
+    font-style: normal;
+}
+
+QToolTip {
+    background-color: #1A1C22;
+    color: #D5CED9;
+    border: 1px solid #373941;
+    padding: 3px;
+    font-style: normal;
+}
+
+QLabel {
+    font-style: italic;
+}

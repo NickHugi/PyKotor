@@ -63,10 +63,7 @@ if TYPE_CHECKING:
     from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
     from qtpy.QtCore import QRect
     from qtpy.QtGui import QScreen
-    from qtpy.QtWidgets import (
-        QWidget,
-        _QMenu,
-    )
+    from qtpy.QtWidgets import QWidget, _QMenu
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.language import LocalizedString

@@ -110,7 +110,7 @@ class TestQFileDialog(unittest.TestCase):
         settings.beginGroup("Qt")
         settings.remove("filedialog")
         settings.endGroup()
-        self._qtest.qWait(200)
+        self._qtest.qWait(200)  # pyright: ignore[reportCallIssue]
 
     @staticmethod
     def wait_for_dir_populated(list_view: QListView, needle: str) -> bool:
@@ -125,7 +125,7 @@ class TestQFileDialog(unittest.TestCase):
             for r in range(model.rowCount(root)):
                 if needle == model.index(r, 0, root).data(Qt.ItemDataRole.DisplayRole):
                     return True
-            QTest.qWait(100)
+            QTest.qWait(100)  # pyright: ignore[reportCallIssue]
             elapsed_time += wait_interval
         return False
 
@@ -137,8 +137,8 @@ class TestQFileDialog(unittest.TestCase):
         for _ in range(50):  # Adjust timeout as needed
             if needle == list_view.currentIndex().data(Qt.ItemDataRole.DisplayRole):
                 return True
-            QTest.keyClick(list_view, Qt.Key.Key_Down)
-            QTest.qWait(100)
+            QTest.keyClick(list_view, Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
+            QTest.qWait(100)  # pyright: ignore[reportCallIssue]
         return False
 
     def test_currentChangedSignal(self):
@@ -191,7 +191,7 @@ class TestQFileDialog(unittest.TestCase):
         second_item: QModelIndex = sidebar_model.index(1, 0)
         assert second_item.isValid()
         sidebar.setCurrentIndex(second_item)
-        self._qtest.keyPress(sidebar.viewport(), Qt.Key.Key_Return)
+        self._qtest.keyPress(sidebar.viewport(), Qt.Key.Key_Return)  # pyright: ignore[reportCallIssue]
         assert len(spy_directory_entered) == 1
         spy_directory_entered = QSignalSpy(fd.directoryEntered)  # clear
 
@@ -205,7 +205,7 @@ class TestQFileDialog(unittest.TestCase):
         combo_box_view: QAbstractItemView | None = combo_box.view()
         assert combo_box_view is not None
         combo_box_view.setCurrentIndex(combo_box_model.index(1, 0))
-        self._qtest.keyPress(combo_box_view.viewport(), Qt.Key.Key_Return)
+        self._qtest.keyPress(combo_box_view.viewport(), Qt.Key.Key_Return)  # pyright: ignore[reportCallIssue]
         assert len(spy_directory_entered) == 1
 
     @pytest.mark.parametrize(
@@ -240,7 +240,7 @@ class TestQFileDialog(unittest.TestCase):
         spy_files_selected = QSignalSpy(fd.filesSelected)
 
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
         list_view: QListView | None = fd.findChild(QListView, "listView")
         assert list_view is not None, "QListView not found with name 'listView'"
         fs_model: QAbstractItemModel | None = list_view.model()
@@ -275,7 +275,7 @@ class TestQFileDialog(unittest.TestCase):
         button.animateClick()
 
         self.app.processEvents()  # Process events
-        self._qtest.qWait(100)
+        self._qtest.qWait(100)  # pyright: ignore[reportCallIssue]
         assert not fd.isVisible(), "File dialog is still visible after clicking Open"
         assert len(spy_files_selected) == 1, "filesSelected signal was not emitted exactly once"
 
@@ -294,7 +294,7 @@ class TestQFileDialog(unittest.TestCase):
         assert filters.view() is not None, "QComboBox view not found"
         assert filters.isVisible(), "QComboBox with name 'fileTypeCombo' is not visible"
 
-        self._qtest.keyPress(filters, Qt.Key.Key_Down)
+        self._qtest.keyPress(filters, Qt.Key.Key_Down)  # pyright: ignore[reportCallIssue]
 
         assert len(spy_filter_selected) == 1, f"filterSelected signal was emitted {len(spy_filter_selected)} times instead of expected 1 time"
 
@@ -392,7 +392,7 @@ class TestQFileDialog(unittest.TestCase):
 
         fd: PythonQFileDialog = PythonQFileDialog(None, self.id(), start_path)
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         model: QFileSystemModel | None = fd.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model is not None, "QFileSystemModel not found with name 'qt_filesystem_model'"
@@ -415,7 +415,7 @@ class TestQFileDialog(unittest.TestCase):
 
         # Input the text
         for char in input_text:
-            self._qtest.keyClick(line_edit, char)
+            self._qtest.keyClick(line_edit, char)  # pyright: ignore[reportCallIssue]
 
         self.app.processEvents()  # Allow the completer to update
 
@@ -428,7 +428,7 @@ class TestQFileDialog(unittest.TestCase):
 
             dir_path: str = os.path.dirname(full_path)  # noqa: PTH120
             file_list: list[str] = os.listdir(dir_path)
-            expected: int = sum(1 for f in file_list if f.startswith(input_text))
+            expected = sum(1 for f in file_list if f.startswith(input_text))
 
             # Account for possible hidden temporary directory
             if tmp_path and str(tmp_path).startswith(dir_path):
@@ -441,7 +441,7 @@ class TestQFileDialog(unittest.TestCase):
     def test_completer_up(self):
         fd: PythonQFileDialog = PythonQFileDialog()
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         line_edit: QLineEdit | None = fd.findChild(QLineEdit, "fileNameEdit")
         assert line_edit is not None, "QLineEdit not found with name 'fileNameEdit'"
@@ -464,7 +464,7 @@ class TestQFileDialog(unittest.TestCase):
     def test_acceptMode(self):
         fd: PythonQFileDialog = PythonQFileDialog()
         fd.show()
-        self._qtest.qWaitForWindowExposed(fd)
+        self._qtest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         new_folder_button: QToolButton | None = fd.findChild(QToolButton, "newFolderButton")
         assert new_folder_button is not None, "New folder button not found"
@@ -763,7 +763,7 @@ class TestQFileDialog(unittest.TestCase):
         assert list_view is not None, "Failed to find list view"
         for file_name in file_list:
             fd.selectFile(os.path.join(fd.directory().path(), file_name))  # noqa: PTH118
-            assert self.wait_for(lambda: list_view.selectionModel().selectedRows()), "Failed to get selected rows"  # pyright: ignore[reportOptionalMemberAccess]
+            assert self.wait_for(lambda: list_view.selectionModel().selectedRows()), "Failed to get selected rows"  # pyright: ignore[reportOptionalMemberAccess, reportArgumentType]
             to_select.append(list_view.selectionModel().selectedRows()[-1])  # pyright: ignore[reportOptionalMemberAccess]
         assert len(spy_files_selected) == 0, f"Spy files selected is not empty: {len(spy_files_selected)}"
 
@@ -848,7 +848,7 @@ class TestQFileDialog(unittest.TestCase):
         fd.setDirectory(QDir.tempPath())
         fd.setMimeTypeFilters(["text/plain", "text/html"])
         fd.show()
-        QTest.qWaitForWindowExposed(fd)
+        QTest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         assert fd.mimeTypeFilters() == ["text/plain", "text/html"], "MIME type filters not set correctly."
 
@@ -876,7 +876,7 @@ class TestQFileDialog(unittest.TestCase):
         fd.setOption(RealQFileDialog.Option.HideNameFilterDetails, not name_filter_details_visible)
         fd.selectNameFilter(select_filter)
         fd.show()
-        QTest.qWaitForWindowExposed(fd)
+        QTest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         assert fd.selectedNameFilter() == expected_selected_filter, "Selected filter not set correctly."
 
@@ -893,7 +893,7 @@ class TestQFileDialog(unittest.TestCase):
         fd.setDirectory(QDir.currentPath())
         fd.show()
         self.app.setActiveWindow(fd)
-        assert QTest.qWaitForWindowActive(fd), "Failed to wait for window to be active"
+        assert QTest.qWaitForWindowActive(fd), "Failed to wait for window to be active"  # pyright: ignore[reportCallIssue]
         assert fd.isVisible() is True, "File dialog was not visible"
         assert self.app.activeWindow() == fd, "File dialog was not active window"
         self.app.processEvents()
@@ -912,7 +912,7 @@ class TestQFileDialog(unittest.TestCase):
         fd = PythonQFileDialog()
         fd.setViewMode(RealQFileDialog.ViewMode.List)
         fd.show()
-        QTest.qWaitForWindowExposed(fd)
+        QTest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         model: QFileSystemModel | None = fd.findChild(QFileSystemModel, "qt_filesystem_model")
         assert model, f"File system model not found, got: '{model}'"
@@ -958,7 +958,7 @@ class TestQFileDialog(unittest.TestCase):
         fd = PythonQFileDialog()
         fd.setViewMode(RealQFileDialog.ViewMode.List)
         fd.show()
-        QTest.qWaitForWindowExposed(fd)
+        QTest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         back_button: QToolButton | None = fd.findChild(QToolButton, "backButton")
         assert back_button, "Back button not found."
@@ -1037,7 +1037,7 @@ class TestQFileDialog(unittest.TestCase):
         fd.setFileMode(file_mode)
         fd.setDirectory(QDir.tempPath())
         fd.show()
-        QTest.qWaitForWindowExposed(fd)
+        QTest.qWaitForWindowExposed(fd)  # pyright: ignore[reportCallIssue]
 
         button_box: QDialogButtonBox | None = fd.findChild(QDialogButtonBox, "buttonBox")
         assert button_box is not None, "Button box not found with name 'buttonBox'"
@@ -1248,13 +1248,13 @@ class TestQFileDialog(unittest.TestCase):
         assert list_view is not None, "QListView was not found with name 'listView'"
         self.wait(1000)
         current_children_count: int = list_view.model().rowCount(list_view.rootIndex())  # pyright: ignore[reportOptionalMemberAccess]
-        QTest.keyClick(line_edit, Qt.Key.Key_Space)
-        QTest.keyClick(line_edit, Qt.Key.Key_Period)
+        QTest.keyClick(line_edit, Qt.Key.Key_Space)  # pyright: ignore[reportCallIssue]
+        QTest.keyClick(line_edit, Qt.Key.Key_Period)  # pyright: ignore[reportCallIssue]
         self.wait(1000)
         assert current_children_count == list_view.model().rowCount(list_view.rootIndex()), f"QListView was not correct, expected: {current_children_count}, got: {list_view.model().rowCount(list_view.rootIndex())}"  # pyright: ignore[reportOptionalMemberAccess]
         line_edit.clear()
-        QTest.keyClick(line_edit, Qt.Key.Key_Period)
-        QTest.keyClick(line_edit, Qt.Key.Key_Space)
+        QTest.keyClick(line_edit, Qt.Key.Key_Period)  # pyright: ignore[reportCallIssue]
+        QTest.keyClick(line_edit, Qt.Key.Key_Space)  # pyright: ignore[reportCallIssue]
         self.wait(1000)
         assert current_children_count == list_view.model().rowCount(list_view.rootIndex()), f"QListView was not correct, expected: {current_children_count}, got: {list_view.model().rowCount(list_view.rootIndex())}"  # pyright: ignore[reportOptionalMemberAccess]
 
@@ -1339,7 +1339,7 @@ class TestQFileDialog(unittest.TestCase):
         return False
 
     def wait(self, msecs: int):
-        QTest.qWait(msecs)
+        QTest.qWait(msecs)  # pyright: ignore[reportCallIssue]
 
 
 FORCE_UNITTEST = False

@@ -284,7 +284,7 @@ class FileDownloader:
         eta = int((float(total) - float(current)) / rate)
         (eta_mins, eta_secs) = divmod(eta, 60)
         long_time = 99
-        return "--:--" if eta_mins > long_time else "%02d:%02d" % (eta_mins, eta_secs)
+        return "--:--" if eta_mins > long_time else f"{eta_mins:02d}:{eta_secs:02d}"
 
     @staticmethod
     def _calc_progress_percent(

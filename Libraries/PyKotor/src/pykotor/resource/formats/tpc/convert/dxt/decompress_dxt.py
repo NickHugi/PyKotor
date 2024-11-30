@@ -45,13 +45,13 @@ def dxt1_to_rgb(dxt1_data: bytes | bytearray, width: int, height: int) -> bytear
     return rgb_data
 
 def dxt3_to_rgba(dxt3_data: bytes | bytearray, width: int, height: int) -> bytearray:
-    def unpack_565(color):
-        r = (color >> 11) & 0x1F
-        g = (color >> 5) & 0x3F
-        b = color & 0x1F
+    def unpack_565(color: int) -> tuple[int, int, int]:
+        r: int = (color >> 11) & 0x1F
+        g: int = (color >> 5) & 0x3F
+        b: int = color & 0x1F
         return (r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2)
 
-    def lerp(a: int, b: int, t: float):
+    def lerp(a: int, b: int, t: float) -> int:
         return int(a + (b - a) * t)
 
     rgba = bytearray(width * height * 4)
@@ -95,7 +95,11 @@ def dxt3_to_rgba(dxt3_data: bytes | bytearray, width: int, height: int) -> bytea
     return rgba
 
 
-def dxt5_to_rgba(dxt5_data: bytes | bytearray, width: int, height: int) -> bytearray:
+def dxt5_to_rgba(
+    dxt5_data: bytes | bytearray,
+    width: int,
+    height: int,
+) -> bytearray:
     def unpack_565(color: int) -> tuple[int, int, int]:
         r: int = (color >> 11) & 0x1F
         g: int = (color >> 5) & 0x3F
@@ -112,7 +116,7 @@ def dxt5_to_rgba(dxt5_data: bytes | bytearray, width: int, height: int) -> bytea
     def interpolate_alpha(a0: int, a1: int, t: float) -> int:
         return int((1 - t) * a0 + t * a1)
 
-    rgba = bytearray(width * height * 4)
+    rgba: bytearray = bytearray(width * height * 4)
     block_count_x: int = (width + 3) // 4
     block_count_y: int = (height + 3) // 4
 
@@ -137,32 +141,37 @@ def dxt5_to_rgba(dxt5_data: bytes | bytearray, width: int, height: int) -> bytea
                 for x in range(4):
                     pixel_offset: int = ((block_y * 4 + y) * width + (block_x * 4 + x)) * 4
 
-                    if block_x * 4 + x < width and block_y * 4 + y < height:
-                        color_index: int = (color_bits >> (2 * (4 * y + x))) & 0x3
-                        alpha_index: int = (alpha_bits >> (3 * (4 * y + x))) & 0x7
+                    if (
+                        block_x * 4 + x >= width
+                        or block_y * 4 + y >= height
+                    ):
+                        continue
 
-                        if color_index == 0:
-                            color: tuple[int, int, int] = c0
-                        elif color_index == 1:
-                            color = c1
-                        elif color_index == 2:  # noqa: PLR2004
-                            color = interpolate_color(c0, c1, 1/3)
-                        else:
-                            color = interpolate_color(c0, c1, 2/3)
+                    color_index: int = (color_bits >> (2 * (4 * y + x))) & 0x3
+                    alpha_index: int = (alpha_bits >> (3 * (4 * y + x))) & 0x7
 
-                        if alpha_index == 0:
-                            alpha = alpha0
-                        elif alpha_index == 1:
-                            alpha = alpha1
-                        elif alpha0 > alpha1:
-                            alpha: int = interpolate_alpha(alpha0, alpha1, alpha_index / 7)
-                        elif alpha_index == 6:  # noqa: PLR2004
-                            alpha = 0
-                        elif alpha_index == 7:  # noqa: PLR2004
-                            alpha = 255
-                        else:
-                            alpha = interpolate_alpha(alpha0, alpha1, (alpha_index - 1) / 5)
+                    if color_index == 0:
+                        color: tuple[int, int, int] = c0
+                    elif color_index == 1:
+                        color = c1
+                    elif color_index == 2:  # noqa: PLR2004
+                        color = interpolate_color(c0, c1, 1/3)
+                    else:
+                        color = interpolate_color(c0, c1, 2/3)
 
-                        rgba[pixel_offset:pixel_offset + 4] = (*color, alpha)
+                    if alpha_index == 0:
+                        alpha = alpha0
+                    elif alpha_index == 1:
+                        alpha = alpha1
+                    elif alpha0 > alpha1:
+                        alpha: int = interpolate_alpha(alpha0, alpha1, alpha_index / 7)
+                    elif alpha_index == 6:  # noqa: PLR2004
+                        alpha = 0
+                    elif alpha_index == 7:  # noqa: PLR2004
+                        alpha = 255
+                    else:
+                        alpha = interpolate_alpha(alpha0, alpha1, (alpha_index - 1) / 5)
+
+                    rgba[pixel_offset:pixel_offset + 4] = (*color, alpha)
 
     return rgba

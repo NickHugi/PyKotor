@@ -84,10 +84,7 @@ class ResourceReader:
                 loaded_src = bytearray(source)
             else:
                 assert isinstance(source, BinaryReader)
-                data: bytes | None = source.read()
-                if data is None:
-                    raise ValueError("Could not read from source")
-                loaded_src = bytearray(data)
+                loaded_src = bytearray(source.read_all())
 
             self._offset: int = offset
             self._size: int = len(loaded_src)

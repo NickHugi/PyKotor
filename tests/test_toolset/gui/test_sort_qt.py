@@ -34,7 +34,9 @@ class ERFSortFilterProxyModel(QSortFilterProxyModel):
         if index.column() == 2:
             resource: ERFResource = srcModel.item(index.row(), 0).data()
             return len(resource.data)
-        return self.sourceModel().data(index)
+        src_model = self.sourceModel()
+        assert isinstance(src_model, QStandardItemModel)
+        return src_model.data(index)
 
     def lessThan(self, left: QtCore.QModelIndex, right: QtCore.QModelIndex) -> bool:
         srcModel = self.sourceModel()
@@ -88,16 +90,16 @@ if __name__ == "__main__":
     proxy.setSourceModel(model)
 
     # Perform the primary sort by size in descending order
-    proxy.sort(2, Qt.DescendingOrder)
+    proxy.sort(2, Qt.SortOrder.DescendingOrder)
     # Then apply a secondary sort by name in ascending order
-    proxy.sort(0, Qt.AscendingOrder)
+    proxy.sort(0, Qt.SortOrder.AscendingOrder)
 
     # Test the sorting
     expected_order = ["001ebo", "001ebo", "001ebo", "3cfd", "combat", "extra", "hyper", "intro", "seccon", "workbnch_tut"]
     verify_sorting(proxy, expected_order)
 
     # Perform the sort by name in descending order
-    proxy.sort(0, Qt.DescendingOrder)
+    proxy.sort(0, Qt.SortOrder.DescendingOrder)
 
     # Test the sorting
     expected_order = ["workbnch_tut", "seccon", "intro", "hyper", "extra", "combat", "3cfd", "001ebo", "001ebo", "001ebo"]

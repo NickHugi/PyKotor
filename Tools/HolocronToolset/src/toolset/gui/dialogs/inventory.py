@@ -42,10 +42,10 @@ if TYPE_CHECKING:
 
     from typing import Sequence
 
-    from PyQt6.QtCore import QObject
     from qtpy.QtCore import (
         QAbstractItemModel,  # pyright: ignore[reportPrivateImportUsage]
         QModelIndex,
+        QObject,
         QPoint,
     )
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent

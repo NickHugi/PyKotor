@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 
+import qtpy
+
 from loggerplus import RobustLogger
-from qtpy.QtCore import QRegularExpression
 from qtpy.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
 
+if qtpy.QT5:
+    from qtpy.QtCore import QRegExp  # pyright: ignore[reportAttributeAccessIssue]
+else:
+    from qtpy.QtCore import QRegularExpression as QRegExp  # pyright: ignore[reportAttributeAccessIssue]
+
 if TYPE_CHECKING:
-    from qtpy.QtCore import QRegularExpressionMatch, QRegularExpressionMatchIterator
     from qtpy.QtGui import QTextDocument
 
     from toolset.data.installation import HTInstallation
@@ -36,8 +41,8 @@ class SyntaxHighlighter(QSyntaxHighlighter):
 
     OPERATORS: ClassVar[list[str]] = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "\\+", "-", "/", "<<", ">>", "\\&", "\\|"]
 
-    COMMENT_BLOCK_START = QRegularExpression("/\\*")
-    COMMENT_BLOCK_END = QRegularExpression("\\*/")
+    COMMENT_BLOCK_START = QRegExp("/\\*")
+    COMMENT_BLOCK_END = QRegExp("\\*/")
 
     BRACES: ClassVar[list[str]] = ["\\{", "\\}", "\\(", "\\)", "\\[", "\\]"]
 
@@ -46,19 +51,6 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         parent: QTextDocument,
         installation: HTInstallation | None = None,
     ):
-        """Initializes the syntax highlighter.
-
-        Args:
-        ----
-            parent: QTextDocument: The parent text document
-            installation: HTInstallation | None: The installation object
-
-        Initializes styles and rules:
-            - Initializes style formats
-            - Gets keywords, functions and constants from installation
-            - Defines highlighting rules for keywords, functions, constants, operators, braces, numbers, strings and comments
-            - Sets rules attribute with compiled rules.
-        """
         super().__init__(parent)
 
         self._installation: HTInstallation | None = installation
@@ -70,23 +62,23 @@ class SyntaxHighlighter(QSyntaxHighlighter):
 
         keyword_format: QTextCharFormat = self._format("blue")
         keywords: list[str] = ["int", "float", "string", "object", "void", "if", "else", "while", "for", "return"]
-        self.rules.extend((QRegularExpression(f"\\b{w}\\b"), keyword_format) for w in keywords)
+        self.rules.extend((QRegExp(f"\\b{w}\\b"), keyword_format) for w in keywords)
 
         function_format: QTextCharFormat = self._format("darkGreen")
-        self.rules.append((QRegularExpression("\\b[A-Za-z0-9_]+(?=\\()"), function_format))
+        self.rules.append((QRegExp("\\b[A-Za-z0-9_]+(?=\\()"), function_format))
 
         number_format: QTextCharFormat = self._format("brown")
-        self.rules.append((QRegularExpression("\\b[0-9]+\\b"), number_format))
+        self.rules.append((QRegExp("\\b[0-9]+\\b"), number_format))
 
         string_format: QTextCharFormat = self._format("darkMagenta")
-        self.rules.append((QRegularExpression('".*"'), string_format))
+        self.rules.append((QRegExp('".*"'), string_format))
 
         comment_format: QTextCharFormat = self._format("gray", italic=True)
-        self.rules.append((QRegularExpression("//[^\n]*"), comment_format))
+        self.rules.append((QRegExp("//[^\n]*"), comment_format))
 
         self.multiline_comment_format = comment_format
-        self.multiline_comment_start = QRegularExpression("/\\*")
-        self.multiline_comment_end = QRegularExpression("\\*/")
+        self.multiline_comment_start = QRegExp("/\\*")
+        self.multiline_comment_end = QRegExp("\\*/")
 
     def _format(
         self,
@@ -107,24 +99,37 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         text: str,
     ):
         for pattern, format in self.rules:
-            expression: QRegularExpression = QRegularExpression(pattern)
-            it: QRegularExpressionMatchIterator = expression.globalMatch(text)
-            while it.hasNext():
-                match: QRegularExpressionMatch = it.next()
-                self.setFormat(match.capturedStart(), match.capturedLength(), format)
+            if qtpy.QT5:
+                # Qt5: QRegExp uses indexIn and matchedLength
+                expression = QRegExp(pattern)
+                index = 0
+                while index >= 0:
+                    index = expression.indexIn(text, index)  # pyright: ignore[reportAttributeAccessIssue]
+                    if index >= 0:
+                        length = expression.matchedLength()  # pyright: ignore[reportAttributeAccessIssue]
+                        self.setFormat(index, length, format)
+                        index += length
+            else:
+                # Qt6: QRegularExpression needs explicit anchoring
+                expression = QRegExp(pattern)
+                it = expression.globalMatch(text)
+                while it.hasNext():
+                    match = it.next()
+                    self.setFormat(match.capturedStart(), match.capturedLength(), format)
 
         self.setCurrentBlockState(0)
 
+        # For multiline comments, use string methods instead of regex for compatibility
         start_index: int = 0
         if self.previousBlockState() != 1:
             try:
-                start_index = text.index(self.multiline_comment_start.pattern())
+                start_index = text.index("/*")  # Use literal instead of pattern()
             except ValueError:
                 start_index = -1
 
         while start_index >= 0:
             try:
-                end_index: int = text.index(self.multiline_comment_end.pattern(), start_index)
+                end_index: int = text.index("*/", start_index)  # Use literal instead of pattern()
             except ValueError:
                 end_index = -1
 
@@ -132,11 +137,11 @@ class SyntaxHighlighter(QSyntaxHighlighter):
                 self.setCurrentBlockState(1)
                 comment_length = len(text) - start_index
             else:
-                comment_length = end_index - start_index + len(self.multiline_comment_end.pattern())
+                comment_length = end_index - start_index + 2  # Use fixed length of "*/"
 
             self.setFormat(start_index, comment_length, self.multiline_comment_format)
             try:
-                start_index = text.index(self.multiline_comment_start.pattern(), start_index + comment_length)
+                start_index = text.index("/*", start_index + comment_length)
             except ValueError:
                 start_index = -1
 

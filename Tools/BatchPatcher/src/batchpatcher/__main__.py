@@ -902,9 +902,9 @@ def create_font_pack(lang: Language):
         SCRIPT_GLOBALS.font_path,
         (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution),
         lang,
-        SCRIPT_GLOBALS.draw_bounds,
         SCRIPT_GLOBALS.custom_scaling,
         font_color=SCRIPT_GLOBALS.font_color,
+        draw_debug_box=True,
     )
 
 

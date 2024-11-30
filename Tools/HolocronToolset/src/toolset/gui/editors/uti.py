@@ -31,10 +31,8 @@ from toolset.utils.window import add_window
 if TYPE_CHECKING:
     import os
 
-    from PyQt6.QtCore import QModelIndex
-    from PyQt6.QtGui import QClipboard
-    from qtpy.QtCore import QPoint
-    from qtpy.QtGui import QPixmap
+    from qtpy.QtCore import QModelIndex, QPoint
+    from qtpy.QtGui import QClipboard, QPixmap
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 

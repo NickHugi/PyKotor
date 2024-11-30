@@ -649,16 +649,17 @@ class _TrimeshHeader:
         self.counters_count: int = 0
         self.counters_count2: int = 0
         self.unknown1: bytes = b"\xff\xff\xff\xff" + b"\xff\xff\xff\xff" + b"\x00\x00\x00\x00"
-        self.saber_unknowns: bytes = b"\x00" * 8
+        self.saber_unknowns: bytes = b"\x03\x00\x00\x00\x00\x00\x00\x00"  # Default: (3,0,0,0,0,0,0,0)
         self.unknown2: int = 0
         self.uv_direction: Vector2 = Vector2.from_null()
         self.uv_jitter: float = 0.0
         self.uv_speed: float = 0.0
+        self.dirt_enabled: int = 0  # K2 only: uint8 bool
+        self.dirt_texture: int = 1  # K2 only: uint16, defaults to 1
         self.mdx_data_size: int = 0
         self.mdx_data_bitmap: int = 0
         self.mdx_vertex_offset: int = 0
         self.mdx_normal_offset: int = 0
-        self.mdx_color_offset: int = 0xFFFFFFFF
         self.mdx_texture1_offset: int = 0
         self.mdx_texture2_offset: int = 0
         self.unknown3: int = 0xFFFFFFFF
@@ -724,11 +725,16 @@ class _TrimeshHeader:
         self.uv_direction = reader.read_vector2()
         self.uv_jitter = reader.read_single()
         self.uv_speed = reader.read_single()
+
+        # K2-specific fields
+        if reader.remaining() >= 3:  # uint8 + uint16
+            self.dirt_enabled = reader.read_uint8()
+            self.dirt_texture = reader.read_uint16()
+
         self.mdx_data_size = reader.read_uint32()
         self.mdx_data_bitmap = reader.read_uint32()
         self.mdx_vertex_offset = reader.read_uint32()
         self.mdx_normal_offset = reader.read_uint32()
-        self.mdx_color_offset = reader.read_uint32()
         self.mdx_texture1_offset = reader.read_uint32()
         self.mdx_texture2_offset = reader.read_uint32()
         self.unknown3 = reader.read_uint32()
@@ -805,11 +811,15 @@ class _TrimeshHeader:
         writer.write_vector2(self.uv_direction)
         writer.write_single(self.uv_jitter)
         writer.write_single(self.uv_speed)
+
+        # K2-specific fields
+        writer.write_uint8(self.dirt_enabled)
+        writer.write_uint16(self.dirt_texture)
+
         writer.write_uint32(self.mdx_data_size)
         writer.write_uint32(self.mdx_data_bitmap)
         writer.write_uint32(self.mdx_vertex_offset)
         writer.write_uint32(self.mdx_normal_offset)
-        writer.write_uint32(self.mdx_color_offset)
         writer.write_uint32(self.mdx_texture1_offset)
         writer.write_uint32(self.mdx_texture2_offset)
         writer.write_uint32(self.unknown3)

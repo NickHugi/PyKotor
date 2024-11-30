@@ -48,6 +48,7 @@ from pykotor.tools import module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
 from toolset.data.installation import HTInstallation
+from toolset.gui.common.style.theme_manager import ThemeManager
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.clone_module import CloneModuleDialog
@@ -71,7 +72,6 @@ from toolset.gui.editors.utp import UTPEditor
 from toolset.gui.editors.uts import UTSEditor
 from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
-from toolset.gui.theme_manager import ThemeManager
 from toolset.gui.widgets.main_widgets import ResourceList, ResourceStandardItem
 from toolset.gui.widgets.settings.widgets.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
@@ -283,6 +283,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewSSF.triggered.connect(lambda: add_window(SSFEditor(self, self.active)))
         self.ui.actionCloneModule.triggered.connect(lambda: add_window(CloneModuleDialog(self, self.active, self.installations)))
 
+
         self.ui.actionModuleDesigner.triggered.connect(self.open_module_designer)
         self.ui.actionEditTLK.triggered.connect(self.open_active_talktable)
         self.ui.actionEditJRL.triggered.connect(self.open_active_journal)
@@ -296,7 +297,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionDiscordKotOR.triggered.connect(lambda: open_link("http://discord.gg/kotor"))
         self.ui.actionDiscordHolocronToolset.triggered.connect(lambda: open_link("https://discord.gg/3ME278a9tQ"))
 
-        for theme_name in self.theme_manager.get_supported_themes():  # loop through the themes defined in the theme manager
+        for theme_name in tuple(set(self.theme_manager.get_default_styles() + self.theme_manager.get_available_themes())):  # noqa: PLW2901
             def change_theme(*args, theme=theme_name):
                 self.theme_manager.change_theme(theme)
             theme_action: _QAction | None = self.ui.menuTheme.addAction(theme_name)

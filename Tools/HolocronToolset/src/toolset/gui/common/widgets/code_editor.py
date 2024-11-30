@@ -42,9 +42,9 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.ui_libraries.qt.widgets.itemviews.treewidget import RobustTreeWidget
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QMimeData, QPoint
+    from qtpy.QtCore import QAbstractItemModel, QMimeData, QPoint
     from qtpy.QtGui import QDragEnterEvent, QDropEvent, QFocusEvent, QFont, QFontMetrics, QKeyEvent, QMoveEvent, QPaintEvent, QResizeEvent, QTextBlock
-    from qtpy.QtWidgets import QScrollBar, QTreeWidgetItem
+    from qtpy.QtWidgets import QAbstractItemView, QScrollBar, QTreeWidgetItem
     from typing_extensions import Literal, Self  # noqa: F401  # pyright: ignore[reportMissingModuleSource]
 
 
@@ -183,16 +183,6 @@ class CodeEditor(QPlainTextEdit):
             block_number += 1
 
     def line_number_area_width(self) -> int:
-        """Calculates the width needed to display line numbers.
-
-        Args:
-        ----
-            self: The object whose method this is.
-
-        Returns:
-        -------
-            int: The width in pixels needed to display line numbers.
-        """
         digits: int = 1
         maximum: int = max(1, self.blockCount())
         while maximum >= 10:  # noqa: PLR2004
@@ -318,9 +308,18 @@ class CodeEditor(QPlainTextEdit):
         self.completer.setCompletionPrefix(self.text_under_cursor())
         if self.completer.completionCount() > 0:
             rect: QRect = self.cursorRect()
-            rect.setWidth(self.completer.popup().sizeHintForColumn(0) + self.completer.popup().verticalScrollBar().sizeHint().width())
+            popup_completer: QAbstractItemView | None = self.completer.popup()
+            if popup_completer is None:
+                return
+            vertical_scrollbar: QScrollBar | None = popup_completer.verticalScrollBar()
+            if vertical_scrollbar is None:
+                return
+            rect.setWidth(popup_completer.sizeHintForColumn(0) + vertical_scrollbar.sizeHint().width())
             self.completer.complete(rect)
-            self.completer.popup().setCurrentIndex(self.completer.completionModel().index(0, 0))
+            completion_model: QAbstractItemModel | None = self.completer.completionModel()
+            if completion_model is None:
+                return
+            popup_completer.setCurrentIndex(completion_model.index(0, 0))
 
     def text_under_cursor(self) -> str:
         tc: QTextCursor = self.textCursor()
@@ -448,7 +447,7 @@ class CodeEditor(QPlainTextEdit):
 
         find_text: str = self.find_edit.text()
         if self.regex.isChecked():
-            find_text = QRegExp(find_text) if qtpy.QT5 else QRegularExpression(find_text)
+            find_text = QRegExp(find_text) if qtpy.QT5 else QRegularExpression(find_text)  # pyright: ignore[reportAssignmentType, reportAttributeAccessIssue]
 
         cursor: QTextCursor = self.textCursor()
         document: QTextDocument | None = self.document()
@@ -611,8 +610,9 @@ class CodeEditor(QPlainTextEdit):
             else:
                 super().keyPressEvent(event)
         elif (
-            self.completer
-            and self.completer.popup().isVisible()
+            self.completer is not None
+            and self.completer.popup() is not None
+            and self.completer.popup().isVisible()  # pyright: ignore[reportOptionalMemberAccess]
             and event.key()
             in (
                 Qt.Key.Key_Enter,
@@ -623,7 +623,7 @@ class CodeEditor(QPlainTextEdit):
             )
         ):
             self.insert_completion(self.completer.currentCompletion())
-            self.completer.popup().hide()
+            self.completer.popup().hide()  # pyright: ignore[reportOptionalMemberAccess]
             return
 
         super().keyPressEvent(event)
@@ -642,15 +642,15 @@ class CodeEditor(QPlainTextEdit):
             or len(completion_prefix) < 3  # noqa: PLR2004
             or event.text()[-1] in eow
         ):
-            self.completer.popup().hide()
+            self.completer.popup().hide()  # pyright: ignore[reportOptionalMemberAccess]
             return
 
         if completion_prefix != self.completer.completionPrefix():
             self.completer.setCompletionPrefix(completion_prefix)
-            self.completer.popup().setCurrentIndex(self.completer.completionModel().index(0, 0))
+            self.completer.popup().setCurrentIndex(self.completer.completionModel().index(0, 0))  # pyright: ignore[reportOptionalMemberAccess]
 
         cr: QRect = self.cursorRect()
-        cr.setWidth(self.completer.popup().sizeHintForColumn(0) + self.completer.popup().verticalScrollBar().sizeHint().width())
+        cr.setWidth(self.completer.popup().sizeHintForColumn(0) + self.completer.popup().verticalScrollBar().sizeHint().width())  # pyright: ignore[reportOptionalMemberAccess]
         self.completer.complete(cr)
 
     def focusInEvent(
@@ -706,7 +706,7 @@ class NSSCodeEditor(CodeEditor):
         mime_data: QMimeData | None = event.mimeData()
         if mime_data is None:
             return
-        self.insert_text_at_position(mime_data.text(), event.pos())
+        self.insert_text_at_position(mime_data.text(), event.pos() if qtpy.QT5 else event.position().toPoint())  # pyright: ignore[reportAttributeAccessIssue]
 
     def insert_text_at_position(
         self,
@@ -729,31 +729,3 @@ class NSSCodeEditor(CodeEditor):
     ):
         super().moveEvent(event)
         self.save_settings()
-
-
-class WebViewEditor(QWidget):
-    def __init__(
-        self,
-        parent: QWidget,
-    ):
-        super().__init__(parent)
-        layout = QVBoxLayout(self)
-        try:
-            from qtpy.QtWebEngineWidgets import QWebEngineView  # pyright: ignore[reportPrivateImportUsage]
-
-            self.web_view: QWebEngineView = QWebEngineView(self)
-            layout.addWidget(self.web_view)
-        except ImportError:
-            label = QLabel("WebEngine not available. Please install QtWebEngine.", self)
-            layout.addWidget(label)
-
-    def load_url(
-        self,
-        url: str,
-    ):
-        from qtpy.QtCore import QUrl
-        from qtpy.QtWebEngineCore import QWebEngineHttpRequest
-
-        if self.web_view:
-            get_request = QWebEngineHttpRequest(QUrl(url), QWebEngineHttpRequest.Method.Get)
-            self.web_view.load(get_request)

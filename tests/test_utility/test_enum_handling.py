@@ -17,6 +17,7 @@ def sip_enum_to_int(obj: Any) -> int:
         return int(nxt_obj.value)
     return int(nxt_obj)
 
+
 if __name__ == "__main__":
     api_name = "PySide6"
     os.environ["QT_API"] = api_name
@@ -32,11 +33,11 @@ if __name__ == "__main__":
     from qtpy.QtWidgets import QApplication, QFileDialog
     print(f"Testing enums with API: {qtpy.API_NAME}")
     for enum_group in [
-        (QFileDialog.Option.ShowDirsOnly, QFileDialog.Options, 1),
+        (QFileDialog.Option.ShowDirsOnly, QFileDialog.Option, 1),
         (QFileDialog.FileMode.ExistingFiles, QFileDialog.FileMode, 3),
         (QFileDialog.DialogLabel.LookIn, QFileDialog.DialogLabel, 0),
-        (Qt.Key_Escape, Qt.Key, 16777216),
-        ]:
+        (Qt.Key.Key_Escape, Qt.Key, 16777216),
+    ]:
         e1, e2, value = enum_group
         some_enum1 = e1
         e1_int: int | None = sip_enum_to_int(some_enum1)

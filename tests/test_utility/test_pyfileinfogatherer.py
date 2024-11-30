@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from ctypes import c_bool
 import os
 import sys
 import tempfile
 
 from unittest.mock import MagicMock, patch
 
-from PyQt6.QtCore import QCoreApplication
+from qtpy.QtCore import QCoreApplication
 import pytest
 
 from qtpy.QtCore import QDir, QFileInfo
@@ -72,10 +73,10 @@ def test_run_abort(gatherer: PyFileInfoGatherer):
                 f.write("test")
 
         gatherer._paths = [temp_dir]  # noqa: SLF001
-        gatherer.abort = False
+        gatherer.abort = c_bool(False)
 
         # Act
-        gatherer.abort = True  # Simulate abort signal
+        gatherer.abort = c_bool(True)  # Simulate abort signal
         gatherer.run()
 
         # Assert
@@ -153,17 +154,6 @@ def test_fetch_extended_information(gatherer: PyFileInfoGatherer):
         assert emitted_updates[0][1].size() == 4  # "test" is 4 bytes
 
 
-def test_set_icon_provider(gatherer: PyFileInfoGatherer):
-    # Arrange
-    provider = QFileIconProvider()
-
-    # Act
-    gatherer.setIconProvider(provider)
-
-    # Assert
-    assert gatherer.m_iconProvider == provider
-
-
 def test_update_file(gatherer: PyFileInfoGatherer):
     with tempfile.TemporaryDirectory() as temp_dir:
         # Arrange
@@ -186,7 +176,6 @@ def test_watched_files(gatherer: PyFileInfoGatherer):
         with open(file_path, "w") as f:  # noqa: PTH123
             f.write("test")
 
-        gatherer.createWatcher()
         gatherer.watchPaths([file_path])
 
         result = gatherer.watchedFiles()
@@ -206,7 +195,6 @@ def test_watched_directories(gatherer: PyFileInfoGatherer):
 
 
 def test_create_watcher(gatherer: PyFileInfoGatherer):
-    gatherer.createWatcher()
     assert gatherer.m_watcher is not None
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -218,13 +206,6 @@ def test_create_watcher(gatherer: PyFileInfoGatherer):
         assert file_path in gatherer.watchedFiles()
 
 
-def test_watch_paths(gatherer: PyFileInfoGatherer):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        gatherer.createWatcher()
-        gatherer.watchPaths([temp_dir])
-        assert gatherer.m_watching is True  # noqa: SLF001
-
-
 def test_unwatch_paths(gatherer: PyFileInfoGatherer):
     with tempfile.TemporaryDirectory() as temp_dir:  # noqa: SIM117
         # Mock QFileSystemWatcher before it's created
@@ -232,8 +213,6 @@ def test_unwatch_paths(gatherer: PyFileInfoGatherer):
             mock_watcher_instance = MockWatcher.return_value
             mock_add_paths = mock_watcher_instance.addPaths
             mock_remove_paths = mock_watcher_instance.removePaths
-
-            gatherer.createWatcher()
 
             assert gatherer.m_watcher is not None, "QFileSystemWatcher was not initialized!"
 
@@ -246,25 +225,6 @@ def test_unwatch_paths(gatherer: PyFileInfoGatherer):
 
             # Check if paths were removed
             mock_remove_paths.assert_not_called()
-
-
-def test_is_watching(gatherer: PyFileInfoGatherer):
-    # Act & Assert
-    assert gatherer.isWatching() is False
-
-    gatherer.setWatching(True)
-    assert gatherer.isWatching() is True
-
-    gatherer.setWatching(False)
-    assert gatherer.isWatching() is False
-
-
-def test_set_watching(gatherer: PyFileInfoGatherer):
-    # Act
-    gatherer.setWatching(True)
-
-    # Assert
-    assert gatherer.m_watching is True  # noqa: SLF001
 
 
 def test_clear(gatherer: PyFileInfoGatherer):

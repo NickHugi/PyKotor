@@ -61,18 +61,21 @@ def get_body_model(  # noqa: C901, PLR0912, PLR0915
                 - get it from 'modela' column, append '01' to the end of the texture name
             - process override texture based on alignment
     """
+    # Load appearance.2da if not provided
     if appearance is None:
         appearance_lookup: ResourceResult | None = installation.resource("appearance", ResourceType.TwoDA)
         if not appearance_lookup:
             raise ValueError("appearance.2da missing from installation.")
         appearance = read_2da(appearance_lookup.data)
 
+    # Load baseitems.2da if not provided
     if baseitems is None:
         baseitems_lookup: ResourceResult | None = installation.resource("baseitems", ResourceType.TwoDA)
         if not baseitems_lookup:
             raise ValueError("baseitems.2da missing from installation.")
         baseitems = read_2da(baseitems_lookup.data)
 
+    # Prepare context for logging and error messages
     first_name: str = installation.string(utc.first_name)
     context_base: str = f" for UTC '{first_name}'"
 
@@ -81,6 +84,7 @@ def get_body_model(  # noqa: C901, PLR0912, PLR0915
     body_model: str | None = None
     override_texture: str | None = None
 
+    # Determine body model and texture based on modeltype
     modeltype: str = utc_appearance_row.get_string("modeltype", context=f"Fetching model type{context_base}")
     if modeltype != "B":
         print(f"appearance.2da: utc 'modeltype' is '{modeltype}', fetching 'race' model{context_base}")
@@ -88,6 +92,7 @@ def get_body_model(  # noqa: C901, PLR0912, PLR0915
     else:
         print("appearance.2da: utc 'modeltype' is 'B'")
 
+        # Handle armor or default model/texture
         if EquipmentSlot.ARMOR not in utc.equipment or not utc.equipment[EquipmentSlot.ARMOR].resref:
             model_column = "modela"
             body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model 'modela'{context_base}")
@@ -95,19 +100,30 @@ def get_body_model(  # noqa: C901, PLR0912, PLR0915
             tex_append = "01"
             override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching default texture{context_base}")
         else:
-            armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref
+            # Handle armor-specific model and texture
+            armor_resref: ResRef = utc.equipment[EquipmentSlot.ARMOR].resref
             RobustLogger().debug(f"utc is wearing armor, fetch '{armor_resref}.uti'")
-            armor_res_lookup = installation.resource(str(armor_resref), ResourceType.UTI)
+
+            # Attempt to load armor UTI
+            armor_res_lookup: ResourceResult | None = installation.resource(str(armor_resref), ResourceType.UTI)
             if armor_res_lookup is None:
                 RobustLogger().error(f"'{armor_resref}.uti' missing from installation{context_base}")
-                model_column, body_model, tex_column, tex_append, override_texture = lookup_no_armor()  # fallback
+                # Fallback to default values if armor UTI is missing
+                model_column = "modela"
+                body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model 'modela'{context_base}")
+                tex_column: Literal["texaevil", "texa"] = "texaevil" if utc.alignment <= 25 else "texa"  # noqa: PLR2004
+                tex_append = "01"
+                override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching default texture{context_base}")
             else:
+                # Process armor-specific model and texture
                 armor_uti: UTI = read_uti(armor_res_lookup.data)
                 RobustLogger().debug(f"baseitems.2da: get body row {armor_uti.base_item} for their armor")
+
                 body_row: TwoDARow = baseitems.get_row(armor_uti.base_item, context=f"Fetching armor base item row{context_base}")
                 body_cell: str = body_row.get_string("bodyvar", context=f"Fetching 'bodyvar'{context_base}")
                 RobustLogger().debug(f"baseitems.2da: 'bodyvar' cell: {body_cell}")
 
+                # Determine model and texture columns
                 armor_variation: str = body_cell.lower()
                 model_column: str = f"model{armor_variation}"
                 evil_tex_column: str = f"tex{armor_variation}evil"
@@ -125,6 +141,7 @@ def get_body_model(  # noqa: C901, PLR0912, PLR0915
         print(f"appearance.2da's texture column: '{tex_column}'")
         print(f"override_texture name: '{override_texture}'")
 
+        # Process override texture
         if override_texture and override_texture.strip() and override_texture != "****":
             fallback_override_texture: str = override_texture + tex_append
             if tex_append != "01" and installation.texture(fallback_override_texture) is None:  # e.g. g_lena.utc which uses the twi'lek stripper model (i.e. should be n_twilekfc01 not n_twilekfc05)
@@ -136,6 +153,7 @@ def get_body_model(  # noqa: C901, PLR0912, PLR0915
         print(f"Final override texture name (from appearance.2da's '{tex_column}' column): '{override_texture}'")
         print(f"Final body model name (from appearance.2da's '{model_column}' column): '{body_model}'")
 
+    # Fallback to 'race' column if body_model is empty or invalid
     if not body_model or not body_model.strip() or body_model == "****":
         body_model = utc_appearance_row.get_string("race", context=f"Fetching 'race' column{context_base}")
         print(f"body model name (from appearance.2da's 'race' column): '{body_model}'")

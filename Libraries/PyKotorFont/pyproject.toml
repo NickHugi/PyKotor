@@ -15,6 +15,8 @@ dependencies = [
     "numpy~=1.22",      # probably required by PyKotorGL
     "charset-normalizer>=2.0,<3.4",  # used for localized string decodings
     "defusedxml~=0.7",  # secure XML parsing
+    "pykotor>=1.7",
+    "Pillow>=9.5",
 ]
 authors = [
   {name = "NickHugi"},
@@ -26,17 +28,33 @@ readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "LGPL-3.0-or-later License"}
 keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
 
-[project.optional-dependencies]
-font_writer = ["Pillow>=9.5"]  # required for TXI/TGA fonts
-xml         = ["defusedxml~=0.7"]         # secure XML parsing
-gl          = [
-  "PyGLM>=2.0,<2.8",
-  "PyOpenGL~=3.1",
-  "django>2.1; os_name != 'nt'",
-  "django>2.0; os_name == 'nt'",
-]
+[tool.poetry]
+name = "pykotorfont"
+version = "1.0.0"
+description = "Work with KOTOR's font textures and txi files."
+authors = ["NickHugi"]
+maintainers = ["Benjamin Auquite <halomastar@gmail.com>"]
+readme = "README.md"
+license = "LGPL-3.0-or-later License"
+keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher", "translation"]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pykotor = "^1.7"
+Pillow = "^9.5"
+
+
 
 [project.urls]
+Homepage = "https://github.com/NickHugi/PyKotor"
+Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
+Repository = "https://github.com/NickHugi/PyKotor.git"
+Issues = "https://github.com/NickHugi/PyKotor/issues"
+#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"
+
+
+[tool.poetry.urls]
 Homepage = "https://github.com/NickHugi/PyKotor"
 Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
 Repository = "https://github.com/NickHugi/PyKotor.git"

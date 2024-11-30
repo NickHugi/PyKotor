@@ -49,9 +49,9 @@ if TOOLSET_DIR.joinpath("toolset").exists():
 from toolset.gui.editors.dlg import DLGEditor  # noqa: E402
 
 if TYPE_CHECKING:
-    from PyQt6.QtCore import QPointF
-    from PyQt6.QtGui import QWheelEvent
-    from PyQt6.QtWidgets import QTreeView
+    from qtpy.QtCore import QPointF
+    from qtpy.QtGui import QWheelEvent
+    from qtpy.QtWidgets import QTreeView
 
     from pykotor.resource.generics.dlg import DLGNode
     from toolset.gui.editors.dlg import DLGStandardItemModel

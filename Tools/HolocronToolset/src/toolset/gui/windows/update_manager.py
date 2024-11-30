@@ -46,8 +46,8 @@ class UpdateManager:
     ):
         with ProcessPoolExecutor() as executor:
             if self.settings.useBetaChannel:
-                edge_future = executor.submit(fetch_update_info, True, silent)
-            master_future = executor.submit(fetch_update_info, False, silent)
+                edge_future: Future[dict[str, Any] | Exception] = executor.submit(fetch_update_info, True, silent)
+            master_future: Future[dict[str, Any] | Exception] = executor.submit(fetch_update_info, False, silent)
 
         master_future.add_done_callback(self.on_master_future_fetched)
         edge_future.add_done_callback(self.on_edge_future_fetched)
@@ -80,7 +80,7 @@ class UpdateManager:
                     QMessageBox.Icon.Information,
                     f"Unable to fetch latest version ({etype})",
                     f"Check if you are connected to the internet.\nError: {msg}",
-                    QMessageBox.Ok,
+                    QMessageBox.StandardButton.Ok,
                 ).exec()
             return
         if isinstance(self.edge_info, Exception):
@@ -91,7 +91,7 @@ class UpdateManager:
                     QMessageBox.Icon.Information,
                     f"Unable to fetch latest version ({etype})",
                     f"Check if you are connected to the internet.\nError: {msg}",
-                    QMessageBox.Ok,
+                    QMessageBox.StandardButton.Ok,
                 ).exec()
             return
         remote_info, release_version_checked = self._determine_version_info(self.edge_info, self.master_info)
@@ -153,44 +153,44 @@ class UpdateManager:
             if self.silent:
                 return
             up_to_date_msg_box = QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "Version is up to date",
                 f"You are running the latest {cur_version_str}version ({CURRENT_VERSION}).",
-                QMessageBox.Ok | QMessageBox.Yes | QMessageBox.Close,
+                QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Close,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
 
-            up_to_date_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
-            up_to_date_msg_box.button(QMessageBox.Yes).setText("Choose Update")
+            up_to_date_msg_box.button(QMessageBox.StandardButton.Ok).setText("Auto-Update")  # pyright: ignore[reportOptionalMemberAccess]
+            up_to_date_msg_box.button(QMessageBox.StandardButton.Yes).setText("Choose Update")  # pyright: ignore[reportOptionalMemberAccess]
             result = up_to_date_msg_box.exec()
 
-            if result == QMessageBox.Ok:
+            if result == QMessageBox.StandardButton.Ok:
                 self.autoupdate_toolset(greatest_version, remote_info, is_release=release_version_checked)
-            elif result == QMessageBox.Yes:
+            elif result == QMessageBox.StandardButton.Yes:
                 toolset_updater = UpdateDialog()
                 toolset_updater.exec()
             return
 
         beta_string: Literal["release ", "beta "] = "release " if release_version_checked else "beta "
         new_version_msg_box = QMessageBox(
-            QMessageBox.Information,
+            QMessageBox.Icon.Information,
             f"Your toolset version {CURRENT_VERSION} is outdated.",
             f"A new toolset {beta_string}version ({greatest_version}) is available for <a href='{download_link}'>download</a>.<br><br>{notes}",
-            QMessageBox.Yes | QMessageBox.Abort,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Abort,
             parent=None,
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         )
 
-        new_version_msg_box.setDefaultButton(QMessageBox.Abort)
-        new_version_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
-        new_version_msg_box.button(QMessageBox.Yes).setText("Details")
-        new_version_msg_box.button(QMessageBox.Abort).setText("Ignore")
+        new_version_msg_box.setDefaultButton(QMessageBox.StandardButton.Abort)
+        new_version_msg_box.button(QMessageBox.StandardButton.Ok).setText("Auto-Update")  # pyright: ignore[reportOptionalMemberAccess]
+        new_version_msg_box.button(QMessageBox.StandardButton.Yes).setText("Details")  # pyright: ignore[reportOptionalMemberAccess]
+        new_version_msg_box.button(QMessageBox.StandardButton.Abort).setText("Ignore")  # pyright: ignore[reportOptionalMemberAccess]
         response = new_version_msg_box.exec()
 
-        if response == QMessageBox.Ok:
+        if response == QMessageBox.StandardButton.Ok:
             self.autoupdate_toolset(greatest_version, remote_info, is_release=release_version_checked)
-        elif response == QMessageBox.Yes:
+        elif response == QMessageBox.StandardButton.Yes:
             toolset_updater = UpdateDialog()
             toolset_updater.exec()
 

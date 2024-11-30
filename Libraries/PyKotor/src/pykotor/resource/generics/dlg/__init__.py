@@ -1,4 +1,5 @@
 """Dialog system for handling game conversations."""
+from __future__ import annotations
 
 from pykotor.resource.generics.dlg.anims import DLGAnimation
 from pykotor.resource.generics.dlg.base import DLG, DLGComputerType, DLGConversationType

@@ -1,0 +1,63 @@
+/* Dracula Dark Theme */
+:root {
+    --primary-bg: #282A36;
+    --secondary-bg: #21222C;
+    --accent: #BD93F9;
+    --text-primary: #F8F8F2;
+    --text-secondary: #6272A4;
+    --highlight: #44475A;
+    --border: #6272A4;
+    
+    --error: #FF5555;
+    --warning: #F1FA8C;
+    --success: #50FA7B;
+}
+
+QWidget {
+    background-color: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+    selection-background-color: var(--highlight);
+    selection-color: var(--accent);
+}
+
+QPushButton {
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 16px;
+}
+
+QPushButton:hover {
+    background-color: var(--highlight);
+    color: var(--accent);
+}
+
+QLineEdit, QTextEdit {
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QComboBox {
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+}
+
+QTabBar::tab {
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 16px;
+}
+
+QTabBar::tab:selected {
+    background-color: var(--highlight);
+    color: var(--accent);
+} 
