@@ -133,7 +133,7 @@ class BIF(BiowareArchive):
     def get_resource_offset(
         self,
         resource: ArchiveResource,
-    ) -> tuple[int, int]:
+    ) -> int:
         """Get offset and size for a resource.
 
         Required by BiowareArchive.
@@ -143,12 +143,11 @@ class BIF(BiowareArchive):
             raise TypeError(msg)
         try:
             if self.bif_type == BIFType.BZF:
-                return resource.offset, resource.packed_size
+                return resource.offset
         except ValueError as e:
             msg = "Resource not found in BIF"
             raise ValueError(msg) from e
-        else:
-            return resource.offset, resource.size
+        return resource.offset
 
     def set_data(
         self,

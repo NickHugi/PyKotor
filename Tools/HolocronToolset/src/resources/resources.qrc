@@ -8,6 +8,28 @@
         <file>other/ManjaroMix.qss</file>
         <file>other/MaterialDark.qss</file>
         <file>other/Ubuntu.qss</file>
+        <file>other/cyberpunk2077.qss</file>
+        <file>other/AMOLED.qss</file>
+        <file>other/andromeda.qss</file>
+        <file>other/andromeda-italic.qss</file>
+        <file>other/aqua.qss</file>
+        <file>other/Astolfo.qss</file>
+        <file>other/asuna.qss</file>
+        <file>other/ConsoleStyle.qss</file>
+        <file>other/cyberpunk2077.qss</file>
+        <file>other/DraculaDark.qss</file>
+        <file>other/ElegantDark.qss</file>
+        <file>other/GruvboxDark.qss</file>
+        <file>other/MacOS.qss</file>
+        <file>other/ManjaroMix.qss</file>
+        <file>other/MaterialDark.qss</file>
+        <file>other/MonokaiDark.qss</file>
+        <file>other/NeonButtons.qss</file>
+        <file>other/NordDark.qss</file>
+        <file>other/OneDarkPro.qss</file>
+        <file>other/ShadesOfPurple.qss</file>
+        <file>other/SolarizedDark.qss</file>
+        <file>other/Ubuntu.qss</file>
     </qresource>
     <qresource prefix="images">
         <file>common/sound-icon.png</file>

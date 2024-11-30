@@ -214,7 +214,7 @@ class ERFEditor(Editor):
                 resref_item.setData(resource)
                 restype_item: QStandardItem = QStandardItem(resource.restype.extension.upper())
                 size_item: QStandardItem = QStandardItem(human_readable_size(len(resource.data)))
-                offset_item: QStandardItem = QStandardItem(f"0x{res_offset[0]:X}")
+                offset_item: QStandardItem = QStandardItem(f"0x{res_offset:X}")
                 self.source_model.appendRow([resref_item, restype_item, size_item, offset_item])
 
         elif restype is ResourceType.RIM:
@@ -224,7 +224,7 @@ class ERFEditor(Editor):
                 resref_item.setData(resource)
                 restype_item: QStandardItem = QStandardItem(resource.restype.extension.upper())
                 size_item: QStandardItem = QStandardItem(human_readable_size(len(resource.data)))
-                offset_item: QStandardItem = QStandardItem(f"0x{rim.get_resource_offset(resource)[0]:X}")
+                offset_item: QStandardItem = QStandardItem(f"0x{rim.get_resource_offset(resource):X}")
                 self.source_model.appendRow([resref_item, restype_item, size_item, offset_item])
 
         elif restype is ResourceType.BIF:
