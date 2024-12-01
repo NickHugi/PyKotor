@@ -1,299 +1,218 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from qtpy.QtCore import QSize, Qt
-from qtpy.QtGui import QBrush, QColor, QPainter, QPen, QTransform
-from qtpy.QtWidgets import QFileDialog, QGraphicsEllipseItem, QGraphicsItem, QGraphicsLineItem, QGraphicsRectItem, QGraphicsScene, QListView, QMessageBox
+from qtpy.QtCore import Signal
+from qtpy.QtWidgets import QMessageBox, QVBoxLayout
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
-from pykotor.common.misc import Color
-from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack, bytes_lyt, read_lyt
+from pykotor.common.geometry import Vector3
+from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTRoom
 from pykotor.resource.type import ResourceType
-from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.editor_settings.lyt import LYTEditorSettings
+from toolset.gui.widgets.renderer.lyt_editor_widget import LYTEditorWidget
+from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
+from toolset.gui.widgets.renderer.walkmesh_editor import WalkmeshEditor
 
 if TYPE_CHECKING:
-    from qtpy.QtWidgets import QGraphicsSceneMouseEvent, QWidget
+    from pathlib import Path
 
+    from qtpy.QtWidgets import QWidget
+
+    from pykotor.common.module import Module
     from toolset.data.installation import HTInstallation
 
-
 class LYTEditor(Editor):
+    """Main editor class for KotOR module layouts.
+
+    Coordinates between the layout editor widget, walkmesh editor,
+    and texture browser components.
+    """
+    """Layout editor for KotOR modules, integrating functionality from KLE."""
+
+    sig_lyt_updated = Signal(LYT)
+
     def __init__(
         self,
         parent: QWidget | None,
         installation: HTInstallation | None = None,
+        module: Module | None = None
     ):
-        supported: list[ResourceType] = [ResourceType.LYT]
-        super().__init__(parent, "LYT Editor", "lyt", supported, supported, installation)
+        supported = [ResourceType.LYT]
+        super().__init__(parent, "Layout Editor", "none", supported, supported, installation)
 
-        from toolset.uic.qtpy.editors.lyt import Ui_LYTEditor
+        self._module = module
+        self._lyt: Optional[LYT] = None
 
-        self.ui: Ui_LYTEditor = Ui_LYTEditor()
-        self.ui.setupUi(self)
-        self._setup_menus()
+        # Create main layout
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self._lyt: LYT = LYT()
-        self._controls: LYTControlScheme = LYTControlScheme(self)
-        self.settings: LYTEditorSettings = LYTEditorSettings()
+        # Create editor components
+        self.lyt_editor = LYTEditorWidget(self)
+        self.walkmesh_editor = WalkmeshEditor(self)
+        self.texture_browser = TextureBrowser(self)
 
-        self.scene = QGraphicsScene(self)
-        self.ui.graphicsView.setScene(self.scene)
+        # Add components to layout
+        layout.addWidget(self.lyt_editor)
 
-        self.material_colors: dict[SurfaceMaterial, QColor] = self._setupMaterialColors()
+        self._setup_signals()
+        if installation:
+            self._setup_installation(installation)
 
-        self._setupConnections()
-        self._setupGraphicsView()
-        self._setupSidebar()
+        self.new()
 
-    def _setupMaterialColors(self) -> dict[SurfaceMaterial, QColor]:
-        def intColorToQColor(num_color: int) -> QColor:
-            color: Color = Color.from_rgba_integer(num_color)
-            return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
+    def _setup_signals(self):
+        """Set up signal connections between components."""
+        # Connect LYT editor signals
+        self.lyt_editor.sig_lyt_updated.connect(self._on_lyt_updated)
+        self.lyt_editor.sig_walkmesh_requested.connect(self.walkmesh_editor.show)
+        self.lyt_editor.sig_texture_browser_requested.connect(self.texture_browser.show)
 
-        return {
-            SurfaceMaterial.UNDEFINED: intColorToQColor(self.settings.undefinedMaterialColour),
-            SurfaceMaterial.OBSCURING: intColorToQColor(self.settings.obscuringMaterialColour),
-            SurfaceMaterial.DIRT: intColorToQColor(self.settings.dirtMaterialColour),
-            SurfaceMaterial.GRASS: intColorToQColor(self.settings.grassMaterialColour),
-            SurfaceMaterial.STONE: intColorToQColor(self.settings.stoneMaterialColour),
-            SurfaceMaterial.WOOD: intColorToQColor(self.settings.woodMaterialColour),
-            SurfaceMaterial.WATER: intColorToQColor(self.settings.waterMaterialColour),
-            SurfaceMaterial.NON_WALK: intColorToQColor(self.settings.nonWalkMaterialColour),
-            SurfaceMaterial.TRANSPARENT: intColorToQColor(self.settings.transparentMaterialColour),
-            SurfaceMaterial.CARPET: intColorToQColor(self.settings.carpetMaterialColour),
-            SurfaceMaterial.METAL: intColorToQColor(self.settings.metalMaterialColour),
-            SurfaceMaterial.PUDDLES: intColorToQColor(self.settings.puddlesMaterialColour),
-            SurfaceMaterial.SWAMP: intColorToQColor(self.settings.swampMaterialColour),
-            SurfaceMaterial.MUD: intColorToQColor(self.settings.mudMaterialColour),
-            SurfaceMaterial.LEAVES: intColorToQColor(self.settings.leavesMaterialColour),
-            SurfaceMaterial.LAVA: intColorToQColor(self.settings.lavaMaterialColour),
-            SurfaceMaterial.BOTTOMLESS_PIT: intColorToQColor(self.settings.bottomlessPitMaterialColour),
-            SurfaceMaterial.DEEP_WATER: intColorToQColor(self.settings.deepWaterMaterialColour),
-            SurfaceMaterial.DOOR: intColorToQColor(self.settings.doorMaterialColour),
-            SurfaceMaterial.NON_WALK_GRASS: intColorToQColor(self.settings.nonWalkGrassMaterialColour),
-            SurfaceMaterial.TRIGGER: intColorToQColor(self.settings.nonWalkGrassMaterialColour),
-        }
+        # Connect walkmesh editor signals
+        self.walkmesh_editor.sig_walkmesh_updated.connect(self.lyt_editor.update_walkmesh)
 
-    def _setupConnections(self):
-        self.ui.add_room_button.clicked.connect(self.add_room)
-        self.ui.add_track_button.clicked.connect(self.add_track)
-        self.ui.addObstacleButton.clicked.connect(self.add_obstacle)
-        self.ui.addDoorHookButton.clicked.connect(self.add_door_hook)  # FIXME: addDoorHookButton attribute not found
-        self.ui.generateWalkmeshButton.clicked.connect(self.generate_walkmesh)
-        self.ui.zoom_slider.valueChanged.connect(self.update_zoom)
-        self.ui.importTextureButton.clicked.connect(self.importTexture)  # FIXME: importTextureButton attribute not found
-        self.ui.importModelButton.clicked.connect(self.importModel)  # FIXME: importModelButton attribute not found
+        # Connect texture browser signals
+        self.texture_browser.sig_texture_selected.connect(self.lyt_editor.apply_texture)
 
-    def _setupGraphicsView(self):
-        self.ui.graphicsView.setRenderHint(QPainter.Antialiasing)
-        self.ui.graphicsView.setDragMode(self.ui.graphicsView.ScrollHandDrag)
-        self.ui.graphicsView.setTransformationAnchor(self.ui.graphicsView.AnchorUnderMouse)
-        self.ui.graphicsView.setResizeAnchor(self.ui.graphicsView.AnchorUnderMouse)
+    def _setup_installation(self, installation: HTInstallation):
+        """Set up installation-specific components."""
+        self._installation = installation
 
-    def _setupSidebar(self):
-        # Setup texture browser
-        self.ui.textureBrowser.setIconSize(QSize(64, 64))  # FIXME: textureBrowser attribute not found
-        self.ui.textureBrowser.setViewMode(QListView.IconMode)  # FIXME: textureBrowser attribute not found
-        self.ui.textureBrowser.setResizeMode(QListView.Adjust)  # FIXME: textureBrowser attribute not found
-        self.ui.textureBrowser.setWrapping(True)  # FIXME: textureBrowser attribute not found
+    def new(self):
+        """Create a new empty layout."""
+        super().new()
+        self._lyt = LYT()
+        self.lyt_editor.set_lyt(self._lyt)
 
-        # Setup room templates
-        self.ui.roomTemplateList.addItems(["Square Room", "Circular Room", "L-Shaped Room"])  # FIXME: roomTemplateList attribute not found
+    def load(self, filepath: str | Path, resref: str, restype: ResourceType, data: bytes):
+        """Load a layout from file."""
+        super().load(filepath, resref, restype, data)
+        try:
+            self._lyt = LYT.from_data(data)
+            self.lyt_editor.set_lyt(self._lyt)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load layout: {str(e)}")
+
+    def save(self) -> bytes | None:
+        """Save the current layout to bytes."""
+        if self._lyt is None:
+            return None
+        # Get latest LYT data from editor
+        self._lyt = self.lyt_editor.get_lyt()
+        return self._lyt.to_data()
+
+    def _on_lyt_updated(self, lyt: LYT):
+        """Handle LYT updates from editor."""
+        self._lyt = lyt
+        self._has_changes = True
+        self.sig_lyt_updated.emit(lyt)
 
     def add_room(self):
+        """Add a new room to the layout."""
+        if self._lyt is None:
+            return
+
         room = LYTRoom()
         room.position = Vector3(0, 0, 0)
-        room.size = Vector2(10, 10)  # FIXME: size attribute not found
+        room.model = "m00xx_empty"  # Default empty room model
+
         self._lyt.rooms.append(room)
-        self.updateScene()
+        self.refresh_ui()
+        self._has_changes = True
 
-    def add_track(self):
-        track = LYTTrack()
-        track.start = Vector3(0, 0, 0)  # FIXME: start attribute not found
-        track.end = Vector3(10, 10, 0)  # FIXME: end attribute not found
-        self._lyt.tracks.append(track)
-        self.updateScene()
+    def delete_selected_room(self):
+        """Delete the currently selected room."""
+        if self._lyt is None or self._selected_room is None:
+            return
 
-    def add_obstacle(self):
-        obstacle = LYTObstacle()
-        obstacle.position = Vector3(0, 0, 0)
-        obstacle.radius = 5  # FIXME: radius attribute not found
-        self._lyt.obstacles.append(obstacle)
-        self.updateScene()
+        self._lyt.rooms.remove(self._selected_room)
+        self._selected_room = None
+        self.refresh_ui()
+        self._has_changes = True
 
     def add_door_hook(self):
-        doorhook = LYTDoorHook()
-        doorhook.position = Vector3(0, 0, 0)
-        self._lyt.doorhooks.append(doorhook)
-        self.updateScene()
+        """Add a new door hook to the layout."""
+        if self._lyt is None:
+            return
 
-    def generate_walkmesh(self):
-        # Implement walkmesh generation logic here
-        pass
+        hook = LYTDoorHook()
+        hook.position = Vector3(0, 0, 0)
+        hook.room_id = len(self._lyt.rooms) - 1 if self._lyt.rooms else 0
 
-    def update_zoom(self, value):
-        scale = value / 100.0
-        self.ui.graphicsView.setTransform(QTransform().scale(scale, scale))
+        self._lyt.door_hooks.append(hook)
+        self.refresh_ui()
+        self._has_changes = True
 
-    def updateScene(self):
-        self.scene.clear()
-        for room in self._lyt.rooms:
-            self.scene.addItem(RoomItem(room, self))
-        for track in self._lyt.tracks:
-            self.scene.addItem(TrackItem(track, self))
-        for obstacle in self._lyt.obstacles:
-            self.scene.addItem(ObstacleItem(obstacle, self))
-        for doorhook in self._lyt.doorhooks:
-            self.scene.addItem(DoorHookItem(doorhook, self))
+    def delete_selected_door_hook(self):
+        """Delete the currently selected door hook."""
+        if self._lyt is None or self._selected_door_hook is None:
+            return
 
-    def importTexture(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Import Texture", "", "Image Files (*.png *.jpg *.bmp)")
-        if file_path:
-            # TODO: Implement texture import logic
-            self.updateTextureBrowser()
+        self._lyt.door_hooks.remove(self._selected_door_hook)
+        self._selected_door_hook = None
+        self.refresh_ui()
+        self._has_changes = True
 
-    def importModel(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Import Model", "", "Model Files (*.mdl)")
-        if file_path:
-            # TODO: Implement model import logic
-            pass
+    def on_room_selection_changed(self):
+        """Handle room selection changes."""
+        selected_items = self.ui.roomList.selectedItems()
+        if not selected_items:
+            self._selected_room = None
+            return
 
-    def updateTextureBrowser(self):
-        # TODO: Update texture browser with imported textures
-        pass
+        room_index = self.ui.roomList.row(selected_items[0])
+        self._selected_room = self._lyt.rooms[room_index] if self._lyt else None
+        self.update_room_properties()
 
-    def load(self, data: bytes, resref: str, restype: ResourceType, filepath: str) -> None:
-        try:
-            self._lyt = read_lyt(data)
-            self.updateScene()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load LYT: {str(e)}")
+    def on_door_hook_selection_changed(self):
+        """Handle door hook selection changes."""
+        selected_items = self.ui.doorHookList.selectedItems()
+        if not selected_items:
+            self._selected_door_hook = None
+            return
 
-    def build(self) -> tuple[bytes, ResourceType]:
-        return bytes_lyt(self._lyt), ResourceType.LYT
+        hook_index = self.ui.doorHookList.row(selected_items[0])
+        self._selected_door_hook = self._lyt.door_hooks[hook_index] if self._lyt else None
+        self.update_door_hook_properties()
 
+    def refresh_ui(self):
+        """Refresh all UI elements."""
+        if self._lyt is None:
+            return
 
-class RoomItem(QGraphicsRectItem):
-    def __init__(self, room: LYTRoom, editor: LYTEditor):
-        super().__init__(0, 0, room.size.x, room.size.y)
-        self.room: LYTRoom = room
-        self.editor: LYTEditor = editor
-        self.setPos(room.position.x, room.position.y)
-        self.setPen(QPen(Qt.GlobalColor.black))
-        self.setBrush(QBrush(Qt.GlobalColor.lightGray))
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
+        # Update room list
+        self.ui.roomList.clear()
+        for i, room in enumerate(self._lyt.rooms):
+            self.ui.roomList.addItem(f"Room {i}: {room.model}")
 
-    def mouseMoveEvent(self, event):
-        super().mouseMoveEvent(event)
-        self.room.position = Vector3(self.pos().x(), self.pos().y(), self.room.position.z)
+        # Update door hook list
+        self.ui.doorHookList.clear()
+        for i, hook in enumerate(self._lyt.door_hooks):
+            self.ui.doorHookList.addItem(f"Door Hook {i} (Room {hook.room_id})")
 
+        self.update_room_properties()
+        self.update_door_hook_properties()
 
-class TrackItem(QGraphicsLineItem):
-    def __init__(self, track: LYTTrack, editor: LYTEditor):
-        super().__init__(track.start.x, track.start.y, track.end.x, track.end.y)
-        self.track = track
-        self.editor = editor
-        self.setPen(QPen(Qt.red, 2))
-        self.setFlag(QGraphicsItem.ItemIsMovable)
-        self.setFlag(QGraphicsItem.ItemIsSelectable)
+    def update_room_properties(self):
+        """Update the room properties panel."""
+        if self._selected_room is None:
+            self.ui.roomPropertiesGroup.setEnabled(False)
+            return
 
+        self.ui.roomPropertiesGroup.setEnabled(True)
+        self.ui.roomModelEdit.setText(self._selected_room.model)
+        self.ui.roomPosXSpin.setValue(self._selected_room.position.x)
+        self.ui.roomPosYSpin.setValue(self._selected_room.position.y)
+        self.ui.roomPosZSpin.setValue(self._selected_room.position.z)
 
-class ObstacleItem(QGraphicsEllipseItem):
-    def __init__(self, obstacle: LYTObstacle, editor: LYTEditor):
-        super().__init__(-obstacle.radius, -obstacle.radius, obstacle.radius * 2, obstacle.radius * 2)
-        self.obstacle = obstacle
-        self.editor = editor
-        self.setPos(obstacle.position.x, obstacle.position.y)
-        self.setPen(QPen(Qt.blue))
-        self.setBrush(QBrush(Qt.blue, Qt.DiagCrossPattern))
-        self.setFlag(QGraphicsItem.ItemIsMovable)
-        self.setFlag(QGraphicsItem.ItemIsSelectable)
+    def update_door_hook_properties(self):
+        """Update the door hook properties panel."""
+        if self._selected_door_hook is None:
+            self.ui.doorHookPropertiesGroup.setEnabled(False)
+            return
 
-    def mouseMoveEvent(self, event):
-        super().mouseMoveEvent(event)
-        self.obstacle.position = Vector3(self.pos().x(), self.pos().y(), self.obstacle.position.z)
-
-
-class DoorHookItem(QGraphicsRectItem):
-    def __init__(
-        self,
-        doorhook: LYTDoorHook,
-        editor: LYTEditor,
-    ):
-        super().__init__(-1, -1, 2, 2)
-        self.doorhook: LYTDoorHook = doorhook
-        self.editor: LYTEditor = editor
-        self.setPos(doorhook.position.x, doorhook.position.y)
-        self.setPen(QPen(Qt.GlobalColor.green))
-        self.setBrush(QBrush(Qt.GlobalColor.green))
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
-
-    def mouseMoveEvent(
-        self,
-        event: QGraphicsSceneMouseEvent,
-    ):
-        super().mouseMoveEvent(event)
-        self.doorhook.position = Vector3(
-            self.pos().x(),
-            self.pos().y(),
-            self.doorhook.position.z,
-        )
-
-
-class LYTControlScheme:
-    def __init__(self, editor: LYTEditor):
-        self.editor: LYTEditor = editor
-        self.settings: LYTEditorSettings = LYTEditorSettings()
-
-    @property
-    def pan_camera(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraBind)
-
-    @pan_camera.setter
-    def pan_camera(self, value):
-        self.settings.moveCameraBind = value
-
-    @property
-    def rotate_camera(self) -> ControlItem:
-        return ControlItem(self.settings.rotateCameraBind)
-
-    @rotate_camera.setter
-    def rotate_camera(self, value):
-        self.settings.rotateCameraBind = value
-
-    @property
-    def zoom_camera(self) -> ControlItem:
-        return ControlItem(self.settings.zoomCameraBind)
-
-    @zoom_camera.setter
-    def zoom_camera(self, value):
-        self.settings.zoomCameraBind = value
-
-    @property
-    def move_selected(self) -> ControlItem:
-        return ControlItem(self.settings.moveSelectedBind)
-
-    @move_selected.setter
-    def move_selected(self, value):
-        self.settings.moveSelectedBind = value
-
-    @property
-    def select_underneath(self) -> ControlItem:
-        return ControlItem(self.settings.selectUnderneathBind)
-
-    @select_underneath.setter
-    def select_underneath(self, value):
-        self.settings.selectUnderneathBind = value
-
-    @property
-    def delete_selected(self) -> ControlItem:
-        return ControlItem(self.settings.deleteSelectedBind)
-
-    @delete_selected.setter
-    def delete_selected(self, value):
-        self.settings.deleteSelectedBind = value
+        self.ui.doorHookPropertiesGroup.setEnabled(True)
+        self.ui.doorHookRoomSpin.setValue(self._selected_door_hook.room_id)
+        self.ui.doorHookPosXSpin.setValue(self._selected_door_hook.position.x)
+        self.ui.doorHookPosYSpin.setValue(self._selected_door_hook.position.y)
+        self.ui.doorHookPosZSpin.setValue(self._selected_door_hook.position.z)

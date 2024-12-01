@@ -64,7 +64,7 @@ if TYPE_CHECKING:
 
 class LYTEditor(QWidget):
     """Core editor class for LYT (Layout) files.
-    
+
     Handles the actual rendering and editing logic for LYT files.
     UI elements should be handled by LYTEditorWidget instead.
     """
