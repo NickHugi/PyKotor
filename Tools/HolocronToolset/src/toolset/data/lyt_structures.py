@@ -150,3 +150,49 @@ class ExtendedLYT(LYT):
             doorhook = ExtendedLYTDoorHook()
             doorhook.deserialize(doorhook_data)
             self.doorhooks.append(doorhook)
+"""Extended LYT data structures with additional attributes."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Optional
+
+from pykotor.common.geometry import Vector2, Vector3, Vector4
+from pykotor.resource.formats.lyt.lyt_data import LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+
+
+@dataclass
+class ExtendedLYTRoom(LYTRoom):
+    """LYTRoom with additional attributes for editing."""
+    size: Vector3 = field(default_factory=lambda: Vector3(10, 10, 3))
+    texture: str = ""
+    name: str = ""
+    id: str = ""
+    connection_points: list[Vector3] = field(default_factory=list)
+
+
+@dataclass 
+class ExtendedLYTTrack(LYTTrack):
+    """LYTTrack with additional attributes for editing."""
+    texture: str = ""
+    name: str = ""
+    id: str = ""
+    start_room: Optional[ExtendedLYTRoom] = None
+    end_room: Optional[ExtendedLYTRoom] = None
+
+
+@dataclass
+class ExtendedLYTObstacle(LYTObstacle):
+    """LYTObstacle with additional attributes for editing."""
+    radius: float = 5.0
+    texture: str = ""
+    name: str = ""
+    id: str = ""
+
+
+@dataclass
+class ExtendedLYTDoorHook(LYTDoorHook):
+    """LYTDoorHook with additional attributes for editing."""
+    name: str = ""
+    id: str = ""
+    connected_room: Optional[ExtendedLYTRoom] = None

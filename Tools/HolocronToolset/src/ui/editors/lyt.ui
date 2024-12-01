@@ -22,25 +22,25 @@
      <widget class="QWidget" name="leftWidget" native="true">
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QTabWidget" name="viewTabWidget">
-         <widget class="QWidget" name="topDownTab">
-          <attribute name="title">
-           <string>Top-Down View</string>
-          </attribute>
+        <widget class="QStackedWidget" name="viewStack">
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <widget class="QWidget" name="topDownPage">
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
             <widget class="QGraphicsView" name="graphicsView">
              <property name="dragMode">
               <enum>QGraphicsView::ScrollHandDrag</enum>
              </property>
+             <property name="renderHints">
+              <set>QPainter::Antialiasing|QPainter::SmoothPixmapTransform</set>
+             </property>
             </widget>
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="threeDTab">
-          <attribute name="title">
-           <string>3D View</string>
-          </attribute>
+         <widget class="QWidget" name="threeDPage">
           <layout class="QVBoxLayout" name="verticalLayout_8">
            <item>
             <widget class="QOpenGLWidget" name="openGLWidget"/>
