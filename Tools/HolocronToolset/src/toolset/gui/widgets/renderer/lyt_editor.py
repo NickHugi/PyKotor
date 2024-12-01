@@ -1317,9 +1317,12 @@ class LYTEditor(QWidget):
             position = room.position
             orientation = room.orientation
 
+            # Get room size from extended attributes
+            size = room.size if isinstance(room, ExtendedLYTRoom) else Vector3(10, 10, 3)
+            
             rect = QRect(
                 int(position.x * zoom),
-                int(position.y * zoom),
+                int(position.y * zoom), 
                 int(size.x * zoom),
                 int(size.y * zoom)
             )
