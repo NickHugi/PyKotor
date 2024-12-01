@@ -103,6 +103,11 @@ class LYTEditor(QWidget):
         self.ui = Ui_LYTEditor()
         self.ui.setupUi(self)
 
+        # Grid settings
+        self._show_grid: bool = True
+        self._grid_size: float = 100.0
+        self._snap_to_grid: bool = True
+
         # Initialize locks
         self.vertex_indices: list[int] = []
         self.vertex_coords: list[Vector3] = []
@@ -1217,6 +1222,58 @@ class LYTEditor(QWidget):
             self.sig_lyt_updated.emit(lyt_copy)
         self.update()
 
+    def draw_grid(
+        self,
+        painter: QPainter,
+    ):
+        """Draw the editor grid."""
+        pen: QPen = QPen(QColor(128, 128, 128), 1, Qt.PenStyle.DashLine)
+        painter.setPen(pen)
+
+        # Draw vertical lines
+        for x in range(0, self.width(), int(self._grid_size)):
+            painter.drawLine(x, 0, x, self.height())
+
+        # Draw horizontal lines  
+        for y in range(0, self.height(), int(self._grid_size)):
+            painter.drawLine(0, y, self.width(), y)
+
+    def snap_to_grid(
+        self,
+        point: Vector2,
+    ) -> Vector2:
+        """Snap a point to the grid."""
+        if not self._snap_to_grid:
+            return point
+            
+        return Vector2(
+            round(point.x / self._grid_size) * self._grid_size,
+            round(point.y / self._grid_size) * self._grid_size
+        )
+
+    def toggle_grid(
+        self,
+        state: bool,
+    ):
+        """Toggle grid visibility."""
+        self._show_grid = state
+        self.update()
+
+    def toggle_snap(
+        self,
+        state: bool,
+    ):
+        """Toggle snap-to-grid functionality."""
+        self._snap_to_grid = state
+
+    def set_grid_size(
+        self,
+        size: int,
+    ):
+        """Set the grid size."""
+        self._grid_size = float(size)
+        self.update()
+
     def draw_room(
         self,
         painter: QPainter,
@@ -1233,6 +1290,12 @@ class LYTEditor(QWidget):
             mdl_res = module.get_resource(room.model, "mdl")
             if not mdl_res:
                 return
+
+            # Snap position if enabled
+            position = room.position
+            if self._snap_to_grid:
+                snapped = self.snap_to_grid(Vector2(position.x, position.y))
+                position = Vector3(snapped.x, snapped.y, position.z)
 
             mdl = mdl_res.resource()
 
