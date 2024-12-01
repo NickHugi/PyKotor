@@ -195,6 +195,73 @@ class ModuleRenderer(QOpenGLWidget):
         self.hide()
         self._scene = None
 
+    def set_lyt(self, lyt: LYT) -> None:
+        """Set the current LYT data and update the scene."""
+        self._lyt = deepcopy(lyt)
+        if self._scene:
+            self._scene.layout = self._lyt
+            self.update()
+        self.sig_lyt_updated.emit(self._lyt)
+
+    def get_lyt(self) -> LYT | None:
+        """Get the current LYT data."""
+        return self._lyt
+
+    def update_lyt_preview(self) -> None:
+        """Update the LYT preview in the scene."""
+        if self._scene and self._lyt:
+            self._scene.layout = self._lyt
+            self.update()
+            self.sig_lyt_updated.emit(self._lyt)
+
+    def add_room(self, room: LYTRoom) -> None:
+        """Add a new room to the LYT."""
+        if self._lyt:
+            self._lyt.rooms.append(room)
+            self.update_lyt_preview()
+
+    def add_track(self, track: LYTTrack) -> None:
+        """Add a new track to the LYT."""
+        if self._lyt:
+            self._lyt.tracks.append(track)
+            self.update_lyt_preview()
+
+    def add_obstacle(self, obstacle: LYTObstacle) -> None:
+        """Add a new obstacle to the LYT."""
+        if self._lyt:
+            self._lyt.obstacles.append(obstacle)
+            self.update_lyt_preview()
+
+    def add_door_hook(self, doorhook: LYTDoorHook) -> None:
+        """Add a new door hook to the LYT."""
+        if self._lyt:
+            self._lyt.doorhooks.append(doorhook)
+            self.update_lyt_preview()
+
+    def remove_room(self, room: LYTRoom) -> None:
+        """Remove a room from the LYT."""
+        if self._lyt and room in self._lyt.rooms:
+            self._lyt.rooms.remove(room)
+            self.update_lyt_preview()
+
+    def remove_track(self, track: LYTTrack) -> None:
+        """Remove a track from the LYT."""
+        if self._lyt and track in self._lyt.tracks:
+            self._lyt.tracks.remove(track)
+            self.update_lyt_preview()
+
+    def remove_obstacle(self, obstacle: LYTObstacle) -> None:
+        """Remove an obstacle from the LYT."""
+        if self._lyt and obstacle in self._lyt.obstacles:
+            self._lyt.obstacles.remove(obstacle)
+            self.update_lyt_preview()
+
+    def remove_door_hook(self, doorhook: LYTDoorHook) -> None:
+        """Remove a door hook from the LYT."""
+        if self._lyt and doorhook in self._lyt.doorhooks:
+            self._lyt.doorhooks.remove(doorhook)
+            self.update_lyt_preview()
+
     def paintGL(self):
         if not self.loop_timer.isActive():
             RobustLogger().debug("ModuleDesigner.paintGL - loop timer is paused or not started.")
