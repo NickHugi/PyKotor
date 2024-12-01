@@ -1456,64 +1456,48 @@ class ZoomPanWidget(QWidget):
         self.zoom_factor = 1.0
         self.pan_offset = QPoint(0, 0)
 
-from copy import deepcopy
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 from qtpy.QtCore import Qt, Signal
-from qtpy.QtWidgets import QWidget
-
-from pykotor.common.geometry import Vector3
-from toolset.data.lyt_structures import (
-    ExtendedLYT as LYT,
-    ExtendedLYTDoorHook as LYTDoorHook,
-    ExtendedLYTObstacle as LYTObstacle,
-    ExtendedLYTRoom as LYTRoom,
-    ExtendedLYTTrack as LYTTrack,
+from qtpy.QtWidgets import (
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
 )
 
+from pykotor.common.geometry import Vector3
+from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTRoom
+
 if TYPE_CHECKING:
-    from qtpy.QtGui import QPaintEvent
+    from toolset.gui.editors.lyt import LYTEditor
 
 class LYTEditorWidget(QWidget):
-    """Widget for editing LYT (Layout) files."""
+    """Widget for editing KotOR module layouts.
+    
+    Provides UI controls for:
+    - Adding/removing rooms and door hooks
+    - Positioning and rotating rooms
+    - Setting room properties
+    - Managing door connections
+    """
 
-    # Signals
     sig_lyt_updated = Signal(LYT)
-    sig_room_selected = Signal(LYTRoom)
-    sig_track_selected = Signal(LYTTrack)
-    sig_obstacle_selected = Signal(LYTObstacle)
-    sig_doorhook_selected = Signal(LYTDoorHook)
 
     def __init__(self, parent: LYTEditor):
         super().__init__(parent)
-        self._lyt: LYT | None = None
-        self.selected_room: LYTRoom | None = None
-        self.selected_track: LYTTrack | None = None
-        self.selected_obstacle: LYTObstacle | None = None
-        self.selected_doorhook: LYTDoorHook | None = None
-
-        self._setup_ui()
-
-    def _setup_ui(self):
-        """Initialize the UI."""
-        self.setMinimumSize(400, 300)
-
-    def set_lyt(self, lyt: LYT):
-        """Set the LYT data to edit."""
-        self._lyt = deepcopy(lyt)
-        self.update()
-
-    def get_lyt(self) -> LYT | None:
-        """Get the current LYT data."""
-        return self._lyt
-
-    def paintEvent(self, event: QPaintEvent):
-        """Handle paint events."""
-        if not self._lyt:
-            return
-
-        # TODO: Implement LYT rendering
-        pass
+        self._lyt: Optional[LYT] = None
+        self._selected_room: Optional[LYTRoom] = None
+        self._selected_door: Optional[LYTDoorHook] = None
+        
+        self._init_ui()
+        self._setup_signals()
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
