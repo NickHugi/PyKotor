@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
 import qtpy
 
+from toolset.gui.widgets.renderer.lyt_editor import LYTRenderer
+
 from loggerplus import RobustLogger
 from qtpy.QtCore import (
     QByteArray,

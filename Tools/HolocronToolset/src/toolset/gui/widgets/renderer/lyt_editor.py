@@ -28,6 +28,7 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QAction, QBrush, QColor, QLinearGradient, QPainter, QPen, QRadialGradient, QTransform
 from qtpy.QtWidgets import (
     QApplication,
+    QCheckBox,
     QGraphicsItem,
     QGraphicsRectItem,
     QHBoxLayout,
@@ -37,6 +38,7 @@ from qtpy.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSlider,
+    QSpinBox,
     QToolBar,
     QUndoStack,
     QVBoxLayout,
