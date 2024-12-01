@@ -50,7 +50,13 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
-from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from toolset.data.lyt_structures import (
+    ExtendedLYT as LYT,
+    ExtendedLYTDoorHook as LYTDoorHook,
+    ExtendedLYTObstacle as LYTObstacle,
+    ExtendedLYTRoom as LYTRoom,
+    ExtendedLYTTrack as LYTTrack,
+)
 from pykotor.resource.resource_auto import BWM
 from toolset.gui.dialogs.lyt_dialogs import ObstaclePropertiesDialog, RoomPropertiesDialog, TrackPropertiesDialog
 from toolset.gui.editors.lyt import LYTEditor
@@ -1436,7 +1442,13 @@ from qtpy.QtCore import Qt, Signal
 from qtpy.QtWidgets import QWidget
 
 from pykotor.common.geometry import Vector3
-from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from toolset.data.lyt_structures import (
+    ExtendedLYT as LYT,
+    ExtendedLYTDoorHook as LYTDoorHook,
+    ExtendedLYTObstacle as LYTObstacle,
+    ExtendedLYTRoom as LYTRoom,
+    ExtendedLYTTrack as LYTTrack,
+)
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QPaintEvent
