@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from qtpy.QtCore import Signal
-from qtpy.QtWidgets import QMessageBox, QVBoxLayout
+from qtpy.QtWidgets import (
+    QHBoxLayout,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+)
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTRoom
