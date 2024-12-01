@@ -703,101 +703,184 @@
                                                 <addaction name="actionAddObstacle" />
                                                 <addaction name="separator" />
                                                 <addaction name="actionImportTexture" />
+                                                <addaction name="actionGenerateWalkmesh" />
                                             </widget>
                                         </item>
                                         <item>
-                                            <widget class="QTreeWidget" name="lytTree">
-                                                <property name="contextMenuPolicy">
-                                                    <enum>Qt::CustomContextMenu</enum>
+                                            <widget class="QSplitter" name="lytSplitter">
+                                                <property name="orientation">
+                                                    <enum>Qt::Vertical</enum>
                                                 </property>
-                                                <property name="headerHidden">
-                                                    <bool>true</bool>
-                                                </property>
-                                                <column>
-                                                    <property name="text">
-                                                        <string>Layout Elements</string>
+                                                <widget class="QTreeWidget" name="lytTree">
+                                                    <property name="contextMenuPolicy">
+                                                        <enum>Qt::CustomContextMenu</enum>
                                                     </property>
-                                                </column>
-                                            </widget>
-                                        </item>
-                                        <item>
-                                            <widget class="QGroupBox" name="lytPropertiesGroup">
-                                                <property name="title">
-                                                    <string>Properties</string>
-                                                </property>
-                                                <layout class="QFormLayout"
-                                                    name="lytPropertiesLayout">
-                                                    <item row="0" column="0">
-                                                        <widget class="QLabel" name="modelLabel">
-                                                            <property name="text">
-                                                                <string>Model:</string>
-                                                            </property>
-                                                        </widget>
-                                                    </item>
-                                                    <item row="0" column="1">
-                                                        <widget class="QLineEdit" name="modelEdit" />
-                                                    </item>
-                                                    <item row="1" column="0">
-                                                        <widget class="QLabel" name="positionLabel">
-                                                            <property name="text">
-                                                                <string>Position:</string>
-                                                            </property>
-                                                        </widget>
-                                                    </item>
-                                                    <item row="1" column="1">
-                                                        <layout class="QHBoxLayout"
-                                                            name="positionLayout">
-                                                            <item>
-                                                                <widget class="QDoubleSpinBox"
-                                                                    name="posXSpin">
-                                                                    <property name="decimals">
-                                                                        <number>3</number>
-                                                                    </property>
-                                                                    <property name="minimum">
-                                                                        <double>
-                                                                            -10000.000000000000000</double>
-                                                                    </property>
-                                                                    <property name="maximum">
-                                                                        <double>
-                                                                            10000.000000000000000</double>
+                                                    <property name="headerHidden">
+                                                        <bool>true</bool>
+                                                    </property>
+                                                    <column>
+                                                        <property name="text">
+                                                            <string>Layout Elements</string>
+                                                        </property>
+                                                    </column>
+                                                </widget>
+                                                <widget class="QTabWidget" name="lytElementTabs">
+                                                    <widget class="QWidget" name="roomTab">
+                                                        <attribute name="title">
+                                                            <string>Room</string>
+                                                        </attribute>
+                                                        <layout class="QFormLayout" name="roomLayout">
+                                                            <item row="0" column="0">
+                                                                <widget class="QLabel" name="modelLabel">
+                                                                    <property name="text">
+                                                                        <string>Model:</string>
                                                                     </property>
                                                                 </widget>
                                                             </item>
-                                                            <item>
-                                                                <widget class="QDoubleSpinBox"
-                                                                    name="posYSpin">
-                                                                    <property name="decimals">
-                                                                        <number>3</number>
-                                                                    </property>
-                                                                    <property name="minimum">
-                                                                        <double>
-                                                                            -10000.000000000000000</double>
-                                                                    </property>
-                                                                    <property name="maximum">
-                                                                        <double>
-                                                                            10000.000000000000000</double>
+                                                            <item row="0" column="1">
+                                                                <layout class="QHBoxLayout" name="modelLayout">
+                                                                    <item>
+                                                                        <widget class="QLineEdit" name="modelEdit" />
+                                                                    </item>
+                                                                    <item>
+                                                                        <widget class="QToolButton" name="browseModelButton">
+                                                                            <property name="text">
+                                                                                <string>...</string>
+                                                                            </property>
+                                                                        </widget>
+                                                                    </item>
+                                                                </layout>
+                                                            </item>
+                                                            <item row="1" column="0">
+                                                                <widget class="QLabel" name="positionLabel">
+                                                                    <property name="text">
+                                                                        <string>Position:</string>
                                                                     </property>
                                                                 </widget>
                                                             </item>
-                                                            <item>
-                                                                <widget class="QDoubleSpinBox"
-                                                                    name="posZSpin">
-                                                                    <property name="decimals">
-                                                                        <number>3</number>
-                                                                    </property>
-                                                                    <property name="minimum">
-                                                                        <double>
-                                                                            -10000.000000000000000</double>
-                                                                    </property>
-                                                                    <property name="maximum">
-                                                                        <double>
-                                                                            10000.000000000000000</double>
+                                                            <item row="1" column="1">
+                                                                <layout class="QHBoxLayout" name="positionLayout">
+                                                                    <item>
+                                                                        <widget class="QDoubleSpinBox" name="posXSpin">
+                                                                            <property name="decimals">
+                                                                                <number>3</number>
+                                                                            </property>
+                                                                            <property name="minimum">
+                                                                                <double>-10000.000000000000000</double>
+                                                                            </property>
+                                                                            <property name="maximum">
+                                                                                <double>10000.000000000000000</double>
+                                                                            </property>
+                                                                        </widget>
+                                                                    </item>
+                                                                    <item>
+                                                                        <widget class="QDoubleSpinBox" name="posYSpin">
+                                                                            <property name="decimals">
+                                                                                <number>3</number>
+                                                                            </property>
+                                                                            <property name="minimum">
+                                                                                <double>-10000.000000000000000</double>
+                                                                            </property>
+                                                                            <property name="maximum">
+                                                                                <double>10000.000000000000000</double>
+                                                                            </property>
+                                                                        </widget>
+                                                                    </item>
+                                                                    <item>
+                                                                        <widget class="QDoubleSpinBox" name="posZSpin">
+                                                                            <property name="decimals">
+                                                                                <number>3</number>
+                                                                            </property>
+                                                                            <property name="minimum">
+                                                                                <double>-10000.000000000000000</double>
+                                                                            </property>
+                                                                            <property name="maximum">
+                                                                                <double>10000.000000000000000</double>
+                                                                            </property>
+                                                                        </widget>
+                                                                    </item>
+                                                                </layout>
+                                                            </item>
+                                                            <item row="2" column="0">
+                                                                <widget class="QLabel" name="rotationLabel">
+                                                                    <property name="text">
+                                                                        <string>Rotation:</string>
                                                                     </property>
                                                                 </widget>
+                                                            </item>
+                                                            <item row="2" column="1">
+                                                                <layout class="QHBoxLayout" name="rotationLayout">
+                                                                    <item>
+                                                                        <widget class="QDoubleSpinBox" name="rotXSpin">
+                                                                            <property name="decimals">
+                                                                                <number>3</number>
+                                                                            </property>
+                                                                            <property name="minimum">
+                                                                                <double>-360.000000000000000</double>
+                                                                            </property>
+                                                                            <property name="maximum">
+                                                                                <double>360.000000000000000</double>
+                                                                            </property>
+                                                                        </widget>
+                                                                    </item>
+                                                                    <item>
+                                                                        <widget class="QDoubleSpinBox" name="rotYSpin">
+                                                                            <property name="decimals">
+                                                                                <number>3</number>
+                                                                            </property>
+                                                                            <property name="minimum">
+                                                                                <double>-360.000000000000000</double>
+                                                                            </property>
+                                                                            <property name="maximum">
+                                                                                <double>360.000000000000000</double>
+                                                                            </property>
+                                                                        </widget>
+                                                                    </item>
+                                                                    <item>
+                                                                        <widget class="QDoubleSpinBox" name="rotZSpin">
+                                                                            <property name="decimals">
+                                                                                <number>3</number>
+                                                                            </property>
+                                                                            <property name="minimum">
+                                                                                <double>-360.000000000000000</double>
+                                                                            </property>
+                                                                            <property name="maximum">
+                                                                                <double>360.000000000000000</double>
+                                                                            </property>
+                                                                        </widget>
+                                                                    </item>
+                                                                </layout>
                                                             </item>
                                                         </layout>
-                                                    </item>
-                                                </layout>
+                                                    </widget>
+                                                    <widget class="QWidget" name="doorHookTab">
+                                                        <attribute name="title">
+                                                            <string>Door Hook</string>
+                                                        </attribute>
+                                                        <layout class="QFormLayout" name="doorHookLayout">
+                                                            <item row="0" column="0">
+                                                                <widget class="QLabel" name="roomNameLabel">
+                                                                    <property name="text">
+                                                                        <string>Room:</string>
+                                                                    </property>
+                                                                </widget>
+                                                            </item>
+                                                            <item row="0" column="1">
+                                                                <widget class="QComboBox" name="roomNameCombo" />
+                                                            </item>
+                                                            <item row="1" column="0">
+                                                                <widget class="QLabel" name="doorNameLabel">
+                                                                    <property name="text">
+                                                                        <string>Door:</string>
+                                                                    </property>
+                                                                </widget>
+                                                            </item>
+                                                            <item row="1" column="1">
+                                                                <widget class="QLineEdit" name="doorNameEdit" />
+                                                            </item>
+                                                        </layout>
+                                                    </widget>
+                                                </widget>
                                             </widget>
                                         </item>
                                     </layout>
@@ -915,6 +998,14 @@
             </property>
             <property name="toolTip">
                 <string>Import a custom texture</string>
+            </property>
+        </action>
+        <action name="actionGenerateWalkmesh">
+            <property name="text">
+                <string>Generate Walkmesh</string>
+            </property>
+            <property name="toolTip">
+                <string>Generate walkmesh from room layout</string>
             </property>
         </action>
         <action name="actionInstructions">

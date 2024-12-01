@@ -76,6 +76,8 @@ class ModuleRenderer(QOpenGLWidget):
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self._module: Module | None = None
         self._installation: HTInstallation | None = None
+        self._lyt: LYT | None = None
+        self._lyt_editor = None  # Will hold the LYT editor instance
 
         self.loop_timer: QTimer = QTimer(self)
         self.loop_timer.timeout.connect(self.loop)
@@ -182,6 +184,7 @@ class ModuleRenderer(QOpenGLWidget):
         self.pause_render_loop()
         self._module = None
         self._installation = None
+        self._lyt = None
 
         # Attempt to destroy the OpenGL context
         gl_context: QOpenGLContext | None = self.context()
