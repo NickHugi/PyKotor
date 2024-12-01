@@ -50,6 +50,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
+from pykotor.resource.resource_auto import BWM
 from toolset.data.lyt_structures import (
     ExtendedLYT as LYT,
     ExtendedLYTDoorHook as LYTDoorHook,
@@ -57,7 +58,6 @@ from toolset.data.lyt_structures import (
     ExtendedLYTRoom as LYTRoom,
     ExtendedLYTTrack as LYTTrack,
 )
-from pykotor.resource.resource_auto import BWM
 from toolset.gui.dialogs.lyt_dialogs import ObstaclePropertiesDialog, RoomPropertiesDialog, TrackPropertiesDialog
 from toolset.gui.editors.lyt import LYTEditor
 from toolset.gui.widgets.customizable_toolbar import CustomizableToolBar
