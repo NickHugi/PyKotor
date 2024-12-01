@@ -1456,8 +1456,6 @@ class ZoomPanWidget(QWidget):
         self.zoom_factor = 1.0
         self.pan_offset = QPoint(0, 0)
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Optional
 
 from qtpy.QtCore import Qt, Signal
