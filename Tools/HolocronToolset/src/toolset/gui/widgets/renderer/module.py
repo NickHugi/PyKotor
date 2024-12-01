@@ -449,7 +449,7 @@ class ModuleRenderer(QOpenGLWidget):
         """Loads the LYT data into the renderer."""
         self._lyt: LYT = deepcopy(lyt)
         if self._lyt_editor is not None:
-            self._lyt_editor._lyt = self._lyt
+            self._lyt_editor._lyt = self._lyt  # noqa: SLF001
         self.sig_lyt_updated.emit(self._lyt)
         self.update()
 
