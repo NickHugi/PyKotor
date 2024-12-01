@@ -28,6 +28,7 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QAction, QActionGroup, QDrag, QHelpEvent, QIcon, QKeySequence, QPainter, QPalette, QPixmap, QShortcut, QUndoCommand
 from qtpy.QtWidgets import (
     QApplication,
+    QCheckBox,
     QDialog,
     QDockWidget,
     QErrorMessage,
@@ -38,6 +39,7 @@ from qtpy.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSlider,
+    QSpinBox,
     QSplitter,
     QStatusBar,
     QToolBar,
