@@ -196,3 +196,38 @@ class ExtendedLYTDoorHook(LYTDoorHook):
     name: str = ""
     id: str = ""
     connected_room: Optional[ExtendedLYTRoom] = None
+"""Extended LYT data structures with additional attributes."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Optional
+
+from pykotor.common.geometry import Vector2, Vector3, Vector4
+from pykotor.resource.formats.lyt.lyt_data import LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+
+@dataclass
+class ExtendedLYTRoom(LYTRoom):
+    """Extended LYT room with additional attributes."""
+    size: Vector3 = field(default_factory=lambda: Vector3(10, 10, 3))
+    texture: str = ""
+    template_name: Optional[str] = None
+    
+@dataclass 
+class ExtendedLYTTrack(LYTTrack):
+    """Extended LYT track with additional attributes."""
+    texture: str = ""
+    width: float = 1.0
+    
+@dataclass
+class ExtendedLYTObstacle(LYTObstacle):
+    """Extended LYT obstacle with additional attributes."""
+    radius: float = 5.0
+    height: float = 2.0
+    
+@dataclass
+class ExtendedLYTDoorHook(LYTDoorHook):
+    """Extended LYT door hook with additional attributes."""
+    width: float = 2.0
+    height: float = 3.0
+    connected_room: Optional[ExtendedLYTRoom] = None

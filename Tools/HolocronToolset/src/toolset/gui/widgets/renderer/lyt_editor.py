@@ -49,11 +49,17 @@ from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.resource.formats.bwm import BWM, BWMFace
 from pykotor.resource.formats.lyt import LYT
 from toolset.data.lyt_structures import (
-    ExtendedLYTDoorHook as LYTDoorHook,
-    ExtendedLYTObstacle as LYTObstacle, 
-    ExtendedLYTRoom as LYTRoom,
-    ExtendedLYTTrack as LYTTrack
+    ExtendedLYTDoorHook,
+    ExtendedLYTObstacle,
+    ExtendedLYTRoom,
+    ExtendedLYTTrack
 )
+
+# Type aliases for backward compatibility
+LYTRoom = ExtendedLYTRoom
+LYTTrack = ExtendedLYTTrack 
+LYTObstacle = ExtendedLYTObstacle
+LYTDoorHook = ExtendedLYTDoorHook
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.uic.qtpy.editors.lyt import Ui_LYTEditor
@@ -1063,10 +1069,10 @@ class LYTEditor(QWidget):
         # This method will be executed in a separate thread
         # Implement the logic to apply the texture to the selected element
         with self.layout_lock:
-            if self.selected_room:  # FIXME: lytroom does not store textures.
-                self.selected_room.texture = texture_name  # FIXME: texture attribute does not exist in a LYTRoom.
-            elif self.selected_track:
-                self.selected_track.texture = texture_name  # FIXME: texture attribute does not exist in a LYTTrack.
+            if self.selected_room and isinstance(self.selected_room, ExtendedLYTRoom):
+                self.selected_room.texture = texture_name
+            elif self.selected_track and isinstance(self.selected_track, ExtendedLYTTrack):
+                self.selected_track.texture = texture_name
 
     def on_texture_applied(self, result):
         self.sig_texture_changed.emit(result)
