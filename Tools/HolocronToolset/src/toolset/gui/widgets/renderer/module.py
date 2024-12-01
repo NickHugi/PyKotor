@@ -136,6 +136,13 @@ class ModuleRenderer(QOpenGLWidget):
         self._installation = installation
         self._module = module
         self._scene = Scene(installation=installation, module=module)
+        
+        # Initialize LYT data from module
+        if module.layout():
+            self._lyt = module.layout().resource()
+            if self._scene:
+                self._scene.layout = self._lyt
+        
         self.scene.camera.fov = self.settings.fieldOfView
         self.scene.camera.width = self.width()
         self.scene.camera.height = self.height()
