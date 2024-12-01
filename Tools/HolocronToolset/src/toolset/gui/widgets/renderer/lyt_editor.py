@@ -1,4 +1,4 @@
-"""Core LYT editing and rendering logic."""
+"""Core LYT rendering and editing logic."""
 
 from __future__ import annotations
 

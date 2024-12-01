@@ -721,7 +721,7 @@ class DoorHookPropertiesDialog(QDialog):
 class AddRoomCommand(QUndoCommand):
     def __init__(
         self,
-        editor: LYTEditor,
+        renderer: LYTRenderer, 
         room: LYTRoom,
     ):
         super().__init__("Add Room")
