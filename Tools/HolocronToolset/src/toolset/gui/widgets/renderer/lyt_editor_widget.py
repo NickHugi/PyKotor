@@ -107,7 +107,7 @@ including toolbars, property panels, etc.
 
 class LYTEditorWidget(QWidget):
     """UI wrapper widget for the LYT editor.
-    
+
     Provides the user interface elements and coordinates between the core editor,
     texture browser, and walkmesh editor components.
     """
@@ -143,12 +143,12 @@ class LYTEditorWidget(QWidget):
     def __init__(self, parent: ModuleRenderer):
         super().__init__(parent)
         self.parent_ref = parent
-        
+
         # Core editing components
         self.lyt_editor = LYTEditor(parent)  # Core editing logic
         self.texture_browser = TextureBrowser(self)  # Texture management
         self.walkmesh_editor = WalkmeshEditor(self)  # Walkmesh editing
-        
+
         # UI state
         self.current_tool = "select"
         self.ui_state = {}
