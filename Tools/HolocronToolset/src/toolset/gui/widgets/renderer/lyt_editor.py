@@ -45,12 +45,12 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.resource.formats.bwm import BWM, BWMFace
-from toolset.data.lyt_structures import (
-    ExtendedLYT as LYT,
-    ExtendedLYTDoorHook as LYTDoorHook,
-    ExtendedLYTObstacle as LYTObstacle,
-    ExtendedLYTRoom as LYTRoom,
-    ExtendedLYTTrack as LYTTrack,
+from pykotor.resource.formats.lyt.lyt_data import (
+    LYT,
+    LYTDoorHook,
+    LYTObstacle,
+    LYTRoom,
+    LYTTrack,
 )
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
