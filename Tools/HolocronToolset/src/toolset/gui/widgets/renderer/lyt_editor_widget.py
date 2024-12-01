@@ -99,11 +99,22 @@ if TYPE_CHECKING:
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 
-"""LYT editor widget for rendering and editing layouts."""
+"""UI wrapper widget for the LYT editor.
+
+Provides the user interface elements around the core LYT editor,
+including toolbars, property panels, etc.
+"""
 
 class LYTEditorWidget(QWidget):
-    sig_lyt_updated = Signal(LYT)
-    sig_walkmesh_updated = Signal(BWM)
+    """UI wrapper widget for the LYT editor.
+    
+    Provides the user interface elements and coordinates between the core editor,
+    texture browser, and walkmesh editor components.
+    """
+    # Signals for coordinating UI state changes
+    sig_lyt_updated = Signal(LYT)  # Emitted when LYT data changes
+    sig_walkmesh_updated = Signal(BWM)  # Emitted when walkmesh changes
+    sig_ui_state_changed = Signal(str)  # Emitted when UI state changes (tool selection etc)
 
     # Qt constants
     HORIZONTAL = Qt.Orientation.Horizontal
@@ -132,9 +143,15 @@ class LYTEditorWidget(QWidget):
     def __init__(self, parent: ModuleRenderer):
         super().__init__(parent)
         self.parent_ref = parent
-        self.lyt_editor = LYTEditor(parent)
-        self.texture_browser = TextureBrowser(self)
-        self.walkmesh_editor = WalkmeshEditor(self)
+        
+        # Core editing components
+        self.lyt_editor = LYTEditor(parent)  # Core editing logic
+        self.texture_browser = TextureBrowser(self)  # Texture management
+        self.walkmesh_editor = WalkmeshEditor(self)  # Walkmesh editing
+        
+        # UI state
+        self.current_tool = "select"
+        self.ui_state = {}
         self.tool_group = QActionGroup(self)
         self.tool_group.setExclusive(True)
 

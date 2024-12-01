@@ -1,4 +1,4 @@
-"""LYT Editor widget for editing module layouts."""
+"""Core LYT editing and rendering logic."""
 
 from __future__ import annotations
 
@@ -63,7 +63,11 @@ if TYPE_CHECKING:
 
 
 class LYTEditor(QWidget):
-    """Widget for editing LYT (Layout) files."""
+    """Core editor class for LYT (Layout) files.
+    
+    Handles the actual rendering and editing logic for LYT files.
+    UI elements should be handled by LYTEditorWidget instead.
+    """
 
     # Signals
     sig_lyt_updated = Signal(LYT)
