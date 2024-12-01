@@ -52,6 +52,7 @@ from pykotor.resource.formats.lyt.lyt_data import (
     LYTRoom,
     LYTTrack,
 )
+from pykotor.resource.generics.gui import GUI
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.uic.qtpy.editors.lyt import Ui_LYTEditor
@@ -1950,3 +1951,16 @@ class LYTEditor(QWidget):
         if hasattr(self, "process_pool"):
             self.process_pool.shutdown()
         super().closeEvent(event)
+
+    def load_lyt(self, lyt):
+        # Load the LYT data into the editor
+        self.lyt = lyt
+        self.render_lyt()
+
+    def render_lyt(self):
+        # Render the LYT elements for editing
+        pass
+
+    def remove_room(self, room):
+        # Remove a room from the LYT
+        pass
