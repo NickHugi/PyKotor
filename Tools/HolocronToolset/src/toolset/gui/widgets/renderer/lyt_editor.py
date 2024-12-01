@@ -271,6 +271,10 @@ class LYTEditor(QWidget):
         """Handle paint events."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Draw grid first
+        if self._show_grid:
+            self.draw_grid(painter)
 
         # Draw grid
         if self._show_grid:
@@ -1486,6 +1490,28 @@ class LYTEditor(QWidget):
         self.setAcceptDrops(True)
 
         layout = QVBoxLayout()
+        
+        # Add grid controls
+        grid_controls = QHBoxLayout()
+        
+        self.show_grid_cb = QCheckBox("Show Grid")
+        self.show_grid_cb.setChecked(self._show_grid)
+        self.show_grid_cb.stateChanged.connect(self.toggle_grid)
+        grid_controls.addWidget(self.show_grid_cb)
+        
+        self.snap_grid_cb = QCheckBox("Snap to Grid") 
+        self.snap_grid_cb.setChecked(self._snap_to_grid)
+        self.snap_grid_cb.stateChanged.connect(self.toggle_snap)
+        grid_controls.addWidget(self.snap_grid_cb)
+        
+        self.grid_size_spin = QSpinBox()
+        self.grid_size_spin.setRange(10, 1000)
+        self.grid_size_spin.setValue(int(self._grid_size))
+        self.grid_size_spin.valueChanged.connect(self.set_grid_size)
+        grid_controls.addWidget(QLabel("Grid Size:"))
+        grid_controls.addWidget(self.grid_size_spin)
+        
+        layout.addLayout(grid_controls)
 
         # Add buttons for LYT editing operations
         button_layout: QHBoxLayout = QHBoxLayout()
