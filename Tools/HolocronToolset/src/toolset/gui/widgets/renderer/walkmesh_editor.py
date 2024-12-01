@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import math
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+
+import qtpy
 
 from qtpy.QtCore import QRectF, Qt, pyqtSignal as Signal
-from qtpy.QtGui import QBrush, QColor, QPainter, QPen
+from qtpy.QtGui import QBrush, QColor, QPainter, QPen, QUndoCommand
 from qtpy.QtWidgets import (
     QComboBox,
     QDialog,
     QDoubleSpinBox,
     QFormLayout,
     QGraphicsEllipseItem,
+    QGraphicsItem,
     QGraphicsLineItem,
     QGraphicsRectItem,
     QGraphicsScene,
@@ -28,7 +31,14 @@ from qtpy.uic import loadUi
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm.bwm_data import BWM
-from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from toolset.data.lyt_structures import (
+    ExtendedLYT as LYT,
+    ExtendedLYTDoorHook as LYTDoorHook,
+    ExtendedLYTObstacle as LYTObstacle,
+    ExtendedLYTRoom as LYTRoom,
+    ExtendedLYTTrack as LYTTrack,
+)
+from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 
 if TYPE_CHECKING:
@@ -36,15 +46,17 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QMouseEvent, QWheelEvent
     from qtpy.QtWidgets import QGraphicsItem
 
+    from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
 
-class LYTEditor(QWidget):
-    sig_lyt_updated = Signal(LYT)
-    sig_walkmesh_updated = Signal(BWM)
 
-    def __init__(self, parent):
+class WalkmeshEditor(QWidget):
+    sig_lyt_updated: ClassVar[Signal] = Signal(LYT)
+    sig_walkmesh_updated: ClassVar[Signal] = Signal(BWM)
+
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.lyt: LYT = LYT()
-        self.scene = QGraphicsScene(self)
+        self.walkmesh: BWM = BWM()
+        self.scene: QGraphicsScene = QGraphicsScene(self)
         self.selected_element: Optional[QGraphicsItem] = None
         self.current_tool: str = "select"
 
@@ -53,46 +65,54 @@ class LYTEditor(QWidget):
         self.texture_browser: TextureBrowser = TextureBrowser(self)
         self.textures: Dict[str, str] = {}
 
-        self.walkmesh: Optional[BWM] = None
-
         self.initUI()
         self.init_connections()
 
+    def toggle_visibility(self):
+        """Toggle walkmesh visibility."""
+        self.setVisible(not self.isVisible())
+
+    def start_editing(self):
+        """Start walkmesh editing mode."""
+        self.is_editing_walkmesh = True
+        self.selected_walkmesh_face = None
+        self.update()
+
     def initUI(self):
-        loadUi("Tools/HolocronToolset/src/ui/widgets/renderer/lyt_editor.ui", self)
-        self.graphicsView.setScene(self.scene)
-        self.graphicsView.setRenderHint(QPainter.Antialiasing)
+        loadUi("Tools/HolocronToolset/src/toolset/uic/qtpy/editors/walkmesh.py", self)
+        self.graphics_view.setScene(self.scene)
+        self.graphics_view.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         self.add_room_button.clicked.connect(self.add_room)
-        self.editRoomButton.clicked.connect(self.editRoom)
-        self.deleteRoomButton.clicked.connect(self.deleteRoom)
+        self.edit_room_button.clicked.connect(self.edit_room)
+        self.delete_room_button.clicked.connect(self.delete_room)
 
         self.add_track_button.clicked.connect(self.add_track)
-        self.editTrackButton.clicked.connect(self.editTrack)
-        self.deleteTrackButton.clicked.connect(self.deleteTrack)
+        self.edit_track_button.clicked.connect(self.edit_track)
+        self.delete_track_button.clicked.connect(self.delete_track)
 
-        self.addObstacleButton.clicked.connect(self.add_obstacle)
-        self.editObstacleButton.clicked.connect(self.editObstacle)
-        self.deleteObstacleButton.clicked.connect(self.deleteObstacle)
+        self.add_obstacle_button.clicked.connect(self.add_obstacle)
+        self.edit_obstacle_button.clicked.connect(self.edit_obstacle)
+        self.delete_obstacle_button.clicked.connect(self.delete_obstacle)
 
-        self.addDoorhookButton.clicked.connect(self.add_door_hook)
-        self.editDoorhookButton.clicked.connect(self.editDoorHook)
-        self.deleteDoorhookButton.clicked.connect(self.deleteDoorHook)
+        self.add_doorhook_button.clicked.connect(self.add_door_hook)
+        self.edit_doorhook_button.clicked.connect(self.edit_doorhook)
+        self.delete_doorhook_button.clicked.connect(self.delete_door_hook)
 
-        self.generateWalkmeshButton.clicked.connect(self.generate_walkmesh)
+        self.generate_walkmesh_button.clicked.connect(self.generate_walkmesh)
 
         self.zoom_slider.valueChanged.connect(self.update_zoom)
 
     def init_connections(self):
-        self.roomsList.itemClicked.connect(self.onRoomSelected)
-        self.tracksList.itemClicked.connect(self.onTrackSelected)
-        self.obstaclesList.itemClicked.connect(self.onObstacleSelected)
-        self.doorhooksList.itemClicked.connect(self.onDoorhookSelected)
+        self.rooms_list.itemClicked.connect(self.on_room_selected)
+        self.tracks_list.itemClicked.connect(self.on_track_selected)
+        self.obstacles_list.itemClicked.connect(self.on_obstacle_selected)
+        self.doorhooks_list.itemClicked.connect(self.on_doorhook_selected)
 
     def set_lyt(self, lyt: LYT):
-        self.lyt = lyt
-        self.updateLists()
-        self.updateScene()
+        self.lyt: LYT = lyt
+        self.update_lists()
+        self.update_scene()
         self.sig_lyt_updated.emit(self.lyt)
 
     def get_lyt(self) -> LYT:
@@ -108,9 +128,9 @@ class LYTEditor(QWidget):
             command = AddRoomCommand(self, room)
             self.undo_stack.push(command)
 
-    def editRoom(self):
+    def edit_room(self):
         if self.selected_element and isinstance(self.selected_element, QGraphicsRectItem):
-            room = self.selected_element.data(0)
+            room: LYTRoom = self.selected_element.data(0)
             dialog = RoomPropertiesDialog(self, room)
             if dialog.exec():
                 old_room = LYTRoom()
@@ -125,27 +145,27 @@ class LYTEditor(QWidget):
                 command = EditRoomCommand(self, room, old_room)
                 self.undo_stack.push(command)
 
-    def deleteRoom(self):
+    def delete_room(self):
         if self.selected_element and isinstance(self.selected_element, QGraphicsRectItem):
-            room = self.selected_element.data(0)
+            room: LYTRoom = self.selected_element.data(0)
             command = DeleteRoomCommand(self, room)
             self.undo_stack.push(command)
 
     def add_track(self):
-        if len(self.lyt.rooms) < 2:
+        if len(self.lyt.rooms) < 2:  # noqa: PLR2004
             QMessageBox.warning(self, "Add Track", "At least two rooms are required to add a track.")
             return
         dialog = TrackPropertiesDialog(self, self.lyt.rooms)
         if dialog.exec():
-            track = LYTTrack()
+            track: LYTTrack = LYTTrack()
             track.start_room = dialog.start_room
             track.end_room = dialog.end_room
             command = AddTrackCommand(self, track)
             self.undo_stack.push(command)
 
-    def editTrack(self):
+    def edit_track(self):
         if self.selected_element and isinstance(self.selected_element, QGraphicsLineItem):
-            track = self.selected_element.data(0)
+            track: LYTTrack = self.selected_element.data(0)
             dialog = TrackPropertiesDialog(self, self.lyt.rooms, track)
             if dialog.exec():
                 old_track = LYTTrack()
@@ -158,27 +178,27 @@ class LYTEditor(QWidget):
                 command = EditTrackCommand(self, track, old_track)
                 self.undo_stack.push(command)
 
-    def deleteTrack(self):
+    def delete_track(self):
         if self.selected_element and isinstance(self.selected_element, QGraphicsLineItem):
-            track = self.selected_element.data(0)
+            track: LYTTrack = self.selected_element.data(0)
             command = DeleteTrackCommand(self, track)
             self.undo_stack.push(command)
 
     def add_obstacle(self):
         dialog = ObstaclePropertiesDialog(self)
         if dialog.exec():
-            obstacle = LYTObstacle()
+            obstacle: LYTObstacle = LYTObstacle()
             obstacle.position = dialog.position
             obstacle.radius = dialog.radius
             command = AddObstacleCommand(self, obstacle)
             self.undo_stack.push(command)
 
-    def editObstacle(self):
+    def edit_obstacle(self):
         if self.selected_element and isinstance(self.selected_element, QGraphicsEllipseItem):
-            obstacle = self.selected_element.data(0)
-            dialog = ObstaclePropertiesDialog(self, obstacle)
+            obstacle: LYTObstacle = self.selected_element.data(0)
+            dialog: ObstaclePropertiesDialog = ObstaclePropertiesDialog(self, obstacle)
             if dialog.exec():
-                old_obstacle = LYTObstacle()
+                old_obstacle: LYTObstacle = LYTObstacle()
                 old_obstacle.position = obstacle.position
                 old_obstacle.radius = obstacle.radius
 
@@ -188,9 +208,9 @@ class LYTEditor(QWidget):
                 command = EditObstacleCommand(self, obstacle, old_obstacle)
                 self.undo_stack.push(command)
 
-    def deleteObstacle(self):
+    def delete_obstacle(self):
         if self.selected_element and isinstance(self.selected_element, QGraphicsEllipseItem):
-            obstacle = self.selected_element.data(0)
+            obstacle: LYTObstacle = self.selected_element.data(0)
             command = DeleteObstacleCommand(self, obstacle)
             self.undo_stack.push(command)
 
@@ -200,19 +220,19 @@ class LYTEditor(QWidget):
             return
         dialog = DoorHookPropertiesDialog(self, self.lyt.rooms)
         if dialog.exec():
-            doorhook = LYTDoorHook()
+            doorhook: LYTDoorHook = LYTDoorHook()
             doorhook.room = dialog.room
             doorhook.position = dialog.position
             doorhook.orientation = dialog.orientation
             command = AddDoorHookCommand(self, doorhook)
             self.undo_stack.push(command)
 
-    def editDoorHook(self):
+    def edit_doorhook(self):
         if self.selected_element and isinstance(self.selected_element, QGraphicsRectItem):
-            doorhook = self.selected_element.data(0)
-            dialog = DoorHookPropertiesDialog(self, self.lyt.rooms, doorhook)
+            doorhook: LYTDoorHook = self.selected_element.data(0)
+            dialog: DoorHookPropertiesDialog = DoorHookPropertiesDialog(self, self.lyt.rooms, doorhook)
             if dialog.exec():
-                old_doorhook = LYTDoorHook()
+                old_doorhook: LYTDoorHook = LYTDoorHook()
                 old_doorhook.room = doorhook.room
                 old_doorhook.position = doorhook.position
                 old_doorhook.orientation = doorhook.orientation
@@ -224,33 +244,39 @@ class LYTEditor(QWidget):
                 command = EditDoorHookCommand(self, doorhook, old_doorhook)
                 self.undo_stack.push(command)
 
-    def deleteDoorHook(self):
+    def delete_door_hook(self):
         if self.selected_element and isinstance(self.selected_element, QGraphicsRectItem):
-            doorhook = self.selected_element.data(0)
+            doorhook: LYTDoorHook = self.selected_element.data(0)
             command = DeleteDoorHookCommand(self, doorhook)
             self.undo_stack.push(command)
 
     def generate_walkmesh(self):
-        self.walkmesh = BWM()
+        self.walkmesh: BWM = BWM()
         for room in self.lyt.rooms:
-            self.addRoomToWalkmesh(room)
+            self.add_room_to_walkmesh(room)
         for obstacle in self.lyt.obstacles:
-            self.addObstacleToWalkmesh(obstacle)
+            self.add_obstacle_to_walkmesh(obstacle)
         self.sig_walkmesh_updated.emit(self.walkmesh)
 
-    def addRoomToWalkmesh(self, room: LYTRoom):
+    def add_room_to_walkmesh(
+        self,
+        room: LYTRoom,
+    ):
         # Create a simple rectangular walkmesh for the room
-        x, y, z = room.position.x, room.position.y, room.position.z
-        width, height = room.size.x, room.size.y
+        x: float = room.position.x
+        y: float = room.position.y
+        z: float = room.position.z
+        width: float = room.size.x
+        height: float = room.size.y
 
-        vertices = [
+        vertices: list[tuple[float, float, float]] = [
             (x, y, z),
             (x + width, y, z),
             (x + width, y + height, z),
             (x, y + height, z)
         ]
 
-        faces = [
+        faces: list[tuple[int, int, int]] = [
             (0, 1, 2),
             (0, 2, 3)
         ]
@@ -258,112 +284,141 @@ class LYTEditor(QWidget):
         for face in faces:
             self.walkmesh.add_face([Vector3(*vertices[i]) for i in face])
 
-    def addObstacleToWalkmesh(self, obstacle: LYTObstacle):
+    def add_obstacle_to_walkmesh(
+        self,
+        obstacle: LYTObstacle,
+    ):
         # Create a simple circular walkmesh for the obstacle
-        x, y, z = obstacle.position.x, obstacle.position.y, obstacle.position.z
-        radius = obstacle.radius
-        num_segments = 16
+        x: float = obstacle.position.x
+        y: float = obstacle.position.y
+        z: float = obstacle.position.z
+        radius: float = obstacle.radius
+        num_segments: int = 16
 
-        vertices = []
+        vertices: list[tuple[float, float, float]] = []
         for i in range(num_segments):
-            angle = 2 * math.pi * i / num_segments
-            vx = x + radius * math.cos(angle)
-            vy = y + radius * math.sin(angle)
+            angle: float = 2 * math.pi * i / num_segments
+            vx: float = x + radius * math.cos(angle)
+            vy: float = y + radius * math.sin(angle)
             vertices.append((vx, vy, z))
 
-        center = (x, y, z)
+        center: tuple[float, float, float] = (x, y, z)
         vertices.append(center)
 
         for i in range(num_segments):
             j = (i + 1) % num_segments
-            self.walkmesh.add_face([
-                Vector3(*vertices[i]),
-                Vector3(*vertices[j]),
-                Vector3(*center)
-            ])
+            self.walkmesh.add_face(
+                [
+                    Vector3(*vertices[i]),
+                    Vector3(*vertices[j]),
+                    Vector3(*center),
+                ]
+            )
 
-    def update_zoom(self, value: int):
-        zoom_factor = value / 100.0
-        self.graphicsView.resetTransform()
-        self.graphicsView.scale(zoom_factor, zoom_factor)
+    def update_zoom(
+        self,
+        value: int,
+    ):
+        zoom_factor: float = value / 100.0
+        self.graphics_view.resetTransform()
+        self.graphics_view.scale(zoom_factor, zoom_factor)
 
-    def updateLists(self):
-        self.roomsList.clear()
-        self.tracksList.clear()
-        self.obstaclesList.clear()
-        self.doorhooksList.clear()
+    def update_lists(self):
+        self.rooms_list.clear()
+        self.tracks_list.clear()
+        self.obstacles_list.clear()
+        self.doorhooks_list.clear()
 
         for room in self.lyt.rooms:
-            self.roomsList.addItem(QListWidgetItem(room.model))
+            self.rooms_list.addItem(QListWidgetItem(room.model))
 
         for track in self.lyt.tracks:
-            self.tracksList.addItem(QListWidgetItem(f"Track {self.lyt.tracks.index(track)}"))
+            self.tracks_list.addItem(QListWidgetItem(f"Track {self.lyt.tracks.index(track)}"))
 
         for obstacle in self.lyt.obstacles:
-            self.obstaclesList.addItem(QListWidgetItem(f"Obstacle {self.lyt.obstacles.index(obstacle)}"))
+            self.obstacles_list.addItem(QListWidgetItem(f"Obstacle {self.lyt.obstacles.index(obstacle)}"))
 
         for doorhook in self.lyt.doorhooks:
-            self.doorhooksList.addItem(QListWidgetItem(f"Door Hook {self.lyt.doorhooks.index(doorhook)}"))
+            self.doorhooks_list.addItem(QListWidgetItem(f"Door Hook {self.lyt.doorhooks.index(doorhook)}"))
 
-    def updateScene(self):
+    def update_scene(self):
         self.scene.clear()
         for room in self.lyt.rooms:
-            self.addRoomToScene(room)
+            self.add_room_to_scene(room)
         for track in self.lyt.tracks:
-            self.addTrackToScene(track)
+            self.add_track_to_scene(track)
         for obstacle in self.lyt.obstacles:
-            self.addObstacleToScene(obstacle)
+            self.add_obstacle_to_scene(obstacle)
         for doorhook in self.lyt.doorhooks:
-            self.addDoorHookToScene(doorhook)
+            self.add_door_hook_to_scene(doorhook)
 
-    def addRoomToScene(self, room: LYTRoom):
+    def add_room_to_scene(
+        self,
+        room: LYTRoom,
+    ):
         rect = QGraphicsRectItem(QRectF(room.position.x, room.position.y, room.size.x, room.size.y))
         rect.setBrush(QBrush(QColor(200, 200, 200, 100)))
         rect.setData(0, room)
         self.scene.addItem(rect)
 
-    def addTrackToScene(self, track: LYTTrack):
-        line = QGraphicsLineItem(track.start_room.position.x, track.start_room.position.y,
-                                 track.end_room.position.x, track.end_room.position.y)
+    def add_track_to_scene(
+        self,
+        track: LYTTrack,
+    ):
+        line = QGraphicsLineItem(
+            track.start_room.position.x,
+            track.start_room.position.y,
+            track.end_room.position.x,
+            track.end_room.position.y,
+        )
         line.setPen(QPen(QColor(255, 0, 0), 2))
         line.setData(0, track)
         self.scene.addItem(line)
 
-    def addObstacleToScene(self, obstacle: LYTObstacle):
-        ellipse = QGraphicsEllipseItem(obstacle.position.x - obstacle.radius,
-                                       obstacle.position.y - obstacle.radius,
-                                       obstacle.radius * 2, obstacle.radius * 2)
+    def add_obstacle_to_scene(
+        self,
+        obstacle: LYTObstacle,
+    ):
+        ellipse: QGraphicsEllipseItem = QGraphicsEllipseItem(
+            obstacle.position.x - obstacle.radius,
+            obstacle.position.y - obstacle.radius,
+            obstacle.radius * 2,
+            obstacle.radius * 2,
+        )
         ellipse.setBrush(QBrush(QColor(0, 255, 0, 100)))
         ellipse.setData(0, obstacle)
         self.scene.addItem(ellipse)
 
-    def addDoorHookToScene(self, doorhook: LYTDoorHook):
+    def add_door_hook_to_scene(
+        self,
+        doorhook: LYTDoorHook,
+    ):
         rect = QGraphicsRectItem(QRectF(doorhook.position.x - 5, doorhook.position.y - 5, 10, 10))
         rect.setBrush(QBrush(QColor(0, 0, 255, 100)))
         rect.setData(0, doorhook)
         self.scene.addItem(rect)
 
-    def onRoomSelected(self, item: QListWidgetItem):
-        index = self.roomsList.row(item)
-        room = self.lyt.rooms[index]
-        self.selectElementInScene(room)
+    def on_room_selected(self, item: QListWidgetItem):
+        index: int = self.rooms_list.row(item)
+        room: LYTRoom = self.lyt.rooms[index]
+        self.select_element_in_scene(room)
 
-    def onTrackSelected(self, item: QListWidgetItem):
-        index = self.tracksList.row(item)
-        track = self.lyt.tracks[index]
-        self.selectElementInScene(track)
+    def on_track_selected(self, item: QListWidgetItem):
+        index: int = self.tracks_list.row(item)
+        track: LYTTrack = self.lyt.tracks[index]
+        self.select_element_in_scene(track)
 
-    def onObstacleSelected(self, item: QListWidgetItem):
-        index = self.obstaclesList.row(item)
-        obstacle = self.lyt.obstacles[index]
-        self.selectElementInScene(obstacle)
+    def on_obstacle_selected(self, item: QListWidgetItem):
+        index: int = self.obstacles_list.row(item)
+        obstacle: LYTObstacle = self.lyt.obstacles[index]
+        self.select_element_in_scene(obstacle)
 
-    def onDoorhookSelected(self, item: QListWidgetItem):
-        index = self.doorhooksList.row(item)
-        doorhook = self.lyt.doorhooks[index]
-        self.selectElementInScene(doorhook)
+    def on_doorhook_selected(self, item: QListWidgetItem):
+        index: int = self.doorhooks_list.row(item)
+        doorhook: LYTDoorHook = self.lyt.doorhooks[index]
+        self.select_element_in_scene(doorhook)
 
-    def selectElementInScene(self, element: Any):
+    def select_element_in_scene(self, element: Any):
         for item in self.scene.items():
             if item.data(0) == element:
                 self.selected_element = item
@@ -371,50 +426,52 @@ class LYTEditor(QWidget):
                 break
 
     def mousePressEvent(self, event: QMouseEvent):
+        pos = event.pos().toPointF() if qtpy.QT5 else event.position()
         if self.current_tool == "select":
-            self.selectElementAt(event.pos())
+            self.select_element_at(pos)
         elif self.current_tool in ["move", "rotate"]:
-            self.startTransform(event.pos())
+            self.start_transform(pos)
 
     def mouseMoveEvent(self, event: QMouseEvent):
         if self.current_tool in ["move", "rotate"] and self.selected_element:
-            self.updateTransform(event.pos())
+            self.update_transform(event.pos().toPointF() if qtpy.QT5 else event.position())
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         if self.current_tool in ["move", "rotate"] and self.selected_element:
-            self.endTransform()
+            self.end_transform()
 
     def wheelEvent(self, event: QWheelEvent):
-        if event.modifiers() & Qt.ControlModifier:
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             delta = event.angleDelta().y()
             if delta > 0:
-                self.zoomIn()
+                self.zoom_in()
             else:
-                self.zoomOut()
+                self.zoom_out()
             event.accept()
         else:
             super().wheelEvent(event)
 
-    def zoomIn(self):
-        self.graphicsView.scale(1.2, 1.2)
+    def zoom_in(self):
+        self.graphics_view.scale(1.2, 1.2)
 
-    def zoomOut(self):
-        self.graphicsView.scale(1 / 1.2, 1 / 1.2)
+    def zoom_out(self):
+        self.graphics_view.scale(1 / 1.2, 1 / 1.2)
 
-    def selectElementAt(self, pos: QPointF):
-        item = self.scene.itemAt(self.graphicsView.mapToScene(pos.toPoint()), self.graphicsView.transform())
+    def select_element_at(self, pos: QPointF):
+        # Select the element at the given position
+        item: QGraphicsItem | None = self.scene.itemAt(self.graphics_view.mapToScene(pos.toPoint()), self.graphics_view.transform())
         if item:
             self.selected_element = item
             item.setSelected(True)
 
-    def startTransform(self, pos: QPointF):
-        self.transform_start = self.graphicsView.mapToScene(pos.toPoint())
+    def start_transform(self, pos: QPointF):
+        self.transform_start: QPointF = self.graphics_view.mapToScene(pos.toPoint())
 
-    def updateTransform(self, pos: QPointF):
+    def update_transform(self, pos: QPointF):
         if not self.selected_element:
             return
-        current_pos = self.graphicsView.mapToScene(pos.toPoint())
-        delta = current_pos - self.transform_start
+        current_pos: QPointF = self.graphics_view.mapToScene(pos.toPoint())
+        delta: QPointF = current_pos - self.transform_start
         if self.current_tool == "move":
             self.selected_element.moveBy(delta.x(), delta.y())
         elif self.current_tool == "rotate":
@@ -425,7 +482,7 @@ class LYTEditor(QWidget):
                 self.selected_element.set_rotation(math.degrees(angle))
         self.transform_start = current_pos
 
-    def endTransform(self):
+    def end_transform(self):
         if not self.selected_element:
             return
         element = self.selected_element.data(0)
@@ -440,28 +497,32 @@ class LYTEditor(QWidget):
         self.undo_stack.push(command)
 
 class RoomPropertiesDialog(QDialog):
-    def __init__(self, parent=None, room: Optional[LYTRoom] = None):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        room: LYTRoom | None = None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Room Properties")
-        self.room = room
+        self.room: LYTRoom | None = room
 
         layout = QFormLayout()
 
-        self.model_edit = QLineEdit(self)
+        self.model_edit: QLineEdit = QLineEdit(self)
         layout.addRow("Model:", self.model_edit)
 
-        self.pos_x = QDoubleSpinBox(self)
-        self.pos_y = QDoubleSpinBox(self)
-        self.pos_z = QDoubleSpinBox(self)
-        pos_layout = QHBoxLayout()
+        self.pos_x: QDoubleSpinBox = QDoubleSpinBox(self)
+        self.pos_y: QDoubleSpinBox = QDoubleSpinBox(self)
+        self.pos_z: QDoubleSpinBox = QDoubleSpinBox(self)
+        pos_layout: QHBoxLayout = QHBoxLayout()
         pos_layout.addWidget(self.pos_x)
         pos_layout.addWidget(self.pos_y)
         pos_layout.addWidget(self.pos_z)
         layout.addRow("Position (X, Y, Z):", pos_layout)
 
-        self.size_x = QDoubleSpinBox(self)
-        self.size_y = QDoubleSpinBox(self)
-        size_layout = QHBoxLayout()
+        self.size_x: QDoubleSpinBox = QDoubleSpinBox(self)
+        self.size_y: QDoubleSpinBox = QDoubleSpinBox(self)
+        size_layout: QHBoxLayout = QHBoxLayout()
         size_layout.addWidget(self.size_x)
         size_layout.addWidget(self.size_y)
         layout.addRow("Size (Width, Height):", size_layout)
@@ -475,32 +536,37 @@ class RoomPropertiesDialog(QDialog):
             self.size_y.setValue(room.size.y)
 
         buttons = QHBoxLayout()
-        ok_button = QPushButton("OK")
-        cancel_button = QPushButton("Cancel")
+        ok_button: QPushButton = QPushButton("OK")
+        cancel_button: QPushButton = QPushButton("Cancel")
         buttons.addWidget(ok_button)
         buttons.addWidget(cancel_button)
 
         ok_button.clicked.connect(self.accept)
         cancel_button.clicked.connect(self.reject)
 
-        main_layout = QVBoxLayout()
+        main_layout: QVBoxLayout = QVBoxLayout()
         main_layout.addLayout(layout)
         main_layout.addLayout(buttons)
 
         self.setLayout(main_layout)
 
     def accept(self):
-        self.model = self.model_edit.text()
-        self.position = Vector3(self.pos_x.value(), self.pos_y.value(), self.pos_z.value())
-        self.size = Vector3(self.size_x.value(), self.size_y.value(), 0)
+        self.model: str = self.model_edit.text()
+        self.position: Vector3 = Vector3(self.pos_x.value(), self.pos_y.value(), self.pos_z.value())
+        self.size: Vector3 = Vector3(self.size_x.value(), self.size_y.value(), 0)
         super().accept()
 
 class TrackPropertiesDialog(QDialog):
-    def __init__(self, parent=None, rooms: List[LYTRoom] = None, track: Optional[LYTTrack] = None):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        rooms: list[LYTRoom] | None = None,
+        track: LYTTrack | None = None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Track Properties")
-        self.rooms = rooms or []
-        self.track = track
+        self.rooms: list[LYTRoom] = rooms or []
+        self.track: LYTTrack | None = track
 
         layout = QFormLayout()
 
@@ -514,8 +580,8 @@ class TrackPropertiesDialog(QDialog):
         layout.addRow("End Room:", self.end_room_combo)
 
         if track:
-            start_index = self.rooms.index(track.start_room)
-            end_index = self.rooms.index(track.end_room)
+            start_index: int = self.rooms.index(track.start_room)
+            end_index: int = self.rooms.index(track.end_room)
             self.start_room_combo.setCurrentIndex(start_index)
             self.end_room_combo.setCurrentIndex(end_index)
 
@@ -535,28 +601,32 @@ class TrackPropertiesDialog(QDialog):
         self.setLayout(main_layout)
 
     def accept(self):
-        self.start_room = self.start_room_combo.currentData()
-        self.end_room = self.end_room_combo.currentData()
+        self.start_room: LYTRoom = self.start_room_combo.currentData()
+        self.end_room: LYTRoom = self.end_room_combo.currentData()
         super().accept()
 
 class ObstaclePropertiesDialog(QDialog):
-    def __init__(self, parent=None, obstacle: Optional[LYTObstacle] = None):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        obstacle: LYTObstacle | None = None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Obstacle Properties")
-        self.obstacle = obstacle
+        self.obstacle: LYTObstacle | None = obstacle
 
         layout = QFormLayout()
 
-        self.pos_x = QDoubleSpinBox(self)
-        self.pos_y = QDoubleSpinBox(self)
-        self.pos_z = QDoubleSpinBox(self)
-        pos_layout = QHBoxLayout()
+        self.pos_x: QDoubleSpinBox = QDoubleSpinBox(self)
+        self.pos_y: QDoubleSpinBox = QDoubleSpinBox(self)
+        self.pos_z: QDoubleSpinBox = QDoubleSpinBox(self)
+        pos_layout: QHBoxLayout = QHBoxLayout()
         pos_layout.addWidget(self.pos_x)
         pos_layout.addWidget(self.pos_y)
         pos_layout.addWidget(self.pos_z)
         layout.addRow("Position (X, Y, Z):", pos_layout)
 
-        self.radius = QDoubleSpinBox(self)
+        self.radius: QDoubleSpinBox = QDoubleSpinBox(self)
         layout.addRow("Radius:", self.radius)
 
         if obstacle:
@@ -581,16 +651,21 @@ class ObstaclePropertiesDialog(QDialog):
         self.setLayout(main_layout)
 
     def accept(self):
-        self.position = Vector3(self.pos_x.value(), self.pos_y.value(), self.pos_z.value())
-        self.radius = self.radius.value()
+        self.position: Vector3 = Vector3(self.pos_x.value(), self.pos_y.value(), self.pos_z.value())
+        self.radius: float = self.radius.value()
         super().accept()
 
 class DoorHookPropertiesDialog(QDialog):
-    def __init__(self, parent=None, rooms: List[LYTRoom] = None, doorhook: Optional[LYTDoorHook] = None):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        rooms: list[LYTRoom] | None = None,
+        doorhook: LYTDoorHook | None = None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Door Hook Properties")
-        self.rooms = rooms or []
-        self.doorhook = doorhook
+        self.rooms: list[LYTRoom] = rooms or []
+        self.doorhook: LYTDoorHook | None = doorhook
 
         layout = QFormLayout()
 
@@ -600,22 +675,22 @@ class DoorHookPropertiesDialog(QDialog):
 
         layout.addRow("Room:", self.room_combo)
 
-        self.pos_x = QDoubleSpinBox(self)
-        self.pos_y = QDoubleSpinBox(self)
-        self.pos_z = QDoubleSpinBox(self)
-        pos_layout = QHBoxLayout()
+        self.pos_x: QDoubleSpinBox = QDoubleSpinBox(self)
+        self.pos_y: QDoubleSpinBox = QDoubleSpinBox(self)
+        self.pos_z: QDoubleSpinBox = QDoubleSpinBox(self)
+        pos_layout: QHBoxLayout = QHBoxLayout()
         pos_layout.addWidget(self.pos_x)
         pos_layout.addWidget(self.pos_y)
         pos_layout.addWidget(self.pos_z)
         layout.addRow("Position (X, Y, Z):", pos_layout)
 
-        self.orientation = QDoubleSpinBox(self)
+        self.orientation: QDoubleSpinBox = QDoubleSpinBox(self)
         self.orientation.setMinimum(0)
         self.orientation.setMaximum(359.99)
         layout.addRow("Orientation (degrees):", self.orientation)
 
-        if doorhook:
-            room_index = self.rooms.index(doorhook.room)
+        if doorhook is not None:
+            room_index: int = self.rooms.index(doorhook.room)
             self.room_combo.setCurrentIndex(room_index)
             self.pos_x.setValue(doorhook.position.x)
             self.pos_y.setValue(doorhook.position.y)
@@ -638,310 +713,354 @@ class DoorHookPropertiesDialog(QDialog):
         self.setLayout(main_layout)
 
     def accept(self):
-        self.room = self.room_combo.currentData()
-        self.position = Vector3(self.pos_x.value(), self.pos_y.value(), self.pos_z.value())
-        self.orientation = math.radians(self.orientation.value())
+        self.room: LYTRoom = self.room_combo.currentData()
+        self.position: Vector3 = Vector3(self.pos_x.value(), self.pos_y.value(), self.pos_z.value())
+        self.orientation: float = math.radians(self.orientation.value())
         super().accept()
 
 class AddRoomCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, room: LYTRoom):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        room: LYTRoom,
+    ):
         super().__init__("Add Room")
-        self.editor = editor
-        self.room = room
+        self.editor: LYTEditor = editor
+        self.room: LYTRoom = room
 
     def redo(self):
-        self.editor.lyt.rooms.append(self.room)
-        self.editor.addRoomToScene(self.room)
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor._lyt.rooms.append(self.room)
+        self.editor.add_room_to_scene(self.room)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
-        self.editor.lyt.rooms.remove(self.room)
+        self.editor._lyt.rooms.remove(self.room)
         for item in self.editor.scene.items():
             if item.data(0) == self.room:
-                self.editor.scene.removeItem(item)
+                self.editor.scene.remove_item(item)
                 break
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class EditRoomCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, room: LYTRoom, old_room: LYTRoom):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        room: LYTRoom,
+        old_room: LYTRoom,
+    ):
         super().__init__("Edit Room")
-        self.editor = editor
-        self.room = room
-        self.old_room = old_room
+        self.editor: LYTEditor = editor
+        self.room: LYTRoom = room
+        self.old_room: LYTRoom = old_room
 
     def redo(self):
         self.room.position = self.new_position
         self.room.size = self.new_size
         self.room.model = self.new_model
-        self.editor.updateScene()
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_scene()
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
         self.room.position = self.old_room.position
         self.room.size = self.old_room.size
         self.room.model = self.old_room.model
-        self.editor.updateScene()
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_scene()
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class DeleteRoomCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, room: LYTRoom):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        room: LYTRoom,
+    ):
         super().__init__("Delete Room")
-        self.editor = editor
-        self.room = room
+        self.editor: LYTEditor = editor
+        self.room: LYTRoom = room
 
     def redo(self):
-        self.editor.lyt.rooms.remove(self.room)
+        self.editor._lyt.rooms.remove(self.room)
         for item in self.editor.scene.items():
             if item.data(0) == self.room:
-                self.editor.scene.removeItem(item)
+                self.editor.scene.remove_item(item)
                 break
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
-        self.editor.lyt.rooms.append(self.room)
-        self.editor.addRoomToScene(self.room)
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor._lyt.rooms.append(self.room)
+        self.editor.add_room_to_scene(self.room)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class AddTrackCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, track: LYTTrack):
         super().__init__("Add Track")
-        self.editor = editor
-        self.track = track
+        self.editor: LYTEditor = editor
+        self.track: LYTTrack = track
 
     def redo(self):
-        self.editor.lyt.tracks.append(self.track)
-        self.editor.addTrackToScene(self.track)
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor._lyt.tracks.append(self.track)
+        self.editor.add_track_to_scene(self.track)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
-        self.editor.lyt.tracks.remove(self.track)
+        self.editor._lyt.tracks.remove(self.track)
         for item in self.editor.scene.items():
             if item.data(0) == self.track:
                 self.editor.scene.removeItem(item)
                 break
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class EditTrackCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, track: LYTTrack, old_track: LYTTrack):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        track: LYTTrack,
+        old_track: LYTTrack,
+    ):
         super().__init__("Edit Track")
-        self.editor = editor
-        self.track = track
-        self.old_track = old_track
+        self.editor: LYTEditor = editor
+        self.track: LYTTrack = track
+        self.old_track: LYTTrack = old_track
 
     def redo(self):
         self.track.start_room = self.new_start_room
         self.track.end_room = self.new_end_room
-        self.editor.updateScene()
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_scene()
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
         self.track.start_room = self.old_track.start_room
         self.track.end_room = self.old_track.end_room
-        self.editor.updateScene()
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_scene()
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class DeleteTrackCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, track: LYTTrack):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        track: LYTTrack,
+    ):
         super().__init__("Delete Track")
-        self.editor = editor
-        self.track = track
+        self.editor: LYTEditor = editor
+        self.track: LYTTrack = track
 
     def redo(self):
-        self.editor.lyt.tracks.remove(self.track)
+        self.editor._lyt.tracks.remove(self.track)
         for item in self.editor.scene.items():
             if item.data(0) == self.track:
-                self.editor.scene.removeItem(item)
+                self.editor.scene.remove_item(item)
                 break
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
-        self.editor.lyt.tracks.append(self.track)
-        self.editor.addTrackToScene(self.track)
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor._lyt.tracks.append(self.track)
+        self.editor.add_track_to_scene(self.track)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class AddObstacleCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, obstacle: LYTObstacle):
         super().__init__("Add Obstacle")
-        self.editor = editor
-        self.obstacle = obstacle
+        self.editor: LYTEditor = editor
+        self.obstacle: LYTObstacle = obstacle
 
     def redo(self):
-        self.editor.lyt.obstacles.append(self.obstacle)
-        self.editor.addObstacleToScene(self.obstacle)
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor._lyt.obstacles.append(self.obstacle)
+        self.editor.add_obstacle_to_scene(self.obstacle)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
-        self.editor.lyt.obstacles.remove(self.obstacle)
+        self.editor._lyt.obstacles.remove(self.obstacle)
         for item in self.editor.scene.items():
             if item.data(0) == self.obstacle:
-                self.editor.scene.removeItem(item)
+                self.editor.scene.remove_item(item)
                 break
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class EditObstacleCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, obstacle: LYTObstacle, old_obstacle: LYTObstacle):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        obstacle: LYTObstacle,
+        old_obstacle: LYTObstacle,
+    ):
         super().__init__("Edit Obstacle")
-        self.editor = editor
-        self.obstacle = obstacle
-        self.old_obstacle = old_obstacle
+        self.editor: LYTEditor = editor
+        self.obstacle: LYTObstacle = obstacle
+        self.old_obstacle: LYTObstacle = old_obstacle
 
     def redo(self):
         self.obstacle.position = self.new_position
         self.obstacle.radius = self.new_radius
-        self.editor.updateScene()
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_scene()
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
         self.obstacle.position = self.old_obstacle.position
         self.obstacle.radius = self.old_obstacle.radius
-        self.editor.updateScene()
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_scene()
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class DeleteObstacleCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, obstacle: LYTObstacle):
         super().__init__("Delete Obstacle")
-        self.editor = editor
-        self.obstacle = obstacle
+        self.editor: LYTEditor = editor
+        self.obstacle: LYTObstacle = obstacle
 
     def redo(self):
-        self.editor.lyt.obstacles.remove(self.obstacle)
+        self.editor._lyt.obstacles.remove(self.obstacle)
         for item in self.editor.scene.items():
             if item.data(0) == self.obstacle:
                 self.editor.scene.removeItem(item)
                 break
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
-        self.editor.lyt.obstacles.append(self.obstacle)
-        self.editor.addObstacleToScene(self.obstacle)
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor._lyt.obstacles.append(self.obstacle)
+        self.editor.add_obstacle_to_scene(self.obstacle)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class AddDoorHookCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, doorhook: LYTDoorHook):
         super().__init__("Add Door Hook")
-        self.editor = editor
-        self.doorhook = doorhook
+        self.editor: LYTEditor = editor
+        self.doorhook: LYTDoorHook = doorhook
 
     def redo(self):
-        self.editor.lyt.doorhooks.append(self.doorhook)
-        self.editor.addDoorHookToScene(self.doorhook)
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor._lyt.doorhooks.append(self.doorhook)
+        self.editor.add_doorhook_to_scene(self.doorhook)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
-        self.editor.lyt.doorhooks.remove(self.doorhook)
+        self.editor._lyt.doorhooks.remove(self.doorhook)
         for item in self.editor.scene.items():
             if item.data(0) == self.doorhook:
                 self.editor.scene.removeItem(item)
                 break
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class EditDoorHookCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, doorhook: LYTDoorHook, old_doorhook: LYTDoorHook):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        doorhook: LYTDoorHook,
+        old_doorhook: LYTDoorHook,
+    ):
         super().__init__("Edit Door Hook")
-        self.editor = editor
-        self.doorhook = doorhook
-        self.old_doorhook = old_doorhook
+        self.editor: LYTEditor = editor
+        self.doorhook: LYTDoorHook = doorhook
+        self.old_doorhook: LYTDoorHook = old_doorhook
 
     def redo(self):
         self.doorhook.room = self.new_room
         self.doorhook.position = self.new_position
         self.doorhook.orientation = self.new_orientation
-        self.editor.updateScene()
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_scene()
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
         self.doorhook.room = self.old_doorhook.room
         self.doorhook.position = self.old_doorhook.position
         self.doorhook.orientation = self.old_doorhook.orientation
-        self.editor.updateScene()
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_scene()
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class DeleteDoorHookCommand(QUndoCommand):
     def __init__(self, editor: LYTEditor, doorhook: LYTDoorHook):
         super().__init__("Delete Door Hook")
-        self.editor = editor
-        self.doorhook = doorhook
+        self.editor: LYTEditor = editor
+        self.doorhook: LYTDoorHook = doorhook
 
     def redo(self):
-        self.editor.lyt.doorhooks.remove(self.doorhook)
+        self.editor._lyt.doorhooks.remove(self.doorhook)
         for item in self.editor.scene.items():
             if item.data(0) == self.doorhook:
                 self.editor.scene.removeItem(item)
                 break
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
-        self.editor.lyt.doorhooks.append(self.doorhook)
-        self.editor.addDoorHookToScene(self.doorhook)
-        self.editor.updateLists()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.editor._lyt.doorhooks.append(self.doorhook)
+        self.editor.add_doorhook_to_scene(self.doorhook)
+        self.editor.update_lists()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
 class MoveRoomCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, room: LYTRoom, old_pos: Vector3, new_pos: Vector3):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        room: LYTRoom,
+        old_pos: Vector3,
+        new_pos: Vector3,
+    ):
         super().__init__("Move Room")
-        self.editor = editor
-        self.room = room
-        self.old_pos = old_pos
-        self.new_pos = new_pos
+        self.editor: LYTEditor = editor
+        self.room: LYTRoom = room
+        self.old_pos: Vector3 = old_pos
+        self.new_pos: Vector3 = new_pos
 
     def redo(self):
         self.room.position = self.new_pos
-        self.updateSceneItem()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.update_scene_item()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
         self.room.position = self.old_pos
-        self.updateSceneItem()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.update_scene_item()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
-    def updateSceneItem(self):
+    def update_scene_item(self):
         for item in self.editor.scene.items():
             if item.data(0) == self.room:
                 item.setPos(self.room.position.x, self.room.position.y)
                 break
 
 class MoveObstacleCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, obstacle: LYTObstacle, old_pos: Vector3, new_pos: Vector3):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        obstacle: LYTObstacle,
+        old_pos: Vector3,
+        new_pos: Vector3,
+    ):
         super().__init__("Move Obstacle")
         self.editor = editor
-        self.obstacle = obstacle
-        self.old_pos = old_pos
-        self.new_pos = new_pos
+        self.obstacle: LYTObstacle = obstacle
+        self.old_pos: Vector3 = old_pos
+        self.new_pos: Vector3 = new_pos
 
     def redo(self):
         self.obstacle.position = self.new_pos
-        self.updateSceneItem()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.update_scene_item()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
         self.obstacle.position = self.old_pos
-        self.updateSceneItem()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.update_scene_item()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
-    def updateSceneItem(self):
+    def update_scene_item(self):
         for item in self.editor.scene.items():
             if item.data(0) == self.obstacle:
                 item.setPos(self.obstacle.position.x - self.obstacle.radius,
@@ -949,24 +1068,30 @@ class MoveObstacleCommand(QUndoCommand):
                 break
 
 class MoveDoorHookCommand(QUndoCommand):
-    def __init__(self, editor: LYTEditor, doorhook: LYTDoorHook, old_pos: Vector3, new_pos: Vector3):
+    def __init__(
+        self,
+        editor: LYTEditor,
+        doorhook: LYTDoorHook,
+        old_pos: Vector3,
+        new_pos: Vector3,
+    ):
         super().__init__("Move Door Hook")
-        self.editor = editor
-        self.doorhook = doorhook
-        self.old_pos = old_pos
-        self.new_pos = new_pos
+        self.editor: LYTEditor = editor
+        self.doorhook: LYTDoorHook = doorhook
+        self.old_pos: Vector3 = old_pos
+        self.new_pos: Vector3 = new_pos
 
     def redo(self):
         self.doorhook.position = self.new_pos
-        self.updateSceneItem()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.update_scene_item()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
     def undo(self):
         self.doorhook.position = self.old_pos
-        self.updateSceneItem()
-        self.editor.sig_lyt_updated.emit(self.editor.lyt)
+        self.update_scene_item()
+        self.editor.sig_lyt_updated.emit(self.editor._lyt)
 
-    def updateSceneItem(self):
+    def update_scene_item(self):
         for item in self.editor.scene.items():
             if item.data(0) == self.doorhook:
                 item.setPos(self.doorhook.position.x - 5, self.doorhook.position.y - 5)

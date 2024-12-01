@@ -1,341 +1,317 @@
+"""LYT Editor widget for editing module layouts."""
+
 from __future__ import annotations
 
-import json
 import math
 import queue
+import threading
 
+from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
 from queue import Empty
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, Callable, cast
 from uuid import uuid4
 
+import qtpy
+
+from PyQt6.QtCore import QPointF
 from qtpy.QtCore import (
     QEvent,
     QLine,
-    QMutexLocker,
+    QLineF,
     QPoint,
     QRect,
     QThread,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
-from qtpy.QtGui import QBrush, QColor, QPainter, QPen
-from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QMessageBox, QPushButton, QSlider, QUndoStack, QVBoxLayout, QWidget
-from qtpy.uic import loadUi
+from qtpy.QtGui import QAction, QBrush, QColor, QLinearGradient, QPainter, QPen, QRadialGradient, QTransform
+from qtpy.QtWidgets import (
+    QApplication,
+    QGraphicsItem,
+    QGraphicsRectItem,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSlider,
+    QToolBar,
+    QUndoStack,
+    QVBoxLayout,
+    QWidget,
+)
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
-from pykotor.common.module import ModuleResource
 from pykotor.resource.formats.bwm import BWM, BWMFace
-from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
-from pykotor.resource.formats.mdl import MDL
+from toolset.data.lyt_structures import (
+    ExtendedLYT as LYT,
+    ExtendedLYTDoorHook as LYTDoorHook,
+    ExtendedLYTObstacle as LYTObstacle,
+    ExtendedLYTRoom as LYTRoom,
+    ExtendedLYTTrack as LYTTrack,
+)
+from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
-from toolset.gui.widgets.renderer.walkmesh_editor import AddRoomCommand, MoveRoomCommand, RotateRoomCommand
+from toolset.uic.qtpy.editors.lyt import Ui_LYTEditor
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QMimeData
-    from qtpy.QtGui import QDragEnterEvent, QDropEvent, QKeyEvent, QMouseEvent
+    from concurrent.futures import Future
 
-    from pykotor.common.module import ModuleResource
-    from pykotor.gl.scene import Scene
-    from pykotor.resource.formats.mdl import MDL
-    from toolset.gui.widgets.renderer.module import ModuleRenderer
+    from qtpy.QtCore import QCoreApplication, QPointF
+    from qtpy.QtGui import QCloseEvent, QMouseEvent, QPaintEvent, _QAction
+    from qtpy.QtWidgets import _QToolBar
+
+    from pykotor.common.module import MDL, Module, ModuleResource
+    from pykotor.gl.scene import TPC, Camera, RenderObject, Scene
+    from pykotor.gl.shader import Texture
 
 
 class LYTEditor(QWidget):
-    sig_lyt_updated: ClassVar[Signal] = Signal(LYT)
-    sig_walkmesh_updated: ClassVar[Signal] = Signal(BWM)
+    """Widget for editing LYT (Layout) files."""
 
-    def __init__(self, parent: ModuleRenderer):
+    # Signals
+    sig_lyt_updated = Signal(LYT)
+    sig_walkmesh_updated = Signal(BWM)
+    sig_room_moved = Signal(LYTRoom, Vector3)
+    sig_room_rotated = Signal(LYTRoom, float)
+    sig_room_resized = Signal(LYTRoom, Vector2)
+    sig_door_hook_moved = Signal(LYTDoorHook, Vector3)
+    sig_obstacle_moved = Signal(LYTObstacle, Vector3)
+    sig_track_moved = Signal(LYTTrack, Vector3)
+    sig_doorhook_added = Signal(LYTDoorHook)
+    sig_rendering_optimized = Signal(bool)
+    sig_room_selected = Signal(LYTRoom)
+    sig_track_selected = Signal(LYTTrack)
+    sig_obstacle_selected = Signal(LYTObstacle)
+    sig_doorhook_selected = Signal(LYTDoorHook)
+    sig_room_added = Signal(LYTRoom)
+    sig_track_added = Signal(LYTTrack)
+    sig_obstacle_added = Signal(LYTObstacle)
+    sig_doorhook_placed = Signal(LYTDoorHook)
+    sig_editing_walkmesh_changed = Signal(bool)
+    sig_texture_changed = Signal(str)
+    sig_task_completed = Signal(Any)
+
+    def __init__(
+        self,
+        parent: ModuleRenderer,
+    ):
         super().__init__(parent)
-        self.ui = loadUi("Tools/HolocronToolset/src/ui/widgets/renderer/lyt_editor.ui", self)
+        self.ui = Ui_LYTEditor()
+        self.ui.setupUi(self)
 
+        # Initialize locks
+        self.vertex_indices: list[int] = []
+        self.vertex_coords: list[Vector3] = []
+        self.layout_lock: threading.RLock = threading.RLock()
+        self.render_lock: threading.RLock = threading.RLock()
+        self.texture_lock: threading.RLock = threading.RLock()
+        self.change_lock: threading.RLock = threading.RLock()
+        self.task_queue_lock: threading.RLock = threading.RLock()
+        self.task_consumer_lock: threading.RLock = threading.RLock()
+
+        # Initialize queues and buffers
+        self.error_queue: queue.Queue[Exception] = queue.Queue()
+        self.task_queue: queue.Queue[Callable[[], Future[Any]]] = queue.Queue()
+        self.main_thread_tasks: queue.Queue[Callable[[], Future[Any]]] = queue.Queue()
+        self.error_queue: queue.Queue[Exception] = queue.Queue()
+        self.change_buffer: list[tuple[str, str, LYTRoom | LYTTrack | LYTObstacle | LYTDoorHook]] = []
+
+        # Initialize process pool
+        self.process_pool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=4)
+
+        # Initialize spatial grid
+        self.spatial_grid: dict[int, dict[int, list[LYTRoom]]] = {}
+        self.grid_size: int = 100  # Default grid size
+
+        # Initialize state
         self._lyt: LYT = LYT()
         self.scene: Scene = parent.scene
-        self.selected_element: Optional[Any] = None
+        self.selected_element: Any = None
         self.current_tool: str = "select"
+        self.is_shutting_down: bool = False
+        self._show_grid: bool = True
+        self._snap_to_grid: bool = False
+        self.is_editing_walkmesh: bool = False
+        self.is_placing_door_hook: bool = False
+        self.is_dragging: bool = False
+        self.is_resizing: bool = False
+        self.is_rotating: bool = False
+        self.mouse_pos: Vector2 = Vector2(0, 0)
+        self.mouse_prev: Vector2 = Vector2(0, 0)
+
+        # Initialize state
+        self._lyt = LYT()
+        self.selected_track: LYTTrack | None = None
+        self.selected_obstacle: LYTObstacle | None = None
+        self.selected_door_hook: LYTDoorHook | None = None
+        self.selected_walkmesh_face: BWMFace | None = None
+        self.selected_room_resize_corner: int | None = None
+        self.selected_room_rotation_point: Vector2 | None = None
 
         self.undo_stack: QUndoStack = QUndoStack(self)
-
         self.texture_browser: TextureBrowser = TextureBrowser(self)
-        self.textures: dict[str, str] = {}
-
+        self.textures: dict[str, Texture] = {}
         self.walkmesh: BWM | None = None
 
-        self.init_connections()
+        # UI state
+        self.is_dragging: bool = False
+        self.is_resizing: bool = False
+        self.is_rotating: bool = False
+        self.is_placing_door_hook: bool = False
+        self.is_editing_walkmesh: bool = False
+        self._show_grid: bool = True
+        self._snap_to_grid: bool = False
+        self.grid_size: int = 100
 
-    def init_connections(self):
-        self.ui.actionAddRoom.triggered.connect(self.add_room)
-        self.ui.actionAddTrack.triggered.connect(self.add_track)
-        self.ui.actionAddObstacle.triggered.connect(self.add_obstacle)
-        self.ui.actionAddDoorHook.triggered.connect(self.add_door_hook)
-        self.ui.actionSelect.triggered.connect(lambda: self.set_current_tool("select"))
-        self.ui.actionMove.triggered.connect(lambda: self.set_current_tool("move"))
-        self.ui.actionRotate.triggered.connect(lambda: self.set_current_tool("rotate"))
+        # Mouse state
+        self.mouse_pos: Vector2 = Vector2(0, 0)
+        self.mouse_prev: Vector2 = Vector2(0, 0)
+        self.mouse_down: set[Qt.MouseButton] = set()
 
-    def init_connections(self):
-        self.ui.actionAddRoom.triggered.connect(self.add_room)
-        self.ui.actionAddTrack.triggered.connect(self.add_track)
-        self.ui.actionAddObstacle.triggered.connect(self.add_obstacle)
-        self.ui.actionAddDoorHook.triggered.connect(self.add_door_hook)
-        self.ui.actionSelect.triggered.connect(lambda: self.set_current_tool("select"))
-        self.ui.actionMove.triggered.connect(lambda: self.set_current_tool("move"))
-        self.ui.actionRotate.triggered.connect(lambda: self.set_current_tool("rotate"))
+        # Initialize components
+        self.undo_stack: QUndoStack = QUndoStack(self)
+        self.texture_browser: TextureBrowser = TextureBrowser(self)
+        self.walkmesh: BWM | None = None
 
-    def set_lyt(self, lyt: LYT):
-        self._lyt = lyt
-        self.scene.set_lyt(lyt)
-        self.sig_lyt_updated.emit(self._lyt)
+        self.init_ui()
+        self.setup_connections()
 
-    def get_lyt(self) -> LYT:
-        return self._lyt
-
-    def set_current_tool(self, tool: str):
-        self.current_tool = tool
-
-    def add_room(self):
-        room = LYTRoom()
-        room.position = Vector3(0, 0, 0)
-        command = AddRoomCommand(self, room)
-        self.undo_stack.push(command)
-
-    def add_track(self):
-        if len(self._lyt.rooms) < 2:
-            return
-        track = LYTTrack()
-        track.start_room = self._lyt.rooms[0]
-        track.end_room = self._lyt.rooms[1]
-        self._lyt.tracks.append(track)
-        self.scene.add_lyt_track(track)
-        self.sig_lyt_updated.emit(self._lyt)
-
-    def add_obstacle(self):
-        obstacle = LYTObstacle()
-        obstacle.position = Vector3(0, 0, 0)
-        self._lyt.obstacles.append(obstacle)
-        self.scene.add_lyt_obstacle(obstacle)
-        self.sig_lyt_updated.emit(self._lyt)
-
-    def add_door_hook(self):
-        if not self._lyt.rooms:
-            return
-        doorhook = LYTDoorHook()
-        doorhook.room = self._lyt.rooms[0]
-        doorhook.position = Vector3(0, 0, 0)
-        self._lyt.doorhooks.append(doorhook)
-        self.scene.add_lyt_door_hook(doorhook)
-        self.sig_lyt_updated.emit(self._lyt)
-
-    def update_element_properties(self):
-        if isinstance(self.selected_element, LYTRoom):
-            self.ui.roomModelEdit.setText(self.selected_element.model)
-            self.ui.roomPosXSpin.setValue(self.selected_element.position.x)
-            self.ui.roomPosYSpin.setValue(self.selected_element.position.y)
-            self.ui.roomPosZSpin.setValue(self.selected_element.position.z)
-        elif isinstance(self.selected_element, LYTObstacle):
-            self.ui.obstacleModelEdit.setText(self.selected_element.model)
-            self.ui.obstaclePosXSpin.setValue(self.selected_element.position.x)
-            self.ui.obstaclePosYSpin.setValue(self.selected_element.position.y)
-            self.ui.obstaclePosZSpin.setValue(self.selected_element.position.z)
-        elif isinstance(self.selected_element, LYTDoorHook):
-            self.ui.doorHookPosXSpin.setValue(self.selected_element.position.x)
-            self.ui.doorHookPosYSpin.setValue(self.selected_element.position.y)
-            self.ui.doorHookPosZSpin.setValue(self.selected_element.position.z)
-            self.updateDoorHookRoomCombo()
-        elif isinstance(self.selected_element, LYTTrack):
-            self.update_track_combos()
-
-    def updateDoorHookRoomCombo(self):
-        self.ui.doorHookRoomCombo.clear()
-        for room in self._lyt.rooms:
-            self.ui.doorHookRoomCombo.addItem(room.model, room)
-        if isinstance(self.selected_element, LYTDoorHook):
-            index = self.ui.doorHookRoomCombo.findData(self.selected_element.room)
-            if index != -1:
-                self.ui.doorHookRoomCombo.setCurrentIndex(index)
-
-    def update_track_combos(self):
-        self.ui.trackStartRoomCombo.clear()
-        self.ui.trackEndRoomCombo.clear()
-        for room in self._lyt.rooms:
-            self.ui.trackStartRoomCombo.addItem(room.model, room)
-            self.ui.trackEndRoomCombo.addItem(room.model, room)
-        if isinstance(self.selected_element, LYTTrack):
-            start_index = self.ui.trackStartRoomCombo.findData(self.selected_element.start_room)
-            end_index = self.ui.trackEndRoomCombo.findData(self.selected_element.end_room)
-            if start_index != -1 and end_index != -1:
-                self.ui.trackStartRoomCombo.setCurrentIndex(start_index)
-                self.ui.trackEndRoomCombo.setCurrentIndex(end_index)
-
-    def mousePressEvent(self, event):
-        if self.current_tool == "select":
-            self.selected_element = self.scene.pick_lyt_element(event.x(), event.y())
-            self.update_element_properties()
-        elif self.current_tool in ["move", "rotate"]:
-            if self.selected_element:
-                self.scene.start_lyt_element_transform(self.selected_element, self.current_tool, event.x(), event.y())
-
-    def mouseMoveEvent(self, event):
-        if self.current_tool in ["move", "rotate"] and self.selected_element:
-            self.scene.update_lyt_element_transform(event.x(), event.y())
-
-    def mouseReleaseEvent(self, event):
-        if self.current_tool in ["move", "rotate"] and self.selected_element:
-            new_pos = self.scene.end_lyt_element_transform()
-            if self.current_tool == "move":
-                command = MoveRoomCommand(self, self.selected_element, self.selected_element.position, new_pos)
-            elif self.current_tool == "rotate":
-                command = RotateRoomCommand(self, self.selected_element, self.selected_element.rotation, new_pos)
-            self.undo_stack.push(command)
-            self.update_element_properties()
-            self.sig_lyt_updated.emit(self._lyt)
-
-    def generate_walkmesh(self):
-        # Implement walkmesh generation logic here
-        self.walkmesh = BWM()
-        # ... generate walkmesh based on LYT data ...
-        self.sig_walkmesh_updated.emit(self.walkmesh)
-
-    def edit_walkmesh(self):
-        if not self.walkmesh:
-            self.generate_walkmesh()
-        # Implement walkmesh editing logic here
-        # This might involve creating a separate WalkmeshEditor widget
-
-    def apply_texture(self, texture_name: str):
-        if self.selected_element and hasattr(self.selected_element, "texture"):
-            self.selected_element.texture = texture_name
-            self.scene.update_lyt_element_texture(self.selected_element, texture_name)
-            self.sig_lyt_updated.emit(self._lyt)
-
-    def initUI(self):
-        self.setAcceptDrops(True)
-
+    def init_ui(self):
+        """Initialize the UI layout."""
         layout = QVBoxLayout()
 
-        # Add buttons for LYT editing operations
+        # Add toolbar
+        toolbar = QToolBar()
+        layout.addWidget(toolbar)
+
+        # Add buttons
         button_layout = QHBoxLayout()
-        add_room_button = QPushButton("Add Room")
-        add_room_button.clicked.connect(self.add_room)
-        button_layout.addWidget(add_room_button)
 
-        add_track_button = QPushButton("Add Track")
-        add_track_button.clicked.connect(self.add_track)
-        button_layout.addWidget(add_track_button)
+        add_room_btn = QPushButton("Add Room")
+        add_room_btn.clicked.connect(self.add_room)
+        button_layout.addWidget(add_room_btn)
 
-        add_obstacle_button = QPushButton("Add Obstacle")
-        add_obstacle_button.clicked.connect(self.add_obstacle)
-        button_layout.addWidget(add_obstacle_button)
+        add_track_btn = QPushButton("Add Track")
+        add_track_btn.clicked.connect(self.add_track)
+        button_layout.addWidget(add_track_btn)
 
-        place_door_hook_button = QPushButton("Place Door Hook")
-        place_door_hook_button.clicked.connect(self.place_door_hook)
-        button_layout.addWidget(place_door_hook_button)
+        add_obstacle_btn = QPushButton("Add Obstacle")
+        add_obstacle_btn.clicked.connect(self.add_obstacle)
+        button_layout.addWidget(add_obstacle_btn)
+
+        add_doorhook_btn = QPushButton("Add Door Hook")
+        add_doorhook_btn.clicked.connect(self.add_door_hook)
+        button_layout.addWidget(add_doorhook_btn)
+
         layout.addLayout(button_layout)
 
-        # Add zoom slider
+        # Add zoom controls
         zoom_layout = QHBoxLayout()
         zoom_layout.addWidget(QLabel("Zoom:"))
-        self.zoom_slider = QSlider(Qt.Orientation.Horizontal)
+
+        self.zoom_slider: QSlider = QSlider(Qt.Orientation.Horizontal)
         self.zoom_slider.setRange(10, 200)
         self.zoom_slider.setValue(100)
         self.zoom_slider.valueChanged.connect(self.update_zoom)
         zoom_layout.addWidget(self.zoom_slider)
+
         layout.addLayout(zoom_layout)
 
-        # Add texture browser
-        self.texturelist = QListWidget()
-        self.texturelist.itemClicked.connect(self.on_texture_selected)
-        layout.addWidget(self.texturelist)
+        # Add texture list
+        self.texture_list = QListWidget()
+        self.texture_list.itemClicked.connect(self.on_texture_selected)
+        layout.addWidget(self.texture_list)
 
         self.setLayout(layout)
-        # Add more UI initialization code here
 
-    def set_lyt(
-        self,
-        lyt: LYT,
-    ):
-        self.lyt: LYT = lyt
+    def setup_connections(self):
+        """Set up signal/slot connections."""
+        # Connect texture browser signals
+        self.texture_browser.sig_texture_selected.connect(self.on_texture_selected)
+
+        # Connect parent signals
+        parent: ModuleRenderer = cast(ModuleRenderer, self.parent())
+        parent.sig_scene_initialized.connect(self.update)
+
+    def get_lyt(self) -> LYT:
+        """Get the current LYT data."""
+        return self._lyt
+
+    def set_lyt(self, lyt: LYT):
+        """Set the LYT data to edit."""
+        self._lyt = lyt
         self.update()
+        self.sig_lyt_updated.emit(lyt)
 
-    def dragEnterEvent(
-        self,
-        event: QDragEnterEvent,
-    ):
-        mime_data: QMimeData | None = event.mimeData()
-        assert mime_data is not None, "mime_data is None"
-        if mime_data.hasFormat("application/x-room-template"):
-            event.accept()
-        else:
-            event.ignore()
-
-    def dropEvent(
-        self,
-        event: QDropEvent,
-    ):
-        mime_data: QMimeData | None = event.mimeData()
-        assert mime_data is not None, "mime_data is None"
-        if mime_data.hasFormat("application/x-room-template"):
-            # Extract room template data and create a new room
-            room_template: LYTRoom = LYTRoom.from_dict(json.loads(mime_data.data("application/x-room-template").data()))
-            self.create_room_from_template(room_template)
-            event.accept()
-        else:
-            event.ignore()
-
-    def create_room_from_template(
-        self,
-        room_template: LYTRoom,
-    ):
-        # Logic to create a room from the given template
-        new_room = LYTRoom(
-            model=room_template.model,
-            position=room_template.position,
-        )
-        self.lyt.rooms.append(new_room)
+    def add_track(self, model: str = ""):
+        """Add a new track."""
+        track = LYTTrack(model=model, position=Vector3(0, 0, 0))
+        with self.layout_lock:
+            self._lyt.tracks.append(track)
         self.update()
-        self.texture_browser.textureChanged.connect(self.apply_texture)
-        self.load_textures()
+        self.sig_track_added.emit(track)
 
-    @property
-    def render(self):
-        painter = QPainter(self.parent())
+    def add_door_hook(self):
+        """Add a new door hook."""
+        if not self._lyt.rooms:
+            return
+
+        hook: LYTDoorHook = LYTDoorHook(room=self._lyt.rooms[0].model, door=f"door_{len(self._lyt.doorhooks)}", position=Vector3(0, 0, 0), orientation=Vector4(0, 0, 0, 1))
+
+        with self.layout_lock:
+            self._lyt.doorhooks.append(hook)
+        self.update()
+        self.sig_doorhook_added.emit(hook)
+
+    def paintEvent(self, event: QPaintEvent):
+        """Handle paint events."""
+        painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         # Draw grid
         if self._show_grid:
             self.draw_grid(painter)
 
-        with QMutexLocker(self.render_lock):
+        with self.render_lock:
             # Draw rooms
-            visible_rooms: set[LYTRoom] = self.get_visible_rooms()
-            for room in visible_rooms:
-                self.draw_room(painter, room, self.parent().scene.camera.distance)
+            for room in self._lyt.rooms:
+                self.draw_room(painter, room)
 
             # Draw tracks
-            for track in self.lyt.tracks:
-                self.draw_track(painter, track, self.parent().scene.camera.distance)
+            for track in self._lyt.tracks:
+                self.draw_track(painter, track)
 
             # Draw obstacles
-            for obstacle in self.lyt.obstacles:
-                self.draw_obstacle(painter, obstacle, self.parent().scene.camera.distance)
+            for obstacle in self._lyt.obstacles:
+                self.draw_obstacle(painter, obstacle)
 
             # Draw doorhooks
-            for doorhook in self.lyt.doorhooks:
-                self.draw_door_hook(painter, doorhook, self.parent().scene.camera.distance)
+            for doorhook in self._lyt.doorhooks:
+                self.draw_door_hook(painter, doorhook)
 
             # Draw selected elements
-            self.draw_selected_elements(painter, self.parent().scene.camera.distance)
+            if self.selected_room:
+                self.draw_room(painter, self.selected_room)
+            if self.selected_track:
+                self.draw_track(painter, self.selected_track)
+            if self.selected_obstacle:
+                self.draw_obstacle(painter, self.selected_obstacle)
+            if self.selected_door_hook:
+                self.draw_door_hook(painter, self.selected_door_hook)
 
-        # Draw walkmesh if in editing mode (outside of render_lock to avoid potential deadlock)
-        if self.is_editing_walkmesh and self.walkmesh:
-            self.draw_walkmesh(painter, self.parent().scene.camera.distance)
-
-        painter.end()
+            # Draw walkmesh if editing
+            if self.is_editing_walkmesh and self.walkmesh:
+                self.draw_walkmesh(painter)
 
     def draw_grid(
         self,
         painter: QPainter,
     ):
-        pen = QPen(QColor(128, 128, 128), 1, Qt.PenStyle.DashLine)
+        """Draw the editor grid."""
+        pen: QPen = QPen(QColor(128, 128, 128), 1, Qt.PenStyle.DashLine)
         painter.setPen(pen)
 
         for x in range(0, self.width(), self.grid_size):
@@ -344,188 +320,74 @@ class LYTEditor(QWidget):
         for y in range(0, self.height(), self.grid_size):
             painter.drawLine(0, y, self.width(), y)
 
-    def draw_room(
-        self,
-        painter: QPainter,
-        room: LYTRoom,
-        zoom: float,
-    ):
-        pen = QPen(QColor(0, 0, 0), 1)
-        brush = QBrush(QColor(128, 128, 128, 128))
-        painter.setPen(pen)
-        painter.setBrush(brush)
-
-        rect = QRect(
-            int(room.position.x),
-            int(room.position.y),
-            int(room.size.x * zoom),
-            int(room.size.y * zoom),
-        )
-        painter.drawRect(rect.scaled(zoom, zoom))
-
     def draw_track(
         self,
         painter: QPainter,
         track: LYTTrack,
-        zoom: float,
     ):
-        pen = QPen(QColor(255, 0, 0), 2)
-        painter.setPen(pen)
-
-        start: QPoint = QPoint(int(track.start.x), int(track.start.y)) * zoom  # FIXME: start and end attributes do not exist.
-        end: QPoint = QPoint(int(track.end.x), int(track.end.y)) * zoom  # FIXME: start and end attributes do not exist.
-        painter.drawLine(start, end)
+        """Draw a track."""
+        painter.setPen(QPen(Qt.GlobalColor.red, 2))
+        painter.drawLine(int(track.position.x), int(track.position.y), int(track.position.x + 100), int(track.position.y + 100))
 
     def draw_obstacle(
         self,
         painter: QPainter,
         obstacle: LYTObstacle,
-        zoom: float,
+        zoom: float = 1.0,
     ):
-        pen = QPen(QColor(255, 255, 0), 2)
-        painter.setPen(pen)
-
-        center = QPoint(int(obstacle.position.x), int(obstacle.position.y)) * zoom  # FIXME: position attribute does not exist.
-        radius = obstacle.radius * zoom  # FIXME: radius attribute does not exist.
-        painter.drawEllipse(center, radius, radius)
+        """Draw an obstacle on the scene."""
+        center, radius = self.get_obstacle_circle(obstacle, zoom)
+        painter.setPen(QPen(Qt.GlobalColor.blue, 2))
+        painter.setBrush(QBrush(Qt.GlobalColor.blue, Qt.BrushStyle.DiagCrossPattern))
+        painter.drawEllipse(center, int(radius), int(radius))
 
     def draw_door_hook(
         self,
         painter: QPainter,
         doorhook: LYTDoorHook,
-        zoom: float,
+        zoom: float = 1.0,
     ):
-        pen = QPen(QColor(0, 255, 0), 2)
-        painter.setPen(pen)
-
-        center = QPoint(int(doorhook.position.x), int(doorhook.position.y)) * zoom
-        zoomInt = int(zoom)
-        painter.drawRect(QRect(center.x() - 2 * zoomInt, center.y() - 2 * zoomInt, 4 * zoomInt, 4 * zoomInt))
-
-    def draw_selected_elements(
-        self,
-        painter: QPainter,
-        zoom: float,
-    ):
-        if self.selected_room:
-            self.draw_selected_room(painter, self.selected_room, zoom)
-        if self.selected_track:
-            self.draw_selected_track(painter, self.selected_track, zoom)
-        if self.selected_obstacle:
-            self.draw_selected_obstacle(painter, self.selected_obstacle, zoom)
-        if self.selected_door_hook:
-            self.draw_selected_doorhook(painter, self.selected_door_hook, zoom)
-
-        # Draw walkmesh if in editing mode
-        if self.is_editing_walkmesh and self.walkmesh:
-            self.draw_walkmesh(painter, zoom)
-
-    def draw_selected_room(
-        self,
-        painter: QPainter,
-        room: LYTRoom,
-        zoom: float,
-    ):
-        pen = QPen(QColor(255, 0, 0), 2)
-        painter.setPen(pen)
-
-        rect = QRect(
-            int(room.position.x),
-            int(room.position.y),
-            int(room.size.x * zoom),  # FIXME: size attribute does not exist.
-            int(room.size.y * zoom),  # FIXME: size attribute does not exist.
+        """Draw a door hook on the scene."""
+        hook_size: float = 3.0 * zoom
+        rect: QRect = QRect(
+            int(doorhook.position.x * zoom - hook_size / 2),
+            int(doorhook.position.y * zoom - hook_size / 2),
+            int(hook_size),
+            int(hook_size),
         )
+        painter.setPen(QPen(Qt.GlobalColor.green, 2))
+        painter.setBrush(QBrush(Qt.GlobalColor.green))
         painter.drawRect(rect)
 
-        # Draw resize handles
-        handle_size = 8
-        for i in range(4):
-            x = rect.x() + (i % 2) * rect.width()
-            y = rect.y() + (i // 2) * rect.height()
-            painter.drawRect(
-                QRect(
-                    x - handle_size // 2,
-                    y - handle_size // 2,
-                    handle_size,
-                    handle_size,
-                ).scaled(zoom, zoom)
-            )  # FIXME: scaled method does not exist.
-
-    def draw_selected_track(
+    def get_room_rect(
         self,
-        painter: QPainter,
-        track: LYTTrack,
-        zoom: float,
-    ):
-        pen = QPen(QColor(255, 0, 0), 2)
-        painter.setPen(pen)
+        room: LYTRoom,
+    ) -> QRect:
+        """Get the rectangle for a room."""
+        return QRect(
+            int(room.position.x),
+            int(room.position.y),
+            100,  # Default size
+            100,
+        )
 
-        start: QPoint = QPoint(int(track.start.x), int(track.start.y)) * zoom  # FIXME: start and end attributes do not exist.
-        end: QPoint = QPoint(int(track.end.x), int(track.end.y)) * zoom  # FIXME: start and end attributes do not exist.
-        painter.drawLine(start, end)
-
-        # Draw handles at start and end
-        handleSize = 8
-        painter.drawRect(
-            QRect(
-                start.x() - handleSize // 2,
-                start.y() - handleSize // 2,
-                handleSize,
-                handleSize,
-            ).scaled(zoom, zoom)
-        )  # FIXME: scaled method does not exist.
-        painter.drawRect(QRect(end.x() - handleSize // 2, end.y() - handleSize // 2, handleSize, handleSize).scaled(zoom, zoom))  # FIXME: scaled method does not exist.
-
-    def draw_selected_obstacle(self, painter: QPainter, obstacle: LYTObstacle, zoom: float):
-        pen = QPen(QColor(255, 255, 0), 2)
-        painter.setPen(pen)
-
-        center = QPoint(int(obstacle.position.x), int(obstacle.position.y)) * zoom  # FIXME: position attribute does not exist.
-        radius: float = obstacle.radius * zoom  # FIXME: radius attribute does not exist.
-        painter.drawEllipse(center, radius, radius)
-
-    def draw_selected_doorhook(
+    def update_zoom(
         self,
-        painter: QPainter,
-        doorhook: LYTDoorHook,
-        zoom: float,
+        value: int,
     ):
-        pen = QPen(QColor(0, 255, 0), 2)
-        painter.setPen(pen)
-
-        center = QPoint(int(doorhook.position.x), int(doorhook.position.y)) * zoom
-        painter.drawRect(QRect(center.x() - 2 * zoom, center.y() - 2 * zoom, 4 * zoom, 4 * zoom))
-
-    def draw_walkmesh(
-        self,
-        painter: QPainter,
-        zoom: float,
-    ):
-        pen = QPen(QColor(0, 0, 255, 128), 1)
-        painter.setPen(pen)
-        for face in self.walkmesh.faces:
-            points: list[QPoint] = [QPoint(int(v.x * zoom), int(v.y * zoom)) for v in face.vertices]  # FIXME: vertices attribute does not exist.
-            painter.drawPolygon(points)
-
-    def handle_key_press(self, e: QKeyEvent):
-        if e.key() == Qt.Key.Key_Delete:
-            if self.selected_room:
-                self.lyt.rooms.remove(self.selected_room)
-                self.selected_room = None
-            if self.selected_track:
-                self.lyt.tracks.remove(self.selected_track)
-                self.selected_track = None
-            if self.selected_obstacle:
-                self.lyt.obstacles.remove(self.selected_obstacle)
-                self.selected_obstacle = None
-            if self.selected_door_hook:
-                self.lyt.doorhooks.remove(self.selected_door_hook)
-                self.selected_door_hook = None
+        """Update camera zoom level."""
+        if self.scene and hasattr(self.scene, "camera"):
+            self.scene.camera.distance = value / 100.0
             self.update()
 
-    def handle_mouse_press(self, e: QMouseEvent):
-        self.mouse_pos: Vector2 = Vector2(e.x(), e.y())
+    def handle_mouse_press(
+        self,
+        e: QMouseEvent,
+    ):
+        pos: QPoint = e.pos() if qtpy.QT5 else e.position().toPoint()
+        self.mouse_pos: Vector2 = Vector2(pos.x(), pos.y())
         self.mouse_prev: Vector2 = self.mouse_pos
+        self.mouse_down: set[Qt.MouseButton] = set()
         self.mouse_down.add(e.button())
 
         if e.button() == Qt.MouseButton.LeftButton:
@@ -544,7 +406,10 @@ class LYTEditor(QWidget):
         elif e.button() == Qt.MouseButton.MiddleButton:
             self.is_dragging = True
 
-    def handle_mouse_release(self, e: QMouseEvent):
+    def handle_mouse_release(
+        self,
+        e: QMouseEvent,
+    ):
         self.mouse_down.discard(e.button())
         self.is_dragging = False
         self.is_resizing = False
@@ -552,8 +417,12 @@ class LYTEditor(QWidget):
         self.selected_room_resize_corner = None
         self.selected_room_rotation_point = None
 
-    def handleMouseMove(self, e: QMouseEvent):
-        self.mouse_pos = Vector2(e.x(), e.y())
+    def handle_mouse_move(
+        self,
+        e: QMouseEvent,
+    ):
+        pos: QPoint = e.pos() if qtpy.QT5 else e.position().toPoint()
+        self.mouse_pos: Vector2 = Vector2(pos.x(), pos.y())
 
         if self.is_dragging:
             self.drag_lyt_element(self.mouse_pos)
@@ -562,9 +431,12 @@ class LYTEditor(QWidget):
         elif self.is_rotating:
             self.rotate_selected_room(self.mouse_pos)
 
-    def select_lyt_element(self, mouse_pos: Vector2):
+    def select_lyt_element(
+        self,
+        mouse_pos: Vector2,
+    ):
         # Check for room selection
-        for room in self.lyt.rooms:
+        for room in self._lyt.rooms:
             rect = QRect(
                 int(room.position.x),
                 int(room.position.y),
@@ -579,11 +451,11 @@ class LYTEditor(QWidget):
                 return
 
         # Check for track selection
-        for track in self.lyt.tracks:
-            start = QPoint(int(track.start.x), int(track.start.y))  # FIXME: start and end attributes do not exist.
-            end = QPoint(int(track.end.x), int(track.end.y))  # FIXME: start and end attributes do not exist.
+        for track in self._lyt.tracks:
+            start = QPoint(int(track.position.x), int(track.position.y))
+            end = QPoint(int(track.position.x + 100), int(track.position.y + 100))
             line = QLine(start, end)
-            if line.ptDistanceToPoint(QPoint(int(mouse_pos.x), int(mouse_pos.y))) <= 5:  # FIXME: ptDistanceToPoint method does not exist.
+            if line.ptDistanceToPoint(QPoint(int(mouse_pos.x), int(mouse_pos.y))) <= 5:
                 self.selected_room = None
                 self.selected_track: LYTTrack | None = track
                 self.selected_obstacle = None
@@ -591,9 +463,9 @@ class LYTEditor(QWidget):
                 return
 
         # Check for obstacle selection
-        for obstacle in self.lyt.obstacles:
+        for obstacle in self._lyt.obstacles:
             center = QPoint(int(obstacle.position.x), int(obstacle.position.y))
-            radius: float = obstacle.radius  # FIXME: radius attribute does not exist.
+            radius: float = 50  # FIXME: radius attribute does not exist.
             if QPoint(int(mouse_pos.x), int(mouse_pos.y)).distanceToPoint(center) <= radius:  # FIXME: distanceToPoint method does not exist.
                 self.selected_room = None
                 self.selected_track = None
@@ -602,23 +474,26 @@ class LYTEditor(QWidget):
                 return
 
         # Check for doorhook selection
-        for doorhook in self.lyt.doorhooks:
+        for doorhook in self._lyt.doorhooks:
             center = QPoint(int(doorhook.position.x), int(doorhook.position.y))
             if QRect(center.x() - 2, center.y() - 2, 4, 4).contains(QPoint(int(mouse_pos.x), int(mouse_pos.y))):
-                self.selected_room = None
-                self.selected_track = None
-                self.selected_obstacle = None
+                self.selected_room: LYTRoom | None = None
+                self.selected_track: LYTTrack | None = None
+                self.selected_obstacle: LYTObstacle | None = None
                 self.selected_door_hook: LYTDoorHook | None = doorhook
                 return
 
         # Deselect if no element is selected
-        self.selected_room = None
-        self.selected_track = None
-        self.selected_obstacle = None
-        self.selected_door_hook = None
+        self.selected_room: LYTRoom | None = None
+        self.selected_track: LYTTrack | None = None
+        self.selected_obstacle: LYTObstacle | None = None
+        self.selected_door_hook: LYTDoorHook | None = None
 
-    def drag_lyt_element(self, mouse_pos: Vector2):
-        delta = mouse_pos - self.mouse_prev
+    def drag_lyt_element(
+        self,
+        mouse_pos: Vector2,
+    ):
+        delta: Vector2 = mouse_pos - self.mouse_prev
         self.mouse_prev = mouse_pos
 
         if self.selected_room:
@@ -631,7 +506,7 @@ class LYTEditor(QWidget):
         elif self.selected_obstacle:
             self.move_obstacle(self.selected_obstacle, delta)
         elif self.selected_door_hook:
-            self.moveDoorHook(self.selected_door_hook, delta)
+            self.move_door_hook(self.selected_door_hook, delta)
 
         self.update()
 
@@ -640,24 +515,24 @@ class LYTEditor(QWidget):
         room: LYTRoom,
         delta: Vector2,
     ):
-        new_position = Vector3(room.position.x + delta.x, room.position.y + delta.y, room.position.z)
-        self.room_moved.emit(room, new_position)
+        new_position: Vector3 = Vector3(room.position.x + delta.x, room.position.y + delta.y, room.position.z)
+        self.sig_room_moved.emit(room, new_position)
 
     def move_track_start(
         self,
         track: LYTTrack,
         delta: Vector2,
     ):
-        new_start = Vector3(track.start.x + delta.x, track.start.y + delta.y, track.start.z)  # FIXME: start and end attributes do not exist.
-        self.room_moved.emit(track, new_start)
+        new_start: Vector3 = Vector3(track.position.x + delta.x, track.position.y + delta.y, track.position.z)
+        self.sig_track_moved.emit(track, new_start)
 
     def move_track_end(
         self,
         track: LYTTrack,
         delta: Vector2,
     ):
-        newEnd = Vector3(track.end.x + delta.x, track.end.y + delta.y, track.end.z)  # FIXME: start and end attributes do not exist.
-        self.room_moved.emit(track, newEnd)
+        new_end: Vector3 = Vector3(track.position.x + 100, track.position.y + 100, track.position.z)
+        self.sig_track_moved.emit(track, new_end)
 
     def move_obstacle(
         self,
@@ -665,15 +540,15 @@ class LYTEditor(QWidget):
         delta: Vector2,
     ):
         new_position = Vector3(obstacle.position.x + delta.x, obstacle.position.y + delta.y, obstacle.position.z)
-        self.room_moved.emit(obstacle, new_position)
+        self.sig_obstacle_moved.emit(obstacle, new_position)
 
-    def moveDoorHook(
+    def move_door_hook(
         self,
         doorhook: LYTDoorHook,
         delta: Vector2,
     ):
         new_position = Vector3(doorhook.position.x + delta.x, doorhook.position.y + delta.y, doorhook.position.z)
-        self.room_moved.emit(doorhook, new_position)
+        self.sig_door_hook_moved.emit(doorhook, new_position)
 
     def resize_selected_room(
         self,
@@ -682,34 +557,34 @@ class LYTEditor(QWidget):
         if self.selected_room is None or self.selected_room_resize_corner is None:
             return
 
-        delta = mouse_pos - self.mouse_prev
+        delta: Vector2 = mouse_pos - self.mouse_prev
         self.mouse_prev = mouse_pos
 
         # Calculate new size based on resize corner
-        new_size = Vector2(self.selected_room.size.x, self.selected_room.size.y)  # FIXME: size attribute does not exist.
+        new_size: Vector2 = Vector2(self.selected_room.size.x, self.selected_room.size.y)  # FIXME: size attribute does not exist.
         if self.selected_room_resize_corner == 0:
             new_size.x += delta.x
             new_size.y += delta.y
         elif self.selected_room_resize_corner == 1:
             new_size.x += delta.x
-        elif self.selected_room_resize_corner == 2:
+        elif self.selected_room_resize_corner == 2:  # noqa: PLR2004
             new_size.x += delta.x
             new_size.y -= delta.y
-        elif self.selected_room_resize_corner == 3:
+        elif self.selected_room_resize_corner == 3:  # noqa: PLR2004
             new_size.y -= delta.y
-        elif self.selected_room_resize_corner == 4:
+        elif self.selected_room_resize_corner == 4:  # noqa: PLR2004
             new_size.y += delta.y
-        elif self.selected_room_resize_corner == 5:
+        elif self.selected_room_resize_corner == 5:  # noqa: PLR2004
             new_size.x -= delta.x
             new_size.y += delta.y
-        elif self.selected_room_resize_corner == 6:
+        elif self.selected_room_resize_corner == 6:  # noqa: PLR2004
             new_size.x -= delta.x
-        elif self.selected_room_resize_corner == 7:
+        elif self.selected_room_resize_corner == 7:  # noqa: PLR2004
             new_size.x -= delta.x
             new_size.y -= delta.y
 
         # Update room size
-        self.roomResized.emit(self.selected_room, new_size)
+        self.sig_room_resized.emit(self.selected_room, new_size)
         self.update()
 
     def rotate_selected_room(
@@ -719,39 +594,45 @@ class LYTEditor(QWidget):
         if self.selected_room is None or self.selected_room_rotation_point is None:
             return
 
-        delta = mouse_pos - self.mouse_prev
+        delta: Vector2 = mouse_pos - self.mouse_prev
         self.mouse_prev = mouse_pos
 
         # Calculate rotation angle
-        angle = math.degrees(math.atan2(delta.y, delta.x))
+        angle: float = math.degrees(math.atan2(delta.y, delta.x))
 
         # Update room rotation
-        self.roomRotated.emit(self.selected_room, angle)
-        self.update()
-
-    def place_door_hook(
-        self,
-        mouse_pos: Vector2,
-    ):
-        doorhook = LYTDoorHook(Vector3(mouse_pos.x, mouse_pos.y, 0))  # FIXME: arguments missing for door, room, orientation
-        self.door_hook_placed.emit(doorhook)
+        self.sig_room_rotated.emit(self.selected_room, angle)
         self.update()
 
     def load_textures(self):
-        # Load textures from the module
-        self.add_background_task(self.load_textures_task, ())
+        """Load textures from module resources."""
+        module = self.parent().scene._module
+        if not module:
+            return
+
+        # Load textures from module's resources
+        textures = module.get_resources("tpc")
+        textures.extend(module.get_resources("tga"))
+
+        # Add to texture browser
+        for tex_res in textures:
+            texture = tex_res.resource()
+            self.texture_browser.add_texture(tex_res.resname, texture)
 
     def load_textures_task(self) -> list[ModuleResource[MDL]]:
         # Implement texture loading logic here
         # This method will be executed in a separate thread
         scene_module: Module | None = self.parent().scene._module  # noqa: SLF001
         assert scene_module is not None
-        textures: list[ModuleResource[MDL]] = scene_module.textures()
+        textures: list[ModuleResource[TPC]] = scene_module.textures()
         with self.texture_lock:
             self.textures = textures
         return textures
 
-    def on_textures_loaded(self, result: Future):
+    def on_textures_loaded(
+        self,
+        result: Future,
+    ):
         self.udpate_texture_list()
 
     def udpate_texture_list(self):
@@ -767,29 +648,29 @@ class LYTEditor(QWidget):
         self.add_background_task(self.apply_texture_task, (texture_name,))
 
     def connect_rooms_automatically(self):
-        if not self.lyt or len(self.lyt.rooms) < 2:
+        if not self.scene.layout or len(self._lyt.rooms) < 2:
             return
 
         new_doorhooks: list[LYTDoorHook] = []
         connected_rooms: set[tuple[LYTRoom, LYTRoom]] = set()
         doorhook_groups: dict[tuple[LYTRoom, LYTRoom], list[LYTDoorHook]] = {}
 
-        for i, room1 in enumerate(self.lyt.rooms):
-            for room2 in self.lyt.rooms[i + 1 :]:
+        for i, room1 in enumerate(self._lyt.rooms):
+            for room2 in self._lyt.rooms[i + 1 :]:
                 if (room1, room2) in connected_rooms or (room2, room1) in connected_rooms:
                     continue
 
-                shared_edge: tuple[str, float, float] | None = self.getSharedEdge(room1, room2)
+                shared_edge: tuple[str, float, float] | None = self.get_shared_edge(room1, room2)
                 if not shared_edge:
                     continue
 
-                new_doorhooks.extend(self.createDoorHooks(room1, room2, shared_edge))
-                connected_rooms.add((room1, room2))
+                new_doorhooks.extend(self.create_door_hooks(room1, room2, shared_edge))
+                connected_rooms.append((room1, room2))
 
         # Remove existing doorhooks that are no longer valid
         valid_doorhooks: list[LYTDoorHook] = []
-        for doorhook in self.lyt.doorhooks:
-            connected_rooms = self.get_connected_rooms(doorhook)
+        for doorhook in self._lyt.doorhooks:
+            connected_rooms: list[LYTRoom] = self.get_connected_rooms(doorhook)
             if len(connected_rooms) == 2:
                 valid_doorhooks.append(doorhook)
                 key = tuple(sorted(connected_rooms, key=lambda r: r.id))  # FIXME: id attribute does not exist.
@@ -808,7 +689,7 @@ class LYTEditor(QWidget):
                 valid_doorhooks.append(doorhook)
 
         # Update the LYT with the new set of doorhooks
-        self.lyt.doorhooks = valid_doorhooks
+        self._lyt.doorhooks = valid_doorhooks
 
         # Optimize doorhook placement
         for group in doorhook_groups.values():
@@ -819,10 +700,13 @@ class LYTEditor(QWidget):
         self.optimize_rendering()
         # Notify listeners of the update
         self.update()
-        self.sig_lyt_updated.emit(self.lyt)
+        self.sig_lyt_updated.emit(self.scene.layout)
 
-    def get_connected_rooms(self, doorhook: LYTDoorHook) -> list[LYTRoom]:
-        return [room for room in self.lyt.rooms if self.is_door_hook_on_room_edge(doorhook, room)]
+    def get_connected_rooms(
+        self,
+        doorhook: LYTDoorHook,
+    ) -> list[LYTRoom]:
+        return [room for room in self._lyt.rooms if self.is_door_hook_on_room_edge(doorhook, room)]
 
     def optimize_group_placement(self, doorhooks: list[LYTDoorHook]):
         if not doorhooks:
@@ -840,13 +724,22 @@ class LYTEditor(QWidget):
             new_pos: Vector3 = self.interpolate_position(doorhooks[0].position, doorhooks[-1].position, t)
             doorhook.position = new_pos
 
-    def get_edge_length(self, start_hook: LYTDoorHook, end_hook: LYTDoorHook) -> float:
+    def get_edge_length(
+        self,
+        start_hook: LYTDoorHook,
+        end_hook: LYTDoorHook,
+    ) -> float:
         return ((end_hook.position.x - start_hook.position.x) ** 2 + (end_hook.position.y - start_hook.position.y) ** 2) ** 0.5
 
-    def interpolate_position(self, start: Vector3, end: Vector3, t: float) -> Vector3:
+    def interpolate_position(
+        self,
+        start: Vector3,
+        end: Vector3,
+        t: float,
+    ) -> Vector3:
         return Vector3(start.x + (end.x - start.x) * t, start.y + (end.y - start.y) * t, start.z + (end.z - start.z) * t)
 
-    def createDoorHooks(
+    def create_door_hooks(
         self,
         room1: LYTRoom,
         room2: LYTRoom,
@@ -863,11 +756,11 @@ class LYTEditor(QWidget):
         for i in range(num_doors):
             t = (i + 0.5) / num_doors  # Position along the edge
             if edge_type == "vertical":
-                door_x = max(room2.position.x, room1.position.x)
-                door_y = start + (end - start) * t
+                door_x: float = max(room2.position.x, room1.position.x)
+                door_y: float = start + (end - start) * t
             else:  # horizontal
-                door_x = start + (end - start) * t
-                door_y = max(room2.position.y, room1.position.y)
+                door_x: float = start + (end - start) * t
+                door_y: float = max(room2.position.y, room1.position.y)
             doorhooks.append(
                 LYTDoorHook(  # pyright: ignore[reportCallIssue]
                     room=uuid4().hex[:15],
@@ -879,66 +772,80 @@ class LYTEditor(QWidget):
 
         return doorhooks
 
-    def getSharedEdge(self, room1: LYTRoom, room2: LYTRoom) -> tuple[str, float, float] | None:
-        r1_left, r1_right = room1.position.x, room1.position.x + room1.size.x  # FIXME: size attribute does not exist.
-        r1_top, r1_bottom = room1.position.y, room1.position.y + room1.size.y  # FIXME: size attribute does not exist.
-        r2_left, r2_right = room2.position.x, room2.position.x + room2.size.x  # FIXME: size attribute does not exist.
-        r2_top, r2_bottom = room2.position.y, room2.position.y + room2.size.y  # FIXME: size attribute does not exist.
+    def get_shared_edge(
+        self,
+        room1: LYTRoom,
+        room2: LYTRoom,
+    ) -> tuple[str, float, float] | None:
+        r1_left: float = room1.position.x
+        r1_right: float = room1.position.x + room1.size.x  # FIXME: size attribute does not exist.
+        r1_top: float = room1.position.y
+        r1_bottom: float = room1.position.y + room1.size.y  # FIXME: size attribute does not exist.
+        r2_left: float = room2.position.x
+        r2_right: float = room2.position.x + room2.size.x  # FIXME: size attribute does not exist.
+        r2_top: float = room2.position.y
+        r2_bottom: float = room2.position.y + room2.size.y  # FIXME: size attribute does not exist.
 
         tolerance = 0.001  # Small tolerance for floating-point comparisons
 
         # Check for vertical adjacency
         if abs(r1_right - r2_left) < tolerance:
-            top = max(r1_top, r2_top)
-            bottom = min(r1_bottom, r2_bottom)
+            top: float = max(r1_top, r2_top)
+            bottom: float = min(r1_bottom, r2_bottom)
             if bottom > top:
                 return "vertical", top, bottom
         elif abs(r1_left - r2_right) < tolerance:
-            top = max(r1_top, r2_top)
-            bottom = min(r1_bottom, r2_bottom)
+            top: float = max(r1_top, r2_top)
+            bottom: float = min(r1_bottom, r2_bottom)
             if bottom > top:
                 return "vertical", top, bottom
 
         # Check for horizontal adjacency
         if abs(r1_bottom - r2_top) < tolerance:
-            left = max(r1_left, r2_left)
-            right = min(r1_right, r2_right)
+            left: float = max(r1_left, r2_left)
+            right: float = min(r1_right, r2_right)
             if right > left:
                 return "horizontal", left, right
         elif abs(r1_top - r2_bottom) < tolerance:
-            left = max(r1_left, r2_left)
-            right = min(r1_right, r2_right)
+            left: float = max(r1_left, r2_left)
+            right: float = min(r1_right, r2_right)
             if right > left:
                 return "horizontal", left, right
 
         return None
 
-    def isDoorHookValid(self, doorhook: LYTDoorHook) -> bool:
+    def is_door_hook_valid(
+        self,
+        doorhook: LYTDoorHook,
+    ) -> bool:
         """Check if the doorhook is on the edge of any room."""
-        return any(self.is_door_hook_on_room_edge(doorhook, room) for room in self.lyt.rooms)
+        return any(self.is_door_hook_on_room_edge(doorhook, room) for room in self._lyt.rooms)
 
-    def is_door_hook_on_room_edge(self, doorhook: LYTDoorHook, room: LYTRoom) -> bool:
-        tolerance = 0.001
-        x, y = doorhook.position.x, doorhook.position.y
+    def is_door_hook_on_room_edge(
+        self,
+        doorhook: LYTDoorHook,
+        room: LYTRoom,
+    ) -> bool:
+        tolerance: float = 0.001
+        x: float = doorhook.position.x
+        y: float = doorhook.position.y
 
         # Check if the doorhook is on any of the room's edges
-        on_left = abs(x - room.position.x) < tolerance
-        on_right = abs(x - (room.position.x + room.size.x)) < tolerance  # FIXME: size attribute does not exist.
-        on_top = abs(y - room.position.y) < tolerance
-        on_bottom = abs(y - (room.position.y + room.size.y)) < tolerance  # FIXME: size attribute does not exist.
+        on_left: bool = abs(x - room.position.x) < tolerance
+        on_right: bool = abs(x - (room.position.x + room.size.x)) < tolerance  # FIXME: size attribute does not exist.
+        on_top: bool = abs(y - room.position.y) < tolerance
+        on_bottom: bool = abs(y - (room.position.y + room.size.y)) < tolerance  # FIXME: size attribute does not exist.
 
         return (
-            (on_left or on_right)
-            and (room.position.y <= y <= room.position.y + room.size.y)  # FIXME: size attribute does not exist.
-            or (on_top or on_bottom)
-            and (room.position.x <= x <= room.position.x + room.size.x)  # FIXME: size attribute does not exist.
+            ((on_left or on_right) and (room.position.y <= y <= room.position.y + room.size.y))  # FIXME: size attribute does not exist.
+            or ((on_top or on_bottom) and (room.position.x <= x <= room.position.x + room.size.x))  # FIXME: size attribute does not exist.
         )
 
-    def optimizeDoorHookPlacement(self):
+    def optimize_door_hook_placement(self):
         # Group doorhooks by their connecting rooms
-        doorhook_groups = {}
-        for doorhook in self.lyt.doorhooks:
-            connected_rooms = self.get_connected_rooms(doorhook)
+        doorhook_groups: dict[tuple[LYTRoom, LYTRoom], list[LYTDoorHook]] = {}
+        for doorhook in self._lyt.doorhooks:
+            connected_rooms: list[LYTRoom] = self.get_connected_rooms(doorhook)
             if connected_rooms:
                 key = tuple(sorted(connected_rooms))  # FIXME: list[LYTRoom]" is incompatible with "Iterable[SupportsRichComparisonT@sorted]
                 if key not in doorhook_groups:
@@ -950,35 +857,25 @@ class LYTEditor(QWidget):
             if len(group) > 1:
                 self.optimize_group_placement(group)
 
-    def manualDoorPlacement(self, room: LYTRoom):
+    def manual_door_placement(
+        self,
+        room: LYTRoom,
+    ):
         self.is_placing_door_hook = True
         self.selected_room = room
 
-    def place_door_hook(self, mouse_pos: Vector2):
-        """Check if the mouse position is on the edge of the selected room."""
-        room = self.selected_room
-        tolerance = 5  # pixels
-
-        if (
-            abs(mouse_pos.x - room.position.x) < tolerance
-            or abs(mouse_pos.x - (room.position.x + room.size.x)) < tolerance  # FIXME: size attribute does not exist.
-            or abs(mouse_pos.y - room.position.y) < tolerance
-            or abs(mouse_pos.y - (room.position.y + room.size.y)) < tolerance  # FIXME: size attribute does not exist.
-        ):
-            doorhook = LYTDoorHook(Vector3(mouse_pos.x, mouse_pos.y, 0))  # FIXME: arguments missing for door, room, orientation
-            self.lyt.doorhooks.append(doorhook)
-            self.door_hook_placed.emit(doorhook)
-            self.update()
-
-    def snapToGrid(self, point: Vector2) -> Vector2:
-        if self._snapToGrid:
+    def snap_to_grid(self, point: Vector2) -> Vector2:
+        if self._snap_to_grid:
             return Vector2(
                 round(point.x / self.grid_size) * self.grid_size,
                 round(point.y / self.grid_size) * self.grid_size,
             )
         return point
 
-    def getRoomResizeCorner(self, mouse_pos: Vector2) -> Optional[int]:
+    def get_room_resize_corner(
+        self,
+        mouse_pos: Vector2,
+    ) -> int | None:
         if self.selected_room is None:
             return None
 
@@ -1002,12 +899,15 @@ class LYTEditor(QWidget):
         if self.selected_room is None:
             return
 
-        self.selected_room_resize_corner = self.getRoomResizeCorner(mouse_pos)
+        self.selected_room_resize_corner = self.get_room_resize_corner(mouse_pos)
         if self.selected_room_resize_corner is not None:
             self.is_resizing = True
             self.mouse_prev = mouse_pos
 
-    def getRoomRotationPoint(self, mouse_pos: Vector2) -> Optional[Vector2]:
+    def get_room_rotation_point(
+        self,
+        mouse_pos: Vector2,
+    ) -> Vector2 | None:
         if self.selected_room is None:
             return None
 
@@ -1024,45 +924,28 @@ class LYTEditor(QWidget):
 
         return None
 
-    def rotate_room(self, mouse_pos: Vector2):
+    def rotate_room(
+        self,
+        mouse_pos: Vector2,
+    ):
         if self.selected_room is None:
             return
 
-        self.selected_room_rotation_point = self.getRoomRotationPoint(mouse_pos)
+        self.selected_room_rotation_point = self.get_room_rotation_point(mouse_pos)
         if self.selected_room_rotation_point is not None:
             self.is_rotating = True
             self.mouse_prev = mouse_pos
 
-    def setGridSize(self, grid_size: int):
+    def set_grid_size(self, grid_size: int):
         self.grid_size = grid_size
         self.update()
 
-    def setSnapToGrid(self, snapToGrid: bool):
-        self._snapToGrid = snapToGrid
+    def set_snap_to_grid(self, *, snap_to_grid: bool):
+        self._snap_to_grid = snap_to_grid
         self.update()
 
-    def setShowGrid(self, show_grid: bool):
+    def set_show_grid(self, *, show_grid: bool):
         self._show_grid: bool = show_grid
-        self.update()
-
-    def generate_walkmesh(self):
-        if not self.lyt or not self.lyt.rooms:
-            return
-
-        self.walkmesh = BWM()
-
-        for room in self.lyt.rooms:
-            # Create a simple rectangular face for each room
-            vertices = [
-                Vector3(room.position.x, room.position.y, 0),
-                Vector3(room.position.x + room.size.x, room.position.y, 0),  # FIXME: size attribute does not exist.
-                Vector3(room.position.x + room.size.x, room.position.y + room.size.y, 0),  # FIXME: size attribute does not exist.
-                Vector3(room.position.x, room.position.y + room.size.y, 0),  # FIXME: size attribute does not exist.
-            ]
-            face = BWMFace(*vertices)
-            self.walkmesh.faces.append(face)
-
-        self.sig_walkmesh_updated.emit(self.walkmesh)
         self.update()
 
     def edit_walkmesh(self):
@@ -1070,35 +953,46 @@ class LYTEditor(QWidget):
             self.generate_walkmesh()
 
         self.is_editing_walkmesh = True
-        self.selectedWalkmeshFace = None
+        self.selected_walkmesh_face = None
         self.update()
 
-    def handleWalkmeshEdit(self, mouse_pos: Vector2):
+    def handle_walkmesh_edit(
+        self,
+        mouse_pos: Vector2,
+    ):
         if not self.is_editing_walkmesh or not self.walkmesh:
             return
 
-        clickedFace = self.getWalkmeshFaceAt(mouse_pos)
+        clicked_face: BWMFace | None = self.get_walkmesh_face_at(mouse_pos)
 
-        if clickedFace:
-            if self.selectedWalkmeshFace == clickedFace:
+        if clicked_face:
+            if self.selected_walkmesh_face == clicked_face:
                 # If the same face is clicked again, enter vertex edit mode
-                self.editWalkmeshVertices(clickedFace)
+                self.edit_walkmesh_vertices(clicked_face)
             else:
-                self.selectedWalkmeshFace = clickedFace
+                self.selected_walkmesh_face: BWMFace | None = clicked_face
         else:
-            self.selectedWalkmeshFace = None
+            self.selected_walkmesh_face = None
 
         self.update()
 
-    def getWalkmeshFaceAt(self, point: Vector2) -> Optional[BWMFace]:
+    def get_walkmesh_face_at(
+        self,
+        point: Vector2,
+    ) -> BWMFace | None:
+        assert self.walkmesh is not None
         for face in self.walkmesh.faces:
-            if self.isPointInPolygon(point, face.vertices):  # FIXME: vertices attribute is not defined.
+            if self.is_point_in_polygon(point, [face.v1, face.v2, face.v3]):
                 return face
         return None
 
-    def isPointInPolygon(self, point: Vector2, vertices: list[Vector3]) -> bool:
-        n = len(vertices)
-        inside = False
+    def is_point_in_polygon(
+        self,
+        point: Vector2,
+        vertices: list[Vector3],
+    ) -> bool:
+        n: int = len(vertices)
+        inside: bool = False
         p1x, p1y = vertices[0].x, vertices[0].y
         for i in range(n + 1):
             p2x, p2y = vertices[i % n].x, vertices[i % n].y
@@ -1110,82 +1004,81 @@ class LYTEditor(QWidget):
             p1x, p1y = p2x, p2y
         return inside
 
-    def editWalkmeshVertices(self, face: BWMFace):
+    def edit_walkmesh_vertices(self, face: BWMFace):
         # TODO: Implement vertex editing logic here
         # For example, you could enter a mode where clicking near a vertex allows you to drag it
         pass
 
-    def drawSelectedWalkmeshFace(self, painter: QPainter, face: BWMFace):
+    def draw_selected_walkmesh_face(
+        self,
+        painter: QPainter,
+        face: BWMFace,
+    ):
         pen = QPen(QColor(255, 0, 0, 200), 2)
         painter.setPen(pen)
-        painter.drawPolygon([QPoint(int(v.x), int(v.y)) for v in face.vertices])  # FIXME: vertices attribute is not defined.
+        painter.drawPolygon([QPoint(int(v.x), int(v.y)) for v in [face.v1, face.v2, face.v3]])
 
-    def updateLYT(self):
-        # Update the LYT data and notify listeners
-        self.sig_lyt_updated.emit(self.lyt)
-        self.update()
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        """Handle mouse release events."""
+        self.mouse_down.discard(event.button())
+        self.is_dragging = False
+        self.is_resizing = False
+        self.is_rotating = False
 
-    def mousePressEvent(self, e: QMouseEvent):
-        super().mousePressEvent(e)
-        if self.is_editing_walkmesh:
-            self.handleWalkmeshEdit(Vector2(e.x(), e.y()))
+    def mouseMoveEvent(self, event: QMouseEvent):
+        """Handle mouse move events."""
+        pos: QPointF = event.position()
+        self.mouse_pos: Vector2 = Vector2(pos.x(), pos.y())
 
-    def mouseMoveEvent(self, e: QMouseEvent):
-        super().mouseMoveEvent(e)
-        if self.is_editing_walkmesh and self.selectedWalkmeshFace:
-            # TODO: Implement logic for moving vertices or the entire face
-            pass
+        if self.is_dragging:
+            self.handle_drag()
+        elif self.is_resizing:
+            self.handle_resize()
+        elif self.is_rotating:
+            self.handle_rotate()
 
-    def mouseReleaseEvent(self, e: QMouseEvent):
-        super().mouseReleaseEvent(e)
-        # TODO: Add any necessary cleanup for walkmesh editing here
-
-    def add_obstacle(self, model_name: str = ""):
-        # TODO: Implement obstacle addition logic
-        newObstacle = LYTObstacle(model=model_name, position=Vector3(50, 50, 0), radius=25)
-        self.lyt.obstacles.append(newObstacle)
-        self.update()
+        self.mouse_prev = self.mouse_pos
 
     def on_texture_selected(self, item: QListWidgetItem):
-        textureName = item.text()
-        self.apply_texture(textureName)
+        texture_name = item.text()
+        self.apply_texture(texture_name)
+        self.sig_texture_changed.emit(texture_name)
 
-    def apply_texture_task(self, textureName: str):
+    def apply_texture_task(self, texture_name: str):
         # This method will be executed in a separate thread
         # Implement the logic to apply the texture to the selected element
-        with self.lyt_lock:
+        with self.layout_lock:
             if self.selected_room:  # FIXME: lytroom does not store textures.
-                self.selected_room.texture = textureName  # FIXME: texture attribute does not exist in a LYTRoom.
+                self.selected_room.texture = texture_name  # FIXME: texture attribute does not exist in a LYTRoom.
             elif self.selected_track:
-                self.selected_track.texture = textureName  # FIXME: texture attribute does not exist in a LYTTrack.
-        return textureName
+                self.selected_track.texture = texture_name  # FIXME: texture attribute does not exist in a LYTTrack.
 
-    def onTextureApplied(self, result):
-        self.textureChanged.emit(result)
+    def on_texture_applied(self, result):
+        self.sig_texture_changed.emit(result)
         self.update()
 
     def optimize_rendering(self):
         # Implement spatial partitioning for efficient rendering of large layouts
-        with self.lyt_lock:
-            if not self.lyt or not self.lyt.rooms:
+        with self.layout_lock:
+            if not self.scene.layout or not self._lyt.rooms:
                 return
 
             # Simple grid-based spatial partitioning
             self.spatial_grid.clear()
 
-            for room in self.lyt.rooms:
+            for room in self._lyt.rooms:
                 grid_x = int(room.position.x / self.grid_size)
                 grid_y = int(room.position.y / self.grid_size)
-                grid_key = (grid_x, grid_y)
+                grid_key: tuple[int, int] = (grid_x, grid_y)
                 if grid_key not in self.spatial_grid:
                     self.spatial_grid[grid_key] = []
                 self.spatial_grid[grid_key].append(room)
 
-            self.renderingOptimized.emit()
+            self.sig_rendering_optimized.emit()
 
     def get_visible_rooms(self) -> set[LYTRoom]:
         visible_rooms: set[LYTRoom] = set()
-        camera = self.parent().scene.camera
+        camera: Camera = self.parent().scene.camera
         view_rect: QRect = QRect(int(camera.x - camera.width / 2), int(camera.y - camera.height / 2), int(camera.width), int(camera.height))
 
         grid_x_start = int(view_rect.left() / self.grid_size)
@@ -1195,7 +1088,7 @@ class LYTEditor(QWidget):
 
         for x in range(grid_x_start, grid_x_end + 1):
             for y in range(grid_y_start, grid_y_end + 1):
-                grid_key = (x, y)
+                grid_key: tuple[int, int] = (x, y)
                 if grid_key in self.spatial_grid:
                     visible_rooms.update(self.spatial_grid[grid_key])
 
@@ -1207,15 +1100,19 @@ class LYTEditor(QWidget):
         assert isinstance(self.parent(), ModuleRenderer)
         return self.parent()
 
-    def onTaskCompleted(self, task: Callable, result: Any):
+    def on_task_completed(
+        self,
+        task: Callable,
+        result: Any,
+    ):
         with self.task_consumer_lock:
             self.main_thread_tasks.put((task, result, {}))
-            qApp = QApplication.instance()
-            assert qApp is not None, "QApplication instance not found?"
-            qApp.postEvent(self, QEvent(QEvent.Type.User))
-        self.taskCompleted.emit(result)
+            app: QCoreApplication | None = QApplication.instance()
+            assert app is not None, "QApplication instance not found?"
+            app.postEvent(self, QEvent(QEvent.Type.User))
+        self.sig_task_completed.emit(result)
 
-    def processBackgroundTasks(self):
+    def process_background_tasks(self):
         if self.is_shutting_down:
             return
 
@@ -1235,7 +1132,7 @@ class LYTEditor(QWidget):
                             # If all consumers are busy, put the task back in the queue
                             self.task_queue.put((task, args))
                             break
-                        except queue.Empty:
+                        except Empty:
                             break
                 for consumer in self.task_consumers:
                     try:
@@ -1245,25 +1142,25 @@ class LYTEditor(QWidget):
                         # If all consumers are busy, put the task back in the queue
                         self.task_queue.put((task, args))
                         break
-                    except queue.Empty:
+                    except Empty:
                         break
 
-    def processMainThreadTasks(self):
+    def process_main_thread_tasks(self):
         while not self.main_thread_tasks.empty():
             try:
                 task, result = self.main_thread_tasks.get(block=False)
                 if task == self.load_textures_task:
                     self.on_textures_loaded(result)
                 elif task == self.apply_texture_task:
-                    self.onTextureApplied(result)
+                    self.on_texture_applied(result)
                 # Add more task completions as needed
             except Empty:  # noqa: PERF203
                 break
 
-        self.processErrors()
-        self.processChanges()  # FIXME: processChanges method does not exist.
+        self.process_errors()
+        self.process_changes()
 
-    def processErrors(self):
+    def process_errors(self):
         while not self.error_queue.empty():
             try:
                 task, exception = self.error_queue.get(block=False)
@@ -1279,109 +1176,777 @@ class LYTEditor(QWidget):
         """Applies all pending changes to the LYT data and updates the UI."""
         with self.change_lock:
             if self.change_buffer:
-                with self.lyt_lock:
+                with self.layout_lock:
                     for change in self.change_buffer:
-                        # Apply the change to self.lyt
+                        # Apply the change to self.scene.layout
                         action, element_type, data = change
                         if action == "add":
-                            if element_type == "room":
-                                self.lyt.rooms.append(data)
-                            elif element_type == "track":
-                                self.lyt.tracks.append(data)
-                            elif element_type == "obstacle":
-                                self.lyt.obstacles.append(data)
-                            elif element_type == "doorhook":
-                                self.lyt.doorhooks.append(data)
+                            if element_type == "room" and isinstance(data, LYTRoom):
+                                self._lyt.rooms.append(data)
+                            elif element_type == "track" and isinstance(data, LYTTrack):
+                                self._lyt.tracks.append(data)
+                            elif element_type == "obstacle" and isinstance(data, LYTObstacle):
+                                self._lyt.obstacles.append(data)
+                            elif element_type == "doorhook" and isinstance(data, LYTDoorHook):
+                                self._lyt.doorhooks.append(data)
                         elif action == "update":
                             # Implement update logic for each element type
                             pass
                         elif action == "delete":
-                            if element_type == "room":
-                                self.lyt.rooms.remove(data)
-                            elif element_type == "track":
-                                self.lyt.tracks.remove(data)
-                            elif element_type == "obstacle":
-                                self.lyt.obstacles.remove(data)
-                            elif element_type == "doorhook":
-                                self.lyt.doorhooks.remove(data)
-                self.sig_lyt_updated.emit(self.lyt)
+                            if element_type == "room" and isinstance(data, LYTRoom):
+                                self._lyt.rooms.remove(data)
+                            elif element_type == "track" and isinstance(data, LYTTrack):
+                                self._lyt.tracks.remove(data)
+                            elif element_type == "obstacle" and isinstance(data, LYTObstacle):
+                                self._lyt.obstacles.remove(data)
+                            elif element_type == "doorhook" and isinstance(data, LYTDoorHook):
+                                self._lyt.doorhooks.remove(data)
+                self.sig_lyt_updated.emit(self.scene.layout)
                 self.change_buffer.clear()
             self.update()
 
-    def updateLYT(self):
-        with self.lyt_lock, self.render_lock:
-            lyt_copy = deepcopy(self.lyt)
+    def update_lyt(self):
+        with self.layout_lock, self.render_lock:
+            lyt_copy: LYT | None = deepcopy(self.scene.layout)
+            assert lyt_copy is not None
             self.sig_lyt_updated.emit(lyt_copy)
         self.update()
 
-    def update_zoom(self, value: int):
-        self.parent().scene.camera.distance = value / 100.0
+    def draw_room(
+        self,
+        painter: QPainter,
+        room: LYTRoom,
+        zoom: float = 1.0,
+    ):
+        """Draw a room with connection points and visual feedback."""
+        try:
+            # Get module and model data
+            module = self.parent().scene._module
+            if not module:
+                return
+
+            mdl_res = module.get_resource(room.model, "mdl")
+            if not mdl_res:
+                return
+
+            mdl = mdl_res.resource()
+
+            # Get room bounds from MDL
+            bounds = mdl.get_bounding_box()
+            size = bounds.size
+
+            position = room.position
+            orientation = room.orientation
+
+            rect = QRect(
+                int(position.x * zoom),
+                int(position.y * zoom),
+                int(size.x * zoom),
+                int(size.y * zoom)
+            )
+
+            # Draw selection highlight if this is the selected room
+            if room == self.selected_room:
+                # Draw resize handles
+                handle_size = 8 * zoom
+                handles = [
+                    (rect.topLeft(), "nw-resize"),
+                    (rect.topRight(), "ne-resize"),
+                    (rect.bottomLeft(), "sw-resize"),
+                    (rect.bottomRight(), "se-resize"),
+                    (QPoint(rect.center().x(), rect.top()), "n-resize"),
+                    (QPoint(rect.center().x(), rect.bottom()), "s-resize"),
+                    (QPoint(rect.left(), rect.center().y()), "w-resize"),
+                    (QPoint(rect.right(), rect.center().y()), "e-resize")
+                ]
+
+                for handle_pos, cursor in handles:
+                    handle_rect = QRect(
+                        handle_pos.x() - handle_size//2,
+                        handle_pos.y() - handle_size//2,
+                        handle_size,
+                        handle_size
+                    )
+                    painter.setPen(QPen(Qt.GlobalColor.yellow))
+                    painter.setBrush(QBrush(Qt.GlobalColor.white))
+                    painter.drawRect(handle_rect)
+
+                # Draw rotation handle
+                rotation_handle_pos = QPoint(
+                    rect.center().x(),
+                    rect.top() - 20 * zoom
+                )
+                painter.setPen(QPen(Qt.GlobalColor.blue, 2))
+                painter.drawLine(rect.center(), rotation_handle_pos)
+                painter.setBrush(QBrush(Qt.GlobalColor.blue))
+                painter.drawEllipse(
+                    rotation_handle_pos.x() - handle_size//2,
+                    rotation_handle_pos.y() - handle_size//2,
+                    handle_size,
+                    handle_size
+                )
+
+                # Draw selection outline
+                painter.setPen(QPen(QColor(255, 255, 0), 2, Qt.PenStyle.DashLine))
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.drawRect(rect.adjusted(-2, -2, 2, 2))
+
+            # Draw main room rectangle with gradient
+            gradient = QLinearGradient(rect.topLeft(), rect.bottomRight())
+            if room == self.selected_room:
+                gradient.setColorAt(0, QColor(180, 200, 255, 180))
+                gradient.setColorAt(1, QColor(140, 170, 255, 180))
+                painter.setPen(QPen(Qt.GlobalColor.blue, 2))
+            else:
+                gradient.setColorAt(0, QColor(220, 220, 220, 180))
+                gradient.setColorAt(1, QColor(200, 200, 200, 180))
+                painter.setPen(QPen(Qt.GlobalColor.black, 2))
+            painter.setBrush(QBrush(gradient))
+
+            # Apply rotation if needed
+            if orientation.z != 0:
+                painter.save()
+                painter.translate(rect.center())
+                painter.rotate(math.degrees(orientation.z))
+                painter.translate(-rect.center())
+                painter.drawRect(rect)
+                painter.restore()
+            else:
+                painter.drawRect(rect)
+
+            # Draw connection points with improved visualization
+            connection_points = self.get_room_connection_points(room)
+            for point, is_valid in connection_points:
+                # Draw connection point glow
+                if is_valid:
+                    glow_size = 16 * zoom
+                    glow_gradient = QRadialGradient(
+                        point.x() * zoom,
+                        point.y() * zoom,
+                        glow_size
+                    )
+                    glow_gradient.setColorAt(0, QColor(0, 255, 0, 100))
+                    glow_gradient.setColorAt(1, QColor(0, 255, 0, 0))
+                    painter.setBrush(QBrush(glow_gradient))
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    painter.drawEllipse(
+                        int((point.x - glow_size/2) * zoom),
+                        int((point.y - glow_size/2) * zoom),
+                        int(glow_size),
+                        int(glow_size)
+                    )
+
+                # Draw connection point
+                point_color = QColor(0, 255, 0) if is_valid else QColor(128, 128, 128)
+                point_size = 8 * zoom
+                painter.setPen(QPen(point_color, 2))
+                painter.setBrush(QBrush(point_color.lighter(120)))
+                painter.drawEllipse(
+                    int((point.x - point_size/2) * zoom),
+                    int((point.y - point_size/2) * zoom),
+                    int(point_size),
+                    int(point_size)
+                )
+
+            # Draw room info with shadow
+            text = f"{room.model}\n{int(size.x)}x{int(size.y)}"
+            painter.setPen(QColor(0, 0, 0, 100))
+            painter.drawText(rect.adjusted(1, 1, 1, 1), Qt.AlignmentFlag.AlignCenter, text)
+            painter.setPen(Qt.GlobalColor.white)
+            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
+
+        except Exception as e:
+            print(f"Error drawing room: {e}")
+
+    def update_room_property(
+        self,
+        property_name: str,
+        value: Any,
+    ):
+        """Update a room property and emit appropriate signals."""
+        if not self.selected_room:
+            return
+
+        if property_name == "position":
+            old_pos: Vector3 = self.selected_room.position
+            self.selected_room.position = value
+            self.sig_room_moved.emit(self.selected_room, value - old_pos)
+
         self.update()
 
-    def closeEvent(self, event):
-        self.is_shutting_down = True
-        for consumer in self.task_consumers:
-            consumer.stop()
-        super().closeEvent(event)
-
-    def handleTaskException(self, task: Callable, exception: Exception):
+    def handle_task_exception(
+        self,
+        task: Callable,
+        exception: Exception,
+    ):
         with self.task_consumer_lock:
             self.error_queue.put((task, exception))
-            qApp = QApplication.instance()
+            qApp: QCoreApplication | None = QApplication.instance()
             assert qApp is not None, "QApplication instance not found?"
             qApp.postEvent(self, QEvent(QEvent.Type.User))
 
-    def add_background_task(self, task: Callable, args: tuple):
+    def add_background_task(
+        self,
+        task: Callable,
+        args: tuple,
+    ):
         with self.task_queue_lock:
             self.task_queue.put((task, args, {}))
-            qApp = QApplication.instance()
+            qApp: QCoreApplication | None = QApplication.instance()
             assert qApp is not None, "QApplication instance not found?"
             qApp.postEvent(self, QEvent(QEvent.Type.User))  # Trigger event processing
 
     def event(self, event: QEvent) -> bool:
         if event.type() == QEvent.Type.User:
-            self.processMainThreadTasks()
-            self.processBackgroundTasks()
-            self.processChanges()  # FIXME: processChanges method does not exist.
+            self.process_main_thread_tasks()
+            self.process_background_tasks()
+            self.process_changes()
             return True
         return super().event(event)
 
-    def addChange(self, change):
+    def add_change(
+        self,
+        change: tuple[str, str, LYTRoom | LYTTrack | LYTObstacle | LYTDoorHook],
+    ):
         with self.change_lock:
             self.change_buffer.append(change)
-            qApp = QApplication.instance()
-            assert qApp is not None, "QApplication instance not found?"
-            qApp.postEvent(self, QEvent(QEvent.Type.User))  # Trigger event processing
+            app: QCoreApplication | None = QApplication.instance()
+            assert app is not None, "QApplication instance not found?"
+            app.postEvent(self, QEvent(QEvent.Type.User))  # Trigger event processing
 
-    def showErrorDialog(self, message: str):
+    def show_error_dialog(
+        self,
+        message: str,
+    ):
         # Implement this method to show an error dialog to the user
-        qApp = QApplication.instance()
+        qApp: QCoreApplication | None = QApplication.instance()
         if qApp is not None and qApp.thread() == QThread.currentThread():
             QMessageBox.critical(self, "Error", message)
 
-    def add_room(self, model_name: str = ""):
-        # Implement room addition logic
-        newRoom = LYTRoom(model=model_name, position=Vector3(0, 0, 0))
-        self.lyt.rooms.append(newRoom)
+    def get_selected_room(self) -> LYTRoom | None:
+        """Get the currently selected room."""
+        return self.selected_room if hasattr(self, "selected_room") else None
+
+    def get_selected_item(self) -> Any:
+        """Get the currently selected item."""
+        return (self.selected_room or
+                self.selected_track or
+                self.selected_obstacle or
+                self.selected_door_hook)
+
+    def update_room(
+        self,
+        room: LYTRoom,
+    ):
+        self.add_change(("update", "room", room))
+
+    def delete_room(
+        self,
+        room: LYTRoom,
+    ):
+        self.add_change(("delete", "room", room))
+
+    def select_room(
+        self,
+        room: LYTRoom,
+    ):
+        self.selected_room = room
         self.update()
 
-    def updateRoom(self, room: LYTRoom):
-        self.addChange(("update", "room", room))
-
-    def deleteRoom(self, room: LYTRoom):
-        self.addChange(("delete", "room", room))
-
-    # Add more methods for specific LYT operations (e.g., add_room, updateRoom, deleteRoom, etc.)
-    # Implement similar methods for tracks, obstacles, and doorhooks
-
-    def add_track(self, model_name: str = ""):
-        # Implement track addition logic
-        newTrack = LYTTrack(model=model_name, position=Vector3(0, 0, 0))
-        self.lyt.tracks.append(newTrack)
+    def duplicate_room(
+        self,
+        room: LYTRoom,
+    ) -> LYTRoom:
+        new_room: LYTRoom = deepcopy(room)
+        self._lyt.rooms.append(new_room)
         self.update()
+        return new_room
 
-    def updateTrack(self, track: LYTTrack):
-        self.addChange(("update", "track", track))
+    def duplicate_selected_room(self) -> LYTRoom | None:
+        if self.selected_room:
+            return self.duplicate_room(self.selected_room)
+        return None
 
-    def deleteTrack(self, track: LYTTrack):
-        self.addChange(("delete", "track", track))
+    def get_obstacle_circle(
+        self,
+        obstacle: LYTObstacle,
+        zoom: float = 1.0,
+    ) -> tuple[QPoint, float]:
+        """Get the center point and radius for an obstacle."""
+        # Default radius if not specified
+        default_radius: float = 5.0
+        radius: float = getattr(obstacle, "radius", default_radius)
+
+        center: QPoint = QPoint(int(obstacle.position.x * zoom), int(obstacle.position.y * zoom))
+        return center, radius * zoom
+
+    def initUI(self):
+        """Initialize the UI layout."""
+        self.setAcceptDrops(True)
+
+        layout = QVBoxLayout()
+
+        # Add buttons for LYT editing operations
+        button_layout: QHBoxLayout = QHBoxLayout()
+        add_room_button: QPushButton = QPushButton("Add Room")
+        add_room_button.clicked.connect(self.add_room)
+        button_layout.addWidget(add_room_button)
+
+        add_track_button: QPushButton = QPushButton("Add Track")
+        add_track_button.clicked.connect(self.add_track)
+        button_layout.addWidget(add_track_button)
+
+        add_obstacle_button: QPushButton = QPushButton("Add Obstacle")
+        add_obstacle_button.clicked.connect(self.add_obstacle)
+        button_layout.addWidget(add_obstacle_button)
+
+        place_door_hook_button: QPushButton = QPushButton("Place Door Hook")
+        place_door_hook_button.clicked.connect(self.place_door_hook)
+        button_layout.addWidget(place_door_hook_button)
+        layout.addLayout(button_layout)
+
+        # Add zoom slider
+        zoom_layout: QHBoxLayout = QHBoxLayout()
+        zoom_layout.addWidget(QLabel("Zoom:"))
+        self.zoom_slider: QSlider = QSlider(Qt.Orientation.Horizontal)
+        self.zoom_slider.setRange(10, 200)
+        self.zoom_slider.setValue(100)
+        self.zoom_slider.valueChanged.connect(self.update_zoom)
+        zoom_layout.addWidget(self.zoom_slider)
+        layout.addLayout(zoom_layout)
+
+        # Add texture browser
+        self.texturelist: QListWidget = QListWidget()
+        self.texturelist.itemClicked.connect(self.on_texture_selected)
+        layout.addWidget(self.texturelist)
+
+        self.setLayout(layout)
+
+        layout: QVBoxLayout = QVBoxLayout()
+
+        # Add buttons for LYT editing operations
+        button_layout: QHBoxLayout = QHBoxLayout()
+        add_room_button: QPushButton = QPushButton("Add Room")
+        add_room_button.clicked.connect(self.add_room)
+        button_layout.addWidget(add_room_button)
+
+        add_track_button: QPushButton = QPushButton("Add Track")
+        add_track_button.clicked.connect(self.add_track)
+        button_layout.addWidget(add_track_button)
+
+        add_obstacle_button: QPushButton = QPushButton("Add Obstacle")
+        add_obstacle_button.clicked.connect(self.add_obstacle)
+        button_layout.addWidget(add_obstacle_button)
+
+        place_door_hook_button: QPushButton = QPushButton("Place Door Hook")
+        place_door_hook_button.clicked.connect(self.place_door_hook)
+        button_layout.addWidget(place_door_hook_button)
+        layout.addLayout(button_layout)
+
+        # Add zoom slider
+        zoom_layout: QHBoxLayout = QHBoxLayout()
+        zoom_layout.addWidget(QLabel("Zoom:"))
+        self.zoom_slider: QSlider = QSlider(Qt.Orientation.Horizontal)
+        self.zoom_slider.setRange(10, 200)
+        self.zoom_slider.setValue(100)
+        self.zoom_slider.valueChanged.connect(self.update_zoom)
+        zoom_layout.addWidget(self.zoom_slider)
+        layout.addLayout(zoom_layout)
+
+        # Add texture browser
+        self.texturelist: QListWidget = QListWidget()
+        self.texturelist.itemClicked.connect(self.on_texture_selected)
+        layout.addWidget(self.texturelist)
+
+        self.setLayout(layout)
+
+    def set_current_tool(self, tool: str):
+        """Set the current editing tool."""
+        self.current_tool = tool
+        self.update_cursor()
+        self.update_ui_state()
+
+    def update_cursor(self):
+        """Update cursor based on current tool."""
+        cursor_map = {
+            "select": Qt.CursorShape.ArrowCursor,
+            "move": Qt.CursorShape.SizeAllCursor,
+            "rotate": Qt.CursorShape.CrossCursor,
+            "scale": Qt.CursorShape.SizeFDiagCursor
+        }
+        self.setCursor(cursor_map.get(self.current_tool, Qt.CursorShape.ArrowCursor))
+
+    def update_ui_state(self):
+        """Update UI elements based on current tool."""
+        self.update()
+        if hasattr(self, "tool_group"):
+            for action in self.tool_group.actions():
+                action.setChecked(action.text().lower() == self.current_tool)
+
+    def mousePressEvent(
+        self,
+        event: QMouseEvent,
+    ):
+        """Handle mouse press events."""
+        try:
+            # Use Scene's pick method with error handling
+            picked_object: RenderObject | None = self.scene.pick(event.pos().x(), event.pos().y())
+            if picked_object and hasattr(picked_object, "data"):
+                self.selected_element = picked_object.data
+                self.update_element_properties()
+        except Exception as e:  # noqa: BLE001
+            print(f"Error in mouse press: {e}")
+            # Fallback to default selection behavior
+            super().mousePressEvent(event)
+
+        pos: QPointF = event.position()
+        self.mouse_pos: Vector2 = Vector2(pos.x(), pos.y())
+        self.mouse_prev: Vector2 = self.mouse_pos
+        self.mouse_down.add(event.button())
+
+        if event.button() == Qt.MouseButton.LeftButton:
+            if self.is_placing_door_hook:
+                self.place_door_hook(self.mouse_pos)
+                self.is_placing_door_hook = False
+            else:
+                self.select_lyt_element(self.mouse_pos)
+                self.is_dragging = True
+
+        elif event.button() == Qt.MouseButton.RightButton:
+            if self.selected_room:
+                self.is_rotating = True
+            elif self.selected_track:
+                self.is_dragging = True
+
+        elif event.button() == Qt.MouseButton.MiddleButton:
+            self.is_dragging = True
+
+    def add_room(
+        self,
+        model: str = "",
+        position: Vector3 | None = None,
+    ):
+        """Add a new room."""
+        # Get module and area data
+        module = self.parent().scene._module
+        if not module:
+            return
+
+        area = module.get_area()
+        if not area:
+            return
+
+        # Load model to get dimensions
+        mdl_res = module.get_resource(model, "mdl")
+        if not mdl_res:
+            return
+
+        mdl = mdl_res.resource()
+
+        # Create room with data from MDL/ARE
+        room: LYTRoom = LYTRoom(
+            model=model,
+            position=position or Vector3(0, 0, 0),
+            orientation=Vector4(0, 0, 0, 1)
+        )
+        room.id = str(uuid4())  # Add unique ID
+
+        # Snap to grid if enabled
+        if self._snap_to_grid:
+            room.position.x = round(room.position.x / self.grid_size) * self.grid_size
+            room.position.y = round(room.position.y / self.grid_size) * self.grid_size
+
+        # Find valid connection points with existing rooms
+        self.highlight_connection_points(room)
+
+        with self.layout_lock:
+            self._lyt.rooms.append(room)
+
+        self.update()
+        self.sig_room_added.emit(room)
+        return room
+
+    def add_obstacle(
+        self,
+        model: str = "",
+    ):
+        """Add a new obstacle."""
+        obstacle: LYTObstacle = LYTObstacle(model=model, position=Vector3(0, 0, 0))
+        with self.layout_lock:
+            self._lyt.obstacles.append(obstacle)
+        self.update()
+        self.sig_obstacle_added.emit(obstacle)
+
+    def update_track(
+        self,
+        track: LYTTrack,
+    ):
+        self.add_change(("update", "track", track))
+
+    def delete_track(
+        self,
+        track: LYTTrack,
+    ):
+        self.add_change(("delete", "track", track))
+
+    def create_door_hook(
+        self,
+        position: Vector3,
+        room: LYTRoom,
+    ) -> LYTDoorHook:
+        """Create a new door hook with proper initialization."""
+        return LYTDoorHook(
+            room=room.model,
+            door="",  # Empty string as default door name
+            position=position,
+            orientation=Vector4(0, 0, 0, 1),  # Default orientation as quaternion
+        )
+
+    def distance_to_line(
+        self,
+        point: QPoint,
+        start: QPoint,
+        end: QPoint,
+    ) -> float:
+        """Calculate the distance from a point to a line segment."""
+        line: QLineF = QLineF(start, end)
+        return line.pointDistance(point)
+
+    def distance_to_point(
+        self,
+        point1: QPoint,
+        point2: QPoint,
+    ) -> float:
+        """Calculate the distance between two points."""
+        return math.sqrt((point1.x() - point2.x()) ** 2 + (point1.y() - point2.y()) ** 2)
+
+    def handle_room_selection(self, pos: QPointF):
+        """Handle room selection at given position."""
+        item: QGraphicsItem | None = self.scene.itemAt(pos, QTransform())
+        if isinstance(item, QGraphicsRectItem) and hasattr(item, "room"):
+            self.selected_room: LYTRoom = item.data(Qt.ItemDataRole.UserRole)
+            self.sig_room_selected.emit(item.data(Qt.ItemDataRole.UserRole))
+            self.update_selection()
+
+    def update_room_position(
+        self,
+        room: LYTRoom,
+        delta: Vector3,
+    ):
+        """Update room position and notify listeners."""
+        room.position += delta
+        self.update_scene()
+        self.sig_room_moved.emit(room, delta)
+
+    def update_room_rotation(self, room: LYTRoom, angle: float):
+        """Update room rotation and notify listeners."""
+        # Convert angle to quaternion
+        half_angle: float = angle / 2.0
+        self.update_scene()
+        self.sig_room_rotated.emit(room, angle)
+
+    def get_room_center(
+        self,
+        room: LYTRoom,
+    ) -> Vector3:
+        """Get the center position of a room."""
+        size: Vector3 = getattr(room, "size", Vector3(10, 10, 0))
+        return room.position + Vector3(size.x / 2, size.y / 2, 0)
+
+    def highlight_selected_room(self):
+        """Highlight the currently selected room."""
+        if not self.selected_room:
+            return
+
+        # Find the room's graphics item
+        for item in self.scene.items():
+            if isinstance(item, QGraphicsRectItem) and item.data(Qt.ItemDataRole.UserRole) == self.selected_room:
+                # Create highlight effect
+                highlight: QGraphicsRectItem = self.addRect(item.rect())
+                highlight.setPos(item.pos())
+                highlight.setPen(QPen(Qt.GlobalColor.yellow, 2, Qt.PenStyle.DashLine))
+                highlight.setZValue(item.zValue() + 1)
+
+    def create_room_graphics(
+        self,
+        room: LYTRoom,
+    ) -> QGraphicsRectItem:
+        """Create graphics item for a room."""
+        size: Vector3 = getattr(room, "size", Vector3(10, 10, 0))
+        item: QGraphicsRectItem = QGraphicsRectItem(0, 0, size.x, size.y)
+        item.setPos(room.position.x, room.position.y)
+        item.setPen(QPen(Qt.GlobalColor.black, 2))
+        item.setBrush(QBrush(Qt.GlobalColor.lightGray))
+        item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
+        item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
+        item.setData(Qt.ItemDataRole.UserRole, room)  # Store reference to room
+        return item
+
+    def update_room_graphics(
+        self,
+        room: LYTRoom,
+    ):
+        """Update graphics for a room."""
+        # Find and update existing room item
+        for item in self.scene.items():
+            if isinstance(item, QGraphicsRectItem) and item.data(Qt.ItemDataRole.UserRole) == room:
+                size: Vector3 = getattr(room, "size", Vector3(10, 10, 0))
+                item.setRect(0, 0, size.x, size.y)
+                item.setPos(room.position.x, room.position.y)
+                break
+
+    def update_element_properties(self):
+        # Remove detailed property editing since UI lacks specific spin boxes
+        if isinstance(self.selected_element, LYTRoom):
+            # Update rooms list instead of detailed editing
+            self.ui.roomsList.clear()
+            for room in self._lyt.rooms:
+                self.ui.roomsList.addItem(room.model)
+        elif isinstance(self.selected_element, LYTObstacle):
+            # Update obstacles list
+            self.ui.obstaclesList.clear()
+            for obstacle in self._lyt.obstacles:
+                self.ui.obstaclesList.addItem(f"Obstacle at {obstacle.position}")
+        elif isinstance(self.selected_element, LYTDoorHook):
+            # Update doorhooks list
+            self.ui.doorhooksList.clear()
+            for doorhook in self._lyt.doorhooks:
+                self.ui.doorhooksList.addItem(f"Door Hook at {doorhook.position}")
+        elif isinstance(self.selected_element, LYTTrack):
+            # Update tracks list
+            self.ui.tracksList.clear()
+            for track in self._lyt.tracks:
+                self.ui.tracksList.addItem(f"Track from {track.start_room.model if track.start_room else 'Unknown'}")
+
+    def init_connections(self):
+        """Initialize UI connections."""
+        # Connect list selection methods
+        self.ui.roomsList.itemClicked.connect(self.on_room_selected)
+        self.ui.obstaclesList.itemClicked.connect(self.on_obstacle_selected)
+        self.ui.doorhooksList.itemClicked.connect(self.on_doorhook_selected)
+        self.ui.tracksList.itemClicked.connect(self.on_track_selected)
+
+        # Connect buttons
+        self.ui.addRoomButton.clicked.connect(self.add_room)
+        self.ui.addTrackButton.clicked.connect(self.add_track)
+        self.ui.addObstacleButton.clicked.connect(self.add_obstacle)
+        self.ui.addDoorHookButton.clicked.connect(self.add_door_hook)
+
+        # Connect texture browser
+        self.ui.textureBrowser.itemClicked.connect(self.on_texture_selected)
+
+        # Connect zoom slider
+        self.ui.zoomSlider.valueChanged.connect(self.update_zoom)
+
+        # Add tool buttons to toolbar
+        toolbar: _QToolBar = QToolBar()
+
+        select_action: _QAction = QAction("Select", self)
+        select_action.setCheckable(True)
+        select_action.setChecked(True)
+        select_action.triggered.connect(lambda: self.set_current_tool("select"))
+        toolbar.addAction(select_action)
+
+        move_action: _QAction = QAction("Move", self)
+        move_action.setCheckable(True)
+        move_action.triggered.connect(lambda: self.set_current_tool("move"))
+        toolbar.addAction(move_action)
+
+        rotate_action: _QAction = QAction("Rotate", self)
+        rotate_action.setCheckable(True)
+        rotate_action.triggered.connect(lambda: self.set_current_tool("rotate"))
+        toolbar.addAction(rotate_action)
+
+        # Add toolbar to layout
+        self.ui.verticalLayout.insertWidget(0, toolbar)
+
+    def on_room_selected(self, item: QListWidgetItem):
+        """Handle room selection from list."""
+        room = item.data(Qt.ItemDataRole.UserRole)
+        if room:
+            self.selected_element = room
+            self.update_element_properties()
+
+    def on_obstacle_selected(self, item: QListWidgetItem):
+        """Handle obstacle selection from list."""
+        obstacle = item.data(Qt.ItemDataRole.UserRole)
+        if obstacle:
+            self.selected_element = obstacle
+            self.update_element_properties()
+
+    def on_doorhook_selected(self, item: QListWidgetItem):
+        """Handle door hook selection from list."""
+        doorhook = item.data(Qt.ItemDataRole.UserRole)
+        if doorhook:
+            self.selected_element = doorhook
+            self.update_element_properties()
+
+    def on_track_selected(self, item: QListWidgetItem):
+        """Handle track selection from list."""
+        track = item.data(Qt.ItemDataRole.UserRole)
+        if track:
+            self.selected_element = track
+            self.update_element_properties()
+
+    def generate_walkmesh(self):
+        """Generate walkmesh with proper error handling."""
+        try:
+            if not self._lyt or not self._lyt.rooms:
+                return
+
+            self.walkmesh = BWM()
+            faces: list[BWMFace] = []
+
+            for room in self._lyt.rooms:
+                # Get room properties with safe defaults
+                position: Vector3 = getattr(room, "position", Vector3(0, 0, 0))
+                size: Vector3 = getattr(room, "size", Vector3(10, 10, 0))
+
+                vertices: list[Vector3] = [
+                    Vector3(position.x, position.y, 0),
+                    Vector3(position.x + size.x, position.y, 0),
+                    Vector3(position.x + size.x, position.y + size.y, 0),
+                    Vector3(position.x, position.y + size.y, 0),
+                ]
+
+                face = BWMFace(v1=vertices[0], v2=vertices[1], v3=vertices[2])
+                faces.append(face)
+
+            self.walkmesh.faces = faces
+            self.sig_walkmesh_updated.emit(self.walkmesh)
+            self.update()
+
+        except Exception as e:  # noqa: BLE001
+            print(f"Error generating walkmesh: {e}")
+
+    def place_door_hook(self, mouse_pos: Vector2):
+        """Place a door hook with proper initialization."""
+        room = self.selected_room
+        if room is None:
+            return
+
+        tolerance = 5  # pixels
+
+        # Check if mouse is on room edge
+        if (
+            abs(mouse_pos.x - room.position.x) < tolerance
+            or abs(mouse_pos.x - (room.position.x + getattr(room, "size", Vector3(10, 10, 0)).x)) < tolerance
+            or abs(mouse_pos.y - room.position.y) < tolerance
+            or abs(mouse_pos.y - (room.position.y + getattr(room, "size", Vector3(10, 10, 0)).y)) < tolerance
+        ):
+            # Create doorhook with proper initialization
+            doorhook = LYTDoorHook(room=room.model, door=f"door_{len(self._lyt.doorhooks)}", position=Vector3(mouse_pos.x, mouse_pos.y, 0), orientation=Vector4(0, 0, 0, 1))
+
+            self._lyt.doorhooks.append(doorhook)
+            self.sig_doorhook_added.emit(doorhook)
+            self.update()
+
+    def closeEvent(
+        self,
+        event: QCloseEvent,
+    ):
+        """Clean up resources on close."""
+        self.is_shutting_down = True
+        if hasattr(self, "process_pool"):
+            self.process_pool.shutdown()
+        super().closeEvent(event)
