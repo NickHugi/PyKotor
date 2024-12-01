@@ -4,39 +4,35 @@ from copy import copy, deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
+import qtpy
+
 from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QMetaObject, QThread, QTimer, Qt
-from qtpy.QtWidgets import QApplication, QMessageBox, QOpenGLWidget
+from qtpy.QtWidgets import (
+    QApplication,
+    QMessageBox,
+    QOpenGLWidget,  # pyright: ignore[reportPrivateImportUsage]
+)
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
 from pykotor.resource.formats.bwm.bwm_data import BWM
+from pykotor.resource.formats.lyt.lyt_data import LYT
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     from glm import vec3
-    from qtpy.QtGui import (
-        QFocusEvent,
-        QKeyEvent,
-        QMouseEvent,
-        QResizeEvent,
-        QWheelEvent,
-    )
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QOpenGLContext, QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
+    from pykotor.gl.scene import RenderObject
     from pykotor.resource.formats.bwm import BWMFace
-    from pykotor.resource.formats.lyt.lyt_data import (
-        LYT,
-        LYTDoorHook,
-        LYTObstacle,
-        LYTRoom,
-        LYTRoomTemplate,
-        LYTTrack,
-    )
+    from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
     from toolset.data.installation import HTInstallation
 
 
@@ -66,19 +62,10 @@ class ModuleRenderer(QOpenGLWidget):
     sig_object_selected = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when an object has been selected through the renderer."""
 
+    sig_lyt_updated = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    """Signal emitted when the LYT data has been updated."""
+
     def __init__(self, parent: QWidget):
-        """Initializes the ModuleDesigner widget.
-
-        Args:
-        ----
-            parent: QWidget: The parent widget.
-
-        Processing Logic:
-        ----------------
-            - Calls super().__init__() to initialize the base QWidget class
-            - Initializes scene, settings and other member variables
-            - Sets initial values for mouse, key states and camera properties
-        """
         super().__init__(parent)
 
         from toolset.gui.windows.module_designer import (
@@ -90,7 +77,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._module: Module | None = None
         self._installation: HTInstallation | None = None
 
-        self.loop_timer = QTimer(self)
+        self.loop_timer: QTimer = QTimer(self)
         self.loop_timer.timeout.connect(self.loop)
         self.loop_interval: int = 33  # ms, approx 30 FPS
 
@@ -107,12 +94,12 @@ class ModuleRenderer(QOpenGLWidget):
     @property
     def scene(self) -> Scene:
         if self._scene is None:
-            instance = QApplication.instance()
+            instance: QtCore.QCoreApplication | None = QApplication.instance()
             assert instance is not None
             if QThread.currentThread() == instance.thread():
                 self.show_scene_not_ready_message()
             else:
-                QMetaObject.invokeMethod(self, "showSceneNotReadyMessage", Qt.QueuedConnection)
+                QMetaObject.invokeMethod(self, "showSceneNotReadyMessage", Qt.ConnectionType.QueuedConnection)
             raise ValueError("Scene is not initialized.")
         assert self._scene is not None
         return self._scene
@@ -123,7 +110,11 @@ class ModuleRenderer(QOpenGLWidget):
     def isReady(self) -> bool:
         return bool(self._module and self._installation)
 
-    def initialize_renderer(self, installation: HTInstallation, module: Module):
+    def initialize_renderer(
+        self,
+        installation: HTInstallation,
+        module: Module,
+    ):
         RobustLogger().debug("Initialize ModuleRenderer")
         self.shutdown_renderer()
         self.show()
@@ -158,7 +149,11 @@ class ModuleRenderer(QOpenGLWidget):
         RobustLogger().debug("ModuleRenderer resizeEvent called.")
         super().resizeEvent(e)
 
-    def resizeGL(self, width: int, height: int):
+    def resizeGL(
+        self,
+        width: int,
+        height: int,
+    ):
         RobustLogger().debug("ModuleRenderer resizeGL called.")
         super().resizeGL(width, height)
         if not self._scene:
@@ -189,7 +184,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._installation = None
 
         # Attempt to destroy the OpenGL context
-        gl_context = self.context()
+        gl_context: QOpenGLContext | None = self.context()
         if gl_context:
             gl_context.doneCurrent()  # Ensure the context is not current
             self.update()  # Trigger an update which will indirectly handle context recreation when needed
@@ -198,20 +193,6 @@ class ModuleRenderer(QOpenGLWidget):
         self._scene = None
 
     def paintGL(self):
-        """Renders the scene and handles object selection.
-
-        Args:
-        ----
-            self: The viewport widget
-
-        Processing Logic:
-        ----------------
-            - Initializes painting if not already initialized
-            - Handles object selection on mouse click
-            - Sets cursor position based on mouse
-            - Renders the scene
-            - Records render time.
-        """
         if not self.loop_timer.isActive():
             RobustLogger().debug("ModuleDesigner.paintGL - loop timer is paused or not started.")
             return
@@ -220,10 +201,10 @@ class ModuleRenderer(QOpenGLWidget):
             return  # Do nothing if not initialized
         #get_root_logger().debug("ModuleDesigner.paintGL called.")
         super().paintGL()
-        start = datetime.now(tz=timezone.utc).astimezone()
+        start: datetime = datetime.now(tz=timezone.utc).astimezone()
         if self.do_select:
             self.do_select = False
-            obj = self.scene.pick(self._mouse_prev.x, self.height() - self._mouse_prev.y)
+            obj: RenderObject | None = self.scene.pick(self._mouse_prev.x, self.height() - self._mouse_prev.y)
 
             if obj is not None and isinstance(obj.data, GITInstance):
                 self.sig_object_selected.emit(obj.data)
@@ -231,8 +212,8 @@ class ModuleRenderer(QOpenGLWidget):
                 self.scene.selection.clear()
                 self.sig_object_selected.emit(None)
 
-        screen_cursor = self.mapFromGlobal(self.cursor().pos())
-        world_cursor = self.scene.screen_to_world(screen_cursor.x(), screen_cursor.y())
+        screen_cursor: QPoint = self.mapFromGlobal(self.cursor().pos())
+        world_cursor: Vector3 = self.scene.screen_to_world(screen_cursor.x(), screen_cursor.y())
         if screen_cursor.x() < self.width() and screen_cursor.x() >= 0 and screen_cursor.y() < self.height() and screen_cursor.y() >= 0:
             self.scene.cursor.set_position(world_cursor.x, world_cursor.y, world_cursor.z)
 
@@ -321,51 +302,55 @@ class ModuleRenderer(QOpenGLWidget):
     # endregion
 
     # region Camera Transformations
-    def snap_camera_to_point(self, point: Vector3, distance: float = 6.0):
+    def snap_camera_to_point(
+        self,
+        point: Vector3,
+        distance: float = 6.0,
+    ):
         camera = self.scene.camera
         camera.x, camera.y, camera.z = point.x, point.y, point.z + 1.0
         camera.distance = distance
 
-    def pan_camera(self, forward: float, right: float, up: float):
-        """Moves the camera by the specified amount.
-
-        The movement takes into account both the rotation and zoom of the
-        camera on the x/y plane.
-
-        Args:
-        ----
-            forward: Units to move forwards.
-            right: Units to move to the right.
-            up: Units to move upwards.
-        """
+    def pan_camera(
+        self,
+        forward: float,
+        right: float,
+        up: float,
+    ):
         forward_vec: vec3 = forward * self.scene.camera.forward()
-        sideways = right * self.scene.camera.sideward()
+        sideways: vec3 = right * self.scene.camera.sideward()
 
         self.scene.camera.x += forward_vec.x + sideways.x
         self.scene.camera.y += forward_vec.y + sideways.y
         self.scene.camera.z += up
 
-    def move_camera(self, forward: float, right: float, up: float):
+    def move_camera(
+        self,
+        forward: float,
+        right: float,
+        up: float,
+    ):
         forward_vec: vec3 = forward * self.scene.camera.forward(ignore_z=False)
-        sideways = right * self.scene.camera.sideward(ignore_z=False)
-        upward = -up * self.scene.camera.upward(ignore_xy=False)
+        sideways: vec3 = right * self.scene.camera.sideward(ignore_z=False)
+        upward: vec3 = -up * self.scene.camera.upward(ignore_xy=False)
 
         self.scene.camera.x += upward.x + sideways.x + forward_vec.x
         self.scene.camera.y += upward.y + sideways.y + forward_vec.y
         self.scene.camera.z += upward.z + sideways.z + forward_vec.z
 
-    def rotate_camera(self, yaw: float, pitch: float, *, clamp_rotations: bool = True):
-        """Rotates the camera by the angles (radians) specified.
-
-        Args:
-        ----
-            yaw:
-            pitch:
-            snapRotations:
-        """
+    def rotate_camera(
+        self,
+        yaw: float,
+        pitch: float,
+        *,
+        clamp_rotations: bool = True,  # noqa: FBT001
+    ):
         self.scene.camera.rotate(yaw, pitch, clamp=clamp_rotations)
 
-    def zoom_camera(self, distance: float):
+    def zoom_camera(
+        self,
+        distance: float,
+    ):
         self.scene.camera.distance -= distance
         self.scene.camera.distance = max(self.scene.camera.distance, 0)
 
@@ -386,23 +371,11 @@ class ModuleRenderer(QOpenGLWidget):
         self.sig_mouse_scrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouse_down, self._keys_down)
 
     def mouseMoveEvent(self, e: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Handles mouse move events.
-
-        Args:
-        ----
-            e: QMouseEvent: Current mouse event.
-
-        Processing Logic:
-        ----------------
-            1. Get current mouse position on screen
-            2. Calculate delta from previous position or center of screen if free camera mode
-            3. Get world position of cursor
-            4. Emit signal with mouse data if time since press > threshold
-        """
         #super().mouseMoveEvent(e)
         if e is None:
             return
-        screen = Vector2(e.x(), e.y())
+        pos: QPoint = e.pos() if qtpy.QT5 else e.position().toPoint()
+        screen: Vector2 = Vector2(pos.x(), pos.y())
         if self.free_cam:
             screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)
         else:
@@ -416,38 +389,48 @@ class ModuleRenderer(QOpenGLWidget):
     def mousePressEvent(self, e: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         super().mousePressEvent(e)
         self._mouse_press_time = datetime.now(tz=timezone.utc).astimezone()
-        button = e.button()
+        button: Qt.MouseButton = e.button()
         self._mouse_down.add(button)
-        coords = Vector2(e.x(), e.y())
+        pos: QPoint = e.pos() if qtpy.QT5 else e.position().toPoint()
+        coords: Vector2 = Vector2(pos.x(), pos.y())
         self.sig_mouse_pressed.emit(coords, self._mouse_down, self._keys_down)
         #RobustLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouse_down}, e.button() '{button}'")
 
-    def mouseReleaseEvent(self, e: QMouseEvent):
+    def mouseReleaseEvent(self, e: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         super().mouseReleaseEvent(e)
         button = e.button()
         self._mouse_down.discard(button)
 
-        coords = Vector2(e.x(), e.y())
+        pos: QPoint = e.pos() if qtpy.QT5 else e.position().toPoint()
+        coords: Vector2 = Vector2(pos.x(), pos.y())
         self.sig_mouse_released.emit(coords, self._mouse_down, self._keys_down)
         #RobustLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouse_down}, e.button() '{button}'")
 
-    def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):
+    def keyPressEvent(
+        self,
+        e: QKeyEvent | None,
+        bubble: bool = True,  # noqa: FBT001, FBT002
+    ):
         super().keyPressEvent(e)
         if e is None:
             return
         key = e.key()
-        self._keys_down.add(key)
+        self._keys_down.add(key)  # pyright: ignore[reportArgumentType]
         if self.underMouse() and not self.free_cam:
             self.sig_keyboard_pressed.emit(self._mouse_down, self._keys_down)
         #key_name = get_qt_key_string_localized(key)
         #RobustLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keys_down}, e.key() '{key_name}'")
 
-    def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):
+    def keyReleaseEvent(
+        self,
+        e: QKeyEvent | None,
+        bubble: bool = True,  # noqa: FBT002, FBT001
+    ):
         super().keyReleaseEvent(e)
         if e is None:
             return
-        key = e.key()
-        self._keys_down.discard(key)
+        key: Qt.Key | int = e.key()
+        self._keys_down.discard(key)  # pyright: ignore[reportArgumentType]
         if self.underMouse() and not self.free_cam:
             self.sig_keyboard_released.emit(self._mouse_down, self._keys_down)
         # key_name = get_qt_key_string_localized(key)
@@ -456,11 +439,14 @@ class ModuleRenderer(QOpenGLWidget):
     # endregion
 
 
-    def load_lyt(self, lyt: LYT):
+    def load_lyt(
+        self,
+        lyt: LYT,
+    ):
         """Loads the LYT data into the renderer."""
-        self._lyt = deepcopy(lyt)
-        if self._lyt_editor:
-            self._lyt_editor.set_lyt(self._lyt)
+        self._lyt: LYT = deepcopy(lyt)
+        if self._lyt_editor is not None:
+            self._lyt_editor._lyt = self._lyt
         self.sig_lyt_updated.emit(self._lyt)
         self.update()
 
@@ -474,45 +460,42 @@ class ModuleRenderer(QOpenGLWidget):
         self.sig_lyt_updated.emit(self._lyt)
         self.update()
 
-    def add_room(self, room: LYTRoom):
+    def add_room(
+        self,
+        room: LYTRoom,
+    ):
         """Adds a new room to the LYT data and triggers a redraw."""
-        if self._lyt:
+        if self._lyt is not None:
             self._lyt.rooms.append(room)
             self.sig_lyt_updated.emit(self._lyt)
             self.update()
 
-    def add_track(self, track: LYTTrack):
+    def add_track(
+        self,
+        track: LYTTrack,
+    ):
         """Adds a new track to the LYT data and triggers a redraw."""
-        if self._lyt:
+        if self._lyt is not None:
             self._lyt.tracks.append(track)
             self.sig_lyt_updated.emit(self._lyt)
             self.update()
 
-    def add_obstacle(self, obstacle: LYTObstacle):
+    def add_obstacle(
+        self,
+        obstacle: LYTObstacle,
+    ):
         """Adds a new obstacle to the LYT data and triggers a redraw."""
-        if self._lyt:
+        if self._lyt is not None:
             self._lyt.obstacles.append(obstacle)
             self.sig_lyt_updated.emit(self._lyt)
             self.update()
 
-    def add_door_hook(self, doorhook: LYTDoorHook):
+    def add_door_hook(
+        self,
+        doorhook: LYTDoorHook,
+    ):
         """Adds a new doorhook to the LYT data and triggers a redraw."""
-        if self._lyt:
+        if self._lyt is not None:
             self._lyt.doorhooks.append(doorhook)
             self.sig_lyt_updated.emit(self._lyt)
             self.update()
-
-    def get_lyt_room_templates(self) -> list[LYTRoomTemplate]:
-        """Returns a list of available room templates."""
-        # Implement logic to return room templates
-        return []
-
-    def get_lyt_track_templates(self) -> list[LYTTrackTemplate]:
-        """Returns a list of available track templates."""
-        # Implement logic to return track templates
-        return []
-
-    def get_lyt_obstacle_templates(self) -> list[LYTObstacleTemplate]:
-        """Returns a list of available obstacle templates."""
-        # Implement logic to return obstacle templates
-        return []

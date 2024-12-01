@@ -1,807 +1,958 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>970</width>
-    <height>651</height>
-   </rect>
-  </property>
-  <action name="actionUndo">
-   <property name="text">
-    <string>Undo</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Z</string>
-   </property>
-  </action>
-  <action name="actionRedo">
-   <property name="text">
-    <string>Redo</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Y</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+Z</string>
-   </property>
-  </action>
-  <property name="focusPolicy">
-   <enum>Qt::StrongFocus</enum>
-  </property>
-  <property name="windowTitle">
-   <string>MainWindow</string>
-  </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <property name="spacing">
-       <number>4</number>
-      </property>
-      <item>
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>970</width>
+                <height>651</height>
+            </rect>
         </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
+        <action name="actionUndo">
+            <property name="text">
+                <string>Undo</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Z</string>
+            </property>
+        </action>
+        <action name="actionRedo">
+            <property name="text">
+                <string>Redo</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Y</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Shift+Z</string>
+            </property>
+        </action>
+        <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
         </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="lockInstancesCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
+        <property name="windowTitle">
+            <string>MainWindow</string>
         </property>
-        <property name="toolTip">
-         <string>Lock all instances in place</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckbox {
-	spacing: 0px;
-}
+        <widget class="QWidget" name="centralwidget">
+            <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_2">
+                        <property name="spacing">
+                            <number>4</number>
+                        </property>
+                        <item>
+                            <spacer name="horizontalSpacer">
+                                <property name="orientation">
+                                    <enum>Qt::Horizontal</enum>
+                                </property>
+                                <property name="sizeHint" stdset="0">
+                                    <size>
+                                        <width>40</width>
+                                        <height>20</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="lockInstancesCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Lock all instances in place</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckbox { spacing: 0px; }
+                                        QCheckBox::indicator {
+                                        image: url(:/images/icons/lock.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }</string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>false</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="Line" name="line_2">
+                                <property name="orientation">
+                                    <enum>Qt::Vertical</enum>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="cursorCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Display cursor at mouse</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckbox {
+                                        spacing: 0px;
+                                        }
 
-QCheckBox::indicator {
-    image: url(:/images/icons/lock.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator {
+                                        image: url(:/images/icons/cursor.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="Line" name="line_2">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="cursorCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Display cursor at mouse</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckbox {
-	spacing: 0px;
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="backfaceCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Enable backface culling</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckbox {
+                                        spacing: 0px;
+                                        }
 
-QCheckBox::indicator {
-    image: url(:/images/icons/cursor.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator {
+                                        image: url(:/images/icons/backface.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="backfaceCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Enable backface culling</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckbox {
-	spacing: 0px;
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="lightmapCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Enable lightmaps</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckbox {
+                                        spacing: 0px;
+                                        }
 
-QCheckBox::indicator {
-    image: url(:/images/icons/backface.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator {
+                                        image: url(:/images/icons/lightmap.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="lightmapCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Enable lightmaps</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckbox {
-	spacing: 0px;
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="Line" name="line">
+                                <property name="orientation">
+                                    <enum>Qt::Vertical</enum>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="viewCreatureCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Creatures</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckbox {
+                                        spacing: 0px;
+                                        }
 
-QCheckBox::indicator {
-    image: url(:/images/icons/lightmap.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator {
+                                        image: url(:/images/icons/k1/creature.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="Line" name="line">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="viewCreatureCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Creatures</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckbox {
-	spacing: 0px;
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="viewDoorCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Doors</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckBox::indicator {
+                                        image: url(:/images/icons/k1/door.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-QCheckBox::indicator {
-    image: url(:/images/icons/k1/creature.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="viewPlaceableCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Placeables</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckBox::indicator {
+                                        image: url(:/images/icons/k1/placeable.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="viewDoorCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Doors</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckBox::indicator {
-    image: url(:/images/icons/k1/door.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="viewStoreCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Merchants</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckBox::indicator {
+                                        image: url(:/images/icons/k1/merchant.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="viewPlaceableCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Placeables</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckBox::indicator {
-    image: url(:/images/icons/k1/placeable.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="viewSoundCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Sounds</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckBox::indicator {
+                                        image: url(:/images/icons/k1/sound.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="viewStoreCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Merchants</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckBox::indicator {
-    image: url(:/images/icons/k1/merchant.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="viewWaypointCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Waypoints</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckBox::indicator {
+                                        image: url(:/images/icons/k1/waypoint.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="viewSoundCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Sounds</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckBox::indicator {
-    image: url(:/images/icons/k1/sound.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="viewCameraCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Cameras</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckBox::indicator {
+                                        image: url(:/images/icons/k1/camera.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="viewWaypointCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Waypoints</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckBox::indicator {
-    image: url(:/images/icons/k1/waypoint.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="viewEncounterCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Encounters</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckBox::indicator {
+                                        image: url(:/images/icons/k1/encounter.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="viewCameraCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Cameras</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckBox::indicator {
-    image: url(:/images/icons/k1/camera.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="viewTriggerCheck">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>28</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Triggers</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QCheckBox::indicator {
+                                        image: url(:/images/icons/k1/trigger.png);
+                                        border: 1px solid rgba(30, 144, 255, 0.0);
+                                        width: 26px;
+                                        height: 26px;
+                                        }
 
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="viewEncounterCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Encounters</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckBox::indicator {
-    image: url(:/images/icons/k1/encounter.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
+                                        QCheckBox::indicator:unchecked:hover {
+                                        background: rgba(30, 144, 255, 0.2);
+                                        border: 1px solid rgba(30, 144, 255, 0.4);
+                                        }
 
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
+                                        QCheckBox::indicator:checked {
+                                        background: rgba(30, 144, 255, 0.4);
+                                        border:1px solid rgba(30, 144, 255, 0.6);
+                                        }
 
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
+                                        QCheckBox::indicator:checked:hover {
+                                        background: rgba(30, 144, 255, 0.5);
+                                        border:1px solid rgba(30, 144, 255, 0.7);
+                                        }
 
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
-
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="viewTriggerCheck">
-        <property name="maximumSize">
-         <size>
-          <width>28</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Triggers</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QCheckBox::indicator {
-    image: url(:/images/icons/k1/trigger.png);
-	border: 1px solid rgba(30, 144, 255, 0.0);
-	width: 26px;
-	height: 26px;
-}
-
-QCheckBox::indicator:unchecked:hover {
-	background: rgba(30, 144, 255, 0.2);
-	border: 1px solid rgba(30, 144, 255, 0.4);
-}
-
-QCheckBox::indicator:checked {
-	background: rgba(30, 144, 255, 0.4);
-	border:1px solid rgba(30, 144, 255, 0.6);
-}
-
-QCheckBox::indicator:checked:hover {
-	background: rgba(30, 144, 255, 0.5);
-	border:1px solid rgba(30, 144, 255, 0.7);
-}
-
-</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0">
-      <item>
-       <widget class="QTreeWidget" name="resourceTree">
-        <property name="maximumSize">
-         <size>
-          <width>200</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::CustomContextMenu</enum>
-        </property>
-        <property name="editTriggers">
-         <set>QAbstractItemView::NoEditTriggers</set>
-        </property>
-        <property name="headerHidden">
-         <bool>true</bool>
-        </property>
-        <column>
-         <property name="text">
-          <string notr="true">1</string>
-         </property>
-        </column>
-       </widget>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <widget class="QSplitter" name="splitter">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <widget class="ModuleRenderer" name="mainRenderer">
-           <property name="mouseTracking">
-            <bool>true</bool>
-           </property>
-          </widget>
-          <widget class="WalkmeshRenderer" name="flatRenderer" native="true">
-           <property name="mouseTracking">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QListWidget" name="instanceList">
-        <property name="maximumSize">
-         <size>
-          <width>200</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::CustomContextMenu</enum>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>970</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="actionOpen"/>
-    <addaction name="actionSave"/>
-    <addaction name="separator"/>
-    <addaction name="actionUndo"/>
-    <addaction name="actionRedo"/>
-   </widget>
-   <widget class="QMenu" name="menuHelp">
-    <property name="title">
-     <string>Help</string>
-    </property>
-    <addaction name="actionInstructions"/>
-   </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuHelp"/>
-  </widget>
-  <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionSave">
-   <property name="text">
-    <string>Save GIT</string>
-   </property>
-  </action>
-  <action name="actiona">
-   <property name="text">
-    <string>Placeholdewr</string>
-   </property>
-  </action>
-  <action name="actionInstructions">
-   <property name="text">
-    <string>Instructions</string>
-   </property>
-  </action>
-  <action name="actionOpen">
-   <property name="text">
-    <string>Open</string>
-   </property>
-  </action>
-  <action name="actionHide3DView">
-   <property name="text">
-    <string>Hide 3D View</string>
-   </property>
-  </action>
-  <action name="actionHide2DView">
-   <property name="text">
-    <string>Hide 2D View</string>
-   </property>
-  </action>
- </widget>
- <customwidgets>
-  <customwidget>
-   <class>WalkmeshRenderer</class>
-   <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.renderer.walkmesh</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ModuleRenderer</class>
-   <extends>QOpenGLWidget</extends>
-   <header location="global">toolset.gui.widgets.renderer.module</header>
-  </customwidget>
- </customwidgets>
- <resources>
-  <include location="../../resources/resources.qrc"/>
- </resources>
- <connections/>
+                                    </string>
+                                </property>
+                                <property name="text">
+                                    <string />
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                    </layout>
+                </item>
+                <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0">
+                        <item>
+                            <widget class="QTabWidget" name="leftPanel">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>250</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <widget class="QWidget" name="resourceTab">
+                                    <attribute name="title">
+                                        <string>Resources</string>
+                                    </attribute>
+                                    <layout class="QVBoxLayout" name="resourceTabLayout">
+                                        <item>
+                                            <widget class="QTreeWidget" name="resourceTree">
+                                                <property name="contextMenuPolicy">
+                                                    <enum>Qt::CustomContextMenu</enum>
+                                                </property>
+                                                <property name="editTriggers">
+                                                    <set>QAbstractItemView::NoEditTriggers</set>
+                                                </property>
+                                                <property name="headerHidden">
+                                                    <bool>true</bool>
+                                                </property>
+                                                <column>
+                                                    <property name="text">
+                                                        <string notr="true">1</string>
+                                                    </property>
+                                                </column>
+                                            </widget>
+                                        </item>
+                                    </layout>
+                                </widget>
+                                <widget class="QWidget" name="lytTab">
+                                    <attribute name="title">
+                                        <string>Layout</string>
+                                    </attribute>
+                                    <layout class="QVBoxLayout" name="lytTabLayout">
+                                        <item>
+                                            <widget class="QToolBar" name="lytToolbar">
+                                                <addaction name="actionAddRoom" />
+                                                <addaction name="actionAddDoorHook" />
+                                                <addaction name="actionAddTrack" />
+                                                <addaction name="actionAddObstacle" />
+                                                <addaction name="separator" />
+                                                <addaction name="actionImportTexture" />
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QTreeWidget" name="lytTree">
+                                                <property name="contextMenuPolicy">
+                                                    <enum>Qt::CustomContextMenu</enum>
+                                                </property>
+                                                <property name="headerHidden">
+                                                    <bool>true</bool>
+                                                </property>
+                                                <column>
+                                                    <property name="text">
+                                                        <string>Layout Elements</string>
+                                                    </property>
+                                                </column>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QGroupBox" name="lytPropertiesGroup">
+                                                <property name="title">
+                                                    <string>Properties</string>
+                                                </property>
+                                                <layout class="QFormLayout"
+                                                    name="lytPropertiesLayout">
+                                                    <item row="0" column="0">
+                                                        <widget class="QLabel" name="modelLabel">
+                                                            <property name="text">
+                                                                <string>Model:</string>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="0" column="1">
+                                                        <widget class="QLineEdit" name="modelEdit" />
+                                                    </item>
+                                                    <item row="1" column="0">
+                                                        <widget class="QLabel" name="positionLabel">
+                                                            <property name="text">
+                                                                <string>Position:</string>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="1" column="1">
+                                                        <layout class="QHBoxLayout"
+                                                            name="positionLayout">
+                                                            <item>
+                                                                <widget class="QDoubleSpinBox"
+                                                                    name="posXSpin">
+                                                                    <property name="decimals">
+                                                                        <number>3</number>
+                                                                    </property>
+                                                                    <property name="minimum">
+                                                                        <double>
+                                                                            -10000.000000000000000</double>
+                                                                    </property>
+                                                                    <property name="maximum">
+                                                                        <double>
+                                                                            10000.000000000000000</double>
+                                                                    </property>
+                                                                </widget>
+                                                            </item>
+                                                            <item>
+                                                                <widget class="QDoubleSpinBox"
+                                                                    name="posYSpin">
+                                                                    <property name="decimals">
+                                                                        <number>3</number>
+                                                                    </property>
+                                                                    <property name="minimum">
+                                                                        <double>
+                                                                            -10000.000000000000000</double>
+                                                                    </property>
+                                                                    <property name="maximum">
+                                                                        <double>
+                                                                            10000.000000000000000</double>
+                                                                    </property>
+                                                                </widget>
+                                                            </item>
+                                                            <item>
+                                                                <widget class="QDoubleSpinBox"
+                                                                    name="posZSpin">
+                                                                    <property name="decimals">
+                                                                        <number>3</number>
+                                                                    </property>
+                                                                    <property name="minimum">
+                                                                        <double>
+                                                                            -10000.000000000000000</double>
+                                                                    </property>
+                                                                    <property name="maximum">
+                                                                        <double>
+                                                                            10000.000000000000000</double>
+                                                                    </property>
+                                                                </widget>
+                                                            </item>
+                                                        </layout>
+                                                    </item>
+                                                </layout>
+                                            </widget>
+                                        </item>
+                                    </layout>
+                                </widget>
+                            </widget>
+                        </item>
+                        <item>
+                            <layout class="QVBoxLayout" name="verticalLayout_2">
+                                <item>
+                                    <widget class="QSplitter" name="splitter">
+                                        <property name="orientation">
+                                            <enum>Qt::Vertical</enum>
+                                        </property>
+                                        <widget class="ModuleRenderer" name="mainRenderer">
+                                            <property name="mouseTracking">
+                                                <bool>true</bool>
+                                            </property>
+                                        </widget>
+                                        <widget class="WalkmeshRenderer" name="flatRenderer"
+                                            native="true">
+                                            <property name="mouseTracking">
+                                                <bool>true</bool>
+                                            </property>
+                                        </widget>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </item>
+                        <item>
+                            <widget class="QListWidget" name="instanceList">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>200</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="contextMenuPolicy">
+                                    <enum>Qt::CustomContextMenu</enum>
+                                </property>
+                            </widget>
+                        </item>
+                    </layout>
+                </item>
+            </layout>
+        </widget>
+        <widget class="QMenuBar" name="menubar">
+            <property name="geometry">
+                <rect>
+                    <x>0</x>
+                    <y>0</y>
+                    <width>970</width>
+                    <height>22</height>
+                </rect>
+            </property>
+            <widget class="QMenu" name="menuFile">
+                <property name="title">
+                    <string>File</string>
+                </property>
+                <addaction name="actionOpen" />
+                <addaction name="actionSave" />
+                <addaction name="separator" />
+                <addaction name="actionUndo" />
+                <addaction name="actionRedo" />
+            </widget>
+            <widget class="QMenu" name="menuHelp">
+                <property name="title">
+                    <string>Help</string>
+                </property>
+                <addaction name="actionInstructions" />
+            </widget>
+            <addaction name="menuFile" />
+            <addaction name="menuHelp" />
+        </widget>
+        <widget class="QStatusBar" name="statusbar" />
+        <action name="actionSave">
+            <property name="text">
+                <string>Save GIT</string>
+            </property>
+        </action>
+        <action name="actionAddRoom">
+            <property name="text">
+                <string>Add Room</string>
+            </property>
+            <property name="toolTip">
+                <string>Add a new room to the layout</string>
+            </property>
+        </action>
+        <action name="actionAddDoorHook">
+            <property name="text">
+                <string>Add Door Hook</string>
+            </property>
+            <property name="toolTip">
+                <string>Add a new door hook</string>
+            </property>
+        </action>
+        <action name="actionAddTrack">
+            <property name="text">
+                <string>Add Track</string>
+            </property>
+            <property name="toolTip">
+                <string>Add a new track element</string>
+            </property>
+        </action>
+        <action name="actionAddObstacle">
+            <property name="text">
+                <string>Add Obstacle</string>
+            </property>
+            <property name="toolTip">
+                <string>Add a new obstacle</string>
+            </property>
+        </action>
+        <action name="actionImportTexture">
+            <property name="text">
+                <string>Import Texture</string>
+            </property>
+            <property name="toolTip">
+                <string>Import a custom texture</string>
+            </property>
+        </action>
+        <action name="actionInstructions">
+            <property name="text">
+                <string>Instructions</string>
+            </property>
+        </action>
+        <action name="actionOpen">
+            <property name="text">
+                <string>Open</string>
+            </property>
+        </action>
+        <action name="actionHide3DView">
+            <property name="text">
+                <string>Hide 3D View</string>
+            </property>
+        </action>
+        <action name="actionHide2DView">
+            <property name="text">
+                <string>Hide 2D View</string>
+            </property>
+        </action>
+    </widget>
+    <customwidgets>
+        <customwidget>
+            <class>WalkmeshRenderer</class>
+            <extends>QWidget</extends>
+            <header location="global">toolset.gui.widgets.renderer.walkmesh</header>
+            <container>1</container>
+        </customwidget>
+        <customwidget>
+            <class>ModuleRenderer</class>
+            <extends>QOpenGLWidget</extends>
+            <header location="global">toolset.gui.widgets.renderer.module</header>
+        </customwidget>
+    </customwidgets>
+    <resources>
+        <include location="../../resources/resources.qrc" />
+    </resources>
+    <connections />
 </ui>
