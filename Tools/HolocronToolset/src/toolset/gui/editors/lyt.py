@@ -52,7 +52,15 @@ class LYTEditor(Editor):
         self.walkmesh_editor = WalkmeshEditor(self)
         self.texture_browser = TextureBrowser(self)
 
-        # Add components to layout
+        # Create toolbar
+        toolbar = QHBoxLayout()
+        self.grid_btn = QPushButton("Toggle Grid")
+        self.snap_btn = QPushButton("Toggle Snap")
+        toolbar.addWidget(self.grid_btn)
+        toolbar.addWidget(self.snap_btn)
+        layout.addLayout(toolbar)
+
+        # Add editor components
         layout.addWidget(self.lyt_editor)
 
         self._setup_signals()
