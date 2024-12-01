@@ -725,7 +725,7 @@ class AddRoomCommand(QUndoCommand):
         room: LYTRoom,
     ):
         super().__init__("Add Room")
-        self.editor: LYTEditor = editor
+        self.renderer: LYTRenderer = renderer
         self.room: LYTRoom = room
 
     def redo(self):

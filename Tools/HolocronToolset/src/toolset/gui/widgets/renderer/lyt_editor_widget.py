@@ -147,7 +147,7 @@ class LYTEditorWidget(QWidget):
         self.parent_ref = parent
 
         # Core editing components
-        self.lyt_editor = LYTEditor(parent)  # Core editing logic
+        self.lyt_renderer = LYTRenderer(parent)  # Core rendering component
         self.texture_browser = TextureBrowser(self)  # Texture management
         self.walkmesh_editor = WalkmeshEditor(self)  # Walkmesh editing
 

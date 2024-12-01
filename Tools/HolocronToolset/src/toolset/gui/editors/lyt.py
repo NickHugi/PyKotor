@@ -216,3 +216,76 @@ class LYTEditor(Editor):
         self.ui.doorHookPosXSpin.setValue(self._selected_door_hook.position.x)
         self.ui.doorHookPosYSpin.setValue(self._selected_door_hook.position.y)
         self.ui.doorHookPosZSpin.setValue(self._selected_door_hook.position.z)
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from qtpy.QtWidgets import QMainWindow, QWidget
+
+from pykotor.resource.formats.lyt.lyt_data import LYT
+from toolset.gui.widgets.renderer.lyt_editor_widget import LYTEditorWidget
+
+if TYPE_CHECKING:
+    from toolset.gui.widgets.renderer.module import ModuleRenderer
+
+class LYTEditorWindow(QMainWindow):
+    """Main window/dialog for LYT editing.
+    
+    Coordinates between the editor widget and module renderer.
+    
+    Responsibilities:
+    - Providing the main editor window/dialog
+    - Managing the overall editor state
+    - Coordinating between editor widget and module renderer
+    - Handling file operations (load/save)
+    """
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("LYT Editor")
+        
+        # Create editor widget
+        self.editor_widget = LYTEditorWidget(self)
+        self.setCentralWidget(self.editor_widget)
+        
+        self.setup_menus()
+        self.setup_toolbars()
+        
+    def setup_menus(self):
+        """Set up the menu bar."""
+        # File menu
+        file_menu = self.menuBar().addMenu("&File")
+        file_menu.addAction("&Save", self.save_lyt)
+        file_menu.addAction("Save &As...", self.save_lyt_as)
+        file_menu.addSeparator()
+        file_menu.addAction("&Close", self.close)
+        
+        # Edit menu
+        edit_menu = self.menuBar().addMenu("&Edit")
+        edit_menu.addAction("&Undo", self.editor_widget.undo_stack.undo)
+        edit_menu.addAction("&Redo", self.editor_widget.undo_stack.redo)
+        
+        # View menu
+        view_menu = self.menuBar().addMenu("&View")
+        view_menu.addAction("Show &Grid", self.editor_widget.toggle_grid)
+        view_menu.addAction("Show &Walkmesh", self.editor_widget.toggle_walkmesh_visibility)
+        
+    def setup_toolbars(self):
+        """Set up the main toolbar."""
+        toolbar = self.addToolBar("Main")
+        toolbar.addAction("Add Room", self.editor_widget.add_room)
+        toolbar.addAction("Add Track", self.editor_widget.add_track)
+        toolbar.addAction("Add Obstacle", self.editor_widget.add_obstacle)
+        toolbar.addAction("Add Door Hook", self.editor_widget.add_door_hook)
+        
+    def load_lyt(self, lyt: LYT):
+        """Load a LYT file for editing."""
+        self.editor_widget.set_lyt(lyt)
+        
+    def save_lyt(self):
+        """Save the current LYT file."""
+        self.editor_widget.save_lyt()
+        
+    def save_lyt_as(self):
+        """Save the LYT file with a new name."""
+        self.editor_widget.save_lyt_as()
