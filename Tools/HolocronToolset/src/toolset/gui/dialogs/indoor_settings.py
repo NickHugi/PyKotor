@@ -56,7 +56,7 @@ class IndoorMapSettings(QDialog):
         self._kits: list[Kit] = kits
 
         self.ui.nameEdit.set_locstring(indoor_map.name)
-        self.ui.colorEdit.setColor(indoor_map.lighting)
+        self.ui.colorEdit.set_color(indoor_map.lighting)
         self.ui.warpCodeEdit.setText(indoor_map.module_id)
 
         self.ui.skyboxSelect.addItem("[None]", "")
