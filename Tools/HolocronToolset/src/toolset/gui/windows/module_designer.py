@@ -243,29 +243,8 @@ class ModuleDesigner(QMainWindow):
         self.ui.actionSave.triggered.connect(self.save_git)
         self.ui.actionInstructions.triggered.connect(self.show_help_window)
 
-        # LYT Editor signals
-        self.ui.actionAddRoom.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_room())
-        self.ui.actionAddDoorHook.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_door_hook())
-        self.ui.actionAddTrack.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_track())
-        self.ui.actionAddObstacle.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_obstacle())
-        self.ui.actionGenerateWalkmesh.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.generate_walkmesh())
-
-        # LYT Editor signals
-        self.ui.actionAddRoom.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_room())
-        self.ui.actionAddDoorHook.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_door_hook())
-        self.ui.actionAddTrack.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_track())
-        self.ui.actionAddObstacle.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_obstacle())
-        self.ui.actionGenerateWalkmesh.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.generate_walkmesh())
-
         self.ui.actionUndo.triggered.connect(lambda: print("Undo signal") or self.undo_stack.undo())
         self.ui.actionRedo.triggered.connect(lambda: print("Redo signal") or self.undo_stack.redo())
-
-        # LYT Editor signals
-        self.ui.actionAddRoom.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_room())
-        self.ui.actionAddDoorHook.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_door_hook())
-        self.ui.actionAddTrack.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_track())
-        self.ui.actionAddObstacle.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_obstacle())
-        self.ui.actionGenerateWalkmesh.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.generate_walkmesh())
 
         # Connect LYT editor signals to update UI
         self.ui.mainRenderer.sig_lyt_updated.connect(self.on_lyt_updated)
