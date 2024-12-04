@@ -8,6 +8,7 @@ from copy import copy, deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
@@ -66,7 +67,7 @@ class IndoorMap:
 
     def rebuild_room_connections(self):
         for room in self.rooms:
-            room.rebuildConnections(self.rooms)
+            room.rebuild_connections(self.rooms)
 
     def door_insertions(self) -> list[DoorInsertion]:
         """Generates door insertions between rooms.
@@ -571,8 +572,12 @@ class IndoorMap:
             - Loads the appropriate load screen TGA file based on installation type
             - Sets the loaded TGA as load screen data for the module.
         """
-        load_tga: bytes = Path("./kits/load_k2.tga" if installation.tsl else "./kits/load_k1.tga").read_bytes()
-        self.mod.set_data(f"load_{self.module_id}", ResourceType.TGA, load_tga)
+        try:
+            load_tga: bytes = Path("./kits/load_k2.tga" if installation.tsl else "./kits/load_k1.tga").read_bytes()
+        except FileNotFoundError:
+            RobustLogger().error(f"Load screen file not found for installation '{installation.name}'.")
+        else:
+            self.mod.set_data(f"load_{self.module_id}", ResourceType.TGA, load_tga)
 
     def set_area_attributes(
         self,
@@ -996,7 +1001,7 @@ class IndoorMapRoom:
 
         return pos
 
-    def rebuildConnections(
+    def rebuild_connections(
         self,
         rooms: list[IndoorMapRoom],
     ):

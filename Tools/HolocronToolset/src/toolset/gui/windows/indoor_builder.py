@@ -33,11 +33,8 @@ from utility.updater.github import download_github_file
 if TYPE_CHECKING:
 
     from qtpy.QtCore import QPoint
-    from qtpy.QtGui import QImage, QKeyEvent, QMouseEvent, QPaintEvent, QWheelEvent
-    from qtpy.QtWidgets import (
-        QAction,  # pyright: ignore[reportPrivateImportUsage]
-        QFormLayout,
-    )
+    from qtpy.QtGui import QImage, QKeyEvent, QMouseEvent, QPaintEvent, QWheelEvent, _QAction
+    from qtpy.QtWidgets import QFormLayout
 
     from pykotor.resource.formats.bwm import BWMFace
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -431,7 +428,7 @@ class IndoorMapBuilder(QMainWindow):
         world: Vector3 = self.ui.mapRenderer.to_world_coords(point.x(), point.y())
         menu = QMenu(self)
 
-        warp_set_action: QAction | None = menu.addAction("Set Warp Point")
+        warp_set_action: _QAction | None = menu.addAction("Set Warp Point")
         assert warp_set_action is not None
         warp_set_action.triggered.connect(lambda: self.set_warp_point(world.x, world.y, world.z))
 
@@ -971,7 +968,7 @@ class IndoorMapRenderer(QWidget):
         for room in self._selected_rooms:
             self._draw_room_highlight(painter, room, 100)
 
-        self._draw_spawn_point(painter, self._map.warpPoint)
+        self._draw_spawn_point(painter, self._map.warp_point)
 
     def _apply_transformation(self) -> QTransform:
         result = QTransform()

@@ -107,12 +107,12 @@ class ThemeManager:
                 "sheet": "",
             },
             "amoled": {
-                "style": self.original_style,
+                "style": "Fusion",
                 "palette": lambda: self.create_palette("#000000", "#141414", "#e67e22", "#f39c12", "#808086", "#FFFFFF"),
                 "sheet": lambda app: self._get_file_stylesheet(":/themes/other/AMOLED.qss", app),
             },
             "aqua": {
-                "style": self.original_style,
+                "style": "Fusion",
                 "palette": None,
                 "sheet": lambda app: self._get_file_stylesheet(":/themes/other/aqua.qss", app),
             },
@@ -127,12 +127,12 @@ class ThemeManager:
                 "sheet": lambda app: self._get_file_stylesheet(":/themes/other/ElegantDark.qss", app),
             },
             "macos": {
-                "style": self.original_style,
+                "style": "Fusion",
                 "palette": None,
                 "sheet": lambda app: self._get_file_stylesheet(":/themes/other/MacOS.qss", app),
             },
             "manjaromix": {
-                "style": self.original_style,
+                "style": "Fusion",
                 "palette": lambda: self.create_palette("#222b2e", "#151a1e", "#FFFFFF", "#214037", "#4fa08b", "#027f7f"),
                 "sheet": lambda app: self._get_file_stylesheet(":/themes/other/ManjaroMix.qss", app),
             },
@@ -155,6 +155,11 @@ class ThemeManager:
                 "style": "Fusion",
                 "palette": lambda: self.create_palette("#1b1b1b", "#232323", "#F8F8F2", "#282828", "#531616", "#99202c"),
                 "sheet": lambda app: self._get_file_stylesheet(":/themes/other/AsunaDark.qss", app),
+            },
+            "asuna": {
+                "style": "Fusion",
+                "palette": lambda: self.create_palette("#1b1b1b", "#232323", "#F8F8F2", "#282828", "#531616", "#99202c"),
+                "sheet": lambda app: self._get_file_stylesheet(":/themes/other/Asuna.qss", app),
             },
             "andromedaitalic": {
                 "style": "Fusion",

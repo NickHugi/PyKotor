@@ -109,7 +109,11 @@ def downsample_rgb(data: bytearray, width: int, height: int, bytes_per_pixel: in
     next_data = bytearray(next_size)
 
     for y in range(next_height):
+        if y <= 0:
+            break
         for x in range(next_width):
+            if x <= 0:
+                break
             src_x = x * 2
             src_y = y * 2
             src_offset = (src_y * width + src_x) * bytes_per_pixel

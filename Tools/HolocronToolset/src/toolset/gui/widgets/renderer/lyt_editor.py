@@ -47,7 +47,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.resource.formats.bwm import BWM, BWMFace
-from pykotor.resource.formats.lyt import LYT, LYTRoom, LYTTrack, LYTObstacle, LYTDoorHook
+from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.uic.qtpy.editors.lyt import Ui_LYTEditor
@@ -60,10 +60,9 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import _QToolBar
 
     from pykotor.common.module import MDL, Module, ModuleResource
-    from pykotor.gl.scene import Camera, RenderObject, Scene
+    from pykotor.gl.scene import Boundary, Camera, RenderObject, Scene
     from pykotor.gl.shader import Texture
     from pykotor.resource.formats.tpc import TPC
-    from pykotor.gl.scene import Boundary
 
 
 class LYTEditor(QWidget):

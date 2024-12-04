@@ -20,7 +20,7 @@ class TestTPCData(unittest.TestCase):
     def test_dxt1_decompression_accuracy(self):
         """Test DXT1 decompression with real texture data"""
         width, height = 4, 4
-        result = dxt1_to_rgb(self.dxt1_red, width, height)
+        result: bytearray = dxt1_to_rgb(self.dxt1_red, width, height)
         
         # Verify correct decompression of red color (5:6:5 format)
         self.assertEqual(result[0:3], b'\xf8\x00\x00')  # Red with 5-bit precision

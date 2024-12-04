@@ -836,3 +836,14 @@ class Scene:
 
             self.models[name] = model
         return self.models[name]
+
+    def jump_to_entry_location(self):
+        if self._module is None:
+            self.camera.x = 0
+            self.camera.y = 0
+            self.camera.z = 0
+        else:
+            point: Vector3 = self.module.info().resource().entry_position
+            self.camera.x = point.x
+            self.camera.y = point.y
+            self.camera.z = point.z + 1.8
