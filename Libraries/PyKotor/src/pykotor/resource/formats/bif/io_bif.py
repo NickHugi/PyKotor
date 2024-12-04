@@ -70,15 +70,14 @@ class BIFBinaryReader(ResourceReader):
         self._reader.seek(self.data_offset)
 
         for i in range(self.var_res_count):
-            res_id: int = self._reader.read_uint32()
+            key_id: int = self._reader.read_uint32()
             offset: int = self._reader.read_uint32()
             size: int = self._reader.read_uint32()
             res_type: ResourceType = ResourceType.from_id(self._reader.read_uint32())
 
             # Create empty resource with placeholder data
-            resource = BIFResource(ResRef(""), res_type, b"", res_id)
+            resource = BIFResource(ResRef.from_blank(), res_type, b"", key_id, size)
             resource.offset = offset
-            resource.size = size
 
             # For BZF, calculate packed size from offset differences
             if self.bif.bif_type == BIFType.BZF and i > 0:
@@ -94,11 +93,8 @@ class BIFBinaryReader(ResourceReader):
 
     def _read_resource_data(self) -> None:
         """Read BIF/BZF resource data."""
-        for resource in self.bif.resources:
-            if resource.size <= 0:
-                continue
-
-            self._reader.seek(self.data_offset + resource.offset)
+        for i, resource in enumerate(self.bif.resources):
+            self._reader.seek(resource.offset)
 
             if self.bif.bif_type == BIFType.BZF:
                 # For BZF, decompress the data
@@ -169,7 +165,7 @@ class BIFBinaryWriter(ResourceWriter):
 
         # Write resource table
         for resource in self.bif.resources:
-            self._writer.write_uint32(resource.resource_id)
+            self._writer.write_uint32(resource.resname_key_index)
             self._writer.write_uint32(resource.offset)
             self._writer.write_uint32(resource.size)
             self._writer.write_uint32(resource.restype.type_id)

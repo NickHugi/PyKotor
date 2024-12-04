@@ -46,10 +46,11 @@ class BIFResource(ArchiveResource):
         resref: ResRef,
         restype: ResourceType,
         data: bytes,
-        res_id: int = 0,
+        resname_key_index: int = 0,
+        size: int | None = None,
     ):
-        super().__init__(resref=resref, restype=restype, data=data)
-        self.resource_id: int = res_id  # Resource ID from KEY file
+        super().__init__(resref=resref, restype=restype, data=data, size=size)
+        self.resname_key_index: int = resname_key_index
         self._offset: int = 0  # Offset in BIF file
         self._packed_size: int = 0  # Size of compressed data (BZF only)
 
@@ -80,11 +81,11 @@ class BIFResource(ArchiveResource):
         """Compare two resources."""
         if not isinstance(other, BIFResource):
             return NotImplemented
-        return self.resource_id == other.resource_id and self.restype == other.restype and self.size == other.size
+        return self.resname_key_index == other.resname_key_index and self.restype == other.restype and self.size == other.size
 
     def __hash__(self) -> int:
         """Hash resource."""
-        return hash((self.resource_id, self.restype, self.size))
+        return hash((self.resname_key_index, self.restype, self.size))
 
     def __str__(self) -> str:
         """Get string representation."""
@@ -159,10 +160,10 @@ class BIF(BiowareArchive):
         """Create and add a new resource."""
         resource = BIFResource(resref, restype, data)
         if res_id is not None:
-            resource.resource_id = res_id
+            resource.resname_key_index = res_id
         self._resources.append(resource)
         self._resource_dict[ResourceIdentifier(str(resref), restype)] = resource
-        self._id_lookup[resource.resource_id] = resource
+        self._id_lookup[resource.resname_key_index] = resource
         self._modified = True
         return resource
 
@@ -174,7 +175,7 @@ class BIF(BiowareArchive):
         try:
             self._resources.remove(resource)
             del self._resource_dict[ResourceIdentifier(str(resource.resref), resource.restype)]
-            del self._id_lookup[resource.resource_id]
+            del self._id_lookup[resource.resname_key_index]
             self._modified = True
         except (ValueError, KeyError) as e:
             msg = f"Resource '{resource!r}' not found in BIF"
@@ -223,7 +224,7 @@ class BIF(BiowareArchive):
         self._id_lookup.clear()
         for resource in self._resources:
             self._resource_dict[ResourceIdentifier(str(resource.resref), resource.restype)] = resource
-            self._id_lookup[resource.resource_id] = resource
+            self._id_lookup[resource.resname_key_index] = resource
 
     @property
     def is_compressed(self) -> bool:
@@ -261,7 +262,7 @@ class BIF(BiowareArchive):
                 KeyEntry(
                     resref=resource.resref,
                     restype=resource.restype,
-                    resid=resource.resource_id,
+                    resid=resource.resname_key_index,
                 )
             )
 
@@ -288,7 +289,7 @@ class BIF(BiowareArchive):
 
         # Check all KEY resources exist in BIF
         for key_res in key_resources:
-            bif_res: BIFResource | None = self.get_resource_by_id(key_res.resource_id)
+            bif_res: BIFResource | None = self.get_resource_by_id(key_res.resname_key_index)
             if bif_res is None:
                 errors.append(f"Resource {key_res.resref}:{key_res.restype} from KEY not found in BIF")
                 continue
@@ -298,9 +299,9 @@ class BIF(BiowareArchive):
 
         # Check all BIF resources exist in KEY
         for bif_res in self._resources:
-            key_res: KeyEntry | None = next((r for r in key_resources if r.resource_id == bif_res.resource_id), None)
+            key_res: KeyEntry | None = next((r for r in key_resources if r.resname_key_index == bif_res.resname_key_index), None)
             if key_res is None:
-                errors.append(f"Resource ID {bif_res.resource_id} from BIF not found in KEY")
+                errors.append(f"Resource ID {bif_res.resname_key_index} from BIF not found in KEY")
 
         return errors
 
@@ -316,11 +317,11 @@ class BIF(BiowareArchive):
             bif_idx: The index of this BIF in the KEY file.
         """
         # Get all KEY resources for this BIF
-        key_resources: dict[int, KeyEntry] = {r.resource_id: r for r in key.key_entries if r.bif_index == bif_idx}
+        key_resources: dict[int, KeyEntry] = {r.resname_key_index: r for r in key.key_entries if r.bif_index == bif_idx}
 
         # Update BIF resource names from KEY
         for resource in self._resources:
-            key_res: KeyEntry | None = key_resources.get(resource.resource_id)
+            key_res: KeyEntry | None = key_resources.get(resource.resname_key_index)
             if key_res is None:
                 continue
             resource.resref = key_res.resref
@@ -346,7 +347,7 @@ class BIF(BiowareArchive):
 
         # Add all resources to the KEY
         for resource in self._resources:
-            key_res = KeyEntry(resref=resource.resref, restype=resource.restype, resid=resource.resource_id)
+            key_res = KeyEntry(resref=resource.resref, restype=resource.restype, resid=resource.resname_key_index)
             key.key_entries.append(key_res)
 
         return key
@@ -368,20 +369,20 @@ class BIF(BiowareArchive):
         errors: list[str] = []
 
         # Get all KEY resources for this BIF
-        key_resources: dict[int, KeyEntry] = {r.resource_id: r for r in key.key_entries if r.bif_index == bif_idx}
+        key_resources: dict[int, KeyEntry] = {r.resname_key_index: r for r in key.key_entries if r.bif_index == bif_idx}
 
         # Update BIF resource names from KEY
         for resource in self._resources:
-            if key_res := key_resources.get(resource.resource_id):
+            if key_res := key_resources.get(resource.resname_key_index):
                 if resource.restype != key_res.restype:
-                    errors.append(f"Resource type mismatch for ID {resource.resource_id}: " f"BIF={resource.restype}, KEY={key_res.restype}")
+                    errors.append(f"Resource type mismatch for ID {resource.resname_key_index}: " f"BIF={resource.restype}, KEY={key_res.restype}")
                 resource.resref = key_res.resref
             else:
-                errors.append(f"Resource ID {resource.resource_id} from BIF not found in KEY")
+                errors.append(f"Resource ID {resource.resname_key_index} from BIF not found in KEY")
 
         # Check for KEY resources not in BIF
-        bif_ids: set[int] = {r.resource_id for r in self._resources}
-        errors.extend([f"Resource {key_res.resref}:{key_res.restype} from KEY not found in BIF (ID: {key_res.resource_id})" for key_res in key_resources.values() if key_res.resource_id not in bif_ids])  # noqa: E501
+        bif_ids: set[int] = {r.resname_key_index for r in self._resources}
+        errors.extend([f"Resource {key_res.resref}:{key_res.restype} from KEY not found in BIF (ID: {key_res.resname_key_index})" for key_res in key_resources.values() if key_res.resname_key_index not in bif_ids])  # noqa: E501
 
         # Rebuild lookup tables with new names
         self.build_lookup_tables()
@@ -393,6 +394,6 @@ class BIF(BiowareArchive):
 
         This can improve access performance when reading resources of the same type.
         """
-        self._resources.sort(key=lambda r: (r.restype.type_id, r.resource_id))
+        self._resources.sort(key=lambda r: (r.restype.type_id, r.resname_key_index))
         self._modified = True
         self.build_lookup_tables()

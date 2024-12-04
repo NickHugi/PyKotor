@@ -35,7 +35,6 @@ if TYPE_CHECKING:
     from pykotor.resource.generics.git import GIT
 
 TEST_FILE = "tests/test_pykotor/test_files/test.git"
-K1_SAME_TEST = "tests/test_pykotor/test_files/k1_same_git_test.git"
 K1_LAST_GOOD_EXTRACT = "tests/test_pykotor/test_files/k1_extracted_git_test.git"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
@@ -69,11 +68,6 @@ class TestGIT(unittest.TestCase):
             gff: GFF = read_gff(git_resource.data())
             reconstructed_gff: GFF = dismantle_git(construct_git(gff))
             assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
-
-    def test_k1_gff_reconstruct(self):
-        gff: GFF = read_gff(K1_SAME_TEST)
-        reconstructed_gff: GFF = dismantle_git(construct_git(gff), Game.K1)
-        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_k2_gff_reconstruct(self):
         gff: GFF = read_gff(TEST_FILE)

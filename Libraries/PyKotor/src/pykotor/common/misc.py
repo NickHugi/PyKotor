@@ -245,19 +245,19 @@ class Color:
         r: float,
         g: float,
         b: float,
-        a: float | None = None,
+        a: float = 1.0,
     ):
         self.r: float = r
         self.g: float = g
         self.b: float = b
-        self.a: float | None = None
+        self.a: float = a
 
     def __repr__(self):
         return f"Color({self})"
 
     def __str__(self) -> str:
         """Returns a string of each color component separated by whitespace."""
-        return f"{self.r} {self.g} {self.b} {self.a or 1.0}"
+        return f"{self.r} {self.g} {self.b} {self.a}"
 
     def __eq__(
         self,

@@ -36,19 +36,14 @@ class ArchiveResource:
         resref: ResRef,
         restype: ResourceType,
         data: bytes,
+        size: int | None = None,
     ):
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
         if isinstance(data, bytearray):
             data = bytes(data)
         self.data: bytes = data
-
-    @property
-    def size(self) -> int:
-        return len(self.data)
-
-    @size.setter
-    def size(self, value: int) -> None: ...
+        self.size: int = len(data) if size is None else size
 
     def __eq__(
         self,

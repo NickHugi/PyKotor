@@ -35,8 +35,7 @@ def detect_bif(
     -------
         The format of the BIF data.
     """
-    with BinaryReader.from_auto(source) as reader:
-        reader.seek(offset)
+    with BinaryReader.from_auto(source, offset) as reader:
         file_type: str = reader.read_string(4)
         file_version: str = reader.read_string(4)
         if file_type not in (BIFType.BIF.value, BIFType.BZF.value):

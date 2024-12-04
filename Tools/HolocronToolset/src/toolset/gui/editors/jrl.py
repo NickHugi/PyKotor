@@ -80,16 +80,16 @@ class JRLEditor(Editor):
         self.ui.journalTree.selectionChanged = self.on_selection_changed  # type: ignore[assignment]
         self.ui.journalTree.customContextMenuRequested.connect(self.on_context_menu_requested)
 
-        self.ui.entryTextEdit.doubleClicked.connect(self.change_entry_text)
+        self.ui.entryTextEdit.sig_double_clicked.connect(self.change_entry_text)
 
         # Make sure all these signals are excusively fired through user interaction NOT when values change
         # programmatically, otherwise values bleed into other items when onSelectionChanged() fires.
-        self.ui.categoryNameEdit.editingFinished.connect(self.on_value_updated)
+        self.ui.categoryNameEdit.sig_editing_finished.connect(self.on_value_updated)
         self.ui.categoryTag.editingFinished.connect(self.on_value_updated)
         self.ui.categoryPlotSelect.currentIndexChanged.connect(self.on_value_updated)
         self.ui.categoryPlanetSelect.activated.connect(self.on_value_updated)
         self.ui.categoryPrioritySelect.activated.connect(self.on_value_updated)
-        self.ui.categoryCommentEdit.keyReleased.connect(self.on_value_updated)
+        self.ui.categoryCommentEdit.sig_key_released.connect(self.on_value_updated)
         self.ui.entryIdSpin.editingFinished.connect(self.on_value_updated)
         self.ui.entryXpSpin.editingFinished.connect(self.on_value_updated)
         self.ui.entryXpSpin.setToolTip("The game multiplies the value set here by 1000 to calculate actual XP to award.")

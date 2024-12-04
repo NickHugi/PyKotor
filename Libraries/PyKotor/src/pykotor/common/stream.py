@@ -692,7 +692,7 @@ class BinaryReader:
 
     def read_terminated_string(
         self,
-        terminator: str,
+        terminator: str = "\0",
         length: int = -1,
         encoding: str = "ascii",
         *,

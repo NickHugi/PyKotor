@@ -43,9 +43,12 @@ if (
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
+from pykotor.common.module import read_rim
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.erf.erf_auto import read_erf
+from pykotor.resource.formats.erf import read_erf
+from pykotor.resource.formats.rim import read_rim
+from pykotor.resource.formats.bif import read_bif
 from pykotor.resource.type import ResourceType
 
 
@@ -108,6 +111,36 @@ class ERFEditorTest(TestCase):
             self.assertDeepEqual(old, new)
 
     @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_rim_reconstruct_from_k1_installation(self):
+        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
+        for rim_resource in (resource for resource in self.installation if resource.restype() in (ResourceType.RIM,)):
+            old = read_rim(rim_resource.data())
+            self.editor.load(rim_resource.filepath(), rim_resource.resname(), rim_resource.restype(), rim_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_rim(data)
+
+            self.assertDeepEqual(old, new)
+
+    @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_bif_reconstruct_from_k1_installation(self):
+        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
+        for bif_resource in (resource for resource in self.installation if resource.restype() in (ResourceType.BIF,)):
+            old = read_bif(bif_resource.data())
+            self.editor.load(bif_resource.filepath(), bif_resource.resname(), bif_resource.restype(), bif_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_bif(data)
+
+            self.assertDeepEqual(old, new)
+
+    @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
@@ -119,6 +152,36 @@ class ERFEditorTest(TestCase):
 
             data, _ = self.editor.build()
             new = read_erf(data)
+
+            self.assertDeepEqual(old, new)
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_rim_reconstruct_from_k2_installation(self):
+        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
+        for rim_resource in (resource for resource in self.installation if resource.restype() in (ResourceType.RIM,)):
+            old = read_rim(rim_resource.data())
+            self.editor.load(rim_resource.filepath(), rim_resource.resname(), rim_resource.restype(), rim_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_rim(data)
+
+            self.assertDeepEqual(old, new)
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_bif_reconstruct_from_k2_installation(self):
+        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
+        for bif_resource in (resource for resource in self.installation if resource.restype() in (ResourceType.BIF,)):
+            old = read_bif(bif_resource.data())
+            self.editor.load(bif_resource.filepath(), bif_resource.resname(), bif_resource.restype(), bif_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_bif(data)
 
             self.assertDeepEqual(old, new)
 
