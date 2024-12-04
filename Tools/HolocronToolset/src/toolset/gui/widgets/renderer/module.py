@@ -12,7 +12,7 @@ from qtpy.QtCore import QMetaObject, QThread, QTimer, Qt
 from qtpy.QtWidgets import (
     QApplication,
     QMessageBox,
-    QOpenGLWidget,
+    QOpenGLWidget,  # pyright: ignore[reportPrivateImportUsage]
 )
 
 from pykotor.common.geometry import Vector2, Vector3
@@ -26,10 +26,10 @@ from utility.error_handling import assert_with_variable_trace
 if TYPE_CHECKING:
     from glm import vec3
     from qtpy.QtCore import QPoint
-    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QOpenGLContext, QResizeEvent, QWheelEvent
+    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QOpenGLContext, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
-    from pykotor.common.module import Module
+    from pykotor.common.module import Module, ModuleResource
     from pykotor.gl.scene import RenderObject
     from pykotor.resource.formats.bwm import BWMFace
     from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
@@ -138,23 +138,15 @@ class ModuleRenderer(QOpenGLWidget):
         self._scene = Scene(installation=installation, module=module)
 
         # Initialize module data
-        if module.layout():
-            self._scene.layout = module.layout().resource()
+        lyt: ModuleResource[LYT] | None = module.layout()
+        if lyt is not None:
+            self._scene.layout = lyt.resource()
 
         self.scene.camera.fov = self.settings.fieldOfView
         self.scene.camera.width = self.width()
         self.scene.camera.height = self.height()
         self.sig_scene_initialized.emit()
         self.resume_render_loop()
-
-    def initializeGL(self):
-        RobustLogger().debug("ModuleRenderer.initializeGL called.")
-        super().initializeGL()
-        RobustLogger().debug("ModuleRenderer.initializeGL - opengl context setup.")
-
-    def resizeEvent(self, e: QResizeEvent):
-        RobustLogger().debug("ModuleRenderer resizeEvent called.")
-        super().resizeEvent(e)
 
     def resizeGL(
         self,
@@ -209,8 +201,48 @@ class ModuleRenderer(QOpenGLWidget):
         self.sig_lyt_updated.emit(self._lyt)
 
     def get_lyt(self) -> LYT | None:
-        """Get the current LYT data."""
+        """Returns the current LYT data."""
         return self._lyt
+
+    def add_room(
+        self,
+        room: LYTRoom,
+    ):
+        """Adds a new room to the LYT data and triggers a redraw."""
+        if self._lyt is not None:
+            self._lyt.rooms.append(room)
+            self.sig_lyt_updated.emit(self._lyt)
+            self.update()
+
+    def add_track(
+        self,
+        track: LYTTrack,
+    ):
+        """Adds a new track to the LYT data and triggers a redraw."""
+        if self._lyt is not None:
+            self._lyt.tracks.append(track)
+            self.sig_lyt_updated.emit(self._lyt)
+            self.update()
+
+    def add_obstacle(
+        self,
+        obstacle: LYTObstacle,
+    ):
+        """Adds a new obstacle to the LYT data and triggers a redraw."""
+        if self._lyt is not None:
+            self._lyt.obstacles.append(obstacle)
+            self.sig_lyt_updated.emit(self._lyt)
+            self.update()
+
+    def add_door_hook(
+        self,
+        doorhook: LYTDoorHook,
+    ):
+        """Adds a new doorhook to the LYT data and triggers a redraw."""
+        if self._lyt is not None:
+            self._lyt.doorhooks.append(doorhook)
+            self.sig_lyt_updated.emit(self._lyt)
+            self.update()
 
     def update_lyt_preview(self) -> None:
         """Update the LYT preview in the scene."""
@@ -218,30 +250,6 @@ class ModuleRenderer(QOpenGLWidget):
             self._scene.layout = self._lyt
             self.update()
             self.sig_lyt_updated.emit(self._lyt)
-
-    def add_room(self, room: LYTRoom) -> None:
-        """Add a new room to the LYT."""
-        if self._lyt:
-            self._lyt.rooms.append(room)
-            self.update_lyt_preview()
-
-    def add_track(self, track: LYTTrack) -> None:
-        """Add a new track to the LYT."""
-        if self._lyt:
-            self._lyt.tracks.append(track)
-            self.update_lyt_preview()
-
-    def add_obstacle(self, obstacle: LYTObstacle) -> None:
-        """Add a new obstacle to the LYT."""
-        if self._lyt:
-            self._lyt.obstacles.append(obstacle)
-            self.update_lyt_preview()
-
-    def add_door_hook(self, doorhook: LYTDoorHook) -> None:
-        """Add a new door hook to the LYT."""
-        if self._lyt:
-            self._lyt.doorhooks.append(doorhook)
-            self.update_lyt_preview()
 
     def remove_room(self, room: LYTRoom) -> None:
         """Remove a room from the LYT."""
@@ -515,65 +523,3 @@ class ModuleRenderer(QOpenGLWidget):
         # RobustLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keys_down}, e.key() '{key_name}'")
 
     # endregion
-
-
-    def load_lyt(
-        self,
-        lyt: LYT,
-    ):
-        """Loads the LYT data into the renderer."""
-        self._lyt: LYT = deepcopy(lyt)
-        if self._lyt_editor is not None:
-            self._lyt_editor._lyt = self._lyt  # noqa: SLF001
-        self.sig_lyt_updated.emit(self._lyt)
-        self.update()
-
-    def get_lyt(self) -> LYT | None:
-        """Returns the current LYT data."""
-        return self._lyt
-
-    def update_lyt(self, lyt: LYT):
-        """Updates the LYT data, notifies listeners, and triggers a redraw."""
-        self._lyt = deepcopy(lyt)
-        self.sig_lyt_updated.emit(self._lyt)
-        self.update()
-
-    def add_room(
-        self,
-        room: LYTRoom,
-    ):
-        """Adds a new room to the LYT data and triggers a redraw."""
-        if self._lyt is not None:
-            self._lyt.rooms.append(room)
-            self.sig_lyt_updated.emit(self._lyt)
-            self.update()
-
-    def add_track(
-        self,
-        track: LYTTrack,
-    ):
-        """Adds a new track to the LYT data and triggers a redraw."""
-        if self._lyt is not None:
-            self._lyt.tracks.append(track)
-            self.sig_lyt_updated.emit(self._lyt)
-            self.update()
-
-    def add_obstacle(
-        self,
-        obstacle: LYTObstacle,
-    ):
-        """Adds a new obstacle to the LYT data and triggers a redraw."""
-        if self._lyt is not None:
-            self._lyt.obstacles.append(obstacle)
-            self.sig_lyt_updated.emit(self._lyt)
-            self.update()
-
-    def add_door_hook(
-        self,
-        doorhook: LYTDoorHook,
-    ):
-        """Adds a new doorhook to the LYT data and triggers a redraw."""
-        if self._lyt is not None:
-            self._lyt.doorhooks.append(doorhook)
-            self.sig_lyt_updated.emit(self._lyt)
-            self.update()

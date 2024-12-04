@@ -30,8 +30,8 @@ class HelpWindow(QMainWindow):
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.help_content = HelpContent(self)
-        self.help_updater = HelpUpdater(self)
+        self.help_content: HelpContent = HelpContent(self)
+        self.help_updater: HelpUpdater = HelpUpdater(self)
 
         self._setup_signals()
         self.help_content.setup_contents()

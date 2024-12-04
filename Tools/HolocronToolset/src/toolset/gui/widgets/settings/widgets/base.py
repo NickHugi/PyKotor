@@ -90,7 +90,7 @@ class SettingsWidget(QWidget):
 
     def _registerColour(self, widget: ColorEdit, colourName: str):
         color_value = self.validateColour(colourName, getattr(self.settings, colourName))
-        widget.setColor(Color.from_rgba_integer(color_value))
+        widget.set_color(Color.from_rgba_integer(color_value))
         self.colours[colourName] = widget
 
     def _reset_and_get_default(self, settingName: str) -> Any:

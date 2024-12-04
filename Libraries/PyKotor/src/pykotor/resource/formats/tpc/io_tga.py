@@ -220,7 +220,6 @@ class TPCTGAReader(ResourceReader):
         # Set the texture format based on the bits per pixel
         datacode_name = next((c.name for c in _DataTypes if c.value == datatype_code), _DataTypes.NO_IMAGE_DATA.name)
         self._tpc.original_datatype_code = _DataTypes.__members__[datacode_name]
-        print("tga datatype_code:", datacode_name, "y_flipped:", y_flipped, "bits_per_pixel:", bits_per_pixel)
         texture_format = (
             TPCTextureFormat.RGBA
             if bits_per_pixel == 32

@@ -78,26 +78,37 @@ class Camera:
         lower_limit: float = 0,
         upper_limit: float = math.pi,
     ):
-        # Update angles
-        self.pitch += pitch
-        self.yaw += yaw
+        # Update pitch and yaw
+        self.pitch = self.pitch + pitch
+        self.yaw = self.yaw + yaw
 
-        # Normalize yaw to [-2π, 2π]
-        self.yaw = self.yaw % (4 * math.pi) - (2 * math.pi)
+        # ensure yaw doesn't get too large.
+        if self.yaw > 2 * math.pi:
+            self.yaw -= 4 * math.pi
+        elif self.yaw < -2 * math.pi:
+            self.yaw += 4 * math.pi
 
         if pitch == 0:
             return
 
-        # Normalize pitch to [-2π, 2π]
-        self.pitch = self.pitch % (4 * math.pi) - (2 * math.pi)
+        # ensure pitch doesn't get too large.
+        if self.pitch > 2 * math.pi:
+            self.pitch -= 4 * math.pi
+        elif self.pitch < -2 * math.pi:
+            self.pitch += 4 * math.pi
 
-        # Apply pitch clamping if enabled
         if clamp:
-            self.pitch = max(lower_limit, min(upper_limit, self.pitch))
+            if self.pitch < lower_limit:
+                self.pitch = lower_limit
+            elif self.pitch > upper_limit:
+                self.pitch = upper_limit
 
-        # Avoid gimbal lock near π/2
-        if abs(self.pitch - math.pi / 2) < 0.05:  # noqa: PLR2004
-            self.pitch += 0.02 if pitch > 0 else -0.02
+        # Add a small value to pitch to jump to the other side if near the limits
+        gimbal_lock_range = .05
+        pitch_limit = math.pi / 2
+        if pitch_limit - gimbal_lock_range < self.pitch < pitch_limit + gimbal_lock_range:
+            small_value = .02 if pitch > 0 else -.02
+            self.pitch += small_value
 
     def forward(
         self,

@@ -3,6 +3,8 @@ from __future__ import annotations
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree as ET
 
+from toolset.gui.windows.help_window import HelpWindow
+
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
 
@@ -22,7 +24,7 @@ if TYPE_CHECKING:
 
 class HelpContent:
     def __init__(self, help_window: HelpWindow):
-        self.help_window = help_window
+        self.help_window: HelpWindow = help_window
         self.version: str | None = None
 
     def setup_contents(self):

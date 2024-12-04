@@ -5,24 +5,12 @@ import time
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
-from qtpy import QtCore
-from qtpy.QtCore import QPoint
-
-from pykotor.gl.scene import Scene
-
-if qtpy.API_NAME in ("PyQt5", "PySide2"):
-    pass
-elif qtpy.API_NAME in ("PyQt6", "PySide6"):
-    pass
-else:
-    raise ValueError(f"Invalid QT_API: '{qtpy.API_NAME}'")
-
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
-from qtpy.QtCore import Qt
+from qtpy import QtCore
+from qtpy.QtCore import QPoint, Qt
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
+from pykotor.gl.scene import Scene
 from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITInstance, GITPlaceable, GITStore, GITWaypoint
 from toolset.data.misc import ControlItem
 from toolset.gui.editors.git import DuplicateCommand, _GeometryMode, _InstanceMode, calculate_zoom_strength
@@ -459,7 +447,7 @@ class ModuleDesignerControls2d:
         if self.zoom_camera.satisfied(buttons, keys):
             if not delta.y:
                 return
-            sens_setting = ModuleDesignerSettings().zoomCameraSensitivity2d
+            sens_setting: int = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoom_factor = calculate_zoom_strength(delta.y, sens_setting)
             self.renderer.camera.nudge_zoom(zoom_factor)
 

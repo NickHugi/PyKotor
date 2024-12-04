@@ -12,13 +12,7 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import read_lyt
-from pykotor.resource.generics.are import (
-    ARE,
-    ARENorthAxis,
-    AREWindPower,
-    dismantle_are,
-    read_are,
-)
+from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
@@ -30,10 +24,10 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import QLabel, QWidget
 
     from pykotor.extract.file import ResourceResult
-    from pykotor.resource.formats.bwm.bwm_data import BWM
-    from pykotor.resource.formats.lyt.lyt_data import LYT
-    from pykotor.resource.formats.tpc.tpc_data import TPC
-    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.formats.bwm import BWM
+    from pykotor.resource.formats.lyt import LYT
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.are import ARERoom
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 
@@ -75,9 +69,9 @@ class AREEditor(Editor):
         if installation is not None:  # will only be none in the unittests
             self._setup_installation(installation)
 
-        self.ui.dirtColor1Edit.allowAlpha = True
-        self.ui.dirtColor2Edit.allowAlpha = True
-        self.ui.dirtColor3Edit.allowAlpha = True
+        self.ui.dirtColor1Edit.allow_alpha = True
+        self.ui.dirtColor2Edit.allow_alpha = True
+        self.ui.dirtColor3Edit.allow_alpha = True
 
         self.ui.minimapRenderer.default_material_color = QColor(0, 0, 255, 127)
         self.ui.minimapRenderer.material_colors[SurfaceMaterial.NON_WALK] = QColor(255, 0, 0, 80)
@@ -103,7 +97,7 @@ class AREEditor(Editor):
         self.ui.mapImageY1Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapImageY2Spin.valueChanged.connect(self.redoMinimap)
 
-        self.relevant_script_resnames = sorted(
+        self.relevant_script_resnames: list[str] = sorted(
             iter(
                 {
                     res.resname().lower()
