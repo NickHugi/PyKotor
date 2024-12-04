@@ -82,29 +82,6 @@ class InventoryEditor(QDialog):
         hide_equipment: bool = False,
         is_store: bool = False,
     ):
-        """Initializes the inventory dialog.
-
-        Args:
-        ----
-            parent (QWidget): Parent widget
-            installation (HTInstallation): Toolset installation
-            capsules (Sequence[LazyCapsule]): List of capsules
-            folders (list[str]): List of folders
-            inventory (list[InventoryItem]): List of inventory items
-            equipment (dict[EquipmentSlot, InventoryItem]): Equipped items
-            droid (bool): True if droid inventory
-            hide_equipment (bool): True if equipment tab hidden
-            is_store (bool): True if store inventory
-
-        Processes Logic:
-        ---------------
-            1. Sets up UI elements
-            2. Maps equipment slots to images
-            3. Populates equipped items
-            4. Populates inventory table
-            5. Builds item trees
-            6. Connects signals.
-        """
         super().__init__(parent)
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
@@ -216,41 +193,29 @@ class InventoryEditor(QDialog):
 
         self.ui.tabWidget_2.setVisible(not hide_equipment)
 
+        if self._installation.cache_core_items is not None:
+            self._installation.cache_core_items._proxy_model = QSortFilterProxyModel()  # noqa: SLF001
         self.build_items()
 
     def accept(self):
         super().accept()
         self.inventory.clear()
         for i in range(self.ui.contentsTable.rowCount()):
-            table_item: ItemContainer = self.ui.contentsTable.item(i, 1)
+            table_item: QTableWidgetItem | None = self.ui.contentsTable.item(i, 1)
+            if not isinstance(table_item, ItemContainer):
+                continue
             self.inventory.append(InventoryItem(ResRef(table_item.resname), table_item.droppable, table_item.infinite))
 
         self.equipment.clear()
         widget: DropFrame | QObject
         for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():  # pyright: ignore[reportGeneralTypeIssues]
-            # HACK: isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
+            # HACK(NickHugi): isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
             # Also make sure there is an item in the slot otherwise the GFF will create a struct for each slot.
-            if "DropFrame" in widget.__class__.__name__ and widget.resname:
-                self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
+            if "DropFrame" in widget.__class__.__name__ and getattr(widget, "resname", None):
+                casted_widget: DropFrame = cast(DropFrame, widget)
+                self.equipment[casted_widget.slot] = InventoryItem(ResRef(casted_widget.resname), casted_widget.droppable, casted_widget.infinite)
 
     def build_items(self):
-        """Builds item trees from a dialog.
-
-        Args:
-        ----
-            self: {The class instance}.
-
-        Returns:
-        -------
-            None: {Does not return anything}
-
-        Processing Logic:
-        ----------------
-            - Opens an ItemBuilderDialog
-            - Checks if dialog was accepted
-            - Caches core items model if not already cached
-            - Sets core, modules and override trees models from the dialog.
-        """
         item_builder_dialog = ItemBuilderDialog(self, self._installation, list(self._capsules))
         if item_builder_dialog.exec():
             if self._installation.cache_core_items is None:
@@ -275,27 +240,6 @@ class InventoryEditor(QDialog):
         resname: str,
         filepath: os.PathLike | str,
     ) -> tuple[str, str, UTI]:
-        """Gets item resource data from filepath or installation.
-
-        Args:
-        ----
-            resname: str - Name of the resource
-            filepath: str - Path to resource file
-
-        Returns:
-        -------
-            filepath: str - Path to resource file
-            name: str - Name of the item
-            uti: UTI - Universal type identifier object
-
-        Processing Logic:
-        ----------------
-            - If no filepath is provided, get resource from installation
-            - If filepath ends with .rim/.mod/.erf, get resource from capsule file
-            - If filepath ends with .bif, get resource from installation searching CHITIN
-            - Else load resource directly from filepath
-            - Return filepath, name extracted from UTI, and UTI object
-        """
         uti: UTI | None = None
         name: str = ""
         if not filepath:
@@ -329,24 +273,6 @@ class InventoryEditor(QDialog):
         name: str = "",
     ):
         # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
-        """Sets equipment in a given slot.
-
-        Args:
-        ----
-            slot (EquipmentSlot): The slot to set the equipment
-            resname (str): The resource name of the equipment
-            filepath (str): The file path of the equipment image
-            name (str): The name of the equipment
-
-        Processing Logic:
-        ----------------
-            - Gets the label and frame for the given slot
-            - If resname is provided:
-                - Gets the filepath, name and uti for the item from the item database
-                - Sets the tooltip, pixmap and calls setItem on the slot frame
-            - Else:
-                - Sets an empty image, clears the tooltip.
-        """
         slot_picture: QLabel = self._slow_map[slot].label
         if resname:
             try:
@@ -381,22 +307,6 @@ class InventoryEditor(QDialog):
         widget: DropFrame | ItemContainer,
         point: QPoint,
     ):
-        """Opens an item context menu at a given point.
-
-        Args:
-        ----
-            widget: ItemContainer: Widget the menu is for
-            point: QPoint: Point to open menu at
-
-        Processing Logic:
-        ----------------
-            - Create a QMenu at the given point
-            - Add actions like Infinite, Droppable based on widget properties
-            - Add Remove Item action
-            - Add No Item action if no item present
-            - Add Set Item ResRef action
-            - Execute the menu.
-        """
         menu = QMenu(self)
 
         if widget.has_item:
@@ -417,8 +327,7 @@ class InventoryEditor(QDialog):
             menu.addAction("No Item").setEnabled(False)
 
         menu.addSeparator()
-        menu.addAction("Set Item ResRef").triggered.connect(lambda: self.prompt_set_item_resref_dialog(widget))
-        assert isinstance(widget, DropFrame), f"Expected DropFrame widget, got {type(widget).__name__}"
+        menu.addAction("Set Item ResRef").triggered.connect(lambda: self.prompt_set_item_resref_dialog(cast(DropFrame, widget)))
         menu.exec(widget.mapToGlobal(point))
 
     def prompt_set_item_resref_dialog(
@@ -494,28 +403,20 @@ class DropFrame(ItemContainer, QFrame):
         self,
         event: QDragEnterEvent,
     ):
-        """Handle drag enter events for slots.
-
-        Args:
-        ----
-            e: QDragEnterEvent - drag enter event
-
-        Processing Logic:
-        ----------------
-            - Check if drag source is a QTreeView
-            - Get source model from proxy model
-            - Map selected index from proxy to source model
-            - Get item from source model index
-            - Accept drag if item slots match receiver slot.
-        """
         if not isinstance(event.source(), QTreeView):
             return
-        tree: QTreeView | None = event.source()
-        proxy_model: QSortFilterProxyModel = tree.model()
+        tree: QObject | None = event.source()
+        if not isinstance(tree, QTreeView):
+            return
+        proxy_model: QAbstractItemModel | None = tree.model()
+        if not isinstance(proxy_model, QSortFilterProxyModel):
+            return
         src_index = proxy_model.mapToSource(tree.selectedIndexes()[0])
-        src_model: ItemModel = proxy_model.sourceModel()
+        src_model: QAbstractItemModel | None = proxy_model.sourceModel()
+        if not isinstance(src_model, ItemModel):
+            return
         item: QStandardItem | None = src_model.itemFromIndex(src_index)
-        if not item.data(_SLOTS_ROLE) & self.slot.value:
+        if not item or not item.data(_SLOTS_ROLE) & self.slot.value:
             return
         event.accept()
 
@@ -523,32 +424,17 @@ class DropFrame(ItemContainer, QFrame):
         self,
         event: QDragMoveEvent,
     ):
-        """Moves an item between slots if the drag and drop events match.
-
-        Args:
-        ----
-            e: QDragMoveEvent: The drag move event
-
-        Processing Logic:
-        ----------------
-            - Check if drag source is a QTreeView
-            - Get the QTreeView, QSortFilterProxyModel and ItemModel
-            - Map the selected index from proxy to source model
-            - Get the item from the mapped index
-            - Check if item's slots match the target slot
-            - Accept the drag move event if slots match.
-        """
         src_object: QObject | None = event.source()
         if not isinstance(src_object, QTreeView):
             return
         tree: QTreeView = src_object
-        proxy_model: QAbstractItemModel = tree.model()
+        proxy_model: QAbstractItemModel | None = tree.model()
         assert isinstance(proxy_model, QSortFilterProxyModel), f"Expected QSortFilterProxyModel, got {type(proxy_model).__name__}"
-        model: QAbstractItemModel = proxy_model.sourceModel()
+        model: QAbstractItemModel | None = proxy_model.sourceModel()
         assert isinstance(model, ItemModel), f"Expected ItemModel, got {type(model).__name__}"
         src_index = proxy_model.mapToSource(tree.selectedIndexes()[0])
         item: QStandardItem | None = model.itemFromIndex(src_index)
-        if not item.data(_SLOTS_ROLE) & self.slot.value:
+        if not item or not item.data(_SLOTS_ROLE) & self.slot.value:
             return
         event.accept()
 
@@ -556,32 +442,15 @@ class DropFrame(ItemContainer, QFrame):
         self,
         event: QDropEvent,
     ):
-        """Handles dropped items from a tree view onto the widget.
-
-        Args:
-        ----
-            e: QDropEvent: The drop event
-
-        Processes dropped items:
-            - Checks if the drop source is a QTreeView
-            - Sets the drop action to Copy
-            - Gets the source tree view and model
-            - Maps the selected index to the source model
-            - Gets the dropped item
-            - Checks if the item's slots match the widget's slot
-            - Accepts the drop if they match
-            - Sets the new item on the widget
-            - Emits a signal with the new item details.
-        """
         src_object: QObject | None = event.source()
         if not isinstance(src_object, QTreeView):
             return
         event.setDropAction(Qt.DropAction.CopyAction)
 
         tree: QTreeView = src_object
-        proxy_model: QAbstractItemModel = tree.model()
+        proxy_model: QAbstractItemModel | None = tree.model()
         assert isinstance(proxy_model, QSortFilterProxyModel), f"Expected QSortFilterProxyModel, got {type(proxy_model).__name__}"
-        model: QAbstractItemModel = proxy_model.sourceModel()
+        model: QAbstractItemModel | None = proxy_model.sourceModel()
         assert isinstance(model, ItemModel), f"Expected ItemModel, got {type(model).__name__}"
         index: QModelIndex = proxy_model.mapToSource(tree.selectedIndexes()[0])
         item: QStandardItem | None = model.itemFromIndex(index)
@@ -617,22 +486,6 @@ class InventoryTable(QTableWidget):
         droppable: bool,
         infinite: bool,
     ):
-        """Adds an item to the inventory table.
-
-        Args:
-        ----
-            resname: The resource name of the item to add
-            droppable: Whether the item can be dropped
-            infinite: Whether the item stack is infinite
-
-        Processing Logic:
-        ----------------
-            - Gets the row count and inserts a new row
-            - Gets the item info from the window
-            - Creates icon and name table widgets
-            - Creates a custom resname table widget
-            - Sets the row with the item info.
-        """
         rowID: int = self.rowCount()
         self.insertRow(rowID)
         filepath, name, uti = cast(InventoryEditor, self.window()).get_item(resname, "")
@@ -646,32 +499,20 @@ class InventoryTable(QTableWidget):
         self,
         event: QDropEvent,
     ):
-        """Handles drag and drop events on the inventory table.
-
-        Args:
-        ----
-            e: QDropEvent(None): The drop event
-
-        Processing Logic:
-        ----------------
-            - Check if drop source is a QTreeView
-            - Set drop action to Copy
-            - Get selected item from source tree view
-            - Insert new row at end of table
-            - Populate row with icon, resname and name from dropped item.
-        """
         if isinstance(event.source(), QTreeView):
             event.setDropAction(Qt.DropAction.CopyAction)
 
             tree: QObject | None = event.source()
             if not isinstance(tree, QTreeView):
                 return
-            proxy_model: QAbstractItemModel = tree.model()
+
+            proxy_model: QAbstractItemModel | None = tree.model()
             assert isinstance(proxy_model, QSortFilterProxyModel), f"Expected QSortFilterProxyModel, got {type(proxy_model).__name__}"
-            model: QAbstractItemModel = proxy_model.sourceModel()
+            model: QAbstractItemModel | None = proxy_model.sourceModel()
             assert isinstance(model, ItemModel), f"Expected ItemModel, got {type(model).__name__}"
             index: QModelIndex = proxy_model.mapToSource(tree.selectedIndexes()[0])
-            item: QStandardItem = model.itemFromIndex(index)
+            item: QStandardItem | None = model.itemFromIndex(index)
+            assert item is not None, f"Expected QStandardItem, got {type(item).__name__}"
             event.accept()
             rowID: int = self.rowCount()
             self.insertRow(rowID)
@@ -707,20 +548,6 @@ class InventoryTable(QTableWidget):
         self,
         table_item: QTableWidgetItem,
     ):
-        """Changes the name of an item in the inventory table.
-
-        Args:
-        ----
-            tableItem (QTableWidgetItem): The item whose name is to be changed.
-
-        Processing Logic:
-        ----------------
-            - Checks if the item passed is an InventoryTableResnameItem
-            - Gets the filepath, name and UTI of the item from the window
-            - Sets the new name, filepath and other properties of the item
-            - Sets the icon of the item using the UTI
-            - Sets the non-editable name in the name column.
-        """
         if isinstance(table_item, InventoryTableResnameItem):
             filepath, name, uti = cast(InventoryEditor, self.window()).get_item(table_item.text(), "")
             icon = QIcon(cast(InventoryEditor, self.window()).get_item_image(uti))
@@ -738,45 +565,38 @@ class InventoryTable(QTableWidget):
         self,
         point: QPoint,
     ):
-        """Opens context menu for selected item.
-
-        Args:
-        ----
-            point (QPoint): Point where to open the menu.
-
-        Processing Logic:
-        ----------------
-            - Check if any item is selected
-            - Get the selected item container
-            - Create menu and add actions based on item type
-            - Execute menu at the given point.
-        """
         if len(self.selectedIndexes()) == 0:
             return
+        sel_model: QtCore.QItemSelectionModel | None = self.selectionModel()
+        if sel_model is None:
+            return
+        row: int = sel_model.selectedRows(1)[0].row()
+        item_container: QTableWidgetItem | None = self.item(row, 1)
+        if item_container is None:
+            return
+        if not isinstance(item_container, ItemContainer):
+            return
+        menu = QMenu(self)
+        if self.is_store:
+            infinite_action = QAction("Infinite")
+            infinite_action.setCheckable(True)
+            infinite_action.setChecked(item_container.infinite)
+            infinite_action.triggered.connect(item_container.toggle_infinite)
+            menu.addAction(infinite_action)
+        else:
+            droppable_action = QAction("Droppable")
+            droppable_action.setCheckable(True)
+            droppable_action.setChecked(item_container.droppable)
+            droppable_action.triggered.connect(item_container.toggle_droppable)
+            menu.addAction(droppable_action)
 
-        item_container: QTableWidgetItem | None = self.item(self.selectionModel().selectedRows(1)[0].row(), 1)
-        if isinstance(item_container, ItemContainer):
-            menu = QMenu(self)
-            if self.is_store:
-                infinite_action = QAction("Infinite")
-                infinite_action.setCheckable(True)
-                infinite_action.setChecked(item_container.infinite)
-                infinite_action.triggered.connect(item_container.toggle_infinite)
-                menu.addAction(infinite_action)
-            else:
-                droppable_action = QAction("Droppable")
-                droppable_action.setCheckable(True)
-                droppable_action.setChecked(item_container.droppable)
-                droppable_action.triggered.connect(item_container.toggle_droppable)
-                menu.addAction(droppable_action)
+        remove_action = QAction("Remove Item")
+        remove_action.triggered.connect(item_container.remove_item)
 
-            remove_action = QAction("Remove Item")
-            remove_action.triggered.connect(item_container.remove_item)
+        menu.addSeparator()
+        menu.addAction(remove_action)
 
-            menu.addSeparator()
-            menu.addAction(remove_action)
-
-            menu.exec(self.mapToGlobal(point))
+        menu.exec(self.mapToGlobal(point))
 
 
 class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
@@ -873,22 +693,6 @@ class ItemBuilderDialog(QDialog):
         self,
         uti: UTI | None,
     ) -> str:
-        """Gets the category for an item based on its equipable slots.
-
-        Args:
-        ----
-            uti: {UTI object}: Item to get category for
-
-        Returns:
-        -------
-            str: Category name for the item
-
-        Processing Logic:
-        ----------------
-            - Check equipable slots of item against slot bitmasks
-            - Return category based on first matching slot
-            - Return default categories if no slots match.
-        """
         if uti is None:
             slots: int = -1
             droid: bool = False
@@ -938,21 +742,6 @@ class ItemBuilderWorker(QThread):
         self._capsules: list[LazyCapsule] = capsules
 
     def run(self):
-        """Runs the resource loading process.
-
-        Args:
-        ----
-            self: The object instance
-
-        Processing Logic:
-        ----------------
-            - Queries a list of resource identifiers from the installation
-            - Extends the queries list with override resources
-            - Extends the queries list with resources from each capsule
-            - Requests the resources from the installation
-            - Tries to read each result as a UTI
-            - Emits signals for each loaded UTI and when finished.
-        """
         queries: list[ResourceIdentifier] = []
         if self._installation.cache_core_items is None:
             queries.extend(resource.identifier() for resource in self._installation.core_resources() if resource.restype() is ResourceType.UTI)
@@ -990,7 +779,7 @@ class ItemModel(QStandardItemModel):
         super().__init__(parent)
 
         self._category_items: dict[str, QStandardItem] = {}
-        self._proxy_model = QSortFilterProxyModel(self)
+        self._proxy_model: QSortFilterProxyModel = QSortFilterProxyModel(self)
         self._proxy_model.setSourceModel(self)
         self._proxy_model.setRecursiveFilteringEnabled(True)  # type: ignore[arg-type]
         self._proxy_model.setFilterCaseSensitivity(False if qtpy.QT5 else Qt.CaseSensitivity.CaseInsensitive)  # type: ignore[arg-type]
@@ -1017,26 +806,6 @@ class ItemModel(QStandardItemModel):
         name: str,
         slots: int,
     ):
-        """Adds an item to the resource list.
-
-        Args:
-        ----
-            resname: Name of the resource in one line.
-            category: Category of the item in one line.
-            filepath: Path to the resource file in one line.
-            name: Optional display name in one line.
-            slots: Number of slots the item uses in one line.
-
-        Returns:
-        -------
-            None: No value is returned in one line.
-
-        Processing Logic:
-        ----------------
-            - The function creates a QStandardItem with the name or resource name.
-            - Tooltip, filepath, resname, and slots are set as item data.
-            - The item is appended to the category item in the model.
-        """
         item = QStandardItem(name.strip() or resname.strip())
         item.setToolTip(f"{resname}\n{filepath}\n{name}")
         item.setData(filepath, _FILEPATH_ROLE)

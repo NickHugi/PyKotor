@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class LocalizedStringLineEdit(QWidget):
-    editingFinished: Signal = Signal()
+    sig_editing_finished: Signal = Signal()
 
     def __init__(self, parent: QWidget):
         """Initialize a locstring edit widget.
@@ -87,7 +87,7 @@ class LocalizedStringLineEdit(QWidget):
         dialog = LocalizedStringDialog(self, self._installation, self._locstring)
         if dialog.exec():
             self.set_locstring(dialog.locstring)
-            self.editingFinished.emit()
+            self.sig_editing_finished.emit()
 
     def locstring(self) -> LocalizedString:
         return self._locstring

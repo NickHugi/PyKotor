@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
 
     from toolset.gui.editor import Editor
-    pass
+
 
 def get_resource_type(filepath: Path | str) -> str | None:
     """Get the resource type from a filepath."""
@@ -19,7 +19,11 @@ def get_resource_type(filepath: Path | str) -> str | None:
         filepath = Path(filepath)
     return filepath.suffix[1:].lower() if filepath.suffix else None
 
-def open_resource(filepath: Path | str, parent: QWidget | None = None) -> Editor | None:
+
+def open_resource(
+    filepath: Path | str,
+    parent: QWidget | None = None,
+) -> Editor | None:
     """Open a resource file in the appropriate editor."""
     if isinstance(filepath, str):
         filepath = Path(filepath)
@@ -35,9 +39,13 @@ def open_resource(filepath: Path | str, parent: QWidget | None = None) -> Editor
 
     return create_editor_window(filepath, parent)
 
-def open_resources(filepaths: list[Path | str], parent: QWidget | None = None) -> list[Editor]:
+
+def open_resources(
+    filepaths: list[Path | str],
+    parent: QWidget | None = None,
+) -> list[Editor]:
     """Open multiple resource files."""
-    editors = []
+    editors: list[Editor] = []
     for filepath in filepaths:
         editor = open_resource(filepath, parent)
         if editor is not None:

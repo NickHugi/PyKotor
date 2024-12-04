@@ -12,7 +12,7 @@ from qtpy.QtCore import QMetaObject, QThread, QTimer, Qt
 from qtpy.QtWidgets import (
     QApplication,
     QMessageBox,
-    QOpenGLWidget,  # pyright: ignore[reportPrivateImportUsage]
+    QOpenGLWidget,
 )
 
 from pykotor.common.geometry import Vector2, Vector3
@@ -136,13 +136,11 @@ class ModuleRenderer(QOpenGLWidget):
         self._installation = installation
         self._module = module
         self._scene = Scene(installation=installation, module=module)
-        
-        # Initialize LYT data from module
+
+        # Initialize module data
         if module.layout():
-            self._lyt = module.layout().resource()
-            if self._scene:
-                self._scene.layout = self._lyt
-        
+            self._scene.layout = module.layout().resource()
+
         self.scene.camera.fov = self.settings.fieldOfView
         self.scene.camera.width = self.width()
         self.scene.camera.height = self.height()
@@ -263,7 +261,10 @@ class ModuleRenderer(QOpenGLWidget):
             self._lyt.obstacles.remove(obstacle)
             self.update_lyt_preview()
 
-    def remove_door_hook(self, doorhook: LYTDoorHook) -> None:
+    def remove_door_hook(
+        self,
+        doorhook: LYTDoorHook,
+    ) -> None:
         """Remove a door hook from the LYT."""
         if self._lyt and doorhook in self._lyt.doorhooks:
             self._lyt.doorhooks.remove(doorhook)

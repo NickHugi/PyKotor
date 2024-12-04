@@ -23,7 +23,10 @@ if TYPE_CHECKING:
 
 
 class EditorMedia:
-    def __init__(self, editor: Editor):
+    def __init__(
+        self,
+        editor: Editor,
+    ):
         self.editor: Editor = editor
 
     def play_byte_source_media(
@@ -45,7 +48,7 @@ class EditorMedia:
         elif qtpy.QT6:
             from qtpy.QtMultimedia import QAudioOutput
 
-            temp_file: tempfile._TemporaryFileWrapper[bytes] = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+            temp_file: tempfile._TemporaryFileWrapper[bytes] = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")  # noqa: SIM115
             temp_file.write(data)  # pyright: ignore[reportArgumentType, reportCallIssue]
             temp_file.flush()
             temp_file.seek(0)
@@ -66,13 +69,13 @@ class EditorMedia:
         order: list[SearchLocation] | None = None,
     ) -> bool:
         """Plays a sound resource."""
-        if not resname or not resname.strip() or self.editor._installation is None:
+        if not resname or not resname.strip() or self.editor._installation is None:  # noqa: SLF001
             self.editor.blink_window(sound=False)
             return False
 
         self.editor.media_player.player.stop()
 
-        data: bytes | None = self.editor._installation.sound(
+        data: bytes | None = self.editor._installation.sound(  # noqa: SLF001
             resname,
             order
             if order is not None

@@ -89,8 +89,8 @@ class SetBindWidget(QWidget):
         return self.keybind, mousebind
 
     def update_keybind_text(self):
-        modifiers = [key for key in self.keybind if key in MODIFIER_KEY_NAMES]
-        other_keys = [key for key in self.keybind if key not in MODIFIER_KEY_NAMES]
-        sorted_keys = modifiers + other_keys
-        text = "+".join(get_qt_key_string_localized(key) for key in sorted_keys)
+        modifiers: list[Qt.Key] = [key for key in self.keybind if key in MODIFIER_KEY_NAMES]
+        other_keys: list[Qt.Key] = [key for key in self.keybind if key not in MODIFIER_KEY_NAMES]
+        sorted_keys: list[Qt.Key] = modifiers + other_keys
+        text: str = "+".join(get_qt_key_string_localized(key) for key in sorted_keys)
         self.ui.setKeysEdit.setText(text.upper())

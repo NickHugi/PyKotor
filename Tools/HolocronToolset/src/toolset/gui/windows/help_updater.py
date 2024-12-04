@@ -3,7 +3,7 @@ from __future__ import annotations
 import zipfile
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from loggerplus import RobustLogger
 from qtpy.QtCore import Qt
@@ -12,6 +12,7 @@ from qtpy.QtWidgets import QMessageBox
 from toolset.config import get_remote_toolset_update_info, is_remote_version_newer
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from toolset.gui.windows.help_window import HelpWindow
 from utility.error_handling import universal_simplify_exception
 from utility.system.os_helper import is_frozen
 from utility.updater.github import download_github_file
@@ -22,15 +23,15 @@ if TYPE_CHECKING:
 
 class HelpUpdater:
     def __init__(self, help_window: HelpWindow):
-        self.help_window = help_window
+        self.help_window: HelpWindow = help_window
 
     def check_for_updates(self):
-        remoteInfo = get_remote_toolset_update_info(use_beta_channel=GlobalSettings().useBetaChannel)
+        remote_info: Exception | dict[str, Any] = get_remote_toolset_update_info(use_beta_channel=GlobalSettings().useBetaChannel)
         try:
-            if not isinstance(remoteInfo, dict):
-                raise remoteInfo  # noqa: TRY301
+            if not isinstance(remote_info, dict):
+                raise remote_info  # noqa: TRY301
 
-            new_version = str(remoteInfo["help"]["version"])
+            new_version = str(remote_info["help"]["version"])
             if self.help_window.help_content.version is None:
                 title = "Help book missing"
                 text = "You do not seem to have a valid help booklet downloaded, would you like to download it?"
@@ -42,7 +43,7 @@ class HelpUpdater:
                 return
         except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            errMsgBox = QMessageBox(
+            err_msg_box = QMessageBox(
                 QMessageBox.Icon.Information,
                 "An unexpected error occurred while parsing the help booklet.",
                 error_msg,
@@ -50,20 +51,20 @@ class HelpUpdater:
                 parent=None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
-            errMsgBox.setWindowIcon(self.help_window.windowIcon())
-            errMsgBox.exec()
+            err_msg_box.setWindowIcon(self.help_window.windowIcon())
+            err_msg_box.exec()
         else:
-            newHelpMsgBox = QMessageBox(
+            new_help_msg_box = QMessageBox(
                 QMessageBox.Icon.Information,
                 title,
                 text,
                 parent=None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
-            newHelpMsgBox.setWindowIcon(self.help_window.windowIcon())
-            newHelpMsgBox.addButton(QMessageBox.StandardButton.Yes)
-            newHelpMsgBox.addButton(QMessageBox.StandardButton.No)
-            user_response = newHelpMsgBox.exec()
+            new_help_msg_box.setWindowIcon(self.help_window.windowIcon())
+            new_help_msg_box.addButton(QMessageBox.StandardButton.Yes)
+            new_help_msg_box.addButton(QMessageBox.StandardButton.No)
+            user_response = new_help_msg_box.exec()
             if user_response == QMessageBox.StandardButton.Yes:
 
                 def task():

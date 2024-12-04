@@ -49,14 +49,14 @@ class AudioPlayer(QMainWindow):
         self.player.durationChanged.connect(self.duration_changed)
         self.player.positionChanged.connect(self.positionChanged)
         self.destroyed.connect(self.closeEvent)
-        if qtpy.API_NAME in {"PySide2", "PyQt5"}:
-            self.player.error.connect(lambda _=None: self.handleError())
+        if qtpy.QT5:
+            self.player.error.connect(lambda _=None: self.handle_error())
         else:
-            self.player.errorOccurred.connect(lambda *args, **kwargs: self.handleError(*args, **kwargs))  # noqa: FBT001  # pyright: ignore[reportAttributeAccessIssue]
+            self.player.errorOccurred.connect(lambda *args, **kwargs: self.handle_error(*args, **kwargs))  # noqa: FBT001  # pyright: ignore[reportAttributeAccessIssue]
 
         self.temp_file = None  # Reference to the temporary file for PyQt6/Pyside6
 
-    def handleError(self, *args, **kwargs):
+    def handle_error(self, *args, **kwargs):
         print("Error:", *args, **kwargs)
         self.closeEvent(None)
 
@@ -79,10 +79,10 @@ class AudioPlayer(QMainWindow):
             if not self.buffer.open(QIODevice.OpenModeFlag.ReadOnly):
                 print("Audio player Buffer not ready?")
                 return
-            from qtpy.QtMultimedia import QMediaContent
+            from qtpy.QtMultimedia import QMediaContent  # pyright: ignore[reportAttributeAccessIssue]
             self.player.setMedia(QMediaContent(), self.buffer)  # pyright: ignore[reportAttributeAccessIssue]
         elif qtpy.QT6:
-            self.temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+            self.temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")  # noqa: SIM115
             self.temp_file.write(data)
             self.temp_file.flush()
             self.temp_file.seek(0)

@@ -20,6 +20,7 @@ from pykotor.common.stream import BinaryWriter
 from toolset.config import get_remote_toolset_update_info, is_remote_version_newer
 from toolset.data.indoorkit import Kit, load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
+from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
 from toolset.gui.widgets.settings.installations import GlobalSettings
@@ -41,7 +42,6 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.bwm import BWMFace
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from toolset.data.indoorkit import KitComponent, KitComponentHook
-    from toolset.data.installation import HTInstallation
 
 
 class IndoorMapBuilder(QMainWindow):
@@ -50,22 +50,6 @@ class IndoorMapBuilder(QMainWindow):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
     ):
-        """Initialize indoor builder window.
-
-        Args:
-        ----
-            parent: QWidget | None - Parent widget or None
-            installation: HTInstallation | None - Installation object or None
-
-        Processing Logic:
-        ----------------
-            - Initialize UI components
-            - Set up signal connections
-            - Set up keyboard shortcuts
-            - Populate kit list
-            - Set initial map
-            - Refresh window title.
-        """
         super().__init__(parent)
 
         self._installation: HTInstallation | None = installation
@@ -103,7 +87,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionOpen.triggered.connect(self.open)
         self.ui.actionSave.triggered.connect(self.save)
         self.ui.actionSaveAs.triggered.connect(self.save_as)
-        self.ui.actionBuild.triggered.connect(self.buildMap)
+        self.ui.actionBuild.triggered.connect(self.build_map)
         self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec())
         self.ui.actionDeleteSelected.triggered.connect(self.delete_selected)
         self.ui.actionDownloadKits.triggered.connect(self.open_kit_downloader)
@@ -217,10 +201,12 @@ class IndoorMapBuilder(QMainWindow):
         KitDownloader(self).exec()
         self._setup_kits()
 
-    def buildMap(self):
-        path = f"{self._installation.module_path() / self._map.module_id}.mod"
+    def build_map(self):
+        assert isinstance(self._installation, HTInstallation)
+        path: Path = self._installation.module_path() / f"{self._map.module_id}.mod"
 
         def task():
+            assert isinstance(self._installation, HTInstallation)
             return self._map.build(self._installation, self._kits, path)
 
         msg = f"You can warp to the game using the code 'warp {self._map.module_id}'. "

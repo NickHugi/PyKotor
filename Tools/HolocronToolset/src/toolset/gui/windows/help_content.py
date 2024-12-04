@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 # Try to import defusedxml, fallback to ElementTree if not available
-from xml.etree import ElementTree as ElemTree
+from xml.etree import ElementTree as ET
 
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
 
-    ElemTree.fromstring = _fromstring
+    ET.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
     print("warning: defusedxml is not available but recommended for security")
 
@@ -29,7 +29,7 @@ class HelpContent:
         self.help_window.ui.contentsTree.clear()
 
         try:
-            tree = ElemTree.parse("./help/contents.xml")  # noqa: S314 incorrect warning.
+            tree = ET.parse("./help/contents.xml")  # noqa: S314 incorrect warning.
             root = tree.getroot()
 
             self.version = str(root.get("version", "0.0"))
@@ -57,7 +57,7 @@ class HelpContent:
             addItem(item)
             self._setup_contents_rec_json(item, structure[title])
 
-    def _setup_contents_rec_xml(self, parent: QTreeWidgetItem | None, element: ElemTree.Element):
+    def _setup_contents_rec_xml(self, parent: QTreeWidgetItem | None, element: ET.Element):
         addItem: Callable[[QTreeWidgetItem], None] = (  # type: ignore[arg-type]
             self.help_window.ui.contentsTree.addTopLevelItem
             if parent is None

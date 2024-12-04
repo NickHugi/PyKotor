@@ -361,8 +361,8 @@ class LocationResult:
 class ResourceIdentifier:
     """Class for storing resource name and type, facilitating case-insensitive object comparisons and hashing equal to their string representations."""
 
-    resname: str
-    restype: ResourceType
+    resname: str = field(default_factory=str)
+    restype: ResourceType = field(default=ResourceType.INVALID)
     _cached_filename_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportAssignmentType, reportArgumentType]
     _lower_resname_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportAssignmentType, reportArgumentType]
 
@@ -370,7 +370,8 @@ class ResourceIdentifier:
         # Workaround to initialize a field in a frozen dataclass
         ext: str = self.restype.extension
         suffix: str = f".{ext}" if ext else ""
-        lower_filename_str = f"{self.resname}{suffix}".lower()
+        lower_filename_str: str = f"{self.resname}{suffix}".lower()
+        object.__setattr__(self, "resname", str(self.resname))
         object.__setattr__(self, "_cached_filename_str", lower_filename_str)
         object.__setattr__(self, "_lower_resname_str", self.resname.lower())
 

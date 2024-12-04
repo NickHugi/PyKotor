@@ -464,4 +464,7 @@ CMakeLists.txt
 CONTRIBUTING.md
 PKGBUILD
 package.json
-vendor
+*.mat
+*.meta
+.archivist/
+.cursorignore

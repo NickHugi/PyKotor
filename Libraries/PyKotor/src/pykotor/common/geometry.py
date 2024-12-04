@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from typing_extensions import Self
+
 
 class Vector2:
     """Represents a 2 dimensional vector.
@@ -36,7 +38,7 @@ class Vector2:
     def __repr__(
         self,
     ) -> str:
-        return f"Vector2({self.x}, {self.y})"
+        return f"{self.__class__.__name__}({self.x}, {self.y})"
 
     def __str__(
         self,
@@ -54,8 +56,8 @@ class Vector2:
         if not isinstance(other, Vector2):
             return NotImplemented
 
-        isclose_x = math.isclose(self.x, other.x)
-        isclose_y = math.isclose(self.y, other.y)
+        isclose_x: bool = math.isclose(self.x, other.x)
+        isclose_y: bool = math.isclose(self.y, other.y)
         return isclose_x and isclose_y
 
     def __add__(
@@ -66,7 +68,7 @@ class Vector2:
         if not isinstance(other, Vector2):
             return NotImplemented
 
-        new = Vector2.from_vector2(self)
+        new: Self = self.__class__.from_vector2(self)
         new.x += other.x
         new.y += other.y
         return new
@@ -79,7 +81,7 @@ class Vector2:
         if not isinstance(other, Vector2):
             return NotImplemented
 
-        new = Vector2.from_vector2(self)
+        new = self.__class__.from_vector2(self)
         new.x -= other.x
         new.y -= other.y
         return new
@@ -92,7 +94,7 @@ class Vector2:
         if not isinstance(other, int):
             return NotImplemented
 
-        new = Vector2.from_vector2(self)
+        new = self.__class__.from_vector2(self)
         new.x *= other
         new.y *= other
         return new
@@ -121,7 +123,7 @@ class Vector2:
             - Return the new vector.
         """
         if isinstance(other, int):
-            new = Vector2.from_vector2(self)
+            new = self.__class__.from_vector2(self)
             new.x /= other
             new.y /= other
             return new
@@ -155,7 +157,7 @@ class Vector2:
     def from_vector2(
         cls,
         other: Vector2,
-    ) -> Vector2:
+    ) -> Self:
         """Returns a duplicate of the specified vector.
 
         Args:
@@ -166,13 +168,13 @@ class Vector2:
         -------
             A new Vector2 object.
         """
-        return Vector2(other.x, other.y)
+        return cls(other.x, other.y)
 
     @classmethod
     def from_vector3(
         cls,
         other: Vector3,
-    ) -> Vector2:
+    ) -> Self:
         """Returns a Vector2 object from the Vector3 object, discarding the Z-component.
 
         Args:
@@ -183,13 +185,13 @@ class Vector2:
         -------
             A new Vector2 object.
         """
-        return Vector2(other.x, other.y)
+        return cls(other.x, other.y)
 
     @classmethod
     def from_vector4(
         cls,
         other: Vector4,
-    ) -> Vector2:
+    ) -> Self:
         """Returns a Vector2 object from the Vector4 object, discarding the Z-component and W-components.
 
         Args:
@@ -200,25 +202,25 @@ class Vector2:
         -------
             A new Vector2 object.
         """
-        return Vector2(other.x, other.y)
+        return cls(other.x, other.y)
 
     @classmethod
     def from_null(
         cls,
-    ) -> Vector2:
+    ) -> Self:
         """Returns a new vector with a magnitude of zero.
 
         Returns:
         -------
             A new Vector2 instance.
         """
-        return Vector2(0.0, 0.0)
+        return cls(0.0, 0.0)
 
     @classmethod
     def from_angle(
         cls,
         angle: float,
-    ) -> Vector2:
+    ) -> Self:
         """Returns a unit vector based on the specified angle.
 
         Args:
@@ -231,7 +233,7 @@ class Vector2:
         """
         x = math.cos(angle)
         y = math.sin(angle)
-        return Vector2(x, y).normal()
+        return cls(x, y).normal()
 
     def set_data(
         self,
@@ -273,8 +275,8 @@ class Vector2:
 
     def normal(
         self,
-    ) -> Vector2:
-        vec2 = Vector2.from_vector2(self)
+    ) -> Self:
+        vec2 = self.__class__.from_vector2(self)
         vec2.normalize()
         return vec2
 
@@ -401,12 +403,12 @@ class Vector3:
     def __add__(
         self,
         other: Vector3,
-    ) -> Vector3:
+    ):
         """Adds the components of two Vector3 objects."""
         if not isinstance(other, Vector3):
             return NotImplemented
 
-        new = Vector3.from_vector3(self)
+        new = self.__class__.from_vector3(self)
         new.x += other.x
         new.y += other.y
         new.z += other.z
@@ -420,7 +422,7 @@ class Vector3:
         if not isinstance(other, Vector3):
             return NotImplemented
 
-        new = Vector3.from_vector3(self)
+        new = self.__class__.from_vector3(self)
         new.x -= other.x
         new.y -= other.y
         new.z -= other.z
@@ -429,10 +431,10 @@ class Vector3:
     def __mul__(
         self,
         other: float,
-    ) -> Vector3:
+    ):
         """Multiplies the components by a scalar integer."""
         if isinstance(other, (int, float)):
-            new = Vector3.from_vector3(self)
+            new = self.__class__.from_vector3(self)
             new.x *= other
             new.y *= other
             new.z *= other
@@ -444,7 +446,7 @@ class Vector3:
         other,
     ):
         if isinstance(other, int):
-            new = Vector3.from_vector3(self)
+            new = self.__class__.from_vector3(self)
             new.x /= other
             new.y /= other
             new.z /= other
@@ -460,7 +462,7 @@ class Vector3:
                 return self.x
             if item == 1:
                 return self.y
-            if item == 2:
+            if item == 2:  # noqa: PLR2004
                 return self.z
             raise KeyError
         return NotImplemented
@@ -477,7 +479,7 @@ class Vector3:
             if key == 1:
                 self.y = value
                 return None
-            if key == 2:
+            if key == 2:  # noqa: PLR2004
                 self.z = value
                 return None
             return None
@@ -487,7 +489,7 @@ class Vector3:
     def from_vector2(
         cls,
         other: Vector2,
-    ) -> Vector3:
+    ) -> Self:
         """Returns a Vector3 object from the Vector2 object, setting the Z-component to zero.
 
         Args:
@@ -498,13 +500,13 @@ class Vector3:
         -------
             A new Vector3 object.
         """
-        return Vector3(other.x, other.y, 0.0)
+        return cls(other.x, other.y, 0.0)
 
     @classmethod
     def from_vector3(
         cls,
         other: Vector3,
-    ) -> Vector3:
+    ) -> Self:
         """Returns a duplicate of the specified vector.
 
         Args:
@@ -515,13 +517,13 @@ class Vector3:
         -------
             A new Vector3 instance.
         """
-        return Vector3(other.x, other.y, other.z)
+        return cls(other.x, other.y, other.z)
 
     @classmethod
     def from_vector4(
         cls,
         other: Vector4,
-    ) -> Vector3:
+    ) -> Self:
         """Returns a Vector3 object from the Vector4 object, discarding the W-component.
 
         Args:
@@ -532,19 +534,19 @@ class Vector3:
         -------
             A new Vector3 object.
         """
-        return Vector3(other.x, other.y, other.z)
+        return cls(other.x, other.y, other.z)
 
     @classmethod
     def from_null(
         cls,
-    ) -> Vector3:
+    ) -> Self:
         """Returns a new vector with a magnitude of zero.
 
         Returns:
         -------
             A new Vector3 instance.
         """
-        return Vector3(0.0, 0.0, 0.0)
+        return cls(0.0, 0.0, 0.0)
 
     def set_vector_coords(
         self,
@@ -566,7 +568,7 @@ class Vector3:
 
     def normalize(
         self,
-    ):
+    ) -> Self:
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle."""
         magnitude = self.magnitude()
         if magnitude == 0:
@@ -592,8 +594,8 @@ class Vector3:
 
     def normal(
         self,
-    ) -> Vector3:
-        vec3 = Vector3.from_vector3(self)
+    ) -> Self:
+        vec3 = self.__class__.from_vector3(self)
         vec3.normalize()
         return vec3
 
@@ -703,10 +705,10 @@ class Vector4:
         if not isinstance(other, Vector4):
             return NotImplemented
 
-        isclose_x = math.isclose(self.x, other.x)
-        isclose_y = math.isclose(self.y, other.y)
-        isclose_z = math.isclose(self.z, other.z)
-        isclose_w = math.isclose(self.w, other.w)
+        isclose_x: bool = math.isclose(self.x, other.x)
+        isclose_y: bool = math.isclose(self.y, other.y)
+        isclose_z: bool = math.isclose(self.z, other.z)
+        isclose_w: bool = math.isclose(self.w, other.w)
         return isclose_x and isclose_y and isclose_z and isclose_w
 
     def __add__(
@@ -717,12 +719,18 @@ class Vector4:
         if not isinstance(other, Vector4):
             return NotImplemented
 
-        new = Vector4.from_vector4(self)
+        new = self.__class__.from_vector4(self)
         new.x += other.x
         new.y += other.y
         new.z += other.z
         new.w += other.w
         return new
+
+    def __getitem__(
+        self,
+        item: int,
+    ) -> float:
+        return self[item]
 
     def __sub__(
         self,
@@ -732,7 +740,7 @@ class Vector4:
         if not isinstance(other, Vector4):
             return NotImplemented
 
-        new = Vector4.from_vector4(self)
+        new = self.__class__.from_vector4(self)
         new.x -= other.x
         new.y -= other.y
         new.z -= other.z
@@ -747,7 +755,7 @@ class Vector4:
         if not isinstance(other, int):
             return NotImplemented
 
-        new = Vector4.from_vector4(self)
+        new = self.__class__.from_vector4(self)
         new.x *= other
         new.y *= other
         new.z *= other
@@ -758,7 +766,7 @@ class Vector4:
     def from_vector2(
         cls,
         other: Vector2,
-    ) -> Vector4:
+    ) -> Self:
         """Returns a Vector4 object from the Vector2 object, setting the Z-component and W-component to zero.
 
         Args:
@@ -769,13 +777,13 @@ class Vector4:
         -------
             A new Vector4 object.
         """
-        return Vector4(other.x, other.y, 0.0, 0.0)
+        return cls(other.x, other.y, 0.0, 0.0)
 
     @classmethod
     def from_vector3(
         cls,
         other: Vector3,
-    ) -> Vector4:
+    ) -> Self:
         """Returns a Vector4 object from the Vector3 object, setting the W-component to zero.
 
         Args:
@@ -786,13 +794,13 @@ class Vector4:
         -------
             A new Vector4 object.
         """
-        return Vector4(other.x, other.y, other.z, 0.0)
+        return cls(other.x, other.y, other.z, 0.0)
 
     @classmethod
     def from_vector4(
         cls,
         other: Vector4,
-    ) -> Vector4:
+    ) -> Self:
         """Returns a duplicate of the specified vector.
 
         Args:
@@ -803,25 +811,25 @@ class Vector4:
         -------
             A new Vector4 instance.
         """
-        return Vector4(other.x, other.y, other.z, other.w)
+        return cls(other.x, other.y, other.z, other.w)
 
     @classmethod
     def from_null(
         cls,
-    ) -> Vector4:
+    ) -> Self:
         """Returns a new vector with a magnitude of zero.
 
         Returns:
         -------
             A new Vector4 instance.
         """
-        return Vector4(0.0, 0.0, 0.0, 0.0)
+        return cls(0.0, 0.0, 0.0, 0.0)
 
     @classmethod
     def from_compressed(
         cls,
         data: int,
-    ) -> Vector4:
+    ) -> Self:
         """Decompresses a compressed Vector4.
 
         Args:
@@ -853,7 +861,7 @@ class Vector4:
             z /= temp
             w = 0
 
-        return Vector4(x, y, z, w)
+        return cls(x, y, z, w)
 
     @classmethod
     def from_euler(
@@ -861,7 +869,7 @@ class Vector4:
         x: float,
         y: float,
         z: float,
-    ) -> Vector4:
+    ) -> Self:
         """Creates a Vector3 object from x/y/z rotations (in radians).
 
         Args:
@@ -883,7 +891,7 @@ class Vector4:
         qz: float = math.cos(roll / 2) * math.cos(pitch / 2) * math.sin(yaw / 2) - math.sin(roll / 2) * math.sin(pitch / 2) * math.cos(yaw / 2)
         qw: float = math.cos(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2) + math.sin(roll / 2) * math.sin(pitch / 2) * math.sin(yaw / 2)
 
-        return Vector4(qx, qy, qz, qw)
+        return cls(qx, qy, qz, qw)
 
     def to_euler(
         self,
@@ -933,7 +941,7 @@ class Vector4:
 
     def normalize(
         self,
-    ) -> Vector4:
+    ) -> Self:
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
 
         Returns:
@@ -996,7 +1004,7 @@ class AxisAngle:
     def from_quaternion(
         cls,
         quaternion: Vector4,
-    ) -> AxisAngle:
+    ) -> Self:
         """Returns a AxisAngle converted from a Vector4 quaternion.
 
         Args:
@@ -1007,7 +1015,7 @@ class AxisAngle:
         -------
             A new AxisAngle instance.
         """
-        aa: AxisAngle = AxisAngle.from_null()
+        aa: Self = cls.from_null()
         quaternion.normalize()
 
         aa.angle = 2.0 * math.atan2(
@@ -1028,14 +1036,14 @@ class AxisAngle:
     @classmethod
     def from_null(
         cls,
-    ) -> AxisAngle:
+    ) -> Self:
         """Returns a AxisAngle that contains no rotation.
 
         Returns:
         -------
             A new AxisAngle instance.
         """
-        return AxisAngle(Vector3.from_null(), 0.0)
+        return cls(Vector3.from_null(), 0.0)
 
 
 class SurfaceMaterial(IntEnum):
@@ -1275,18 +1283,18 @@ class Polygon2:
         n = len(self.points)
         inside = False
 
-        p1 = self.points[0]
+        p1: Vector2 = self.points[0]
         for i in range(1, n + 1):
-            p2 = self.points[i % n]
+            p2: Vector2 = self.points[i % n]
             if p1.y == p2.y:
                 if point.y == p2.y:
                     if min(p1.x, p2.x) <= point.x <= max(p1.x, p2.x):
-                        inside = include_edges
+                        inside: bool = include_edges
                         break
                     if point.x < min(p1.x, p2.x):
                         inside = not inside
             elif min(p1.y, p2.y) <= point.y <= max(p1.y, p2.y):
-                xinters = (point.y - p1.y) * (p2.x - p1.x) / float(p2.y - p1.y) + p1.x
+                xinters: float = (point.y - p1.y) * (p2.x - p1.x) / float(p2.y - p1.y) + p1.x
 
                 if point.x == xinters:
                     inside = include_edges
@@ -1319,8 +1327,8 @@ class Polygon2:
         # Code was adapted from this stackoverflow post:
         # https://stackoverflow.com/a/34327761
 
-        n = len(self.points)
-        area = 0.0
+        n: int = len(self.points)
+        area: float = 0.0
         for i in range(n - 1):
             area += -self.points[i].y * self.points[i + 1].x + self.points[i].x * self.points[i + 1].y
         area += -self.points[n - 1].y * self.points[0].x + self.points[n - 1].x * self.points[0].y

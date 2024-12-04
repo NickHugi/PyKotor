@@ -15,7 +15,7 @@ import resources_rc  # noqa: PLC0415, F401  # pylint: disable=ungrouped-imports,
 from toolset.config import CURRENT_VERSION
 from toolset.gui.windows.main import ToolWindow
 from toolset.main_init import is_running_from_temp
-from toolset.main_settings import _setup_pre_init_settings, setup_post_init_settings, setup_toolset_default_env
+from toolset.main_settings import setup_post_init_settings, setup_pre_init_settings, setup_toolset_default_env
 from toolset.utils.window import TOOLSET_WINDOWS
 from utility.system.app_process.shutdown import terminate_child_processes
 
@@ -36,7 +36,7 @@ def main():
 
     This block is ran when users run __main__.py directly.
     """
-    _setup_pre_init_settings()
+    setup_pre_init_settings()
 
     app = QApplication(sys.argv)
     app.setApplicationName("HolocronToolset")

@@ -5,6 +5,7 @@ from pykotor.resource.formats.gff.gff_data import (
     GFFStruct,
     GFFFieldType,
     GFFContent,
+    GFFComparisonResult,
 )
 from pykotor.resource.formats.gff.io_gff import (
     GFFBinaryReader,
@@ -18,6 +19,7 @@ from pykotor.resource.formats.gff.gff_auto import write_gff, read_gff, detect_gf
 
 __all__ = [
     "GFF",
+    "GFFComparisonResult",
     "GFFBinaryReader",
     "GFFBinaryWriter",
     "GFFContent",

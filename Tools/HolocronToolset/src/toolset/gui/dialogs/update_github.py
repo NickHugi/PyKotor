@@ -49,6 +49,7 @@ def fetch_and_cache_forks() -> dict[str, list[GithubRelease]]:
 
 def filter_releases(
     releases: list[GithubRelease],
+    *,
     include_prerelease: bool = False
 ) -> list[GithubRelease]:
     """Filter releases based on criteria."""

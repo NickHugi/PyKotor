@@ -1,4 +1,8 @@
+"""UI wrapper widget for the LYT editor.
 
+Provides the user interface elements around the core LYT editor,
+including toolbars, property panels, etc.
+"""
 from __future__ import annotations
 
 import concurrent.futures
@@ -12,8 +16,6 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
 import qtpy
 
-from toolset.gui.widgets.renderer.lyt_editor import LYTRenderer
-
 from loggerplus import RobustLogger
 from qtpy.QtCore import (
     QByteArray,
@@ -23,18 +25,20 @@ from qtpy.QtCore import (
     QPoint,
     QSettings,
     QSize,
-    QTimer,
+    QTimer,  # pyright: ignore[reportPrivateImportUsage]
     Qt,
-    Signal,  # pyright: ignore[reportPrivateImportUsage]
+    Signal,
 )
 from qtpy.QtGui import QAction, QActionGroup, QDrag, QHelpEvent, QIcon, QKeySequence, QPainter, QPalette, QPixmap, QShortcut, QUndoCommand
 from qtpy.QtWidgets import (
     QApplication,
-    QCheckBox,
-    QDialog, 
+    QDialog,
     QDockWidget,
     QErrorMessage,
     QFileDialog,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
     QInputDialog,
     QLabel,
     QMenu,
@@ -54,21 +58,12 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
+from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTRoom
 from pykotor.resource.resource_auto import BWM
-from toolset.data.lyt_structures import (
-    ExtendedLYT as LYT,
-    ExtendedLYTDoorHook as LYTDoorHook,
-    ExtendedLYTObstacle as LYTObstacle,
-    ExtendedLYTRoom as LYTRoom,
-    ExtendedLYTTrack as LYTTrack,
-)
+from toolset.data.lyt_structures import ExtendedLYTObstacle, ExtendedLYTTrack
 from toolset.gui.dialogs.lyt_dialogs import ObstaclePropertiesDialog, RoomPropertiesDialog, TrackPropertiesDialog
 from toolset.gui.editors.lyt import LYTEditor
-from toolset.gui.widgets.customizable_toolbar import CustomizableToolBar
-from toolset.gui.widgets.renderer.custom_toolbar import (
-    CustomizableToolBar,  # FIXME: CustomizableToolBar not found
-)
-from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
+from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.gui.widgets.renderer.walkmesh_editor import DoorHookPropertiesDialog, WalkmeshEditor
 
@@ -78,6 +73,8 @@ elif qtpy.QT6:
     from qtpy.QtGui import QUndoStack
 else:
     raise RuntimeError("Unsupported Qt version")
+
+
 if TYPE_CHECKING:
     from concurrent.futures import Future
 
@@ -100,14 +97,12 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import _QMenu
     from typing_extensions import Literal
 
+    from toolset.data.lyt_structures import ExtendedLYTDoorHook, ExtendedLYTRoom
+    from toolset.gui.editors.lyt import LYTEditor
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 
-"""UI wrapper widget for the LYT editor.
 
-Provides the user interface elements around the core LYT editor,
-including toolbars, property panels, etc.
-"""
 
 class LYTEditorWidget(QWidget):
     """UI wrapper widget for the LYT editor.
@@ -115,6 +110,206 @@ class LYTEditorWidget(QWidget):
     Provides the user interface elements and coordinates between the core editor,
     texture browser, and walkmesh editor components.
     """
+
+    """Widget for editing KotOR module layouts.
+
+    Provides UI controls for:
+    - Adding/removing rooms and door hooks
+    - Positioning and rotating rooms
+    - Setting room properties
+    - Managing door connections
+    """
+
+    sig_lyt_updated = Signal(LYT)
+
+    def __init__(self, parent: LYTEditor):
+        super().__init__(parent)
+        self._lyt: Optional[LYT] = None
+        self._selected_room: Optional[LYTRoom] = None
+        self._selected_door: Optional[LYTDoorHook] = None
+
+        self._init_ui()
+        self._setup_signals()
+
+    def _init_ui(self):
+        """Initialize the UI layout and controls."""
+        layout = QVBoxLayout(self)
+
+        # Room controls
+        room_group = QGroupBox("Room Properties")
+        room_layout = QGridLayout()
+
+        # Position controls
+        pos_layout = QHBoxLayout()
+        pos_layout.addWidget(QLabel("Position:"))
+        self.pos_x = QSpinBox()
+        self.pos_y = QSpinBox()
+        self.pos_z = QSpinBox()
+        for spin in (self.pos_x, self.pos_y, self.pos_z):
+            spin.setRange(-99999, 99999)
+            pos_layout.addWidget(spin)
+        room_layout.addLayout(pos_layout, 0, 0, 1, 2)
+
+        # Model name
+        room_layout.addWidget(QLabel("Model:"), 1, 0)
+        self.model_name = QLabel()
+        room_layout.addWidget(self.model_name, 1, 1)
+
+        room_group.setLayout(room_layout)
+        layout.addWidget(room_group)
+
+        # Door hook controls
+        door_group = QGroupBox("Door Hook Properties")
+        door_layout = QGridLayout()
+
+        # Door position
+        door_pos_layout = QHBoxLayout()
+        door_pos_layout.addWidget(QLabel("Position:"))
+        self.door_pos_x = QSpinBox()
+        self.door_pos_y = QSpinBox()
+        self.door_pos_z = QSpinBox()
+        for spin in (self.door_pos_x, self.door_pos_y, self.door_pos_z):
+            spin.setRange(-99999, 99999)
+            door_pos_layout.addWidget(spin)
+        door_layout.addLayout(door_pos_layout, 0, 0, 1, 2)
+
+        # Room ID
+        door_layout.addWidget(QLabel("Room:"), 1, 0)
+        self.room_id = QSpinBox()
+        self.room_id.setRange(0, 999)
+        door_layout.addWidget(self.room_id, 1, 1)
+
+        door_group.setLayout(door_layout)
+        layout.addWidget(door_group)
+
+        # Action buttons
+        button_layout = QHBoxLayout()
+        self.add_room_btn = QPushButton("Add Room")
+        self.add_door_btn = QPushButton("Add Door Hook")
+        self.delete_btn = QPushButton("Delete Selected")
+        button_layout.addWidget(self.add_room_btn)
+        button_layout.addWidget(self.add_door_btn)
+        button_layout.addWidget(self.delete_btn)
+        layout.addLayout(button_layout)
+
+        layout.addStretch()
+
+    def _setup_signals(self):
+        """Connect widget signals."""
+        # Position spinboxes
+        self.pos_x.valueChanged.connect(self._on_room_pos_changed)
+        self.pos_y.valueChanged.connect(self._on_room_pos_changed)
+        self.pos_z.valueChanged.connect(self._on_room_pos_changed)
+
+        # Door hook spinboxes
+        self.door_pos_x.valueChanged.connect(self._on_door_pos_changed)
+        self.door_pos_y.valueChanged.connect(self._on_door_pos_changed)
+        self.door_pos_z.valueChanged.connect(self._on_door_pos_changed)
+        self.room_id.valueChanged.connect(self._on_door_room_changed)
+
+        # Buttons
+        self.add_room_btn.clicked.connect(self._on_add_room)
+        self.add_door_btn.clicked.connect(self._on_add_door)
+        self.delete_btn.clicked.connect(self._on_delete)
+
+    def set_lyt(self, lyt: LYT):
+        """Set the LYT being edited."""
+        self._lyt = lyt
+        self._selected_room = None
+        self._selected_door = None
+        self._update_ui()
+
+    def get_lyt(self) -> Optional[LYT]:
+        """Get the current LYT."""
+        return self._lyt
+
+    def select_room(self, room: Optional[LYTRoom]):
+        """Select a room for editing."""
+        self._selected_room = room
+        self._selected_door = None
+        self._update_ui()
+
+    def select_door(self, door: Optional[LYTDoorHook]):
+        """Select a door hook for editing."""
+        self._selected_door = door
+        self._selected_room = None
+        self._update_ui()
+
+    def _update_ui(self):
+        """Update UI controls to reflect current selection."""
+        room_selected = self._selected_room is not None
+        door_selected = self._selected_door is not None
+
+        # Update room controls
+        if room_selected:
+            self.pos_x.setValue(self._selected_room.position.x)
+            self.pos_y.setValue(self._selected_room.position.y)
+            self.pos_z.setValue(self._selected_room.position.z)
+            self.model_name.setText(self._selected_room.model)
+
+        # Update door controls
+        if door_selected:
+            self.door_pos_x.setValue(self._selected_door.position.x)
+            self.door_pos_y.setValue(self._selected_door.position.y)
+            self.door_pos_z.setValue(self._selected_door.position.z)
+            self.room_id.setValue(self._selected_door.room_id)
+
+        # Enable/disable controls
+        for widget in (self.pos_x, self.pos_y, self.pos_z):
+            widget.setEnabled(room_selected)
+        for widget in (self.door_pos_x, self.door_pos_y, self.door_pos_z, self.room_id):
+            widget.setEnabled(door_selected)
+
+    def _on_room_pos_changed(self):
+        """Handle room position changes."""
+        if self._selected_room and self._lyt:
+            self._selected_room.position = Vector3(self.pos_x.value(), self.pos_y.value(), self.pos_z.value())
+            self.sig_lyt_updated.emit(self._lyt)
+
+    def _on_door_pos_changed(self):
+        """Handle door hook position changes."""
+        if self._selected_door and self._lyt:
+            self._selected_door.position = Vector3(self.door_pos_x.value(), self.door_pos_y.value(), self.door_pos_z.value())
+            self.sig_lyt_updated.emit(self._lyt)
+
+    def _on_door_room_changed(self):
+        """Handle door hook room ID changes."""
+        if self._selected_door and self._lyt:
+            self._selected_door.room_id = self.room_id.value()
+            self.sig_lyt_updated.emit(self._lyt)
+
+    def _on_add_room(self):
+        """Add a new room."""
+        if self._lyt:
+            room = LYTRoom()
+            room.position = Vector3(0, 0, 0)
+            room.model = "m00xx_empty"
+            self._lyt.rooms.append(room)
+            self.select_room(room)
+            self.sig_lyt_updated.emit(self._lyt)
+
+    def _on_add_door(self):
+        """Add a new door hook."""
+        if self._lyt:
+            door = LYTDoorHook()
+            door.position = Vector3(0, 0, 0)
+            door.room_id = len(self._lyt.rooms) - 1 if self._lyt.rooms else 0
+            self._lyt.door_hooks.append(door)
+            self.select_door(door)
+            self.sig_lyt_updated.emit(self._lyt)
+
+    def _on_delete(self):
+        """Delete the selected item."""
+        if self._lyt:
+            if self._selected_room:
+                self._lyt.rooms.remove(self._selected_room)
+                self._selected_room = None
+            elif self._selected_door:
+                self._lyt.door_hooks.remove(self._selected_door)
+                self._selected_door = None
+            self._update_ui()
+            self.sig_lyt_updated.emit(self._lyt)
+
     # Signals for coordinating UI state changes
     sig_lyt_updated = Signal(LYT)  # Emitted when LYT data changes
     sig_walkmesh_updated = Signal(BWM)  # Emitted when walkmesh changes
@@ -146,7 +341,7 @@ class LYTEditorWidget(QWidget):
 
     def __init__(self, parent: ModuleRenderer):
         super().__init__(parent)
-        self.parent_ref = parent
+        self.parent_ref: ModuleRenderer = parent
 
         # Core editing components
         self.lyt_renderer = LYTRenderer(parent)  # Core rendering component
@@ -155,7 +350,7 @@ class LYTEditorWidget(QWidget):
 
         # UI state
         self.current_tool = "select"
-        self.ui_state = {}
+        self.ui_state: dict[str, Any] = {}
         self.tool_group = QActionGroup(self)
         self.tool_group.setExclusive(True)
 
@@ -215,7 +410,6 @@ class LYTEditorWidget(QWidget):
         main_layout = QVBoxLayout(self)
 
         # Create main toolbar
-        self.main_toolbar: CustomizableToolBar = CustomizableToolBar("LYT Editor Toolbar")
         self.main_toolbar.setIconSize(QSize(24, 24))
         self.setup_main_toolbar()
         main_layout.addWidget(self.main_toolbar)
@@ -1182,7 +1376,7 @@ class LYTEditorWidget(QWidget):
 
     def add_track(self):
         if self.selected_room:
-            track = LYTTrack()
+            track = ExtendedLYTTrack()
             track.start_room = self.selected_room
             # Open a dialog to select end room and set other properties
             dialog = TrackPropertiesDialog(self.current_lyt.rooms, track, self)  # FIXME: TrackPropertiesDialog needs to be created
@@ -1191,7 +1385,7 @@ class LYTEditorWidget(QWidget):
                 self.update_lyt_preview()
 
     def add_obstacle(self):
-        obstacle = LYTObstacle()
+        obstacle = ExtendedLYTObstacle()
         # Open a dialog to set obstacle properties
         dialog = ObstaclePropertiesDialog(obstacle, self)  # FIXME: ObstaclePropertiesDialog needs to be created
         if dialog.exec():
@@ -1246,22 +1440,22 @@ class LYTEditorWidget(QWidget):
         else:
             QMessageBox.warning(self, "Save Failed", "No current LYT or module available.")
 
-    def edit_room_properties(self, room: LYTRoom) -> None:
+    def edit_room_properties(self, room: ExtendedLYTRoom) -> None:
         dialog = RoomPropertiesDialog(room, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.update_scene()
 
-    def edit_track_properties(self, track: LYTTrack) -> None:
+    def edit_track_properties(self, track: ExtendedLYTTrack) -> None:
         dialog = TrackPropertiesDialog(track, self._lyt.rooms, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.update_scene()
 
-    def edit_obstacle_properties(self, obstacle: LYTObstacle) -> None:
+    def edit_obstacle_properties(self, obstacle: ExtendedLYTObstacle) -> None:
         dialog = ObstaclePropertiesDialog(obstacle, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.update_scene()
 
-    def edit_doorhook_properties(self, doorhook: LYTDoorHook) -> None:
+    def edit_doorhook_properties(self, doorhook: ExtendedLYTDoorHook) -> None:
         dialog = DoorHookPropertiesDialog(doorhook, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.update_scene()
@@ -1456,29 +1650,10 @@ class ZoomPanWidget(QWidget):
         self.zoom_factor = 1.0
         self.pan_offset = QPoint(0, 0)
 
-from typing import TYPE_CHECKING, Optional
-
-from qtpy.QtCore import Qt, Signal
-from qtpy.QtWidgets import (
-    QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSpinBox,
-    QVBoxLayout,
-    QWidget,
-)
-
-from pykotor.common.geometry import Vector3
-from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTRoom
-
-if TYPE_CHECKING:
-    from toolset.gui.editors.lyt import LYTEditor
 
 class LYTEditorWidget(QWidget):
     """Widget for editing KotOR module layouts.
-    
+
     Provides UI controls for:
     - Adding/removing rooms and door hooks
     - Positioning and rotating rooms
@@ -1493,235 +1668,6 @@ class LYTEditorWidget(QWidget):
         self._lyt: Optional[LYT] = None
         self._selected_room: Optional[LYTRoom] = None
         self._selected_door: Optional[LYTDoorHook] = None
-        
+
         self._init_ui()
         self._setup_signals()
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Optional
-
-from qtpy.QtCore import Qt, Signal
-from qtpy.QtWidgets import (
-    QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSpinBox,
-    QVBoxLayout,
-    QWidget,
-)
-
-from pykotor.common.geometry import Vector3
-from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTRoom
-
-if TYPE_CHECKING:
-    from toolset.gui.editors.lyt import LYTEditor
-
-class LYTEditorWidget(QWidget):
-    """Widget for editing KotOR module layouts.
-    
-    Provides UI controls for:
-    - Adding/removing rooms and door hooks
-    - Positioning and rotating rooms
-    - Setting room properties
-    - Managing door connections
-    """
-
-    sig_lyt_updated = Signal(LYT)
-
-    def __init__(self, parent: LYTEditor):
-        super().__init__(parent)
-        self._lyt: Optional[LYT] = None
-        self._selected_room: Optional[LYTRoom] = None
-        self._selected_door: Optional[LYTDoorHook] = None
-        
-        self._init_ui()
-        self._setup_signals()
-
-    def _init_ui(self):
-        """Initialize the UI layout and controls."""
-        layout = QVBoxLayout(self)
-
-        # Room controls
-        room_group = QGroupBox("Room Properties")
-        room_layout = QGridLayout()
-        
-        # Position controls
-        pos_layout = QHBoxLayout()
-        pos_layout.addWidget(QLabel("Position:"))
-        self.pos_x = QSpinBox()
-        self.pos_y = QSpinBox() 
-        self.pos_z = QSpinBox()
-        for spin in (self.pos_x, self.pos_y, self.pos_z):
-            spin.setRange(-99999, 99999)
-            pos_layout.addWidget(spin)
-        room_layout.addLayout(pos_layout, 0, 0, 1, 2)
-
-        # Model name
-        room_layout.addWidget(QLabel("Model:"), 1, 0)
-        self.model_name = QLabel()
-        room_layout.addWidget(self.model_name, 1, 1)
-
-        room_group.setLayout(room_layout)
-        layout.addWidget(room_group)
-
-        # Door hook controls  
-        door_group = QGroupBox("Door Hook Properties")
-        door_layout = QGridLayout()
-
-        # Door position
-        door_pos_layout = QHBoxLayout()
-        door_pos_layout.addWidget(QLabel("Position:"))
-        self.door_pos_x = QSpinBox()
-        self.door_pos_y = QSpinBox()
-        self.door_pos_z = QSpinBox()
-        for spin in (self.door_pos_x, self.door_pos_y, self.door_pos_z):
-            spin.setRange(-99999, 99999)
-            door_pos_layout.addWidget(spin)
-        door_layout.addLayout(door_pos_layout, 0, 0, 1, 2)
-
-        # Room ID
-        door_layout.addWidget(QLabel("Room:"), 1, 0)
-        self.room_id = QSpinBox()
-        self.room_id.setRange(0, 999)
-        door_layout.addWidget(self.room_id, 1, 1)
-
-        door_group.setLayout(door_layout)
-        layout.addWidget(door_group)
-
-        # Action buttons
-        button_layout = QHBoxLayout()
-        self.add_room_btn = QPushButton("Add Room")
-        self.add_door_btn = QPushButton("Add Door Hook") 
-        self.delete_btn = QPushButton("Delete Selected")
-        button_layout.addWidget(self.add_room_btn)
-        button_layout.addWidget(self.add_door_btn)
-        button_layout.addWidget(self.delete_btn)
-        layout.addLayout(button_layout)
-
-        layout.addStretch()
-
-    def _setup_signals(self):
-        """Connect widget signals."""
-        # Position spinboxes
-        self.pos_x.valueChanged.connect(self._on_room_pos_changed)
-        self.pos_y.valueChanged.connect(self._on_room_pos_changed)
-        self.pos_z.valueChanged.connect(self._on_room_pos_changed)
-
-        # Door hook spinboxes
-        self.door_pos_x.valueChanged.connect(self._on_door_pos_changed)
-        self.door_pos_y.valueChanged.connect(self._on_door_pos_changed)
-        self.door_pos_z.valueChanged.connect(self._on_door_pos_changed)
-        self.room_id.valueChanged.connect(self._on_door_room_changed)
-
-        # Buttons
-        self.add_room_btn.clicked.connect(self._on_add_room)
-        self.add_door_btn.clicked.connect(self._on_add_door)
-        self.delete_btn.clicked.connect(self._on_delete)
-
-    def set_lyt(self, lyt: LYT):
-        """Set the LYT being edited."""
-        self._lyt = lyt
-        self._selected_room = None
-        self._selected_door = None
-        self._update_ui()
-
-    def get_lyt(self) -> Optional[LYT]:
-        """Get the current LYT."""
-        return self._lyt
-
-    def select_room(self, room: Optional[LYTRoom]):
-        """Select a room for editing."""
-        self._selected_room = room
-        self._selected_door = None
-        self._update_ui()
-
-    def select_door(self, door: Optional[LYTDoorHook]):
-        """Select a door hook for editing."""
-        self._selected_door = door
-        self._selected_room = None
-        self._update_ui()
-
-    def _update_ui(self):
-        """Update UI controls to reflect current selection."""
-        room_selected = self._selected_room is not None
-        door_selected = self._selected_door is not None
-
-        # Update room controls
-        if room_selected:
-            self.pos_x.setValue(self._selected_room.position.x)
-            self.pos_y.setValue(self._selected_room.position.y)
-            self.pos_z.setValue(self._selected_room.position.z)
-            self.model_name.setText(self._selected_room.model)
-        
-        # Update door controls
-        if door_selected:
-            self.door_pos_x.setValue(self._selected_door.position.x)
-            self.door_pos_y.setValue(self._selected_door.position.y)
-            self.door_pos_z.setValue(self._selected_door.position.z)
-            self.room_id.setValue(self._selected_door.room_id)
-
-        # Enable/disable controls
-        for widget in (self.pos_x, self.pos_y, self.pos_z):
-            widget.setEnabled(room_selected)
-        for widget in (self.door_pos_x, self.door_pos_y, self.door_pos_z, self.room_id):
-            widget.setEnabled(door_selected)
-
-    def _on_room_pos_changed(self):
-        """Handle room position changes."""
-        if self._selected_room and self._lyt:
-            self._selected_room.position = Vector3(
-                self.pos_x.value(),
-                self.pos_y.value(),
-                self.pos_z.value()
-            )
-            self.sig_lyt_updated.emit(self._lyt)
-
-    def _on_door_pos_changed(self):
-        """Handle door hook position changes."""
-        if self._selected_door and self._lyt:
-            self._selected_door.position = Vector3(
-                self.door_pos_x.value(),
-                self.door_pos_y.value(),
-                self.door_pos_z.value()
-            )
-            self.sig_lyt_updated.emit(self._lyt)
-
-    def _on_door_room_changed(self):
-        """Handle door hook room ID changes."""
-        if self._selected_door and self._lyt:
-            self._selected_door.room_id = self.room_id.value()
-            self.sig_lyt_updated.emit(self._lyt)
-
-    def _on_add_room(self):
-        """Add a new room."""
-        if self._lyt:
-            room = LYTRoom()
-            room.position = Vector3(0, 0, 0)
-            room.model = "m00xx_empty"
-            self._lyt.rooms.append(room)
-            self.select_room(room)
-            self.sig_lyt_updated.emit(self._lyt)
-
-    def _on_add_door(self):
-        """Add a new door hook."""
-        if self._lyt:
-            door = LYTDoorHook()
-            door.position = Vector3(0, 0, 0)
-            door.room_id = len(self._lyt.rooms) - 1 if self._lyt.rooms else 0
-            self._lyt.door_hooks.append(door)
-            self.select_door(door)
-            self.sig_lyt_updated.emit(self._lyt)
-
-    def _on_delete(self):
-        """Delete the selected item."""
-        if self._lyt:
-            if self._selected_room:
-                self._lyt.rooms.remove(self._selected_room)
-                self._selected_room = None
-            elif self._selected_door:
-                self._lyt.door_hooks.remove(self._selected_door)
-                self._selected_door = None
-            self._update_ui()
-            self.sig_lyt_updated.emit(self._lyt)

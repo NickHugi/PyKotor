@@ -68,7 +68,6 @@
         "david-rickard.git-diff-and-merge-tool",
         "davidkol.fastcompare",
         "gxiao.difftool",
-        "wwm.better-align",
         "fabiospampinato.vscode-todo-plus",
         "sourcery.sourcery",
         "letmaik.git-tree-compare",
@@ -109,6 +108,7 @@
         "pycoder.pycoder",
         "drfword.synesthesia",
         "kerns.commander-v",
-        "tetedecactus.onepiece-dark-theme"
+        "tetedecactus.onepiece-dark-theme",
+        "choi.one-click-man"
     ]
 }

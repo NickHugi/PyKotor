@@ -1,51 +1,61 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from qtpy import QtCore
 from qtpy.QtWidgets import QFormLayout, QSpinBox
 
+if TYPE_CHECKING:
+    from qtpy.QtCore import QObject
+    from qtpy.QtWidgets import QLayout
+
 
 class GFFFieldSpinBox(QSpinBox):
-    applyFinalValue = QtCore.Signal(int)  # pyright: ignore[reportPrivateImportUsage]
+    sig_final_value_applied = QtCore.Signal(int)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.specialValueTextMapping = {0: "0", -1: "-1"}
+        self.special_value_text_mapping: dict[int, str] = {0: "0", -1: "-1"}
         self.min_value = self.minimum()
         self.setMinimum(-2147483647+1)
         self.setMaximum(2147483647)
-        self.setSpecialValueText(self.specialValueTextMapping.get(self.value(), ""))
+        self.setSpecialValueText(self.special_value_text_mapping.get(self.value(), ""))
 
-        self.lastOperation = None
-        self.cachedValue = None
-        self.applyFinalValue.connect(self._apply_final_value)
+        self.last_operation: str | None = None
+        self.cached_value: int | None = None
+        self.sig_final_value_applied.connect(self._apply_final_value)
 
     def true_minimum(self) -> int:
-        special_min = min(self.specialValueTextMapping.keys(), default=self.minimum())
+        special_min = min(self.special_value_text_mapping.keys(), default=self.minimum())
         return min(self.minimum(), special_min, self.min_value)
 
     def true_maximum(self) -> int:
-        special_max = max(self.specialValueTextMapping.keys(), default=self.maximum())
+        special_max = max(self.special_value_text_mapping.keys(), default=self.maximum())
         return max(self.maximum(), special_max)
 
     def stepBy(self, steps: int):
-        self.lastOperation = "stepBy"
-        current_value = self.value()
+        self.last_operation = "stepBy"
+        current_value: int = self.value()
         if steps > 0:
-            self.cachedValue = self._next_value(current_value, steps)
+            self.cached_value = self._next_value(current_value, steps)
         elif steps < 0:
-            self.cachedValue = self._next_value(current_value, steps)
-        self.applyFinalValue.emit(self.cachedValue)
+            self.cached_value = self._next_value(current_value, steps)
+        self.sig_final_value_applied.emit(self.cached_value)
 
-    def _next_value(self, current_value: int, steps: int) -> int:
-        tentative_next_value = current_value + steps
-        true_min = self.true_minimum()
+    def _next_value(
+        self,
+        current_value: int,
+        steps: int,
+    ) -> int:
+        tentative_next_value: int = current_value + steps
+        true_min: int = self.true_minimum()
         if tentative_next_value < true_min:
             return true_min
         max_val = self.maximum()
         if tentative_next_value > max_val:
             return max_val
 
-        special_values: list[int] = sorted(self.specialValueTextMapping.keys())
+        special_values: list[int] = sorted(self.special_value_text_mapping.keys())
         if steps > 0:
             for sv in special_values:
                 if sv > current_value and sv <= tentative_next_value:
@@ -61,14 +71,14 @@ class GFFFieldSpinBox(QSpinBox):
                 return sv
         return sv
 
-    def textChanged(self, text: str):
-        self.lastOperation = "textChanged"
+    def text_changed(self, text: str):
+        self.last_operation = "textChanged"
         try:
-            self.cachedValue = int(text)
+            self.cached_value = int(text)
         except ValueError:
-            self.cachedValue = self.value()
+            self.cached_value = self.value()
 
-    def _apply_final_value(self, value):
+    def _apply_final_value(self, value: int):
         if value < self.true_minimum():
             value = self.true_minimum()
         elif value > self.true_maximum():
@@ -80,49 +90,57 @@ class GFFFieldSpinBox(QSpinBox):
         self.min_value = value
         super().setMinimum(min(-2, value))
 
-    def onValueChanged(self, value):
-        if self.lastOperation in ("stepBy", "textChanged"):
-            self.applyFinalValue.emit(self.cachedValue)
-        self.lastOperation = None
+    def on_value_changed(self, value):
+        if self.last_operation in ("stepBy", "textChanged"):
+            self.sig_final_value_applied.emit(self.cached_value)
+        self.last_operation = None
 
     @classmethod
     def from_spinbox(
         cls,
-        originalSpin: QSpinBox,
+        original_spin: QSpinBox,
         min_value: int = 0,
         max_value: int = 100,
     ) -> GFFFieldSpinBox:
         """Is not perfect at realigning, but attempts to initialize a GFFFieldSpinBox from a pre-existing QSpinBox."""
-        if not isinstance(originalSpin, QSpinBox):
+        if not isinstance(original_spin, QSpinBox):
             raise TypeError("The provided widget is not a QSpinBox.")
 
-        layout = originalSpin.parentWidget().layout()
-        row, role = None, None
+        layout: QLayout | None = original_spin.parentWidget().layout()
+        row: int | None = None
+        role: int | None = None
 
         if isinstance(layout, QFormLayout):
             for r in range(layout.rowCount()):
-                if layout.itemAt(r, QFormLayout.ItemRole.FieldRole) and layout.itemAt(r, QFormLayout.ItemRole.FieldRole).widget() == originalSpin:
+                if layout.itemAt(r, QFormLayout.ItemRole.FieldRole) and layout.itemAt(r, QFormLayout.ItemRole.FieldRole).widget() == original_spin:
                     row, role = r, QFormLayout.ItemRole.FieldRole
 
                     break
-                if layout.itemAt(r, QFormLayout.ItemRole.LabelRole) and layout.itemAt(r, QFormLayout.ItemRole.LabelRole).widget() == originalSpin:
+                if layout.itemAt(r, QFormLayout.ItemRole.LabelRole) and layout.itemAt(r, QFormLayout.ItemRole.LabelRole).widget() == original_spin:
                     row, role = r, QFormLayout.ItemRole.LabelRole
 
                     break
 
-        parent = originalSpin.parent()
-        customSpin = cls(parent, min_value=min_value, max_value=max_value)
+        parent: QObject | None = original_spin.parent()
+        if parent is None:
+            raise RuntimeError("The provided widget has no parent.")
 
-        for i in range(originalSpin.metaObject().propertyCount()):
-            prop = originalSpin.metaObject().property(i)
+        custom_spin: GFFFieldSpinBox = cls(parent, min_value=min_value, max_value=max_value)
+
+        meta_obj: QtCore.QMetaObject | None = original_spin.metaObject()
+        if meta_obj is None:
+            raise RuntimeError("The provided widget is not a QSpinBox.")
+
+        for i in range(meta_obj.propertyCount()):
+            prop: QtCore.QMetaProperty = meta_obj.property(i)
 
             if prop.isReadable() and prop.isWritable():
-                value = originalSpin.property(prop.name())
-                customSpin.setProperty(prop.name(), value)
+                value = original_spin.property(prop.name())
+                custom_spin.setProperty(prop.name(), value)
 
         if row is not None and role is not None:
-            layout.setWidget(row, role, customSpin)
+            layout.setWidget(row, role, custom_spin)
 
-        originalSpin.deleteLater()
+        original_spin.deleteLater()
 
-        return customSpin
+        return custom_spin

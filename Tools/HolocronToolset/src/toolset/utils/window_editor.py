@@ -10,9 +10,12 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
     pass
 
-def create_editor_window(filepath: Path | str | None = None, parent: QWidget | None = None) -> Editor:
+def create_editor_window(
+    filepath: Path | str | None = None,
+    parent: QWidget | None = None,
+) -> Editor:
     """Create a new editor window."""
-    editor = Editor(parent)
+    editor: Editor = Editor(parent)
     if filepath is not None:
         editor.load_file(filepath)
     add_window(editor)

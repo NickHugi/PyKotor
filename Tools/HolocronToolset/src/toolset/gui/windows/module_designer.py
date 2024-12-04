@@ -32,6 +32,7 @@ from pykotor.common.misc import Color, ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.gl.scene import Camera
+from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITEncounter, GITInstance, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.generics.utt import read_utt
@@ -60,8 +61,10 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import QCheckBox
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
-    from pykotor.gl.scene import Camera
+    from pykotor.common.module import UTT, UTW
+    from pykotor.gl.scene import Camera, Scene
     from pykotor.resource.formats.bwm.bwm_data import BWM
+    from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.git import GIT
     from pykotor.resource.generics.ifo import IFO
@@ -241,8 +244,32 @@ class ModuleDesigner(QMainWindow):
         self.ui.actionSave.triggered.connect(self.save_git)
         self.ui.actionInstructions.triggered.connect(self.show_help_window)
 
+        # LYT Editor signals
+        self.ui.actionAddRoom.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_room())
+        self.ui.actionAddDoorHook.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_door_hook())
+        self.ui.actionAddTrack.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_track())
+        self.ui.actionAddObstacle.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_obstacle())
+        self.ui.actionGenerateWalkmesh.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.generate_walkmesh())
+
+        # LYT Editor signals
+        self.ui.actionAddRoom.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_room())
+        self.ui.actionAddDoorHook.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_door_hook())
+        self.ui.actionAddTrack.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_track())
+        self.ui.actionAddObstacle.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_obstacle())
+        self.ui.actionGenerateWalkmesh.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.generate_walkmesh())
+
         self.ui.actionUndo.triggered.connect(lambda: print("Undo signal") or self.undo_stack.undo())
         self.ui.actionRedo.triggered.connect(lambda: print("Redo signal") or self.undo_stack.redo())
+
+        # LYT Editor signals
+        self.ui.actionAddRoom.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_room())
+        self.ui.actionAddDoorHook.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_door_hook())
+        self.ui.actionAddTrack.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_track())
+        self.ui.actionAddObstacle.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.add_obstacle())
+        self.ui.actionGenerateWalkmesh.triggered.connect(lambda: self.ui.mainRenderer._lyt_editor.generate_walkmesh())
+
+        # Connect LYT editor signals to update UI
+        self.ui.mainRenderer.sig_lyt_updated.connect(self.on_lyt_updated)
 
         self.ui.resourceTree.clicked.connect(self.on_resource_tree_single_clicked)
         self.ui.resourceTree.doubleClicked.connect(self.on_resource_tree_double_clicked)
@@ -312,9 +339,15 @@ class ModuleDesigner(QMainWindow):
         self.custom_status_bar_container.setLayout(self.custom_status_bar_layout)
         self.custom_status_bar.addPermanentWidget(self.custom_status_bar_container)
 
-    def update_status_bar(self, mouse_pos: QPoint | Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key], renderer: WalkmeshRenderer | ModuleRenderer):
-        norm_mouse_pos = Vector2(mouse_pos.x(), mouse_pos.y()) if isinstance(mouse_pos, QPoint) else mouse_pos
-        world_pos_3d = None
+    def update_status_bar(
+        self,
+        mouse_pos: QPoint | Vector2,
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
+        renderer: WalkmeshRenderer | ModuleRenderer,
+    ):
+        norm_mouse_pos: Vector2 = Vector2(mouse_pos.x(), mouse_pos.y()) if isinstance(mouse_pos, QPoint) else mouse_pos
+        world_pos_3d: Vector3 | None = None
 
         if isinstance(renderer, ModuleRenderer):
             pos = renderer.scene.cursor.position()
@@ -338,7 +371,7 @@ class ModuleDesigner(QMainWindow):
 
         self.buttons_keys_pressed_label.setText(f"Keys/Buttons: {'+'.join(map(get_qt_key_string, sorted_keys))} {'+'.join(map(get_qt_button_string, sorted_buttons))}")
 
-        instance = self.selected_instances[0] if self.selected_instances else None
+        instance: GITInstance | None = self.selected_instances[0] if self.selected_instances else None
         self.selected_instance_label.setText(f"Selected Instance: {repr(instance) if isinstance(instance, GITCamera) else instance.identifier() if instance else 'None'}")
 
     def _refresh_window_title(self):
@@ -348,6 +381,12 @@ class ModuleDesigner(QMainWindow):
             title = f"{self._module.root()} - {self._installation.name} - Module Designer"
         self.setWindowTitle(title)
 
+    def on_lyt_updated(self, lyt: LYT):
+        """Handle LYT updates from the editor."""
+        if self._module:
+            self._module.layout().save()
+            self.rebuild_resource_tree()
+
     def open_module_with_dialog(self):
         dialog = SelectModuleDialog(self, self._installation)
 
@@ -356,14 +395,17 @@ class ModuleDesigner(QMainWindow):
             self.open_module(mod_filepath)
 
     #    @with_variable_trace(Exception)
-    def open_module(self, mod_filepath: Path):
+    def open_module(
+        self,
+        mod_filepath: Path,
+    ):
         """Opens a module."""
         mod_root = self._installation.get_module_root(mod_filepath)
         mod_filepath = self._ensure_mod_file(mod_filepath, mod_root)
 
         self.unload_module()
         combined_module = Module(mod_root, self._installation, use_dot_mod=is_mod_file(mod_filepath))
-        git = combined_module.git().resource()
+        git: GIT | None = combined_module.git().resource()
         if git is None:
             raise ValueError(f"This module '{mod_root}' is missing a GIT!")
 
@@ -372,7 +414,7 @@ class ModuleDesigner(QMainWindow):
             res_obj = mod_resource.resource()
             if res_obj is not None and mod_resource.restype() is ResourceType.WOK:
                 walkmeshes.append(res_obj)
-        result = (combined_module, git, walkmeshes)
+        result: tuple[Module, GIT, list[BWM]] = (combined_module, git, walkmeshes)
         new_module, git, walkmeshes = result
         self._module = new_module
         self.ui.flatRenderer.set_git(git)
@@ -465,7 +507,7 @@ class ModuleDesigner(QMainWindow):
             self.ui.resourceTree.setEnabled(False)
             return
 
-        categories = {
+        categories: dict[ResourceType, QTreeWidgetItem] = {
             ResourceType.UTC: QTreeWidgetItem(["Creatures"]),
             ResourceType.UTP: QTreeWidgetItem(["Placeables"]),
             ResourceType.UTD: QTreeWidgetItem(["Doors"]),
@@ -500,7 +542,7 @@ class ModuleDesigner(QMainWindow):
         for resource in self._module.resources.values():
             item = QTreeWidgetItem([f"{resource.resname()}.{resource.restype().extension}"])
             item.setData(0, Qt.ItemDataRole.UserRole, resource)
-            category = categories.get(resource.restype(), categories[ResourceType.INVALID])
+            category: QTreeWidgetItem = categories.get(resource.restype(), categories[ResourceType.INVALID])
             category.addChild(item)
 
         self.ui.resourceTree.sortByColumn(0, Qt.SortOrder.AscendingOrder)
@@ -618,6 +660,8 @@ class ModuleDesigner(QMainWindow):
         self.ui.instanceList.clear()
         items: list[QListWidgetItem] = []
 
+        if self._module is None:
+            return
         git: GIT = self._module.git().resource()
 
         for instance in git.instances():
@@ -734,11 +778,11 @@ class ModuleDesigner(QMainWindow):
                 self._module.git().resource().add(instance)
 
                 if isinstance(instance, GITWaypoint):
-                    utw = read_utw(dialog.data)
+                    utw: UTW = read_utw(dialog.data)
                     instance.tag = utw.tag
                     instance.name = utw.name
                 elif isinstance(instance, GITTrigger):
-                    utt = read_utt(dialog.data)
+                    utt: UTT = read_utt(dialog.data)
                     instance.tag = utt.tag
                     if not instance.geometry:
                         RobustLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "utt")
@@ -748,14 +792,17 @@ class ModuleDesigner(QMainWindow):
                         RobustLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "ute")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITDoor):
-                    utd = read_utd(dialog.data)
+                    utd: module.UTD = read_utd(dialog.data)
                     instance.tag = utd.tag
         else:
             self._module.git().resource().add(instance)
         self.rebuild_instance_list()
 
-    def add_instance_at_cursor(self, instance: GITInstance):
-        scene = self.ui.mainRenderer.scene
+    def add_instance_at_cursor(
+        self,
+        instance: GITInstance,
+    ):
+        scene: Scene = self.ui.mainRenderer.scene
         assert scene is not None
 
         instance.position.x = scene.cursor.position().x
@@ -777,14 +824,20 @@ class ModuleDesigner(QMainWindow):
             self._module.git().resource().add(instance)
         self.rebuild_instance_list()
 
-    def edit_instance(self, instance: GITInstance):
+    def edit_instance(
+        self,
+        instance: GITInstance,
+    ):
         if open_instance_dialog(self, instance, self._installation):
             if not isinstance(instance, GITCamera):
                 ident = instance.identifier()
                 self.ui.mainRenderer.scene.clear_cache_buffer.append(ident)
             self.rebuild_instance_list()
 
-    def snap_camera_to_view(self, git_camera_instance: GITCamera):
+    def snap_camera_to_view(
+        self,
+        git_camera_instance: GITCamera,
+    ):
         view_camera: Camera = self._get_scene_camera()
         view_position: vec3 = view_camera.true_position()
 
@@ -799,7 +852,10 @@ class ModuleDesigner(QMainWindow):
         self.undo_stack.push(RotateCommand(git_camera_instance, git_camera_instance.orientation, new_orientation))
         git_camera_instance.orientation = new_orientation
 
-    def snap_view_to_git_camera(self, git_camera_instance: GITCamera):
+    def snap_view_to_git_camera(
+        self,
+        git_camera_instance: GITCamera,
+    ):
         view_camera: Camera = self._get_scene_camera()
         euler: Vector3 = git_camera_instance.orientation.to_euler()
         view_camera.pitch = math.pi - euler.z - math.radians(git_camera_instance.pitch)
@@ -809,9 +865,12 @@ class ModuleDesigner(QMainWindow):
         view_camera.z = git_camera_instance.position.z + git_camera_instance.height
         view_camera.distance = 0
 
-    def snap_view_to_git_instance(self, git_instance: GITInstance):
+    def snap_view_to_git_instance(
+        self,
+        git_instance: GITInstance,
+    ):
         camera: Camera = self._get_scene_camera()
-        yaw = git_instance.yaw()
+        yaw: float | None = git_instance.yaw()
         camera.yaw = camera.yaw if yaw is None else yaw
         camera.x, camera.y, camera.z = git_instance.position
         camera.y = git_instance.position.y
@@ -853,7 +912,11 @@ class ModuleDesigner(QMainWindow):
             self.ui.flatRenderer.instance_selection.clear()
             self.selected_instances.clear()
 
-    def delete_selected(self, *, no_undo_stack: bool = False):
+    def delete_selected(
+        self,
+        *,
+        no_undo_stack: bool = False,
+    ):
         if not no_undo_stack:
             self.undo_stack.push(DeleteCommand(self.git(), self.selected_instances.copy(), self))  # noqa: SLF001
         for instance in self.selected_instances:
@@ -877,12 +940,12 @@ class ModuleDesigner(QMainWindow):
 
         for instance in self.selected_instances:
             self.log.debug("Moving %s", instance.resref)
-            new_x = instance.position.x + x
-            new_y = instance.position.y + y
+            new_x: float = instance.position.x + x
+            new_y: float = instance.position.y + y
             if no_z_coord:
-                new_z = instance.position.z
+                new_z: float = instance.position.z
             else:
-                new_z = instance.position.z + (z or self.ui.mainRenderer.walkmesh_point(instance.position.x, instance.position.y).z)
+                new_z: float = instance.position.z + (z or self.ui.mainRenderer.walkmesh_point(instance.position.x, instance.position.y).z)
             old_position = instance.position
             new_position = Vector3(new_x, new_y, new_z)
             if not no_undo_stack:

@@ -295,8 +295,7 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
 
     if restype.category == "Audio":
         editor = AudioPlayer(None)
-        app = cast(QApplication, QApplication.instance())
-        editor.setWindowIcon(app.windowIcon())
+        editor.setWindowIcon(cast(QApplication, QApplication.instance()).windowIcon())
 
     if restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM, ResourceType.BIF):
         editor = ERFEditor(None, installation)

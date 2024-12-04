@@ -704,6 +704,20 @@
                                                 <addaction name="separator" />
                                                 <addaction name="actionImportTexture" />
                                                 <addaction name="actionGenerateWalkmesh" />
+                                                <addaction name="actionAddRoom" />
+                                                <addaction name="actionAddDoorHook" />
+                                                <addaction name="actionAddTrack" />
+                                                <addaction name="actionAddObstacle" />
+                                                <addaction name="separator" />
+                                                <addaction name="actionImportTexture" />
+                                                <addaction name="actionGenerateWalkmesh" />
+                                                <addaction name="actionAddRoom" />
+                                                <addaction name="actionAddDoorHook" />
+                                                <addaction name="actionAddTrack" />
+                                                <addaction name="actionAddObstacle" />
+                                                <addaction name="separator" />
+                                                <addaction name="actionImportTexture" />
+                                                <addaction name="actionGenerateWalkmesh" />
                                             </widget>
                                         </item>
                                         <item>

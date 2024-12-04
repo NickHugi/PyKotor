@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
 import qtpy
 
-from toolset.gui.widgets.renderer.lyt_editor import LYTRenderer
-
 from qtpy.QtCore import QRectF, Qt, pyqtSignal as Signal
 from qtpy.QtGui import QBrush, QColor, QPainter, QPen, QUndoCommand
 from qtpy.QtWidgets import (
@@ -48,7 +46,7 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QMouseEvent, QWheelEvent
     from qtpy.QtWidgets import QGraphicsItem
 
-    from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
+    from toolset.gui.widgets.renderer.lyt_editor import LYTEditor, LYTRenderer
 
 
 class WalkmeshEditor(QWidget):
@@ -723,7 +721,7 @@ class DoorHookPropertiesDialog(QDialog):
 class AddRoomCommand(QUndoCommand):
     def __init__(
         self,
-        renderer: LYTRenderer, 
+        renderer: LYTRenderer,
         room: LYTRoom,
     ):
         super().__init__("Add Room")

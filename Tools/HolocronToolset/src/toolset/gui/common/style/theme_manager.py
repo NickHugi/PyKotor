@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any
 
 import qtpy
 
-from PyQt6.QtWidgets import QStyleFactory
 from qtpy.QtCore import (
     QDir,
     QDirIterator,
@@ -22,6 +21,7 @@ from qtpy.QtWidgets import (
     QApplication,
     QMessageBox,
     QStyle,
+    QStyleFactory,
 )
 
 from toolset.gui.widgets.settings.widgets.misc import GlobalSettings
@@ -182,7 +182,7 @@ class ThemeManager:
                 "sheet": lambda app: self._get_file_stylesheet(":/themes/other/SolarizedDark.qss", app),
             },
         }
-        return configs.get(theme_name, configs["native"])
+        return configs.get(theme_name, configs["fusion (light)"])
 
     @Slot()
     def change_theme(

@@ -5,7 +5,17 @@ import math
 from copy import copy
 from typing import TYPE_CHECKING, Generic, NamedTuple, TypeVar
 
-from qtpy.QtCore import QPoint, QPointF, QRect, QRectF, QTimer, Qt, Signal
+import qtpy
+
+from qtpy.QtCore import (
+    QPoint,
+    QPointF,
+    QRect,
+    QRectF,
+    QTimer,
+    Qt,
+    Signal,  # pyright: ignore[reportPrivateImportUsage]
+)
 from qtpy.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath, QPen, QPixmap, QTransform
 from qtpy.QtWidgets import QWidget
 
@@ -270,28 +280,40 @@ class WalkmeshRenderer(QWidget):
     def set_minimap(self, are: ARE, tpc: TPC):
         self._are = are
 
-        tpc_rgb_data: bytearray = tpc.convert(TPCTextureFormat.RGB).data
-        get_result: TPCMipmap = tpc.get()
+        # Convert the TPC to RGB format and get the first mipmap
+        tpc_rgb_data: bytearray = tpc.convert(TPCTextureFormat.RGB).data  # pyright: ignore[reportAttributeAccessIssue]
+        get_result: TPCMipmap = tpc.get(0, 0)
         image = QImage(bytes(tpc_rgb_data), get_result.width, get_result.height, QImage.Format.Format_RGB888)
-        crop = QRect(0, 0, 435, 256)
-        self._minimap_image = image.copy(crop)
+        crop: QRect = QRect(0, 0, 435, 256)
+        self._minimap_image: QImage = image.copy(crop)
 
-    def snap_camera_to_point(self, point: Vector2 | Vector3, zoom: int = 8):
+    def snap_camera_to_point(
+        self,
+        point: Vector2 | Vector3,
+        zoom: int = 8,
+    ):
         self.camera.set_position(point.x, point.y)
         self.camera.set_zoom(zoom)
 
-    def do_cursor_lock(self, mutable_screen: Vector2):
+    def do_cursor_lock(
+        self,
+        mutable_screen: Vector2,
+    ):
         """Reset the cursor to the center of the screen to prevent it from going off screen.
 
         Used with the FreeCam and drag camera movements and drag rotations.
         """
-        global_old_pos = self.mapToGlobal(QPoint(int(self._mouse_prev.x), int(self._mouse_prev.y)))
+        global_old_pos: QPoint = self.mapToGlobal(QPoint(int(self._mouse_prev.x), int(self._mouse_prev.y)))
         QCursor.setPos(global_old_pos)
-        local_old_pos = self.mapFromGlobal(QPoint(global_old_pos.x(), global_old_pos.y()))
+        local_old_pos: QPoint = self.mapFromGlobal(QPoint(global_old_pos.x(), global_old_pos.y()))
         mutable_screen.x = local_old_pos.x()
         mutable_screen.y = local_old_pos.y()
 
-    def to_render_coords(self, x: float, y: float) -> Vector2:
+    def to_render_coords(
+        self,
+        x: float,
+        y: float,
+    ) -> Vector2:
         """Returns a screen-space coordinates coverted from the specified world-space coordinates.
 
         The origin of the screen-space coordinates is the top-left of the WalkmeshRenderer widget.
@@ -304,25 +326,33 @@ class WalkmeshRenderer(QWidget):
         y2: float = (x * sin + y * cos) * self.camera.zoom() + self.height() / 2
         return Vector2(x2, y2)
 
-    def to_world_coords(self, x: float, y: float) -> Vector3:
+    def to_world_coords(
+        self,
+        x: float,
+        y: float,
+    ) -> Vector3:
         """Returns the world-space coordinates converted from the specified screen-space coordinates.
 
         The Z component is calculated using the X/Y components and the walkmesh
         face the mouse is over. If there is no face underneath the mouse, the Z component is set to zero.
         """
         y = self.height() - y
-        cos = math.cos(self.camera.rotation())
-        sin = math.sin(self.camera.rotation())
+        cos: float = math.cos(self.camera.rotation())
+        sin: float = math.sin(self.camera.rotation())
         x = (x - self.width() / 2) / self.camera.zoom()
         y = (y - self.height() / 2) / self.camera.zoom()
-        x2 = x * cos - y * sin + self.camera.position().x
-        y2 = x * sin + y * cos + self.camera.position().y
+        x2: float = x * cos - y * sin + self.camera.position().x
+        y2: float = x * sin + y * cos + self.camera.position().y
 
-        z = self.get_z_coord(x2, y2)
+        z: float = self.get_z_coord(x2, y2)
 
         return Vector3(x2, y2, z)
 
-    def to_world_delta(self, x: float, y: float) -> Vector2:
+    def to_world_delta(
+        self,
+        x: float,
+        y: float,
+    ) -> Vector2:
         """Returns the coordinates representing a change in world-space.
 
         This is convereted from coordinates representing a
@@ -336,7 +366,11 @@ class WalkmeshRenderer(QWidget):
         y2: float = x * sin + y * cos
         return Vector2(x2, -y2)
 
-    def get_z_coord(self, x: float, y: float) -> float:
+    def get_z_coord(
+        self,
+        x: float,
+        y: float,
+    ) -> float:
         """Returns the Z coordinate based of walkmesh data for the specified point.
 
         If there are overlapping faces, the walkable face will take priority.
@@ -428,10 +462,13 @@ class WalkmeshRenderer(QWidget):
         self.camera.set_zoom(camScale)
         self.camera.set_rotation(0)
 
-    def _build_face(self, face: BWMFace) -> QPainterPath:
-        v1 = Vector2(face.v1.x, face.v1.y)
-        v2 = Vector2(face.v2.x, face.v2.y)
-        v3 = Vector2(face.v3.x, face.v3.y)
+    def _build_face(
+        self,
+        face: BWMFace,
+    ) -> QPainterPath:
+        v1: Vector2 = Vector2(face.v1.x, face.v1.y)
+        v2: Vector2 = Vector2(face.v2.x, face.v2.y)
+        v3: Vector2 = Vector2(face.v3.x, face.v3.y)
 
         path = QPainterPath()
         path.moveTo(v1.x, v1.y)
@@ -442,24 +479,10 @@ class WalkmeshRenderer(QWidget):
 
         return path
 
-    def _build_instance_bounds(self, instance: GITInstance) -> QPainterPath:
-        """Builds a path for the instance geometry.
-
-        Args:
-        ----
-            instance: The GITInstance object
-
-        Returns:
-        -------
-            path: A QPainterPath representing the instance geometry.
-
-        Processing Logic:
-        ----------------
-            - Checks if the instance is an encounter or trigger with geometry
-            - Moves to the first point of the geometry
-            - Draws lines between subsequent points
-            - Closes the path by drawing a line to the first point
-        """
+    def _build_instance_bounds(
+        self,
+        instance: GITInstance,
+    ) -> QPainterPath:
         path = QPainterPath()
         if (isinstance(instance, (GITEncounter, GITTrigger))) and len(instance.geometry) > 0:
             path.moveTo(instance.position.x + instance.geometry[0].x, instance.position.y + instance.geometry[0].y)  # type: ignore[]
@@ -468,7 +491,10 @@ class WalkmeshRenderer(QWidget):
             path.lineTo(instance.position.x + instance.geometry[0].x, instance.position.y + instance.geometry[0].y)  # type: ignore[]
         return path
 
-    def _build_instance_bounds_points(self, instance: GITInstance) -> QPainterPath:
+    def _build_instance_bounds_points(
+        self,
+        instance: GITInstance,
+    ) -> QPainterPath:
         path = QPainterPath()
         if isinstance(instance, (GITTrigger, GITEncounter)):
             for point in instance.geometry:
@@ -476,7 +502,7 @@ class WalkmeshRenderer(QWidget):
                 path.addEllipse(QPointF(instance.position.x + point.x, instance.position.y + point.y), size, size)
         return path
 
-    def _draw_image(
+    def _draw_image(  # noqa: PLR0913
         self,
         painter: QPainter,
         pixmap: QPixmap,
@@ -496,23 +522,10 @@ class WalkmeshRenderer(QWidget):
         painter.restore()
 
     # region Events
-    def paintEvent(self, e: QPaintEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Renders the scene by drawing walkmesh faces, instances and selected objects.
-
-        Args:
-        ----
-            e (QPaintEvent): The paint event
-
-        Processing Logic:
-        ----------------
-            - Builds and caches walkmesh face geometry
-            - Sets up camera transform
-            - Fills background and draws walkmesh faces
-            - Draws instances like creatures, doors as icons
-            - Highlights first instance under mouse
-            - Highlights first geom point under mouse
-            - Highlights selected instances and geometry points
-        """
+    def paintEvent(
+        self,
+        e: QPaintEvent,  # pyright: ignore[reportIncompatibleMethodOverride]
+    ):
         # Build walkmesh faces cache
         if self._walkmesh_face_cache is None:
             self._walkmesh_face_cache = {}
@@ -540,49 +553,57 @@ class WalkmeshRenderer(QWidget):
 
         # Draw the minimap
         if self._are and self._minimap_image:
-            axis_to_rotation = {
+            axis_to_rotation: dict[ARENorthAxis, int] = {
                 ARENorthAxis.PositiveY: 0,
                 ARENorthAxis.PositiveX: 270,
                 ARENorthAxis.NegativeY: 180,
                 ARENorthAxis.NegativeX: 90,
             }
-            rotation = axis_to_rotation[self._are.north_axis]
-            rads = math.radians(-rotation)
+            rotation: int = axis_to_rotation[self._are.north_axis]
+            rads: float = math.radians(-rotation)
 
-            map_point_1_x = ((self._are.map_point_1.x - 0.5) * math.cos(rads)) - ((self._are.map_point_1.y - 0.5) * math.sin(rads)) + 0.5
-            map_point_1_y = ((self._are.map_point_1.x - 0.5) * math.sin(rads)) + ((self._are.map_point_1.y - 0.5) * math.cos(rads)) + 0.5
-            map_point_2_x = ((self._are.map_point_2.x - 0.5) * math.cos(rads)) - ((self._are.map_point_2.y - 0.5) * math.sin(rads)) + 0.5
-            map_point_2_y = ((self._are.map_point_2.x - 0.5) * math.sin(rads)) + ((self._are.map_point_2.y - 0.5) * math.cos(rads)) + 0.5
+            map_point_1_x: float = ((self._are.map_point_1.x - 0.5) * math.cos(rads)) - ((self._are.map_point_1.y - 0.5) * math.sin(rads)) + 0.5
+            map_point_1_y: float = ((self._are.map_point_1.x - 0.5) * math.sin(rads)) + ((self._are.map_point_1.y - 0.5) * math.cos(rads)) + 0.5
+            map_point_2_x: float = ((self._are.map_point_2.x - 0.5) * math.cos(rads)) - ((self._are.map_point_2.y - 0.5) * math.sin(rads)) + 0.5
+            map_point_2_y: float = ((self._are.map_point_2.x - 0.5) * math.sin(rads)) + ((self._are.map_point_2.y - 0.5) * math.cos(rads)) + 0.5
 
-            world_point_1_x = self._are.world_point_1.x
-            world_point_1_y = self._are.world_point_1.y
-            world_point_2_x = self._are.world_point_2.x
-            world_point_2_y = self._are.world_point_2.y
+            world_point_1_x: float = self._are.world_point_1.x
+            world_point_1_y: float = self._are.world_point_1.y
+            world_point_2_x: float = self._are.world_point_2.x
+            world_point_2_y: float = self._are.world_point_2.y
 
             # X% of the width of the image
-            widthPercent = abs(map_point_1_x - map_point_2_x)
-            heightPercent = abs(map_point_1_y - map_point_2_y)
+            widthPercent: float = abs(map_point_1_x - map_point_2_x)
+            heightPercent: float = abs(map_point_1_y - map_point_2_y)
             # Takes up Y amount of WUs.
-            widthWU = abs(world_point_1_x - world_point_2_x)
-            heightWU = abs(world_point_1_y - world_point_2_y)
+            widthWU: float = abs(world_point_1_x - world_point_2_x)
+            heightWU: float = abs(world_point_1_y - world_point_2_y)
 
             # Here we determine how many world units the full texture covers
             # 100% of the image width/height covers X amount of world units
-            fullWidthWU = widthWU / widthPercent
-            fullHeightWU = heightWU / heightPercent
+            fullWidthWU: float = widthWU / widthPercent
+            fullHeightWU: float = heightWU / heightPercent
 
             # Now we can figure out where the X/Y coords of the image go
             # Remember world_point_1 not the corner of the image, but somewhere within the image, so we must calculate
             # where the corner of the image is in the world space.
-            imageX = world_point_1_x - (fullWidthWU * map_point_1_x)
-            imageY = world_point_1_y - (fullHeightWU * (1 - map_point_1_y))
+            imageX: float = world_point_1_x - (fullWidthWU * map_point_1_x)
+            imageY: float = world_point_1_y - (fullHeightWU * (1 - map_point_1_y))
 
             rotated: QImage = self._minimap_image.transformed(QTransform().rotate(rotation))
 
             targetRect = QRectF(QPointF(imageX, imageY), QPointF(imageX + fullWidthWU, imageY + fullHeightWU))
             painter.drawImage(targetRect, rotated)
 
-        pen: QPen = QPen(Qt.NoPen) if self.hide_walkmesh_edges else QPen(QColor(10, 10, 10, 120), 1 / self.camera.zoom(), Qt.SolidLine)
+        pen: QPen = (
+            QPen(Qt.PenStyle.NoPen)
+            if self.hide_walkmesh_edges
+            else QPen(
+                QColor(10, 10, 10, 120),
+                1 / self.camera.zoom(),
+                Qt.PenStyle.SolidLine,
+            )
+        )
         painter.setPen(pen)
         for face, path in self._walkmesh_face_cache.items():
             painter.setBrush(self.material_color(face.material))
@@ -608,7 +629,7 @@ class WalkmeshRenderer(QWidget):
         painter.setOpacity(1.0)
         if self._pth is not None:
             for i, source in enumerate(self._pth):
-                painter.setPen(QPen(QColor(200, 200, 200, 255), self._path_edge_width, Qt.SolidLine))
+                painter.setPen(QPen(QColor(200, 200, 200, 255), self._path_edge_width, Qt.PenStyle.SolidLine))
                 for j in self._pth.outgoing(i):
                     target: Vector2 | None = self._pth.get(j.target)
                     assert target is not None, assert_with_variable_trace(target is not None)
@@ -632,7 +653,7 @@ class WalkmeshRenderer(QWidget):
         # Draw the git instances (represented as icons)
         painter.setOpacity(0.6)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
-        lower_filter = self.instance_filter.lower()
+        lower_filter: str = self.instance_filter.lower()
         if self._git is not None:
             for creature in [] if self.hide_creatures else self._git.creatures:
                 if creature.resref and lower_filter not in str(creature.resref).lower():
@@ -679,10 +700,10 @@ class WalkmeshRenderer(QWidget):
 
         # Highlight the first instance that is underneath the mouse
         if self._instances_under_mouse:
-            instance = self._instances_under_mouse[0]
+            instance: GITInstance = self._instances_under_mouse[0]
 
             painter.setBrush(QColor(255, 255, 255, 35))
-            painter.setPen(Qt.NoPen)
+            painter.setPen(Qt.PenStyle.NoPen)
             painter.drawEllipse(QPointF(instance.position.x, instance.position.y), 1, 1)
 
             # If its a trigger or an encounter, this will draw the geometry stored inside it
@@ -697,7 +718,7 @@ class WalkmeshRenderer(QWidget):
 
             if not self.hide_geom_points:
                 painter.setBrush(QColor(255, 255, 255, 200))
-                painter.setPen(Qt.NoPen)
+                painter.setPen(Qt.PenStyle.NoPen)
                 painter.drawEllipse(QPointF(point.x, point.y), 4 / self.camera.zoom(), 4 / self.camera.zoom())
 
         # Highlight selected instances
@@ -720,10 +741,10 @@ class WalkmeshRenderer(QWidget):
             # Draw an arrow representing the instance rotation (where applicable)
             instance_yaw_value: float | None = instance.yaw()
             if instance_yaw_value is not None:
-                l1px = instance.position.x + math.cos(instance_yaw_value + math.pi / 2) * 1.1
-                l1py = instance.position.y + math.sin(instance_yaw_value + math.pi / 2) * 1.1
-                l2px = instance.position.x + math.cos(instance_yaw_value + math.pi / 2) * 1.3
-                l2py = instance.position.y + math.sin(instance_yaw_value + math.pi / 2) * 1.3
+                l1px: float = instance.position.x + math.cos(instance_yaw_value + math.pi / 2) * 1.1
+                l1py: float = instance.position.y + math.sin(instance_yaw_value + math.pi / 2) * 1.1
+                l2px: float = instance.position.x + math.cos(instance_yaw_value + math.pi / 2) * 1.3
+                l2py: float = instance.position.y + math.sin(instance_yaw_value + math.pi / 2) * 1.3
                 painter.setBrush(Qt.BrushStyle.NoBrush)
                 painter.setPen(QPen(QColor(255, 255, 255, 255), 0.15))
                 painter.drawLine(QPointF(l1px, l1py), QPointF(l2px, l2py))
@@ -739,9 +760,10 @@ class WalkmeshRenderer(QWidget):
         self.sig_mouse_scrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouse_down, self._keys_down)
 
     def mouseMoveEvent(self, e: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
+        pos = e.pos() if qtpy.QT5 else e.position().toPoint()
         super().mouseMoveEvent(e)
-        coords = Vector2(e.x(), e.y())
-        coords_delta = Vector2(coords.x - self._mouse_prev.x, coords.y - self._mouse_prev.y)
+        coords: Vector2 = Vector2(pos.x(), pos.y())
+        coords_delta: Vector2 = Vector2(coords.x - self._mouse_prev.x, coords.y - self._mouse_prev.y)
         self.sig_mouse_moved.emit(coords, coords_delta, self._mouse_down, self._keys_down)
         self._mouse_prev = coords  # Always assign mouse_prev after emitting: allows signal handlers (e.g. ModuleDesigner, GITEditor) to handle cursor lock.
 
@@ -761,8 +783,8 @@ class WalkmeshRenderer(QWidget):
 
                 if isinstance(instance, GITEncounter) or (isinstance(instance, GITTrigger) and instance in self.instance_selection.all()):
                     for point in instance.geometry:
-                        pworld = Vector2.from_vector3(instance.position + point)
-                        if pworld.distance(world) <= 0.5:
+                        pworld: Vector2 = Vector2.from_vector3(instance.position + point)
+                        if pworld.distance(world) <= 0.5:  # noqa: PLR2004
                             self._geom_points_under_mouse.append(GeomPoint(instance, point))
 
         if self._pth is not None:

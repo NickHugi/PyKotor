@@ -31,6 +31,8 @@ from pykotor.resource.formats.lyt import (
     LYTRoom,
     LYTTrack,
 )
+
+from pykotor.common.misc import ResRef
 from pykotor.resource.formats.lyt.lyt_auto import read_lyt, write_lyt
 from pykotor.resource.type import ResourceType
 
@@ -50,14 +52,14 @@ class TestLYT(TestCase):
         self.validate_io(lyt)
 
     def validate_io(self, lyt: LYT):
-        assert lyt.rooms[0] == LYTRoom("M17mg_01a", Vector3(100.0, 100.0, 0.0))
-        assert lyt.rooms[1] == LYTRoom("M17mg_01b", Vector3(100.0, 100.0, 0.0))
-        assert lyt.tracks[0] == LYTTrack("M17mg_MGT01", Vector3(0.0, 0.0, 0.0))
-        assert lyt.tracks[1] == LYTTrack("M17mg_MGT02", Vector3(112.047, 209.04, 0.0))
-        assert lyt.obstacles[0] == LYTObstacle("M17mg_MGO01", Vector3(103.309, 3691.61, 0.0))
-        assert lyt.obstacles[1] == LYTObstacle("M17mg_MGO02", Vector3(118.969, 3688.0, 0.0))
-        assert lyt.doorhooks[0] == LYTDoorHook("M02ac_02h", "door_01", Vector3(170.475, 66.375, 0.0), Vector4(0.707107, 0.0, 0.0, -0.707107))
-        assert lyt.doorhooks[1] == LYTDoorHook("M02ac_02a", "door_06", Vector3(90.0, 129.525, 0.0), Vector4(1.0, 0.0, 0.0, 0.0))
+        assert LYTRoom(ResRef("M17mg_01a"), Vector3(100.0, 100.0, 0.0)) in lyt.rooms
+        assert LYTRoom(ResRef("M17mg_01b"), Vector3(100.0, 100.0, 0.0)) in lyt.rooms
+        assert lyt.tracks[0] == LYTTrack(ResRef("M17mg_MGT01"), Vector3(0.0, 0.0, 0.0))
+        assert lyt.tracks[1] == LYTTrack(ResRef("M17mg_MGT02"), Vector3(112.047, 209.04, 0.0))
+        assert lyt.obstacles[0] == LYTObstacle(ResRef("M17mg_MGO01"), Vector3(103.309, 3691.61, 0.0))
+        assert lyt.obstacles[1] == LYTObstacle(ResRef("M17mg_MGO02"), Vector3(118.969, 3688.0, 0.0))
+        assert lyt.doorhooks[0] == LYTDoorHook(ResRef("M02ac_02h"), "door_01", Vector3(170.475, 66.375, 0.0), Vector4(0.707107, 0.0, 0.0, -0.707107))
+        assert lyt.doorhooks[1] == LYTDoorHook(ResRef("M02ac_02a"), "door_06", Vector3(90.0, 129.525, 0.0), Vector4(1.0, 0.0, 0.0, 0.0))
 
     def test_read_raises(self):
         if os.name == "nt":

@@ -6,8 +6,6 @@ import sys
 import unittest
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
@@ -26,13 +24,15 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING
 
+
+from pykotor.resource.type import ResourceType
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.uti import construct_uti, dismantle_uti
 
 if TYPE_CHECKING:
-    from pykotor.resource.formats.gff.gff_data import GFF
+    from pykotor.resource.formats.gff import GFF
     from pykotor.resource.generics.uti import UTI
 
 TEST_FILE = "tests/test_pykotor/test_files/test.uti"
@@ -43,7 +43,7 @@ K2_PATH = os.environ.get("K2_PATH")
 
 class TestUTI(TestCase):
     def setUp(self):
-        self.log_messages = [os.linesep]
+        self.log_messages: list[str] = [os.linesep]
 
     def log_func(self, *msgs):
         self.log_messages.append("\t".join(msgs))
@@ -71,25 +71,25 @@ class TestUTI(TestCase):
             assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
-        reconstructed_gff = dismantle_uti(construct_uti(gff), Game.K1)
-        result = gff.compare(reconstructed_gff, self.log_func)
-        output = os.linesep.join(self.log_messages)
+        gff: GFF = read_gff(TEST_FILE)
+        reconstructed_gff: GFF = dismantle_uti(construct_uti(gff), Game.K1)
+        result: bool = gff.compare(reconstructed_gff, self.log_func)
+        output: str = os.linesep.join(self.log_messages)
         if not result:
-            expected_output = r"Field 'LocalizedString' is different at 'GFFRoot\Description': 456 --> 5633"
+            expected_output: str = r"Field 'LocalizedString' is different at 'GFFRoot\Description': 456 --> 5633"
             assert output.strip() == expected_output.strip(), "Comparison output does not match expected output"
         else:
             assert result
 
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
-        uti = construct_uti(gff)
+        gff: GFF = read_gff(TEST_FILE)
+        uti: UTI = construct_uti(gff)
         self.validate_io(uti)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
-        gff = dismantle_uti(construct_uti(gff))
-        uti = construct_uti(gff)
+        gff: GFF = read_gff(TEST_FILE)
+        gff: GFF = dismantle_uti(construct_uti(gff))
+        uti: UTI = construct_uti(gff)
         self.validate_io(uti)
 
     def validate_io(self, uti: UTI):

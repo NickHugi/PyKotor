@@ -7,7 +7,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.resource.formats.key import KEY, BifEntry, KeyEntry, KEYBinaryWriter, KEYBinaryReader
 
 
-class TestKEYFile(TestCase):
+class TestKEY(TestCase):
     """Test KEY file reading and writing."""
 
     def test_write_key(self):

@@ -26,21 +26,21 @@ from typing import TYPE_CHECKING
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.jrl import construct_jrl, dismantle_jrl
+from pykotor.resource.generics.jrl import JRL, construct_jrl, dismantle_jrl
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff import GFF
-    from pykotor.resource.generics.jrl import JRL, JRLEntry
+    from pykotor.resource.generics.jrl import JRL, JRLEntry, JRLQuest
 
 TEST_FILE = "tests/test_pykotor/test_files/test.jrl"
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
 
 
 class TestJRL(unittest.TestCase):
     def setUp(self):
-        self.log_messages = [os.linesep]
+        self.log_messages: list[str] = [os.linesep]
 
     def log_func(self, message=""):
         self.log_messages.append(message)
@@ -68,23 +68,23 @@ class TestJRL(unittest.TestCase):
             assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff: GFF = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_jrl(construct_jrl(gff))
         assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
-        jrl = construct_jrl(gff)
+        gff: GFF = read_gff(TEST_FILE)
+        jrl: JRL = construct_jrl(gff)
         self.validate_io(jrl)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff: GFF = read_gff(TEST_FILE)
         gff = dismantle_jrl(construct_jrl(gff))
-        jrl = construct_jrl(gff)
+        jrl: JRL = construct_jrl(gff)
         self.validate_io(jrl)
 
     def validate_io(self, jrl: JRL):
-        quest = jrl.quests[0]
+        quest: JRLQuest = jrl.quests[0]
         assert quest.comment == "Plot to be considered worthy to hear the Sand People history."
         assert quest.name.stringref == 33089
         assert quest.planet_id == 4
@@ -99,7 +99,14 @@ class TestJRL(unittest.TestCase):
         assert entry2.end
         self._assert_group(20, entry2, 33091, 6.0, 1)
 
-    def _assert_group(self, expected_entry_id: int, jrl: JRLEntry, expected_stringref: int, expected_xp, decimal_places: int):
+    def _assert_group(
+        self,
+        expected_entry_id: int,
+        jrl: JRLEntry,
+        expected_stringref: int,
+        expected_xp: float,
+        decimal_places: int,
+    ):
         assert expected_entry_id == jrl.entry_id
         assert expected_stringref == jrl.text.stringref
         self.assertAlmostEqual(expected_xp, jrl.xp_percentage, decimal_places)

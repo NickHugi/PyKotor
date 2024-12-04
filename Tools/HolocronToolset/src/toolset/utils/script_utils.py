@@ -4,12 +4,17 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from loggerplus import RobustLogger
-from qtpy.QtWidgets import QFileDialog
+from qtpy.QtWidgets import QFileDialog, QMessageBox
 
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 
 if TYPE_CHECKING:
+    from types import TracebackType
+
+    from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
+
     from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
+    from pykotor.tools.registry import SpoofKotorRegistry
 
 log = RobustLogger()
 
@@ -25,12 +30,20 @@ NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
     "Error details: {}"
 )
 
+
 class NoOpRegistrySpoofer:
-    def __enter__(self):
+    def __enter__(self) -> Self:
         log.debug("Enter NoOpRegistrySpoofer")
         return self
-    def __exit__(self, exc_type, exc_val, exc_tb):
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
         log.debug(f"NoOpRegistrySpoofer.__exit__({exc_type}, {exc_val}, {exc_tb})")
+
 
 def setup_extract_path() -> Path:
     """Sets up and returns the extraction path for temporary files.
@@ -47,12 +60,13 @@ def setup_extract_path() -> Path:
     extract_path = Path(global_settings.extractPath)
 
     if not extract_path.is_dir():
-        extract_path_str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
-        extract_path = Path(extract_path_str) if extract_path_str else None
-        if not extract_path or not extract_path.is_dir():
-            msg = "Temp directory has not been set or is invalid."
+        extract_path_str: str | None = QFileDialog.getExistingDirectory(None, "Select a temp directory")
+        extract_path: Path | None = Path(extract_path_str) if extract_path_str else None
+        if extract_path is None or not extract_path.exists() or not extract_path.is_dir():
+            msg: str = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
     return extract_path
+
 
 def handle_permission_error(
     reg_spoofer: SpoofKotorRegistry | NoOpRegistrySpoofer,
@@ -74,7 +88,7 @@ def handle_permission_error(
         PermissionError: If the error occurred with a NoOpRegistrySpoofer.
     """
     if isinstance(reg_spoofer, NoOpRegistrySpoofer):
-        raise
+        raise TypeError(str(e))
 
     # Spoofing was required but failed. Show the relevant message.
     msg: str = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(

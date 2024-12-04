@@ -43,21 +43,6 @@ class InsertInstanceDialog(QDialog):
         module: Module,
         restype: ResourceType,
     ):
-        """Initialize a resource editor dialog.
-
-        Args:
-        ----
-            parent: QWidget - Parent widget
-            installation: HTInstallation - HT installation object
-            module: Module - Module object
-            restype: ResourceType - Resource type
-
-        Initializes the resource editor dialog:
-            - Sets up UI elements
-            - Connects signal handlers
-            - Populates resource list
-            - Initializes location selector.
-        """
         super().__init__(parent)
         self.setWindowFlags(
             Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
@@ -102,18 +87,6 @@ class InsertInstanceDialog(QDialog):
         self.ui.locationSelect.setCurrentIndex(self.ui.locationSelect.count() - 1)
 
     def _setup_resource_list(self):
-        """Populates a resource list widget with available resources.
-
-        Args:
-        ----
-            self: The class instance
-
-        Processing Logic:
-        ----------------
-            - Loops through installation resources and adds matching type
-            - Loops through module capsules and nested resources, adding matching type
-            - Selects first item if list is populated.
-        """
         palette: QPalette = self.palette()  # Get the current application palette if needed
         text_color: QColor = palette.color(QPalette.ColorRole.WindowText)
         for resource in self._installation.core_resources():
@@ -300,16 +273,6 @@ class InsertInstanceDialog(QDialog):
         self,
         resource: FileResource,
     ) -> str:
-        """Generates a summary of the selected resource.
-
-        Args:
-        ----
-            resource: FileResource - The selected resource.
-
-        Returns:
-        -------
-            str: Summary text.
-        """
         summary: list[str] = [
             f"Name: {resource.resname()}",
             f"Type: {resource.restype().name}",

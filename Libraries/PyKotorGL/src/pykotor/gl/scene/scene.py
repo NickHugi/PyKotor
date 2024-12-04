@@ -35,7 +35,7 @@ from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
-from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model
+from pykotor.gl.models.mdl import Boundary, Model
 from pykotor.gl.models.predefined_mdl import (
     CAMERA_MDL_DATA,
     CAMERA_MDX_DATA,
@@ -59,6 +59,7 @@ from pykotor.gl.models.predefined_mdl import (
     WAYPOINT_MDX_DATA,
 )
 from pykotor.gl.models.read_mdl import gl_load_stitched_model
+from pykotor.gl.scene import Camera, RenderObject
 from pykotor.gl.shader import KOTOR_FSHADER, KOTOR_VSHADER, PICKER_FSHADER, PICKER_VSHADER, PLAIN_FSHADER, PLAIN_VSHADER, Shader, Texture
 from pykotor.resource.formats.lyt.lyt_data import LYT, LYTRoom
 from pykotor.resource.formats.tpc.tpc_data import TPC
@@ -75,7 +76,6 @@ from utility.common.more_collections import CaseInsensitiveDict
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from glm import mat4x4
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.module import Module, ModulePieceResource, ModuleResource
@@ -160,6 +160,9 @@ class Scene:
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().debug(f"Completed pre-initialize Scene{module_id_part}")
 
+    def set_lyt(self, lyt: LYT):
+        self.layout = lyt
+
     def set_installation(
         self,
         installation: Installation,
@@ -167,7 +170,7 @@ class Scene:
         def load_2da(name: str) -> TwoDA:
             resource: ResourceResult | None = installation.resource(name, ResourceType.TwoDA, SEARCH_ORDER_2DA)
             if resource is None:
-                RobustLogger().warning(f"Could not load {name}.2da, using blank 2DA")
+                RobustLogger().warning(f"Could not load {name}.2da, this means its models will not be rendered")
                 return TwoDA()
             return read_2da(resource.data)
 
@@ -833,278 +836,3 @@ class Scene:
 
             self.models[name] = model
         return self.models[name]
-
-    def jump_to_entry_location(self):
-        if self._module is None:
-            self.camera.x = 0
-            self.camera.y = 0
-            self.camera.z = 0
-        else:
-            ifo_module_resource: ModuleResource[IFO] | None = self.module.info()
-            if ifo_module_resource is None:
-                raise ValueError("IFO module resource not found.")
-            ifo: IFO | None = ifo_module_resource.resource()
-            if ifo is None:
-                raise ValueError("IFO resource not found.")
-            point: Vector3 = ifo.entry_position
-            self.camera.x = point.x
-            self.camera.y = point.y
-            self.camera.z = point.z + 1.8
-
-
-class RenderObject:
-    def __init__(  # noqa: PLR0913
-        self,
-        model: str,
-        position: vec3 | None = None,
-        rotation: vec3 | None = None,
-        *,
-        data: Any = None,
-        gen_boundary: Callable[[], Boundary] | None = None,
-        override_texture: str | None = None,
-    ):
-        self.model: str = model
-        self.children: list[RenderObject] = []
-        self._transform: mat4 = mat4()
-        self._position: vec3 = vec3() if position is None else position
-        self._rotation: vec3 = vec3() if rotation is None else rotation
-        self._cube: Cube | None = None
-        self._boundary: Boundary | Empty | None = None
-        self.gen_boundary: Callable[[], Boundary] | None = gen_boundary
-        self.data: Any = data
-        self.override_texture: str | None = override_texture
-
-        self._recalc_transform()
-
-    def transform(self) -> mat4:
-        return self._transform
-
-    def set_transform(
-        self,
-        transform: mat4,
-    ):
-        self._transform = transform
-        rotation = quat()
-        glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())  # pyright: ignore[reportCallIssue, reportArgumentType]
-        self._rotation = glm.eulerAngles(rotation)
-
-    def _recalc_transform(self):
-        self._transform = mat4() * glm.translate(self._position)
-        self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
-
-    def position(self) -> vec3:
-        return copy(self._position)
-
-    def set_position(
-        self,
-        x: float,
-        y: float,
-        z: float,
-    ):
-        if self._position.x == x and self._position.y == y and self._position.z == z:
-            return
-
-        self._position = vec3(x, y, z)
-        self._recalc_transform()
-
-    def rotation(self) -> vec3:
-        return copy(self._rotation)
-
-    def set_rotation(
-        self,
-        x: float,
-        y: float,
-        z: float,
-    ):
-        if self._rotation.x == x and self._rotation.y == y and self._rotation.z == z:
-            return
-
-        self._rotation = vec3(x, y, z)
-        self._recalc_transform()
-
-    def reset_cube(self):
-        self._cube = None
-
-    def cube(
-        self,
-        scene: Scene,
-    ) -> Cube:
-        if not self._cube:
-            min_point = vec3(10000, 10000, 10000)
-            max_point = vec3(-10000, -10000, -10000)
-            self._cube_rec(scene, mat4(), self, min_point, max_point)
-            self._cube = Cube(scene, min_point, max_point)
-        return self._cube
-
-    def radius(
-        self,
-        scene: Scene,
-    ) -> float:
-        cube = self.cube(scene)
-        return max(
-            abs(cube.min_point.x),
-            abs(cube.min_point.y),
-            abs(cube.min_point.z),
-            abs(cube.max_point.x),
-            abs(cube.max_point.y),
-            abs(cube.max_point.z),
-        )
-
-    def _cube_rec(
-        self,
-        scene: Scene,
-        transform: mat4,
-        obj: RenderObject,
-        min_point: vec3,
-        max_point: vec3,
-    ):
-        obj_min, obj_max = scene.model(obj.model).box()
-        obj_min: vec3 = transform * obj_min
-        obj_max: vec3 = transform * obj_max
-        min_point.x = min(min_point.x, obj_min.x, obj_max.x)
-        min_point.y = min(min_point.y, obj_min.y, obj_max.y)
-        min_point.z = min(min_point.z, obj_min.z, obj_max.z)
-        max_point.x = max(max_point.x, obj_min.x, obj_max.x)
-        max_point.y = max(max_point.y, obj_min.y, obj_max.y)
-        max_point.z = max(max_point.z, obj_min.z, obj_max.z)
-        for child in obj.children:
-            self._cube_rec(scene, transform * child.transform(), child, min_point, max_point)
-
-    def reset_boundary(self):
-        self._boundary = None
-
-    def boundary(
-        self,
-        scene: Scene,
-    ) -> Boundary | Empty:
-        if self._boundary is None:
-            self._boundary = Empty(scene) if self.gen_boundary is None else self.gen_boundary()
-        return self._boundary
-
-
-class Camera:
-    def __init__(self):
-        self.x: float = 40.0
-        self.y: float = 130.0
-        self.z: float = 0.5
-        self.width: int = 1920
-        self.height: int = 1080
-        self.pitch: float = math.pi / 2
-        self.yaw: float = 0.0
-        self.distance: float = 10.0
-        self.fov: float = 90.0
-
-    def set_resolution(
-        self,
-        width: int,
-        height: int,
-    ):
-        self.width, self.height = width, height
-
-    def set_position(
-        self,
-        position: Vector3 | vec3,
-    ):
-        self.x = position.x
-        self.y = position.y
-        self.z = position.z
-
-    def view(self) -> mat4:
-        up: vec3 = vec3(0, 0, 1)
-        pitch: vec3 = glm.vec3(1, 0, 0)
-
-        x, y, z = self.x, self.y, self.z
-        x += math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
-        y += math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
-        z += math.sin(self.pitch - math.pi / 2) * self.distance
-
-        camera: mat4x4 = mat4() * glm.translate(vec3(x, y, z))
-        camera = glm.rotate(camera, self.yaw + math.pi / 2, up)
-        camera = glm.rotate(camera, math.pi - self.pitch, pitch)
-        return glm.inverse(camera)
-
-    def projection(self) -> mat4:
-        return glm.perspective(
-            self.fov,
-            self.width / self.height,
-            0.1,
-            5000,
-        )
-
-    def translate(
-        self,
-        translation: vec3,
-    ):
-        self.x += translation.x
-        self.y += translation.y
-        self.z += translation.z
-
-    def rotate(
-        self,
-        yaw: float,
-        pitch: float,
-        *,
-        clamp: bool = False,
-        lower_limit: float = 0,
-        upper_limit: float = math.pi,
-    ):
-        # Update angles
-        self.pitch += pitch
-        self.yaw += yaw
-
-        # Normalize yaw to [-2π, 2π]
-        self.yaw = self.yaw % (4 * math.pi) - (2 * math.pi)
-
-        if pitch == 0:
-            return
-
-        # Normalize pitch to [-2π, 2π]
-        self.pitch = self.pitch % (4 * math.pi) - (2 * math.pi)
-
-        # Apply pitch clamping if enabled
-        if clamp:
-            self.pitch = max(lower_limit, min(upper_limit, self.pitch))
-
-        # Avoid gimbal lock near π/2
-        if abs(self.pitch - math.pi / 2) < 0.05:  # noqa: PLR2004
-            self.pitch += 0.02 if pitch > 0 else -0.02
-
-    def forward(
-        self,
-        *,
-        ignore_z: bool = True,
-    ) -> vec3:
-        eye_x: float = math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2)
-        eye_y: float = math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2)
-        eye_z: float | Literal[0] = 0 if ignore_z else math.sin(self.pitch - math.pi / 2)
-        return glm.normalize(-vec3(eye_x, eye_y, eye_z))
-
-    def sideward(
-        self,
-        *,
-        ignore_z: bool = True,
-    ) -> vec3:
-        return glm.normalize(glm.cross(self.forward(ignore_z=ignore_z), vec3(0.0, 0.0, 1.0)))
-
-    def upward(
-        self,
-        *,
-        ignore_xy: bool = True,
-    ) -> vec3:
-        if ignore_xy:
-            return glm.normalize(vec3(0, 0, 1))
-        forward: vec3 = self.forward(ignore_z=False)
-        sideward: vec3 = self.sideward(ignore_z=False)
-        cross: vec3 = glm.cross(forward, sideward)
-        return glm.normalize(cross)
-
-    def true_position(self) -> vec3:
-        cos_yaw: float = math.cos(self.yaw)
-        cos_pitch: float = math.cos(self.pitch - math.pi / 2)
-        sin_yaw: float = math.sin(self.yaw)
-        sin_pitch: float = math.sin(self.pitch - math.pi / 2)
-        return vec3(
-            self.x + cos_yaw * cos_pitch * self.distance,
-            self.y + sin_yaw * cos_pitch * self.distance,
-            self.z + sin_pitch * self.distance,
-        )

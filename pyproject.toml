@@ -180,7 +180,6 @@ src = [
 [tool.ruff.lint]
 external = ["V"]
 task-tags = ["TODO", "FIXME", "HACK"]
-select = ["ALL"]
 exclude = [".venv", ".venv*"]
 unfixable = [
     "F841",

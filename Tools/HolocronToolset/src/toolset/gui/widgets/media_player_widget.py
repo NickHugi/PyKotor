@@ -21,11 +21,11 @@ class MediaPlayerWidget(QWidget):
         super().__init__(parent)
         self.buffer: QBuffer = QBuffer(self)
         self.player: QMediaPlayer = QMediaPlayer(self)
-        self.setup_media_player()
+        self._setup_media_player()
         self._setup_signals()
         self.hide_widget()
 
-    def setup_media_player(self):
+    def _setup_media_player(self):
         self.speed_levels: list[float] = [1, 1.25, 1.5, 2, 5, 10]
         self.current_speed_index: int = 0
 
@@ -46,7 +46,7 @@ class MediaPlayerWidget(QWidget):
             button_layout.addWidget(button)
             button_layout.setAlignment(button, Qt.AlignmentFlag.AlignBottom)
         self.time_label: QLabel = QLabel("00:00 / 00:00")
-        self.setup_time_slider()
+        self._setup_time_slider()
 
         button_layout.addWidget(self.time_label)
         button_layout.addWidget(self.time_slider, 1)
@@ -56,10 +56,10 @@ class MediaPlayerWidget(QWidget):
         self.setLayout(button_layout)
         self.hide_widget()
 
-    def setup_time_slider(self):
+    def _setup_time_slider(self):
         self.time_slider: QSlider = QSlider(Qt.Orientation.Horizontal)
         self.time_slider.setMouseTracking(True)
-        self.drag_position = QPoint()
+        self.drag_position: QPoint = QPoint()
 
         def slider_mouse_press_event(
             ev: QMouseEvent,
@@ -183,7 +183,7 @@ class MediaPlayerWidget(QWidget):
     def toggle_mute(self):
         if qtpy.QT5:
             self.player.setMuted(not self.player.isMuted())  # type: ignore[attr-defined]
-            muted = self.player.isMuted()  # type: ignore[attr-defined]
+            muted: bool = self.player.isMuted()  # type: ignore[attr-defined]
         else:
             audio_output: QAudioOutput | None = self.player.audioOutput()  # type: ignore[attr-defined]
             current_volume: float = audio_output.volume()  # type: ignore[attr-defined]

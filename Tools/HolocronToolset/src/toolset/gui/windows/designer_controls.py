@@ -10,6 +10,8 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import QPoint
 
+from pykotor.gl.scene import Scene
+
 if qtpy.API_NAME in ("PyQt5", "PySide2"):
     pass
 elif qtpy.API_NAME in ("PyQt6", "PySide6"):
@@ -21,13 +23,14 @@ from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import Qt
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
-from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint
+from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITInstance, GITPlaceable, GITStore, GITWaypoint
 from toolset.data.misc import ControlItem
 from toolset.gui.editors.git import DuplicateCommand, _GeometryMode, _InstanceMode, calculate_zoom_strength
 from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
 from toolset.utils.misc import BUTTON_TO_INT
 
 if TYPE_CHECKING:
+    from pykotor.gl.scene import Scene
     from pykotor.resource.generics.git import GITInstance
     from toolset.gui.editors.git import _SpawnMode
     from toolset.gui.widgets.renderer.module import ModuleRenderer
@@ -36,19 +39,28 @@ if TYPE_CHECKING:
 
 
 class ModuleDesignerControls3d:
-    def __init__(self, editor: ModuleDesigner, renderer: ModuleRenderer):
+    def __init__(
+        self,
+        editor: ModuleDesigner,
+        renderer: ModuleRenderer,
+    ):
         self.editor: ModuleDesigner = editor
         self.renderer: ModuleRenderer = renderer
         self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
         if self.renderer._scene is not None:  # noqa: SLF001
             self.renderer._scene.show_cursor = True  # noqa: SLF001
 
-    def on_mouse_scrolled(self, delta: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
+    def on_mouse_scrolled(
+        self,
+        delta: Vector2,
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
+    ):
         if self.zoom_camera.satisfied(buttons, keys):
-            strength = self.settings.zoomCameraSensitivity3d / 10000
+            strength: float = self.settings.zoomCameraSensitivity3d / 10000
             self.renderer.scene.camera.distance += -delta.y * strength
         elif self.move_z_camera.satisfied(buttons, keys):
-            strength = self.settings.moveCameraSensitivity3d / 10000
+            strength: float = self.settings.moveCameraSensitivity3d / 10000
             self.renderer.scene.camera.z -= -delta.y * strength
 
     def on_mouse_moved(
@@ -97,12 +109,12 @@ class ModuleDesignerControls3d:
                 self.editor.initial_positions = {instance: instance.position for instance in self.editor.selected_instances}
                 self.editor.is_drag_moving = True
             for instance in self.editor.selected_instances:
-                scene = self.renderer.scene
+                scene: Scene = self.renderer.scene
                 assert scene is not None
 
-                x = scene.cursor.position().x
-                y = scene.cursor.position().y
-                z = instance.position.z if isinstance(instance, GITCamera) else scene.cursor.position().z
+                x: float = scene.cursor.position().x
+                y: float = scene.cursor.position().y
+                z: float = instance.position.z if isinstance(instance, GITCamera) else scene.cursor.position().z
                 instance.position = Vector3(x, y, z)
 
         if self.move_z_selected.satisfied(buttons, keys):
@@ -125,7 +137,12 @@ class ModuleDesignerControls3d:
                     self.editor.initial_rotations[instance] = Vector4(*instance.orientation) if isinstance(instance, GITCamera) else instance.bearing
             self.editor.rotate_selected(screen_delta.x, screen_delta.y)
 
-    def on_mouse_pressed(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
+    def on_mouse_pressed(
+        self,
+        screen: Vector2,
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
+    ):
         if self.select_underneath.satisfied(buttons, keys):
             self.renderer.do_select = True  # auto-selects the instance under the mouse in the paint loop, and implicitly sets this back to False
 
@@ -155,7 +172,7 @@ class ModuleDesignerControls3d:
         # TODO(th3w1zard1): Seems the code throughout is designed for multi-selections, yet nothing uses it. Probably disabled due to a bug or planned for later.
         instance: GITInstance = deepcopy(self.editor.selected_instances[-1])
         if isinstance(instance, GITCamera):
-            instance.camera_id = self.editor._module.git().resource().next_camera_id()
+            instance.camera_id = self.editor._module.git().resource().next_camera_id()  # noqa: SLF001
         RobustLogger().info(f"Duplicating {instance!r}")
         self.editor.undo_stack.push(DuplicateCommand(self.editor._module.git().resource(), [instance], self.editor))  # noqa: SLF001
         vect3 = self.renderer.scene.cursor.position()
@@ -164,8 +181,12 @@ class ModuleDesignerControls3d:
         self.editor.rebuild_instance_list()
         self.editor.set_selection([instance])
 
-    def on_keyboard_pressed(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
-        scene = self.renderer.scene
+    def on_keyboard_pressed(
+        self,
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
+    ):
+        scene: Scene = self.renderer.scene
         assert scene is not None
 
         if self.toggle_free_cam.satisfied(buttons, keys):
@@ -176,14 +197,14 @@ class ModuleDesignerControls3d:
             return
 
         # Check camera movement keys
-        move_camera_keys = {
+        move_camera_keys: dict[str, bool] = {
             "selected": self.move_camera_to_selected.satisfied(buttons, keys),
             "cursor": self.move_camera_to_cursor.satisfied(buttons, keys),
             "entry": self.move_camera_to_entry_point.satisfied(buttons, keys)
         }
         if any(move_camera_keys.values()):
             if move_camera_keys["selected"]:
-                instance = next(iter(self.editor.selected_instances), None)
+                instance: GITInstance | None = next(iter(self.editor.selected_instances), None)
                 if instance is not None:
                     self.renderer.snap_camera_to_point(instance.position)
             elif move_camera_keys["cursor"]:
@@ -429,7 +450,12 @@ class ModuleDesignerControls2d:
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self._mode: _InstanceMode | _GeometryMode | _SpawnMode
 
-    def on_mouse_scrolled(self, delta: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
+    def on_mouse_scrolled(
+        self,
+        delta: Vector2,
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
+    ):
         if self.zoom_camera.satisfied(buttons, keys):
             if not delta.y:
                 return
@@ -437,7 +463,15 @@ class ModuleDesignerControls2d:
             zoom_factor = calculate_zoom_strength(delta.y, sens_setting)
             self.renderer.camera.nudge_zoom(zoom_factor)
 
-    def on_mouse_moved(self, screen: Vector2, screen_delta: Vector2, world: Vector2, world_delta: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
+    def on_mouse_moved(
+        self,
+        screen: Vector2,
+        screen_delta: Vector2,
+        world: Vector2,
+        world_delta: Vector2,
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
+    ):
         should_move_camera = self.move_camera.satisfied(buttons, keys)
         should_rotate_camera = self.rotate_camera.satisfied(buttons, keys)
         adjusted_world_delta = world_delta
@@ -481,7 +515,12 @@ class ModuleDesignerControls2d:
                     )
             self._mode.rotate_selected_to_point(world.x, world.y)
 
-    def on_mouse_pressed(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
+    def on_mouse_pressed(
+        self,
+        screen: Vector2,
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
+    ):
         world: Vector3 = self.renderer.to_world_coords(screen.x, screen.y)
         if (
             self.duplicate_selected.satisfied(buttons, keys)
@@ -503,7 +542,11 @@ class ModuleDesignerControls2d:
                 RobustLogger().debug("on_mouse_pressed, select_underneath did not find any instances.")
                 self.editor.set_selection([])
 
-    def on_keyboard_pressed(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
+    def on_keyboard_pressed(
+        self,
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
+    ):
         if self.delete_selected.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
                 self._mode.delete_selected()
@@ -519,7 +562,12 @@ class ModuleDesignerControls2d:
         if self.toggle_instance_lock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def on_mouse_released(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
+    def on_mouse_released(
+        self,
+        screen: Vector2,
+        buttons: set[Qt.MouseButton],
+        keys: set[Qt.Key],
+    ):
         self.editor.handle_undo_redo_from_long_action_finished()
 
     def on_keyboard_released(self, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):

@@ -41,14 +41,12 @@
         "--explicit-package-bases"
     ],
     "mypy.runUsingActiveInterpreter": true,
-    "python.analysis.autoImportCompletions": true,
+    "python.analysis.autoImportCompletions": false,
     "python.analysis.autoIndent": true,
     "python.analysis.autoSearchPaths": true,
-    "python.analysis.enablePytestSupport": true,
+    "python.analysis.enablePytestSupport": false,
+    "python.analysis.typeCheckingMode": "off",
     "python.analysis.indexing": true,
-    "python.analysis.persistAllIndices": true,
-    "python.analysis.regenerateStdLibIndices": false,
-    "python.missingPackage.severity": "Warning",
     "python.terminal.launchArgs": [
         "-i",
         "-m",

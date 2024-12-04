@@ -18,11 +18,7 @@ from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.resource.type import ResourceType
 from pykotor.tools.registry import SpoofKotorRegistry
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
-from toolset.utils.script_utils import (
-    NoOpRegistrySpoofer,
-    handle_permission_error,
-    setup_extract_path,
-)
+from toolset.utils.script_utils import NoOpRegistrySpoofer, handle_permission_error, setup_extract_path
 
 if TYPE_CHECKING:
     from typing_extensions import LiteralString

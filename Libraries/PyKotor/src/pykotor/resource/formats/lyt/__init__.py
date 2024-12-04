@@ -21,6 +21,7 @@ __all__ = [
     "LYTObstacle",
     "LYTRoom",
     "LYTTrack",
+    "LYTTrackType",
     "bytes_lyt",
     "read_lyt",
     "write_lyt",

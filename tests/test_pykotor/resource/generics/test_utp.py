@@ -6,11 +6,9 @@ import sys
 import unittest
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
-THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
+THIS_SCRIPT_PATH: pathlib.Path = pathlib.Path(__file__).resolve()
+PYKOTOR_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[3].resolve()
+UTILITY_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
 
 
 def add_sys_path(p: pathlib.Path):
@@ -26,10 +24,12 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING
 
+
+from pykotor.resource.type import ResourceType
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utp import construct_utp, dismantle_utp
+from pykotor.resource.generics.utp import UTP, construct_utp, dismantle_utp
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
@@ -71,19 +71,19 @@ class Test(TestCase):
             assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
 
     def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
-        reconstructed_gff = dismantle_utp(construct_utp(gff))
+        gff: GFF = read_gff(TEST_FILE)
+        reconstructed_gff: GFF = dismantle_utp(construct_utp(gff))
         assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
-        utp = construct_utp(gff)
+        gff: GFF = read_gff(TEST_FILE)
+        utp: UTP = construct_utp(gff)
         self.validate_io(utp)
 
     def test_io_reconstruct(self):
         gff = read_gff(TEST_FILE)
-        gff = dismantle_utp(construct_utp(gff))
-        utp = construct_utp(gff)
+        gff: GFF = dismantle_utp(construct_utp(gff))
+        utp: UTP = construct_utp(gff)
         self.validate_io(utp)
 
     def validate_io(self, utp: UTP):

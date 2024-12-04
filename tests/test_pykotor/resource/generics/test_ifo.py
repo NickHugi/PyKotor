@@ -41,9 +41,9 @@ K2_PATH = os.environ.get("K2_PATH")
 
 class TestIFO(TestCase):
     def setUp(self):
-        self.log_messages = [os.linesep]
+        self.log_messages: list[str] = [os.linesep]
 
-    def log_func(self, message=""):
+    def log_func(self, message: str = ""):
         self.log_messages.append(message)
 
     @unittest.skipIf(

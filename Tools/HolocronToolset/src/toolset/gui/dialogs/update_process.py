@@ -26,10 +26,14 @@ def run_progress_dialog(
     title: str = "Operation Progress",
 ) -> NoReturn:
     """Call this with multiprocessing.Process."""
-    app = QApplication(sys.argv)
+    app: QApplication = QApplication(sys.argv)
     dialog: ProgressDialog = ProgressDialog(progress_queue, title)
-    icon: QIcon | None = app.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation)
-    dialog.setWindowIcon(QIcon(icon))
+    app_style: QStyle | None = app.style()
+    if app_style is None:
+        raise RuntimeError("Failed to get QStyle for application")
+    icon: QIcon | None = app_style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation)
+    if icon is not None:
+        dialog.setWindowIcon(QIcon(icon))
     dialog.show()
     sys.exit(app.exec())
 

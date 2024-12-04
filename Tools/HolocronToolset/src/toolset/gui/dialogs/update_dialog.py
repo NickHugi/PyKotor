@@ -47,7 +47,7 @@ class UpdateDialog(QDialog):
     def include_prerelease(self) -> bool:
         return self.preReleaseCheckBox.isChecked()
 
-    def set_prerelease(self, value):
+    def set_prerelease(self, value: bool) -> None:  # noqa: FBT001
         return self.preReleaseCheckBox.setChecked(value)
 
     def init_ui(self):
@@ -136,7 +136,7 @@ class UpdateDialog(QDialog):
     def filter_releases_based_on_prerelease(self):
         selected_fork: str = self.fork_combo_box.currentText()
         if selected_fork in self.forks_cache:
-            self.releases = filter_releases(self.forks_cache[selected_fork], self.include_prerelease())
+            self.releases = filter_releases(self.forks_cache[selected_fork], include_prerelease=self.include_prerelease())
         else:
             self.releases = []
 

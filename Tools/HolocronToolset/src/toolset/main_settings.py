@@ -10,10 +10,10 @@ from qtpy.QtWidgets import QApplication
 from toolset.gui.widgets.settings.widgets.application import ApplicationSettings
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QSettings
+    from qtpy.QtCore import QCoreApplication, QSettings
 
 
-def _setup_pre_init_settings():
+def setup_pre_init_settings():  # pyright: ignore[reportUnusedFunction]
     """Setup pre-initialization settings for the Holocron Toolset.
 
     Call main_init() to get here.
@@ -51,7 +51,7 @@ def setup_post_init_settings():
     """
     settings_widget = ApplicationSettings()
     toolset_qsettings: QSettings = settings_widget.settings
-    app = QApplication.instance()
+    app: QCoreApplication | None = QApplication.instance()
     assert app is not None, "QApplication instance not found."
     assert isinstance(app, QApplication), "QApplication instance not a QApplication type object."
 
@@ -85,7 +85,7 @@ def setup_toolset_default_env():
 
     if os.name == "nt":
         os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation")
-        os.environ["QT_MEDIA_BACKEND"] = "windows"
+        os.environ["QT_MEDIA_BACKEND"] = os.environ.get("QT_MEDIA_BACKEND", "windows")
     if not is_debug_mode() or is_frozen():
         os.environ["QT_DEBUG_PLUGINS"] = os.environ.get("QT_DEBUG_PLUGINS", "0")
         os.environ["QT_LOGGING_RULES"] = os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")  # Disable specific Qt debug output

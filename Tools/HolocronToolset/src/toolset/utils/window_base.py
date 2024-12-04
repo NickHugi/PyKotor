@@ -15,7 +15,10 @@ TOOLSET_WINDOWS: list[QDialog | QMainWindow] = []
 
 _UNIQUE_SENTINEL = object()
 
-def add_window(window: QDialog | QMainWindow):
+
+def add_window(
+    window: QDialog | QMainWindow,
+) -> None:
     """Prevents Qt's garbage collection by keeping a reference to the window."""
     original_closeEvent = window.closeEvent
 
@@ -38,14 +41,13 @@ def add_window(window: QDialog | QMainWindow):
     window.closeEvent = new_close_event  # pyright: ignore[reportAttributeAccessIssue]
     TOOLSET_WINDOWS.append(window)
 
-def add_recent_file(file: Path):
+
+def add_recent_file(
+    file: Path,
+) -> None:
     """Update the list of recent files."""
     settings = GlobalSettings()
-    recent_files: list[str] = [
-        str(fp)
-        for fp in {Path(p) for p in settings.recentFiles}
-        if fp.is_file()
-    ]
+    recent_files: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.is_file()]
     recent_files.insert(0, str(file))
     if len(recent_files) > 15:  # noqa: PLR2004
         recent_files.pop()

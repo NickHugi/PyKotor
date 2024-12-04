@@ -204,65 +204,42 @@ class Difference:
         return f"Difference(path={self.path}, old_value={self.old_value}, new_value={self.new_value})"
 
 
-class GFFCompareResult:
-    """A comparison result from gff.compare/GFFStruct.compare.
-
-    Contains enough differential information between the two GFF structs that it can be used to take one gff and reconstruct the other.
-    Helper methods also exist for working with the data in other code.
-
-    Backwards-compatibility note: the original gff.compare used to return a simple boolean. True if the gffs were the same, False if not. This class
-    attempts to keep backwards compatibility while ensuring we can still return a type that's more detailed and informative.
-    """
+class GFFComparisonResult:
+    """Class to store comprehensive results of a GFF comparison."""
 
     def __init__(self):
-        self.differences: list[Difference] = []
+        self.is_identical: bool = True
+        self.field_stats: dict[str, dict[str, int]] = {
+            "used": {},      # Fields that were successfully compared
+            "missing": {},   # Fields missing in the target GFF
+            "extra": {},     # Fields present in target but not source
+            "mismatched": {} # Fields present in both but with different values
+        }
+        self.struct_id_mismatches: list[tuple[str, int, int]] = []  # (path, source_id, target_id)
+        self.field_count_mismatches: list[tuple[str, int, int]] = []  # (path, source_count, target_count)
+        self.value_mismatches: list[tuple[str, str, Any, Any]] = []  # (path, field_type, source_val, target_val)
 
-    def __bool__(self):
-        # Return False if the list has any contents (meaning the objects are different), True if it's empty.
-        return not self.differences
+    def add_field_stat(self, category: str, field_name: str) -> None:
+        """Increment the count for a field in a given category."""
+        self.field_stats[category][field_name] = self.field_stats[category].get(field_name, 0) + 1
 
-    def add_difference(
-        self,
-        path,
-        old_value,
-        new_value,
-    ):
-        """Adds a difference to the collection of tracked differences.
+    def add_struct_id_mismatch(self, path: str, source_id: int, target_id: int) -> None:
+        """Record a struct ID mismatch."""
+        self.is_identical = False
+        self.struct_id_mismatches.append((path, source_id, target_id))
 
-        Args:
-        ----
-            path (str): The path to the value where the difference was found.
-            old_value (Any): The original value at the specified path.
-            new_value (Any): The new value at the specified path that differs from the original.
-        """
-        self.differences.append(Difference(path, old_value, new_value))
+    def add_field_count_mismatch(self, path: str, source_count: int, target_count: int) -> None:
+        """Record a field count mismatch."""
+        self.is_identical = False
+        self.field_count_mismatches.append((path, source_count, target_count))
 
-    def get_changed_values(self) -> tuple[Difference, ...]:
-        """Returns a tuple of differences where the value has changed from the original.
+    def add_value_mismatch(self, path: str, field_type: str, source_val: Any, target_val: Any) -> None:
+        """Record a value mismatch."""
+        self.is_identical = False
+        self.value_mismatches.append((path, field_type, source_val, target_val))
 
-        Returns:
-        -------
-            tuple[Difference]: A collection of differences with changed values.
-        """
-        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value)
-
-    def get_new_values(self) -> tuple[Difference, ...]:
-        """Returns a tuple of differences where a new value is present in the compared GFFStruct.
-
-        Returns:
-        -------
-            tuple[Difference]: A collection of differences with new values.
-        """
-        return tuple(diff for diff in self.differences if diff.old_value is None and diff.new_value is not None)
-
-    def get_removed_values(self) -> tuple[Difference, ...]:
-        """Returns a tuple of differences where a value is present in the original GFFStruct but not in the compared.
-
-        Returns:
-        -------
-            tuple[Difference]: A collection of differences with removed values.
-        """
-        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is None)
+    def __bool__(self) -> bool:
+        return self.is_identical
 
 
 class GFF:
@@ -316,7 +293,7 @@ class GFF:
         *,
         ignore_default_changes: bool = False,
         ignore_values: dict[str, set[Any]] | None = None,
-    ) -> bool:
+    ) -> GFFComparisonResult:
         """Compare two GFF objects.
 
         Args:
@@ -330,17 +307,25 @@ class GFF:
 
         Returns:
         -------
-            bool: True if GFFs are identical, False otherwise
+            GFFComparisonResult: Object containing detailed comparison results
 
         Processing Logic:
         ----------------
             - Compare root nodes of both GFFs
             - Recursively compare child nodes
-            - Log any differences found
-            - Write comparison report to given path if provided
-            - Return True if no differences found, False otherwise.
+            - Collect statistics about field usage and mismatches
+            - Return comprehensive comparison results
         """
-        return self.root.compare(other_gff.root, log_func, path, ignore_default_changes=ignore_default_changes, ignore_values=ignore_values)
+        result = GFFComparisonResult()
+        self.root.compare(
+            other_gff.root,
+            log_func,
+            path,
+            ignore_default_changes=ignore_default_changes,
+            ignore_values=ignore_values,
+            comparison_result=result
+        )
+        return result
 
 
 class _GFFField:
@@ -472,10 +457,11 @@ class GFFStruct:
         *,
         ignore_default_changes: bool = False,
         ignore_values: dict[str, set[Any]] | None = None,
+        comparison_result: GFFComparisonResult | None = None,
     ) -> bool:
         """Recursively compares two GFFStructs.
 
-        Functionally the same as __eq__, but will log/print comparison information as well
+        Functionally similar to __eq__, but collects comprehensive comparison statistics
 
         Args:
         ----
@@ -484,17 +470,11 @@ class GFFStruct:
             current_path: {PureWindowsPath | os.PathLike | str | None}: Path of structure being compared
             ignore_default_changes: {bool}: Whether to ignore default/empty changes
             ignore_values: {dict[str, set[Any]] | None}: Dictionary of field labels and their ignorable values
+            comparison_result: {GFFComparisonResult | None}: Object to store comparison statistics
 
         Returns:
         -------
             bool: True if structures are the same, False otherwise
-
-        Processing Logic:
-        ----------------
-            - Creates dictionaries of fields for each structure
-            - Gets union of all field labels
-            - Compares field types, values recursively for structs and lists
-            - Logs any differences found
         """
         ignore_labels: set[str] = {
             "KTInfoDate",
@@ -503,6 +483,7 @@ class GFFStruct:
             "EditorInfo",
         }
         ignore_values = ignore_values or {}
+        comparison_result = comparison_result or GFFComparisonResult()
 
         def is_ignorable_value(label: str, v: Any) -> bool:
             """Check if a value is ignorable for a specific label."""
@@ -519,15 +500,16 @@ class GFFStruct:
         ) -> bool:
             return is_ignorable_value(label, old_value) and is_ignorable_value(label, new_value)
 
-        is_same: bool = True
         current_path = PureWindowsPath(current_path or "GFFRoot")
-        if len(self) != len(other_gff_struct) and not ignore_default_changes:  # sourcery skip: class-extract-method
+
+        if len(self) != len(other_gff_struct) and not ignore_default_changes:
             log_func("")
             log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
-            is_same = False
+            comparison_result.add_field_count_mismatch(str(current_path), len(self), len(other_gff_struct))
+
         if self.struct_id != other_gff_struct.struct_id:
             log_func(f"Struct ID is different at '{current_path}': '{self.struct_id}' --> '{other_gff_struct.struct_id}'")
-            is_same = False
+            comparison_result.add_struct_id_mismatch(str(current_path), self.struct_id, other_gff_struct.struct_id)
 
         # Create dictionaries for both old and new structures
         old_dict: dict[str, tuple[GFFFieldType, Any]] = {
@@ -554,17 +536,19 @@ class GFFStruct:
                     msg: str = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
                     raise RuntimeError(msg)
                 log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(safe_repr(new_value))}")
-                is_same = False
+                comparison_result.add_field_stat("extra", label)
                 continue
+
             if new_value is None or new_ftype is None:
                 log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(safe_repr(old_value))}")
-                is_same = False
+                comparison_result.add_field_stat("missing", label)
                 continue
 
             # Check if field types have changed
             if old_ftype != new_ftype:
                 log_func(f"Field type is different at '{child_path}': '{old_ftype.name}'-->'{new_ftype.name}'")
-                is_same = False
+                comparison_result.add_field_stat("mismatched", label)
+                comparison_result.add_value_mismatch(str(child_path), "field_type", old_ftype.name, new_ftype.name)
                 continue
 
             # Compare values depending on their types
@@ -573,7 +557,7 @@ class GFFStruct:
                 cur_struct_this: GFFStruct = old_value
                 if cur_struct_this.struct_id != new_value.struct_id:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
-                    is_same = False
+                    comparison_result.add_struct_id_mismatch(str(child_path), cur_struct_this.struct_id, new_value.struct_id)
 
                 if not cur_struct_this.compare(
                     new_value,
@@ -581,8 +565,8 @@ class GFFStruct:
                     child_path,
                     ignore_default_changes=ignore_default_changes,
                     ignore_values=ignore_values,
+                    comparison_result=comparison_result
                 ):
-                    is_same = False
                     continue
             elif old_ftype == GFFFieldType.List:
                 gff_list: GFFList = old_value
@@ -592,24 +576,29 @@ class GFFStruct:
                     child_path,
                     ignore_default_changes=ignore_default_changes,
                     ignore_values=ignore_values,
+                    comparison_result=comparison_result
                 ):
-                    is_same = False
                     continue
-
             elif old_value != new_value:
                 if isinstance(old_value, float) and isinstance(new_value, float) and math.isclose(old_value, new_value, rel_tol=1e-4, abs_tol=1e-4):
+                    comparison_result.add_field_stat("used", label)
                     continue
 
-                is_same = False
                 if str(old_value) == str(new_value):
                     log_func(
                         f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference)."  # noqa: E501
                     )
+                    comparison_result.add_field_stat("mismatched", label)
                     continue
                 log_func(f"Field '{old_ftype.name}' is different at '{child_path}':")
                 log_func(format_diff(old_value, new_value, label))
+                comparison_result.add_field_stat("mismatched", label)
+                comparison_result.add_value_mismatch(str(child_path), old_ftype.name, old_value, new_value)
+                continue
 
-        return is_same
+            comparison_result.add_field_stat("used", label)
+
+        return bool(comparison_result)
 
     def what_type(
         self,
@@ -1487,6 +1476,7 @@ class GFFList:
         *,
         ignore_default_changes: bool = False,
         ignore_values: dict[str, set[Any]] | None = None,
+        comparison_result: GFFComparisonResult | None = None,
     ) -> bool:
         """Compare two GFFLists recursively.
 
@@ -1499,6 +1489,7 @@ class GFFList:
             current_path: PureWindowsPath - Path being compared
             ignore_default_changes: {bool}: Whether to ignore default/empty changes
             ignore_values: {dict[str, set[Any]] | None}: Dictionary of field labels and their ignorable values
+            comparison_result: {GFFComparisonResult | None}: Object to store comparison statistics
 
 
         Returns:
@@ -1551,7 +1542,7 @@ class GFFList:
         for list_index in common_items:
             old_child: GFFStruct = old_dict[list_index]
             new_child: GFFStruct = new_dict[list_index]
-            if not old_child.compare(new_child, log_func, current_path / str(list_index), ignore_default_changes=ignore_default_changes, ignore_values=ignore_values):
+            if not old_child.compare(new_child, log_func, current_path / str(list_index), ignore_default_changes=ignore_default_changes, ignore_values=ignore_values, comparison_result=comparison_result):
                 is_same_result = False
 
         return is_same_result

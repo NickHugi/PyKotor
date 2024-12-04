@@ -17,20 +17,7 @@ import requests
 from loggerplus import RobustLogger
 from qtpy.QtCore import QThread, Qt
 from qtpy.QtGui import QFont
-from qtpy.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QComboBox,
-    QDialog,
-    QFormLayout,
-    QHBoxLayout,
-    QLabel,
-    QMessageBox,
-    QPushButton,
-    QStyle,
-    QTextEdit,
-    QVBoxLayout,
-)
+from qtpy.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QStyle, QTextEdit, QVBoxLayout
 
 from toolset.config import LOCAL_PROGRAM_INFO, is_remote_version_newer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
@@ -41,6 +28,7 @@ from utility.updater.update import AppUpdate
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QIcon
+    from typing_extensions import Literal
 
     from utility.updater.github import Asset
 
@@ -144,7 +132,7 @@ class UpdateDialog(QDialog):
             self.release_combo_box.addItem(release.tag_name, release)
             if release.tag_name == version_to_toolset_tag(LOCAL_PROGRAM_INFO["currentVersion"]):
                 index = self.release_combo_box.count() - 1
-                self.release_combo_box.setItemData(index, QFont("Arial", 10, QFont.Bold), Qt.FontRole)
+                self.release_combo_box.setItemData(index, QFont("Arial", 10, QFont.Weight.Bold), Qt.ItemDataRole.FontRole)
         form_layout.addRow("Select Release:", self.release_combo_box)
 
         main_layout.addLayout(form_layout)
@@ -172,7 +160,7 @@ class UpdateDialog(QDialog):
         current_version_layout = QHBoxLayout()
         current_version_layout.addStretch(1)
         current_version = LOCAL_PROGRAM_INFO["currentVersion"]
-        version_color = "#FFA500" if is_remote_version_newer(current_version, toolset_tag_to_version(self.get_selected_tag())) else "#00FF00"
+        version_color: Literal["#FFA500", "#00FF00"] = "#FFA500" if is_remote_version_newer(current_version, toolset_tag_to_version(self.get_selected_tag())) else "#00FF00"
         version_text = f"<span style='font-size:16px; font-weight:bold; color:{version_color};'>{current_version}</span>"
         current_version_label = QLabel(f"Holocron Toolset Current Version: {version_text}")
         current_version_label.setFont(QFont("Arial", 12))
@@ -193,12 +181,12 @@ class UpdateDialog(QDialog):
         self.forks_cache.clear()
         forks_url = "https://api.github.com/repos/NickHugi/PyKotor/forks"
         try:
-            forks_response = requests.get(forks_url, timeout=15)
+            forks_response: requests.Response = requests.get(forks_url, timeout=15)
             forks_response.raise_for_status()
-            forks_json = forks_response.json()
+            forks_json: list[dict[str, Any]] = forks_response.json()
             for fork in forks_json:
-                fork_owner_login = fork["owner"]["login"]
-                fork_full_name = f"{fork_owner_login}/{fork['name']}"
+                fork_owner_login: str = fork["owner"]["login"]
+                fork_full_name: str = f"{fork_owner_login}/{fork['name']}"
                 self.forks_cache[fork_full_name] = self.fetch_fork_releases(fork_full_name, include_all=True)
         except requests.HTTPError as e:
             RobustLogger().exception(f"Failed to fetch forks: {e}")
@@ -211,9 +199,9 @@ class UpdateDialog(QDialog):
     ) -> list[GithubRelease]:
         url = f"https://api.github.com/repos/{fork_full_name}/releases"
         try:
-            response = requests.get(url, timeout=15)
+            response: requests.Response = requests.get(url, timeout=15)
             response.raise_for_status()
-            releases_json = response.json()
+            releases_json: list[dict[str, Any]] = response.json()
             if include_all:
                 return [GithubRelease.from_json(r) for r in releases_json]
             return [GithubRelease.from_json(r) for r in releases_json if not r["draft"] and (self.include_prerelease() or not r["prerelease"])]
@@ -284,7 +272,7 @@ class UpdateDialog(QDialog):
         return self.releases[0] if self.releases else None
 
     def on_update_latest_clicked(self):
-        latest_release = self.get_latest_release()
+        latest_release: GithubRelease | None = self.get_latest_release()
         if not latest_release:
             print("No toolset releases found?")
             return

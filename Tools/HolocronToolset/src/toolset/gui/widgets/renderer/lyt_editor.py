@@ -14,12 +14,12 @@ from uuid import uuid4
 
 import qtpy
 
-from PyQt6.QtCore import QPointF
 from qtpy.QtCore import (
     QEvent,
     QLine,
     QLineF,
     QPoint,
+    QPointF,
     QRect,
     QThread,
     Qt,
@@ -47,19 +47,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.resource.formats.bwm import BWM, BWMFace
-from pykotor.resource.formats.lyt import LYT
-from toolset.data.lyt_structures import (
-    ExtendedLYTDoorHook,
-    ExtendedLYTObstacle,
-    ExtendedLYTRoom,
-    ExtendedLYTTrack
-)
-
-# Type aliases for backward compatibility
-LYTRoom = ExtendedLYTRoom
-LYTTrack = ExtendedLYTTrack 
-LYTObstacle = ExtendedLYTObstacle
-LYTDoorHook = ExtendedLYTDoorHook
+from pykotor.resource.formats.lyt import LYT, LYTRoom, LYTTrack, LYTObstacle, LYTDoorHook
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.uic.qtpy.editors.lyt import Ui_LYTEditor
@@ -72,8 +60,10 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import _QToolBar
 
     from pykotor.common.module import MDL, Module, ModuleResource
-    from pykotor.gl.scene import TPC, Camera, RenderObject, Scene
+    from pykotor.gl.scene import Camera, RenderObject, Scene
     from pykotor.gl.shader import Texture
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.gl.scene import Boundary
 
 
 class LYTEditor(QWidget):
@@ -189,7 +179,6 @@ class LYTEditor(QWidget):
         self.mouse_down: set[Qt.MouseButton] = set()
 
         # Initialize components
-        self.undo_stack: QUndoStack = QUndoStack(self)
         self.texture_browser: TextureBrowser = TextureBrowser(self)
         self.walkmesh: BWM | None = None
 
@@ -885,13 +874,18 @@ class LYTEditor(QWidget):
         self.is_placing_door_hook = True
         self.selected_room = room
 
-    def snap_to_grid(self, point: Vector2) -> Vector2:
-        if self._snap_to_grid:
-            return Vector2(
-                round(point.x / self.grid_size) * self.grid_size,
-                round(point.y / self.grid_size) * self.grid_size,
-            )
-        return point
+    def snap_to_grid(
+        self,
+        point: Vector2,
+    ) -> Vector2:
+        """Snap a point to the grid."""
+        if not self._snap_to_grid:
+            return point
+
+        return Vector2(
+            round(point.x / self._grid_size) * self._grid_size,
+            round(point.y / self._grid_size) * self._grid_size
+        )
 
     def get_room_resize_corner(
         self,
@@ -957,8 +951,12 @@ class LYTEditor(QWidget):
             self.is_rotating = True
             self.mouse_prev = mouse_pos
 
-    def set_grid_size(self, grid_size: int):
-        self.grid_size = grid_size
+    def set_grid_size(
+        self,
+        size: int,
+    ):
+        """Set the grid size."""
+        self._grid_size = float(size)
         self.update()
 
     def set_snap_to_grid(self, *, snap_to_grid: bool):
@@ -1233,35 +1231,6 @@ class LYTEditor(QWidget):
             self.sig_lyt_updated.emit(lyt_copy)
         self.update()
 
-    def draw_grid(
-        self,
-        painter: QPainter,
-    ):
-        """Draw the editor grid."""
-        pen: QPen = QPen(QColor(128, 128, 128), 1, Qt.PenStyle.DashLine)
-        painter.setPen(pen)
-
-        # Draw vertical lines
-        for x in range(0, self.width(), int(self._grid_size)):
-            painter.drawLine(x, 0, x, self.height())
-
-        # Draw horizontal lines
-        for y in range(0, self.height(), int(self._grid_size)):
-            painter.drawLine(0, y, self.width(), y)
-
-    def snap_to_grid(
-        self,
-        point: Vector2,
-    ) -> Vector2:
-        """Snap a point to the grid."""
-        if not self._snap_to_grid:
-            return point
-
-        return Vector2(
-            round(point.x / self._grid_size) * self._grid_size,
-            round(point.y / self._grid_size) * self._grid_size
-        )
-
     def toggle_grid(
         self,
         state: bool,
@@ -1277,14 +1246,6 @@ class LYTEditor(QWidget):
         """Toggle snap-to-grid functionality."""
         self._snap_to_grid = state
 
-    def set_grid_size(
-        self,
-        size: int,
-    ):
-        """Set the grid size."""
-        self._grid_size = float(size)
-        self.update()
-
     def draw_room(
         self,
         painter: QPainter,
@@ -1298,7 +1259,7 @@ class LYTEditor(QWidget):
             if not module:
                 return
 
-            mdl_res = module.get_resource(room.model, "mdl")
+            mdl_res = module.resource(room.model, "mdl")
             if not mdl_res:
                 return
 
@@ -1311,7 +1272,7 @@ class LYTEditor(QWidget):
             mdl = mdl_res.resource()
 
             # Get room bounds from MDL
-            bounds = mdl.get_bounding_box()
+            bounds: Boundary = self.scene.objects.get(mdl_res.filename()).boundary()
             size = bounds.size
 
             position = room.position
@@ -1319,10 +1280,10 @@ class LYTEditor(QWidget):
 
             # Get room size from extended attributes
             size = room.size if isinstance(room, ExtendedLYTRoom) else Vector3(10, 10, 3)
-            
+
             rect = QRect(
                 int(position.x * zoom),
-                int(position.y * zoom), 
+                int(position.y * zoom),
                 int(size.x * zoom),
                 int(size.y * zoom)
             )
