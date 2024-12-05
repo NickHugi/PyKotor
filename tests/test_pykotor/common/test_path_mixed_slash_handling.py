@@ -9,14 +9,7 @@ import platform
 import sys
 import unittest
 from ctypes.wintypes import DWORD
-from pathlib import (
-    Path,
-    PosixPath,
-    PurePath,
-    PurePosixPath,
-    PureWindowsPath,
-    WindowsPath,
-)
+from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 from unittest import mock
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -35,22 +28,14 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pathlib import (
+from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
+
+from utility.system.path import (
     Path as CustomPath,
-)
-from pathlib import (
     PosixPath as CustomPosixPath,
-)
-from pathlib import (
     PurePath as CustomPurePath,
-)
-from pathlib import (
     PurePosixPath as CustomPurePosixPath,
-)
-from pathlib import (
     PureWindowsPath as CustomPureWindowsPath,
-)
-from pathlib import (
     WindowsPath as CustomWindowsPath,
 )
 
@@ -572,7 +557,6 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             assert str(CustomPath("//")) == "."
             assert str(CustomPath("///")) == "."
 
-
     def test_custom_path_edge_cases_os_specific_custom_pure_path(self):
         assert str(CustomPurePath("C:/")) == "C:"
         assert str(CustomPurePath("C:\\")) == "C:"
@@ -599,6 +583,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         elif os.name == "nt":
             assert str(CustomPurePath("//")) == "."
             assert str(CustomPurePath("///")) == "."
+
 
 if __name__ == "__main__":
     unittest.main()

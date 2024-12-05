@@ -24,7 +24,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Vector3
+from utility.common.geometry import Vector3
 from pykotor.resource.formats.bwm import BWMBinaryReader, read_bwm, write_bwm
 
 if TYPE_CHECKING:

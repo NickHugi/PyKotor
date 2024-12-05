@@ -19,24 +19,24 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath, QPen, QPixmap, QTransform
 from qtpy.QtWidgets import QWidget
 
-from pykotor.common.geometry import Vector2, Vector3
 from pykotor.resource.formats.bwm import BWM
 from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.are import ARENorthAxis
 from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITEncounter, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from toolset.utils.misc import clamp
+from utility.common.geometry import Vector2, Vector3
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QPaintEvent, QWheelEvent
 
-    from pykotor.common.geometry import SurfaceMaterial
     from pykotor.resource.formats.bwm.bwm_data import BWMFace
     from pykotor.resource.formats.lyt.lyt_data import LYT, LYTRoom
     from pykotor.resource.formats.tpc.tpc_data import TPC, TPCMipmap
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.git import GIT, GITInstance
     from pykotor.resource.generics.pth import PTH
+    from utility.common.geometry import SurfaceMaterial
 
 T = TypeVar("T")
 

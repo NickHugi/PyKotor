@@ -22,7 +22,7 @@ from OpenGL.raw.GL.VERSION.GL_2_0 import glEnableVertexAttribArray
 from OpenGL.raw.GL.VERSION.GL_3_0 import glBindVertexArray
 from glm import mat4, quat, vec3, vec4
 
-from pykotor.common.geometry import Vector3
+from utility.common.geometry import Vector3
 
 if TYPE_CHECKING:
     from _testbuffer import ndarray

@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from qtpy import QtCore
-from qtpy.QtCore import QBuffer, QIODevice
+from qtpy.QtCore import QBuffer
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QListWidgetItem, QMessageBox
 
@@ -311,14 +311,8 @@ class UTSEditor(Editor):
         data: bytes | None = self._installation.sound(resname)
 
         if data:
-            # PyQt5 and PySide2 code path
-            from qtpy.QtMultimedia import QMediaContent  # pyright: ignore[reportAttributeAccessIssue]
-
-            self.buffer = QBuffer(self)
-            self.buffer.setData(data)
-            self.buffer.open(QIODevice.ReadOnly)  # pyright: ignore[reportAttributeAccessIssue]
-            self.player.setMedia(QMediaContent(), self.buffer)  # pyright: ignore[reportAttributeAccessIssue]
-            QtCore.QTimer.singleShot(0, self.player.play)
+            self.play_byte_source_media(data)
+            return True
         else:
             QMessageBox(QMessageBox.Icon.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
 

@@ -18,13 +18,13 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+from utility.common.geometry import Vector3, Vector4
 
 if TYPE_CHECKING:
     import os

@@ -21,7 +21,7 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.common.geometry import Vector3
+from utility.common.geometry import Vector3
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs.compiler.interpreter import Stack
 

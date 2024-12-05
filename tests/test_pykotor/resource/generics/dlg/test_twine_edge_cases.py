@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from pykotor.common.geometry import Vector2
+from utility.common.geometry import Vector2
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.resource.generics.dlg.base import DLG
 from pykotor.resource.generics.dlg.links import DLGLink

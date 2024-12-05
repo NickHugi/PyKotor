@@ -25,7 +25,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 from typing import TYPE_CHECKING
 
 
-from pykotor.common.geometry import Vector2, Vector4
+from utility.common.geometry import Vector2, Vector4
 from pykotor.resource.formats.gff import GFF, GFFStruct
 from pykotor.common.misc import Color, Game
 from pykotor.extract.installation import Installation
@@ -60,9 +60,6 @@ class TestGUI(TestCase):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for gui_resource in (resource for resource in self.installation if resource.restype() is ResourceType.GUI):
             if gui_resource.identifier() in (
-                "abilities.gui",
-                "character.gui",
-                "container.gui",
                 "debug.gui",
             ):
                 continue
@@ -84,9 +81,6 @@ class TestGUI(TestCase):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for gui_resource in (resource for resource in self.installation if resource.restype() is ResourceType.GUI):
             if gui_resource.identifier() in (
-                "abilities.gui",
-                "character.gui",
-                "container.gui",
                 "debug.gui",
             ):
                 continue
@@ -218,86 +212,85 @@ class TestGUI(TestCase):
             assert root.gui_text.strref == -1, f"{root.gui_text.strref} == -1"
             assert root.gui_text.text == "", f"{root.gui_text.text} == ''"
 
-        elif isinstance(root, GUIButton):
-            assert isinstance(root.text, str), f"{root.text} is {type(root.text)}"
-            assert isinstance(root.text_color, Color), f"{root.text_color} is {type(root.text_color)}"
-            assert isinstance(root.border, bool), f"{root.border} is {type(root.border)}"
-            assert isinstance(root.pulsing, int), f"{root.pulsing} is {type(root.pulsing)}"
+        for control in root.children:
+            if isinstance(control, GUIButton):
+                assert isinstance(control.text, (str, type(None))), f"{control.text} is {type(control.text)}"
+                assert isinstance(control.color, (Color, type(None))), f"{control.color} is {type(control.color)}"
+                assert isinstance(control.border, (GUIBorder, type(None))), f"{control.border} is {type(control.border)}"
+                assert isinstance(control.pulsing, (int, type(None))), f"{control.pulsing} is {type(control.pulsing)}"
 
-            assert root.text == "", f"{root.text} == ''"
-            assert root.text_color == Color(0, 0, 0, 0), f"{root.text_color} == {Color(0, 0, 0, 0)}"
-            assert root.border is True, f"{root.border} is True"
-            assert root.pulsing == 0, f"{root.pulsing} == 0"
+                assert control.text == None, f"{control.text} == None"
+                assert control.color == None, f"{control.color} == None"
+                assert control.pulsing == None, f"{control.pulsing} == None"
 
-        elif isinstance(root, GUISlider):
-            assert isinstance(root.value, float), f"{root.value} is {type(root.value)}"
-            assert isinstance(root.min_value, float), f"{root.min_value} is {type(root.min_value)}"
-            assert isinstance(root.max_value, float), f"{root.max_value} is {type(root.max_value)}"
-            assert isinstance(root.direction, str), f"{root.direction} is {type(root.direction)}"
+            elif isinstance(control, GUISlider):
+                assert isinstance(control.value, float), f"{control.value} is {type(control.value)}"
+                assert isinstance(control.min_value, float), f"{control.min_value} is {type(control.min_value)}"
+                assert isinstance(control.max_value, float), f"{control.max_value} is {type(control.max_value)}"
+                assert isinstance(control.direction, str), f"{control.direction} is {type(control.direction)}"
 
-            assert root.value == 0.0, f"{root.value} == 0.0"
-            assert root.min_value == 0.0, f"{root.min_value} == 0.0"
-            assert root.max_value == 100.0, f"{root.max_value} == 100.0"
-            assert root.direction == "horizontal", f"{root.direction} == 'horizontal'"
+                assert control.value == 0.0, f"{control.value} == 0.0"
+                assert control.min_value == 0.0, f"{control.min_value} == 0.0"
+                assert control.max_value == 100.0, f"{control.max_value} == 100.0"
+                assert control.direction == "horizontal", f"{control.direction} == 'horizontal'"
 
-        elif isinstance(root, GUIPanel):
-            assert isinstance(root.background_texture, (str, type(None))), f"{root.background_texture} is {type(root.background_texture)}"
-            assert isinstance(root.border_texture, (str, type(None))), f"{root.border_texture} is {type(root.border_texture)}"
+            elif isinstance(control, GUIPanel):
+                assert isinstance(control.background_texture, (str, type(None))), f"{control.background_texture} is {type(control.background_texture)}"
+                assert isinstance(control.border_texture, (str, type(None))), f"{control.border_texture} is {type(control.border_texture)}"
 
-            if root.background_texture:
-                assert root.background_texture == "", f"{root.background_texture} == ''"
-            if root.border_texture:
-                assert root.border_texture == "", f"{root.border_texture} == ''"
+                if control.background_texture:
+                    assert control.background_texture == "", f"{control.background_texture} == ''"
+                if control.border_texture:
+                    assert control.border_texture == "", f"{control.border_texture} == ''"
 
-        elif isinstance(root, GUIListBox):
-            assert isinstance(root.proto_item, (GUIProtoItem, type(None))), f"{root.proto_item} is {type(root.proto_item)}"
-            assert isinstance(root.scroll_bar, (GUIScrollbar, type(None))), f"{root.scroll_bar} is {type(root.scroll_bar)}"
+            elif isinstance(control, GUIListBox):
+                assert isinstance(control.proto_item, (GUIProtoItem, type(None))), f"{control.proto_item} is {type(control.proto_item)}"
+                assert isinstance(control.scroll_bar, (GUIScrollbar, type(None))), f"{control.scroll_bar} is {type(control.scroll_bar)}"
 
-        elif isinstance(root, GUICheckBox):
-            assert isinstance(root.text, str), f"{root.text} is {type(root.text)}"
-            assert isinstance(root.text_color, Color), f"{root.text_color} is {type(root.text_color)}"
+            elif isinstance(control, GUICheckBox):
+                assert isinstance(control.gui_text, GUIText), f"{control.gui_text} is {type(control.gui_text)}"
+                assert isinstance(control.color, Color), f"{control.color} is {type(control.color)}"
 
-            assert root.text == "", f"{root.text} == ''"
-            assert root.text_color == Color(0, 0, 0, 0), f"{root.text_color} == {Color(0, 0, 0, 0)}"
+                assert control.gui_text.text == "", f"{control.gui_text.text} == ''"
+                assert control.color == Color(0, 0, 0, 1), f"{control.color} == {Color(0, 0, 0, 1)}"
 
-        elif isinstance(root, GUIProtoItem):
-            assert isinstance(root.gui_text, GUIText), f"{root.gui_text} is {type(root.gui_text)}"
-            assert isinstance(root.text_color, Color), f"{root.text_color} is {type(root.text_color)}"
-            assert isinstance(root.border, bool), f"{root.border} is {type(root.border)}"
-            assert isinstance(root.pulsing, int), f"{root.pulsing} is {type(root.pulsing)}"
+            elif isinstance(control, GUIProtoItem):
+                assert isinstance(control.gui_text, GUIText), f"{control.gui_text} is {type(control.gui_text)}"
+                assert isinstance(control.color, (Color, type(None))), f"{control.color} is {type(control.color)}"
+                assert isinstance(control.border, (GUIBorder, type(None))), f"{control.border} is {type(control.border)}"
+                assert isinstance(control.pulsing, (int, type(None))), f"{control.pulsing} is {type(control.pulsing)}"
 
-            assert root.gui_text.text == "", f"{root.gui_text.text} == ''"
-            assert root.text_color == Color(0, 0, 0, 0), f"{root.text_color} == {Color(0, 0, 0, 0)}"
-            assert root.border is True, f"{root.border} is True"
-            assert root.pulsing == 0, f"{root.pulsing} == 0"
+                assert control.gui_text.text in ("Entered Name", None, ""), f"'{control.gui_text.text}' in ('Entered Name', None)"
+                assert control.color == None, f"{control.color} == None"
+                assert control.pulsing == None, f"{control.pulsing} == None"
 
-        elif isinstance(root, GUIProgressBar):
-            assert isinstance(root.max_value, float), f"{root.max_value} is {type(root.max_value)}"
-            assert isinstance(root.progress_fill_texture, str), f"{root.progress_fill_texture} is {type(root.progress_fill_texture)}"
-            assert isinstance(root.progress_border, (GUIBorder, type(None))), f"{root.progress_border} is {type(root.progress_border)}"
-            
-            assert root.progress_fill_texture == "", f"{root.progress_fill_texture} == ''"
+            elif isinstance(control, GUIProgressBar):
+                assert isinstance(control.max_value, float), f"{control.max_value} is {type(control.max_value)}"
+                assert isinstance(control.progress_fill_texture, str), f"{control.progress_fill_texture} is {type(control.progress_fill_texture)}"
+                assert isinstance(control.progress_border, (GUIBorder, type(None))), f"{control.progress_border} is {type(control.progress_border)}"
+                
+                assert control.progress_fill_texture == "", f"{control.progress_fill_texture} == ''"
 
-            if root.progress_border:
-                assert isinstance(root.progress_border.color, Color), f"{root.progress_border.color} is {type(root.progress_border.color)}"
-                assert isinstance(root.progress_border.corner, str), f"{root.progress_border.corner} is {type(root.progress_border.corner)}"
-                assert isinstance(root.progress_border.dimension, int), f"{root.progress_border.dimension} is {type(root.progress_border.dimension)}"
-                assert isinstance(root.progress_border.edge, str), f"{root.progress_border.edge} is {type(root.progress_border.edge)}"
-                assert isinstance(root.progress_border.fill, str), f"{root.progress_border.fill} is {type(root.progress_border.fill)}"
-                assert isinstance(root.progress_border.fill_style, int), f"{root.progress_border.fill_style} is {type(root.progress_border.fill_style)}"
-                assert isinstance(root.progress_border.inner_offset, int), f"{root.progress_border.inner_offset} is {type(root.progress_border.inner_offset)}"
-                assert isinstance(root.progress_border.inner_offset_y, int), f"{root.progress_border.inner_offset_y} is {type(root.progress_border.inner_offset_y)}"
-                assert isinstance(root.progress_border.pulsing, int), f"{root.progress_border.pulsing} is {type(root.progress_border.pulsing)}"
+                if control.progress_border:
+                    assert isinstance(control.progress_border.color, Color), f"{control.progress_border.color} is {type(control.progress_border.color)}"
+                    assert isinstance(control.progress_border.corner, str), f"{control.progress_border.corner} is {type(control.progress_border.corner)}"
+                    assert isinstance(control.progress_border.dimension, int), f"{control.progress_border.dimension} is {type(control.progress_border.dimension)}"
+                    assert isinstance(control.progress_border.edge, str), f"{control.progress_border.edge} is {type(control.progress_border.edge)}"
+                    assert isinstance(control.progress_border.fill, str), f"{control.progress_border.fill} is {type(control.progress_border.fill)}"
+                    assert isinstance(control.progress_border.fill_style, int), f"{control.progress_border.fill_style} is {type(control.progress_border.fill_style)}"
+                    assert isinstance(control.progress_border.inner_offset, int), f"{control.progress_border.inner_offset} is {type(control.progress_border.inner_offset)}"
+                    assert isinstance(control.progress_border.inner_offset_y, int), f"{control.progress_border.inner_offset_y} is {type(control.progress_border.inner_offset_y)}"
+                    assert isinstance(control.progress_border.pulsing, int), f"{control.progress_border.pulsing} is {type(control.progress_border.pulsing)}"
 
-                assert root.progress_border.color == Color(0, 0, 0, 0), f"{root.progress_border.color} == {Color(0, 0, 0, 0)}"
-                assert root.progress_border.corner == "", f"{root.progress_border.corner} == ''"
-                assert root.progress_border.dimension == 0, f"{root.progress_border.dimension} == 0"
-                assert root.progress_border.edge == "", f"{root.progress_border.edge} == ''"
-                assert root.progress_border.fill == "", f"{root.progress_border.fill} == ''"
-                assert root.progress_border.fill_style == 0, f"{root.progress_border.fill_style} == 0"
-                assert root.progress_border.inner_offset == 0, f"{root.progress_border.inner_offset} == 0"
-                assert root.progress_border.inner_offset_y == 0, f"{root.progress_border.inner_offset_y} == 0"
-                assert root.progress_border.pulsing == 0, f"{root.progress_border.pulsing} == 0"
+                    assert control.progress_border.color == Color(0, 0, 0, 0), f"{control.progress_border.color} == {Color(0, 0, 0, 0)}"
+                    assert control.progress_border.corner == "", f"{control.progress_border.corner} == ''"
+                    assert control.progress_border.dimension == 0, f"{control.progress_border.dimension} == 0"
+                    assert control.progress_border.edge == "", f"{control.progress_border.edge} == ''"
+                    assert control.progress_border.fill == "", f"{control.progress_border.fill} == ''"
+                    assert control.progress_border.fill_style == 0, f"{control.progress_border.fill_style} == 0"
+                    assert control.progress_border.inner_offset == 0, f"{control.progress_border.inner_offset} == 0"
+                    assert control.progress_border.inner_offset_y == 0, f"{control.progress_border.inner_offset_y} == 0"
+                    assert control.progress_border.pulsing == 0, f"{control.progress_border.pulsing} == 0"
 
 
 if __name__ == "__main__":

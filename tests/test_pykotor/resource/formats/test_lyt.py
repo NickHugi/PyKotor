@@ -22,7 +22,7 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.common.geometry import Vector3, Vector4
+from utility.common.geometry import Vector3, Vector4
 from pykotor.resource.formats.lyt import (
     LYT,
     LYTAsciiReader,

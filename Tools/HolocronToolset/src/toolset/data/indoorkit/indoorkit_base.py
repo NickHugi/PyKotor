@@ -9,9 +9,9 @@ if TYPE_CHECKING:
 
     from qtpy.QtGui import QImage
 
-    from pykotor.common.geometry import Vector3
     from pykotor.resource.formats.bwm import BWM
     from pykotor.resource.generics.utd import UTD
+    from utility.common.geometry import Vector3
 
 
 class Kit:

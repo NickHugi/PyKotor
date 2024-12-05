@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, cast
 
 from pathlib import PureWindowsPath
 
-from pykotor.common.geometry import Vector3, Vector4
+from utility.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff

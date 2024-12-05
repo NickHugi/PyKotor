@@ -15,7 +15,6 @@ from qtpy.QtCore import QPointF, QRectF, QTimer, Qt
 from qtpy.QtGui import QColor, QKeySequence, QPainter, QPainterPath, QPen, QPixmap, QTransform
 from qtpy.QtWidgets import QDialog, QFileDialog, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QPushButton, QStatusBar, QWidget
 
-from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryWriter
 from toolset.config import get_remote_toolset_update_info, is_remote_version_newer
 from toolset.data.indoorkit import Kit, load_kits
@@ -25,6 +24,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
+from utility.common.geometry import Vector2, Vector3
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.misc import is_debug_mode
 from utility.system.os_helper import is_frozen

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from qtpy.QtGui import QColor, QImage, QPixmap
 from qtpy.QtWidgets import QColorDialog
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color, ResRef
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
@@ -17,6 +16,7 @@ from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
+from utility.common.geometry import SurfaceMaterial, Vector2
 
 if TYPE_CHECKING:
     import os

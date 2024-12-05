@@ -10,13 +10,13 @@ from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QCursor
 from qtpy.QtWidgets import QOpenGLWidget
 
-from pykotor.common.geometry import Vector2
 from pykotor.common.stream import BinaryReader
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
+from utility.common.geometry import Vector2
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:

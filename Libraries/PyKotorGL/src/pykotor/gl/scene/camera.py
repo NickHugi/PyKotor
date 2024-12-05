@@ -9,7 +9,7 @@ import glm
 from glm import mat4, vec3
 
 if TYPE_CHECKING:
-    from pykotor.common.geometry import Vector3
+    from utility.common.geometry import Vector3
 
 
 class Camera:

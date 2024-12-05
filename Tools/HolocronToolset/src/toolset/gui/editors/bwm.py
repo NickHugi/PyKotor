@@ -8,21 +8,21 @@ from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
 from qtpy.QtWidgets import QListWidgetItem, QShortcut
 
-from pykotor.common.geometry import SurfaceMaterial
 from pykotor.common.misc import Color
 from pykotor.resource.formats.bwm import read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
+from utility.common.geometry import SurfaceMaterial
 
 if TYPE_CHECKING:
     import os
 
     from qtpy.QtWidgets import QWidget
 
-    from pykotor.common.geometry import Vector2, Vector3
     from pykotor.resource.formats.bwm import BWM, BWMFace
     from toolset.data.installation import HTInstallation
+    from utility.common.geometry import Vector2, Vector3
 
 _TRANS_FACE_ROLE = Qt.ItemDataRole.UserRole + 1  # type: ignore[attr-defined]
 _TRANS_EDGE_ROLE = Qt.ItemDataRole.UserRole + 2  # type: ignore[attr-defined]

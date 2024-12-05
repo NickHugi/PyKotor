@@ -15,12 +15,12 @@ from qtpy.QtWidgets import (
     QOpenGLWidget,  # pyright: ignore[reportPrivateImportUsage]
 )
 
-from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
 from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.formats.lyt.lyt_data import LYT
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
+from utility.common.geometry import Vector2, Vector3
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:

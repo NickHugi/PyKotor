@@ -51,7 +51,10 @@ if TYPE_CHECKING:
     from PIL.Image import Image
     from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject, QRect
     from qtpy.QtGui import QMouseEvent, QResizeEvent, QShowEvent
-    from qtpy.QtWidgets import QScrollBar
+    from qtpy.QtWidgets import (
+        QScrollBar,
+        _QMenu,
+    )
     from qtpy.sip import voidptr
 
     from pykotor.resource.formats.tpc.tpc_data import TPC
@@ -571,11 +574,11 @@ class TextureList(MainWindowList):
     def on_resource_context_menu(self, position: QPoint):
         """Show the context menu for the texture list."""
         print(f"Showing context menu at position: {position}")
-        menu = QMenu(self)
-        cast(QAction, menu.addAction("Open in Editor")).triggered.connect(self.on_resource_double_clicked)
-        cast(QAction, menu.addAction("Reload")).triggered.connect(self.on_reload_selected)
+        menu: _QMenu = QMenu(self)
+        menu.addAction("Open in Editor").triggered.connect(self.on_resource_double_clicked)
+        menu.addAction("Reload").triggered.connect(self.on_reload_selected)
 
-        export_submenu = QMenu("Export texture as...", menu)
+        export_submenu: _QMenu = QMenu("Export texture as...", menu)
         menu.addMenu(export_submenu)
 
         for tpc_format in TPCTextureFormat:
@@ -583,7 +586,7 @@ class TextureList(MainWindowList):
             def export_texture_wrapper(_checked, f=tpc_format):
                 return self.export_texture(f)
 
-            cast(QAction, export_submenu.addAction(tpc_format.name)).triggered.connect(export_texture_wrapper)
+            export_submenu.addAction(tpc_format.name).triggered.connect(export_texture_wrapper)
 
         menu.exec(self.ui.resourceList.mapToGlobal(position))  # pyright: ignore[reportArgumentType, reportCallIssue]
 
@@ -594,16 +597,22 @@ class TextureList(MainWindowList):
             if not folder_path or not folder_path.strip():
                 return
             folderpath = Path(folder_path)
-            target_restype: ResourceType = cast(
-                ResourceType,
-                QInputDialog.getItem(
-                    self,
-                    "Export Texture",
-                    "Select Target Format",
-                    (ResourceType.TPC.name,) if target_format.is_dxt() else (ResourceType.TGA.name, ResourceType.TPC.name),
-                    0,
-                ),
-            )
+            target_restype: ResourceType = ResourceType.__members__[
+                str(
+                    QInputDialog.getItem(
+                        self,
+                        "Export Texture",
+                        "Select Target Format",
+                        (ResourceType.TPC.name,)
+                        if target_format.is_dxt()
+                        else (
+                            ResourceType.TGA.name,
+                            ResourceType.TPC.name,
+                        ),
+                        0,
+                    )[0]
+                )
+            ]
         else:
             file_filter = "TPC Files (*.tpc);;All Files (*)" if target_format.is_dxt() else "TGA Files (*.tga);;TPC Files (*.tpc);;All Files (*)"
             filepath, _ = QFileDialog.getSaveFileName(self, "Export Texture", "", file_filter)

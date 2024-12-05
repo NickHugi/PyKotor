@@ -11,18 +11,18 @@ from qtpy import QtCore
 from qtpy.QtCore import QPoint
 from qtpy.QtGui import QKeySequence
 
-from pykotor.common.geometry import Vector3
 from pykotor.gl.scene import Camera
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from utility.common.geometry import Vector3
 from utility.system.path import Path
 
 if TYPE_CHECKING:
     from glm import vec3
     from qtpy.QtCore import QKeyCombination, Qt
 
-    from pykotor.common.geometry import Vector2
     from pykotor.resource.generics.git import GITInstance
     from toolset.gui.widgets.renderer.module import ModuleRenderer
+    from utility.common.geometry import Vector2
 
 
 def get_mouse_code(string: str) -> QtCore.Qt.MouseButton:

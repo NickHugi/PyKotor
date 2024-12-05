@@ -22,7 +22,7 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.common.geometry import Vector3, Vector4
+from utility.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language
 from pykotor.resource.formats.gff import (
     GFF,

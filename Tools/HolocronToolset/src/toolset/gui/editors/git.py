@@ -23,7 +23,6 @@ from qtpy.QtWidgets import (
     QUndoCommand,  # pyright: ignore[reportPrivateImportUsage]
 )
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
@@ -47,6 +46,7 @@ from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.editor_settings.git import GITSettings
 from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
 from toolset.utils.window import add_window, open_resource_editor
+from utility.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 
 if TYPE_CHECKING:
 

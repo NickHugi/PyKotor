@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from qtpy.QtWidgets import QDialog, QDoubleSpinBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
 
-from pykotor.common.geometry import Vector3
+from utility.common.geometry import Vector3
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.lyt.lyt_data import LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack

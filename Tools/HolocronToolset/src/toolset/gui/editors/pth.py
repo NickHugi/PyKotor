@@ -9,7 +9,6 @@ from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
 from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QMessageBox, QWidget
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
@@ -21,6 +20,7 @@ from toolset.gui.editor import Editor
 from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.editor_settings.git import GITSettings
 from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
+from utility.common.geometry import SurfaceMaterial, Vector2
 from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
@@ -32,12 +32,12 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QKeyEvent, QMouseEvent
     from qtpy.QtWidgets import QStatusBar
 
-    from pykotor.common.geometry import Vector3
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.generics.git import GITInstance
     from toolset.data.installation import HTInstallation
+    from utility.common.geometry import Vector3
 
 
 class CustomStdout:

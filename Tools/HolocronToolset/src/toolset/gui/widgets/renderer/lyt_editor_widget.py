@@ -56,7 +56,6 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
 from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTRoom
 from pykotor.resource.resource_auto import BWM
@@ -66,6 +65,7 @@ from toolset.gui.editors.lyt import LYTEditor
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.gui.widgets.renderer.walkmesh_editor import DoorHookPropertiesDialog, WalkmeshEditor
+from utility.common.geometry import Vector3
 
 if qtpy.QT5:
     from qtpy.QtWidgets import QUndoStack

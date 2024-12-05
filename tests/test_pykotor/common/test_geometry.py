@@ -22,7 +22,7 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.common.geometry import Face, Polygon2, Vector2, Vector3, Vector4
+from utility.common.geometry import Face, Polygon2, Vector2, Vector3, Vector4
 
 
 class TestVector2(TestCase):

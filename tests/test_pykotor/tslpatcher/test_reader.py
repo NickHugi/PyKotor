@@ -27,7 +27,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pathlib import Path
 
-from pykotor.common.geometry import Vector3, Vector4
+from utility.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFStruct

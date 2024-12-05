@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, Any
 
 from qtpy.QtGui import QImage
 
-from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.generics.utd import read_utd
 from toolset.data.indoorkit.indoorkit_base import Kit, KitComponent, KitComponentHook, KitDoor, MDLMDXTuple
 from toolset.utils.misc import get_nums
+from utility.common.geometry import Vector3
 
 if TYPE_CHECKING:
     import os

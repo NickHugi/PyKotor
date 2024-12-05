@@ -24,7 +24,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pathlib import Path
 
-from pykotor.common.geometry import Vector3
+from utility.common.geometry import Vector3
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 from pykotor.resource.formats.ncs import NCS, NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import CompileError

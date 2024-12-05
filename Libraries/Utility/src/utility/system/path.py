@@ -31,11 +31,11 @@ StrOrPathLike = Union[os.PathLike, str]
 SBoPL = TypeVar("SBoPL", bound=StrBytesOrPathLike)
 SoPL = TypeVar("SoPL", bound=StrOrPathLike)
 
-_WINDOWS_PATH_NORMALIZE_RE = re.compile(r"^\\{3,}")
-_WINDOWS_EXTRA_SLASHES_RE = re.compile(r"(?<!^)\\+")
-_UNIX_EXTRA_SLASHES_RE = re.compile(r"/{2,}")
-_WINDOWS_SPLITDRIVE_RE = re.compile(r"^([a-zA-Z]:)\\")
-_POSIX_SPLITDRIVE_RE = re.compile(r"^/")
+_WINDOWS_PATH_NORMALIZE_RE: re.Pattern[str] = re.compile(r"^\\{3,}")
+_WINDOWS_EXTRA_SLASHES_RE: re.Pattern[str] = re.compile(r"(?<!^)\\+")
+_UNIX_EXTRA_SLASHES_RE: re.Pattern[str] = re.compile(r"/{2,}")
+_WINDOWS_SPLITDRIVE_RE: re.Pattern[str] = re.compile(r"^([a-zA-Z]:)\\")
+_POSIX_SPLITDRIVE_RE: re.Pattern[str] = re.compile(r"^/")
 
 _MAX_LRU_SIZE = 20000
 
@@ -193,7 +193,7 @@ class PurePath(pathlib.PurePath, _Inherit, metaclass=PurePathType):  # type: ign
         for arg in args:
             normpath_str: str = cls.str_norm(os.fspath(arg), slash=cls._flavour.sep)
             if cached_isabs(normpath_str):
-                drive_or_root, splitpathpart = cached_splitdrive(normpath_str) if cls._flavour.sep == "\\" else cached_splitroot(normpath_str)
+                drive_or_root, splitpathpart = cached_splitdrive(normpath_str)
                 if drive_or_root:
                     args_list.append(drive_or_root)
                 if splitpathpart and splitpathpart.strip():

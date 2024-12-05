@@ -10,13 +10,13 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QColor, QPainter, QPen, QTransform
 from qtpy.QtWidgets import QFileDialog, QGraphicsEllipseItem, QGraphicsItem, QGraphicsLineItem, QGraphicsRectItem, QGraphicsScene, QListView, QMessageBox
 
-from pykotor.common.geometry import SurfaceMaterial, Vector3, Vector4
 from pykotor.common.misc import Color
 from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack, LYTTrackType, bytes_lyt, read_lyt
 from pykotor.resource.type import ResourceType
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.editor_settings.lyt import LYTEditorSettings
+from utility.common.geometry import SurfaceMaterial, Vector3, Vector4
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget

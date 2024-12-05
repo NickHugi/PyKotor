@@ -12,7 +12,6 @@ from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
-from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, ResRef
 from pykotor.extract.file import ResourceIdentifier
@@ -27,6 +26,7 @@ from pykotor.resource.generics.ifo import IFO, bytes_ifo
 from pykotor.resource.generics.utd import bytes_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
+from utility.common.geometry import Vector2, Vector3, Vector4
 
 if TYPE_CHECKING:
     import os

@@ -45,12 +45,12 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.resource.formats.bwm import BWM, BWMFace
 from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.uic.qtpy.editors.lyt import Ui_LYTEditor
+from utility.common.geometry import Vector2, Vector3, Vector4
 
 if TYPE_CHECKING:
     from concurrent.futures import Future

@@ -29,7 +29,6 @@ from qtpy.QtWidgets import (
 )
 from qtpy.uic import loadUi
 
-from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.formats.lyt.lyt_data import (
     LYT,
@@ -40,6 +39,7 @@ from pykotor.resource.formats.lyt.lyt_data import (
 )
 from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
+from utility.common.geometry import Vector3
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPointF

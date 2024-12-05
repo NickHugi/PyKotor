@@ -27,7 +27,6 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.extract.file import ResourceIdentifier
@@ -51,6 +50,7 @@ from toolset.gui.windows.designer_controls import ModuleDesignerControls2d, Modu
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import MODIFIER_KEY_NAMES, get_qt_button_string, get_qt_key_string
 from toolset.utils.window import open_resource_editor
+from utility.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from utility.error_handling import safe_repr
 
 if TYPE_CHECKING:
