@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Literal, TypeVar
 
 from loggerplus import RobustLogger
 
-from pykotor.common.geometry import Vector3
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
@@ -17,6 +16,7 @@ from pykotor.resource.generics.dlg.links import DLGLink
 from pykotor.resource.generics.dlg.nodes import DLGEntry, DLGNode, DLGReply
 from pykotor.resource.generics.dlg.stunts import DLGStunt
 from pykotor.resource.type import ResourceType
+from utility.common.geometry import Vector3
 
 if TYPE_CHECKING:
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]

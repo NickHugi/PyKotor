@@ -10,10 +10,10 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from loggerplus import RobustLogger
 
-from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
+from utility.common.geometry import Vector3, Vector4
 from utility.common.misc_string.util import format_text
 from utility.error_handling import safe_repr
 
@@ -208,16 +208,22 @@ class GFFComparisonResult:
     """Class to store comprehensive results of a GFF comparison."""
 
     def __init__(self):
-        self.is_identical: bool = True
         self.field_stats: dict[str, dict[str, int]] = {
-            "used": {},      # Fields that were successfully compared
-            "missing": {},   # Fields missing in the target GFF
-            "extra": {},     # Fields present in target but not source
-            "mismatched": {} # Fields present in both but with different values
+            "used": {},  # Fields that were successfully compared
+            "missing": {},  # Fields missing in the target GFF
+            "extra": {},  # Fields present in target but not source
+            "mismatched": {},  # Fields present in both but with different values
         }
         self.struct_id_mismatches: list[tuple[str, int, int]] = []  # (path, source_id, target_id)
         self.field_count_mismatches: list[tuple[str, int, int]] = []  # (path, source_count, target_count)
         self.value_mismatches: list[tuple[str, str, Any, Any]] = []  # (path, field_type, source_val, target_val)
+
+    def __bool__(self) -> bool:
+        return self.is_identical
+
+    @property
+    def is_identical(self) -> bool:
+        return not (self.struct_id_mismatches or self.field_count_mismatches or self.value_mismatches)
 
     def add_field_stat(self, category: str, field_name: str) -> None:
         """Increment the count for a field in a given category."""
@@ -225,21 +231,15 @@ class GFFComparisonResult:
 
     def add_struct_id_mismatch(self, path: str, source_id: int, target_id: int) -> None:
         """Record a struct ID mismatch."""
-        self.is_identical = False
         self.struct_id_mismatches.append((path, source_id, target_id))
 
     def add_field_count_mismatch(self, path: str, source_count: int, target_count: int) -> None:
         """Record a field count mismatch."""
-        self.is_identical = False
         self.field_count_mismatches.append((path, source_count, target_count))
 
     def add_value_mismatch(self, path: str, field_type: str, source_val: Any, target_val: Any) -> None:
         """Record a value mismatch."""
-        self.is_identical = False
         self.value_mismatches.append((path, field_type, source_val, target_val))
-
-    def __bool__(self) -> bool:
-        return self.is_identical
 
 
 class GFF:
@@ -317,14 +317,7 @@ class GFF:
             - Return comprehensive comparison results
         """
         result = GFFComparisonResult()
-        self.root.compare(
-            other_gff.root,
-            log_func,
-            path,
-            ignore_default_changes=ignore_default_changes,
-            ignore_values=ignore_values,
-            comparison_result=result
-        )
+        self.root.compare(other_gff.root, log_func, path, ignore_default_changes=ignore_default_changes, ignore_values=ignore_values, comparison_result=result)
         return result
 
 
@@ -487,11 +480,7 @@ class GFFStruct:
 
         def is_ignorable_value(label: str, v: Any) -> bool:
             """Check if a value is ignorable for a specific label."""
-            return (
-                not v
-                or str(v) in {"0", "-1"}
-                or (label in ignore_values and v in ignore_values[label])
-            )
+            return not v or str(v) in {"0", "-1"} or (label in ignore_values and v in ignore_values[label])
 
         def is_ignorable_comparison(
             label: str,
@@ -512,12 +501,8 @@ class GFFStruct:
             comparison_result.add_struct_id_mismatch(str(current_path), self.struct_id, other_gff_struct.struct_id)
 
         # Create dictionaries for both old and new structures
-        old_dict: dict[str, tuple[GFFFieldType, Any]] = {
-            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels
-        }
-        new_dict: dict[str, tuple[GFFFieldType, Any]] = {
-            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels
-        }
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels}
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels}
 
         # Union of labels from both old and new structures
         all_labels: set[str] = set(old_dict.keys()) | set(new_dict.keys())
@@ -559,25 +544,11 @@ class GFFStruct:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
                     comparison_result.add_struct_id_mismatch(str(child_path), cur_struct_this.struct_id, new_value.struct_id)
 
-                if not cur_struct_this.compare(
-                    new_value,
-                    log_func,
-                    child_path,
-                    ignore_default_changes=ignore_default_changes,
-                    ignore_values=ignore_values,
-                    comparison_result=comparison_result
-                ):
+                if not cur_struct_this.compare(new_value, log_func, child_path, ignore_default_changes=ignore_default_changes, ignore_values=ignore_values, comparison_result=comparison_result):
                     continue
             elif old_ftype == GFFFieldType.List:
                 gff_list: GFFList = old_value
-                if not gff_list.compare(
-                    new_value,
-                    log_func,
-                    child_path,
-                    ignore_default_changes=ignore_default_changes,
-                    ignore_values=ignore_values,
-                    comparison_result=comparison_result
-                ):
+                if not gff_list.compare(new_value, log_func, child_path, ignore_default_changes=ignore_default_changes, ignore_values=ignore_values, comparison_result=comparison_result):
                     continue
             elif old_value != new_value:
                 if isinstance(old_value, float) and isinstance(new_value, float) and math.isclose(old_value, new_value, rel_tol=1e-4, abs_tol=1e-4):
@@ -643,7 +614,7 @@ class GFFStruct:
     ) -> Any:
         return self._fields[label].value()
 
-    def add_missing(
+    def merge(
         self,
         other: GFFStruct,
     ):
@@ -653,10 +624,10 @@ class GFFStruct:
         ----
             other: The GFFStruct from which missing fields will be sourced.
         """
-        self._add_missing(self, other)
+        self._merge(self, other)
 
     @staticmethod
-    def _add_missing(  # noqa: PLR0912, C901
+    def _merge(  # noqa: PLR0912, C901
         target: GFFStruct,
         source: GFFStruct,
         relpath: PureWindowsPath | None = None,
@@ -673,12 +644,12 @@ class GFFStruct:
             if target.exists(label):
                 if field_type == GFFFieldType.Struct:
                     assert isinstance(value, GFFStruct)
-                    value._add_missing(value, source.get_struct(label), relpath.joinpath(label))  # noqa: SLF001
+                    value._merge(value, source.get_struct(label), relpath.joinpath(label))  # noqa: SLF001
                 elif field_type == GFFFieldType.List:
                     assert isinstance(value, GFFList)
                     target_list: GFFList = target.get_list(label)
                     for i, (target_item, source_item) in enumerate(zip(target_list, value)):
-                        target_item._add_missing(  # noqa: SLF001
+                        target_item._merge(  # noqa: SLF001
                             target_item,
                             source_item,
                             relpath.joinpath(label, str(i)),
@@ -1309,8 +1280,8 @@ class GFFStruct:
     def get_vector4(
         self,
         label: str,
-        default: Vector4 | None = None,
-    ) -> Vector4:
+        default: T = None,
+    ) -> Vector4 | T:
         """Returns a copy of the value from the field with the specified label.
 
         Args:
@@ -1333,7 +1304,7 @@ class GFFStruct:
         self,
         label: str,
         default: T = None,
-    ) -> bytes:
+    ) -> bytes | T:
         """Returns the value of the field with the specified label.
 
         Args:

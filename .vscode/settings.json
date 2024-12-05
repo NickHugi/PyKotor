@@ -67,7 +67,7 @@
     "python.analysis.packageIndexDepths": [
         {
             "name": "",
-            "depth": 3,
+            "depth": 7,
             "includeAllSymbols": true
         },
     ],
@@ -82,8 +82,7 @@
     "[python]": {
         "editor.formatOnSave": false
     },
-    "ruff.format.args": [
-        "--line-length=275"
-    ],
-    "cmake.sourceDirectory": "C:/GitHub/PyKotor/vendor/reone/src/apps/engine"
+    "cmake.sourceDirectory": "C:/GitHub/PyKotor/vendor/reone/src/apps/engine",
+    "problems.decorations.enabled": false
+
 }

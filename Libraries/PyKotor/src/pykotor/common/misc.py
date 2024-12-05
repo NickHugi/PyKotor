@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
-from pykotor.common.geometry import Vector3
+from utility.common.geometry import Vector3
 
 if TYPE_CHECKING:
     import os

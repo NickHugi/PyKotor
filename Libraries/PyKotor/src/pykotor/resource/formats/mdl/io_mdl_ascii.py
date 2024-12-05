@@ -3,24 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TextIO
 
-from pykotor.resource.formats.mdl.mdl_types import (
-    MDLControllerType,
-    MDLDangly,
-    MDLSkin,
-)
+from pykotor.resource.formats.mdl.mdl_types import MDLControllerType, MDLDangly, MDLSkin
 
 if TYPE_CHECKING:
-    from pykotor.resource.formats.mdl.mdl_types import (
-        MDLController,
-        MDLData,
-        MDLEmitter,
-        MDLLight,
-        MDLMesh,
-        MDLNode,
-        MDLReference,
-        MDLSaber,
-        MDLWalkmesh,
-    )
+    from pykotor.resource.formats.mdl.mdl_types import MDLController, MDLData, MDLEmitter, MDLLight, MDLMesh, MDLNode, MDLReference, MDLSaber, MDLWalkmesh
+    from utility.common.geometry import Vector3, Vector4
 
 
 @dataclass
@@ -118,8 +105,8 @@ class MDLAsciiWriter:
         """Write skin-specific data."""
         self.write_line(indent, "bones " + str(len(skin.bone_indices)))
         for i, bone_idx in enumerate(skin.bone_indices):
-            qbone = skin.qbones[i]
-            tbone = skin.tbones[i]
+            qbone: Vector4 = skin.qbones[i]
+            tbone: Vector3 = skin.tbones[i]
             self.write_line(indent + 1, f"{i} {bone_idx} {qbone.x} {qbone.y} {qbone.z} {qbone.w} {tbone.x} {tbone.y} {tbone.z}")
 
     def _write_dangly(self, indent: int, dangly: MDLDangly) -> None:

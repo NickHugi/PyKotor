@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-from pykotor.common.geometry import Vector3
+from utility.common.geometry import Vector3
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction, ScriptParam
 
 KOTOR_CONSTANTS = [

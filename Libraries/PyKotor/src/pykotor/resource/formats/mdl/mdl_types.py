@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import IntEnum, IntFlag
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color
+from utility.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 
 
 # region Enums and Flags

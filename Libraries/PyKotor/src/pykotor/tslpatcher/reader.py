@@ -6,7 +6,6 @@ from configparser import ConfigParser, ParsingError
 from pathlib import Path, PurePath, PureWindowsPath
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
@@ -51,6 +50,7 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from pykotor.tslpatcher.namespaces import PatcherNamespace
+from utility.common.geometry import Vector3, Vector4
 from utility.common.more_collections import CaseInsensitiveDict
 from utility.misc import is_float, is_int
 

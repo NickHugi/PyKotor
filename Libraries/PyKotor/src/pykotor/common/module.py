@@ -17,14 +17,17 @@ from pykotor.common.misc import ResRef
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.bwm import bytes_bwm, read_bwm, write_bwm
-from pykotor.resource.formats.erf import read_erf, write_erf
-from pykotor.resource.formats.gff import GFF, GFFFieldType, read_gff
-from pykotor.resource.formats.lyt import LYT, bytes_lyt, read_lyt, write_lyt
-from pykotor.resource.formats.ncs import write_ncs
-from pykotor.resource.formats.rim import read_rim, write_rim
-from pykotor.resource.formats.tpc import bytes_tpc, read_tpc, write_tpc
-from pykotor.resource.formats.vis import VIS, bytes_vis, read_vis, write_vis
+from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm, read_bwm, write_bwm
+from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
+from pykotor.resource.formats.gff.gff_auto import read_gff
+from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType
+from pykotor.resource.formats.lyt.lyt_auto import bytes_lyt, read_lyt, write_lyt
+from pykotor.resource.formats.lyt.lyt_data import LYT
+from pykotor.resource.formats.ncs.ncs_auto import write_ncs
+from pykotor.resource.formats.rim.rim_auto import read_rim, write_rim
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc, read_tpc, write_tpc
+from pykotor.resource.formats.vis.vis_auto import bytes_vis, read_vis, write_vis
+from pykotor.resource.formats.vis.vis_data import VIS
 from pykotor.resource.generics.are import bytes_are, read_are, write_are
 from pykotor.resource.generics.dlg import bytes_dlg, read_dlg, write_dlg
 from pykotor.resource.generics.git import GIT, bytes_git, read_git, write_git
@@ -49,15 +52,14 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
-    from pykotor.common.language import LocalizedString
     from pykotor.common.misc import Game
     from pykotor.extract.file import FileResource, LocationResult, ResourceResult
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.erf.erf_data import ERF
     from pykotor.resource.formats.gff.gff_data import GFF, GFFList
-    from pykotor.resource.formats.mdl import MDL
+    from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.rim.rim_data import RIM
-    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.formats.tpc.tpc_data import TPC
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.pth import PTH
@@ -213,11 +215,7 @@ class ModuleLinkPiece(ModulePieceResource):
 
     def module_id(self) -> ResRef | None:
         """Get the module id, attempt to just check resrefs, fallback to the Mod_Area_list."""
-        link_resources: set[FileResource] = {
-            resource
-            for resource in self._resources
-            if resource.restype() is not ResourceType.IFO and KModuleType.MAIN.contains(resource.restype())
-        }
+        link_resources: set[FileResource] = {resource for resource in self._resources if resource.restype() is not ResourceType.IFO and KModuleType.MAIN.contains(resource.restype())}
         if link_resources:
             check_resname = next(iter(link_resources)).identifier().lower_resname
             if all(check_resname == res.identifier().lower_resname for res in link_resources):
@@ -230,7 +228,10 @@ class ModuleLinkPiece(ModulePieceResource):
             if actual_ftype is not GFFFieldType.List:
                 RobustLogger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_list' type '{actual_ftype.name}', expected 'List'")
             else:
-                area_list: GFFList = gff_ifo.root.get_list("Mod_Area_list")
+                area_list: GFFList | None = gff_ifo.root.get_list("Mod_Area_list")
+                if area_list is None:
+                    RobustLogger().error(f"{self.filename()}: Module.IFO has a Mod_Area_list field, but it is not a valid list.")
+                    return None
                 area_localized_name: ResRef | None = next((gff_struct.get_resref("Area_Name") for gff_struct in area_list if gff_struct.exists("Area_Name")), None)
                 if area_localized_name is not None and str(area_localized_name).strip():
                     print(f"Module ID, Check 2: Found in Mod_Area_list: '{area_localized_name}'")
@@ -249,7 +250,10 @@ class ModuleLinkPiece(ModulePieceResource):
                 actual_ftype: GFFFieldType = gff_are.root.what_type("Name")
                 if actual_ftype is not GFFFieldType.LocalizedString:
                     raise ValueError(f"{self.filename()} has IFO with incorrect field 'Name' type '{actual_ftype.name}', expected 'LocalizedString'")
-                result: LocalizedString = gff_are.root.get_locstring("Name")
+                result: LocalizedString | None = gff_are.root.get_locstring("Name")
+                if result is None:
+                    RobustLogger().error(f"{self.filename()}: ARE has a Name field, but it is not a valid LocalizedString.")
+                    return LocalizedString.from_invalid()
                 print(f"Check 1 result: '{result}'")
                 return result
         raise ValueError(f"Failed to find an ARE for module '{self.piece_info.filename()}'")
@@ -464,7 +468,7 @@ class Module:  # noqa: PLR0904
             name_to_root: The underlying implementation that does the actual conversion.
         """
         assert not isinstance(filepath, bytes)
-        filepath_str = os.fspath(filepath)
+        filepath_str: str = os.fspath(filepath)
         return Module.name_to_root(filepath_str)
 
     def capsules(self) -> list[ModulePieceResource]:
@@ -1363,11 +1367,7 @@ class Module:  # noqa: PLR0904
         lower_resname: str = resname.lower()
         texture_types: set[ResourceType] = {ResourceType.TPC, ResourceType.TGA}
         return next(
-            (
-                resource
-                for resource in self.resources.values()
-                if resource.isActive() and resource.restype() in texture_types and lower_resname == resource.identifier().lower_resname
-            ),
+            (resource for resource in self.resources.values() if resource.isActive() and resource.restype() in texture_types and lower_resname == resource.identifier().lower_resname),
             None,
         )
 

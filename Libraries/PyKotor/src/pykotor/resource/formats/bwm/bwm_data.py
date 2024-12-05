@@ -7,7 +7,7 @@ from copy import copy
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Face, Vector3
+from utility.common.geometry import Face, Vector3
 
 if TYPE_CHECKING:
     from typing_extensions import Literal

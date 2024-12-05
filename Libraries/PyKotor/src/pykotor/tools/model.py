@@ -7,14 +7,14 @@ from collections import deque
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from pykotor.common.geometry import Vector4
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
+from utility.common.geometry import Vector4
 
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-    from pykotor.common.geometry import Vector3
+    from utility.common.geometry import Vector3
 
 _GEOM_ROOT_FP0_K1: int = 4273776
 _GEOM_ROOT_FP1_K1: int = 4216096

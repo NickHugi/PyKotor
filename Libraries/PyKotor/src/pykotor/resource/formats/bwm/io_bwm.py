@@ -4,9 +4,9 @@ import struct
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import SurfaceMaterial, Vector3
 from pykotor.resource.formats.bwm.bwm_data import BWM, BWMFace, BWMType
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
+from utility.common.geometry import SurfaceMaterial, Vector3
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.bwm.bwm_data import BWMAdjacency, BWMEdge, BWMNodeAABB

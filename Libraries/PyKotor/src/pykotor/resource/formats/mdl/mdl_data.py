@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from enum import IntEnum, IntFlag
+from enum import IntFlag
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import SurfaceMaterial, Vector3, Vector4
 from pykotor.common.misc import Color
 from pykotor.resource.type import ResourceType
+from utility.common.geometry import SurfaceMaterial, Vector3, Vector4
 
 if TYPE_CHECKING:
-    from pykotor.common.geometry import Vector2
+    from pykotor.resource.formats.mdl.mdl_types import MDLControllerType
+    from utility.common.geometry import Vector2
 
 
 class MDL:
@@ -486,7 +487,7 @@ class MDLMesh:
 
         # KotOR 2 Only
         self.dirt_enabled: bool = False
-        self.dirt_texture: int = 0
+        self.dirt_texture: str = ""
         self.dirt_coordinate_space: int = 0
         self.hide_in_hologram: bool = False
 
@@ -586,19 +587,6 @@ class MDLFace:
 
 
 # endregion
-
-
-# region Controller Data
-class MDLControllerType(IntEnum):
-    INVALID = -1
-
-    POSITION = 8
-    ORIENTATION = 20
-    SCALE = 36
-    ILLUM_COLOR = 100
-    ALPHA = 132
-
-    P2P_BEZIER_2 = 132
 
 
 class MDLController:

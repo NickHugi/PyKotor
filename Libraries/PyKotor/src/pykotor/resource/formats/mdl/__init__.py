@@ -9,23 +9,26 @@ from pykotor.resource.formats.mdl.mdl_data import (
     MDLAnimation,
     MDLController,
     MDLControllerRow,
-    MDLControllerType,
     MDLBoneVertex,
     MDLLight,
     MDLFace,
     MDLEmitter,
+    MDLReference,
+    MDLSaber,
+    MDLWalkmesh,
+    MDLNodeFlags,
 )
-from pykotor.resource.formats.mdl.io_mdl import (
-    MDLBinaryReader,
-    MDLBinaryWriter,
-)
-from pykotor.resource.formats.mdl.io_mdl_ascii import (
-    MDLAsciiReader,
-    MDLAsciiWriter,
-)
+from pykotor.resource.formats.mdl.mdl_types import MDLClassification
+from pykotor.resource.formats.mdl.io_mdl import MDLBinaryReader, MDLBinaryWriter
+from pykotor.resource.formats.mdl.io_mdl_ascii import MDLAsciiReader, MDLAsciiWriter
+from pykotor.resource.formats.mdl.mdl_types import MDLControllerType
 from pykotor.resource.formats.mdl.mdl_auto import bytes_mdl, write_mdl, read_mdl
 
 __all__ = [
+    "MDLClassification",
+    "MDLReference",
+    "MDLWalkmesh",
+    "MDLSaber",
     "MDL",
     "MDLAnimation",
     "MDLConstraint",
@@ -46,6 +49,7 @@ __all__ = [
     "MDLBinaryWriter",
     "MDLMesh",
     "MDLNode",
+    "MDLNodeFlags",
     "bytes_mdl",
     "read_mdl",
     "write_mdl",

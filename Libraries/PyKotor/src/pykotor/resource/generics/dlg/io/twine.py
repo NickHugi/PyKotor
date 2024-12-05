@@ -17,13 +17,13 @@ try:
 except ImportError:
     fromstring = ET.fromstring
 
-from pykotor.common.geometry import Vector2
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import Color
 from pykotor.resource.generics.dlg.base import DLG
 from pykotor.resource.generics.dlg.io.twine_data import FormatConverter, PassageMetadata, PassageType, TwineLink, TwineMetadata, TwinePassage, TwineStory
 from pykotor.resource.generics.dlg.links import DLGLink
 from pykotor.resource.generics.dlg.nodes import DLGEntry, DLGReply
+from utility.common.geometry import Vector2
 
 if TYPE_CHECKING:
     from typing_extensions import Literal, TypeAlias, TypedDict  # pyright: ignore[reportMissingModuleSource]

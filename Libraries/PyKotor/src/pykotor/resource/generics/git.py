@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 from loggerplus import RobustLogger
 
-from pykotor.common.geometry import Polygon3, Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.extract.file import ResourceIdentifier
@@ -22,6 +21,7 @@ from pykotor.resource.generics.uts import UTS, bytes_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
+from utility.common.geometry import Polygon3, Vector2, Vector3, Vector4
 
 if TYPE_CHECKING:
     from collections.abc import Generator

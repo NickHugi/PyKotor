@@ -3,11 +3,11 @@ from __future__ import annotations
 from copy import copy
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import ResourceType
+from utility.common.geometry import Vector2
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:

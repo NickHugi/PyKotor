@@ -9,7 +9,7 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from pykotor.common.geometry import Vector3, Vector4
+    from utility.common.geometry import Vector3, Vector4
 
 
 class LYT:

@@ -17,11 +17,11 @@ except (ImportError, ModuleNotFoundError):
     print("warning: defusedxml is not available but recommended for security")
 
 
-from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
+from utility.common.geometry import Vector3, Vector4
 from utility.misc import indent
 
 if TYPE_CHECKING:

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
-from pykotor.common.geometry import Vector2
+from utility.common.geometry import Vector2
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

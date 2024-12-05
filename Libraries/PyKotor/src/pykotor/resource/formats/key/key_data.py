@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-
-if TYPE_CHECKING:
-    from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
 
 class BifEntry:
@@ -47,33 +44,6 @@ class KeyEntry:
         self.resref: ResRef = ResRef.from_blank() if resref is None else ResRef(resref)
         self.restype: ResourceType = ResourceType.INVALID if restype is None else restype
         self.resource_id: int = 0 if resid is None else resid
-
-    @classmethod
-    def from_bif(
-        cls,
-        resref: str | ResRef,
-        restype: ResourceType,
-        bif_index: int,
-    ) -> Self:
-        """Create a key entry from a BIF index."""
-        entry: Self = cls()
-        entry.resref = ResRef(resref)
-        entry.restype = restype
-        entry.resource_id = bif_index << 20
-        return entry
-
-    @classmethod
-    def from_res(
-        cls,
-        resref: str | ResRef,
-        restype: ResourceType,
-        res_index: int,
-    ) -> Self:
-        entry: Self = cls()
-        entry.resref = ResRef(resref)
-        entry.restype = restype
-        entry.resource_id = res_index
-        return entry
 
     @property
     def bif_index(self) -> int:

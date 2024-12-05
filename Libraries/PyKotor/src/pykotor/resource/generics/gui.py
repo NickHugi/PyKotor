@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Literal, TypeVar
+from typing import TYPE_CHECKING, Literal, Optional, TypeVar, cast
 
-from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFList, GFFStruct, bytes_gff, read_gff, write_gff
 from pykotor.resource.type import ResourceType
+from utility.common.geometry import Vector2, Vector3, Vector4
 
 if TYPE_CHECKING:
     from typing_extensions import Literal
@@ -117,7 +117,7 @@ class GUIControl:
         self.properties: dict[str, str | int | float | ResRef | LocalizedString] = {}
         self.moveto: GUIMoveTo | None = None
         self.scrollbar: GUIScrollbar | None = None
-        self.max_value: int = 100
+        self.max_value: int | None = None
         self.padding: int | None = None
         self.looping: int | None = None
         self.left_scrollbar: int | None = None
@@ -204,7 +204,7 @@ class GUIButton(GUIControl):
         self.gui_type: GUIControlType = GUIControlType.Button
         self.text: str | None = None
         self.text_color: Color = Color(0, 0, 0, 0)
-        self.border: bool = True
+        self.border: GUIBorder | None = None
         self.pulsing: int | None = None
 
 
@@ -282,7 +282,7 @@ class GUISelected:
         self.fill: ResRef = ResRef.from_blank()
         self.fill_style: int = 0
         self.dimension: int = 0
-        self.inner_offset: int = 0
+        self.inner_offset: int | None = None
         self.color: Color | None = None
         self.pulsing: int | None = None
         self.inner_offset_y: int | None = None
@@ -297,7 +297,7 @@ class GUIHilightSelected:
         self.fill: ResRef = ResRef.from_blank()
         self.fill_style: int = 0
         self.dimension: int = 0
-        self.inner_offset: int = 0
+        self.inner_offset: int | None = None
         self.color: Color | None = None
         self.pulsing: int | None = None
         self.inner_offset_y: int | None = None
@@ -320,7 +320,6 @@ class GUIProtoItem(GUIControl):
     def __init__(self):
         super().__init__()
         self.gui_type: GUIControlType = GUIControlType.ProtoItem
-        self.text_color: Color | None = None
         self.border: GUIBorder | None = None
         self.pulsing: int | None = None
 
@@ -336,7 +335,7 @@ class GUIProgressBar(GUIControl):
         self.progress_fill_texture: ResRef = ResRef.from_blank()
         self.progress_border: GUIBorder | None = None
         self.start_from_left: int = 1
-        self.progress: GUIBorder | None = None
+        self.progress: float | None = None
 
     def set_value(self, value: int) -> None:
         """Set the progress bar value between 0-100."""
@@ -494,7 +493,7 @@ def construct_gui(gff: GFF) -> GUI:
         proto.font = proto_struct.get_resref("FONT", ResRef.from_blank())
         color: Vector3 | None = proto_struct.get_vector3("COLOR", None)
         if color:
-            proto.text_color = Color(color.x, color.y, color.z, 1.0)
+            proto.color = Color(color.x, color.y, color.z, 1.0)
 
         # Extent
         left, top, width, height = read_extent(proto_struct)
@@ -550,13 +549,13 @@ def construct_gui(gff: GFF) -> GUI:
         scroll.gui_thumb = read_scrollbar_thumb_or_dir(scroll_struct, GUIScrollbarThumb)
         return scroll
 
-    def read_border_like(struct: GFFStruct, field_name: str) -> GUIBorder | None:
+    def read_border_like(struct: GFFStruct, field_name: str) -> GUIBorder | GUISelected | None:
         """Read border-like struct values (BORDER, HILIGHT, SELECTED, etc.)."""
         border_struct: GFFStruct | None = struct.get_struct(field_name, None)
         if border_struct is None:
             return None
 
-        border = GUIBorder()
+        border = GUISelected() if field_name == "SELECTED" else GUIBorder()
         color: Vector3 | None = border_struct.get_vector3("COLOR", None)
         if color:
             border.color = Color(color.x, color.y, color.z, 1.0)
@@ -659,7 +658,7 @@ def construct_gui(gff: GFF) -> GUI:
                 progress_border.inner_offset = progress_struct.get_int32("INNEROFFSET", 0)
                 progress_border.inner_offset_y = progress_struct.get_int32("INNEROFFSETY", None)
                 progress_border.pulsing = progress_struct.get_uint8("PULSING", None)
-                control.progress = progress_border
+                control.border = progress_border
 
         # Slider specific
         if control_type == GUIControlType.Slider:
@@ -692,7 +691,7 @@ def construct_gui(gff: GFF) -> GUI:
 
         # CheckBox specific
         if isinstance(control, GUICheckBox):
-            control.selected = read_border_like(struct, "SELECTED")
+            control.selected = cast(Optional[GUISelected], read_border_like(struct, "SELECTED"))
             control.hilight_selected = read_hilight_selected(struct)
             control.is_selected = bool(struct.get_uint8("ISSELECTED", 0))
 
@@ -814,8 +813,10 @@ def dismantle_gui(  # noqa: C901, PLR0915
             scroll_struct.set_int32("Obj_ParentID", scroll.parent_id)
         if scroll.locked is not None:
             scroll_struct.set_uint8("Obj_Locked", int(scroll.locked))
-        scroll_struct.set_int32("MAXVALUE", scroll.max_value)
-        scroll_struct.set_int32("VISIBLEVALUE", scroll.visible_value)
+        if scroll.max_value is not None:
+            scroll_struct.set_int32("MAXVALUE", scroll.max_value)
+        if scroll.visible_value is not None:
+            scroll_struct.set_int32("VISIBLEVALUE", scroll.visible_value)
         if scroll.current_value is not None:
             scroll_struct.set_int32("CURVALUE", scroll.current_value)
         if scroll.padding is not None:
@@ -887,7 +888,7 @@ def dismantle_gui(  # noqa: C901, PLR0915
         if hilight.pulsing is not None:
             hilight_struct.set_uint8("PULSING", hilight.pulsing)
 
-    def write_border_like(struct: GFFStruct, field_name: str, border: GUIBorder) -> None:
+    def write_border_like(struct: GFFStruct, field_name: str, border: GUIBorder | GUISelected) -> None:
         """Write border-like values to a GFF struct."""
         border_struct: GFFStruct = struct.set_struct(field_name, GFFStruct(0))
         if border.color is not None:
@@ -1015,10 +1016,10 @@ def dismantle_gui(  # noqa: C901, PLR0915
 
         # ListBox specific
         if control.gui_type == GUIControlType.ListBox:
-            if control.proto_item is not None:
-                write_proto_item(struct, control.proto_item)
-            if control.scroll_bar is not None:
-                write_scrollbar(struct, control.scroll_bar)
+            if hasattr(control, "proto_item") and control.proto_item is not None:  # pyright: ignore[reportAttributeAccessIssue]
+                write_proto_item(struct, control.proto_item)  # pyright: ignore[reportAttributeAccessIssue]
+            if hasattr(control, "scroll_bar") and control.scroll_bar is not None:  # pyright: ignore[reportAttributeAccessIssue]
+                write_scrollbar(struct, control.scroll_bar)  # pyright: ignore[reportAttributeAccessIssue]
 
         # CheckBox specific
         if control.gui_type == GUIControlType.CheckBox:
