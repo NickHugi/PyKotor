@@ -201,7 +201,7 @@ class InsertInstanceDialog(QDialog):
             summary_text: str = self.generate_resource_summary(resource)
             self.ui.dynamicTextLabel.setText(summary_text)
             if resource.restype() is ResourceType.UTC and self.global_settings.showPreviewUTC:
-                self.ui.previewRenderer.setCreature(read_utc(resource.data()))
+                self.ui.previewRenderer.set_creature(read_utc(resource.data()))
             else:
                 mdl_data: bytes | None = None
                 mdx_data: bytes | None = None

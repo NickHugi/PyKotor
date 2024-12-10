@@ -24,22 +24,6 @@ if TYPE_CHECKING:
 
 class MDLEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize the Model Viewer window.
-
-        Args:
-        ----
-            parent: {QWidget}: The parent widget of this window
-            installation: {HTInstallation}: The installation context
-
-        Processing Logic:
-        ----------------
-            - Initialize the base class with the given parameters
-            - Create an MDL model object
-            - Load the UI from the designer file
-            - Set up menus and connect signals
-            - Set the installation on the model renderer
-            - Call new() to start with a blank state.
-        """
         supported: list[ResourceType] = [ResourceType.MDL]
         super().__init__(parent, "Model Viewer", "none", supported, supported, installation)
 
@@ -60,21 +44,6 @@ class MDLEditor(Editor):
         ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
-        """Loads a model resource and its associated data.
-
-        Args:
-        ----
-            filepath: {Path to the resource file}
-            resref: {Resource reference string}
-            restype: {Resource type (MDL or MDX)}
-            data: {Binary data of the resource}
-
-        Loads associated MDL/MDX data:
-            - Checks file extension and loads associated data from file
-            - Loads associated data from Erf, Rim or Bif files if present
-            - Sets model data on renderer if both MDL and MDX found
-            - Displays error if unable to find associated data.
-        """
         c_filepath: Path = Path(filepath)
         super().load(c_filepath, resref, restype, data)
 
@@ -110,7 +79,7 @@ class MDLEditor(Editor):
             QMessageBox(QMessageBox.Icon.Critical, f"Could not find the '{c_filepath.stem}' MDL/MDX", "").exec()
             return
 
-        self.ui.modelRenderer.setModel(mdl_data, mdx_data)
+        self.ui.modelRenderer.set_model(mdl_data, mdx_data)
         self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0)
 
     def _loadMDL(self, mdl: MDL):
@@ -131,4 +100,4 @@ class MDLEditor(Editor):
     def new(self):
         super().new()
         self._mdl = MDL()
-        self.ui.modelRenderer.clearModel()
+        self.ui.modelRenderer.clear_model()

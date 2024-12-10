@@ -31,7 +31,7 @@ from pykotor.common.misc import Color, ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.gl.scene import Camera
-from pykotor.resource.formats.bwm.bwm_data import BWM
+from pykotor.resource.formats.bwm import BWM
 from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITEncounter, GITInstance, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.generics.utt import read_utt
@@ -54,7 +54,7 @@ from utility.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from utility.error_handling import safe_repr
 
 if TYPE_CHECKING:
-    from glm import vec3
+
     from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
     from qtpy.QtWidgets import QCheckBox, _QMenu
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
@@ -114,20 +114,6 @@ class ModuleDesigner(QMainWindow):
         installation: HTInstallation,
         mod_filepath: Path | None = None,
     ):
-        """Initializes the Module Designer window.
-
-        Args:
-        ----
-            parent: QWidget | None: Parent widget
-            installation: HTInstallation: Hometuck installation
-
-        Processing Logic:
-        ----------------
-            - Initializes UI elements and connects signals
-            - Sets up 3D and 2D renderer controls
-            - Populates resource tree and instance list
-            - Sets window title and loads module on next frame.
-        """
         super().__init__(parent)
         self.setWindowTitle("Module Designer")
 
@@ -143,8 +129,8 @@ class ModuleDesigner(QMainWindow):
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.log: RobustLogger = RobustLogger()
 
-        self.base_frame_rate = 60
-        self.camera_update_timer = QTimer()
+        self.base_frame_rate: int = 60
+        self.camera_update_timer: QTimer = QTimer()
         self.camera_update_timer.timeout.connect(self.update_camera)
         self.camera_update_timer.start(int(1000 / self.base_frame_rate))  # ~60 FPS
         self.last_frame_time: float = time.time()
@@ -841,11 +827,9 @@ class ModuleDesigner(QMainWindow):
         git_camera_instance: GITCamera,
     ):
         view_camera: Camera = self._get_scene_camera()
-        view_position: vec3 = view_camera.true_position()
+        git_camera_instance.position = view_camera.true_position()
 
-        new_position = Vector3(view_position.x, view_position.y, view_position.z - git_camera_instance.height)
-        self.undo_stack.push(MoveCommand(git_camera_instance, git_camera_instance.position, new_position))
-        git_camera_instance.position = new_position
+        self.undo_stack.push(MoveCommand(git_camera_instance, git_camera_instance.position, git_camera_instance.position))
 
         self.log.debug("Create RotateCommand for undo/redo functionality")
         pitch = math.pi - (view_camera.pitch + (math.pi / 2))
@@ -969,7 +953,10 @@ class ModuleDesigner(QMainWindow):
     # endregion
 
     # region Signal Callbacks
-    def _on_saved_resource(self, resource: ModuleResource):
+    def _on_saved_resource(
+        self,
+        resource: ModuleResource,
+    ):
         resource.reload()
         self.ui.mainRenderer.scene.clear_cache_buffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
@@ -1133,22 +1120,27 @@ class ModuleDesigner(QMainWindow):
         self.update_status_bar(screen, buttons, keys, self.ui.mainRenderer)
         self._controls3d.on_mouse_pressed(screen, buttons, keys)
 
-    def do_cursor_lock(self, mutable_screen: Vector2, *, center_mouse: bool = True, do_rotations: bool = True):
-        global_new_pos = QCursor.pos()
-        renderer = self.ui.mainRenderer
+    def do_cursor_lock(
+        self,
+        mut_scr: Vector2,
+        *,
+        center_mouse: bool = True,
+        do_rotations: bool = True,
+    ):
+        new_pos: QPoint = QCursor.pos()
+        renderer: ModuleRenderer = self.ui.mainRenderer
         if center_mouse:
-            global_old_pos = renderer.mapToGlobal(renderer.rect().center())
-            QCursor.setPos(global_old_pos.x(), global_old_pos.y())
+            old_pos = renderer.mapToGlobal(renderer.rect().center())
+            QCursor.setPos(old_pos.x(), old_pos.y())
         else:
-            global_old_pos = renderer.mapToGlobal(QPoint(int(renderer._mouse_prev.x), int(renderer._mouse_prev.y)))
-            QCursor.setPos(global_old_pos)
-            local_old_pos = renderer.mapFromGlobal(QPoint(global_old_pos.x(), global_old_pos.y()))
-            mutable_screen.x = local_old_pos.x()
-            mutable_screen.y = local_old_pos.y()
+            old_pos = renderer.mapToGlobal(QPoint(int(renderer._mouse_prev.x), int(renderer._mouse_prev.y)))
+            QCursor.setPos(old_pos)
+            local_old_pos: QPoint = renderer.mapFromGlobal(QPoint(old_pos.x(), old_pos.y()))
+            mut_scr.x, mut_scr.y = local_old_pos.x(), local_old_pos.y()
 
         if do_rotations:
-            yaw_delta = global_old_pos.x() - global_new_pos.x()
-            pitch_delta = global_old_pos.y() - global_new_pos.y()
+            yaw_delta = old_pos.x() - new_pos.x()
+            pitch_delta = old_pos.y() - new_pos.y()
             if isinstance(self._controls3d, ModuleDesignerControlsFreeCam):
                 strength = self.settings.rotateCameraSensitivityFC / 10000
                 clamp = False
@@ -1302,14 +1294,14 @@ class ModuleDesigner(QMainWindow):
     # endregion
 
     # region Events
-    def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):  # noqa: FBT001, FBT002  # pyright: ignore[reportIncompatibleMethodOverride]
+    def keyPressEvent(self, e: QKeyEvent | None):  # noqa: FBT001, FBT002  # pyright: ignore[reportIncompatibleMethodOverride]
         if e is None:
             return
         super().keyPressEvent(e)
         self.ui.mainRenderer.keyPressEvent(e)
         self.ui.flatRenderer.keyPressEvent(e)
 
-    def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):  # noqa: FBT001, FBT002  # pyright: ignore[reportIncompatibleMethodOverride]
+    def keyReleaseEvent(self, e: QKeyEvent | None):  # noqa: FBT001, FBT002  # pyright: ignore[reportIncompatibleMethodOverride]
         if e is None:
             return
         super().keyReleaseEvent(e)
@@ -1323,15 +1315,15 @@ class ModuleDesigner(QMainWindow):
             return
 
         # Check camera rotation and movement keys
-        keys = self.ui.mainRenderer.keys_down()
-        buttons = self.ui.mainRenderer.mouse_down()
-        rotation_keys = {
+        keys: set[Qt.Key] = self.ui.mainRenderer.keys_down()
+        buttons: set[Qt.MouseButton] = self.ui.mainRenderer.mouse_down()
+        rotation_keys: dict[str, bool] = {
             "left": self._controls3d.rotate_camera_left.satisfied(buttons, keys),
             "right": self._controls3d.rotate_camera_right.satisfied(buttons, keys),
             "up": self._controls3d.rotate_camera_up.satisfied(buttons, keys),
             "down": self._controls3d.rotate_camera_down.satisfied(buttons, keys),
         }
-        movement_keys = {
+        movement_keys: dict[str, bool] = {
             "up": self._controls3d.move_camera_up.satisfied(buttons, keys),
             "down": self._controls3d.move_camera_down.satisfied(buttons, keys),
             "left": self._controls3d.move_camera_left.satisfied(buttons, keys),
@@ -1348,9 +1340,9 @@ class ModuleDesigner(QMainWindow):
         self.last_frame_time = cur_time
 
         # Calculate rotation delta
-        norm_rotate_units_setting = self.settings.rotateCameraSensitivity3d / 1000
+        norm_rotate_units_setting: float = self.settings.rotateCameraSensitivity3d / 1000
         norm_rotate_units_setting *= self.base_frame_rate * time_since_last_frame  # apply modifier based on user's fps
-        angle_units_delta = (math.pi / 4) * norm_rotate_units_setting
+        angle_units_delta: float = (math.pi / 4) * norm_rotate_units_setting
 
         # Rotate camera based on key inputs
         if rotation_keys["left"]:
@@ -1363,12 +1355,22 @@ class ModuleDesigner(QMainWindow):
             self.ui.mainRenderer.rotate_camera(0, -angle_units_delta)
 
         # Calculate movement delta
-        keys = self.ui.mainRenderer.keys_down()
-        buttons = self.ui.mainRenderer.mouse_down()
-        if self._controls3d.speed_boost_control.satisfied(buttons, keys, exact_keys_and_buttons=False):
-            move_units_delta = (self.settings.boostedFlyCameraSpeedFC) if isinstance(self._controls3d, ModuleDesignerControlsFreeCam) else (self.settings.boostedMoveCameraSensitivity3d)
+        if self._controls3d.speed_boost_control.satisfied(
+            self.ui.mainRenderer.mouse_down(),
+            self.ui.mainRenderer.keys_down(),
+            exact_keys_and_buttons=False,
+        ):
+            move_units_delta: float = (
+                self.settings.boostedFlyCameraSpeedFC
+                if isinstance(self._controls3d, ModuleDesignerControlsFreeCam)
+                else self.settings.boostedMoveCameraSensitivity3d
+            )
         else:
-            move_units_delta = (self.settings.flyCameraSpeedFC) if isinstance(self._controls3d, ModuleDesignerControlsFreeCam) else (self.settings.moveCameraSensitivity3d)
+            move_units_delta = (
+                self.settings.flyCameraSpeedFC
+                if isinstance(self._controls3d, ModuleDesignerControlsFreeCam)
+                else self.settings.moveCameraSensitivity3d
+            )
 
         move_units_delta /= 500  # normalize
         move_units_delta *= time_since_last_frame * self.base_frame_rate  # apply modifier based on user's fps

@@ -70,7 +70,7 @@ class ModuleDesignerControls3d:
             or rotate_camera_satisfied
             or zoom_camera_satisfied
         ):
-            self.editor.do_cursor_lock(mutable_screen=screen, center_mouse=False, do_rotations=False)
+            self.editor.do_cursor_lock(screen, center_mouse=False, do_rotations=False)
             move_strength = self.settings.moveCameraSensitivity3d / 1000
             if move_xy_camera_satisfied:
                 forward = -screen_delta.y * self.renderer.scene.camera.forward()

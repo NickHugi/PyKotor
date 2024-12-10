@@ -25,7 +25,6 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QCursor, QIcon, QImage, QImageReader, QPixmap, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import (
     QAbstractItemView,
-    QAction,  # pyright: ignore[reportPrivateImportUsage]
     QApplication,
     QFileDialog,
     QFileIconProvider,
@@ -96,7 +95,7 @@ class ResourceList(MainWindowList):
         self.tooltip_text: str = ""
         self.original_items: list[tuple[QStandardItem, list[list[QStandardItem]]]] = []
 
-        self.ui = Ui_Form()
+        self.ui: Ui_Form = Ui_Form()
         self.ui.setupUi(self)
         self.setup_signals()
 
@@ -252,9 +251,9 @@ class ResourceList(MainWindowList):
         if not resources:
             return
         menu = QMenu(self)
-        cast(QAction, menu.addAction("Open")).triggered.connect(lambda: self.sig_request_open_resource.emit(resources, True))
+        menu.addAction("Open").triggered.connect(lambda: self.sig_request_open_resource.emit(resources, True))
         if all(resource.restype().contents == "gff" for resource in resources):
-            cast(QAction, menu.addAction("Open with GFF Editor")).triggered.connect(lambda: self.sig_request_open_resource.emit(resources, False))
+            menu.addAction("Open with GFF Editor").triggered.connect(lambda: self.sig_request_open_resource.emit(resources, False))
         menu.addSeparator()
         builder = ResourceItems(resources=resources)
         builder.viewport = lambda: self.ui.resourceTree

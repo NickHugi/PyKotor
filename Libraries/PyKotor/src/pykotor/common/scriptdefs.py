@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import math
 
-from utility.common.geometry import Vector3
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction, ScriptParam
+from utility.common.geometry import Vector3
 
 KOTOR_CONSTANTS = [
     ScriptConstant(DataType.INT, "NUM_INVENTORY_SLOTS", 18),

@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
 BASE_SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview]
-SOURCE_TYPES = Union[BASE_SOURCE_TYPES, STREAM_TYPES, BytesIO, BinaryWriter]
+SOURCE_TYPES = Union[BASE_SOURCE_TYPES, STREAM_TYPES, BytesIO, BinaryReader]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BytesIO, BinaryWriter]
 
 

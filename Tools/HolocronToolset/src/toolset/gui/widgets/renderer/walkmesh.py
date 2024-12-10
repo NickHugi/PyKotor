@@ -177,8 +177,8 @@ class WalkmeshRenderer(QWidget):
         self.material_colors: dict[SurfaceMaterial, QColor] = {}
         self.default_material_color: QColor = QColor(255, 0, 255)
 
-        self._keys_down: set[int] = set()
-        self._mouse_down: set[int] = set()
+        self._keys_down: set[int | Qt.Key] = set()
+        self._mouse_down: set[int | Qt.MouseButton] = set()
 
         self._pixmap_creature: QPixmap = QPixmap(":/images/icons/k1/creature.png")
         self._pixmap_door: QPixmap = QPixmap(":/images/icons/k1/door.png")
@@ -801,18 +801,26 @@ class WalkmeshRenderer(QWidget):
         super().mousePressEvent(e)
         if e is None:
             return
-        button = e.button()
+        button: int | Qt.MouseButton = e.button()
         self._mouse_down.add(button)
-        coords = Vector2(e.x(), e.y())
+        coords = (
+            Vector2(e.x(), e.y())  # pyright: ignore[reportAttributeAccessIssue]
+            if qtpy.QT5
+            else Vector2(e.position().toPoint().x(), e.position().toPoint().y())
+        )
         self.sig_mouse_pressed.emit(coords, self._mouse_down, self._keys_down)
 
     def mouseReleaseEvent(self, e: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         super().mouseReleaseEvent(e)
         if e is None:
             return
-        button = e.button()
+        button: int | Qt.MouseButton = e.button()
         self._mouse_down.discard(button)
-        coords = Vector2(e.x(), e.y())
+        coords = (
+            Vector2(e.x(), e.y())  # pyright: ignore[reportAttributeAccessIssue]
+            if qtpy.QT5
+            else Vector2(e.position().toPoint().x(), e.position().toPoint().y())
+        )
         self.sig_mouse_released.emit(coords, self._mouse_down, self._keys_down)
 
     def keyPressEvent(self, e: QKeyEvent):  # pyright: ignore[reportIncompatibleMethodOverride]

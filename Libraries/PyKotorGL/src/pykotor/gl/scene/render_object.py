@@ -50,7 +50,7 @@ class RenderObject:
         scale = vec3()
         skew = vec3()
         perspective = vec4()
-        glm.decompose(transform, scale, rotation, self._position, skew, perspective)
+        glm.decompose(transform, scale, rotation, self._position, skew, perspective)  # pyright: ignore[reportArgumentType, reportCallIssue]
         self._rotation = glm.eulerAngles(rotation)
 
     def _recalc_transform(self):

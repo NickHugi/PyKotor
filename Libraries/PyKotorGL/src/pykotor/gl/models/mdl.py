@@ -25,8 +25,6 @@ from glm import mat4, quat, vec3, vec4
 from utility.common.geometry import Vector3
 
 if TYPE_CHECKING:
-    from _testbuffer import ndarray
-
     from pykotor.gl.scene import Scene
     from pykotor.gl.shader import Shader
 
@@ -145,7 +143,7 @@ class Node:
             transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
             transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         position = vec3()
-        glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())
+        glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())  # pyright: ignore[reportCallIssue, reportArgumentType]
         return position
 
     def global_rotation(self) -> quat:
@@ -155,7 +153,7 @@ class Node:
             transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
             transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         rotation = quat()
-        glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())
+        glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())  # pyright: ignore[reportCallIssue, reportArgumentType]
         return rotation
 
     def global_transform(self) -> mat4:
@@ -228,13 +226,13 @@ class Mesh:
         self.texture: str = "NULL"
         self.lightmap: str = "NULL"
 
-        self.vertex_data = vertex_data
-        self.mdx_size = block_size
-        self.mdx_vertex = vertex_offset
+        self.vertex_data: bytearray = vertex_data
+        self.mdx_size: int = block_size
+        self.mdx_vertex: int = vertex_offset
 
-        self._vao = glGenVertexArrays(1)
-        self._vbo = glGenBuffers(1)
-        self._ebo = glGenBuffers(1)
+        self._vao: int = glGenVertexArrays(1)
+        self._vbo: int = glGenBuffers(1)
+        self._ebo: int = glGenBuffers(1)
         glBindVertexArray(self._vao)
 
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
@@ -247,7 +245,7 @@ class Mesh:
         element_data_mv = memoryview(element_data)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data_mv, GL_STATIC_DRAW)
 
-        self._face_count = len(element_data) // 2
+        self._face_count: int = len(element_data) // 2
 
         if data_bitflags & 0x0001:
             glEnableVertexAttribArray(1)
@@ -298,14 +296,30 @@ class Cube:
 
         vertices = np.array(
             [
-                min_point.x, min_point.y, max_point.z,
-                max_point.x, min_point.y, max_point.z,
-                max_point.x, max_point.y, max_point.z,
-                min_point.x, max_point.y, max_point.z,
-                min_point.x, min_point.y, min_point.z,
-                max_point.x, min_point.y, min_point.z,
-                max_point.x, max_point.y, min_point.z,
-                min_point.x, max_point.y, min_point.z
+                min_point.x,
+                min_point.y,
+                max_point.z,
+                max_point.x,
+                min_point.y,
+                max_point.z,
+                max_point.x,
+                max_point.y,
+                max_point.z,
+                min_point.x,
+                max_point.y,
+                max_point.z,
+                min_point.x,
+                min_point.y,
+                min_point.z,
+                max_point.x,
+                min_point.y,
+                min_point.z,
+                max_point.x,
+                max_point.y,
+                min_point.z,
+                min_point.x,
+                max_point.y,
+                min_point.z,
             ],
             dtype="float32",
         )
@@ -318,9 +332,9 @@ class Cube:
         self.min_point: vec3 = min_point
         self.max_point: vec3 = max_point
 
-        self._vao = glGenVertexArrays(1)
-        self._vbo = glGenBuffers(1)
-        self._ebo = glGenBuffers(1)
+        self._vao: int = glGenVertexArrays(1)
+        self._vbo: int = glGenBuffers(1)
+        self._ebo: int = glGenBuffers(1)
         glBindVertexArray(self._vao)
 
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
@@ -401,7 +415,7 @@ class Boundary:
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
 
-    def _build_nd(self, vertices: list[Vector3]) -> tuple[ndarray, ndarray]:
+    def _build_nd(self, vertices: list[Vector3]) -> tuple[np.ndarray, np.ndarray]:
         npvertices = []
         for vertex in vertices:
             npvertices.extend([*vertex, *Vector3(vertex.x, vertex.y, vertex.z + 2)])
@@ -421,4 +435,5 @@ class Empty:
     def __init__(self, scene: Scene):
         self._scene: Scene = scene
 
-    def draw(self, shader: Shader, transform: mat4): ...
+    def draw(self, shader: Shader, transform: mat4):
+        ...

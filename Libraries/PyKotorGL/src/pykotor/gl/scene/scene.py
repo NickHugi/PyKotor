@@ -843,7 +843,7 @@ class Scene:
             self.camera.y = 0
             self.camera.z = 0
         else:
-            point: Vector3 = self.module.info().resource().entry_position
+            point: Vector3 = self._get_ifo().entry_position
             self.camera.x = point.x
             self.camera.y = point.y
             self.camera.z = point.z + 1.8

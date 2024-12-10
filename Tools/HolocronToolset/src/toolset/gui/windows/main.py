@@ -181,7 +181,7 @@ class ToolWindow(QMainWindow):
         self.erf_editor_button = QPushButton("ERF Editor", self)
         self.erf_editor_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.erf_editor_button.clicked.connect(self._open_module_tab_erf_editor)  # Connect to the ERF Editor functionality
-        #self.ui.verticalLayoutRightPanel.insertWidget(2, self.erf_editor_button)  # pyright: ignore[reportArgumentType]
+        self.ui.verticalLayoutRightPanel.insertWidget(2, self.erf_editor_button)  # pyright: ignore[reportArgumentType]
         self.erf_editor_button.hide()
         modules_resource_list = self.ui.modulesWidget.ui
         modules_section_combo: QComboBox = modules_resource_list.sectionCombo  # type: ignore[attr-defined]

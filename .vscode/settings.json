@@ -45,7 +45,7 @@
     "python.analysis.autoIndent": true,
     "python.analysis.autoSearchPaths": true,
     "python.analysis.enablePytestSupport": false,
-    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.typeCheckingMode": "basic",
     "python.analysis.indexing": true,
     "python.terminal.launchArgs": [
         "-i",

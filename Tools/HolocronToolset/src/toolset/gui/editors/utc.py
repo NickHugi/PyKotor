@@ -384,7 +384,7 @@ class UTCEditor(Editor):
             - Loads comments
         """
         self._utc = utc
-        self.ui.previewRenderer.setCreature(utc)
+        self.ui.previewRenderer.set_creature(utc)
 
         # Basic
         self.ui.firstnameEdit.set_locstring(utc.first_name)
@@ -883,7 +883,7 @@ class UTCEditor(Editor):
             if self._installation is not None:
                 data, _ = self.build()
                 utc: UTC = read_utc(data)
-                self.ui.previewRenderer.setCreature(utc)
+                self.ui.previewRenderer.set_creature(utc)
         else:
             self.ui.previewRenderer.setVisible(False)
             self.resize(max(798 - 350, self.sizeHint().width()), max(553, self.sizeHint().height()))
