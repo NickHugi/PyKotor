@@ -71,7 +71,7 @@ class ModelRenderer(QOpenGLWidget):
         QTimer.singleShot(33, self.loop)
 
     def paintGL(self):
-        if self.scene is None:
+        if self._scene is None:
             return
 
         if self._model_to_load is not None:

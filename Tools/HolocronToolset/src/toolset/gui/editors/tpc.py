@@ -96,7 +96,8 @@ class TPCEditor(Editor):
         self.update_image()
 
     def setup_navigation_buttons(self):
-        layout = QVBoxLayout(self.ui.scrollAreaWidgetContents)
+        layout = self.ui.scrollAreaWidgetContents.layout()
+        assert isinstance(layout, (QVBoxLayout, QHBoxLayout))
         if self._tpc.is_animated:
             hbox = QHBoxLayout()
             prev_button = QPushButton("Previous")

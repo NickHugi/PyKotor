@@ -7,7 +7,7 @@ import uuid
 from abc import abstractmethod
 from contextlib import suppress
 from pathlib import Path, PurePath
-from typing import TYPE_CHECKING, Any, Callable, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, cast
 
 import qtpy
 
@@ -16,7 +16,6 @@ from qtpy.QtCore import (
     QBuffer,
     QIODevice,
     QTimer,
-    QUrl,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]  # pyright: ignore[reportPrivateImportUsage]
 )
@@ -62,7 +61,7 @@ if TYPE_CHECKING:
     from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
     from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
     from qtpy.QtCore import QRect
-    from qtpy.QtGui import QScreen
+    from qtpy.QtGui import QScreen, _QAction
     from qtpy.QtWidgets import QWidget, _QMenu
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]  # pyright: ignore[reportMissingModuleSource]
 
@@ -511,12 +510,14 @@ class Editor(QMainWindow):
         self._revert = data
         menu_bar: QMenuBar | None = cast(Optional[QMenuBar], self.menuBar())
         assert menu_bar is not None, "Menu bar is None somehow? This should be impossible."
-        menu: _QMenu | None = menu_bar.actions()[0].menu()
-        assert menu is not None, "Menu is somehow None"
-        for action in menu.actions():
-            if action.text() == "Revert":
-                action.setEnabled(True)
-                break
+        menu_bar_actions: Sequence[_QAction] = menu_bar.actions()  # pyright: ignore[reportAssignmentType]
+        if len(menu_bar_actions) > 0:
+            menu: _QMenu | None = menu_bar_actions[0].menu()
+            assert menu is not None, "Menu is somehow None"
+            for action in menu_bar_actions:
+                if action.text() == "Revert":
+                    action.setEnabled(True)
+                    break
         self.refresh_window_title()
         self.sig_loaded_file.emit(str(self._filepath), self._resname, self._restype, data)
 
@@ -527,10 +528,12 @@ class Editor(QMainWindow):
         assert menu_bar is not None, "Menu bar is None somehow? This should be impossible."
         menu: _QMenu | None = menu_bar.actions()[0].menu()
         assert menu is not None, "Menu is somehow None"
-        for action in menu.actions():
-            if action.text() != "Revert":
-                continue
-            action.setEnabled(False)
+        menu_bar_actions: Sequence[_QAction] = menu.actions()  # pyright: ignore[reportAssignmentType]
+        if len(menu_bar_actions) > 0:
+            for action in menu_bar_actions:
+                if action.text() != "Revert":
+                    continue
+                action.setEnabled(False)
         self.refresh_window_title()
         self.sig_new_file.emit()
 
@@ -590,17 +593,19 @@ class Editor(QMainWindow):
         elif qtpy.QT6:
             from qtpy.QtMultimedia import QAudioOutput
 
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-            temp_file.write(data)  # pyright: ignore[reportArgumentType, reportCallIssue]
-            temp_file.flush()
-            temp_file_path: str = temp_file.name
+            # Create buffer and load data
+            buffer = QBuffer(self)
+            buffer.setData(data)
+            buffer.open(QIODevice.OpenModeFlag.ReadOnly)
 
+            # Set up player
             player: PyQt6MediaPlayer | PySide6MediaPlayer = cast(Any, self.media_player.player)
-            audio_output = QAudioOutput(self)  # pyright: ignore[reportCallIssue, reportArgumentType]
+            audio_output = QAudioOutput(self)
             audio_output.setVolume(1)
-            player.setAudioOutput(audio_output)  # pyright: ignore[reportArgumentType]
-            player.setSource(QUrl.fromLocalFile(temp_file_path))  # pyright: ignore[reportArgumentType]
-            player.mediaStatusChanged.connect(lambda status, file_name=temp_file_path: self.remove_temp_audio_file(status, file_name))
+            player.setAudioOutput(audio_output)
+
+            # Use the buffer directly instead of a file
+            player.setSourceDevice(buffer)
             player.play()
         return True
 

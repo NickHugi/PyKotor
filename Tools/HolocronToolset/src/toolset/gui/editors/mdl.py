@@ -43,7 +43,13 @@ class MDLEditor(Editor):
     def _setup_signals(self):
         ...
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         c_filepath: Path = Path(filepath)
         super().load(c_filepath, resref, restype, data)
 

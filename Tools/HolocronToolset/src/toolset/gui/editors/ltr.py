@@ -4,7 +4,12 @@ from typing import TYPE_CHECKING
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QFontMetrics
-from qtpy.QtWidgets import QAction, QApplication, QMenu, QTableWidgetItem
+from qtpy.QtWidgets import (
+    QAction,  # pyright: ignore[reportPrivateImportUsage]
+    QApplication,
+    QMenu,
+    QTableWidgetItem,
+)
 
 from pykotor.resource.formats.ltr.ltr_auto import bytes_ltr, read_ltr
 from pykotor.resource.formats.ltr.ltr_data import LTR
@@ -52,12 +57,18 @@ class LTREditor(Editor):
         self.ui.buttonRemoveDouble.clicked.connect(self.removeDoubleRow)
         self.ui.buttonAddTriple.clicked.connect(self.addTripleRow)
         self.ui.buttonRemoveTriple.clicked.connect(self.removeTripleRow)
-        self.ui.tableSingles.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.ui.tableSingles.horizontalHeader().customContextMenuRequested.connect(self.show_header_context_menu)
-        self.ui.tableDoubles.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.ui.tableDoubles.horizontalHeader().customContextMenuRequested.connect(self.show_header_context_menu)
-        self.ui.tableTriples.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.ui.tableTriples.horizontalHeader().customContextMenuRequested.connect(self.show_header_context_menu)
+        hor_header = self.ui.tableSingles.horizontalHeader()
+        assert hor_header is not None
+        hor_header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        hor_header.customContextMenuRequested.connect(self.show_header_context_menu)
+        hor_header2 = self.ui.tableDoubles.horizontalHeader()
+        assert hor_header2 is not None
+        hor_header2.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        hor_header2.customContextMenuRequested.connect(self.show_header_context_menu)
+        hor_header3 = self.ui.tableTriples.horizontalHeader()
+        assert hor_header3 is not None
+        hor_header3.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        hor_header3.customContextMenuRequested.connect(self.show_header_context_menu)
 
     def populateComboBoxes(self):
         char_set = LTR.CHARACTER_SET
@@ -117,11 +128,17 @@ class LTREditor(Editor):
         menu.addAction(toggle_alternate_row_colors_action)
 
         if self.ui.tableSingles.hasFocus():
-            menu.exec(self.ui.tableSingles.horizontalHeader().mapToGlobal(position))
+            hor_header_single = self.ui.tableSingles.horizontalHeader()
+            assert hor_header_single is not None
+            menu.exec(hor_header_single.mapToGlobal(position))
         if self.ui.tableDoubles.hasFocus():
-            menu.exec(self.ui.tableDoubles.horizontalHeader().mapToGlobal(position))
+            hor_header_double = self.ui.tableDoubles.horizontalHeader()
+            assert hor_header_double is not None
+            menu.exec(hor_header_double.mapToGlobal(position))
         if self.ui.tableTriples.hasFocus():
-            menu.exec(self.ui.tableTriples.horizontalHeader().mapToGlobal(position))
+            hor_header_triple = self.ui.tableTriples.horizontalHeader()
+            assert hor_header_triple is not None
+            menu.exec(hor_header_triple.mapToGlobal(position))
 
     def toggle_alternate_row_colors(self):
         for table in (self.ui.tableSingles, self.ui.tableDoubles, self.ui.tableTriples):
@@ -150,7 +167,9 @@ class LTREditor(Editor):
         # Loop over each column and adjust based on header text width
         for col in range(header.count()):
             # Calculate the width required for the text in the header
-            header_text = header.model().headerData(col, Qt.Orientation.Horizontal)
+            header_model = header.model()
+            assert header_model is not None
+            header_text = header_model.headerData(col, Qt.Orientation.Horizontal)
             text_width = font_metrics.horizontalAdvance(str(header_text)) + 10
 
             # Ensure the column is wide enough for the header text
@@ -164,10 +183,12 @@ class LTREditor(Editor):
             if self.auto_resize_enabled:
                 self.auto_fit_columns(table)
             else:
-                self.reset_column_widths(table)
+                self.reset_column_widths()
             header = table.horizontalHeader()
             assert header is not None
-            header.viewport().update()
+            header_viewport = header.viewport()
+            assert header_viewport is not None
+            header_viewport.update()
 
     def setSingleCharacter(self):
         char = self.ui.comboBoxSingleChar.currentText()
@@ -211,7 +232,9 @@ class LTREditor(Editor):
         self.ui.tableSingles.insertRow(row_position)
 
     def removeSingleRow(self):
-        indices = self.ui.tableSingles.selectionModel().selectedRows()
+        sel_model = self.ui.tableSingles.selectionModel()
+        assert sel_model is not None
+        indices = sel_model.selectedRows()
         for index in sorted(indices):
             self.ui.tableSingles.removeRow(index.row())
 
@@ -220,7 +243,9 @@ class LTREditor(Editor):
         self.ui.tableDoubles.insertRow(row_position)
 
     def removeDoubleRow(self):
-        indices = self.ui.tableDoubles.selectionModel().selectedRows()
+        sel_model = self.ui.tableDoubles.selectionModel()
+        assert sel_model is not None
+        indices = sel_model.selectedRows()
         for index in sorted(indices):
             self.ui.tableDoubles.removeRow(index.row())
 
@@ -229,11 +254,19 @@ class LTREditor(Editor):
         self.ui.tableTriples.insertRow(row_position)
 
     def removeTripleRow(self):
-        indices = self.ui.tableTriples.selectionModel().selectedRows()
+        sel_model = self.ui.tableTriples.selectionModel()
+        assert sel_model is not None
+        indices = sel_model.selectedRows()
         for index in sorted(indices):
             self.ui.tableTriples.removeRow(index.row())
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
         self.ltr = read_ltr(data)
         self.updateUIFromLTR()

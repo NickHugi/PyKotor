@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 from qtpy.QtWidgets import QMessageBox
 
 from pykotor.common.misc import ResRef
-from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utd import UTD, dismantle_utd, read_utd
@@ -23,7 +22,6 @@ if TYPE_CHECKING:
 
     from qtpy.QtWidgets import QWidget
 
-    from pykotor.common.stream import BinaryWriterFile
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
@@ -125,8 +123,10 @@ class UTDEditor(Editor):
         self.ui.appearanceSelect.set_context(appearances, self._installation, HTInstallation.TwoDA_DOORS)
         self.ui.factionSelect.set_context(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
 
-        self.ui.appearanceSelect.set_items(appearances.get_column("label"))
-        self.ui.factionSelect.set_items(factions.get_column("label"))
+        if appearances is not None:
+            self.ui.appearanceSelect.set_items(appearances.get_column("label"))
+        if factions is not None:
+            self.ui.factionSelect.set_items(factions.get_column("label"))
 
         self.handle_widget_with_tsl(self.ui.notBlastableCheckbox, installation)
         self.handle_widget_with_tsl(self.ui.difficultyModSpin, installation)
@@ -184,6 +184,7 @@ class UTDEditor(Editor):
             - Divides loading into sections for Basic, Advanced, Lock, Scripts, and Comments
             - Handles different UI element types like checkboxes, dropdowns, text fields, etc.
         """
+        assert self._installation is not None
         self._utd = utd
 
         # Basic
@@ -318,6 +319,7 @@ class UTDEditor(Editor):
         self._loadUTD(UTD())
 
     def change_name(self):
+        assert self._installation is not None
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
@@ -343,6 +345,7 @@ class UTDEditor(Editor):
             3. If not found, prompts to create a new file in the override folder
             4. If found or created, opens the resource editor window.
         """
+        assert self._installation is not None
         resname: str = self.ui.conversationEdit.currentText()
         data: bytes | None = None
         filepath: os.PathLike | None = None
@@ -360,11 +363,9 @@ class UTDEditor(Editor):
 
                 write_gff(dismantle_dlg(DLG()), data)
                 filepath = self._installation.override_path() / f"{resname}.dlg"
-                writer: BinaryWriterFile = BinaryWriter.to_file(filepath)
-                writer.write_bytes(data)
-                writer.close()
+                filepath.write_bytes(data)
         else:
-            resname, restype, filepath, data = search
+            resname, filepath, data = search.resname, search.filepath, search.data
 
         if data is not None:
             open_resource_editor(filepath, resname, ResourceType.DLG, data, self._installation, self)
@@ -401,6 +402,7 @@ class UTDEditor(Editor):
             - If resources are loaded, set them on the preview renderer
             - If not loaded, clear the existing model from the preview renderer.
         """
+        assert self._installation is not None
         self.resize(max(674, self.sizeHint().width()), max(457, self.sizeHint().height()))
 
         data, _ = self.build()
@@ -408,6 +410,7 @@ class UTDEditor(Editor):
         mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
         mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
         if mdl is not None and mdx is not None:
-            self.ui.previewRenderer.setModel(mdl.data, mdx.data)
+            self.ui.previewRenderer.set_model(mdl.data, mdx.data)
         else:
-            self.ui.previewRenderer.clearModel()
+            self.ui.previewRenderer.clear_model()
+

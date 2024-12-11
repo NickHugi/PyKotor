@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-import tempfile
 import time
 
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import qtpy
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QTimer
-from qtpy.QtMultimedia import QAudioOutput, QMediaPlayer
+from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QFileDialog, QMainWindow
 
 from pykotor.extract.file import ResourceIdentifier
@@ -23,6 +22,8 @@ if TYPE_CHECKING:
 
     import os
 
+    from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
+    from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QWidget
 
@@ -82,17 +83,22 @@ class AudioPlayer(QMainWindow):
             from qtpy.QtMultimedia import QMediaContent  # pyright: ignore[reportAttributeAccessIssue]
             self.player.setMedia(QMediaContent(), self.buffer)  # pyright: ignore[reportAttributeAccessIssue]
         elif qtpy.QT6:
-            self.temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")  # noqa: SIM115
-            self.temp_file.write(data)
-            self.temp_file.flush()
-            self.temp_file.seek(0)
-            self.temp_file.close()
+            from qtpy.QtMultimedia import QAudioOutput
 
+            # Create buffer and load data
+            buffer = QBuffer(self)
+            buffer.setData(data)
+            buffer.open(QIODevice.OpenModeFlag.ReadOnly)
+
+            # Set up player
+            player: PyQt6MediaPlayer | PySide6MediaPlayer = cast(Any, self.player)
             audio_output = QAudioOutput(self)
-            self.player.setAudioOutput(audio_output)  # pyright: ignore[reportAttributeAccessIssue]
-            self.player.setSource(QtCore.QUrl.fromLocalFile(self.temp_file.name))  # pyright: ignore[reportAttributeAccessIssue]
             audio_output.setVolume(1)
-            self.player.mediaStatusChanged.connect(lambda status, file_name=self.temp_file.name: self.remove_temp_audio_file(status, file_name))
+            player.setAudioOutput(audio_output)
+
+            # Use the buffer directly instead of a file
+            player.setSourceDevice(buffer)
+            player.play()
         QtCore.QTimer.singleShot(0, self.player.play)
 
     def remove_temp_audio_file(
@@ -107,7 +113,13 @@ class AudioPlayer(QMainWindow):
             except OSError:
                 RobustLogger().exception(f"Error removing temporary file {filePathStr}")
 
-    def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resname: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         self.setWindowTitle(f"{resname}.{restype.extension} - Audio Player")
         self.set_media(data, restype)  # Use the refined set_media method
 

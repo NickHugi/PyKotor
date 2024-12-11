@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum, auto
 from typing import TYPE_CHECKING
 
 from qtpy.QtGui import QColor, QStandardItem, QStandardItemModel
@@ -26,6 +27,16 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
+class PhaseTask(Enum):
+    """Enum for tracking quest phase tasks."""
+    NONE = auto()
+    KILL = auto()
+    TALK = auto()
+    ITEM = auto()
+    LOCATION = auto()
+    CUSTOM = auto()
+
+
 class JRLEditor(Editor):
     """Journal Editor is designed for editing JRL files.
 
@@ -40,21 +51,6 @@ class JRLEditor(Editor):
     # the JRL object.
 
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initializes the Journal Editor window.
-
-        Args:
-        ----
-            parent: {QWidget}: Parent widget
-            installation: {HTInstallation}: HTInstallation object
-
-        Processing Logic:
-        ----------------
-            - Sets up the UI from the designed form
-            - Initializes the JRL object and model
-            - Connects menu and signal handlers
-            - Sets the installation if provided
-            - Displays an empty new journal by default.
-        """
         supported: list[ResourceType] = [ResourceType.JRL]
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
 
@@ -72,7 +68,6 @@ class JRLEditor(Editor):
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setup_installation(installation)
-
 
         self.new()
 
@@ -123,7 +118,13 @@ class JRLEditor(Editor):
             self.ui.categoryPlanetSelect.addItem(text)
         self.ui.categoryPlanetSelect.set_context(planets, self._installation, HTInstallation.TwoDA_PLANETS)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Load quest data from a file.
 
         Args:
@@ -180,7 +181,10 @@ class JRLEditor(Editor):
         ----
             entryItem: The item to refresh.
         """
-        text: str = f"[{entryItem.data().entry_id}] {self._installation.string(entryItem.data().text)}"
+        if self._installation is None:
+            text: str = f"[{entryItem.data().entry_id}] {entryItem.data().text}"
+        else:
+            text: str = f"[{entryItem.data().entry_id}] {self._installation.string(entryItem.data().text)}"
         entryItem.setForeground(QColor(0x880000 if entryItem.data().end else 0x000000))
         entryItem.setText(text)
 
@@ -191,11 +195,15 @@ class JRLEditor(Editor):
         ----
             questItem: The item to refresh.
         """
-        text: str = self._installation.string(questItem.data().name, "[Unnamed]")
+        if self._installation is None:
+            text: str = questItem.data().name or "[Unnamed]"
+        else:
+            text: str = self._installation.string(questItem.data().name, "[Unnamed]")
         questItem.setText(text)
 
     def change_quest_name(self):
         """Opens a LocalizedStringDialog for editing the name of the selected quest."""
+        assert self._installation is not None, "Installation is None"
         dialog = LocalizedStringDialog(self, self._installation, self.ui.categoryNameEdit.locstring())
         if dialog.exec():
             self.ui.categoryNameEdit.set_installation(self._installation)
@@ -207,6 +215,8 @@ class JRLEditor(Editor):
 
     def change_entry_text(self):
         """Opens a LocalizedStringDialog for editing the text of the selected entry."""
+        assert self._installation is not None, "Installation is None"
+        assert self.ui.entryTextEdit.locstring is not None, "Entry text is None"
         dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)
         if dialog.exec():
             self._load_locstring(self.ui.entryTextEdit, dialog.locstring)
@@ -235,7 +245,9 @@ class JRLEditor(Editor):
             entryItem: The item in the tree that stores the entry.
         """
         entry: JRLEntry = entryItem.data()
-        entryItem.parent().removeRow(entryItem.row())
+        entry_parent = entryItem.parent()
+        if entry_parent is not None:
+            entry_parent.removeRow(entryItem.row())
         for quest in self._jrl.quests:
             if entry in quest.entries:
                 quest.entries.remove(entry)
@@ -322,31 +334,50 @@ class JRLEditor(Editor):
             - Handles selection of Quest or Entry differently
         """
         QTreeView.selectionChanged(self.ui.journalTree, selection, deselected)
-        self.ui.categoryCommentEdit.blockSignals(True)
-        self.ui.entryTextEdit.blockSignals(True)
 
-        if selection.indexes():
-            index = selection.indexes()[0]
-            item = self._model.itemFromIndex(index)
-            assert item is not None, f"Could not find journalTree index '{index}'"
-            data = item.data()
-            if isinstance(data, JRLQuest):  # sourcery skip: extract-method
-                self.ui.questPages.setCurrentIndex(0)
-                self.ui.categoryNameEdit.set_locstring(data.name)
-                self.ui.categoryTag.setText(data.tag)
-                self.ui.categoryPlotSelect.setCurrentIndex(data.plot_index)
-                self.ui.categoryPlanetSelect.setCurrentIndex(data.planet_id + 1)
-                self.ui.categoryPrioritySelect.setCurrentIndex(data.priority.value)
-                #self.ui.categoryCommentEdit.setPlainText(data.comment)
-            elif isinstance(data, JRLEntry):
-                self.ui.questPages.setCurrentIndex(1)
-                self._load_locstring(self.ui.entryTextEdit, data.text)
-                self.ui.entryEndCheck.setChecked(data.end)
-                self.ui.entryXpSpin.setValue(data.xp_percentage)
-                self.ui.entryIdSpin.setValue(data.entry_id)
+        # Block signals to prevent recursive updates
+        widgets_to_block = [
+            self.ui.categoryCommentEdit,
+            self.ui.entryTextEdit,
+            self.ui.categoryNameEdit,
+            self.ui.categoryPlotSelect,
+            self.ui.categoryPlanetSelect,
+            self.ui.categoryPrioritySelect,
+            self.ui.entryEndCheck,
+            self.ui.entryXpSpin,
+            self.ui.entryIdSpin
+        ]
 
-        self.ui.categoryCommentEdit.blockSignals(False)
-        self.ui.entryTextEdit.blockSignals(False)
+        for widget in widgets_to_block:
+            widget.blockSignals(True)
+
+        try:
+            if selection.indexes():
+                index = selection.indexes()[0]
+                item = self._model.itemFromIndex(index)
+                if item is None:
+                    return
+
+                data = item.data()
+                if isinstance(data, JRLQuest):
+                    self.ui.questPages.setCurrentIndex(0)
+                    if self._installation is not None:
+                        self.ui.categoryNameEdit.set_locstring(data.name)
+                    self.ui.categoryPlotSelect.setCurrentIndex(data.plot_index)
+                    self.ui.categoryPlanetSelect.setCurrentIndex(data.planet_id + 1)
+                    self.ui.categoryPrioritySelect.setCurrentIndex(data.priority.value)
+
+                elif isinstance(data, JRLEntry):
+                    self.ui.questPages.setCurrentIndex(1)
+                    if self._installation is not None:
+                        self._load_locstring(self.ui.entryTextEdit, data.text)
+                    self.ui.entryEndCheck.setChecked(data.end)
+                    self.ui.entryXpSpin.setValue(data.xp_percentage)
+                    self.ui.entryIdSpin.setValue(data.entry_id)
+        finally:
+            # Always unblock signals
+            for widget in widgets_to_block:
+                widget.blockSignals(False)
 
     def on_context_menu_requested(self, point: QPoint):
         """Handle context menu requests for the journal tree widget.
@@ -387,7 +418,9 @@ class JRLEditor(Editor):
         else:
             menu.addAction("Add Quest").triggered.connect(lambda: self.add_quest(JRLQuest()))
 
-        menu.popup(self.ui.journalTree.viewport().mapToGlobal(point))
+        jrlTree_viewport = self.ui.journalTree.viewport()
+        assert jrlTree_viewport is not None, "Journal tree viewport is None"
+        menu.popup(jrlTree_viewport.mapToGlobal(point))
 
     def on_delete_shortcut(self):
         """Deletes selected shortcut from journal tree.

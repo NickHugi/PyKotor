@@ -127,7 +127,13 @@ class BWMEditor(Editor):
             item.setData(Qt.ItemDataRole.UserRole, material)  # type: ignore[attr-defined]
             self.ui.materialList.addItem(item)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads a resource into the editor.
 
         Args:

@@ -142,15 +142,18 @@ class SceneBase:
 
     def get_creature_render_object(  # noqa: C901
         self,
-        instance: GITCreature,
+        instance: GITCreature | None = None,
         utc: UTC | None = None,
     ) -> RenderObject:
         assert self.installation is not None
         try:
-            if utc is None:
+            if instance is not None and utc is None:
                 utc = self._resource_from_gitinstance(instance, self.module.creature)
             if utc is None:
-                RobustLogger().warning(f"Could not get UTC for GITCreature instance '{instance.identifier()}', not found in mod/override.")
+                if instance is not None:
+                    RobustLogger().warning(f"Could not get UTC for GITCreature instance '{instance.identifier()}', not found in mod/override.")
+                else:
+                    RobustLogger().warning("Could not get UTC for GITCreature, no instance provided.")
                 return RenderObject("unknown", data=instance)
 
             head_obj: RenderObject | None = None

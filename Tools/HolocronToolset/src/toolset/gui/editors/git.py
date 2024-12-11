@@ -464,7 +464,13 @@ class GITEditor(Editor):
         self.ui.actionUseTriggerName.triggered.connect(lambda: setattr(self.settings, "triggerLabel", "name"))
         self.ui.actionUseTriggerName.triggered.connect(self.update_visibility)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Load a resource from a file.
 
         Args:

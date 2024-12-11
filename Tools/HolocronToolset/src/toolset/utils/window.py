@@ -16,7 +16,6 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
-
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QDialog, QMainWindow
 
@@ -136,9 +135,11 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
     from toolset.gui.editors.erf import ERFEditor  # noqa: PLC0415
     from toolset.gui.editors.gff import GFFEditor  # noqa: PLC0415
     from toolset.gui.editors.git import GITEditor  # noqa: PLC0415
+    from toolset.gui.editors.ifo import IFOEditor  # noqa: PLC0415
     from toolset.gui.editors.jrl import JRLEditor  # noqa: PLC0415
+    from toolset.gui.editors.lip import LIPEditor  # noqa: PLC0415
     from toolset.gui.editors.ltr import LTREditor  # noqa: PLC0415
-    from toolset.gui.editors.mdl import MDLEditor
+    from toolset.gui.editors.mdl import MDLEditor  # noqa: PLC0415
     from toolset.gui.editors.nss import NSSEditor  # noqa: PLC0415
     from toolset.gui.editors.pth import PTHEditor  # noqa: PLC0415
     from toolset.gui.editors.ssf import SSFEditor  # noqa: PLC0415
@@ -155,7 +156,7 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
     from toolset.gui.editors.uts import UTSEditor  # noqa: PLC0415
     from toolset.gui.editors.utt import UTTEditor  # noqa: PLC0415
     from toolset.gui.editors.utw import UTWEditor  # noqa: PLC0415
-    from toolset.gui.windows.audio_player import AudioPlayer  # noqa: PLC0415  # noqa: PLC0415
+    from toolset.gui.windows.audio_player import AudioPlayer  # noqa: PLC0415
 
     if gff_specialized is None:
         gff_specialized = GlobalSettings().gffSpecializedEditors
@@ -186,22 +187,24 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
 
     if restype.target_type() is ResourceType.TwoDA:
         editor = TwoDAEditor(None, installation)
-    if restype.target_type() is ResourceType.SSF:
+    elif restype.target_type() is ResourceType.SSF:
         editor = SSFEditor(None, installation)
-    if restype.target_type() is ResourceType.TLK:
+    elif restype.target_type() is ResourceType.TLK:
         editor = TLKEditor(None, installation)
-    if restype.target_type() is ResourceType.LTR:
+    elif restype.target_type() is ResourceType.LTR:
         editor = LTREditor(None, installation)
-    if restype.category == "Walkmeshes":
+    elif restype.target_type() is ResourceType.LIP:  # Add LIP editor support
+        editor = LIPEditor(None, installation)
+    elif restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
-    if (
+    elif (
         restype.category in {"Images", "Textures"}
         and restype is not ResourceType.TXI
     ):
         editor = TPCEditor(None, installation)
-    if restype is ResourceType.NSS:
+    elif restype is ResourceType.NSS:
         editor = NSSEditor(None, installation)
-    if restype is ResourceType.NCS:
+    elif restype is ResourceType.NCS:
         QMessageBox.warning(
             parent_window_widget,
             "Cannot decompile NCS without an installation active",
@@ -209,133 +212,137 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
         )
         return None, None
 
-    if restype.target_type() is ResourceType.DLG:
+    elif restype.target_type() is ResourceType.DLG:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = DLGEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTC, ResourceType.BTC, ResourceType.BIC}:
+    elif restype.target_type() in {ResourceType.UTC, ResourceType.BTC, ResourceType.BIC}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
             editor = UTCEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTP, ResourceType.BTP}:
+    elif restype.target_type() in {ResourceType.UTP, ResourceType.BTP}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
             editor = UTPEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTD, ResourceType.BTD}:
+    elif restype.target_type() in {ResourceType.UTD, ResourceType.BTD}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
             editor = UTDEditor(None, installation)
 
-    if restype.target_type() is ResourceType.UTS:
+    elif restype.target_type() is ResourceType.IFO:
+        editor = IFOEditor(None, installation)
+
+    elif restype.target_type() is ResourceType.UTS:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTSEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTT, ResourceType.BTT}:
+    elif restype.target_type() in {ResourceType.UTT, ResourceType.BTT}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTTEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTM, ResourceType.BTM}:
+    elif restype.target_type() in {ResourceType.UTM, ResourceType.BTM}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTMEditor(None, installation)
 
-    if restype.target_type() is ResourceType.UTW:
+    elif restype.target_type() is ResourceType.UTW:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTWEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTE, ResourceType.BTE}:
+    elif restype.target_type() in {ResourceType.UTE, ResourceType.BTE}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTEEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTI, ResourceType.BTI}:
+    elif restype.target_type() in {ResourceType.UTI, ResourceType.BTI}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTIEditor(None, installation)
 
-    if restype.target_type() is ResourceType.JRL:
+    elif restype.target_type() is ResourceType.JRL:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = JRLEditor(None, installation)
 
-    if restype.target_type() is ResourceType.ARE:
+    elif restype.target_type() is ResourceType.ARE:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = AREEditor(None, installation)
 
-    if restype.target_type() is ResourceType.PTH:
+    elif restype.target_type() is ResourceType.PTH:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = PTHEditor(None, installation)
 
-    if restype.target_type() is ResourceType.GIT:
+    elif restype.target_type() is ResourceType.GIT:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = GITEditor(None, installation)
 
-    if restype.category == "Audio":
+    elif restype.category == "Audio":
         editor = AudioPlayer(None)
         editor.setWindowIcon(cast(QApplication, QApplication.instance()).windowIcon())
 
-    if restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM, ResourceType.BIF):
+    elif restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM, ResourceType.BIF):
         editor = ERFEditor(None, installation)
 
-    if restype in {ResourceType.MDL, ResourceType.MDX}:
+    elif restype in {ResourceType.MDL, ResourceType.MDX}:
         editor = MDLEditor(None, installation)
 
-    if editor is None and restype.target_type().contents == "gff":
+    elif restype.target_type().contents == "gff":
         editor = GFFEditor(None, installation)
 
-    if editor is None and restype.contents == "plaintext":
+    elif restype.contents == "plaintext":
         editor = TXTEditor(None)
 
-    if editor is not None:
-        try:
-            editor.load(filepath, resname, restype, data)
-            editor.show()
-            editor.activateWindow()
-            add_window(editor)
-
-        except Exception as e:
-            QMessageBox(
-                QMessageBox.Icon.Critical,
-                "An unexpected error has occurred",
-                str(universal_simplify_exception(e)),
-                QMessageBox.StandardButton.Ok,
-                parent_window_widget,
-                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
-            ).show()
-            raise
-        else:
-            return filepath, editor
-    else:
+    if editor is None:
         QMessageBox(
             QMessageBox.Icon.Critical,
             "Failed to open file",
             f"The selected file format '{restype}' is not yet supported.",
             QMessageBox.StandardButton.Ok,
             parent_window_widget,
+            flags=Qt.WindowType.Window
+            | Qt.WindowType.Dialog
+            | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
+        ).show()
+        return None, None
+
+    try:
+        editor.load(filepath, resname, restype, data)
+        editor.show()
+        editor.activateWindow()
+        add_window(editor)
+
+    except Exception as e:
+        QMessageBox(
+            QMessageBox.Icon.Critical,
+            "An unexpected error has occurred",
+            str(universal_simplify_exception(e)),
+            QMessageBox.StandardButton.Ok,
+            parent_window_widget,
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
         ).show()
-
-    return None, None
+        raise
+    else:
+        return filepath, editor

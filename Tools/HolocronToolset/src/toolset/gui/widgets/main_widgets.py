@@ -23,19 +23,7 @@ from qtpy.QtCore import (
     Slot,  # pyright: ignore[reportPrivateImportUsage]
 )
 from qtpy.QtGui import QCursor, QIcon, QImage, QImageReader, QPixmap, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import (
-    QAbstractItemView,
-    QApplication,
-    QFileDialog,
-    QFileIconProvider,
-    QHeaderView,
-    QInputDialog,
-    QListView,
-    QMenu,
-    QStyle,
-    QToolTip,
-    QWidget,
-)
+from qtpy.QtWidgets import QAbstractItemView, QApplication, QFileDialog, QFileIconProvider, QHeaderView, QInputDialog, QListView, QMenu, QStyle, QToolTip, QWidget
 
 from pykotor.extract.file import FileResource
 from pykotor.resource.formats.tpc.tpc_auto import read_tpc, write_tpc
@@ -50,10 +38,7 @@ if TYPE_CHECKING:
     from PIL.Image import Image
     from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject, QRect
     from qtpy.QtGui import QMouseEvent, QResizeEvent, QShowEvent
-    from qtpy.QtWidgets import (
-        QScrollBar,
-        _QMenu,
-    )
+    from qtpy.QtWidgets import QScrollBar, _QMenu
     from qtpy.sip import voidptr
 
     from pykotor.resource.formats.tpc.tpc_data import TPC
@@ -539,7 +524,7 @@ class TextureList(MainWindowList):
         """Set the resources to be displayed in the texture list."""
         print(f"Setting resources for TextureList with {len(resources)} resources")
         current_section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
-        print(f"Current section: {current_section_name}")
+        print(f"Current section: '{current_section_name}'")
         current_source_model: QStandardItemModel = self.texture_source_models[current_section_name]
         current_source_model.clear()
 
@@ -726,7 +711,7 @@ class TextureList(MainWindowList):
         # print("Icon loaded callback triggered")
         item_context, tpc_mipmap = future.result()
         section_name, row = item_context
-        print(f"Loaded icon for section: {section_name}, row: {row}")
+        # print(f"Loaded icon for section: {section_name}, row: {row}")
         src_index: QModelIndex = self.texture_source_models[section_name].index(row, 0)
         if not src_index.isValid():
             RobustLogger().warning("Invalid source index for row {row}")

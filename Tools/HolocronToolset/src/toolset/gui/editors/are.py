@@ -34,25 +34,6 @@ if TYPE_CHECKING:
 
 class AREEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize the ARE Editor window.
-
-        Args:
-        ----
-            parent: {QWidget}: Parent widget
-            installation: {HTInstallation}: Installation object
-
-        Processing Logic:
-        ----------------
-            - Initialize superclass with supported types
-            - Set window size
-            - Create ARE object
-            - Load UI from designer file
-            - Set up menus
-            - Connect signals
-            - Set up installation
-            - Configure color editors
-            - Create new empty ARE.
-        """
         supported: list[ResourceType] = [ResourceType.ARE]
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
         self.setMinimumSize(400, 600)  # Lock the window size
@@ -114,19 +95,6 @@ class AREEditor(Editor):
         self.ui.onUserDefinedSelect.populate_combo_box(self.relevant_script_resnames)
 
     def _setup_installation(self, installation: HTInstallation):
-        """Set up installation details.
-
-        Args:
-        ----
-            installation: {HTInstallation object}: Installation details
-
-        Processing Logic:
-        ----------------
-            - Set installation object to internal variable
-            - Set installation name to name edit field
-            - Get camera styles from htinstallation and populate dropdown
-            - Show/hide dirt, grass, snow, rain, lightning UI elements.
-        """
         self._installation = installation
 
         self.ui.nameEdit.set_installation(installation)
@@ -150,7 +118,13 @@ class AREEditor(Editor):
         installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
         installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         are: ARE = read_are(data)
@@ -158,20 +132,6 @@ class AREEditor(Editor):
         self.adjustSize()
 
     def _loadARE(self, are: ARE):
-        """Loads area data into UI widgets.
-
-        Args:
-        ----
-            are: ARE - Area object
-
-        Loads area data:
-            - Sets basic properties like name, tag, camera style
-            - Sets map properties like points, zoom, axis
-            - Sets weather properties like fog, lighting, wind
-            - Sets terrain properties like grass, dirt
-            - Sets script properties like onEnter, onExit
-            - Sets comment text.
-        """
         if not self._installation:
             print("Load an installation first.")
             return
@@ -270,19 +230,6 @@ class AREEditor(Editor):
         self.ui.commentsEdit.setPlainText(are.comment)
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds the ARE data from UI controls.
-
-        Returns:
-        -------
-            tuple[bytes, bytes]: The ARE data and log
-
-        Processing Logic:
-        ----------------
-            - Reads values from UI controls like name, tag, camera style etc
-            - Sets properties like fog, weather, terrain etc
-            - Writes ARE data to bytearray
-            - Returns ARE data and empty log
-        """
         self._are = self._buildARE()
 
         data = bytearray()
@@ -376,38 +323,11 @@ class AREEditor(Editor):
             self.ui.minimapRenderer.set_minimap(are, self._minimap)
 
     def change_color(self, color_spin: LongSpinBox):
-        """Changes the color selection.
-
-        Args:
-        ----
-            colorSpin: LongSpinBox widget to update color value
-
-        Processing Logic:
-        ----------------
-            - Opens a QColorDialog to select a new color
-            - Converts the selected QColor to a Color object
-            - Sets the colorSpin value to the BGR integer of the selected color.
-        """
         qcolor: QColor = QColorDialog.getColor(QColor(color_spin.value()))
         color = Color.from_bgr_integer(qcolor.rgb())
         color_spin.setValue(color.bgr_integer())
 
     def redo_color_image(self, value: int, color_label: QLabel):
-        """Redraws a color image based on a value.
-
-        Args:
-        ----
-            value: The integer value representing the BGR color
-            colorLabel: The label to display the color image
-
-        Processing Logic:
-        ----------------
-            - Convert the integer value to a Color object
-            - Extract the RGB values from the Color object
-            - Create a bytes object with the RGB values repeated for a 16x16 image
-            - Create a QImage from the bytes data
-            - Set the pixmap on the colorLabel from the QImage
-        """
         color = Color.from_bgr_integer(value)
         r, g, b = int(color.r * 255), int(color.g * 255), int(color.b * 255)
         data = bytes([r, g, b] * 16 * 16)

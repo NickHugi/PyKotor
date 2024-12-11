@@ -183,7 +183,7 @@ class PTHEditor(Editor):
         self.rightLabel = QLabel("Right Status")
 
         # Ensure the center label's text is centered
-        self.centerLabel.setAlignment(Qt.AlignCenter)
+        self.centerLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Create a horizontal layout
         layout = QHBoxLayout()
@@ -202,7 +202,9 @@ class PTHEditor(Editor):
         statusWidget.setLayout(layout)
 
         # Set the widget to the status bar
-        self.statusBar().addPermanentWidget(statusWidget, 1)
+        sbar = self.statusBar()
+        assert sbar is not None
+        sbar.addPermanentWidget(statusWidget, 1)
 
     def update_status_bar(
         self,
@@ -244,8 +246,14 @@ class PTHEditor(Editor):
         self.ui.renderArea.customContextMenuRequested.connect(self.on_context_menu)
         self.ui.renderArea.sig_key_pressed.connect(self.on_key_pressed)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
-        super().load(filepath, resref, restype, data)
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
+        super().load(filepath, resref, restype, data)  # sourcery skip: class-extract-method
 
         order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
         assert self._installation is not None
@@ -450,15 +458,15 @@ class PTHControlScheme:
             self.editor.move_selected(world.x, world.y)
 
     @status_bar_decorator
-    def on_mouse_pressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def on_mouse_pressed(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]):
         if self.select_underneath.satisfied(buttons, keys):
             self.editor.select_node_under_mouse()
 
     @status_bar_decorator
-    def on_mouse_released(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
+    def on_mouse_released(self, screen: Vector2, buttons: set[Qt.MouseButton], keys: set[Qt.Key]): ...
 
     @status_bar_decorator
-    def on_keyboard_pressed(self, buttons: set[int], keys: set[int]):
+    def on_keyboard_pressed(self, buttons: set[Qt.Key], keys: set[Qt.Key]):
         if self.delete_selected.satisfied(buttons, keys):
             node = None
             try:
@@ -471,7 +479,7 @@ class PTHControlScheme:
             self.editor.remove_node(node)
 
     @status_bar_decorator
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
+    def onKeyboardReleased(self, buttons: set[Qt.Key], keys: set[Qt.Key]): ...
 
     @status_bar_decorator
     def on_render_context_menu(self, world: Vector2, screen: QPoint):
@@ -501,7 +509,7 @@ class PTHControlScheme:
 
         menu = QMenu(self.editor)
         menu.addAction("Add Node").triggered.connect(lambda _=None: self.editor.addNode(world.x, world.y))
-        menu.addAction("Copy XY coords").triggered.connect(lambda: QApplication.clipboard().setText(str(self.editor.status_out.mouse_pos)))
+        menu.addAction("Copy XY coords").triggered.connect(lambda: QApplication.clipboard().setText(str(self.editor.status_out.mouse_pos)))  # pyright: ignore[reportOptionalMemberAccess]
         if under_mouse_index is not None:
             menu.addAction("Remove Node").triggered.connect(lambda _=None: self.editor.remove_node(under_mouse_index))
 
