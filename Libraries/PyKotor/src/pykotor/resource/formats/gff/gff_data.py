@@ -644,10 +644,10 @@ class GFFStruct:
             if target.exists(label):
                 if field_type == GFFFieldType.Struct:
                     assert isinstance(value, GFFStruct)
-                    value._merge(value, source.get_struct(label), relpath.joinpath(label))  # noqa: SLF001
+                    value._merge(value, source.get_struct(label, GFFStruct()), relpath.joinpath(label))  # noqa: SLF001
                 elif field_type == GFFFieldType.List:
                     assert isinstance(value, GFFList)
-                    target_list: GFFList = target.get_list(label)
+                    target_list: GFFList = target.get_list(label, GFFList())
                     for i, (target_item, source_item) in enumerate(zip(target_list, value)):
                         target_item._merge(  # noqa: SLF001
                             target_item,
