@@ -360,8 +360,7 @@ class SceneBase:
                 mdl_data = CURSOR_MDL_DATA
                 mdx_data = CURSOR_MDX_DATA
             elif name == "unknown":
-                mdl_data = UNKNOWN_MDL_DATA
-                mdx_data = UNKNOWN_MDX_DATA
+                mdl_data, mdx_data = UNKNOWN_MDL_DATA, UNKNOWN_MDX_DATA
             elif self.installation is not None:
                 capsules: list[ModulePieceResource] = [] if self._module is None else self.module.capsules()
                 mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
