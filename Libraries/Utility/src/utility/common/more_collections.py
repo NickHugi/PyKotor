@@ -344,6 +344,10 @@ class CaseInsensitiveDict(Generic[T]):
     def copy(self) -> CaseInsensitiveDict[T]:
         return self.from_dict(self._dictionary)
 
+    def clear(self) -> None:
+        self._dictionary.clear()
+        self._case_map.clear()
+
 
 # Example usage:
 if __name__ == "__main__":
