@@ -1,4 +1,5 @@
 """Loader utilities for converting KotOR MDL/TPC files into Panda3D formats."""
+
 from __future__ import annotations
 
 import struct
@@ -14,12 +15,14 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tpc import TPC
     from utility.common.stream import SOURCE_TYPES
 
+
 def _make_transform(pos: LPoint3, quat: LQuaternion) -> LMatrix4:
     """Create a transform matrix from position and rotation."""
     transform = LMatrix4()
     transform_state = TransformState.makePosQuatScale(pos, quat, LPoint3(1, 1, 1))
     transform.assign(transform_state.getMat())
     return transform
+
 
 def load_mdl(mdl: SOURCE_TYPES, mdx: SOURCE_TYPES) -> NodePath:
     """Load a KotOR MDL/MDX pair into a Panda3D NodePath."""
@@ -109,7 +112,9 @@ def load_mdl(mdl: SOURCE_TYPES, mdx: SOURCE_TYPES) -> NodePath:
     for key, value in merged.items():
         vertex_data = bytearray()
         elements: list[int] = []
-        child = root.attachNewNode("mesh")
+
+        # Create a new NodePath for this mesh
+        child = NodePath(GeomNode("mesh"))
 
         last_element = 0
         for offset, transform in value:
@@ -173,8 +178,8 @@ def load_mdl(mdl: SOURCE_TYPES, mdx: SOURCE_TYPES) -> NodePath:
 
             last_element += vertex_count
 
-        # Create geometry
-        format_array = GeomVertexFormat.getV3n3t2()
+        # Create geometry with proper format
+        format_array = GeomVertexFormat.getV3n3t2()  # position, normal, texcoord
         vdata = GeomVertexData("mesh", format_array, Geom.UHStatic)
         vertex = GeomVertexWriter(vdata, "vertex")
         normal = GeomVertexWriter(vdata, "normal")
@@ -185,16 +190,16 @@ def load_mdl(mdl: SOURCE_TYPES, mdx: SOURCE_TYPES) -> NodePath:
         for i in range(vertex_count):
             base = i * 40
 
-            # Position
-            x, y, z = struct.unpack("fff", vertex_data[base:base + 12])
+            # Position (x, y, z)
+            x, y, z = struct.unpack("fff", vertex_data[base : base + 12])
             vertex.addData3(x, y, z)
 
-            # Normal
-            nx, ny, nz = struct.unpack("fff", vertex_data[base + 12:base + 24])
+            # Normal (nx, ny, nz)
+            nx, ny, nz = struct.unpack("fff", vertex_data[base + 12 : base + 24])
             normal.addData3(nx, ny, nz)
 
-            # Texture coords
-            u, v = struct.unpack("ff", vertex_data[base + 24:base + 32])
+            # Texture coords (u, v)
+            u, v = struct.unpack("ff", vertex_data[base + 24 : base + 32])
             texcoord.addData2(u, v)
 
         # Create triangles
@@ -203,64 +208,83 @@ def load_mdl(mdl: SOURCE_TYPES, mdx: SOURCE_TYPES) -> NodePath:
             prim.addVertices(elements[i], elements[i + 1], elements[i + 2])
         prim.closePrimitive()
 
-        # Create geometry
+        # Create geometry and attach to node
         geom = Geom(vdata)
         geom.addPrimitive(prim)
-        node = GeomNode("mesh")
-        node.addGeom(geom)
+        geom_node = child.node()
+        assert isinstance(geom_node, GeomNode)
+        geom_node.addGeom(geom)
 
-        # Store texture names
+        # Store texture names and attach to root
         texture, lightmap = key.split("\n")
         child.setPythonTag("texture", texture)
         child.setPythonTag("lightmap", lightmap)
+        child.reparentTo(root)
 
     return root
+
 
 def load_tpc(tpc: TPC) -> Texture:
     """Load a KotOR TPC file into a Panda3D Texture."""
     mipmap = tpc.get(0, 0)
     tpc_format = tpc.format()
-    raw_img_data = mipmap.data
 
     # Create texture
     texture = Texture()
 
-    # TODO: figure out how to load compressed textures in panda3d directly.
-    if tpc_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT3}:
-        tpc.convert(TPCTextureFormat.RGB)
-        tpc_format = TPCTextureFormat.RGB
-    elif tpc_format == TPCTextureFormat.DXT5:
-        tpc.convert(TPCTextureFormat.RGBA)
-        tpc_format = TPCTextureFormat.RGBA
+    # Convert compressed formats to uncompressed
+    if tpc_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT3, TPCTextureFormat.DXT5}:
+        target_format = TPCTextureFormat.RGB if tpc_format == TPCTextureFormat.DXT1 else TPCTextureFormat.RGBA
+        tpc.convert(target_format)
+        mipmap = tpc.get(0, 0)
+        tpc_format = target_format
 
+    # Setup texture based on format and ensure data size matches expected size
     if tpc_format == TPCTextureFormat.RGB:
+        expected_size = mipmap.width * mipmap.height * 3
+        if len(mipmap.data) != expected_size:
+            raise ValueError(f"Invalid RGB image data size. Expected {expected_size}, got {len(mipmap.data)}")
         texture.setup2dTexture(mipmap.width, mipmap.height, Texture.T_unsigned_byte, Texture.F_rgb)
+        texture.setRamImage(mipmap.data)
     elif tpc_format == TPCTextureFormat.RGBA:
+        expected_size = mipmap.width * mipmap.height * 4
+        if len(mipmap.data) != expected_size:
+            raise ValueError(f"Invalid RGBA image data size. Expected {expected_size}, got {len(mipmap.data)}")
         texture.setup2dTexture(mipmap.width, mipmap.height, Texture.T_unsigned_byte, Texture.F_rgba)
+        texture.setRamImage(mipmap.data)
     elif tpc_format == TPCTextureFormat.BGR:
+        expected_size = mipmap.width * mipmap.height * 3
+        if len(mipmap.data) != expected_size:
+            raise ValueError(f"Invalid BGR image data size. Expected {expected_size}, got {len(mipmap.data)}")
         texture.setup2dTexture(mipmap.width, mipmap.height, Texture.T_unsigned_byte, Texture.F_rgb)
         # Convert BGR to RGB
         converted = bytearray()
-        for i in range(0, len(raw_img_data), 3):
-            pixel = raw_img_data[i:i+3]
+        for i in range(0, len(mipmap.data), 3):
+            pixel = mipmap.data[i : i + 3]
             converted.extend(reversed(pixel))
-        raw_img_data = bytes(converted)
+        texture.setRamImage(bytes(converted))
     elif tpc_format == TPCTextureFormat.BGRA:
+        expected_size = mipmap.width * mipmap.height * 4
+        if len(mipmap.data) != expected_size:
+            raise ValueError(f"Invalid BGRA image data size. Expected {expected_size}, got {len(mipmap.data)}")
         texture.setup2dTexture(mipmap.width, mipmap.height, Texture.T_unsigned_byte, Texture.F_rgba)
         # Convert BGRA to RGBA
         converted = bytearray()
-        for i in range(0, len(raw_img_data), 4):
-            pixel = raw_img_data[i:i+4]
+        for i in range(0, len(mipmap.data), 4):
+            pixel = mipmap.data[i : i + 4]
             converted.extend(reversed(pixel[:3]))  # Reverse BGR
             converted.append(pixel[3])  # Keep alpha
-        raw_img_data = bytes(converted)
+        texture.setRamImage(bytes(converted))
     elif tpc_format == TPCTextureFormat.Greyscale:
+        expected_size = mipmap.width * mipmap.height
+        if len(mipmap.data) != expected_size:
+            raise ValueError(f"Invalid Greyscale image data size. Expected {expected_size}, got {len(mipmap.data)}")
         texture.setup2dTexture(mipmap.width, mipmap.height, Texture.T_unsigned_byte, Texture.F_luminance)
+        texture.setRamImage(mipmap.data)
     else:
         # Default to RGBA
         texture.setup2dTexture(mipmap.width, mipmap.height, Texture.T_unsigned_byte, Texture.F_rgba)
-
-        texture.setRamImage(raw_img_data)
+        texture.setRamImage(mipmap.data)
 
     # Configure texture settings
     texture.setMagfilter(Texture.FT_linear)

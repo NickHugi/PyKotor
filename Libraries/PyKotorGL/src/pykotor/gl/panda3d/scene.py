@@ -9,19 +9,33 @@ from typing import TYPE_CHECKING, Any
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
 from direct.task.Task import Task
-from panda3d.core import LQuaternion, Point3, WindowProperties
+from panda3d.core import (
+    AmbientLight,
+    DirectionalLight,
+    Geom,
+    GeomNode,
+    GeomTriangles,
+    GeomVertexData,
+    GeomVertexFormat,
+    GeomVertexWriter,
+    LQuaternion,
+    Material,
+    NodePath,
+    Point3,
+    WindowProperties,
+    loadPrcFileData,
+)
 
-from pykotor.common.module import Module
-from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.installation import SearchLocation
 from pykotor.gl.panda3d.loader import load_mdl, load_tpc
 from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.type import ResourceType
 from pykotor.tools import creature
 
 if TYPE_CHECKING:
-    from panda3d.core import NodePath
 
-    from pykotor.common.module import ModuleResource
+    from pykotor.common.module import Module, ModuleResource
+    from pykotor.extract.installation import Installation
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.generics.git import GIT
 
@@ -39,6 +53,40 @@ def get_resource_data(resource: ModuleResource[Any] | None) -> bytes | None:
     return data
 
 
+def create_test_triangle() -> NodePath:
+    """Create a simple colored triangle for testing rendering."""
+    # Create the vertex format
+    format = GeomVertexFormat.getV3c4()
+    vdata = GeomVertexData("triangle", format, Geom.UHStatic)
+
+    # Create vertex writers
+    vertex = GeomVertexWriter(vdata, "vertex")
+    color = GeomVertexWriter(vdata, "color")
+
+    # Add vertices
+    vertex.addData3(0, 0, 0)
+    vertex.addData3(2, 0, 0)
+    vertex.addData3(1, 2, 0)
+
+    # Add colors (RGB)
+    color.addData4(1, 0, 0, 1)  # Red
+    color.addData4(0, 1, 0, 1)  # Green
+    color.addData4(0, 0, 1, 1)  # Blue
+
+    # Create the triangle primitive
+    tri = GeomTriangles(Geom.UHStatic)
+    tri.addVertices(0, 1, 2)
+    tri.closePrimitive()
+
+    # Create the geom and geom node
+    geom = Geom(vdata)
+    geom.addPrimitive(tri)
+    node = GeomNode("test_triangle")
+    node.addGeom(geom)
+
+    return NodePath(node)
+
+
 class KotorRenderer(ShowBase):
     """Panda3D renderer with KotOR module loading support."""
 
@@ -48,7 +96,55 @@ class KotorRenderer(ShowBase):
         installation: Installation | None = None,
         module: Module | None = None,
     ):
+        # Enable hardware animation and advanced shaders
+        loadPrcFileData("", """
+            hardware-animated-vertices true
+            basic-shaders-only false
+        """)
+
         super().__init__()
+
+        # Set up camera
+        self.camera.setPos(0, -10, 0)  # Move camera back to see test objects
+        self.camera.lookAt(0, 0, 0)  # Look at center
+
+        # Create and position test triangle
+        test_triangle = create_test_triangle()
+        test_triangle.reparentTo(self.render)
+        test_triangle.setPos(0, 0, 0)  # Position at origin
+
+        # Enable shader generation for the entire scene
+        self.render.setShaderAuto()
+        # Enable vertex colors
+        self.render.setColorOff()
+
+        # Set up basic lighting
+        # Ambient light to ensure models are visible
+        alight = AmbientLight("alight")
+        alight.setColor((0.4, 0.4, 0.4, 1))  # Moderate ambient light
+        alnp = self.render.attachNewNode(alight)
+        self.render.setLight(alnp)
+
+        # Key light (main directional light)
+        key_light = DirectionalLight("key_light")
+        key_light.setColor((0.8, 0.8, 0.7, 1))  # Slightly warm key light
+        key_light_np = self.render.attachNewNode(key_light)
+        key_light_np.setHpr(45, -45, 0)
+        self.render.setLight(key_light_np)
+
+        # Fill light (secondary directional light)
+        fill_light = DirectionalLight("fill_light")
+        fill_light.setColor((0.3, 0.3, 0.35, 1))  # Slightly cool fill light
+        fill_light_np = self.render.attachNewNode(fill_light)
+        fill_light_np.setHpr(-45, -30, 0)
+        self.render.setLight(fill_light_np)
+
+        # Create default material
+        self.default_material = Material()
+        self.default_material.setShininess(32.0)  # Medium shininess
+        self.default_material.setAmbient((0.2, 0.2, 0.2, 1.0))  # Low ambient reflection
+        self.default_material.setDiffuse((0.8, 0.8, 0.8, 1.0))  # High diffuse reflection
+        self.default_material.setSpecular((0.5, 0.5, 0.5, 1.0))  # Medium specular reflection
 
         self.installation: Installation | None = installation
         if installation:
@@ -58,11 +154,12 @@ class KotorRenderer(ShowBase):
 
         # Root node for all module content
         self.module_root: NodePath = self.render.attachNewNode("module_root")
-
-        # Set up camera
-        self.camera.reparentTo(self.render)
-        self.camera.setPos(0, -50, 20)  # Start position
-        self.camera.lookAt(0, 0, 0)  # Look at center
+        # Enable shader generation for module content
+        self.module_root.setShaderAuto()
+        # Enable vertex colors
+        self.module_root.setColorOff()
+        # Apply default material to module root
+        self.module_root.setMaterial(self.default_material)
 
         # Camera movement variables
         self.camera_speed = 30.0  # Units per second
@@ -120,6 +217,12 @@ class KotorRenderer(ShowBase):
         # Clear existing content
         self.module_root.removeNode()
         self.module_root = self.render.attachNewNode("module_root")
+        # Enable shader generation for new module content
+        self.module_root.setShaderAuto()
+        # Enable vertex colors
+        self.module_root.setColorOff()
+        # Apply default material to module root
+        self.module_root.setMaterial(self.default_material)
 
         # Load GIT/LYT
         git_resource = module.git()
@@ -280,7 +383,20 @@ class KotorRenderer(ShowBase):
         mdl = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER)
         mdx = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER)
         if mdl is not None and mdx is not None:
-            return load_mdl(mdl.data[12:], mdx.data)
+            # Pass full MDL data instead of skipping bytes
+            node = load_mdl(mdl.data[12:], mdx.data)
+            if node:
+                # Enable backface culling for better performance
+                node.setTwoSided(False)
+                # Make sure model is visible and can receive lighting
+                node.show()
+                # Set up material properties for proper lighting
+                node.setShaderAuto()
+                # Enable vertex colors
+                node.setColorOff()
+                # Apply default material
+                node.setMaterial(self.default_material)
+            return node
 
         return None
 
@@ -288,7 +404,7 @@ class KotorRenderer(ShowBase):
         """Load TPC from module or installation and apply to model."""
         assert self.installation is not None
 
-        # Then try installation
+        # Try installation
         tpc = self.installation.texture(
             name,
             [
@@ -301,7 +417,12 @@ class KotorRenderer(ShowBase):
         )
         if tpc is not None:
             tex = load_tpc(tpc)
-            model.setTexture(tex)
+            if tex:
+                # Apply texture to all child nodes
+                for child in model.getChildren():
+                    child.setTexture(tex, 1)  # Use 1 as priority to override any existing textures
+                # Also apply to parent node
+                model.setTexture(tex, 1)
 
     def update_key(self, key: str, value: bool) -> None:
         """Update the key state dictionary."""
@@ -358,288 +479,3 @@ class KotorRenderer(ShowBase):
             self.camera.setPos(self.camera.getPos() + move_vec * speed * dt)
 
         return Task.cont
-
-
-print("Starting demo...")
-demo: KotorRenderer | None = None
-
-if __name__ == "__main__":
-    from pathlib import Path
-
-    from direct.gui.DirectGui import DirectButton, DirectFrame, DirectLabel, DirectOptionMenu
-    from direct.showbase.ShowBase import ShowBase
-    from panda3d.core import TextNode, WindowProperties
-
-    from pykotor.common.misc import Game
-    from pykotor.extract.installation import Installation
-    from pykotor.tools.path import find_kotor_paths_from_default
-
-    class MyApp(ShowBase):
-        def __init__(self):
-            ShowBase.__init__(self)
-            self.selected_game = None
-            self.selected_installation_path = None
-            self.selected_level = None
-            self.game_menu = None
-            self.should_exit = False
-
-            # Set up window properties
-            props = WindowProperties()
-            props.setTitle("KotOR Module Viewer")
-            props.setSize(800, 600)
-            self.win.requestProperties(props)
-
-            # Set up background
-            self.setBackgroundColor(0.12, 0.12, 0.14)  # Dark background
-
-            self.select_game_installation_and_level()
-
-        def select_game_installation_and_level(self):
-            # Find KotOR installation paths
-            paths: dict[Game, list[Path]] = find_kotor_paths_from_default()  # pyright: ignore[reportAssignmentType]
-            if not paths:
-                print("Could not find KotOR installation")
-                self.should_exit = True
-                return
-
-            # Create main container frame with more padding
-            frame = DirectFrame(
-                frameColor=(0.16, 0.16, 0.18, 0.95),
-                frameSize=(-1.0, 1.0, -0.7, 0.7),  # Wider frame
-                pos=(0, 0, 0),
-                relief=1
-            )
-
-            # Title bar
-            title_frame = DirectFrame(
-                frameColor=(0.18, 0.18, 0.2, 1),
-                frameSize=(-1.0, 1.0, -0.1, 0.1),
-                pos=(0, 0, 0.6),
-                parent=frame,
-                relief=1
-            )
-
-            DirectLabel(
-                text="KotOR Module Viewer",
-                scale=0.08,  # Larger text
-                pos=(0, 0, 0),
-                parent=title_frame,
-                text_fg=(0.95, 0.95, 0.95, 1),
-                text_align=TextNode.ACenter,
-                text_shadow=(0, 0, 0, 0.5),
-                text_shadowOffset=(0.002, 0.002)
-            )
-
-            # Content container with better spacing
-            content_frame = DirectFrame(
-                frameColor=(0.16, 0.16, 0.18, 0),
-                frameSize=(-0.9, 0.9, -0.5, 0.5),
-                pos=(0, 0, 0),
-                parent=frame
-            )
-
-            # Row height and spacing
-            row_height = 0.15
-            label_scale = 0.07
-            menu_scale = 0.07
-            button_scale = 0.07
-
-            # Game selection row
-            game_label = DirectLabel(
-                text="Game",
-                scale=label_scale,
-                pos=(-0.85, 0, 0.3),
-                parent=content_frame,
-                text_align=TextNode.ALeft,
-                text_fg=(0.9, 0.9, 0.9, 1)
-            )
-
-            game_options = [game.name for game in paths.keys()]
-            self.game_menu = DirectOptionMenu(
-                text="Select Game",
-                scale=menu_scale,
-                items=game_options,
-                initialitem=0,
-                pos=(-0.3, 0, 0.3),
-                parent=content_frame,
-                frameSize=(-0.6, 0.6, -0.25, 0.25),
-                popupMarker_scale=0.3,
-                frameColor=(0.12, 0.12, 0.14, 1),  # Darker background
-                highlightColor=(0.18, 0.18, 0.2, 1),
-                text_fg=(0.9, 0.9, 0.9, 1),
-                item_text_fg=(0.9, 0.9, 0.9, 1),
-                item_frameColor=(0.12, 0.12, 0.14, 0.95)
-            )
-
-            game_button = DirectButton(
-                text="Choose",
-                scale=button_scale,
-                pos=(0.5, 0, 0.3),
-                command=self.update_installations,
-                parent=content_frame,
-                frameSize=(-0.6, 0.6, -0.4, 0.4),  # Much larger clickable area
-                frameColor=(0.2, 0.5, 0.9, 1),
-                pressEffect=0.9,
-                relief=1,
-                text_fg=(1, 1, 1, 1)
-            )
-
-            # Installation selection row
-            installation_label = DirectLabel(
-                text="Path",
-                scale=label_scale,
-                pos=(-0.85, 0, 0),
-                parent=content_frame,
-                text_align=TextNode.ALeft,
-                text_fg=(0.9, 0.9, 0.9, 1)
-            )
-
-            self.installation_menu = DirectOptionMenu(
-                text="Select Installation",
-                scale=menu_scale,
-                items=["No installations found"],
-                pos=(-0.3, 0, 0),
-                parent=content_frame,
-                frameSize=(-0.6, 0.6, -0.25, 0.25),
-                popupMarker_scale=0.3,
-                frameColor=(0.12, 0.12, 0.14, 1),  # Darker background
-                highlightColor=(0.18, 0.18, 0.2, 1),
-                text_fg=(0.9, 0.9, 0.9, 1),
-                item_text_fg=(0.9, 0.9, 0.9, 1),
-                item_frameColor=(0.12, 0.12, 0.14, 0.95)
-            )
-
-            installation_button = DirectButton(
-                text="Choose",
-                scale=button_scale,
-                pos=(0.5, 0, 0),
-                command=self.update_levels,
-                parent=content_frame,
-                frameSize=(-0.6, 0.6, -0.4, 0.4),  # Much larger clickable area
-                frameColor=(0.2, 0.5, 0.9, 1),
-                pressEffect=0.9,
-                relief=1,
-                text_fg=(1, 1, 1, 1)
-            )
-
-            # Level selection row
-            level_label = DirectLabel(
-                text="Level",
-                scale=label_scale,
-                pos=(-0.85, 0, -0.3),
-                parent=content_frame,
-                text_align=TextNode.ALeft,
-                text_fg=(0.9, 0.9, 0.9, 1)
-            )
-
-            self.level_menu = DirectOptionMenu(
-                text="Select Level",
-                scale=menu_scale,
-                items=["No levels found"],
-                pos=(-0.3, 0, -0.3),
-                parent=content_frame,
-                frameSize=(-0.6, 0.6, -0.25, 0.25),
-                popupMarker_scale=0.3,
-                frameColor=(0.12, 0.12, 0.14, 1),  # Darker background
-                highlightColor=(0.18, 0.18, 0.2, 1),
-                text_fg=(0.9, 0.9, 0.9, 1),
-                item_text_fg=(0.9, 0.9, 0.9, 1),
-                item_frameColor=(0.12, 0.12, 0.14, 0.95)
-            )
-
-            # Store paths
-            self.paths = paths
-
-            # Load button
-            load_button = DirectButton(
-                text="Load Module",
-                scale=0.08,
-                pos=(0, 0, -0.5),
-                command=self.confirm_selection,
-                parent=frame,
-                frameSize=(-0.8, 0.8, -0.4, 0.4),  # Much larger clickable area
-                frameColor=(0.2, 0.7, 0.4, 1),
-                pressEffect=0.9,
-                relief=1,
-                text_fg=(1, 1, 1, 1)
-            )
-
-        def update_installations(self):
-            if self.game_menu is None:
-                return
-
-            selected_game = self.game_menu.get()
-            game_enum = Game[selected_game]
-            installation_paths = self.paths[game_enum]
-
-            if installation_paths:
-                self.installation_menu["items"] = [str(path) for path in installation_paths]
-                self.installation_menu.set(0)
-            else:
-                self.installation_menu["items"] = ["No installations found"]
-                self.installation_menu.set(0)
-
-            # Reset level menu
-            self.level_menu["items"] = ["No levels found"]
-            self.level_menu.set(0)
-
-        def update_levels(self):
-            selected_path = self.installation_menu.get()
-            if selected_path and selected_path != "No installations found":
-                self.selected_installation = Installation(Path(selected_path))
-                levels = self.selected_installation.modules_list()
-                if levels:
-                    self.level_menu["items"] = levels
-                    self.level_menu.set(0)
-                else:
-                    self.level_menu["items"] = ["No levels found"]
-                    self.level_menu.set(0)
-
-        def confirm_selection(self):
-            if self.game_menu is None or self.installation_menu is None or self.level_menu is None:
-                return
-
-            selected_level = self.level_menu.get()
-            if selected_level == "No levels found":
-                return
-
-            self.selected_game = self.game_menu.get()
-            self.selected_installation_path = self.installation_menu.get()
-            self.selected_level = selected_level
-
-            if all(
-                [
-                    self.selected_game,
-                    self.selected_installation_path and self.selected_installation_path != "No installations found",
-                    self.selected_level and self.selected_level != "No levels found",
-                ]
-            ):
-                self.should_exit = True
-
-        def run(self):
-            """Override run to handle clean exit."""
-            while not self.should_exit:
-                self.taskMgr.step()
-
-            # Clean up
-            self.destroy()
-            return self.selected_game, self.selected_installation, self.selected_level
-
-    # Run the selection UI first
-    app = MyApp()
-    selected_game, selected_installation, selected_level = app.run()
-
-    # Only proceed if we have valid selections
-    if all([selected_game, selected_installation, selected_level]):
-        print(f"Selected Game: {selected_game}")
-        print(f"Selected Installation: {selected_installation}")
-        print(f"Selected Level: {selected_level}")
-
-        # Now create and run the renderer
-        demo = KotorRenderer(
-            installation=selected_installation,
-            module=Module(str(selected_level), selected_installation),
-        )
-        demo.run()
-
-print("Demo finished.")
