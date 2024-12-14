@@ -1,1 +1,0 @@
-pycryptodome  # Tested with 3.20.0. Used for the upgrader. TODO: make optional.
