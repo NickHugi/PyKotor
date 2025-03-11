@@ -179,7 +179,7 @@ class DLGEditor(Editor):
             widget.setToolTip(original_tooltip)
         self.original_tooltips.clear()
 
-    def showEvent(
+    def showEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QShowEvent,
     ):
@@ -351,8 +351,8 @@ Should return 1 or 0, representing a boolean.
         self.ui.soundComboBox.currentTextChanged.connect(self.on_node_update)
         self.ui.voiceComboBox.currentTextChanged.connect(self.on_node_update)
 
-        self.ui.soundButton.clicked.connect(lambda: self.play_sound(self.ui.soundComboBox.currentText(), [SearchLocation.SOUND, SearchLocation.VOICE]) and None or None)
-        self.ui.voiceButton.clicked.connect(lambda: self.play_sound(self.ui.voiceComboBox.currentText(), [SearchLocation.VOICE]) and None or None)
+        self.ui.soundButton.clicked.connect(lambda: (self.play_sound(self.ui.soundComboBox.currentText(), [SearchLocation.SOUND, SearchLocation.VOICE]) and None) or None)
+        self.ui.voiceButton.clicked.connect(lambda: (self.play_sound(self.ui.voiceComboBox.currentText(), [SearchLocation.VOICE]) and None) or None)
 
         self.ui.soundComboBox.set_button_delegate("Play", lambda text: self.play_sound(text, [SearchLocation.SOUND, SearchLocation.VOICE]))
         self.ui.voiceComboBox.set_button_delegate("Play", lambda text: self.play_sound(text, [SearchLocation.VOICE]))
@@ -1246,7 +1246,7 @@ Should return 1 or 0, representing a boolean.
         write_dlg(self.core_dlg, data, game_to_use)
         # dismantle_dlg(self.editor.core_dlg).compare(read_gff(data), log_func=print)  # use for debugging (don't forget to import)
 
-        return data, b""
+        return bytes(data), b""
 
     def new(self):
         super().new()
@@ -1257,7 +1257,7 @@ Should return 1 or 0, representing a boolean.
         installation: HTInstallation,
     ):
         """Sets up the installation for the UI."""
-        self._installation = installation
+        self._installation = installation  # pyright: ignore[reportIncompatibleVariableOverride]
         installation.setup_file_context_menu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
         if installation.game().is_k1():
             required: list[str] = [HTInstallation.TwoDA_VIDEO_EFFECTS, HTInstallation.TwoDA_DIALOG_ANIMS]
@@ -1581,7 +1581,7 @@ Should return 1 or 0, representing a boolean.
         else:
             menu = QMenu(self)
             if not self._focused:
-                add_entry_action = cast(QAction, menu.addAction("Add Entry"))
+                add_entry_action = cast(QAction, menu.addAction("Add Entry"))  # pyright: ignore[reportInvalidTypeForm]
                 assert add_entry_action is not None, "Failed to create 'Add Entry' action."
                 add_entry_action.triggered.connect(self.model.add_root_node)
             else:
@@ -1589,7 +1589,7 @@ Should return 1 or 0, representing a boolean.
                 def reset_tree(*args):
                     self._load_dlg(self.core_dlg)
 
-                reset_tree_action = cast(QAction, menu.addAction("Reset Tree"))
+                reset_tree_action = cast(QAction, menu.addAction("Reset Tree"))  # pyright: ignore[reportInvalidTypeForm]
                 assert reset_tree_action is not None, "Failed to create 'Reset Tree' action."
                 reset_tree_action.triggered.connect(reset_tree)
         view_port: QWidget | None = self.ui.dialogTree.viewport()
@@ -1671,10 +1671,10 @@ Should return 1 or 0, representing a boolean.
         play_menu.mousePressEvent = lambda event: (print("play_menu.mousePressEvent"), self._play_node_sound(item.link.node), QMenu.mousePressEvent(play_menu, event))  # type: ignore[method-assign]
         play_sound_action: _QAction | None = play_menu.addAction("Play Sound")
         assert play_sound_action is not None, "Failed to create 'Play Sound' action."
-        play_sound_action.triggered.connect(lambda: self.play_sound("" if item.link is None else str(item.link.node.sound)) and None or None)
+        play_sound_action.triggered.connect(lambda: (self.play_sound("" if item.link is None else str(item.link.node.sound)) and None) or None)
         play_voice_action: _QAction | None = play_menu.addAction("Play Voice")
         assert play_voice_action is not None, "Failed to create 'Play Voice' action."
-        play_voice_action.triggered.connect(lambda: self.play_sound("" if item.link is None else str(item.link.node.vo_resref)) and None or None)
+        play_voice_action.triggered.connect(lambda: (self.play_sound("" if item.link is None else str(item.link.node.vo_resref)) and None) or None)
         play_sound_action.setEnabled(bool(self.ui.soundComboBox.currentText().strip()))
         play_voice_action.setEnabled(bool(self.ui.voiceComboBox.currentText().strip()))
         play_menu.setEnabled(bool(self.ui.soundComboBox.currentText().strip() or self.ui.voiceComboBox.currentText().strip()))
@@ -1884,15 +1884,15 @@ Should return 1 or 0, representing a boolean.
             self.show_reference_dialog(references, item_html)
 
     # region Events
-    def focusOutEvent(
+    def focusOutEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         e: QFocusEvent,
-    ):  # pyright: ignore[reportIncompatibleMethodOverride]
+    ):
         self.keys_down.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
         print("dlgedit.focusOutEvent: clearing all keys/buttons held down.")
 
-    def closeEvent(
+    def closeEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QCloseEvent,
     ):
@@ -1943,7 +1943,7 @@ Should return 1 or 0, representing a boolean.
         elif below_index.isValid() and key == Qt.Key.Key_Down and not self.ui.dialogTree.visualRect(below_index).contains(view_port.rect()):
             self.ui.dialogTree.scrollTo(below_index)
 
-    def keyPressEvent(  # noqa: PLR0912, C901, PLR0911, PLR0915
+    def keyPressEvent(  # noqa: PLR0912, C901, PLR0911, PLR0915  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QKeyEvent,
         *,
@@ -2061,7 +2061,7 @@ Should return 1 or 0, representing a boolean.
                 else:
                     self.model.delete_selected_node()
 
-    def keyReleaseEvent(
+    def keyReleaseEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QKeyEvent,
     ):
@@ -2449,7 +2449,7 @@ Should return 1 or 0, representing a boolean.
             item.link.node.camera_id = self.ui.cameraIdSpin.value()
             item.link.node.camera_anim = self.ui.cameraAnimSpin.value()
             item.link.node.camera_angle = self.ui.cameraAngleSelect.currentIndex()
-            item.link.node.camera_effect = self.ui.cameraEffectSelect.currentData()
+            item.link.node.camera_effect = self.ui.cameraEffectSelect.currentIndex()
 
             if item.link.node.camera_id >= 0 and item.link.node.camera_angle == 0:
                 self.ui.cameraAngleSelect.setCurrentIndex(6)
