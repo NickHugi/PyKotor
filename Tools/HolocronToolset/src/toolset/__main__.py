@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from toolset.main_app import main
+try:
+    from toolset.main_app import main
+except ImportError:
+    import sys
+
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+    sys.path.append(str(Path(__file__).resolve().parent.parent.parent.parent.parent.joinpath("Libraries", "PyKotor", "src")))
+    sys.path.append(str(Path(__file__).resolve().parent.parent.parent.parent.parent.joinpath("Libraries", "PyKotorGL", "src")))
+    from toolset.main_app import main
 from toolset.main_init import main_init
 
 if __name__ == "__main__":
