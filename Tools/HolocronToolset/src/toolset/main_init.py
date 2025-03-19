@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import atexit
-import faulthandler
 import importlib
 import multiprocessing
 import os
@@ -142,7 +141,7 @@ def main_init():
         fix_qt_env_var()
     # Do not use `faulthandler.enable()` in the toolset!
     # https://bugreports.qt.io/browse/PYSIDE-2359
-    faulthandler.enable()
+    #faulthandler.enable()
 
 
 def last_resort_cleanup():
@@ -159,3 +158,8 @@ def last_resort_cleanup():
     RobustLogger().debug("Starting new shutdown process...")
     start_shutdown_process()
     RobustLogger().debug("Shutdown process started...")
+    # The shutdown process will take care of the rest.
+    # This is just a last resort to ensure the toolset doesn't run in the background.
+    # This should be the last thing to run before the process exits.
+    RobustLogger().debug("Last resort cleanup done.")
+    # The process will exit when the shutdown process is done.
