@@ -4,7 +4,6 @@
     },
     "cmake.options.statusBarVisibility": "hidden",
     "cmake.sourceDirectory": "C:/GitHub/PyKotor/vendor/reone/src/apps/engine",
-    "cody.codebase": "https://github.com/th3w1zard1/PyKotor",
     "debugpy.debugJustMyCode": false,
     "files.exclude": {
         "**/.trunk/*actions/": true,
@@ -23,10 +22,6 @@
     },
     "github-actions.workflows.pinned.workflows": [
         ".github/workflows/publish_and_test_pykotor.yml"
-    ],
-    "gitlens.codeLens.scopes": [
-        "document",
-        "containers"
     ],
     "launch": {
         "autoReload": {
@@ -80,6 +75,5 @@
     ],
     "python.testing.unittestEnabled": true,
     "pythonTestExplorer.outputs.showOutputsOnRun": true,
-    "remote.WSL.fileWatcher.polling": true,
-    "traycer.executionMode": "Auto"
+    "cursorpyright.analysis.autoImportCompletions": false
 }

@@ -11,7 +11,6 @@ readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
     "charset-normalizer>=2.0,<3.4",  # optional but recommended, auto-detect encoding of INI files
-    "pykotor>=1.7",
 ]
 license = {text = "LGPL-3.0-or-later License"}
 keywords = ["kotor", "library", "holo", "patcher", "pykotor", "star", "wars", "knights", "holopatcher", "tslpatcher"]
