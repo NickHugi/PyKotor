@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hologenerator"
+version = "1.0.0"
+description = "KOTOR Configuration Generator for HoloPatcher"
+readme = "README.md"
+authors = [
+    {name = "th3w1zard1", email = "2219836+th3w1zard1@users.noreply.github.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+dependencies = [
+    # Will use the PyKotor library from the parent project
+]
+
+[project.optional-dependencies]
+gui = ["tkinter"]  # Usually built-in with Python
+web = ["flask", "flask-cors"]  # For the web server backend
+
+[project.urls]
+Homepage = "https://github.com/th3w1zard1/PyKotor"
+Repository = "https://github.com/th3w1zard1/PyKotor"
+Documentation = "https://github.com/th3w1zard1/PyKotor/tree/main/Tools/HoloGenerator"
+"Bug Tracker" = "https://github.com/th3w1zard1/PyKotor/issues"
+
+[project.scripts]
+hologenerator = "hologenerator.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hologenerator = ["web/build/**/*"]
