@@ -16,9 +16,12 @@ from pathlib import Path
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
         working_dir = str(path)
+        hologenerator_path = path.parents[2].joinpath("Tools/HoloGenerator/src")
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
+        # Add the hologenerator src directory to sys.path so the hologenerator package can be found
+        sys.path.insert(0, str(hologenerator_path))
 
     pykotor_path = Path(__file__).parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
@@ -133,7 +136,7 @@ def main():
         
         if result:
             lines_count = len(result.splitlines())
-            print(f"Configuration generated successfully!")
+            print("Configuration generated successfully!")
             print(f"Output saved to: {output_path}")
             print(f"Lines generated: {lines_count}")
             
@@ -150,7 +153,7 @@ def main():
             print("The installations appear to be identical.")
             
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {e.__class__.__name__}: {e}")
         sys.exit(1)
 
 
