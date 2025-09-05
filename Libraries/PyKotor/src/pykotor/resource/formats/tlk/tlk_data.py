@@ -119,13 +119,20 @@ class TLK:
         mismatch_count, extra_old, extra_new = 0, 0, 0
 
         for (old_stringref, old_entry), (new_stringref, new_entry) in zip_longest(self, other, fillvalue=(None, None)):
-            # Both TLKs have the entry but with different content
+            # Handle entries that only exist in the new TLK
             if old_stringref is None or old_entry is None:
                 if new_stringref is not None and new_entry is not None:
+                    log_func(f"New-only entry at stringref: {new_stringref}")
+                    log_func(format_text(compare_and_format("", new_entry.text)))
+                    log_func(format_text(compare_and_format("", new_entry.voiceover)))
                     extra_new += 1
                     continue
                 continue
+            # Handle entries that only exist in the old TLK
             if new_stringref is None or new_entry is None:
+                log_func(f"Old-only entry at stringref: {old_stringref}")
+                log_func(format_text(compare_and_format(old_entry.text, "")))
+                log_func(format_text(compare_and_format(old_entry.voiceover, "")))
                 extra_old += 1
                 continue
             if old_entry != new_entry:
@@ -138,9 +145,10 @@ class TLK:
                 log_func(f"Entry mismatch at stringref: {old_stringref}")
                 if text_mismatch:
                     log_func(format_text(compare_and_format(old_entry.text, new_entry.text)))
-                mismatch_count += 1
                 if vo_mismatch:
                     log_func(format_text(compare_and_format(old_entry.voiceover, new_entry.voiceover)))
+                # Count one mismatch per entry regardless of which fields differ
+                mismatch_count += 1
 
         # Provide a summary of discrepancies
         if mismatch_count:

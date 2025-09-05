@@ -66,10 +66,12 @@ def log_output(*args, **kwargs):
     if not OUTPUT_LOG:
         chosen_log_file_path: str = "log_install_differ.log"
         OUTPUT_LOG = Path(chosen_log_file_path).resolve()
+        assert OUTPUT_LOG is not None
         if not OUTPUT_LOG.parent.safe_isdir():
             while True:
-                chosen_log_file_path: str = PARSER_ARGS.output_log or input("Filepath of the desired output logfile: ").strip() or "log_install_differ.log"
+                chosen_log_file_path = PARSER_ARGS.output_log or input("Filepath of the desired output logfile: ").strip() or "log_install_differ.log"
                 OUTPUT_LOG = Path(chosen_log_file_path).resolve()
+                assert OUTPUT_LOG is not None
                 if OUTPUT_LOG.parent.safe_isdir():
                     break
                 print("Invalid path:", OUTPUT_LOG)
