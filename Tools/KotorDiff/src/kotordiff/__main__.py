@@ -34,9 +34,6 @@ from utility.misc import generate_hash
 from utility.system.agnostics import askdirectory, askopenfilename
 from utility.system.path import Path, PureWindowsPath
 
-if os.name == "nt":
-    from utility.system.win32.com.windialogs import open_file_and_folder_dialog
-
 if TYPE_CHECKING:
     from pykotor.extract.file import FileResource
     from utility.system.path import PurePath
@@ -417,23 +414,8 @@ def main():
         nonlocal lookup_function
         if lookup_function is not None:
             return lookup_function
-        if os.name == "nt":
-            def lookup_function(title: str) -> str:
-                result = open_file_and_folder_dialog(title=title)
-                return result[0] if result else ""
-        else:
-            choice = input("Do you want to pick a path using a ui-based file/directory picker? (y/N)").strip().lower()
-            if not choice or choice == "y":
-                file_or_dir_choice = input("Do you want to pick a file? (No for directory) (y/N)").strip().lower()
-                if file_or_dir_choice == "yes":
-                    def lookup_function(title: str) -> str:
-                        return askopenfilename(title=title)
-                else:
-                    def lookup_function(title: str) -> str:
-                        return askdirectory(title=title)
-            else:
-                def lookup_function(title: str) -> str:
-                    return input(title)
+        def lookup_function(title: str) -> str:
+            return input(title)
         return lookup_function
 
     while True:
