@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Setup script for HoloGenerator development environment.
+HoloGenerator is a GUI-only tool for KOTOR configuration generation.
 """
 
 import subprocess
@@ -122,6 +123,8 @@ def main():
     """Main setup function."""
     print("🚀 HoloGenerator Development Setup")
     print("==================================")
+    print("HoloGenerator is a GUI-only tool for KOTOR configuration generation.")
+    print()
     
     # Setup Python environment
     setup_python_environment()
@@ -138,8 +141,10 @@ def main():
     print("Next steps:")
     print("1. Run tests: ./run_tests.sh")
     print("2. Start React dev server: cd web && npm start")
-    print("3. Test CLI: python -m hologenerator --help")
-    print("4. Test GUI: python -m hologenerator --gui")
+    print("3. Test GUI: python -m hologenerator")
+    print()
+    print("Note: HoloGenerator is GUI-only. For command-line functionality,")
+    print("use KotorDiff instead.")
     print()
     print("Happy coding! 🎯")
 

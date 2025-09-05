@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "hologenerator"
 version = "1.0.0"
-description = "KOTOR Configuration Generator for HoloPatcher"
+description = "KOTOR Configuration Generator for HoloPatcher - GUI Only"
 readme = "README.md"
 authors = [
     {name = "th3w1zard1", email = "2219836+th3w1zard1@users.noreply.github.com"}
@@ -24,6 +24,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Games/Entertainment",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Desktop Environment :: Gnome",
+    "Topic :: Desktop Environment :: K Desktop Environment (KDE)",
+    "Topic :: Desktop Environment :: XFCE",
 ]
 requires-python = ">=3.8"
 dependencies = [
@@ -39,9 +42,6 @@ Homepage = "https://github.com/th3w1zard1/PyKotor"
 Repository = "https://github.com/th3w1zard1/PyKotor"
 Documentation = "https://github.com/th3w1zard1/PyKotor/tree/main/Tools/HoloGenerator"
 "Bug Tracker" = "https://github.com/th3w1zard1/PyKotor/issues"
-
-[project.scripts]
-hologenerator = "hologenerator.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

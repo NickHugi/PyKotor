@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from configparser import ConfigParser
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -25,18 +26,16 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pathlib import Path
-
-from utility.common.geometry import Vector3, Vector4
-from pykotor.common.language import Gender, Language
-from pykotor.common.misc import ResRef
-from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFStruct
-from pykotor.resource.formats.ssf import SSFSound
-from pykotor.resource.formats.tlk import TLK, write_tlk
-from pykotor.resource.type import ResourceType
-from pykotor.tslpatcher.config import PatcherConfig
-from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
-from pykotor.tslpatcher.mods.gff import (
+from utility.common.geometry import Vector3, Vector4  # pyright: ignore[reportMissingImports]
+from pykotor.common.language import Gender, Language  # pyright: ignore[reportMissingImports]
+from pykotor.common.misc import ResRef  # pyright: ignore[reportMissingImports]
+from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFStruct  # pyright: ignore[reportMissingImports]
+from pykotor.resource.formats.ssf import SSFSound  # pyright: ignore[reportMissingImports]
+from pykotor.resource.formats.tlk import TLK, write_tlk  # pyright: ignore[reportMissingImports]
+from pykotor.resource.type import ResourceType  # pyright: ignore[reportMissingImports]
+from pykotor.tslpatcher.config import PatcherConfig  # pyright: ignore[reportMissingImports]
+from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK  # pyright: ignore[reportMissingImports]
+from pykotor.tslpatcher.mods.gff import (  # pyright: ignore[reportMissingImports]
     AddFieldGFF,
     AddStructToListGFF,
     FieldValue2DAMemory,
@@ -46,7 +45,7 @@ from pykotor.tslpatcher.mods.gff import (
     ModifyFieldGFF,
     ModifyGFF
 )
-from pykotor.tslpatcher.mods.twoda import (
+from pykotor.tslpatcher.mods.twoda import (  # pyright: ignore[reportMissingImports]
     AddRow2DA,
     CopyRow2DA,
     RowValue2DAMemory,
@@ -58,12 +57,12 @@ from pykotor.tslpatcher.mods.twoda import (
     RowValueTLKMemory,
     TargetType
 )
-from pykotor.tslpatcher.reader import ConfigReader
+from pykotor.tslpatcher.reader import ConfigReader  # pyright: ignore[reportMissingImports]
 
 if TYPE_CHECKING:
-    from pykotor.tslpatcher.mods.ssf import ModifySSF
-    from pykotor.tslpatcher.mods.tlk import ModifyTLK
-    from pykotor.tslpatcher.mods.twoda import (
+    from pykotor.tslpatcher.mods.ssf import ModifySSF  # pyright: ignore[reportMissingImports]
+    from pykotor.tslpatcher.mods.tlk import ModifyTLK  # pyright: ignore[reportMissingImports]
+    from pykotor.tslpatcher.mods.twoda import (  # pyright: ignore[reportMissingImports]
         AddColumn2DA,
         ChangeRow2DA
     )

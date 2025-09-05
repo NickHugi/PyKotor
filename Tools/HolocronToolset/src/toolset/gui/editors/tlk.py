@@ -81,6 +81,7 @@ class TLKEditor(Editor):
         self.ui.splitter.setSizes([99999999, 1])
 
         self.new()
+        self.show()
 
     def _setup_signals(self):
         def _on_jump_spinbox_goto(*args, **kwargs):

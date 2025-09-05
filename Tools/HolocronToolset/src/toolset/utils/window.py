@@ -42,6 +42,7 @@ def add_window(window: QDialog | QMainWindow):
         if isinstance(window, Editor) and window._filepath is not None:  # noqa: SLF001
             add_recent_file(window._filepath)  # noqa: SLF001
         if window in TOOLSET_WINDOWS:
+            print(f"Removing window: {window}")
             TOOLSET_WINDOWS.remove(window)
         if event is _UNIQUE_SENTINEL:  # Make event arg optional just in case the class has the wrong definition.
             original_closeEvent(*args, **kwargs)
@@ -49,6 +50,7 @@ def add_window(window: QDialog | QMainWindow):
             original_closeEvent(event, *args, **kwargs)  # pyright: ignore[reportArgumentType]
 
     window.closeEvent = new_close_event  # pyright: ignore[reportAttributeAccessIssue]
+    print(f"Adding window: {window}")
     TOOLSET_WINDOWS.append(window)
 
 

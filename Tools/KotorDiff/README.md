@@ -127,7 +127,7 @@ If you point **PATH1** and **PATH2** to two KOTOR installs, it will ONLY compare
 ### **Supported filetypes/formats:**
 
 - TalkTable files (TLK)
-- Any GFF file (DLG, UTC, GUI, UTP, UTD, GIT, IFO, etc.)
+- Any GFF file (DLG, UTC, GUI, UTP, UTD, etc.)
 - Any capsule (ERF, MOD, RIM, SAV, etc.)
 
 **Not supported:** NCS, NSS, ITP
@@ -137,6 +137,22 @@ If you point **PATH1** and **PATH2** to two KOTOR installs, it will ONLY compare
 ### **CLI Support:**
 
 This is a very flexible tool. You can send it command line arguments if you would like to use it in a 3rd party tool. Run `kotordiff.exe --help` to get a full syntax. If there's an error, the exit code will be 3 (if the error is known by my code) or 1 (some system error loading the tool). If the two paths match, the exit code will be 0. If the two paths don't match, the exit code will be 2. You can utilize these error codes to use KotorDiff in a customized 3rd party script or as an add-on to WinMerge/WinDirStat; the possibilities are endless.
+
+### **Command Line Options:**
+
+```bash
+kotordiff [--path1 PATH1] [--path2 PATH2] [--output-log FILE] [--ignore-rims] [--ignore-tlk] [--ignore-lips] [--compare-hashes] [--logging] [--use-profiler]
+```
+
+- `--path1`: Path to the first K1/TSL install, file, or directory to diff
+- `--path2`: Path to the second K1/TSL install, file, or directory to diff  
+- `--output-log`: Filepath of the desired output logfile
+- `--ignore-rims`: Whether to compare RIMS (default is False)
+- `--ignore-tlk`: Whether to compare TLK files (default is False)
+- `--ignore-lips`: Whether to compare LIPS (default is False)
+- `--compare-hashes`: Compare hashes of any unsupported file/resource type (default is True)
+- `--logging`: Whether to log the results to a file or not (default is True)
+- `--use-profiler`: Use cProfile to find where most of the execution time is taking place in source code
 
 ### **FAQ:**
 
@@ -159,3 +175,7 @@ This whole tool is open source, feel free to run directly from the source script
 There's a well-written article explaining why the false positives happen on their issue template: [https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md](https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md)
 
 **TLDR:** PyInstaller is an amazing tool, but antiviruses may flag it. This is not the fault of PyInstaller or my tool, but rather the fault of how some scummy users have chosen to use PyInstaller in the past. Please report any false positives you encounter to your antivirus's website, as reports not only improve the accuracy of everybody's AV experience overall but also indirectly support the [PyInstaller project](https://github.com/pyinstaller/pyinstaller).
+
+**Q: Is there a GUI version available?**
+
+A: No, KotorDiff is designed as a lightweight, command-line only tool. If you need a GUI for configuration generation, check out [HoloGenerator](https://github.com/th3w1zard1/PyKotor/tree/main/Tools/HoloGenerator) which provides a web-based interface for generating HoloPatcher configurations.

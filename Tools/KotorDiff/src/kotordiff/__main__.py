@@ -49,10 +49,12 @@ if os.name == "nt":
         WIN32_DIALOGS_AVAILABLE = True
     except ImportError:
         WIN32_DIALOGS_AVAILABLE = False
-        open_file_and_folder_dialog = None
+        def open_file_and_folder_dialog(title: str) -> str:
+            return input(f"{title}: ").strip()
 else:
     WIN32_DIALOGS_AVAILABLE = False
-    open_file_and_folder_dialog = None
+    def open_file_and_folder_dialog(title: str) -> str:
+        return input(f"{title}: ").strip()
 
 if TYPE_CHECKING:
     from pathlib import PurePath
@@ -425,7 +427,6 @@ def main():
     PARSER.add_argument("--ignore-lips", type=bool, help="Whether to compare LIPS (default is False)")
     PARSER.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is True)")
     PARSER.add_argument("--use-profiler", type=bool, default=False, help="Use cProfile to find where most of the execution time is taking place in source code.")
-
 
     PARSER_ARGS, unknown = PARSER.parse_known_args()
     

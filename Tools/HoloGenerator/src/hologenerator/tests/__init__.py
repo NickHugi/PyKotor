@@ -2,6 +2,7 @@
 Test suite for HoloGenerator.
 
 This module contains all unit tests for the HoloGenerator package.
+HoloGenerator is a GUI-only tool for KOTOR configuration generation.
 """
 
 import unittest
@@ -16,7 +17,6 @@ if src_dir not in sys.path:
 
 # Import test modules
 from .test_core import *
-from .test_cli import *
 
 # Conditionally import GUI tests
 try:

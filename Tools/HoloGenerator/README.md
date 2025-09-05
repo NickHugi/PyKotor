@@ -1,27 +1,32 @@
 # HoloGenerator - KOTOR Configuration Generator for HoloPatcher
 
-HoloGenerator is a comprehensive tool for automatically generating `changes.ini` files compatible with HoloPatcher by comparing two KOTOR installations or individual files.
+HoloGenerator is a **GUI-only** tool for automatically generating `changes.ini` files compatible with HoloPatcher by comparing two KOTOR installations or individual files.
 
 ## 🌟 Features
 
 ### Multiple Interfaces
-- **Command Line**: Full-featured CLI for automation and scripting
-- **Desktop GUI**: User-friendly tkinter-based interface 
+
+- **Desktop GUI**: User-friendly tkinter-based interface
 - **Web Application**: Modern React-based web interface with real-time diffing
 
+**Note:** HoloGenerator is designed exclusively for GUI usage. If you need command-line functionality, please use [KotorDiff](https://github.com/th3w1zard1/PyKotor/tree/main/Tools/KotorDiff) instead.
+
 ### Advanced Diffing
+
 - **Real-time comparison**: Fast, visual side-by-side file comparison
 - **Multi-format Support**: GFF, 2DA, TLK, SSF, LIP, and other KOTOR file formats
 - **Word-level diffing**: Granular change detection and highlighting
 - **Intelligent caching**: Optimized performance for large files
 
 ### Workflow Features
+
 - **Undo/Redo**: Full history tracking with keyboard shortcuts (Ctrl+Z, Ctrl+Y)
 - **Sequential file addition**: Build complex configurations by adding multiple file diffs
 - **Import/Export**: Support for importing existing `changes.ini` files
 - **Copy/Download**: Easy sharing and distribution of generated configurations
 
 ### Web Interface
+
 - **Intuitive UI**: Clean, modern interface inspired by GitHub's diff viewer
 - **Drag & Drop**: Easy file uploads with format auto-detection
 - **Live Preview**: Real-time configuration generation and preview
@@ -30,31 +35,26 @@ HoloGenerator is a comprehensive tool for automatically generating `changes.ini`
 ## 🚀 Quick Start
 
 ### Web Interface
-Visit: **https://th3w1zard1.github.io/hologenerator**
 
-### Command Line
-```bash
-# Compare two KOTOR installations
-python -m hologenerator /path/to/original/kotor /path/to/modified/kotor -o changes.ini
-
-# Compare individual files
-python -m hologenerator file1.gff file2.gff --file-mode -o changes.ini
-```
+Visit: **<https://th3w1zard1.github.io/hologenerator>**
 
 ### Desktop GUI
+
 ```bash
-python -m hologenerator --gui
+python -m hologenerator
 ```
 
 ## 📦 Installation
 
 ### From Source
+
 ```bash
 cd Tools/HoloGenerator
 pip install -e .
 ```
 
 ### Development Setup
+
 ```bash
 cd Tools/HoloGenerator
 python setup_dev.py
@@ -62,49 +62,20 @@ python setup_dev.py
 
 ## 🔧 Usage Examples
 
-### CLI Examples
+### Desktop GUI
 
-**Basic installation comparison:**
+**Launch the application:**
+
 ```bash
-hologenerator "/path/to/vanilla/kotor" "/path/to/modded/kotor"
+python -m hologenerator
 ```
 
-**File comparison with custom output:**
-```bash
-hologenerator original.2da modified.2da --file-mode -o appearance_changes.ini
-```
+**Using the GUI:**
 
-**Multiple format support:**
-```bash
-# Automatically detects file types and generates appropriate patches
-hologenerator original.utc modified.utc --file-mode  # GFF file
-hologenerator dialog.tlk modified_dialog.tlk --file-mode  # TLK file
-```
-
-### Python API
-
-```python
-from hologenerator import ConfigurationGenerator
-from pathlib import Path
-
-# Initialize generator
-generator = ConfigurationGenerator()
-
-# Compare installations
-config = generator.generate_config(
-    Path("/path/to/original"),
-    Path("/path/to/modified"),
-    Path("output/changes.ini")
-)
-
-# Compare individual files
-config = generator.generate_from_files(
-    Path("original.gff"),
-    Path("modified.gff")
-)
-
-print(f"Generated {len(config.splitlines())} lines of configuration")
-```
+1. Select your original and modified KOTOR installations or files
+2. View real-time differences in the diff viewer
+3. Generate a complete `changes.ini` configuration file
+4. Save or copy the generated configuration
 
 ### Web Interface Workflow
 
@@ -128,7 +99,8 @@ print(f"Generated {len(config.splitlines())} lines of configuration")
 ## 🏗️ Architecture
 
 ### Core Components
-```
+
+```bash
 hologenerator/
 ├── core/
 │   ├── differ.py          # File comparison engine
@@ -176,11 +148,13 @@ StrRef42=Modified
 ## 🧪 Testing
 
 ### Run All Tests
+
 ```bash
 ./run_tests.sh
 ```
 
 ### Individual Test Suites
+
 ```bash
 # Python tests
 python -m pytest src/hologenerator/tests/ -v
@@ -193,6 +167,7 @@ python -m unittest src/hologenerator/tests/test_gui.py
 ```
 
 ### Test Coverage
+
 - **Core functionality**: 100% coverage of critical paths
 - **Error handling**: Comprehensive error scenario testing
 - **Integration tests**: End-to-end workflow validation
@@ -203,11 +178,13 @@ python -m unittest src/hologenerator/tests/test_gui.py
 The React web application is automatically deployed to GitHub Pages via GitHub Actions:
 
 ### Automatic Deployment
+
 - **Trigger**: Push to main branch with changes in `Tools/HoloGenerator/web/`
 - **Build**: React production build with optimizations
 - **Deploy**: GitHub Pages deployment to `https://th3w1zard1.github.io/hologenerator`
 
 ### Manual Deployment
+
 ```bash
 cd web
 npm run build
@@ -217,11 +194,13 @@ npm run deploy
 ## 🛠️ Development
 
 ### Prerequisites
+
 - **Python 3.8+** (required)
 - **Node.js 16+** (for web interface)
-- **tkinter** (optional, for GUI)
+- **tkinter** (required, for GUI)
 
 ### Development Setup
+
 ```bash
 # Setup development environment
 python setup_dev.py
@@ -230,10 +209,11 @@ python setup_dev.py
 cd web && npm start
 
 # Run in development mode
-python -m hologenerator --gui
+python -m hologenerator
 ```
 
 ### Code Quality
+
 - **Linting**: flake8, ESLint
 - **Formatting**: black, Prettier
 - **Type Checking**: mypy, TypeScript
@@ -263,7 +243,8 @@ This project is part of the PyKotor toolkit and follows the same licensing terms
 
 ## 🔗 Links
 
-- **Web App**: https://th3w1zard1.github.io/hologenerator
+- **Web App**: <https://th3w1zard1.github.io/hologenerator>
 - **Documentation**: [Full documentation](https://github.com/th3w1zard1/PyKotor/tree/main/Tools/HoloGenerator)
 - **Issues**: [Report bugs](https://github.com/th3w1zard1/PyKotor/issues)
 - **PyKotor**: [Main project](https://github.com/th3w1zard1/PyKotor)
+- **KotorDiff**: [CLI alternative](https://github.com/th3w1zard1/PyKotor/tree/main/Tools/KotorDiff)
