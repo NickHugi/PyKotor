@@ -8,18 +8,18 @@ import re
 from contextlib import suppress
 from typing import Any
 
-import requests
+import requests  #pyright: ignore[reportMissingModuleSource]
 
-from loggerplus import RobustLogger
-from qtpy.QtWidgets import QMessageBox
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingImports]
+from qtpy.QtWidgets import QMessageBox  # pyright: ignore[reportMissingImports]
 
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import universal_simplify_exception  # pyright: ignore[reportMissingImports]
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "3.1.1",
-    "toolsetLatestVersion": "3.1.1",
-    "toolsetLatestBetaVersion": "3.1.1",
+    "currentVersion": "3.1.2",
+    "toolsetLatestVersion": "3.1.2",
+    "toolsetLatestBetaVersion": "3.1.2",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
@@ -52,8 +52,8 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
             "64bit": ["https://mega.nz/file/0ex33YTJ#RlBxTx3AOdxj8tBmgFg8SsCMSdO5i9SYu2FNsktrtzc", "https://github.com/NickHugi/PyKotor/releases/download/v{tag}-toolset/HolocronToolset_Windows_PyQt5_x64.zip"]
         }
     },
-    "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "A new major Release version is available.",
+    "toolsetLatestNotes": "Path editor now creates bidirectional links automatically, eliminating manual reciprocal edges and preventing zero-connection points.",
+    "toolsetLatestBetaNotes": "Path editor now creates bidirectional links automatically, eliminating manual reciprocal edges and preventing zero-connection points.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
@@ -125,13 +125,13 @@ def getRemoteToolsetUpdateInfo(
 def remoteVersionNewer(localVersion: str, remoteVersion: str) -> bool | None:
     version_check: bool | None = None
     with suppress(Exception):
-        from packaging import version
+        from packaging import version  # pyright: ignore[reportMissingImports] # noqa: PLC0415
 
         version_check = version.parse(remoteVersion) > version.parse(localVersion)
     if version_check is None:
         RobustLogger().warning(f"Version string might be malformed, attempted 'packaging.version.parse({localVersion}) > packaging.version.parse({remoteVersion})'")
         with suppress(Exception):
-            from distutils.version import LooseVersion
+            from distutils.version import LooseVersion  # noqa: PLC0415
 
             version_check = LooseVersion(remoteVersion) > LooseVersion(localVersion)
     return version_check
@@ -143,6 +143,7 @@ def version_to_toolset_tag(version: str) -> str:
         second_dot_index = version.find(".", version.find(".") + 1)  # Find the index of the second dot
         version = version[:second_dot_index] + version[second_dot_index + 1:]  # Remove the second dot by slicing and concatenating
     return f"v{version}-toolset"
+
 
 def toolset_tag_to_version(tag: str) -> str:
     numeric_part: str = "".join([c for c in tag if c.isdigit() or c == "."])

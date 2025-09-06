@@ -78,3 +78,4 @@ Libraries/Utility/.aider.model.settings.json
 /Libraries/Utility/src/utility/ui_libraries/qt/filesystem/common/deprecated
 /Libraries/Utility/src/utility/ui_libraries/qt/filesystem/common/untested
 Tools/HolocronToolset/src/toolset/uic
+/vendor
