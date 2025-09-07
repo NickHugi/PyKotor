@@ -417,7 +417,7 @@ def main():
         if lookup_function is not None:
             return lookup_function
         def lookup_function(title: str) -> str:
-            return input(title)
+            return askopenfilename(title=title)
         return lookup_function
 
     while True:
