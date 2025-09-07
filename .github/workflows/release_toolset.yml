@@ -5,7 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  OS_RUNNERS_JSON: '["windows-2019", "ubuntu-20.04", "macos-12"]'
+  OS_RUNNERS_JSON: '["windows-latest", "ubuntu-20.04", "macos-12"]'
   PYTHON_VERSIONS_JSON: '["3.8"]'
   ARCHITECTURES_JSON: '["x86", "x64"]'
   INTERPRETERS_JSON: '["python"]'
@@ -102,7 +102,7 @@ jobs:
             qt_version: 'PyQt6'
           - python_pypy: "pypy"
             python-version: '3.10'
-            os: 'windows-2019'
+            os: 'windows-latest'
           - qt_version: 'PyQt6'
             architecture: x86
           - qt_version: 'PySide6'
