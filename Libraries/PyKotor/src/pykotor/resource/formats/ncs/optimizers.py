@@ -113,8 +113,10 @@ class RemoveUnusedBlocksOptimizer(NCSOptimizer):
                 NCSInstructionType.JNZ,
                 NCSInstructionType.JSR,
             }:
+                assert instruction.jump is not None, f"{instruction} has a NoneType jump."
                 checking.extend((ncs.instructions.index(instruction.jump), check + 1))
             elif instruction.ins_type == NCSInstructionType.JMP:
+                assert instruction.jump is not None, f"{instruction} has a NoneType jump."
                 checking.append(ncs.instructions.index(instruction.jump))
             elif instruction.ins_type == NCSInstructionType.RETN:
                 ...

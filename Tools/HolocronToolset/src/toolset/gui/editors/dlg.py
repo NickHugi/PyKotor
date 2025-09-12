@@ -4354,7 +4354,6 @@ Should return 1 or 0, representing a boolean.
         #    self.setWidgetGeometry(widget)
 
     def _handleShiftItemKeybind(self, selectedIndex: QModelIndex, selectedItem: DLGStandardItem, key: QtKey | int):
-        # sourcery skip: extract-duplicate-method
         aboveIndex = self.ui.dialogTree.indexAbove(selectedIndex)
         belowIndex = self.ui.dialogTree.indexBelow(selectedIndex)
         if self.keysDown in (
@@ -4386,7 +4385,7 @@ Should return 1 or 0, representing a boolean.
         event: QKeyEvent,
         *,
         isTreeViewCall: bool = False,
-    ):  # sourcery skip: extract-duplicate-method
+    ):
         if not isTreeViewCall:
             if not self.ui.dialogTree.hasFocus():
                 print(f"<SDM> [DLGEditor.keyPressEvent scope] passthrough key {getQtKeyString(event.key())}: dialogTree does not have focus.")

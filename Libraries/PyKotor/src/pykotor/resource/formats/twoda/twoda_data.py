@@ -6,6 +6,7 @@ from contextlib import suppress
 from copy import copy
 from typing import TYPE_CHECKING, Any, TypeVar
 
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -15,10 +16,11 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class TwoDA:
+class TwoDA(ComparableMixin):
     """Represents a 2DA file."""
 
     BINARY_TYPE = ResourceType.TwoDA
+    COMPARABLE_SEQUENCE_FIELDS = ("_rows", "_headers", "_labels")
 
     def __init__(
         self,
@@ -27,6 +29,22 @@ class TwoDA:
         self._rows: list[dict[str, str]] = []
         self._headers: list[str] = [] if headers is None else headers  # for columns
         self._labels: list[str] = []  # for rows
+
+    def __eq__(self, other):
+        if not isinstance(other, TwoDA):
+            return NotImplemented
+        return (
+            self._rows == other._rows
+            and self._headers == other._headers
+            and self._labels == other._labels
+        )
+
+    def __hash__(self):
+        return hash((
+            tuple(tuple(sorted(row.items())) for row in self._rows),
+            tuple(self._headers),
+            tuple(self._labels)
+        ))
 
     def __repr__(
         self,
@@ -506,7 +524,8 @@ class TwoDA:
         return ret
 
 
-class TwoDARow:
+class TwoDARow(ComparableMixin):
+    COMPARABLE_FIELDS = ("_row_label", "_data")
     def __init__(
         self,
         row_label: str,
@@ -526,6 +545,9 @@ class TwoDARow:
         if isinstance(other, TwoDARow):
             return self._row_label == other._row_label and self._data == other._data
         return NotImplemented
+
+    def __hash__(self):
+        return hash((self._row_label, tuple(sorted(self._data.items()))))
 
     def label(
         self,

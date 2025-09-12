@@ -75,7 +75,7 @@ class KModuleType(Enum):
     MAIN = ".rim"  # Contains the IFO/ARE/GIT
     DATA = "_s.rim"  # Contains everything else
     K2_DLG = "_dlg.erf"  # In TSL, DLGs are here instead of _s.rim.
-    MOD = ".mod"  # Community-standard override, takes priority over the above.
+    MOD = ".mod"  # Community-standard override, takes priority over the above 3 files. This extension overrides all 3 of the above, while the other 3 are complementary to each other.
 
     def contains(  # noqa: PLR0911
         self,
@@ -184,7 +184,6 @@ class ModuleLinkPiece(ModulePieceResource):
     def ifo(self) -> GFF:
         lookup = self.resource("module", ResourceType.IFO)
         if lookup is None:
-            import errno
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(self.filepath().joinpath("module.ifo")))
         return read_gff(lookup)
 
@@ -583,11 +582,17 @@ class Module:  # noqa: PLR0904
         result: set[ResourceIdentifier] = set()
         for location in original_git_or_lyt.locations():
             original_git_or_lyt.activate(location)
-            loaded_git_or_lyt: type[GIT | LYT | VIS] | None = original_git_or_lyt.resource()
-            if not isinstance(loaded_git_or_lyt, (GIT, LYT, VIS)):
-                raise RuntimeError(errmsg)  # noqa: TRY004
-            if not isinstance(loaded_git_or_lyt, VIS):
-                result.update(loaded_git_or_lyt.iter_resource_identifiers())
+            try:
+                loaded_git_or_lyt: type[GIT | LYT | VIS] | None = original_git_or_lyt.resource()
+                if not isinstance(loaded_git_or_lyt, (GIT, LYT)):
+                    raise RuntimeError(errmsg)  # noqa: TRY004, TRY301
+                if not isinstance(loaded_git_or_lyt, VIS):
+                    result.update(loaded_git_or_lyt.iter_resource_identifiers())
+            except RuntimeError:
+                raise
+            except Exception:  # noqa: BLE001
+                RobustLogger().error("Unexpected exception when executing %s._handle_git_lyt_reloads() with resource '%s'",
+                                           repr(self), original_git_or_lyt.identifier())
         original_git_or_lyt.activate(original_path)  # reactivate the main one.
 
         return result

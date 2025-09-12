@@ -6,8 +6,11 @@ import math
 
 from typing import ClassVar
 
+from pykotor.resource.formats._base import ComparableMixin
 
-class TXIBaseInformation:
+
+class TXIBaseInformation(ComparableMixin):
+    COMPARABLE_FIELDS = ("mipmap", "filter", "downsamplemin", "downsamplemax")
     """Fields used within all txi files."""
 
     def __init__(self):
@@ -18,47 +21,175 @@ class TXIBaseInformation:
         self.downsamplemin: int = 0  # (???) (probably unsupported or broken related to above)
         self.downsamplemax: int = 0  # (???) (probably unsupported or broken related to above)
 
+    def __eq__(self, other):
+        if not isinstance(other, TXIBaseInformation):
+            return NotImplemented
+        return (
+            self.mipmap == other.mipmap
+            and self.filter == other.filter
+            and self.downsamplemin == other.downsamplemin
+            and self.downsamplemax == other.downsamplemax
+        )
+
+    def __hash__(self):
+        return hash((self.mipmap, self.filter, self.downsamplemin, self.downsamplemax))
+
 
 class TXIMaterialInformation(TXIBaseInformation):
+    COMPARABLE_FIELDS = (
+        *TXIBaseInformation.COMPARABLE_FIELDS,
+        "bumpmaptexture",
+        "bumpyshinytexture",
+        "envmaptexture",
+        "bumpreplacementtexture",
+        "blending",
+        "decal",
+    )
     def __init__(self):
-        self.bumpmaptexture: int
-        self.bumpyshinytexture: int
-        self.envmaptexture: int
-        self.bumpreplacementtexture: int
-        self.blending: int
-        self.decal: int
+        super().__init__()
+        self.bumpmaptexture: int = 0
+        self.bumpyshinytexture: int = 0
+        self.envmaptexture: int = 0
+        self.bumpreplacementtexture: int = 0
+        self.blending: int = 0
+        self.decal: int = 0
+
+    def __eq__(self, other):
+        if not isinstance(other, TXIMaterialInformation):
+            return NotImplemented
+        return (
+            super().__eq__(other)
+            and self.bumpmaptexture == other.bumpmaptexture
+            and self.bumpyshinytexture == other.bumpyshinytexture
+            and self.envmaptexture == other.envmaptexture
+            and self.bumpreplacementtexture == other.bumpreplacementtexture
+            and self.blending == other.blending
+            and self.decal == other.decal
+        )
+
+    def __hash__(self):
+        return hash((
+            super().__hash__(),
+            self.bumpmaptexture,
+            self.bumpyshinytexture,
+            self.envmaptexture,
+            self.bumpreplacementtexture,
+            self.blending,
+            self.decal
+        ))
 
 
 class TXITextureInformation(TXIBaseInformation):
+    COMPARABLE_FIELDS = (
+        *TXIBaseInformation.COMPARABLE_FIELDS,
+        "proceduretype",
+        "filerange",
+        "defaultwidth",
+        "defaultheight",
+        "filter",
+        "maptexelstopixels",
+        "gamma",
+        "isbumpmap",
+        "clamp",
+        "alphamean",
+        "isdiffusebumpmap",
+        "isspecularbumpmap",
+        "bumpmapscaling",
+        "specularcolor",
+        "numx",
+        "numy",
+        "cube",
+        "bumpintensity",
+        "temporary",
+        "useglobalalpha",
+        "isenvironmentmapped",
+        "pltreplacement",
+    )
     def __init__(self):
         super().__init__()
-        self.proceduretype: int
-        self.filerange: int
-        self.defaultwidth: int
-        self.defaultheight: int
-        self.filter: int
-        self.maptexelstopixels: int
-        self.gamma: int
-        self.isbumpmap: int
-        self.clamp: int
-        self.alphamean: int
-        self.isdiffusebumpmap: int
-        self.isspecularbumpmap: int
-        self.bumpmapscaling: int
-        self.specularcolor: int
-        self.numx: int
-        self.numy: int
-        self.cube: int
-        self.bumpintensity: int
-        self.temporary: int
-        self.useglobalalpha: int
-        self.isenvironmentmapped: int
-        self.pltreplacement: int
+        self.proceduretype: int = 0
+        self.filerange: int = 0
+        self.defaultwidth: int = 0
+        self.defaultheight: int = 0
+        self.filter: int = 0
+        self.maptexelstopixels: int = 0
+        self.gamma: int = 0
+        self.isbumpmap: int = 0
+        self.clamp: int = 0
+        self.alphamean: int = 0
+        self.isdiffusebumpmap: int = 0
+        self.isspecularbumpmap: int = 0
+        self.bumpmapscaling: int = 0
+        self.specularcolor: int = 0
+        self.numx: int = 0
+        self.numy: int = 0
+        self.cube: int = 0
+        self.bumpintensity: int = 0
+        self.temporary: int = 0
+        self.useglobalalpha: int = 0
+        self.isenvironmentmapped: int = 0
+        self.pltreplacement: int = 0
+
+    def __eq__(self, other):
+        if not isinstance(other, TXITextureInformation):
+            return NotImplemented
+        return (
+            super().__eq__(other)
+            and self.proceduretype == other.proceduretype
+            and self.filerange == other.filerange
+            and self.defaultwidth == other.defaultwidth
+            and self.defaultheight == other.defaultheight
+            and self.filter == other.filter
+            and self.maptexelstopixels == other.maptexelstopixels
+            and self.gamma == other.gamma
+            and self.isbumpmap == other.isbumpmap
+            and self.clamp == other.clamp
+            and self.alphamean == other.alphamean
+            and self.isdiffusebumpmap == other.isdiffusebumpmap
+            and self.isspecularbumpmap == other.isspecularbumpmap
+            and self.bumpmapscaling == other.bumpmapscaling
+            and self.specularcolor == other.specularcolor
+            and self.numx == other.numx
+            and self.numy == other.numy
+            and self.cube == other.cube
+            and self.bumpintensity == other.bumpintensity
+            and self.temporary == other.temporary
+            and self.useglobalalpha == other.useglobalalpha
+            and self.isenvironmentmapped == other.isenvironmentmapped
+            and self.pltreplacement == other.pltreplacement
+        )
+
+    def __hash__(self):
+        return hash((
+            super().__hash__(),
+            self.proceduretype,
+            self.filerange,
+            self.defaultwidth,
+            self.defaultheight,
+            self.filter,
+            self.maptexelstopixels,
+            self.gamma,
+            self.isbumpmap,
+            self.clamp,
+            self.alphamean,
+            self.isdiffusebumpmap,
+            self.isspecularbumpmap,
+            self.bumpmapscaling,
+            self.specularcolor,
+            self.numx,
+            self.numy,
+            self.cube,
+            self.bumpintensity,
+            self.temporary,
+            self.useglobalalpha,
+            self.isenvironmentmapped,
+            self.pltreplacement
+        ))
 
 
 class TXIFontInformation(TXIBaseInformation):
     DEFAULT_RESOLUTION: ClassVar[int] = 512
-    FONT_TEXTURES: ClassVar[list[str]] = [  # TODO: figure out which ones the game actually uses.
+    FONT_TEXTURES: ClassVar[list[str]] = [  # TODO(th3w1zard1): figure out which ones the game actually uses.
         "fnt_galahad14",  # Main menu?
         "dialogfont10x10",
         "dialogfont10x10a",
@@ -111,7 +242,7 @@ class TXIFontInformation(TXIBaseInformation):
         self.caretindent: float = (
             -0.010000
         )  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted so this checks out.
-        self.fontwidth: float = 1.000000  # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in k1 tests, changing this does not yield any noticeable ingame result.
+        self.fontwidth: float = 1.000000  # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in k1 tests, changing this does not yield any noticeable ingame result.  # noqa: E501
 
         # This could easily be used for DBCS (double byte encodings).
         # It may be unimplemented in KOTOR. Or hopefully, nobody's figured out how to use it.
@@ -124,12 +255,37 @@ class TXIFontInformation(TXIBaseInformation):
         self.baselineheight: float  # Untested. Float between 0 and 1.
         self.texturewidth: float  # Tested. Float between 0 and 1. Actual displayed width of the texture, allows stretching/compressing along the X axis.
 
-        self.upper_left_coords: list[
-            tuple[float, float, int]
-        ]  # Confirmed. The top left coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
-        self.lower_right_coords: list[
-            tuple[float, float, int]
-        ]  # Confirmed. The bottom right coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
+        self.upper_left_coords: list[tuple[float, float, int]] = []  # Confirmed. The top left coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0  # noqa: E501
+        self.lower_right_coords: list[tuple[float, float, int]] = []  # Confirmed. The bottom right coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0  # noqa: E501
+
+    COMPARABLE_FIELDS = (
+        *TXIBaseInformation.COMPARABLE_FIELDS,
+        "numchars",
+        "spacingR",
+        "spacingB",
+        "caretindent",
+        "fontwidth",
+        "isdoublebyte",
+        "dbmapping",
+    )
+    COMPARABLE_SEQUENCE_FIELDS = ("upper_left_coords", "lower_right_coords")
+
+    def __hash__(self):
+        return hash((
+            super().__hash__(),
+            self.numchars,
+            self.spacingR,
+            self.spacingB,
+            self.caretindent,
+            self.fontwidth,
+            self.isdoublebyte,
+            id(self.dbmapping),  # Use id for object comparison
+            getattr(self, "fontheight", None),
+            getattr(self, "baselineheight", None),
+            getattr(self, "texturewidth", None),
+            tuple(self.upper_left_coords),
+            tuple(self.lower_right_coords)
+        ))
         #
         # The 3rd int in the upperleftcoords and bottomright coords is unknown. It could be any of the following:
         #
@@ -261,7 +417,7 @@ lowerrightcoords {self.lr_coords_count}
         # self.texturewidth: float = self.numchars * custom_scaling / 50  # maybe?
         # self.fontheight: float = (self.numchars * custom_scaling * max_char_height) / (50 * resolution[1])  # maybe?
 
-        # TODO: I'm pretty sure fontwidth could be calculated here too. During testing, it's been easier to leave that at 1.000000 so there's less variables to worry about.
+        # TODO(th3w1zard1): I'm pretty sure fontwidth could be calculated here too. During testing, it's been easier to leave that at 1.000000 so there's less variables to worry about.  # noqa: E501
         # We should figure out the relationship for proper readability. I think vanilla K1 defines texturewidth as 'resolution_x / 100'.
         # Also worth mentioning the above math doesn't even work if the resolution isn't a perfect square.
         # EDIT: Editing fontwidth yields no changes in K1. Might do something in K2.

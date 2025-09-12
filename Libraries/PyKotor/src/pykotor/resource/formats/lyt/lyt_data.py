@@ -6,16 +6,18 @@ from typing import TYPE_CHECKING, Any, Generator
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.common.geometry import Vector3, Vector4
 
 
-class LYT:
+class LYT(ComparableMixin):
     """Represents a LYT file."""
 
     BINARY_TYPE = ResourceType.LTR
+    COMPARABLE_SEQUENCE_FIELDS = ("rooms", "tracks", "obstacles", "doorhooks")
 
     def __init__(
         self,
@@ -24,6 +26,26 @@ class LYT:
         self.tracks: list[LYTTrack] = []
         self.obstacles: list[LYTObstacle] = []
         self.doorhooks: list[LYTDoorHook] = []
+
+    def __eq__(self, other):
+        if not isinstance(other, LYT):
+            return NotImplemented
+        return (
+            self.rooms == other.rooms
+            and self.tracks == other.tracks
+            and self.obstacles == other.obstacles
+            and self.doorhooks == other.doorhooks
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                tuple(self.rooms),
+                tuple(self.tracks),
+                tuple(self.obstacles),
+                tuple(self.doorhooks),
+            ),
+        )
 
     def iter_resource_identifiers(self) -> Generator[ResourceIdentifier, Any, None]:
         """Generates resources that utilize this LYT.
@@ -44,7 +66,8 @@ class LYT:
             yield parsed_model.lower()
 
 
-class LYTRoom:
+class LYTRoom(ComparableMixin):
+    COMPARABLE_FIELDS = ("model", "position")
     """An area model.
 
     Attributes:
@@ -63,7 +86,7 @@ class LYTRoom:
 
     def __eq__(
         self,
-        other: LYTRoom,
+        other,
     ):
         if self is other:
             return True
@@ -74,10 +97,11 @@ class LYTRoom:
     def __hash__(
         self,
     ):
-        return hash(self.model)
+        return hash((self.model.lower(), self.position))
 
 
-class LYTTrack:
+class LYTTrack(ComparableMixin):
+    COMPARABLE_FIELDS = ("model", "position")
     """A swoop track booster.
 
     Unknown if this actually does anything in-game or is just to assist developers.
@@ -98,7 +122,7 @@ class LYTTrack:
 
     def __eq__(
         self,
-        other: LYTTrack,
+        other,
     ):
         if self is other:
             return True
@@ -106,8 +130,12 @@ class LYTTrack:
             return NotImplemented
         return self.model.lower() == other.model.lower() and self.position == other.position
 
+    def __hash__(self):
+        return hash((self.model.lower(), self.position))
 
-class LYTObstacle:
+
+class LYTObstacle(ComparableMixin):
+    COMPARABLE_FIELDS = ("model", "position")
     """A swoop track obstacle.
 
     Unknown if this actually does anything in-game or is just to assist developers.
@@ -128,7 +156,7 @@ class LYTObstacle:
 
     def __eq__(
         self,
-        other: LYTObstacle,
+        other,
     ):
         if self is other:
             return True
@@ -136,8 +164,12 @@ class LYTObstacle:
             return NotImplemented
         return self.model.lower() == other.model.lower() and self.position == other.position
 
+    def __hash__(self):
+        return hash((self.model.lower(), self.position))
 
-class LYTDoorHook:
+
+class LYTDoorHook(ComparableMixin):
+    COMPARABLE_FIELDS = ("room", "door", "position", "orientation")
     """A door hook.
 
     This just exists for modelers to assist module designers.
@@ -157,14 +189,14 @@ class LYTDoorHook:
         position: Vector3,
         orientation: Vector4,
     ):
-        self.room: str = room  # TODO: find out if this is case-insensitive and implement via __eq__.
-        self.door: str = door  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.room: str = room  # TODO(th3w1zard1): find out if this is case-insensitive and implement via __eq__.
+        self.door: str = door  # TODO(th3w1zard1): find out if this is case-insensitive and implement via __eq__.
         self.position: Vector3 = position
         self.orientation: Vector4 = orientation
 
     def __eq__(
         self,
-        other: LYTDoorHook,
+        other,
     ):
         if self is other:
             return True
@@ -176,3 +208,6 @@ class LYTDoorHook:
             and self.position == other.position
             and self.orientation == other.orientation
         )
+
+    def __hash__(self):
+        return hash((self.room, self.door, self.position, self.orientation))

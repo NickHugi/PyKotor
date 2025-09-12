@@ -82,6 +82,10 @@ exclude = '''
 '''
 
 [tool.pyright]
+extraPaths = [
+    "Libraries/PyKotor/src",
+    "Libraries/Utility/src"
+]
 reportMissingImports = true
 reportMissingTypeStubs = true
 pythonVersion = "3.8"

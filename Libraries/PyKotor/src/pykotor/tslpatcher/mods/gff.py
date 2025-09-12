@@ -383,12 +383,14 @@ class AddFieldGFF(ModifyGFF):
             - Applies any modifier patches recursively
         """
         #logger.add_verbose(f"Apply patch from INI section [{self.identifier}] FieldType: {self.field_type.name} GFF Path: '{self.path}'")
-        navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path)
+        # Resolve the special sentinel used when adding a Struct so that navigation targets the parent container
+        container_path = self.path.parent if self.path.name == ">>##INDEXINLIST##<<" else self.path
+        navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, container_path)
         if isinstance(navigated_container, GFFStruct):
             struct_container = navigated_container
         else:
             reason = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
-            logger.add_error(f"Unable to add new GFF Field '{self.label}' at GFF Path '{self.path}'! This {reason}")
+            logger.add_error(f"Unable to add new GFF Field '{self.label}' at GFF Path '{container_path}'! This {reason}")
             return
 
         value: Any = self.value.value(memory, self.field_type)
@@ -399,7 +401,7 @@ class AddFieldGFF(ModifyGFF):
             if isinstance(self.value, FieldValue2DAMemory):
                 logger.add_verbose(f"Looking up field pointer of stored !FieldPath ({stored_fieldpath}) in 2DAMEMORY{self.value.token_id}")
             else:
-                logger.add_verbose(f'Found PureWindowsPath object in value() lookup from non-FieldValue2DAMemory object? Path: "{stored_fieldpath}" INI section: [{self.identifier}]')
+                logger.add_verbose(f'Found PureWindowsPath object in value() lookup from non-FieldValue2DAMemory object? Path: "{stored_fieldpath}" INI section: [{self.identifier}]')  # noqa: E501
             from_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, stored_fieldpath.parent)
             if not isinstance(from_container, GFFStruct):
                 reason = "does not exist!" if from_container is None else "is not an instance of a GFFStruct."
@@ -414,7 +416,7 @@ class AddFieldGFF(ModifyGFF):
         for add_field in self.modifiers:
             assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, ModifyFieldGFF, Memory2DAModifierGFF)), f"{type(add_field).__name__}: {add_field}"
 
-            # HACK: resolves any >>##INDEXINLIST##<<, not sure why lengths aren't the same though (ziplongest)? Whatever, it works.
+            # HACK(th3w1zard1): resolves any >>##INDEXINLIST##<<, not sure why lengths aren't the same though (hence use of zip_longest)? Whatever, it works.
             newpath = PureWindowsPath("")
             for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
                 newpath /= resolvedpart or part

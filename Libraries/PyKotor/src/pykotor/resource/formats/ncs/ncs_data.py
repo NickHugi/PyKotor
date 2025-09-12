@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, NamedTuple
 
+from pykotor.resource.formats._base import ComparableMixin
+
 if TYPE_CHECKING:
     import os
 
@@ -186,9 +188,19 @@ class NCSInstructionType(Enum):
     NOP2 = NCSInstructionTypeValue(NCSByteCode.NOP2, 0x00)
 
 
-class NCS:
+class NCS(ComparableMixin):
+    COMPARABLE_SEQUENCE_FIELDS = ("instructions",)
+
     def __init__(self):
         self.instructions: list[NCSInstruction] = []
+
+    def __eq__(self, other):
+        if not isinstance(other, NCS):
+            return NotImplemented
+        return self.instructions == other.instructions
+
+    def __hash__(self):
+        return hash(tuple(self.instructions))
 
     def print(self):
         for i, instruction in enumerate(self.instructions):
@@ -269,7 +281,7 @@ class NCS:
         self.instructions.extend(other.instructions)
 
 
-class NCSInstruction:
+class NCSInstruction(ComparableMixin):
     """Initialize a NCS instruction object.
 
     Args:
@@ -283,6 +295,8 @@ class NCSInstruction:
         - Sets jump target if provided
         - Sets args list if provided.
     """
+
+    COMPARABLE_FIELDS = ("ins_type", "args", "jump")
 
     def __init__(
         self,
@@ -302,6 +316,20 @@ class NCSInstruction:
     def __repr__(self):
         return f"NCSInstruction({self.ins_type}, {self.jump}, {self.args})"
 
+    def __eq__(self, other):
+        if not isinstance(other, NCSInstruction):
+            return NotImplemented
+        # Note: We compare jump by identity since it's a circular reference
+        return (
+            self.ins_type == other.ins_type
+            and self.args == other.args
+            and self.jump is other.jump
+        )
+
+    def __hash__(self):
+        # Note: We use id() for jump since it's a circular reference
+        return hash((self.ins_type, tuple(self.args), id(self.jump) if self.jump else None))
+
 
 class NCSOptimizer(ABC):
     def __init__(self):
@@ -317,4 +345,5 @@ class NCSOptimizer(ABC):
 
 class NCSCompiler(ABC):
     @abstractmethod
-    def compile_script(self, source_filepath: os.PathLike | str, output_filepath: os.PathLike | str, game: Game, *, debug: bool): ...
+    def compile_script(self, source_path: os.PathLike | str, output_path: os.PathLike | str, game: Game, optimizers: list[NCSOptimizer] | None = None, *, debug: bool = False):
+        ...

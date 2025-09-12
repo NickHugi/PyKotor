@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import os
 import shutil
 import sys
@@ -77,7 +78,6 @@ class ModInstaller:
             if not self.changes_ini_path.safe_isfile():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
             if not self.changes_ini_path.safe_isfile():
-                import errno
                 msg = "Could not find the changes ini file on disk."
                 raise FileNotFoundError(errno.ENOENT, msg, str(self.changes_ini_path))
 
@@ -183,7 +183,7 @@ class ModInstaller:
             module_root = Installation.get_module_root(output_container_path)
             tslrcm_omitted_rims = ("702KOR", "401DXN")
             if module_root.upper() not in tslrcm_omitted_rims and is_rim_file(output_container_path):
-                self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}!\nPatching RIMs is highly incompatible, not recommended, and widely considered bad practice. Please request the mod developer to fix this.")
+                self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}!\nPatching RIMs is highly incompatible, not recommended, and widely considered bad practice. Please request the mod developer to fix this.")  # noqa: E501
             if not output_container_path.safe_isfile():
                 if is_mod_file(output_container_path):
                     self.log.add_note(
@@ -199,7 +199,6 @@ class ModInstaller:
                         self.log.add_error(msg)
                         raise
                 else:
-                    import errno
                     msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."  # noqa: E501
                     raise FileNotFoundError(errno.ENOENT, msg, str(output_container_path))
             capsule = Capsule(output_container_path)
@@ -405,7 +404,7 @@ class ModInstaller:
                 self._prepare_compilelist(config, self.log, memory, self.game)
                 finished_preprocessed_scripts = True
 
-            # if self.game.is_ios():  # TODO:
+            # if self.game.is_ios():  # TODO(th3w1zard1):
             #    patch.destination = patch.destination.lower()
             output_container_path: CaseAwarePath = self.game_path / patch.destination
             try:
@@ -430,7 +429,7 @@ class ModInstaller:
                     self.handle_modrim_shadow(patch)
                     capsule.add(*ResourceIdentifier.from_path(patch.saveas).unpack(), patched_data)
                 else:
-                    # if self.game.is_ios():  # TODO:
+                    # if self.game.is_ios():  # TODO(th3w1zard1):
                     #    patch.saveas = patch.saveas.lower()
                     output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders when the patch demands it.
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
@@ -486,7 +485,7 @@ class ModInstaller:
         scripts_list: list[CaseAwarePath] = [*set(temp_script_folder.iterdir())]
         log.add_verbose(f"Preprocessing #StrRef# and #2DAMEMORY# tokens for all {len(scripts_list)} scripts, before running [CompileList]")
         for script in temp_script_folder.iterdir():
-            if script.suffix.lower() != ".nss" or not file.safe_isfile():
+            if script.suffix.lower() != ".nss" or not script.safe_isfile():
                 continue
             log.add_verbose(f"Parsing tokens in '{script.name}'...")
             with script.open(mode="rb") as f:
@@ -514,7 +513,11 @@ class ModInstaller:
 
         if female_dialog_file.is_file():
             female_tlk_patches: ModificationsTLK = deepcopy(patches_tlk)
-            female_tlk_patches.sourcefile = female_tlk_patches.sourcefile_f if (self.mod_path / female_tlk_patches.sourcefile_f).is_file() else patches_tlk.sourcefile
+            female_tlk_patches.sourcefile = (
+                female_tlk_patches.sourcefile_f
+                if (self.mod_path / female_tlk_patches.sourcefile_f).is_file()
+                else patches_tlk.sourcefile
+            )
             female_tlk_patches.saveas = female_dialog_filename
             tlk_patches.append(female_tlk_patches)
 

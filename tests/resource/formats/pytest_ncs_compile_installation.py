@@ -47,7 +47,7 @@ from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from _pytest.reports import TestReport
-    from ply import yacc
+    from ply import yacc  # pyright: ignore[reportMissingTypeStubs]
 
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats.ncs.ncs_data import NCSCompiler

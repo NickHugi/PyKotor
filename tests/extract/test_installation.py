@@ -23,6 +23,8 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from pykotor.resource.formats.tpc.tpc_data import TPC
+from utility.common.more_collections import CaseInsensitiveDict
 from pykotor.common.language import LocalizedString
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
@@ -270,10 +272,15 @@ class TestInstallation(TestCase):
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
         folders = [installation.override_path()]
 
-    def _assert_from_path_tests(self, arg0, arg1, arg2):
-        self.assertTrue(arg0[ResourceIdentifier.from_path(arg1)])
-        self.assertFalse(arg0[ResourceIdentifier.from_path(arg2)])
-        self.assertEqual(2, len(arg0))
+    def _assert_from_path_tests(
+        self,
+        results: CaseInsensitiveDict[TPC | None],
+        res1: str,
+        res2: str,
+    ):
+        self.assertTrue(results[ResourceIdentifier.from_path(res1)])
+        self.assertFalse(results[ResourceIdentifier.from_path(res2)])
+        self.assertEqual(2, len(results))
 
     def test_texture(self):
         installation: Installation = self.installation  # type: ignore[attr-defined]

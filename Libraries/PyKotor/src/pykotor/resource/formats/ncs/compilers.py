@@ -12,8 +12,8 @@ from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.misc import generate_hash
-from utility.system.path import Path
+from utility.misc import generate_hash  # pyright: ignore[reportMissingImports]
+from utility.system.path import Path  # pyright: ignore[reportMissingImports]
 
 if TYPE_CHECKING:
     import os

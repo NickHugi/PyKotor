@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_file, is_mod_file, is_sav_file
 from utility.common.more_collections import OrderedSet
@@ -33,7 +34,7 @@ class ERFType(Enum):
         raise ValueError(msg)
 
 
-class ERF:
+class ERF(ComparableMixin):
     """Represents the data of a ERF file.
 
     Attributes:
@@ -42,6 +43,8 @@ class ERF:
     """
 
     BINARY_TYPE = ResourceType.ERF
+    COMPARABLE_FIELDS = ("erf_type", "is_save_erf")
+    COMPARABLE_SET_FIELDS = ("_resources",)
 
     def __init__(
         self,
@@ -154,7 +157,7 @@ class ERF:
         """
         key = ResourceIdentifier(resname, restype)
         resource: ERFResource | None = self._resource_dict.pop(key, None)
-        if resource:  # FIXME: should raise here
+        if resource:  # FIXME(th3w1zard1): should raise here
             self._resources.remove(resource)
 
     def to_rim(
@@ -174,13 +177,17 @@ class ERF:
         return rim
 
     def __eq__(self, other):
-        from pykotor.resource.formats.rim import RIM
+        from pykotor.resource.formats.rim import RIM  # Prevent circular imports  # noqa: PLC0415
         if not isinstance(other, (ERF, RIM)):
             return NotImplemented
         return set(self._resources) == set(other._resources)
 
+    def __hash__(self):
+        return hash((self.erf_type, tuple(self._resources), self.is_save_erf))
 
-class ERFResource:
+
+class ERFResource(ComparableMixin):
+    COMPARABLE_FIELDS = ("resref", "restype", "data")
     def __init__(
         self,
         resref: ResRef,
@@ -189,7 +196,7 @@ class ERFResource:
     ):
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
-        if isinstance(data, bytearray):  # FIXME: Something is passing bytearray here
+        if isinstance(data, bytearray):  # FIXME(th3w1zard1): Something is passing bytearray here
             data = bytes(data)
         self.data: bytes = data
 
@@ -197,7 +204,7 @@ class ERFResource:
         self,
         other,
     ):
-        from pykotor.resource.formats.rim import RIMResource
+        from pykotor.resource.formats.rim import RIMResource  # Prevent circular imports  # noqa: PLC0415
         if not isinstance(other, (ERFResource, RIMResource)):
             return NotImplemented
         return (

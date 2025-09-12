@@ -890,7 +890,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 takeown_args.extend(("/D", "Y"))
                 if recurse:
                     takeown_args.append("/R")
-            if elevate:  # sourcery skip: extract-duplicate-method
+            if elevate:
                 commands.append(" ".join(takeown_args))
             else:
                 takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603

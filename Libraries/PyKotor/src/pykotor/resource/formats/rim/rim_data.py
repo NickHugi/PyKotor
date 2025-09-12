@@ -7,15 +7,16 @@ from typing import Any, Generator
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats.erf.erf_data import ERF
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 from utility.common.more_collections import OrderedSet
 
 
-class RIM:
+class RIM(ComparableMixin):
     """Represents the data of a RIM file."""
 
     BINARY_TYPE = ResourceType.RIM
+    COMPARABLE_SET_FIELDS = ("_resources",)
 
     def __init__(
         self,
@@ -144,7 +145,7 @@ class RIM:
         -------
             A new ERF object.
         """
-        from pykotor.resource.formats.erf import ERF  # Prevent circular imports
+        from pykotor.resource.formats.erf import ERF  # Prevent circular imports  # noqa: PLC0415,F811
 
         erf = ERF()
         for resource in self._resources:
@@ -152,13 +153,17 @@ class RIM:
         return erf
 
     def __eq__(self, other):
-        from pykotor.resource.formats.rim import RIM
+        from pykotor.resource.formats.erf import ERF  # Prevent circular imports  # noqa: PLC0415,F811
         if not isinstance(other, (ERF, RIM)):
             return NotImplemented
         return set(self._resources) == set(other._resources)
 
+    def __hash__(self):
+        return hash(tuple(self._resources))
 
-class RIMResource:
+
+class RIMResource(ComparableMixin):
+    COMPARABLE_FIELDS = ("resref", "restype", "data")
     def __init__(
         self,
         resref: ResRef,
@@ -167,7 +172,7 @@ class RIMResource:
     ):
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
-        if isinstance(data, bytearray):  # FIXME: Something is passing bytearray here
+        if isinstance(data, bytearray):  # FIXME(th3w1zard1): Something is passing bytearray here
             data = bytes(data)
         self.data: bytes = data
 
@@ -175,7 +180,7 @@ class RIMResource:
         self,
         other,
     ):
-        from pykotor.resource.formats.erf import ERFResource
+        from pykotor.resource.formats.erf import ERFResource  # Prevent circular imports  # noqa: PLC0415
         if not isinstance(other, (ERFResource, RIMResource)):
             return NotImplemented
         return (

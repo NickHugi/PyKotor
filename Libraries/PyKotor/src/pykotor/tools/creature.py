@@ -24,7 +24,7 @@ def get_body_model(
     *,
     appearance: TwoDA | None = None,
     baseitems: TwoDA | None = None,
-) -> tuple[str | None, str | None]:    # sourcery skip: extract-duplicate-method
+) -> tuple[str | None, str | None]:  
     """Returns the body model and texture names for the given creature utc.
 
     The values for the model/texture may be None and the default texture provided by the model should be used instead.
@@ -147,7 +147,7 @@ def get_weapon_models(
     *,
     appearance: TwoDA | None = None,
     baseitems: TwoDA | None = None,
-) -> tuple[str | None, str | None]:  # sourcery skip: extract-duplicate-method
+) -> tuple[str | None, str | None]:
     """Returns a tuple containing the right-hand weapon model and the left-hand weapon model (in that order).
 
     If no weapon is equipped in a particular hand the value will return None.
@@ -232,7 +232,7 @@ def get_head_model(
     *,
     appearance: TwoDA | None = None,
     heads: TwoDA | None = None,
-) -> tuple[str | None, str | None]:  # sourcery skip: extract-duplicate-method
+) -> tuple[str | None, str | None]:
     """Returns the model and texture names for the head used by a creature.
 
     The value for the texture may be None and the default texture provided by the model should be used instead.

@@ -1490,7 +1490,7 @@ class GITControlScheme:
             - Checks if move selected condition is satisfied and moves selected object
             - Checks if rotate selected to point condition is satisfied and rotates selected object to point.
         """
-        # sourcery skip: extract-duplicate-method, remove-redundant-if, split-or-ifs
+        # pylint: disable=remove-redundant-if, split-or-ifs
         shouldPanCamera = self.panCamera.satisfied(buttons, keys)
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
 

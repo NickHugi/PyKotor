@@ -134,9 +134,6 @@ class TestConfigReader(unittest.TestCase):
         # Load the INI file and the TLK file
         self.config_reader = ConfigReader(self.ini, self.mod_path)  # type: ignore
 
-    def cleanUp(self):
-        self.mod_path.unlink()
-
     def create_test_tlk(self, data: dict[int, dict[str, str]]) -> TLK:
         tlk = TLK()
         for v in data.values():
@@ -201,7 +198,7 @@ class TestConfigReader(unittest.TestCase):
         )
 
     def test_tlk_complex_changes(self):
-        # sourcery skip: extract-duplicate-method, remove-dict-keys, use-dict-items
+      , remove-dict-keys, use-dict-items
         ini_text2 = """
         [TLKList]
         ReplaceFile10=complex.tlk

@@ -8,6 +8,7 @@ from enum import IntEnum
 from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Face, Vector3
+from pykotor.resource.formats._base import ComparableMixin
 
 if TYPE_CHECKING:
     from typing_extensions import Literal
@@ -21,8 +22,11 @@ class BWMType(IntEnum):
     AreaModel = 1
 
 
-class BWM:
+class BWM(ComparableMixin):
     """Represents the data of a RIM file."""
+
+    COMPARABLE_FIELDS = ("walkmesh_type", "position", "relative_hook1", "relative_hook2", "absolute_hook1", "absolute_hook2")
+    COMPARABLE_SEQUENCE_FIELDS = ("faces",)
 
     def __init__(
         self,
@@ -35,6 +39,30 @@ class BWM:
         self.relative_hook2: Vector3 = Vector3.from_null()
         self.absolute_hook1: Vector3 = Vector3.from_null()
         self.absolute_hook2: Vector3 = Vector3.from_null()
+
+    def __eq__(self, other):
+        if not isinstance(other, BWM):
+            return NotImplemented
+        return (
+            self.walkmesh_type == other.walkmesh_type
+            and self.faces == other.faces
+            and self.position == other.position
+            and self.relative_hook1 == other.relative_hook1
+            and self.relative_hook2 == other.relative_hook2
+            and self.absolute_hook1 == other.absolute_hook1
+            and self.absolute_hook2 == other.absolute_hook2
+        )
+
+    def __hash__(self):
+        return hash((
+            self.walkmesh_type,
+            tuple(self.faces),
+            self.position,
+            self.relative_hook1,
+            self.relative_hook2,
+            self.absolute_hook1,
+            self.absolute_hook2,
+        ))
 
     def walkable_faces(
         self,
@@ -61,10 +89,6 @@ class BWM:
         self,
     ) -> list[BWMFace]:
         """Return unwalkable faces in the mesh.
-
-        Args:
-        ----
-            self: The mesh object
 
         Returns:
         -------
@@ -147,8 +171,9 @@ class BWM:
             - Recursively build left and right trees
             - Stop when single face remains or axes exhausted
         """
-        if rlevel > 128:
-            msg = f"recursion level must not exceed 128, but is currently at level {rlevel}"
+        max_level = 128
+        if rlevel > max_level:
+            msg = f"recursion level must not exceed {max_level}, but is currently at level {rlevel}"
             raise ValueError(msg)
 
         if not faces:
@@ -174,6 +199,7 @@ class BWM:
 
         # Find longest axis
         split_axis: int = 0
+        max_axes: int = 3
         bb_size: Vector3 = bbmax - bbmin
         if bb_size.y > bb_size.x:
             split_axis = 1
@@ -185,7 +211,7 @@ class BWM:
         for face in faces:
             change_axis = change_axis and face.centre()[split_axis] == bbcentre[split_axis]
         if change_axis:
-            split_axis = 0 if split_axis == 2 else split_axis + 1
+            split_axis = 0 if split_axis == max_axes - 1 else split_axis + 1
 
         # Put faces on the left and right side of the split plane into separate
         # lists. Try all axises to prevent tree degeneration.
@@ -205,9 +231,9 @@ class BWM:
             if faces_left and faces_right:
                 break
 
-            split_axis = 0 if split_axis == 2 else split_axis + 1
+            split_axis = 0 if split_axis == max_axes - 1 else split_axis + 1
             tested_axes += 1
-            if tested_axes == 3:
+            if tested_axes == max_axes:
                 msg = "Generated tree is degenerate"
                 raise RuntimeError(msg)
 
@@ -217,60 +243,6 @@ class BWM:
         self._aabbs_rec(aabbs, faces_left, rlevel + 1)
         aabb.right = aabbs[-1]
         self._aabbs_rec(aabbs, faces_right, rlevel + 1)
-
-    def edges_new_logic(self) -> list[BWMEdge]:
-        """Potential new logic to fix infinite loops/bad parsing."""
-        walkable: list[BWMFace] = [face for face in self.faces if face.material.walkable()]
-        adjacencies: list[tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]] = [self.adjacencies(face) for face in walkable]
-
-        visited: set[int] = set()
-        edges: list[BWMEdge] = []
-        perimeters: list[int] = []
-        for i, j in itertools.product(range(len(walkable)), range(3)):
-            if adjacencies[i][j] is not None:
-                continue
-            edge_index: int = i * 3 + j
-            if edge_index in visited:
-                continue
-            next_face: int = i
-            next_edge: int = j
-            perimeter_started = False
-            while next_face != -1:
-                edge_index = 3 * next_face + next_edge  # Re-calculate edge_index to ensure accuracy
-                if edge_index in visited:
-                    # If revisiting an edge, we finalize the last edge and stop
-                    if perimeter_started:
-                        edges[-1].final = True
-                        perimeters.append(len(edges) - sum(perimeters))  # Correct the perimeter count
-                    break
-
-                visited.add(edge_index)
-                perimeter_started = True
-                adj_edge: BWMAdjacency | None = adjacencies[next_face][next_edge]
-                if adj_edge is not None:
-                    adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge
-                    next_face = adj_edge_index // 3
-                    next_edge = (adj_edge_index % 3 + 1) % 3
-                else:
-                    face_id: int = edge_index // 3
-                    edge_id: int = edge_index % 3
-                    transition: int | None = None
-                    if edge_id == 0 and self.faces[face_id].trans1 is not None:
-                        transition = self.faces[face_id].trans1
-                    elif edge_id == 1 and self.faces[face_id].trans2 is not None:
-                        transition = self.faces[face_id].trans2
-                    elif edge_id == 2 and self.faces[face_id].trans3 is not None:
-                        transition = self.faces[face_id].trans3
-                    new_edge = BWMEdge(self.faces[next_face], edge_index, -1 if transition is None else transition)
-                    edges.append(new_edge)
-                    next_face = -1  # Terminate if no adjacency
-
-        # Check if the last edge loop was completed without finalization
-        if edges and not edges[-1].final and perimeter_started:
-            edges[-1].final = True
-            perimeters.append(len(edges) - sum(perimeters))
-
-        return edges
 
     def edges(
         self,
@@ -292,14 +264,17 @@ class BWM:
             - Traces edge paths and adds them to the edges list until it loops back
             - Marks final edges and records perimeter lengths
         """
+        NUM_EDGES_PER_FACE = 3  # Constant for number of edges per face
+        LAST_EDGE_INDEX = NUM_EDGES_PER_FACE - 1
+
         walkable: list[BWMFace] = [face for face in self.faces if face.material.walkable()]
         adjacencies: list[tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]] = [self.adjacencies(face) for face in walkable]
 
         visited: set[int] = set()
         edges: list[BWMEdge] = []
         perimeters: list[int] = []
-        for i, j in itertools.product(range(len(walkable)), range(3)):
-            edge_index: int = i * 3 + j
+        for i, j in itertools.product(range(len(walkable)), range(NUM_EDGES_PER_FACE)):
+            edge_index: int = i * NUM_EDGES_PER_FACE + j
             if adjacencies[i][j] is not None or edge_index in visited:
                 continue  # Skip if adjacency exists or edge has been visited
             next_face: int = i
@@ -308,33 +283,33 @@ class BWM:
             while next_face != -1:
                 adj_edge: BWMAdjacency | None = adjacencies[next_face][next_edge]
                 if adj_edge is not None:
-                    adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge
-                    next_face = adj_edge_index // 3
-                    next_edge = ((adj_edge_index % 3) + 1) % 3
+                    adj_edge_index = self.faces.index(adj_edge.face) * NUM_EDGES_PER_FACE + adj_edge.edge
+                    next_face = adj_edge_index // NUM_EDGES_PER_FACE
+                    next_edge = ((adj_edge_index % NUM_EDGES_PER_FACE) + 1) % NUM_EDGES_PER_FACE
                     continue
-                edge_index = next_face * 3 + next_edge
+                edge_index = next_face * NUM_EDGES_PER_FACE + next_edge
                 if edge_index in visited:
                     next_face = -1
                     edges[-1].final = True
                     perimeters.append(perimeter_length)
                     continue
-                face_id, edge_id = divmod(edge_index, 3)
+                face_id, edge_id = divmod(edge_index, NUM_EDGES_PER_FACE)
                 transition: int | None = None
                 if edge_id == 0 and self.faces[face_id].trans1 is not None:
                     transition = self.faces[face_id].trans1
                 if edge_id == 1 and self.faces[face_id].trans2 is not None:
                     transition = self.faces[face_id].trans2
-                if edge_id == 2 and self.faces[face_id].trans3 is not None:
+                if edge_id == LAST_EDGE_INDEX and self.faces[face_id].trans3 is not None:
                     transition = self.faces[face_id].trans3
                 edges.append(BWMEdge(self.faces[next_face], edge_index, -1 if transition is None else transition))
                 perimeter_length += 1
                 visited.add(edge_index)
-                next_edge = (edge_index + 1) % 3
+                next_edge = (edge_index + 1) % NUM_EDGES_PER_FACE
 
         return edges
 
 
-    def adjacencies(
+    def adjacencies(  # noqa: C901, PLR0913
         self,
         face: BWMFace,
     ) -> tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]:
@@ -355,34 +330,37 @@ class BWM:
             3. Iterate through walkable faces and check if edges match using a bit flag
             4. Return adjacencies or None.
         """
-        walkable: list[BWMFace] = self.walkable_faces()
+        ADJACENCY_FLAG_V1V2 = 3
+        ADJACENCY_FLAG_V2V3 = 6
+        ADJACENCY_FLAG_V3V1 = 5
 
+        walkable: list[BWMFace] = self.walkable_faces()
         adj1: list[Vector3] = [face.v1, face.v2]
         adj2: list[Vector3] = [face.v2, face.v3]
         adj3: list[Vector3] = [face.v3, face.v1]
 
-        adj_index1 = None
-        adj_index2 = None
-        adj_index3 = None
+        adj_index1: BWMAdjacency | None = None
+        adj_index2: BWMAdjacency | None = None
+        adj_index3: BWMAdjacency | None = None
 
         def matches(
             face_index: int,
             edges: list[Vector3],
         ) -> Literal[2, 1, 0, -1]:
-            flag = 0x00
+            flag: int = 0
             other_face: BWMFace = self.faces[face_index]
             if other_face.v1 in edges:
-                flag += 0x01
+                flag += 1
             if other_face.v2 in edges:
-                flag += 0x02
+                flag += 2
             if other_face.v3 in edges:
-                flag += 0x04
+                flag += 4
             edge: Literal[2, 1, 0, -1] = -1
-            if flag == 0x03:
+            if flag == ADJACENCY_FLAG_V1V2:
                 edge = 0
-            if flag == 0x06:
+            if flag == ADJACENCY_FLAG_V2V3:
                 edge = 1
-            if flag == 0x05:
+            if flag == ADJACENCY_FLAG_V3V1:
                 edge = 2
             return edge
 
@@ -429,13 +407,18 @@ class BWM:
             - Update maximum x, y, z values of bbmax
             - Return bounding box minimum and maximum points.
         """
-        bbmin = Vector3(1000000, 1000000, 1000000)
-        bbmax = Vector3(-1000000, -1000000, -1000000)
+        bbmin: Vector3 = Vector3(1000000, 1000000, 1000000)
+        bbmax: Vector3 = Vector3(-1000000, -1000000, -1000000)
         for vertex in self.vertices():
             self._handle_vertex(bbmin, vertex, bbmax)
         return bbmin, bbmax
 
-    def _handle_vertex(self, bbmin: Vector3, vertex: Vector3, bbmax: Vector3):
+    def _handle_vertex(
+        self,
+        bbmin: Vector3,
+        vertex: Vector3,
+        bbmax: Vector3,
+    ):
         """Update bounding box with vertex position.
 
         Args:
@@ -477,14 +460,14 @@ class BWM:
             BWMFace object or None.
         """
         for face in self.faces:
-            v1 = face.v1
-            v2 = face.v2
-            v3 = face.v3
+            v1: Vector3 = face.v1
+            v2: Vector3 = face.v2
+            v3: Vector3 = face.v3
 
             # Formula taken from: https://www.w3resource.com/python-exercises/basic/python-basic-1-exercise-40.php
-            c1 = (v2.x - v1.x) * (y - v1.y) - (v2.y - v1.y) * (x - v1.x)
-            c2 = (v3.x - v2.x) * (y - v2.y) - (v3.y - v2.y) * (x - v2.x)
-            c3 = (v1.x - v3.x) * (y - v3.y) - (v1.y - v3.y) * (x - v3.x)
+            c1: float = (v2.x - v1.x) * (y - v1.y) - (v2.y - v1.y) * (x - v1.x)
+            c2: float = (v3.x - v2.x) * (y - v2.y) - (v3.y - v2.y) * (x - v2.x)
+            c3: float = (v1.x - v3.x) * (y - v3.y) - (v1.y - v3.y) * (x - v3.x)
 
             if (c1 < 0 and c2 < 0 and c3 < 0) or (c1 > 0 and c2 > 0 and c3 > 0):
                 return face
@@ -519,9 +502,9 @@ class BWM:
         ----
             degrees: The angle to rotate in degrees.
         """
-        radians = math.radians(degrees)
-        cos = math.cos(radians)
-        sin = math.sin(radians)
+        radians: float = math.radians(degrees)
+        cos: float = math.cos(radians)
+        sin: float = math.sin(radians)
 
         for vertex in self.vertices():
             x, y = vertex.x, vertex.y
@@ -584,7 +567,8 @@ class BWM:
                 face.v1, face.v2, face.v3 = v3, v2, v1
 
 
-class BWMFace(Face):
+class BWMFace(Face, ComparableMixin):
+    COMPARABLE_FIELDS = ("v1", "v2", "v3", "trans1", "trans2", "trans3")
     """An extension of the Face class with a transition index for each edge."""
 
     def __init__(
@@ -598,6 +582,19 @@ class BWMFace(Face):
         self.trans2: int | None = None
         self.trans3: int | None = None
 
+    def __eq__(self, other):
+        if not isinstance(other, BWMFace):
+            return NotImplemented
+        return (
+            super().__eq__(other)
+            and self.trans1 == other.trans1
+            and self.trans2 == other.trans2
+            and self.trans3 == other.trans3
+        )
+
+    def __hash__(self):
+        return hash((super().__hash__(), self.trans1, self.trans2, self.trans3))
+
 
 class BWMMostSignificantPlane(IntEnum):
     NEGATIVE_Z = -3
@@ -609,10 +606,12 @@ class BWMMostSignificantPlane(IntEnum):
     POSITIVE_Z = 3
 
 
-class BWMNodeAABB:
+class BWMNodeAABB(ComparableMixin):
     """A node in an AABB tree. Calculated with BWM.aabbs()."""
 
-    def __init__(
+    COMPARABLE_FIELDS = ("bb_min", "bb_max", "face", "sigplane", "left", "right")
+
+    def __init__(  # noqa: PLR0913
         self,
         bb_min: Vector3,
         bb_max: Vector3,
@@ -649,8 +648,30 @@ class BWMNodeAABB:
         self.left: BWMNodeAABB | None = left
         self.right: BWMNodeAABB | None = right
 
+    def __eq__(self, other):
+        if not isinstance(other, BWMNodeAABB):
+            return NotImplemented
+        return (
+            self.bb_min == other.bb_min
+            and self.bb_max == other.bb_max
+            and self.face == other.face
+            and self.sigplane == other.sigplane
+            and self.left == other.left
+            and self.right == other.right
+        )
 
-class BWMAdjacency:
+    def __hash__(self):
+        return hash((
+            self.bb_min,
+            self.bb_max,
+            self.face,
+            self.sigplane,
+            self.left,
+            self.right,
+        ))
+
+
+class BWMAdjacency(ComparableMixin):
     """Maps a edge index (0 to 2 inclusive) to a target face from a source face. Calculated with BWM.adjacencies().
 
     Attributes:
@@ -658,6 +679,8 @@ class BWMAdjacency:
         face: Target face.
         edge: Edge index of the source face (0 to 2 inclusive).
     """
+
+    COMPARABLE_FIELDS = ("face", "edge")
 
     def __init__(
         self,
@@ -667,8 +690,16 @@ class BWMAdjacency:
         self.face: BWMFace = face
         self.edge: int = index
 
+    def __eq__(self, other):
+        if not isinstance(other, BWMAdjacency):
+            return NotImplemented
+        return self.face == other.face and self.edge == other.edge
 
-class BWMEdge:
+    def __hash__(self):
+        return hash((self.face, self.edge))
+
+
+class BWMEdge(ComparableMixin):
     """Represents an edge of a the face that is not adjacent to any other walkable face. Calculated with BWM.edges().
 
     Attributes:
@@ -678,6 +709,8 @@ class BWMEdge:
         transition: Index into a LYT file.
         final: This is the final edge of the perimeter.
     """
+
+    COMPARABLE_FIELDS = ("face", "index", "transition", "final")
 
     def __init__(
         self,
@@ -691,3 +724,16 @@ class BWMEdge:
         self.index: int = index
         self.transition: int = transition
         self.final: bool = final
+
+    def __eq__(self, other):
+        if not isinstance(other, BWMEdge):
+            return NotImplemented
+        return (
+            self.face == other.face
+            and self.index == other.index
+            and self.transition == other.transition
+            and self.final == other.final
+        )
+
+    def __hash__(self):
+        return hash((self.face, self.index, self.transition, self.final))

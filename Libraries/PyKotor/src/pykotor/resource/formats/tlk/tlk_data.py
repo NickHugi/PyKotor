@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-from itertools import zip_longest
-from typing import TYPE_CHECKING
-
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
-from utility.string_util import compare_and_format, format_text
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 
-class TLK:
+class TLK(ComparableMixin):
     BINARY_TYPE = ResourceType.TLK
+    COMPARABLE_FIELDS = ("language",)
+    COMPARABLE_SEQUENCE_FIELDS = ("entries",)
 
     def __init__(
         self,
@@ -112,56 +108,11 @@ class TLK:
         else:
             self.entries.extend([TLKEntry("", ResRef.from_blank()) for _ in range(len(self), size)])
 
-    def compare(self, other: TLK, log_func: Callable = print) -> bool:
-        if len(self) != len(other):
-            log_func(f"TLK row count mismatch. Old: {len(self)}, New: {len(other)}")
-
-        mismatch_count, extra_old, extra_new = 0, 0, 0
-
-        for (old_stringref, old_entry), (new_stringref, new_entry) in zip_longest(self, other, fillvalue=(None, None)):
-            # Handle entries that only exist in the new TLK
-            if old_stringref is None or old_entry is None:
-                if new_stringref is not None and new_entry is not None:
-                    log_func(f"New-only entry at stringref: {new_stringref}")
-                    log_func(format_text(compare_and_format("", new_entry.text)))
-                    log_func(format_text(compare_and_format("", new_entry.voiceover)))
-                    extra_new += 1
-                    continue
-                continue
-            # Handle entries that only exist in the old TLK
-            if new_stringref is None or new_entry is None:
-                log_func(f"Old-only entry at stringref: {old_stringref}")
-                log_func(format_text(compare_and_format(old_entry.text, "")))
-                log_func(format_text(compare_and_format(old_entry.voiceover, "")))
-                extra_old += 1
-                continue
-            if old_entry != new_entry:
-                text_mismatch: bool = old_entry.text != new_entry.text
-                vo_mismatch: bool = old_entry.voiceover != new_entry.voiceover
-                if not text_mismatch and not vo_mismatch:
-                    log_func("TLK entries are not equal, but no differences could be found?")
-                    continue
-
-                log_func(f"Entry mismatch at stringref: {old_stringref}")
-                if text_mismatch:
-                    log_func(format_text(compare_and_format(old_entry.text, new_entry.text)))
-                if vo_mismatch:
-                    log_func(format_text(compare_and_format(old_entry.voiceover, new_entry.voiceover)))
-                # Count one mismatch per entry regardless of which fields differ
-                mismatch_count += 1
-
-        # Provide a summary of discrepancies
-        if mismatch_count:
-            log_func(f"{mismatch_count} entries have mismatches.")
-        if extra_old:
-            log_func(f"Old TLK has {extra_old} stringrefs that are missing in the new TLK.")
-        if extra_new:
-            log_func(f"New TLK has {extra_new} extra stringrefs that are not in the old TLK.")
-
-        return not (mismatch_count or extra_old or extra_new)
+    # compare is provided by ComparableMixin
 
 
-class TLKEntry:
+class TLKEntry(ComparableMixin):
+    COMPARABLE_FIELDS = ("text", "voiceover")
     def __init__(
         self,
         text: str,
@@ -177,10 +128,7 @@ class TLKEntry:
         self.soundlength_present: bool = True
         self.sound_length: int = 0
 
-    def __eq__(
-        self,
-        other: TLKEntry,
-    ):
+    def __eq__(self, other: object):
         """Returns True if the text and voiceover match."""
         if self is other:
             return True

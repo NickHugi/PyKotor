@@ -183,8 +183,8 @@ class Installation:
         self._report_main_progress("Loading modules...")
         self.load_modules()
         # K1 doesn't actually use the RIMs in the Rims folder.
-        #if self.game().is_k1():
-        #    self.load_rims()
+        if self.game().is_k1():
+            self.load_rims()
         self._report_main_progress("Loading streammusic...")
         self.load_streammusic()
         self._report_main_progress("Loading streamsounds...")
@@ -886,7 +886,7 @@ class Installation:
         -------
             A list of FileResources.
         """
-        if not self._override or directory and directory not in self._override:
+        if not self._override or (directory and directory not in self._override):
             self.load_override()
 
         return (
@@ -1166,6 +1166,8 @@ class Installation:
         *,
         capsules: Sequence[Capsule] | None = None,
         folders: list[Path] | None = None,
+        module_root: str | None = None,
+        logger: Callable[[str], None] | None = None,
     ) -> ResourceResult | None:
         """Returns a resource matching the specified resref and restype.
 
@@ -1182,6 +1184,8 @@ class Installation:
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
             order: The ordered list of locations to check.
+            module_root: The root name of the module to search in. (e.g. "danm13") (Optional)
+            logger: A logger to use for logging. (Optional)
 
         Returns:
         -------
@@ -1193,20 +1197,27 @@ class Installation:
             order,
             capsules=capsules,
             folders=folders,
+            module_root=module_root,
+            logger=logger,
         )
         search: ResourceResult | None = batch[query]
         if search is None:
-            self._log.warning(f"Could not find '{query}' during resource lookup.")
+            if logger:
+                logger(f"Could not find '{query}' during resource lookup.")
+            else:
+                self._log.warning(f"Could not find '{query}' during resource lookup.")
             return None
         return search
 
     def resources(
         self,
-        queries: list[ResourceIdentifier] | set[ResourceIdentifier],
+        queries: list[ResourceIdentifier] | tuple[Sequence[str], Sequence[ResourceType]],
         order: list[SearchLocation] | None = None,
         *,
         capsules: Sequence[Capsule] | None = None,
         folders: list[Path] | None = None,
+        module_root: str | None = None,
+        logger: Callable[[str], None] | None = None,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
         """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found.
 
@@ -1219,6 +1230,8 @@ class Installation:
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
+            module_root: The root name of the module to search in. (e.g. "danm13") (Optional)
+            logger: A logger to use for logging. (Optional)
 
         Returns:
         -------
@@ -1230,6 +1243,8 @@ class Installation:
             order,
             capsules=capsules,
             folders=folders,
+            module_root=module_root,
+            logger=logger,
         )
 
         handles: dict[ResourceIdentifier, BinaryReader] = {}
@@ -1238,7 +1253,10 @@ class Installation:
             location_list: list[LocationResult] = locations.get(query, [])
 
             if not location_list:
-                self._log.warning(f"Resource not found: '{query}'")
+                if logger:
+                    logger(f"Resource not found: '{query}'")
+                else:
+                    self._log.warning(f"Resource not found: '{query}'")
                 results[query] = None
                 continue
 
@@ -1275,11 +1293,11 @@ class Installation:
         return results
 
     @overload
-    def location(self, file: os.PathLike | str, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None) -> list[LocationResult]: ...
+    def location(self, file: os.PathLike | str, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None, module_root: str | None = None) -> list[LocationResult]: ...
     @overload
-    def location(self, query: ResourceIdentifier, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None) -> list[LocationResult]: ...
+    def location(self, query: ResourceIdentifier, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None, module_root: str | None = None) -> list[LocationResult]: ...
     @overload
-    def location(self, resname: str, restype: ResourceType | None = None, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None) -> list[LocationResult]: ...
+    def location(self, resname: str, restype: ResourceType | None = None, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None, module_root: str | None = None) -> list[LocationResult]: ...
     def location(
         self,
         resname: str,
@@ -1289,6 +1307,8 @@ class Installation:
         *,
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
+        module_root: str | None = None,
+        logger: Callable[[str], None] | None = None,
     ) -> list[LocationResult]:
         """Returns a list filepaths for where a particular resource matching the given resref and restype are located.
 
@@ -1301,6 +1321,8 @@ class Installation:
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
+            module_root: The root name of the module to search in. (e.g. "danm13") (Optional)
+            logger: A logger to use for logging. (Optional)
 
         Returns:
         -------
@@ -1323,7 +1345,7 @@ class Installation:
             elif isinstance(resname, ResourceIdentifier):
                 query = resname
             else:
-                raise TypeError(f"Invalid argument at position 0. Expected filename or filepath (os.PathLike | str), got {resname} ({resname!r}) of type {resname.__class__.__name__}")
+                raise TypeError(f"Invalid argument at position 0. Expected filename or filepath (os.PathLike | str), got {resname} ({resname!r}) of type {resname.__class__.__name__}")  # noqa: E501
         elif isinstance(restype, ResourceType):
             query = ResourceIdentifier(resname, restype)
         else:
@@ -1334,6 +1356,8 @@ class Installation:
             order,
             capsules=capsules,
             folders=folders,
+            module_root=module_root,
+            logger=logger,
         )[query]
 
     def locations(
@@ -1343,6 +1367,8 @@ class Installation:
         *,
         capsules: Sequence[Capsule] | None = None,
         folders: list[Path] | None = None,
+        module_root: str | None = None,
+        logger: Callable[[str], None] | None = None,
     ) -> dict[ResourceIdentifier, list[LocationResult]]:
         """Returns a dictionary mapping the items provided in the queries argument to a list of locations for that respective resource.
 
@@ -1352,6 +1378,8 @@ class Installation:
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
+            module_root: The root name of the module to search in. (e.g. "danm13") (Optional)
+            logger: A logger to use for logging. (Optional)
 
         Returns:
         -------
@@ -1367,6 +1395,13 @@ class Installation:
             ]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
+
+        # Log the search if logger is provided
+        if logger and len(queries) == 1:
+            query = next(iter(queries)) if isinstance(queries, set) else queries[0]
+            if isinstance(query, ResourceIdentifier):
+                logger(f"Installation-wide search for '{query}':")
+                logger("  Checking each location:")
 
         real_queries: set[ResourceIdentifier] = set()
 
@@ -1441,9 +1476,22 @@ class Installation:
                     )
                     locations[identifier].append(location)
 
+        def check_modules():
+            if module_root is None:
+                # No module filter, search all modules
+                check_dict(self._modules)
+            else:
+                # Filter modules by root name
+                filtered_modules = {
+                    filename: resources
+                    for filename, resources in self._modules.items()
+                    if self.get_module_root(filename) == module_root.lower()
+                }
+                check_dict(filtered_modules)
+
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
-            SearchLocation.MODULES: lambda: check_dict(self._modules),
+            SearchLocation.MODULES: check_modules,
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
             SearchLocation.TEXTURES_TPA: lambda: check_list(self._texturepacks[TexturePackNames.TPA.value]),
@@ -1458,9 +1506,63 @@ class Installation:
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
         }
 
-        for item in order:
+        for i, item in enumerate(order, 1):
             assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
+
+            # Track locations before searching this item
+            before_count = 0
+            if logger and len(queries) == 1:
+                query = next(iter(queries)) if isinstance(queries, set) else queries[0]
+                if isinstance(query, ResourceIdentifier):
+                    before_count = len(locations.get(query, []))
+
             function_map.get(item, lambda: None)()
+
+            # Log results after searching this item
+            if logger and len(queries) == 1:
+                query = next(iter(queries)) if isinstance(queries, set) else queries[0]
+                if isinstance(query, ResourceIdentifier):
+                    after_locations = locations.get(query, [])
+                    location_names = {
+                        SearchLocation.CUSTOM_FOLDERS: "Custom folders",
+                        SearchLocation.OVERRIDE: "Override folders",
+                        SearchLocation.CUSTOM_MODULES: "Custom modules",
+                        SearchLocation.MODULES: "Module capsules",
+                        SearchLocation.CHITIN: "Chitin BIFs",
+                        SearchLocation.TEXTURES_TPA: "Texture pack TPA",
+                        SearchLocation.TEXTURES_TPB: "Texture pack TPB",
+                        SearchLocation.TEXTURES_TPC: "Texture pack TPC",
+                        SearchLocation.TEXTURES_GUI: "Texture pack GUI",
+                        SearchLocation.RIMS: "RIM files",
+                        SearchLocation.LIPS: "LIP files",
+                        SearchLocation.MUSIC: "StreamMusic",
+                        SearchLocation.SOUND: "StreamSounds",
+                        SearchLocation.VOICE: "StreamWaves/StreamVoice",
+                    }
+                    description = location_names.get(item, str(item))
+
+                    new_locations = after_locations[before_count:]
+                    if new_locations:
+                        for j, location_result in enumerate(new_locations):
+                            # Format the filepath relative to installation root for readability
+                            try:
+                                rel_path = location_result.filepath.relative_to(self._path)
+                            except ValueError:
+                                rel_path = location_result.filepath
+                            # Show SELECTED for the first location found (highest priority)
+                            if before_count == 0 and j == 0:
+                                logger(f"    {i}. {description} -> FOUND at {rel_path} -> SELECTED")
+                            else:
+                                logger(f"    {i}. {description} -> FOUND at {rel_path}")
+                    else:
+                        # Only log "not found" if this location type was actually checked
+                        # Skip logging for CUSTOM_FOLDERS if no folders were provided
+                        # Skip logging for CUSTOM_MODULES if no capsules were provided
+                        if item == SearchLocation.CUSTOM_FOLDERS and not folders:
+                            continue
+                        if item == SearchLocation.CUSTOM_MODULES and not capsules:
+                            continue
+                        logger(f"    {i}. {description} -> not found")
 
         return locations
 
@@ -1471,6 +1573,7 @@ class Installation:
         *,
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
+        logger: Callable[[str], None] | None = None,
     ) -> TPC | None:
         """Returns a TPC object loaded from a resource with the specified name.
 
@@ -1498,7 +1601,7 @@ class Installation:
         -------
             TPC object or None.
         """
-        batch: CaseInsensitiveDict[TPC | None] = self.textures([resname], order, capsules=capsules, folders=folders)
+        batch: CaseInsensitiveDict[TPC | None] = self.textures([resname], order, capsules=capsules, folders=folders, logger=logger)
         return batch[resname] if batch else None
 
     def textures(
@@ -1508,6 +1611,7 @@ class Installation:
         *,
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
+        logger: Callable[[str], None] | None = None,
     ) -> CaseInsensitiveDict[TPC | None]:
         """Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists.
 
@@ -1519,6 +1623,7 @@ class Installation:
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
+            logger: A logger to use for logging. (Optional)
 
         Returns:
         -------
@@ -1647,6 +1752,7 @@ class Installation:
         *,
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
+        logger: Callable[[str], None] | None = None,
     ) -> set[FileResource]:
         """Finds all gffs that utilize this stringref in their localizedstring.
 
@@ -1658,6 +1764,7 @@ class Installation:
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
+            logger: A logger to use for logging. (Optional)
 
         Returns:
         -------
@@ -1798,7 +1905,10 @@ class Installation:
                         file.suffix
                         and (
                             file.suffix[1:].casefold() in gff_extensions
-                            or (file.name.lower() in relevant_2da_filenames and file.suffix.casefold() == ".2da")
+                            or (
+                                file.name.lower() in relevant_2da_filenames
+                                and file.suffix.casefold() == ".2da"
+                            )
                         )
                         and file.safe_isfile()
                     )
@@ -1849,6 +1959,7 @@ class Installation:
         *,
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
+        logger: Callable[[str], None] | None = None,
     ) -> bytes | None:
         """Returns the bytes of a sound resource if it can be found, otherwise returns None.
 
@@ -1860,12 +1971,13 @@ class Installation:
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
+            logger: A logger to use for logging. (Optional)
 
         Returns:
         -------
             A bytes object or None.
         """
-        batch: CaseInsensitiveDict[bytes | None] = self.sounds([resname], order, capsules=capsules, folders=folders)
+        batch: CaseInsensitiveDict[bytes | None] = self.sounds([resname], order, capsules=capsules, folders=folders, logger=logger)
         return batch[resname] if batch else None
 
     def sounds(
@@ -1875,6 +1987,7 @@ class Installation:
         *,
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
+        logger: Callable[[str], None] | None = None,
     ) -> CaseInsensitiveDict[bytes | None]:
         """Returns a dictionary mapping the items provided in the resnames argument to a bytes object if the respective sound resource could be found.
 
@@ -1886,13 +1999,14 @@ class Installation:
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
+            logger: A logger to use for logging. (Optional)
 
         Returns:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
-        resnames: set[str] = set(resnames)
-        case_resnames: set[str] = {resname.casefold() for resname in resnames}
+        resnames_set = set(resnames)
+        case_resnames: set[str] = {resname.casefold() for resname in resnames_set}
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
         if order is None:
@@ -1907,7 +2021,7 @@ class Installation:
         sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
         sound_formats: list[ResourceType] = [ResourceType.WAV, ResourceType.MP3]
 
-        for resname in resnames:
+        for resname in resnames_set:
             sounds[resname] = None
 
         def check_dict(values: dict[str, list[FileResource]]):
