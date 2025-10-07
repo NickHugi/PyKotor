@@ -9,10 +9,10 @@ from ctypes import POINTER, WINFUNCTYPE, byref, c_ulong, c_void_p, c_wchar_p, ca
 from ctypes.wintypes import HMODULE, HWND, LPCWSTR
 from typing import TYPE_CHECKING, Sequence
 
-import comtypes  # pyright: ignore[reportMissingTypeStubs]
-import comtypes.client  # pyright: ignore[reportMissingTypeStubs]
+import comtypes  # pyright: ignore[reportMissingTypeStubs, reportMissingImports]
+import comtypes.client  # pyright: ignore[reportMissingTypeStubs, reportMissingImports]
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs, reportMissingImports]
 
 from utility.system.path import WindowsPath
 from utility.system.win32.com.com_helpers import HandleCOMCall

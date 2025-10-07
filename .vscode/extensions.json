@@ -1,6 +1,5 @@
 {
     "recommendations": [
-        "sourcery.sourcery",
         "arturock.gitstash",
         "ms-python.mypy-type-checker",
         "ms-python.vscode-pylance",
@@ -10,7 +9,6 @@
         "ms-vscode.powershell",
         "ms-python.debugpy",
         "tylerleonhardt.vscode-inline-values-powershell",
-        "almenon.arepl",
         "rogalmic.bash-debug",
         "mads-hartmann.bash-ide-vscode",
         "formulahendry.github-actions",

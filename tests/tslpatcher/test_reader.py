@@ -198,7 +198,6 @@ class TestConfigReader(unittest.TestCase):
         )
 
     def test_tlk_complex_changes(self):
-      , remove-dict-keys, use-dict-items
         ini_text2 = """
         [TLKList]
         ReplaceFile10=complex.tlk
