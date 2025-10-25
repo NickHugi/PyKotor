@@ -1431,6 +1431,46 @@ class GFFList(ComparableMixin):
         """Returns the struct at the specified index."""
         return self._structs[item] if isinstance(item, int) else NotImplemented
 
+    def __repr__(self) -> str:
+        """Returns a detailed string representation of the GFFList."""
+        if not self._structs:
+            return "GFFList([])"
+
+        # Show summary with struct IDs
+        struct_ids = [f"Struct#{s.struct_id}" for s in self._structs[:3]]
+        preview = ", ".join(struct_ids)
+        if len(self._structs) > 3:
+            preview += f", ... ({len(self._structs) - 3} more)"
+
+        return f"GFFList([{preview}], total={len(self._structs)})"
+
+    def __str__(self) -> str:
+        """Returns a human-readable string representation of the GFFList."""
+        if not self._structs:
+            return "GFFList (empty)"
+
+        lines = [f"GFFList with {len(self._structs)} structs:"]
+        for i, struct in enumerate(self._structs):
+            lines.append(f"  [{i}] Struct#{struct.struct_id} ({len(struct)} fields)")
+            # Show first few fields of each struct
+            max_fields_preview = 3
+            for field_count, (label, field_type, value) in enumerate(struct):
+                if field_count >= max_fields_preview:
+                    lines.append(f"      ... ({len(struct) - max_fields_preview} more fields)")
+                    break
+                # Format value based on type
+                if field_type == GFFFieldType.Struct:
+                    value_str = f"<Struct#{value.struct_id}>"
+                elif field_type == GFFFieldType.List:
+                    value_str = f"<List[{len(value)}]>"
+                elif isinstance(value, (str, int, float)):
+                    value_str = repr(value)
+                else:
+                    value_str = str(value)
+                lines.append(f"      {label}: {value_str}")
+
+        return "\n".join(lines)
+
     def add(
         self,
         struct_id: int,

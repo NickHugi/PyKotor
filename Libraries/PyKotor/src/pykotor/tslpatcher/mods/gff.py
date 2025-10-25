@@ -593,12 +593,12 @@ class ModificationsGFF(PatcherModifications):
 
     def patch_resource(
         self,
-        source_gff: SOURCE_TYPES,
+        source: SOURCE_TYPES,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes | Literal[True]:
-        gff: GFF = GFFBinaryReader(source_gff).load()
+    ) -> bytes:
+        gff: GFF = GFFBinaryReader(source).load()
         self.apply(gff, memory, logger, game)
         return bytes_gff(gff)
 

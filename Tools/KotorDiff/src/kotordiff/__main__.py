@@ -3,11 +3,15 @@ from __future__ import annotations
 
 import cProfile
 import difflib
+import io
+import os
 import pathlib
 import sys
+import traceback
 
 from argparse import ArgumentParser
 from contextlib import suppress
+from dataclasses import dataclass
 from io import StringIO
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -27,7 +31,14 @@ if getattr(sys, "frozen", False) is False:
     utility_path = pathlib.Path(__file__).parents[4] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
         update_sys_path(utility_path.parent)
+    kotordiff_path = pathlib.Path(__file__).parent
+    if kotordiff_path.exists():
+        update_sys_path(kotordiff_path.parent)
 
+from kotordiff.diff_analyzers import DiffAnalyzerFactory
+from kotordiff.diff_objects import DiffFormat
+from kotordiff.formatters import FormatterFactory
+from kotordiff.ini_serializer import TSLPatcherINISerializer
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats import gff, lip, tlk, twoda
@@ -36,40 +47,86 @@ from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from utility.error_handling import universal_simplify_exception
 from utility.misc import generate_hash
-from utility.system.path import Path, PureWindowsPath
+from utility.system.path import Path, PurePath, PureWindowsPath
 
 # Import the new logging and diff systems
 try:
-    from kotordiff.diff_objects import DiffFormat
-    from kotordiff.formatters import FormatterFactory
     from kotordiff.logger import LogLevel, OutputMode, setup_logger
 except ImportError:
     # Fallback for when running as script
-    LogLevel = None
-    OutputMode = None
-    setup_logger = None
-    DiffFormat = None
-    FormatterFactory = None
+    LogLevel = None  # type: ignore[assignment, misc]
+    OutputMode = None  # type: ignore[assignment, misc]
+    setup_logger = None  # type: ignore[assignment, misc]
+    DiffFormat = None  # type: ignore[assignment, misc]
+    FormatterFactory = None  # type: ignore[assignment, misc]
 
 if TYPE_CHECKING:
-    import os
-
     from pykotor.extract.file import (
         FileResource,
         FileResource as CapsuleResource,
     )
-    from utility.system.path import PurePath
+    from pykotor.resource.formats.tlk.tlk_data import TLK
 
 CURRENT_VERSION = "1.0.0"
-OUTPUT_LOG: Path | None = None
-LOGGING_ENABLED: bool | None = None
 
-PARSER_ARGS = None
-PARSER = None
+
+@dataclass
+class GlobalConfig:
+    """Global configuration state for KotorDiff."""
+
+    output_log: Path | None = None
+    logging_enabled: bool | None = None
+    parser_args: Any = None
+    parser: Any = None
+
+
+# Global configuration instance
+_global_config = GlobalConfig()
+
+
+@dataclass
+class DiffContext:
+    """Context for diff operations, grouping related file paths."""
+
+    file1_rel: Path
+    file2_rel: Path
+    ext: str
+    resname: str | None = None
+    skip_nss: bool = False  # Skip .nss files when comparing installations
+
+    @property
+    def where(self) -> PureWindowsPath | str:
+        """Get the display name for the resource being compared."""
+        if self.resname:
+            return PureWindowsPath(self.file1_rel.name, f"{self.resname}.{self.ext}")
+        return self.file1_rel.name
+
+
+@dataclass
+class IniGenerationConfig:
+    """Configuration for INI generation (changes.ini) for both 2-way and 3-way diffs."""
+
+    generate_ini: bool = True
+    out_ini: Path | None = None
+
+
+@dataclass
+class ModificationsByType:
+    """Typed collection of modifications grouped by format type."""
+
+    twoda: list[Any]  # List[Modifications2DA]
+    gff: list[Any]  # List[ModificationsGFF]
+    tlk: list[Any]  # List[ModificationsTLK]
+    ssf: list[Any]  # List[ModificationsSSF]
+    install: list[tuple[str, list[str]]]  # List[(folder, [filenames])]
+
+    @classmethod
+    def create_empty(cls) -> ModificationsByType:
+        """Create an empty ModificationsByType instance."""
+        return cls(twoda=[], gff=[], tlk=[], ssf=[], install=[])
 
 
 def log_output(*args, **kwargs):
-    global OUTPUT_LOG  # noqa: PLW0603
     # Create an in-memory text stream
     buffer = StringIO()
 
@@ -79,28 +136,39 @@ def log_output(*args, **kwargs):
     # Retrieve the printed content
     msg = buffer.getvalue()
 
-    # Print the captured output to console
-    print(*args, **kwargs)  # noqa: T201
+    # Print the captured output to console with Unicode error handling
+    try:
+        print(*args, **kwargs)
+    except UnicodeEncodeError:
+        # Fallback: encode with error handling for Windows console
+        # Replace unencodable characters with ? or similar
+        try:
+            safe_msg = msg.encode(sys.stdout.encoding or "utf-8", errors="replace").decode(sys.stdout.encoding or "utf-8")
+            print(safe_msg, **kwargs)
+        except Exception:  # noqa: BLE001
+            # Last resort: use ASCII with backslashreplace
+            safe_msg = msg.encode("ascii", errors="backslashreplace").decode("ascii")
+            print(safe_msg, **kwargs)
 
-    if not LOGGING_ENABLED or not PARSER_ARGS or not PARSER:
+    if not _global_config.logging_enabled or not _global_config.parser_args or not _global_config.parser:
         return
 
-    if not OUTPUT_LOG:
+    if not _global_config.output_log:
         chosen_log_file_path: str = "log_install_differ.log"
-        OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-        assert OUTPUT_LOG is not None
-        if not OUTPUT_LOG.parent.safe_isdir():
+        _global_config.output_log = Path(chosen_log_file_path).resolve()
+        assert _global_config.output_log is not None
+        if not _global_config.output_log.parent.safe_isdir():
             while True:
-                chosen_log_file_path = PARSER_ARGS.output_log or input("Filepath of the desired output logfile: ").strip() or "log_install_differ.log"
-                OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-                assert OUTPUT_LOG is not None
-                if OUTPUT_LOG.parent.safe_isdir():
+                chosen_log_file_path = _global_config.parser_args.output_log or input("Filepath of the desired output logfile: ").strip() or "log_install_differ.log"
+                _global_config.output_log = Path(chosen_log_file_path).resolve()
+                assert _global_config.output_log is not None
+                if _global_config.output_log.parent.safe_isdir():
                     break
-                print("Invalid path:", OUTPUT_LOG)
-                PARSER.print_help()
+                print("Invalid path:", _global_config.output_log)
+                _global_config.parser.print_help()
 
-    # Write the captured output to the file
-    with OUTPUT_LOG.open("a", encoding="utf-8") as f:
+    # Write the captured output to the file (always use UTF-8 for file)
+    with _global_config.output_log.open("a", encoding="utf-8") as f:
         f.write(msg)
 
 
@@ -162,9 +230,9 @@ class ModuleCapsuleWrapper:
 
         # Possible related files in order of priority
         related_files = [
-            f"{root}.rim",       # Main RIM
-            f"{root}_s.rim",     # Data RIM
-            f"{root}_dlg.erf",   # Dialog ERF (TSL only, but check anyway)
+            f"{root}.rim",  # Main RIM
+            f"{root}_s.rim",  # Data RIM
+            f"{root}_dlg.erf",  # Dialog ERF (TSL only, but check anyway)
         ]
 
         found_files = []
@@ -261,7 +329,7 @@ def _get_resource_reader_function(ext: str) -> Callable[[bytes], Any] | None:
         "sav": lambda data: __import__("pykotor.resource.formats.erf.erf_auto", fromlist=["read_erf"]).read_erf(data),
         "ssf": lambda data: __import__("pykotor.resource.formats.ssf.ssf_auto", fromlist=["read_ssf"]).read_ssf(data),
         "mdl": lambda data: __import__("pykotor.resource.formats.mdl.mdl_auto", fromlist=["read_mdl"]).read_mdl(data),
-        #"ncs": lambda data: __import__("pykotor.resource.formats.ncs.ncs_auto", fromlist=["read_ncs"]).read_ncs(data),
+        "ncs": lambda data: __import__("pykotor.resource.formats.ncs.ncs_auto", fromlist=["read_ncs"]).read_ncs(data),
         "wok": lambda data: __import__("pykotor.resource.formats.bwm.bwm_auto", fromlist=["read_bwm"]).read_bwm(data),
         "pwk": lambda data: __import__("pykotor.resource.formats.bwm.bwm_auto", fromlist=["read_bwm"]).read_bwm(data),
         "dwk": lambda data: __import__("pykotor.resource.formats.bwm.bwm_auto", fromlist=["read_bwm"]).read_bwm(data),
@@ -270,7 +338,12 @@ def _get_resource_reader_function(ext: str) -> Callable[[bytes], Any] | None:
         "vis": lambda data: __import__("pykotor.resource.formats.vis.vis_auto", fromlist=["read_vis"]).read_vis(data),
     }
 
-    return reader_map.get(ext.lower())
+    return reader_map.get(ext.lower(), read_unknown_resource)
+
+
+def read_unknown_resource(data: bytes) -> Any:
+    """Read an unknown resource from data - returns raw bytes for unknown formats."""
+    return data
 
 
 def _has_comparable_interface(obj: Any) -> bool:
@@ -312,6 +385,8 @@ class InstallationLogger:
 
 def _compare_text_content(data1: bytes, data2: bytes, where: str) -> bool:
     """Compare text content using line-by-line diffing."""
+    MAX_LINE_LENGTH = 200  # Maximum characters to display per line
+
     try:
         # Try UTF-8 first
         text1 = data1.decode("utf-8", errors="ignore")
@@ -332,47 +407,63 @@ def _compare_text_content(data1: bytes, data2: bytes, where: str) -> bool:
     lines1 = text1.splitlines(keepends=True)
     lines2 = text2.splitlines(keepends=True)
 
-    diff = difflib.unified_diff(
-        lines1, lines2,
-        fromfile=f"(old){where}",
-        tofile=f"(new){where}",
-        lineterm=""
-    )
+    diff = difflib.unified_diff(lines1, lines2, fromfile=f"(old){where}", tofile=f"(new){where}", lineterm="")
 
     diff_lines = list(diff)
     if diff_lines:
         log_output_with_separator(f"^ '{where}': Text content differs ^")
         for line in diff_lines:
-            log_output(line)
+            # Truncate excessively long lines (likely binary data that slipped through)
+            if len(line) > MAX_LINE_LENGTH:
+                truncated = line[:MAX_LINE_LENGTH] + f"... (truncated, {len(line)} chars total)"
+                log_output(truncated)
+            else:
+                log_output(line.rstrip())
         return False
 
     return True
 
 
-def diff_data(  # noqa: C901, PLR0911, PLR0912, PLR0913, PLR0915
+def diff_data(  # noqa: C901, PLR0911, PLR0912, PLR0915
     data1: bytes | Path,
     data2: bytes | Path,
-    file1_rel: Path,
-    file2_rel: Path,
-    ext: str,
-    resname: str | None = None,
+    context: DiffContext,
 ) -> bool | None:
-    where: PureWindowsPath | str = PureWindowsPath(file1_rel.name, f"{resname}.{ext}") if resname else file1_rel.name
+    """Compare two resources with appropriate format-specific handling.
+
+    Complexity is unavoidable due to many file formats and fallback strategies.
+    """
+    where = context.where
 
     if not data1 and data2:
-        return log_output(f"[Error] Cannot determine data for '{where}' in '{file1_rel}'")  # type: ignore[func-returns-value]
+        return log_output(f"[Error] Cannot determine data for '{where}' in '{context.file1_rel}'")  # type: ignore[func-returns-value]
     if data1 and not data2:
-        return log_output(f"[Error] Cannot determine data for '{where}' in '{file2_rel}'")  # type: ignore[func-returns-value]
+        return log_output(f"[Error] Cannot determine data for '{where}' in '{context.file2_rel}'")  # type: ignore[func-returns-value]
     if not data1 and not data2:
-        # message = f"No data for either resource: '{where}'"  # noqa: ERA001
-        # log_output(message)  # noqa: ERA001
+        # message = f"No data for either resource: '{where}'"
+        # log_output(message)
         return True
 
-    assert PARSER_ARGS
-    if ext == "tlk" and PARSER_ARGS.ignore_tlk:
-        return True
-    if ext == "lip" and PARSER_ARGS.ignore_lips:
-        return True
+    # Skip .nss source files when comparing installations (they're dev files, not game data)
+    if context.skip_nss and context.ext == "nss":
+        return True  # Skip silently
+
+    assert _global_config.parser_args
+
+    # Fast path: For large binary files (audio, video), check file size first before reading
+    LARGE_BINARY_FORMATS = {"wav", "mp3", "bik", "mve", "tga", "tpc"}
+    if context.ext in LARGE_BINARY_FORMATS and isinstance(data1, Path) and isinstance(data2, Path):
+        # Check file sizes first - if different, no need to read the files
+        try:
+            size1 = data1.stat().st_size
+            size2 = data2.stat().st_size
+            if size1 != size2:
+                if _global_config.parser_args.compare_hashes:
+                    log_output(f"'{context.where}': File sizes differ ({size1} vs {size2} bytes)")
+                    return False
+                return True  # Sizes differ but not comparing hashes
+        except Exception:  # noqa: BLE001, S110
+            pass  # Fall through to normal comparison
 
     # Convert Path to bytes if needed
     if isinstance(data1, Path):
@@ -381,30 +472,48 @@ def diff_data(  # noqa: C901, PLR0911, PLR0912, PLR0913, PLR0915
         data2 = data2.read_bytes()
 
     # Check if this is a GFF type (handled specially for backwards compatibility)
-    if ext in gff_types:
+    if context.ext in gff_types:
         gff1: gff.GFF | None = None
         gff2: gff.GFF | None = None
         try:
             gff1 = gff.read_gff(data1)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+            return log_output(f"[Error] loading GFF {context.file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             gff2 = gff.read_gff(data2)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+            return log_output(f"[Error] loading GFF {context.file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if gff1 and not gff2:
-            return log_output(f"GFF resource missing in memory:\t'{file1_rel.parent / where}'")  # type: ignore[func-returns-value]
+            return log_output(f"GFF resource missing in memory:\t'{context.file1_rel.parent / where}'")  # type: ignore[func-returns-value]
         if not gff1 and gff2:
-            return log_output(f"GFF resource missing in memory:\t'{file2_rel.parent / where}'")  # type: ignore[func-returns-value]
+            return log_output(f"GFF resource missing in memory:\t'{context.file2_rel.parent / where}'")  # type: ignore[func-returns-value]
         if not gff1 and not gff2:
-            return log_output(f"Both GFF resources missing in memory:\t'{where}'")  # type: ignore[func-returns-value]
-        if gff1 and gff2 and not gff1.compare(gff2, log_output, PureWindowsPath(where)):
-            log_output_with_separator(f"^ '{where}': GFF is different ^")
+            return log_output(f"Both GFF resources missing in memory:\t'{context.where}'")  # type: ignore[func-returns-value]
+        if gff1 and gff2 and not gff1.compare(gff2, log_output, PureWindowsPath(context.where)):
+            log_output_with_separator(f"^ '{context.where}': GFF is different ^")
             return False
         return True
 
+    # Define known binary formats that should never be treated as text
+    BINARY_FORMATS = {
+        # Scripts and models
+        "ncs", "mdl", "mdx",
+        # Walkmesh formats
+        "wok", "pwk", "dwk",
+        # Textures
+        "tga", "tpc", "txi",
+        # Audio/Video
+        "wav", "mp3", "bik", "mve",
+        # Capsule formats (should be handled by capsule reader, but fallback to binary if parsing fails)
+        "erf", "rim", "mod", "sav",
+        # All GFF-based formats (already handled above, but listed here for completeness in case of parse failure)
+        "are", "git", "ifo", "utc", "utd", "ute",
+        "uti", "utm", "utp", "uts", "utt", "utw",
+        "dlg", "gui", "jrl", "fac", "ssf", "bic",
+    }
+
     # Try to get a resource reader function for this extension
-    reader_func = _get_resource_reader_function(ext)
+    reader_func = _get_resource_reader_function(context.ext)
 
     if reader_func:
         try:
@@ -414,24 +523,73 @@ def diff_data(  # noqa: C901, PLR0911, PLR0912, PLR0913, PLR0915
 
             # Check if the parsed objects have ComparableMixin interface
             if _has_comparable_interface(obj1) and _has_comparable_interface(obj2):
-                # Use the structured compare method
+                # Special handling for NCS files - provide summary instead of exhaustive diff
+                if context.ext == "ncs":
+                    # Capture comparison output to summarize it
+                    comparison_lines = []
+
+                    def capture_log(*args, **kwargs):
+                        buffer = StringIO()
+                        print(*args, file=buffer, **kwargs)
+                        comparison_lines.append(buffer.getvalue())
+
+                    is_same = obj1.compare(obj2, capture_log)
+
+                    if not is_same:
+                        # Provide a summary of differences
+                        log_output("NCS scripts differ:")
+                        log_output(f"  Old: {len(obj1.instructions)} instructions")
+                        log_output(f"  New: {len(obj2.instructions)} instructions")
+
+                        # Show first few differences only
+                        MAX_DIFF_LINES = 20
+                        if len(comparison_lines) > MAX_DIFF_LINES:
+                            for line in comparison_lines[:MAX_DIFF_LINES]:
+                                log_output(line.rstrip())
+                            log_output(f"  ... ({len(comparison_lines) - MAX_DIFF_LINES} more difference lines omitted)")
+                        else:
+                            for line in comparison_lines:
+                                log_output(line.rstrip())
+
+                        log_output_with_separator(f"^ '{context.where}': {context.ext.upper()} is different ^")
+                        return False
+                    return True
+
+                # Use the structured compare method for other files
                 if not obj1.compare(obj2, log_output):
-                    log_output_with_separator(f"^ '{where}': {ext.upper()} is different ^")
+                    log_output_with_separator(f"^ '{context.where}': {context.ext.upper()} is different ^")
                     return False
                 return True
             # Objects don't have compare method, fall through to other methods
 
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             # Parsing failed, fall through to other comparison methods
-            log_output(f"[Warning] Could not parse {ext.upper()} for structured comparison: {universal_simplify_exception(e)}")
+            log_output(f"[Warning] Could not parse {context.ext.upper()} for structured comparison at '{context.where}'")
+            log_output(f"  Exception: {type(e).__name__}: {e}")
+            # Show the original cause if available (for chained exceptions)
+            if e.__cause__:
+                log_output(f"  Caused by: {type(e.__cause__).__name__}: {e.__cause__}")
+            # Only show full traceback if verbose mode enabled
+            if os.environ.get("KOTORDIFF_VERBOSE"):
+                log_output("  Full traceback:")
+                for line in traceback.format_exc().splitlines():
+                    log_output(f"    {line}")
 
-    # Check if content appears to be text
-    if _is_text_content(data1) and _is_text_content(data2):
-        return _compare_text_content(data1, data2, str(where))
+            # For known binary formats, skip text comparison and go straight to hash
+            if context.ext.lower() in BINARY_FORMATS:
+                log_output("  Falling back to hash comparison")
+                if _global_config.parser_args.compare_hashes and generate_hash(data1) != generate_hash(data2):
+                    log_output(f"'{context.where}': SHA256 is different")
+                    return False
+                return True
+
+    # Check if content appears to be text (but skip for known binary formats)
+    if context.ext.lower() not in BINARY_FORMATS and _is_text_content(data1) and _is_text_content(data2):
+        return _compare_text_content(data1, data2, str(context.where))
 
     # Fallback to hash comparison for binary content
-    if PARSER_ARGS.compare_hashes and generate_hash(data1) != generate_hash(data2):
-        log_output(f"'{where}': SHA256 is different")
+    if _global_config.parser_args.compare_hashes and generate_hash(data1) != generate_hash(data2):
+        log_output(f"'{context.where}': SHA256 is different")
         return False
 
     return True
@@ -449,6 +607,7 @@ def log_output_with_separator(message, *, below=True, above=False, surround=Fals
 # Unified diff helpers and diff3 support
 # --------------
 
+
 def _read_text_lines(filepath: Path) -> list[str]:
     try:
         return filepath.read_bytes().decode("utf-8", errors="ignore").splitlines(True)  # noqa: FBT003
@@ -460,8 +619,6 @@ def _read_text_lines(filepath: Path) -> list[str]:
 
 
 def _print_udiff(from_file: Path, to_file: Path, label_from: str, label_to: str):
-    import difflib  # noqa: PLC0415
-
     a = _read_text_lines(from_file)
     b = _read_text_lines(to_file)
     if not a and not b:
@@ -490,8 +647,11 @@ def _ext_of(path: Path) -> str:
     return s[1:] if s.startswith(".") else s
 
 
-def _should_skip_rel(rel: str) -> bool:  # noqa: ARG001
-    # Honor --ignore-rims in install-aware flows; for generic flows we never skip here.
+def _should_skip_rel(_rel: str) -> bool:
+    """Check if a relative path should be skipped.
+
+    Note: Currently unused but kept for future filtering capabilities.
+    """
     return False
 
 
@@ -511,7 +671,7 @@ def _diff3_files_udiff(  # noqa: C901, PLR0911, PLR0912, PLR0915
             cap_old = Capsule(older)
             cap_mine = Capsule(mine)
             cap_new = Capsule(yours)
-        except Exception as e:  # noqa: BLE001
+        except (ValueError, OSError) as e:
             log_output(f"[Error] diff3 capsule: {universal_simplify_exception(e)}")
             return
         old_dict = {res.resname(): res for res in cap_old}
@@ -576,59 +736,60 @@ def _diff3_files_udiff(  # noqa: C901, PLR0911, PLR0912, PLR0915
     if ext == "2da":
         # Always use typed TwoDA compare to avoid treating as binary/text
         try:
-            t_old = twoda.read_2da(older)
-            t_mine = twoda.read_2da(mine)
-            t_new = twoda.read_2da(yours)
+            twoda_old = twoda.read_2da(older)
+            twoda_mine = twoda.read_2da(mine)
+            twoda_new = twoda.read_2da(yours)
         except Exception as e:  # noqa: BLE001
             log_output(f"[Error] reading 2DA: {universal_simplify_exception(e)}")
             return
         log_output(f"--- (old){older}")
         log_output(f"+++ (mine){mine}")
-        t_old.compare(t_mine, log_output)
+        twoda_old.compare(twoda_mine, log_output)
         log_output(f"--- (old){older}")
         log_output(f"+++ (new){yours}")
-        t_old.compare(t_new, log_output)
+        twoda_old.compare(twoda_new, log_output)
         return
 
     if ext in gff_types:
         # For GFF, we can't do a line-based merge, so just show both diffs as before
         try:
-            g_old = gff.read_gff(older)
-            g_mine = gff.read_gff(mine)
-            g_new = gff.read_gff(yours)
+            gff_old = gff.read_gff(older)
+            gff_mine = gff.read_gff(mine)
+            gff_new = gff.read_gff(yours)
         except Exception as e:  # noqa: BLE001
             log_output(f"[Error] reading GFF: {universal_simplify_exception(e)}")
             return
         log_output(f"--- (old){older}")
         log_output(f"+++ (mine){mine}")
-        g_old.compare(g_mine, log_output, PureWindowsPath(mine.name))
+        gff_old.compare(gff_mine, log_output, PureWindowsPath(mine.name))
         log_output(f"--- (old){older}")
         log_output(f"+++ (new){yours}")
-        g_old.compare(g_new, log_output, PureWindowsPath(yours.name))
+        gff_old.compare(gff_new, log_output, PureWindowsPath(yours.name))
         return
 
     if ext == "tlk":
         try:
-            t_old = tlk.read_tlk(older)
-            t_mine = tlk.read_tlk(mine)
-            t_new = tlk.read_tlk(yours)
+            tlk_old = tlk.read_tlk(older)
+            tlk_mine = tlk.read_tlk(mine)
+            tlk_new = tlk.read_tlk(yours)
         except Exception as e:  # noqa: BLE001
             log_output(f"[Error] reading TLK: {universal_simplify_exception(e)}")
             return
 
-        def tlk_lines(t):
+        def tlk_lines(tlk: TLK) -> list[str]:
             lines = []
-            for i in range(len(t)):  # type: ignore[arg-type]
+            for i in range(len(tlk)):
                 try:
-                    e = t.get(i)
-                    lines.append(f"{i}\t{e.text}\t{e.voiceover}\n")
-                except Exception:  # noqa: BLE001, PERF203
+                    e = tlk.get(i)
+                    lines.append(f"{i}\t{e.text}\t{e.voiceover}\n") if e else lines.append(f"{i}\t\n")
+                except Exception as e:  # noqa: BLE001, PERF203
+                    log_output(f"[Error] reading TLK: {universal_simplify_exception(e)}")
                     lines.append(f"{i}\t\n")
             return lines
 
-        a = tlk_lines(t_old)
-        b = tlk_lines(t_mine)
-        c = tlk_lines(t_new)
+        a = tlk_lines(tlk_old)
+        b = tlk_lines(tlk_mine)
+        c = tlk_lines(tlk_new)
         try:
             m3 = merge3.Merge3(a, b, c)
             for line in m3.merge_lines():
@@ -656,104 +817,119 @@ def _generate_changes_ini(  # noqa: C901, PLR0912, PLR0915
     *,
     out_path: Path,
 ):
-    # Build list of files that changed between older and yours only
-    files_old: set[str] = _walk_files(older_root)
-    files_new: set[str] = _walk_files(yours_root)
-    all_rel: list[str] = sorted(files_old | files_new)
+    """Generate a comprehensive TSLPatcher-compatible changes.ini from directory differences.
 
-    # Map lower-cased rel -> actual rel from 'yours' for correct casing
+    This unified generator:
+    1. Uses diff analyzers to create precise PatcherModifications for supported formats
+    2. Falls back to [InstallList] for unsupported files
+    3. Stages all necessary files
+    """
+    log_output_with_separator("Generating TSLPatcher changes.ini", above=True)
+
+    # Collect all files
+    older_files = {str(f.relative_to(older_root)): f for f in older_root.rglob("*") if f.is_file()} if older_root.safe_isdir() else {}
+    yours_files = {str(f.relative_to(yours_root)): f for f in yours_root.rglob("*") if f.is_file()} if yours_root.safe_isdir() else {}
+    all_rel = sorted(set(older_files.keys()) | set(yours_files.keys()))
+
+    # Track modifications by type
+    modifications_by_type = ModificationsByType.create_empty()
+
+    # Map casefolded rel -> actual rel from 'yours' for correct casing
     yours_rel_map: dict[str, str] = {}
-    if yours_root.safe_isdir():
-        for f in yours_root.safe_rglob("*"):
-            if f.safe_isfile():
-                relp = f.relative_to(yours_root).as_posix()
-                yours_rel_map[relp.casefold()] = relp
-    else:
-        yours_rel_map[yours_root.name.casefold()] = yours_root.name
+    for rel in yours_files:
+        yours_rel_map[rel.casefold()] = rel
 
-    changed_by_rel: dict[str, list[str]] = {}  # dest_folder -> [filenames]
-
-    def is_different(rel: str) -> bool:  # noqa: PLR0911
-        p_old: Path = older_root / rel
-        p_new: Path = yours_root / rel
-        if not p_old.safe_exists() and p_new.safe_exists():
-            return True
-        if p_old.safe_exists() and not p_new.safe_exists():
-            return True
-        if not p_old.safe_exists() and not p_new.safe_exists():
-            return False
-        # Compare using typed logic when possible
-        ext: str = _ext_of(p_new)
-        try:
-            if ext in gff_types:
-                return not gff.read_gff(p_old).compare(gff.read_gff(p_new), lambda *_a, **_k: None)
-            if ext == "2da":
-                return not twoda.read_2da(p_old).compare(twoda.read_2da(p_new), lambda *_a, **_k: None)  # type: ignore[arg-type]
-            if ext == "tlk":
-                return not tlk.read_tlk(p_old).compare(tlk.read_tlk(p_new), lambda *_a, **_k: None)  # type: ignore[arg-type]
-        except Exception:  # noqa: BLE001, S110
-            pass
-        try:
-            return generate_hash(p_old) != generate_hash(p_new)
-        except Exception:  # noqa: BLE001
-            return True
-
+    # Analyze each file
     for rel in all_rel:
         if _should_skip_rel(rel):
             continue
-        if not is_different(rel):
-            continue
-        actual_rel: str = yours_rel_map.get(rel, rel)
-        dest_folder: str = Path(actual_rel).parent.as_posix()
-        filename: str = Path(actual_rel).name
-        changed_by_rel.setdefault(dest_folder, []).append(filename)
 
-    # Stage changed files next to changes.ini (tslpatchdata) so INI is portable
+        older_file = older_files.get(rel)
+        yours_file = yours_files.get(rel)
+
+        # Skip if only in one location
+        if older_file is None or yours_file is None:
+            continue
+
+        # Check if different
+        older_data = older_file.read_bytes()
+        yours_data = yours_file.read_bytes()
+
+        if older_data == yours_data:
+            continue
+
+        # Try to analyze with diff analyzers
+        ext = _ext_of(Path(rel))
+        analyzer = DiffAnalyzerFactory.get_analyzer(ext)
+
+        if analyzer:
+            try:
+                log_output(f"Analyzing {rel}...")
+                modifications = analyzer.analyze(older_data, yours_data, Path(rel).name)
+
+                if modifications:
+                    # Successfully analyzed - add to appropriate list
+                    if ext.lower() in ("2da", "twoda"):
+                        modifications_by_type.twoda.append(modifications)
+                    elif ext.lower() in gff_types:
+                        modifications_by_type.gff.append(modifications)
+                    elif ext.lower() == "tlk":
+                        modifications_by_type.tlk.append(modifications)
+                    elif ext.lower() == "ssf":
+                        modifications_by_type.ssf.append(modifications)
+                continue
+            except Exception as e:  # noqa: BLE001
+                log_output(f"[Warning] Failed to analyze {rel}: {universal_simplify_exception(e)}")
+
+        # Fallback to InstallList for this file
+        actual_rel = yours_rel_map.get(rel.casefold(), rel)
+        dest_folder = str(Path(actual_rel).parent)
+        filename = Path(actual_rel).name
+        # Find or create entry for this folder
+        folder_entry = next((entry for entry in modifications_by_type.install if entry[0] == dest_folder), None)
+        if folder_entry is None:
+            folder_entry = (dest_folder, [])
+            modifications_by_type.install.append(folder_entry)
+        folder_entry[1].append(filename)
+
+    # Stage files
     import shutil  # noqa: PLC0415
-    stage_root: Path = out_path.parent
+
+    stage_root = out_path.parent
     stage_root.mkdir(exist_ok=True, parents=True)
-    for folder, files in changed_by_rel.items():
+
+    # Stage files for InstallList
+    for folder, files in modifications_by_type.install:
         for fname in files:
-            src_rel: Path = Path(folder) / fname if folder else Path(fname)
-            src_abs: Path = (yours_root / src_rel) if yours_root.safe_isdir() else yours_root
-            dst_dir: Path = (stage_root / folder) if folder else stage_root
+            src_rel = Path(folder) / fname if folder != "." else Path(fname)
+            src_abs = yours_root / src_rel if yours_root.safe_isdir() else yours_root
+            dst_dir = stage_root / folder if folder != "." else stage_root
             dst_dir.mkdir(exist_ok=True, parents=True)
-            dst_abs: Path = dst_dir / fname
+            dst_abs = dst_dir / fname
             try:
                 shutil.copy2(src_abs, dst_abs)
             except Exception as e:  # noqa: BLE001
                 log_output(f"[Warning] Failed to stage '{src_abs}' → '{dst_abs}': {universal_simplify_exception(e)}")
 
-    # Build InstallList pointing to staged subfolders
-    lines: list[str] = []
-    lines.append("[InstallList]")
-    folder_names: list[str] = list(changed_by_rel.keys())
-    for i, folder in enumerate(folder_names):
-        dest = folder if folder else "."
-        lines.append(f"Folder{i}={dest}")
-    lines.append("")
+    # Generate INI content using the expert serializer
+    serializer = TSLPatcherINISerializer()
+    ini_content = serializer.serialize(modifications_by_type)
 
-    for i, folder in enumerate(folder_names):
-        dest = folder if folder else "."
-        section_name = f"Folder{i}"
-        lines.append(f"[{section_name}]")
-        src = dest if dest != "." else "."
-        lines.append(f"!SourceFolder={src}")
-        for j, fname in enumerate(sorted(changed_by_rel[folder])):
-            lines.append(f"Replace{j}={fname}")
-        lines.append("")
-
-    out_path.write_text("\n".join(lines), encoding="utf-8")
-    log_output(f"changes.ini generated at: {out_path}")
+    # Write the INI file
+    out_path.write_text(ini_content, encoding="utf-8")
+    log_output(f"Successfully generated changes.ini at: {out_path}")
+    log_output(f"  - 2DA patches: {len(modifications_by_type.twoda)}")
+    log_output(f"  - GFF patches: {len(modifications_by_type.gff)}")
+    log_output(f"  - TLK patches: {len(modifications_by_type.tlk)}")
+    log_output(f"  - SSF patches: {len(modifications_by_type.ssf)}")
+    log_output(f"  - Install files: {sum(len(files) for _, files in modifications_by_type.install)}")
 
 
 def run_differ3_from_args(
     mine: Path,
     older: Path,
     yours: Path,
-    *,
-    generate_ini: bool = True,
-    out_ini: Path | None = None,
+    config: IniGenerationConfig,
 ):
     # Print header
     log_output()
@@ -777,11 +953,16 @@ def run_differ3_from_args(
         msg = "--mine, --older, --yours must all be files or all be directories"
         raise ValueError(msg)
 
-    if generate_ini:
-        out_path: Path = out_ini if out_ini is not None else Path("changes.ini").resolve()
+    if config.generate_ini:
+        out_path: Path = config.out_ini if config.out_ini is not None else Path("changes.ini").resolve()
         _generate_changes_ini(mine, older, yours, out_path=out_path)
 
-def _load_capsule(file_path: Path, *, use_composite: bool) -> Capsule | ModuleCapsuleWrapper | None:
+
+def _load_capsule(
+    file_path: Path,
+    *,
+    use_composite: bool,
+) -> Capsule | ModuleCapsuleWrapper | None:
     """Load a capsule file, either as a simple Capsule or ModuleCapsuleWrapper."""
     try:
         if use_composite:
@@ -802,11 +983,11 @@ def _report_missing_resources(
 ) -> None:
     """Report missing resources between two capsules."""
     c_file1_rel, c_file2_rel = file_paths
-    for resref in missing_in_capsule1:
+    for resref in sorted(missing_in_capsule1):
         message = f"Capsule1 resource missing\t{c_file1_rel}\t{resref}\t{capsule2_resources[resref].restype().extension.upper()}"
         log_output(message)
 
-    for resref in missing_in_capsule2:
+    for resref in sorted(missing_in_capsule2):
         message = f"Capsule2 resource missing\t{c_file2_rel}\t{resref}\t{capsule1_resources[resref].restype().extension.upper()}"
         log_output(message)
 
@@ -816,6 +997,8 @@ def _diff_capsule_files(
     c_file2: Path,
     c_file1_rel: Path,
     c_file2_rel: Path,
+    *,
+    skip_nss: bool = False,
 ) -> bool | None:
     """Handle diffing of capsule files."""
     # Check if we should use composite module loading for each file individually
@@ -845,20 +1028,22 @@ def _diff_capsule_files(
     missing_in_capsule2: set[str] = capsule1_resources.keys() - capsule2_resources.keys()
 
     _report_missing_resources(
-        missing_in_capsule1, missing_in_capsule2,
+        missing_in_capsule1,
+        missing_in_capsule2,
         capsule1_resources=capsule1_resources,
         capsule2_resources=capsule2_resources,
-        file_paths=(c_file1_rel, c_file2_rel)
+        file_paths=(c_file1_rel, c_file2_rel),
     )
 
     # Check for differences in common resources
     is_same_result: bool | None = True
     common_resrefs: set[str] = capsule1_resources.keys() & capsule2_resources.keys()
-    for resref in common_resrefs:
+    for resref in sorted(common_resrefs):
         res1: FileResource = capsule1_resources[resref]
         res2: FileResource = capsule2_resources[resref]
         ext: str = res1.restype().extension.casefold()
-        result: bool | None = diff_data(res1.data(), res2.data(), c_file1_rel, c_file2_rel, ext, resref)
+        ctx = DiffContext(c_file1_rel, c_file2_rel, ext, resref, skip_nss=skip_nss)
+        result: bool | None = diff_data(res1.data(), res2.data(), ctx)
         is_same_result = None if result is None else (result and is_same_result)
 
     return is_same_result
@@ -867,6 +1052,8 @@ def _diff_capsule_files(
 def diff_files(
     file1: os.PathLike | str,
     file2: os.PathLike | str,
+    *,
+    skip_nss: bool = False,
 ) -> bool | None:
     c_file1: Path = Path.pathify(file1).resolve()
     c_file2: Path = Path.pathify(file2).resolve()
@@ -882,16 +1069,23 @@ def diff_files(
 
     # Prefer udiff output by default for text-like files (exclude 2DA; use TwoDA.compare)
     ext = c_file1_rel.suffix.casefold()[1:]
-    if ext in {"txt", "nss"}:
+    if ext in {"txi"}:
         _print_udiff(c_file1, c_file2, f"(old){c_file1}", f"(new){c_file2}")
 
     if is_capsule_file(c_file1_rel.name):
-        return _diff_capsule_files(c_file1, c_file2, c_file1_rel, c_file2_rel)
+        return _diff_capsule_files(c_file1, c_file2, c_file1_rel, c_file2_rel, skip_nss=skip_nss)
 
-    return diff_data(c_file1, c_file2, c_file1_rel, c_file2_rel, c_file1_rel.suffix.casefold()[1:])
+    ctx = DiffContext(c_file1_rel, c_file2_rel, c_file1_rel.suffix.casefold()[1:], skip_nss=skip_nss)
+    return diff_data(c_file1, c_file2, ctx)
 
 
-def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str, *, filters: list[str] | None = None) -> bool | None:
+def diff_directories(
+    dir1: os.PathLike | str,
+    dir2: os.PathLike | str,
+    *,
+    filters: list[str] | None = None,
+    skip_nss: bool = False,
+) -> bool | None:
     c_dir1 = Path.pathify(dir1).resolve()
     c_dir2 = Path.pathify(dir2).resolve()
 
@@ -904,6 +1098,10 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str, *, filter
     # Merge both sets to iterate over unique relative paths
     all_files: set[str] = files_path1.union(files_path2)
 
+    # Skip .nss files if requested (for installation comparisons)
+    if skip_nss:
+        all_files = {f for f in all_files if not f.lower().endswith(".nss")}
+
     # Apply filters if provided
     if filters:
         filtered_files = {f for f in all_files if should_include_in_filtered_diff(f, filters)}
@@ -912,10 +1110,23 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str, *, filter
             log_output(f"Filtered from {len(all_files)} to {len(filtered_files)} files")
         all_files = filtered_files
 
+    # Show progress for large directories
+    PROGRESS_FILE_THRESHOLD = 100  # Minimum files to show progress updates
+
+    total_files = len(all_files)
+    if total_files > PROGRESS_FILE_THRESHOLD:
+        log_output(f"Comparing {total_files} files...")
+
     is_same_result: bool | None = True
-    for rel_path in all_files:
-        result: bool | None = diff_files(c_dir1 / rel_path, c_dir2 / rel_path)
+    for idx, rel_path in enumerate(sorted(all_files), 1):
+        # Show progress every PROGRESS_FILE_THRESHOLD files for large directories
+        if total_files > PROGRESS_FILE_THRESHOLD and idx % PROGRESS_FILE_THRESHOLD == 0:
+            log_output(f"Progress: {idx}/{total_files} files processed...")
+        result: bool | None = diff_files(c_dir1 / rel_path, c_dir2 / rel_path, skip_nss=skip_nss)
         is_same_result = None if result is None else result and is_same_result
+
+    if total_files > PROGRESS_FILE_THRESHOLD:
+        log_output(f"Completed: {total_files}/{total_files} files processed.")
 
     return is_same_result
 
@@ -926,7 +1137,14 @@ def diff_installs(
     *,
     filters: list[str] | None = None,
 ) -> bool | None:
-    # TODO(th3w1zard1): use pykotor.extract.installation  # noqa: FIX002, TD003
+    """Compare two KOTOR installations by diffing their standard directories.
+
+    Note: This function walks installation directories directly. For more advanced
+    resource resolution (using chitin.key, module loading, etc.), use diff_installs_with_objects
+    or the Installation-aware comparison functions.
+
+    TODO: https://github.com/NickHugi/PyKotor/issues/XXX - Fully utilize Installation objects for resource resolution
+    """
     rinstall_path1: CaseAwarePath = CaseAwarePath.pathify(install_path1).resolve()
     rinstall_path2: CaseAwarePath = CaseAwarePath.pathify(install_path2).resolve()
     log_output()
@@ -937,7 +1155,7 @@ def diff_installs(
         log_output(f"Using filters: {filters}")
     log_output()
 
-    is_same_result = True
+    is_same_result: bool | None = True
 
     # Only compare dialog.tlk if no specific filters or if TLK files are explicitly requested
     if not filters or any("dialog.tlk" in f.lower() or "tlk" in f.lower() for f in filters):
@@ -945,19 +1163,15 @@ def diff_installs(
 
     modules_path1: CaseAwarePath = rinstall_path1 / "Modules"
     modules_path2: CaseAwarePath = rinstall_path2 / "Modules"
-    is_same_result = diff_directories(modules_path1, modules_path2, filters=filters) and is_same_result
+    is_same_result = diff_directories(modules_path1, modules_path2, filters=filters, skip_nss=True) and is_same_result
 
     override_path1: CaseAwarePath = rinstall_path1 / "Override"
     override_path2: CaseAwarePath = rinstall_path2 / "Override"
-    is_same_result = diff_directories(override_path1, override_path2, filters=filters) and is_same_result
-
-    rims_path1: CaseAwarePath = rinstall_path1 / "rims"
-    rims_path2: CaseAwarePath = rinstall_path2 / "rims"
-    is_same_result = diff_directories(rims_path1, rims_path2, filters=filters) and is_same_result
+    is_same_result = diff_directories(override_path1, override_path2, filters=filters, skip_nss=True) and is_same_result
 
     lips_path1: CaseAwarePath = rinstall_path1 / "Lips"
     lips_path2: CaseAwarePath = rinstall_path2 / "Lips"
-    is_same_result = diff_directories(lips_path1, lips_path2, filters=filters) and is_same_result
+    is_same_result = diff_directories(lips_path1, lips_path2, filters=filters, skip_nss=True) and is_same_result
 
     streamwaves_path1: CaseAwarePath = (
         rinstall_path1.joinpath("streamwaves")
@@ -969,8 +1183,16 @@ def diff_installs(
         if rinstall_path2.joinpath("streamwaves").safe_isdir()
         else rinstall_path2.joinpath("streamvoice")
     )
-    is_same_result = diff_directories(streamwaves_path1, streamwaves_path2, filters=filters) and is_same_result
-    return is_same_result  # noqa: RET504
+    is_same_result = (
+        diff_directories(
+            streamwaves_path1,
+            streamwaves_path2,
+            filters=filters,
+            skip_nss=True,
+        )
+        and is_same_result
+    )
+    return is_same_result
 
 
 def diff_installs_with_objects(
@@ -1026,7 +1248,12 @@ def resolve_resource_with_installation(
         installation_logger(f"Resolving resource '{resource_name}.{resource_type.extension}' in installation...")
 
         # Use Installation's resource method with the logger
-        resource_result = installation.resource(resource_name, resource_type, module_root=module_root, logger=installation_logger)
+        resource_result = installation.resource(
+            resource_name,
+            resource_type,
+            module_root=module_root,
+            logger=installation_logger,
+        )
 
         if resource_result is not None:
             search_log = installation_logger.get_resource_log(f"{resource_name}.{resource_type.extension}")
@@ -1047,7 +1274,10 @@ def resolve_resource_with_installation(
         return None, "Not found in installation", search_log
 
 
-def _parse_resource_name_and_type(resource_name: str, resource_type: ResourceType | None) -> tuple[str | None, ResourceType, str | None]:
+def _parse_resource_name_and_type(
+    resource_name: str,
+    resource_type: ResourceType | None,
+) -> tuple[str | None, ResourceType, str | None]:
     """Parse resource name and determine resource type.
 
     Returns:
@@ -1145,7 +1375,10 @@ def resolve_resource_in_installation(
         return data, source
 
 
-def should_include_in_filtered_diff(file_path: str, filters: list[str] | None) -> bool:
+def should_include_in_filtered_diff(
+    file_path: str,
+    filters: list[str] | None,
+) -> bool:
     """Check if a file should be included based on filter criteria.
 
     Args:
@@ -1183,7 +1416,10 @@ def should_include_in_filtered_diff(file_path: str, filters: list[str] | None) -
     return False
 
 
-def _validate_paths(path1: Path, path2: Path) -> bool | None:
+def _validate_paths(
+    path1: Path,
+    path2: Path,
+) -> bool | None:
     """Validate that both paths exist. Returns None if validation fails."""
     if not path1.safe_exists():
         log_output(f"--path1='{path1}' does not exist on disk, cannot diff")
@@ -1194,7 +1430,10 @@ def _validate_paths(path1: Path, path2: Path) -> bool | None:
     return True
 
 
-def _load_installations(path1: Path, path2: Path) -> tuple[Installation | None, Installation | None]:
+def _load_installations(
+    path1: Path,
+    path2: Path,
+) -> tuple[Installation | None, Installation | None]:
     """Load installations if the paths are KOTOR install directories."""
     installation1 = None
     installation2 = None
@@ -1219,10 +1458,11 @@ def _load_installations(path1: Path, path2: Path) -> tuple[Installation | None, 
 
 
 def _handle_special_comparisons(
-    path1: Path, path2: Path,
+    path1: Path,
+    path2: Path,
     installation1: Installation | None,
     installation2: Installation | None,
-    filters: list[str] | None
+    filters: list[str] | None,
 ) -> bool | None:
     """Handle special comparison cases (container vs installation, resource vs installation, etc.)."""
     # Handle container vs installation comparison
@@ -1275,10 +1515,7 @@ def run_differ_from_args(
         return diff_files(path1, path2)
 
     # If we get here, the paths are incompatible
-    msg: str = (
-        f"--path1='{path1.name}' and --path2='{path2.name}' must be the same type "
-        f"or one must be a resource and the other an installation"
-    )
+    msg: str = f"--path1='{path1.name}' and --path2='{path2.name}' must be the same type or one must be a resource and the other an installation"
     raise ValueError(msg)
 
 
@@ -1309,7 +1546,7 @@ def _load_container_capsule(container_path: Path, *, use_composite: bool) -> Cap
         return None
 
 
-def _process_container_resource(
+def _process_container_resource(  # noqa: PLR0913
     resource: FileResource,
     container_path: Path,
     installation: Installation,
@@ -1338,7 +1575,11 @@ def _process_container_resource(
 
     # Resolve resource in installation
     installation_data, resolution_info, search_log = resolve_resource_with_installation(
-        installation, resname, restype, module_root=module_root, installation_logger=installation_logger
+        installation,
+        resname,
+        restype,
+        module_root=module_root,
+        installation_logger=installation_logger,
     )
 
     if installation_data is None:
@@ -1352,9 +1593,11 @@ def _process_container_resource(
 
     try:
         if container_first:
-            result = diff_data(container_data, installation_data, container_rel, installation_rel, restype.extension.casefold())
+            ctx = DiffContext(container_rel, installation_rel, restype.extension.casefold(), skip_nss=True)
+            result = diff_data(container_data, installation_data, ctx)
         else:
-            result = diff_data(installation_data, container_data, installation_rel, container_rel, restype.extension.casefold())
+            ctx = DiffContext(installation_rel, container_rel, restype.extension.casefold(), skip_nss=True)
+            result = diff_data(installation_data, container_data, ctx)
     except Exception as e:  # noqa: BLE001
         log_output(f"Error comparing '{resource_identifier}': {universal_simplify_exception(e)}")
         return None, True  # Error, continue processing
@@ -1401,7 +1644,7 @@ def diff_container_vs_installation(
     installation_logger = InstallationLogger()
 
     # Process all resources
-    is_same_result = True
+    is_same_result: bool | None = True
     total_resources = 0
     compared_resources = 0
 
@@ -1415,10 +1658,12 @@ def diff_container_vs_installation(
         total_resources += 1
 
         result, should_continue = _process_container_resource(
-            resource, container_path, installation,
+            resource,
+            container_path,
+            installation,
             container_first=container_first,
             module_root=resolution_module_root,
-            installation_logger=installation_logger
+            installation_logger=installation_logger,
         )
 
         if result is None:
@@ -1478,7 +1723,10 @@ def diff_resource_vs_installation(
 
     # Resolve the resource in the installation
     installation_data, resolution_info, search_log = resolve_resource_with_installation(
-        installation, name_part, resource_type, installation_logger=installation_logger
+        installation,
+        name_part,
+        resource_type,
+        installation_logger=installation_logger,
     )
 
     if installation_data is None:
@@ -1492,9 +1740,11 @@ def diff_resource_vs_installation(
     ext = resource_path.suffix.casefold()[1:] if resource_path.suffix else ""
 
     if resource_first:
-        result = diff_data(resource_data, installation_data, resource_rel, installation_rel, ext)
+        ctx = DiffContext(resource_rel, installation_rel, ext, skip_nss=True)
+        result = diff_data(resource_data, installation_data, ctx)
     else:
-        result = diff_data(installation_data, resource_data, installation_rel, resource_rel, ext)
+        ctx = DiffContext(installation_rel, resource_rel, ext, skip_nss=True)
+        result = diff_data(installation_data, resource_data, ctx)
 
     # Only show installation search logs if a diff was found
     if result is False and search_log:
@@ -1503,104 +1753,351 @@ def diff_resource_vs_installation(
     return result
 
 
-def main():  # noqa: C901, PLR0912, PLR0915
-    print(f"KotorDiff version {CURRENT_VERSION}")
-    global PARSER_ARGS
-    global PARSER  # noqa: PLW0603
-    global LOGGING_ENABLED  # noqa: PLW0603
-    PARSER = ArgumentParser(description="Finds differences between KOTOR files/dirs. Supports 2-way and 3-way (diff3) comparisons.")
-    # Legacy two-path args
-    PARSER.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
-    PARSER.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
-    # New three-way args
-    PARSER.add_argument("--mine", type=str, help="Path to 'mine' (target to patch).")
-    PARSER.add_argument("--older", type=str, help="Path to 'older' (common ancestor/baseline).")
-    PARSER.add_argument("--yours", type=str, help="Path to 'yours' (desired final state).")
-    PARSER.add_argument("--format", type=str, default="default",
-                       choices=["default", "unified", "context", "side_by_side"],
-                       help="Output format (default: default)")
-    PARSER.add_argument("--out-ini", type=str, help="If set, writes a changes.ini at this path after a diff.")
-    PARSER.add_argument("--generate-ini", action="store_true", help="Generate changes.ini and stage files for TSLPatcher (default: only for 3-way diffs).")
-    PARSER.add_argument("--no-ini", action="store_true", help="Do not write changes.ini for any diffs.")
-    PARSER.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
-    PARSER.add_argument("--log-level", type=str, default="info",
-                       choices=["debug", "info", "warning", "error", "critical"],
-                       help="Logging level (default: info)")
-    PARSER.add_argument("--output-mode", type=str, default="full",
-                       choices=["full", "diff_only", "quiet"],
-                       help="Output mode: full (all logs), diff_only (only diff results), quiet (minimal) (default: full)")
-    PARSER.add_argument("--no-color", action="store_true", help="Disable colored output")
-    PARSER.add_argument("--compare-hashes", type=bool, help="Compare hashes of any unsupported file/resource type (default is True)")
-    PARSER.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is False)")
-    PARSER.add_argument("--ignore-tlk", type=bool, help="Whether to compare TLK files (default is False)")
-    PARSER.add_argument("--ignore-lips", type=bool, help="Whether to compare LIPS (default is False)")
-    PARSER.add_argument("--filter", action="append",
-                       help="Filter specific files/modules for installation-wide diffs (can be used multiple times). "
-                            "Examples: 'tat_m18ac' for module, 'some_character.utc' for specific resource")
-    PARSER.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is True)")
-    PARSER.add_argument("--use-profiler", type=bool, default=False, help="Use cProfile to find where most of the execution time is taking place in source code.")
+def _normalize_path_arg(path_str: str | None) -> str | None:
+    """Normalize a path argument by stripping quotes and handling Windows path issues."""
+    if not path_str:
+        return None
 
-    PARSER_ARGS, unknown = PARSER.parse_known_args()
-    LOGGING_ENABLED = bool(PARSER_ARGS.logging is None or PARSER_ARGS.logging)
+    # Strip leading/trailing whitespace
+    path_str = path_str.strip()
+
+    if not path_str:
+        return None
+
+    # Handle Windows PowerShell quote escaping issues where trailing backslash escapes the quote
+    # This manifests as paths like: C:\Program Files (x86)\Steam\steamapps\common\swkotor" C:\Program
+    # We need to detect and fix this by finding where the actual path likely ends
+
+    # Check if we have what looks like a mangled path (has a quote in the middle followed by space and more path)
+    if '"' in path_str and " " in path_str:
+        # Try to find the actual path end - look for the quote followed by space
+        quote_space_idx = path_str.find('" ')
+        if quote_space_idx > 0:
+            # Take everything before the quote as the path
+            path_str = path_str[:quote_space_idx]
+
+    # Strip quotes if present (handles both single and double quotes)
+    if (path_str.startswith('"') and path_str.endswith('"')) or (path_str.startswith("'") and path_str.endswith("'")):
+        path_str = path_str[1:-1]
+
+    # Remove any remaining quotes that might be embedded
+    path_str = path_str.replace('"', "").replace("'", "")
+
+    # Strip trailing backslashes that may have been used before quotes
+    path_str = path_str.rstrip("\\").rstrip("/")
+
+    # Final cleanup
+    path_str = path_str.strip()
+
+    return path_str if path_str else None
+
+
+def main():  # noqa: C901, PLR0912, PLR0915
+    """Main entry point for KotorDiff."""
+    # Configure console for UTF-8 output to handle Unicode characters
+    # This prevents UnicodeEncodeError on Windows when outputting text diffs
+    if sys.platform == "win32":
+        try:
+            # Try to reconfigure stdout/stderr to use UTF-8 with error handling
+            sys.stdout = io.TextIOWrapper(
+                sys.stdout.buffer,
+                encoding="utf-8",
+                errors="replace",  # Replace unencodable chars with ?
+                line_buffering=True,
+            )
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+        except Exception:  # noqa: BLE001, S110
+            # If reconfiguration fails, the error handling in log_output will catch it
+            pass
+
+    print(f"KotorDiff version {CURRENT_VERSION}")
+
+    # Debug: Show what arguments we actually received from PowerShell
+    debug_mode = os.environ.get("KOTORDIFF_DEBUG")
+
+    if debug_mode:
+        print("DEBUG: Original sys.argv:")
+        for idx, arg in enumerate(sys.argv):
+            print(f"  [{idx}] {arg!r}")
+
+    # Pre-process sys.argv to fix Windows PowerShell quote escaping issues
+    # This must happen BEFORE argparse sees the arguments
+
+    # First, detect if arguments are severely mangled (e.g., --path1="..\" causes --path2 to be in same arg)
+    reconstructed_argv = [sys.argv[0]]  # Keep the script name
+    i = 1
+
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+
+        # Check if this arg contains multiple option flags (sign of mangling)
+        # Example: '--path1=C:\path\" --path2=C:\other'
+        if arg.startswith("--") and '" --' in arg:
+            # This is severely mangled - split it back up
+            parts = arg.split('" --')
+
+            # First part is complete (before the split)
+            reconstructed_argv.append(parts[0])
+
+            # Second part needs to be reassembled from fragments
+            # The path is split across multiple argv elements
+            for idx in range(1, len(parts)):
+                part = "--" + parts[idx]  # Add back the -- prefix
+
+                # Now we need to collect fragments until we find a closing quote or another --
+                path_fragments = [part]
+                i += 1
+
+                # Collect fragments until we hit a closing quote or another option
+                while i < len(sys.argv):
+                    next_fragment = sys.argv[i]
+
+                    # Stop if we hit another option flag
+                    if next_fragment.startswith("--"):
+                        i -= 1  # Back up so we process this in the outer loop
+                        break
+
+                    # Add this fragment
+                    path_fragments.append(next_fragment)
+
+                    # Stop if this fragment ends with a quote
+                    if next_fragment.endswith('"'):
+                        break
+
+                    i += 1
+
+                # Reconstruct the full argument by joining fragments with spaces
+                full_arg = " ".join(path_fragments)
+                reconstructed_argv.append(full_arg)
+        else:
+            reconstructed_argv.append(arg)
+
+        i += 1
+
+    # Debug: Show reconstructed argv
+    if debug_mode:
+        print("\nDEBUG: Reconstructed sys.argv:")
+        for idx, arg in enumerate(reconstructed_argv):
+            print(f"  [{idx}] {arg!r}")
+
+    # Now normalize the reconstructed arguments
+    fixed_argv = []
+    i = 0
+    while i < len(reconstructed_argv):
+        arg = reconstructed_argv[i]
+        # Check if this is a path argument that might need normalization
+        if arg.startswith(("--path", "--mine", "--older", "--yours")):
+            # Check if it uses = syntax (--path1=value)
+            if "=" in arg:
+                key, value = arg.split("=", 1)
+                normalized = _normalize_path_arg(value)
+                if normalized:
+                    fixed_argv.append(f"{key}={normalized}")
+                else:
+                    fixed_argv.append(arg)
+            else:
+                # Space-separated syntax (--path1 value)
+                fixed_argv.append(arg)
+                if i + 1 < len(reconstructed_argv):
+                    i += 1
+                    next_arg = reconstructed_argv[i]
+                    # Normalize the value
+                    normalized = _normalize_path_arg(next_arg)
+                    if normalized:
+                        fixed_argv.append(normalized)
+                    else:
+                        fixed_argv.append(next_arg)
+        # Not a path argument, but might be a positional path
+        # Try to normalize it in case
+        elif i > 0 and not arg.startswith("-"):  # Positional argument (not a flag)
+            normalized = _normalize_path_arg(arg)
+            if normalized:
+                fixed_argv.append(normalized)
+            else:
+                fixed_argv.append(arg)
+        else:
+            fixed_argv.append(arg)
+        i += 1
+
+    # Replace sys.argv with fixed version
+    sys.argv = fixed_argv
+
+    # Debug: Show what arguments we have after normalization
+    if debug_mode:
+        print("\nDEBUG: Fixed sys.argv:")
+        for idx, arg in enumerate(sys.argv):
+            print(f"  [{idx}] {arg!r}")
+        print()
+
+    _global_config.parser = ArgumentParser(description="Finds differences between KOTOR files/dirs. Supports 2-way and 3-way (diff3) comparisons.")
+    # Legacy two-path args
+    _global_config.parser.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
+    _global_config.parser.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
+    # New three-way args
+    _global_config.parser.add_argument("--mine", type=str, help="Path to 'mine' (target to patch).")
+    _global_config.parser.add_argument("--older", type=str, help="Path to 'older' (common ancestor/baseline).")
+    _global_config.parser.add_argument("--yours", type=str, help="Path to 'yours' (desired final state).")
+    _global_config.parser.add_argument(
+        "--format",
+        type=str,
+        default="default",
+        choices=["default", "unified", "context", "side_by_side"],
+        help="Output format (default: default)",
+    )
+    _global_config.parser.add_argument(
+        "--out-ini",
+        nargs="?",
+        const="changes.ini",
+        default=None,
+        help="Generate changes.ini for TSLPatcher. Optionally specify output path (default: changes.ini). For 3-way diffs, defaults to 'changes.ini' if not specified.",
+    )
+    _global_config.parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
+    _global_config.parser.add_argument(
+        "--log-level", type=str, default="info", choices=["debug", "info", "warning", "error", "critical"], help="Logging level (default: info)"
+    )
+    _global_config.parser.add_argument(
+        "--output-mode",
+        type=str,
+        default="full",
+        choices=["full", "diff_only", "quiet"],
+        help="Output mode: full (all logs), diff_only (only diff results), quiet (minimal) (default: full)",
+    )
+    _global_config.parser.add_argument("--no-color", action="store_true", help="Disable colored output")
+    _global_config.parser.add_argument(
+        "--compare-hashes",
+        type=bool,
+        default=True,
+        help="Compare hashes of any unsupported file/resource type (default is True)",
+    )
+    _global_config.parser.add_argument(
+        "--filter",
+        action="append",
+        help="Filter specific files/modules for installation-wide diffs (can be used multiple times). "
+        "Examples: 'tat_m18ac' for module, 'some_character.utc' for specific resource",
+    )
+    _global_config.parser.add_argument(
+        "--logging",
+        type=bool,
+        default=True,
+        help="Whether to log the results to a file or not (default is True)",
+    )
+    _global_config.parser.add_argument(
+        "--use-profiler",
+        type=bool,
+        default=False,
+        help="Use cProfile to find where most of the execution time is taking place in source code.",
+    )
+
+    # Use parse_known_args to capture positional arguments without adding them to help
+    _global_config.parser_args, unknown_args = _global_config.parser.parse_known_args()
+    _global_config.logging_enabled = bool(_global_config.parser_args.logging is None or _global_config.parser_args.logging)
+
+    # Normalize all path arguments
+    _global_config.parser_args.path1 = _normalize_path_arg(_global_config.parser_args.path1)
+    _global_config.parser_args.path2 = _normalize_path_arg(_global_config.parser_args.path2)
+    _global_config.parser_args.mine = _normalize_path_arg(_global_config.parser_args.mine)
+    _global_config.parser_args.older = _normalize_path_arg(_global_config.parser_args.older)
+    _global_config.parser_args.yours = _normalize_path_arg(_global_config.parser_args.yours)
+
+    # Handle Windows PowerShell quote escaping in unknown args
+    # If we have multiple unknown args that look like they were split incorrectly, try to reassemble
+    cleaned_unknown = []
+    i = 0
+    while i < len(unknown_args):
+        current = unknown_args[i]
+        # Check if this looks like the start of a path that was split (ends with quote and space)
+        if i + 1 < len(unknown_args) and ('" ' in current or "' " in current):
+            # Try to reassemble - take everything up to the quote
+            normalized = _normalize_path_arg(current)
+            if normalized:
+                cleaned_unknown.append(normalized)
+            i += 1
+            # Skip the mangled continuation
+            continue
+        normalized = _normalize_path_arg(current)
+        if normalized:
+            cleaned_unknown.append(normalized)
+        i += 1
+
+    unknown_args = cleaned_unknown
 
     # Set up the new logging system if available
     if setup_logger is not None and LogLevel is not None and OutputMode is not None:
-        log_level = getattr(LogLevel, PARSER_ARGS.log_level.upper())
-        output_mode = getattr(OutputMode, PARSER_ARGS.output_mode.upper())
-        use_colors = not PARSER_ARGS.no_color
+        log_level = getattr(LogLevel, _global_config.parser_args.log_level.upper())
+        output_mode = getattr(OutputMode, _global_config.parser_args.output_mode.upper())
+        use_colors = not _global_config.parser_args.no_color
 
         # Set up output file if specified
         output_file = None
-        if PARSER_ARGS.output_log:
+        if _global_config.parser_args.output_log:
             try:
-                output_file = Path(PARSER_ARGS.output_log).open("w", encoding="utf-8")
+                output_file = Path(_global_config.parser_args.output_log).open("w", encoding="utf-8")
             except Exception as e:  # noqa: BLE001
-                print(f"Warning: Could not open log file {PARSER_ARGS.output_log}: {e}")
+                print(f"Warning: Could not open log file {_global_config.parser_args.output_log}: {e}")
 
         setup_logger(log_level, output_mode, use_colors, output_file)
 
-    lookup_function: Callable[[str], str | tuple[str, ...]] | None = None  # pyright: ignore[reportRedeclaration, reportAssignmentType]
+    def prompt_for_path(title: str) -> str:
+        """Prompt the user for a path input."""
+        user_input = input(f"{title}: ").strip()
+        return _normalize_path_arg(user_input) or ""
 
-    def get_lookup_function() -> Callable[[str], str | tuple[str, ...]]:
-        nonlocal lookup_function
-        if lookup_function is not None:
-            return lookup_function
-        def lookup_function(title: str) -> str | tuple[str, ...]:
-            #return askopenfilename(title=title)
-            return input(f"{title}: ")
-        return lookup_function
+    def print_path_error_with_help(path: Path) -> None:
+        """Print error message for invalid path with helpful quoting guidance."""
+        print("Invalid path:", path)
+        # Detect if this might be a quoting issue
+        path_str = str(path)
+        if '"' in path_str or not path.parent.safe_exists():
+            print("\nNote: If using paths with spaces and trailing backslashes in PowerShell:")
+            print('  - Remove trailing backslash: --path1="C:\\Program Files\\folder"')
+            print('  - Or double the backslash: --path1="C:\\Program Files\\folder\\\\"')
+            print('  - Or use forward slashes: --path1="C:/Program Files/folder/"')
+        if _global_config.parser:
+            _global_config.parser.print_help()
 
     # Decide between 2-way and 3-way usage
-    # Wire unknown positional args to mine/older/yours if provided
-    mine_arg: str | None = PARSER_ARGS.mine or (unknown[0] if len(unknown) > 0 else None)
-    older_arg: str | None = PARSER_ARGS.older or (unknown[1] if len(unknown) > 1 else None)
-    yours_arg: str | None = PARSER_ARGS.yours or (unknown[2] if len(unknown) > 2 else None)  # noqa: PLR2004
+    # Prefer explicit args, fallback to positional args
+    mine_arg: str | None = _global_config.parser_args.mine or (unknown_args[0] if len(unknown_args) > 0 else None)
+    older_arg: str | None = _global_config.parser_args.older or (unknown_args[1] if len(unknown_args) > 1 else None)
+    yours_arg: str | None = _global_config.parser_args.yours or (unknown_args[2] if len(unknown_args) > 2 else None)  # noqa: PLR2004
 
     is_three_way: bool = bool(mine_arg and older_arg and yours_arg)
 
     if is_three_way:
-        PARSER_ARGS.mine = Path(mine_arg).resolve()
-        PARSER_ARGS.older = Path(older_arg).resolve()
-        PARSER_ARGS.yours = Path(yours_arg).resolve()
-        for _label, p in (("--mine", PARSER_ARGS.mine), ("--older", PARSER_ARGS.older), ("--yours", PARSER_ARGS.yours)):
+        _global_config.parser_args.mine = Path(mine_arg).resolve()
+        _global_config.parser_args.older = Path(older_arg).resolve()
+        _global_config.parser_args.yours = Path(yours_arg).resolve()
+        for _label, p in (("--mine", _global_config.parser_args.mine), ("--older", _global_config.parser_args.older), ("--yours", _global_config.parser_args.yours)):
             if not p.safe_exists():
                 print("Invalid path:", p)
-                PARSER.print_help()
+                _global_config.parser.print_help()
                 sys.exit(2)
     else:
+        # Handle 2-way comparison
+        # Priority: --path1 > positional arg > prompt
+        # Get initial path1 from explicit arg or positional arg
+        initial_path1 = _global_config.parser_args.path1 or (unknown_args[0] if len(unknown_args) > 0 else None)
+
         while True:
-            PARSER_ARGS.path1 = Path(
-                PARSER_ARGS.path1
-                or (unknown[0] if len(unknown) > 0 else None)
-                or get_lookup_function()("Path to the first K1/TSL install, file, or directory to diff."),
-            ).resolve()
-            if PARSER_ARGS.path1.safe_exists():
+            if initial_path1:
+                path1_str = initial_path1
+                initial_path1 = None  # Only use once
+            else:
+                path1_str = prompt_for_path("Path to the first K1/TSL install, file, or directory to diff.")
+
+            if not path1_str:
+                print("Path cannot be empty")
+                continue
+
+            _global_config.parser_args.path1 = Path(path1_str).resolve()
+
+            if _global_config.parser_args.path1.safe_exists():
                 break
 
             # Check if this could be a module name by trying to find related module files
             potential_module_files = []
-            base_name = PARSER_ARGS.path1.name
-            parent_dir = PARSER_ARGS.path1.parent
+            base_name = _global_config.parser_args.path1.name
+            parent_dir = _global_config.parser_args.path1.parent
 
             for ext in [".mod", ".rim", "_s.rim", "_dlg.erf"]:
                 module_file = parent_dir / f"{base_name}{ext}"
@@ -1610,26 +2107,36 @@ def main():  # noqa: C901, PLR0912, PLR0915
             if potential_module_files:
                 # Found module files, use the first one as the representative path
                 # The composite loading logic will handle finding all related files
-                PARSER_ARGS.path1 = potential_module_files[0]
-                log_output(f"Resolved module name '{base_name}' to: {PARSER_ARGS.path1}")
+                _global_config.parser_args.path1 = potential_module_files[0]
+                log_output(f"Resolved module name '{base_name}' to: {_global_config.parser_args.path1}")
                 break
 
-            print("Invalid path:", PARSER_ARGS.path1)
-            PARSER.print_help()
-            PARSER_ARGS.path1 = None
+            print_path_error_with_help(_global_config.parser_args.path1)
+
+        # Priority: --path2 > positional arg > prompt
+        # Get initial path2 from explicit arg or positional arg
+        initial_path2 = _global_config.parser_args.path2 or (unknown_args[1] if len(unknown_args) > 1 else None)
+
         while True:
-            PARSER_ARGS.path2 = Path(
-                PARSER_ARGS.path2
-                or (unknown[1] if len(unknown) > 1 else None)
-                or get_lookup_function()("Path to the second K1/TSL install, file, or directory to diff."),
-            ).resolve()
-            if PARSER_ARGS.path2.safe_exists():
+            if initial_path2:
+                path2_str = initial_path2
+                initial_path2 = None  # Only use once
+            else:
+                path2_str = prompt_for_path("Path to the second K1/TSL install, file, or directory to diff.")
+
+            if not path2_str:
+                print("Path cannot be empty")
+                continue
+
+            _global_config.parser_args.path2 = Path(path2_str).resolve()
+
+            if _global_config.parser_args.path2.safe_exists():
                 break
 
             # Check if this could be a module name by trying to find related module files
             potential_module_files = []
-            base_name = PARSER_ARGS.path2.name
-            parent_dir = PARSER_ARGS.path2.parent
+            base_name = _global_config.parser_args.path2.name
+            parent_dir = _global_config.parser_args.path2.parent
 
             for ext in [".mod", ".rim", "_s.rim", "_dlg.erf"]:
                 module_file = parent_dir / f"{base_name}{ext}"
@@ -1639,81 +2146,89 @@ def main():  # noqa: C901, PLR0912, PLR0915
             if potential_module_files:
                 # Found module files, use the first one as the representative path
                 # The composite loading logic will handle finding all related files
-                PARSER_ARGS.path2 = potential_module_files[0]
-                log_output(f"Resolved module name '{base_name}' to: {PARSER_ARGS.path2}")
+                _global_config.parser_args.path2 = potential_module_files[0]
+                log_output(f"Resolved module name '{base_name}' to: {_global_config.parser_args.path2}")
                 break
 
-            print("Invalid path:", PARSER_ARGS.path2)
-            PARSER.print_help()
-            PARSER_ARGS.path2 = None
+            print_path_error_with_help(_global_config.parser_args.path2)
 
-    PARSER_ARGS.ignore_rims = bool(PARSER_ARGS.ignore_rims)
-    PARSER_ARGS.ignore_lips = bool(PARSER_ARGS.ignore_lips)
-    PARSER_ARGS.ignore_tlk = bool(PARSER_ARGS.ignore_tlk)
-    PARSER_ARGS.use_profiler = bool(PARSER_ARGS.use_profiler)
-    PARSER_ARGS.compare_hashes = not bool(PARSER_ARGS.compare_hashes)
+    _global_config.parser_args.use_profiler = bool(_global_config.parser_args.use_profiler)
+    _global_config.parser_args.compare_hashes = not bool(_global_config.parser_args.compare_hashes)
 
     log_output()
     if is_three_way:
-        log_output(f"Using --mine='{PARSER_ARGS.mine}'")
-        log_output(f"Using --older='{PARSER_ARGS.older}'")
-        log_output(f"Using --yours='{PARSER_ARGS.yours}'")
+        log_output(f"Using --mine='{_global_config.parser_args.mine}'")
+        log_output(f"Using --older='{_global_config.parser_args.older}'")
+        log_output(f"Using --yours='{_global_config.parser_args.yours}'")
     else:
-        log_output(f"Using --path1='{PARSER_ARGS.path1}'")
-        log_output(f"Using --path2='{PARSER_ARGS.path2}'")
-    log_output(f"Using --ignore-rims={PARSER_ARGS.ignore_rims}")
-    log_output(f"Using --ignore-tlk={PARSER_ARGS.ignore_tlk}")
-    log_output(f"Using --ignore-lips={PARSER_ARGS.ignore_lips}")
-    log_output(f"Using --compare-hashes={PARSER_ARGS.compare_hashes}")
-    log_output(f"Using --use-profiler={PARSER_ARGS.use_profiler}")
+        log_output(f"Using --path1='{_global_config.parser_args.path1}'")
+        log_output(f"Using --path2='{_global_config.parser_args.path2}'")
+    log_output(f"Using --compare-hashes={_global_config.parser_args.compare_hashes}")
+    log_output(f"Using --use-profiler={_global_config.parser_args.use_profiler}")
 
     profiler = None
     try:
-        if PARSER_ARGS.use_profiler:
+        if _global_config.parser_args.use_profiler:
             profiler = cProfile.Profile()
             profiler.enable()
 
         if is_three_way:
-            # For 3-way diffs, generate ini by default unless --no-ini is specified
-            should_generate_ini = not PARSER_ARGS.no_ini
+            # For 3-way diffs, generate INI by default to "changes.ini" unless --out-ini is not provided
+            # If --out-ini is provided (with or without path), use that value
+            out_ini_path: Path | None
+            if _global_config.parser_args.out_ini is not None:
+                # --out-ini was provided (either with path or without, in which case it's "changes.ini")
+                out_ini_path = Path(_global_config.parser_args.out_ini).resolve()
+            else:
+                # Default behavior for 3-way: generate to "changes.ini"
+                out_ini_path = Path("changes.ini").resolve()
+
+            assert isinstance(_global_config.parser_args.mine, Path)
+            assert isinstance(_global_config.parser_args.older, Path)
+            assert isinstance(_global_config.parser_args.yours, Path)
+            config = IniGenerationConfig(
+                generate_ini=True,
+                out_ini=out_ini_path,
+            )
             run_differ3_from_args(
-                PARSER_ARGS.mine,
-                PARSER_ARGS.older,
-                PARSER_ARGS.yours,
-                generate_ini=should_generate_ini,
-                out_ini=(Path(PARSER_ARGS.out_ini) if PARSER_ARGS.out_ini else None),
+                _global_config.parser_args.mine,
+                _global_config.parser_args.older,
+                _global_config.parser_args.yours,
+                config,
             )
             comparison = None
         else:
+            assert isinstance(_global_config.parser_args.path1, Path)
+            assert isinstance(_global_config.parser_args.path2, Path)
             comparison = run_differ_from_args(
-                PARSER_ARGS.path1,
-                PARSER_ARGS.path2,
-                filters=PARSER_ARGS.filter,
+                _global_config.parser_args.path1,
+                _global_config.parser_args.path2,
+                filters=_global_config.parser_args.filter,
             )
 
-            # Generate changes.ini only if explicitly requested for 2-way diffs
-            if PARSER_ARGS.generate_ini and not PARSER_ARGS.no_ini:
-                ini_out: Path = Path(PARSER_ARGS.out_ini).resolve() if PARSER_ARGS.out_ini else Path("changes.ini").resolve()
+            # Generate changes.ini only if --out-ini is explicitly provided for 2-way diffs
+            if _global_config.parser_args.out_ini is not None:
+                ini_out: Path = Path(_global_config.parser_args.out_ini).resolve()
                 log_output(f"Generating changes.ini and staging files at: {ini_out.parent}")
                 try:
                     _generate_changes_ini(
-                        PARSER_ARGS.path1,  # mine (target to patch)
-                        PARSER_ARGS.path1,  # older baseline same as mine in 2-way mode
-                        PARSER_ARGS.path2,  # yours (desired state)
+                        _global_config.parser_args.path1,  # mine (target to patch)
+                        _global_config.parser_args.path1,  # older baseline same as mine in 2-way mode
+                        _global_config.parser_args.path2,  # yours (desired state)
                         out_path=ini_out,
                     )
                 except Exception as e:  # noqa: BLE001
                     log_output(f"[Error] Failed to generate changes.ini: {universal_simplify_exception(e)}")
-            elif PARSER_ARGS.out_ini and not PARSER_ARGS.generate_ini:
-                log_output("[Info] --out-ini specified but --generate-ini not set. Use --generate-ini to create changes.ini for 2-way diffs.")
 
         if profiler is not None:
             _stop_profiler(profiler)
         if comparison is not None:
+            assert isinstance(_global_config.parser_args.path1, PurePath)
+            assert isinstance(_global_config.parser_args.path2, PurePath)
             log_output(
-                f"'{relative_path_from_to(PARSER_ARGS.path2, PARSER_ARGS.path1)}'",
+                f"'{relative_path_from_to(_global_config.parser_args.path2, _global_config.parser_args.path1)}'",
                 " MATCHES " if comparison else " DOES NOT MATCH ",
-                f"'{relative_path_from_to(PARSER_ARGS.path1, PARSER_ARGS.path2)}'",
+                f"'{relative_path_from_to(_global_config.parser_args.path1, _global_config.parser_args.path2)}'",
             )
             if comparison is True:
                 sys.exit(0)

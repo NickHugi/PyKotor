@@ -79,11 +79,11 @@ class BWMBinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if file_type != "BWM ":
-            msg = "Not a valid binary BWM file."
+            msg = f"Not a valid binary BWM file. Expected 'BWM ', got '{file_type}' (hex: {file_type.encode('latin1').hex()})"
             raise ValueError(msg)
 
         if file_version != "V1.0":
-            msg = "The BWM version of the file is unsupported."
+            msg = f"Unsupported BWM version: got '{file_version}', expected 'V1.0'"
             raise ValueError(msg)
 
         self._wok.walkmesh_type = BWMType(self._reader.read_uint32())
@@ -291,12 +291,12 @@ class BWMBinaryWriter(ResourceWriter):
         self._writer.write_uint32(len(perimeters))
         self._writer.write_uint32(perimeter_offset)
 
-        self._writer.write_bytes(vertex_data)
-        self._writer.write_bytes(indices_data)
-        self._writer.write_bytes(material_data)
-        self._writer.write_bytes(normal_data)
-        self._writer.write_bytes(coeffeicent_data)
-        self._writer.write_bytes(aabb_data)
-        self._writer.write_bytes(adjacency_data)
-        self._writer.write_bytes(edge_data)
-        self._writer.write_bytes(perimeter_data)
+        self._writer.write_bytes(bytes(vertex_data))
+        self._writer.write_bytes(bytes(indices_data))
+        self._writer.write_bytes(bytes(material_data))
+        self._writer.write_bytes(bytes(normal_data))
+        self._writer.write_bytes(bytes(coeffeicent_data))
+        self._writer.write_bytes(bytes(aabb_data))
+        self._writer.write_bytes(bytes(adjacency_data))
+        self._writer.write_bytes(bytes(edge_data))
+        self._writer.write_bytes(bytes(perimeter_data))

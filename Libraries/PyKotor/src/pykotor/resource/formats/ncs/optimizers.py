@@ -72,13 +72,90 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
 
 
 class MergeAdjacentMoveSPOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS) -> NoReturn:
-        raise NotImplementedError
+    """Merges consecutive MOVSP instructions into a single instruction.
+
+    Multiple adjacent stack pointer movements can be combined into one,
+    reducing bytecode size and improving execution efficiency.
+    """
+
+    def optimize(self, ncs: NCS):
+        """Merge adjacent MOVSP instructions.
+
+        Args:
+        ----
+            ncs: NCS object to optimize
+
+        Processing Logic:
+        ----------------
+            - Find sequences of consecutive MOVSP instructions
+            - Sum their offset values
+            - Replace sequence with single MOVSP containing the sum
+            - Update any jumps that target removed instructions
+        """
+        i = 0
+        while i < len(ncs.instructions) - 1:
+            instruction = ncs.instructions[i]
+
+            if instruction.ins_type != NCSInstructionType.MOVSP:
+                i += 1
+                continue
+
+            # Check if next instruction is also MOVSP and nothing jumps to it
+            next_inst = ncs.instructions[i + 1]
+            if next_inst.ins_type == NCSInstructionType.MOVSP and not ncs.links_to(next_inst):
+                # Merge: add the offsets together
+                combined_offset = instruction.args[0] + next_inst.args[0]
+                instruction.args[0] = combined_offset
+
+                # Remove the second MOVSP
+                ncs.instructions.remove(next_inst)
+                self.instructions_cleared += 1
+
+                # Don't increment i, check if we can merge more
+                continue
+
+            i += 1
 
 
 class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS) -> NoReturn:
-        raise NotImplementedError
+    """Removes JMP instructions that jump to the immediately following instruction.
+
+    Such jumps are redundant as execution would naturally flow to the next
+    instruction anyway.
+    """
+
+    def optimize(self, ncs: NCS):
+        """Remove redundant adjacent jumps.
+
+        Args:
+        ----
+            ncs: NCS object to optimize
+
+        Processing Logic:
+        ----------------
+            - Find all JMP instructions
+            - Check if jump target is the immediately following instruction
+            - Remove such redundant JMP instructions
+        """
+        removals = []
+
+        for i, instruction in enumerate(ncs.instructions[:-1]):  # Skip last instruction
+            if instruction.ins_type != NCSInstructionType.JMP:
+                continue
+
+            if instruction.jump is None:
+                continue
+
+            # Check if this JMP targets the very next instruction
+            next_instruction = ncs.instructions[i + 1]
+            if instruction.jump is next_instruction:
+                # This JMP is redundant
+                removals.append(instruction)
+
+        # Remove all redundant JMPs
+        for instruction in removals:
+            ncs.instructions.remove(instruction)
+            self.instructions_cleared += 1
 
 
 class RemoveUnusedBlocksOptimizer(NCSOptimizer):

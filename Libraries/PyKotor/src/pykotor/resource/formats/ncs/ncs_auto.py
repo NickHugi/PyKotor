@@ -103,15 +103,35 @@ def compile_nss(
     errorlog: yacc.NullLogger | None = None,
     debug: bool = False,
 ) -> NCS:
-    """Returns NCS object compiled from input source string.
+    """Compile NSS source code to NCS bytecode.
 
-    Attributes:
-    ----------
-        source: The source code.
-        game: Target game for the NCS object.
-        optimizers: What post-compilation optimizers to apply to the NCS object.
+    Args:
+    ----
+        source: The NSS source code string to compile
+        game: Target game (K1 or TSL) - determines which function/constant definitions to use
+        optimizers: Optional list of post-compilation optimizers to apply
+        library_lookup: Paths to search for #include files
+        errorlog: Optional error logger for parser
+        debug: Enable debug output from parser
+
+    Returns:
+    -------
+        NCS: Compiled NCS bytecode object
+
+    Raises:
+    ------
+        CompileError: If source code has syntax errors or semantic issues
+        EntryPointError: If script has no main() or StartingConditional() entry point
+
+    Note:
+    ----
+        RemoveNopOptimizer is always applied first unless explicitly included in optimizers list,
+        as NOP instructions are compilation artifacts that should be removed.
     """
+    # Initialize lexer (creates parser tables if needed)
     NssLexer()
+
+    # Create parser with game-appropriate function and constant definitions
     nss_parser = NssParser(
         functions=KOTOR_FUNCTIONS if game.is_k1() else TSL_FUNCTIONS,
         constants=KOTOR_CONSTANTS if game.is_k1() else TSL_CONSTANTS,
@@ -123,13 +143,17 @@ def compile_nss(
 
     ncs = NCS()
 
+    # Parse and compile source code to bytecode
     block = nss_parser.parser.parse(source, tracking=True, debug=debug)
     block.compile(ncs)
 
+    # Ensure NOP removal is always first optimization pass
     if not optimizers or not any(isinstance(optimizer, RemoveNopOptimizer) for optimizer in optimizers):
         optimizers = [RemoveNopOptimizer()] + (optimizers or [])
 
+    # Apply all optimizers
     for optimizer in optimizers:
         optimizer.reset()
     ncs.optimize(optimizers)
+
     return ncs

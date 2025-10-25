@@ -199,8 +199,8 @@ class GFFDiffComparator(DiffComparator[Any]):
         """Compare two GFF objects."""
         try:
             # Use the existing compare method but capture the differences
-            field_diffs = []
-            struct_diffs = []
+            field_diffs: list[FieldDiff] = []
+            struct_diffs: list[StructDiff] = []
 
             def diff_callback(message: str, *args, **kwargs):
                 """Capture diff information instead of just logging."""
@@ -237,9 +237,9 @@ class TwoDADiffComparator(DiffComparator[Any]):
         """Compare two 2DA objects."""
         try:
             # Use existing compare method but capture differences
-            header_diffs = []
-            row_diffs = []
-            column_diffs = []
+            header_diffs: list[HeaderDiff] = []
+            row_diffs: list[RowDiff] = []
+            column_diffs: list[ColumnDiff] = []
 
             def diff_callback(message: str, *args, **kwargs):
                 """Capture diff information."""
@@ -274,7 +274,7 @@ class TLKDiffComparator(DiffComparator[Any]):
     def compare(self, left: Any, right: Any, left_id: str, right_id: str) -> TLKDiffResult:
         """Compare two TLK objects."""
         try:
-            entry_diffs = []
+            entry_diffs: list[TLKEntryDiff] = []
 
             def diff_callback(message: str, *args, **kwargs):
                 """Capture diff information."""
@@ -311,6 +311,16 @@ class DiffEngine:
             "tlk": TLKDiffComparator(),
             "bytes": BytesDiffComparator(),
         }
+        # Import structured engine lazily to avoid circular imports
+        self._structured_engine = None
+
+    @property
+    def structured_engine(self):
+        """Lazy load structured engine."""
+        if self._structured_engine is None:
+            from kotordiff.structured_diff import StructuredDiffEngine
+            self._structured_engine = StructuredDiffEngine()
+        return self._structured_engine
 
     def compare_resources(
         self,
@@ -353,20 +363,26 @@ class DiffEngine:
         if resource_type in ("gff", "2da", "tlk") and resource_type != "bytes":
             try:
                 # Import here to avoid circular imports
+                left_parsed: Any
+                right_parsed: Any
+                
                 if resource_type == "gff":
                     from pykotor.resource.formats import gff
-                    left_obj = gff.read_gff(left_data)
-                    right_obj = gff.read_gff(right_data)
+                    left_parsed = gff.read_gff(left_data)
+                    right_parsed = gff.read_gff(right_data)
                 elif resource_type == "2da":
                     from pykotor.resource.formats import twoda
-                    left_obj = twoda.read_2da(left_data)
-                    right_obj = twoda.read_2da(right_data)
+                    left_parsed = twoda.read_2da(left_data)
+                    right_parsed = twoda.read_2da(right_data)
                 elif resource_type == "tlk":
                     from pykotor.resource.formats import tlk
-                    left_obj = tlk.read_tlk(left_data)
-                    right_obj = tlk.read_tlk(right_data)
+                    left_parsed = tlk.read_tlk(left_data)
+                    right_parsed = tlk.read_tlk(right_data)
+                else:
+                    # Fallback to bytes comparison
+                    return comparator.compare(left_data, right_data, left_id, right_id)
 
-                return comparator.compare(left_obj, right_obj, left_id, right_id)
+                return comparator.compare(left_parsed, right_parsed, left_id, right_id)
 
             except Exception as e:
                 return DiffResult(

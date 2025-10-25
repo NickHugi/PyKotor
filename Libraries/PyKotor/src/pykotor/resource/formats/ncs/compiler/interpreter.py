@@ -9,13 +9,13 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 from pykotor.common.geometry import Vector3
 from pykotor.common.script import DataType
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS
-from pykotor.resource.formats.ncs import NCSInstructionType
+from pykotor.resource.formats.ncs import NCSInstruction, NCSInstructionType
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from pykotor.common.script import ScriptFunction
-    from pykotor.resource.formats.ncs import NCS, NCSInstruction
+    from pykotor.resource.formats.ncs import NCS
 
 
 class Interpreter:
@@ -27,7 +27,7 @@ class Interpreter:
         self._functions: list[ScriptFunction] = KOTOR_FUNCTIONS
 
         self._stack: Stack = Stack()
-        self._returns: list[NCSInstruction] = [None]
+        self._returns: list[NCSInstruction | None] = [None]
 
         self._mocks: dict[str, Callable] = {}
 
@@ -233,7 +233,7 @@ class Interpreter:
 
             elif self._cursor.ins_type == NCSInstructionType.JSR:
                 index_return_to = self._ncs.instructions.index(self._cursor) + 1
-                return_to = self._ncs.instructions[index_return_to]
+                return_to: NCSInstruction | None = self._ncs.instructions[index_return_to]
                 self._returns.append(return_to)
 
             elif self._cursor.ins_type in {
@@ -249,9 +249,15 @@ class Interpreter:
                 StackSnapshot(self._cursor, self._stack.state()),
             )
 
-            # Control flow
+            # Control flow handling
             if self._cursor.ins_type == NCSInstructionType.RETN:
                 return_to = self._returns.pop()
+                if return_to is None:
+                    msg = f"Return instruction RETN at index {index} has no return target"
+                    raise RuntimeError(msg)
+                if not isinstance(return_to, NCSInstruction):
+                    msg = f"Return instruction RETN at index {index} has no return target"
+                    raise RuntimeError(msg)
                 self._cursor = return_to
                 continue
 
@@ -261,8 +267,15 @@ class Interpreter:
                 or (self._cursor.ins_type == NCSInstructionType.JNZ and jump_value != 0)
                 or self._cursor.ins_type == NCSInstructionType.JSR
             ):
+                if self._cursor.jump is None:
+                    msg = f"Jump instruction {self._cursor.ins_type.name} at index {index} has no jump target"
+                    raise RuntimeError(msg)
                 self._cursor = self._cursor.jump
             else:
+                # Move to next instruction
+                if index + 1 >= len(self._ncs.instructions):
+                    # End of program
+                    break
                 self._cursor = self._ncs.instructions[index + 1]
 
     def store_state(self):
@@ -279,26 +292,64 @@ class Interpreter:
 
         self._stack.add(DataType.ACTION, ActionStackValue(block, self._stack.state()))
 
-    def do_action(self, function: ScriptFunction, args: int):
+    def do_action(self, function: ScriptFunction, args: int):  # noqa: C901, PLR0912
+        """Execute an engine action/function call.
+
+        Args:
+        ----
+            function: The script function being called
+            args: Number of arguments being passed
+
+        Raises:
+        ------
+            ValueError: If argument count or types don't match function signature
+        """
+        if args != len(function.params):
+            msg = (
+                f"Action '{function.name}' called with {args} arguments "
+                f"but expects {len(function.params)} parameters"
+            )
+            raise ValueError(msg)
+
         args_snap = []
 
+        # Pop arguments from stack in reverse order (last param popped first)
         for i in range(args):
-            if function.params[i].datatype == DataType.VECTOR:
+            param_index = args - 1 - i  # Reverse order
+            if param_index >= len(function.params):
+                msg = f"Action '{function.name}' parameter index {param_index} out of range"
+                raise ValueError(msg)
+
+            if function.params[param_index].datatype == DataType.VECTOR:
+                # Vectors are three floats on stack (z, y, x order when popping)
+                try:
+                    z = self._stack.pop().value
+                    y = self._stack.pop().value
+                    x = self._stack.pop().value
+                except IndexError as e:
+                    msg = f"Stack underflow while popping vector for '{function.name}'"
+                    raise RuntimeError(msg) from e
+
                 vector_object = StackObject(
                     DataType.VECTOR,
-                    Vector3(
-                        self._stack.pop().value,
-                        self._stack.pop().value,
-                        self._stack.pop().value,
-                    ),
+                    Vector3(x, y, z),
                 )
                 args_snap.append(vector_object)
             else:
-                args_snap.append(self._stack.pop())
+                try:
+                    args_snap.append(self._stack.pop())
+                except IndexError as e:
+                    msg = f"Stack underflow while popping argument for '{function.name}'"
+                    raise RuntimeError(msg) from e
 
+        # Validate argument types
         for i in range(args):
             if function.params[i].datatype != args_snap[i].data_type:
-                msg = f"Invoked action '{function.name}' received the wrong data type for parameter '{function.params[i].name}' valued at '{args_snap[i]}'."
+                msg = (
+                    f"Action '{function.name}' parameter '{function.params[i].name}' "
+                    f"expects type {function.params[i].datatype.name} but got "
+                    f"{args_snap[i].data_type.name} with value '{args_snap[i].value}'"
+                )
                 raise ValueError(msg)
 
         if function.returntype != DataType.VOID:
@@ -329,7 +380,11 @@ class Interpreter:
 
     def set_mock(self, function_name: str, mock: Callable):
         function = next(
-            (function for function in self._functions if function.name == function_name),
+            (
+                function
+                for function in self._functions
+                if function.name == function_name
+            ),
             None,
         )
 
@@ -354,7 +409,7 @@ class StackV2:
         self._stack: bytearray = bytearray()
         self._base_pointer: int = 0
         self._base_pointer_saved: list[int] = []
-        self._stack_types: list = []
+        self._stack_types: list[DataType] = []
 
     def state(self) -> bytearray:
         return copy(self._stack)
@@ -369,13 +424,39 @@ class StackV2:
         copied = self._stack[stacksize - offset : stacksize - offset + size]
         self._stack.extend(copied)
 
-    # TODO: refactor
-    def add(self, datatype: DataType, value: float | int):  # noqa: PYI041,RUF100
-        if datatype not in {DataType.INT, DataType.FLOAT}:
-            raise NotImplementedError
-        if not isinstance(value, int):
-            raise ValueError
-        self._stack.extend(struct.pack("i", value))
+    def add(self, datatype: DataType, value: float | str | object):
+        """Add a value to the stack with proper type handling.
+
+        Args:
+        ----
+            datatype: The type of data being added
+            value: The value to add
+
+        Raises:
+        ------
+            ValueError: If value type doesn't match datatype
+            NotImplementedError: If datatype is not supported
+        """
+        if datatype == DataType.INT:
+            if not isinstance(value, int):
+                msg = f"Expected int value, got {type(value)}"
+                raise ValueError(msg)
+            self._stack.extend(struct.pack("i", value))
+        elif datatype == DataType.FLOAT:
+            if not isinstance(value, (int, float)):
+                msg = f"Expected numeric value, got {type(value)}"
+                raise ValueError(msg)
+            self._stack.extend(struct.pack("f", float(value)))
+        elif datatype in {DataType.STRING, DataType.OBJECT, DataType.EFFECT,
+                          DataType.EVENT, DataType.LOCATION, DataType.TALENT}:
+            # For non-primitive types, store as 4-byte reference/handle
+            # In a real implementation these would be object references
+            # For StackV2 byte-based simulation, store as int
+            handle = 0 if value is None else hash(value) & 0xFFFFFFFF
+            self._stack.extend(struct.pack("I", handle))
+        else:
+            msg = f"Unsupported datatype for StackV2: {datatype}"
+            raise NotImplementedError(msg)
 
 
 class Stack:
@@ -391,25 +472,63 @@ class Stack:
         self._stack.append(StackObject(data_type, value))
 
     def _stack_index(self, offset: int) -> int:
+        """Convert a stack offset to an actual list index.
+
+        Args:
+        ----
+            offset: Stack offset (must be negative, relative to stack top)
+
+        Returns:
+        -------
+            int: Actual index in the stack list
+
+        Raises:
+        ------
+            ValueError: If offset is invalid
+        """
         if offset >= 0:
-            raise ValueError
+            msg = f"Stack offset must be negative, got {offset}"
+            raise ValueError(msg)
+
         offset = abs(offset)
         index = 0
         while offset > 0:
+            if abs(index) > len(self._stack):
+                msg = f"Stack offset out of range: {offset}"
+                raise ValueError(msg)
             element_size = self._stack[index].data_type.size()
             offset -= element_size
             index -= 1
         return index
 
     def _stack_index_bp(self, offset: int) -> int:
+        """Convert a base-pointer-relative offset to an actual list index.
+
+        Args:
+        ----
+            offset: Offset relative to base pointer (must be negative)
+
+        Returns:
+        -------
+            int: Actual index in the stack list
+
+        Raises:
+        ------
+            ValueError: If offset is invalid or out of range
+        """
         if offset >= 0:
-            raise ValueError
+            msg = f"BP-relative offset must be negative, got {offset}"
+            raise ValueError(msg)
+
         bp_index = self._bp // 4
         relative_index = abs(offset) // 4
         absolute_index = bp_index - relative_index
-        if absolute_index < 0:
-            raise ValueError
-        return bp_index - relative_index
+
+        if absolute_index < 0 or absolute_index >= len(self._stack):
+            msg = f"BP-relative offset {offset} results in invalid index {absolute_index}"
+            raise ValueError(msg)
+
+        return absolute_index
 
     def stack_pointer(self) -> int:
         return len(self._stack) * 4
@@ -452,24 +571,83 @@ class Stack:
             self._stack[target_index] = self._stack[source_index]
 
     def pop(self) -> Any:
+        """Pop and return the top stack element.
+
+        Returns:
+        -------
+            StackObject: The popped stack element
+
+        Raises:
+        ------
+            IndexError: If stack is empty
+        """
+        if not self._stack:
+            msg = "Cannot pop from empty stack"
+            raise IndexError(msg)
         return self._stack.pop()
 
     def move(self, offset: int):
+        """Move the stack pointer by offset (shrink or grow stack).
+
+        Args:
+        ----
+            offset: Number of bytes to move (negative shrinks, positive grows)
+
+        Raises:
+        ------
+            ValueError: If offset is positive (stack growth not supported via move)
+        """
         if offset > 0:
-            raise ValueError
+            msg = f"Stack growth via MOVSP not supported (offset={offset})"
+            raise ValueError(msg)
         if offset == 0:
             return
         remove_to = self._stack_index(offset)
         self._stack = self._stack[:remove_to]
 
     def copy_down_bp(self, offset: int, size: int):
-        # Copy from the top of the stack down to the bp adjusted w/ offset?
+        """Copy value from stack top down to base-pointer-relative location.
+
+        Args:
+        ----
+            offset: Offset relative to base pointer (negative)
+            size: Size in bytes to copy (typically 4)
+
+        Raises:
+        ------
+            IndexError: If stack is empty
+            ValueError: If offset/size is invalid
+        """
+        if not self._stack:
+            msg = "Cannot copy from empty stack"
+            raise IndexError(msg)
+
+        if size % 4 != 0:
+            msg = f"Size must be multiple of 4, got {size}"
+            raise ValueError(msg)
+
+        # For now, simple implementation copying single element
+        # Full implementation would handle multi-element copies
         top_value = self._stack[-1]
         to_index = self._stack_index_bp(offset)
         self._stack[to_index] = top_value
 
     def copy_top_bp(self, offset: int, size: int):
-        # Copy value relative to base pointer to the top of the stack
+        """Copy value from base-pointer-relative location to stack top.
+
+        Args:
+        ----
+            offset: Offset relative to base pointer (negative)
+            size: Size in bytes to copy (typically 4)
+
+        Raises:
+        ------
+            ValueError: If offset/size is invalid
+        """
+        if size % 4 != 0:
+            msg = f"Size must be multiple of 4, got {size}"
+            raise ValueError(msg)
+
         copy_index = self._stack_index_bp(offset)
         top_value = self._stack[copy_index]
         self._stack.append(top_value)
@@ -482,132 +660,380 @@ class Stack:
         self._bp = self._bp_buffer.pop()
 
     def increment(self, offset: int):
+        """Increment value at stack offset.
+
+        Args:
+        ----
+            offset: Stack offset (negative, relative to top)
+
+        Raises:
+        ------
+            ValueError: If value at offset is not numeric
+        """
         index = self._stack_index(offset)
-        self._stack[index] = copy(self._stack[index])
-        self._stack[index].value += 1
+        new_value: StackObject = copy(self._stack[index])
+        if isinstance(new_value.value, int):
+            new_value.value += 1
+        elif isinstance(new_value.value, float):
+            new_value.value += 1.0
+        else:
+            msg = f"Cannot increment non-numeric type {new_value.data_type}"
+            raise TypeError(msg)
+        self._stack[index] = new_value
 
     def decrement(self, offset: int):
+        """Decrement value at stack offset.
+
+        Args:
+        ----
+            offset: Stack offset (negative, relative to top)
+
+        Raises:
+        ------
+            ValueError: If value at offset is not numeric
+        """
         index = self._stack_index(offset)
-        self._stack[index] = copy(self._stack[index])
-        self._stack[index].value -= 1
+        new_value: StackObject = copy(self._stack[index])
+        if isinstance(new_value.value, int):
+            new_value.value -= 1
+        elif isinstance(new_value.value, float):
+            new_value.value -= 1.0
+        else:
+            msg = f"Cannot decrement non-numeric type {new_value.data_type}"
+            raise TypeError(msg)
+        self._stack[index] = new_value
 
     def increment_bp(self, offset: int):
+        """Increment value at base-pointer-relative offset.
+
+        Args:
+        ----
+            offset: Offset relative to base pointer (negative)
+
+        Raises:
+        ------
+            ValueError: If value at offset is not numeric
+        """
         index = self._stack_index_bp(offset)
-        self._stack[index] = copy(self._stack[index])
-        self._stack[index].value += 1
+        new_value: StackObject = copy(self._stack[index])
+        if isinstance(new_value.value, int):
+            new_value.value += 1
+        elif isinstance(new_value.value, float):
+            new_value.value += 1.0
+        else:
+            msg = f"Cannot increment non-numeric type {new_value.data_type}"
+            raise TypeError(msg)
+        self._stack[index] = new_value
+
 
     def decrement_bp(self, offset: int):
+        """Decrement value at base-pointer-relative offset.
+
+        Args:
+        ----
+            offset: Offset relative to base pointer (negative)
+
+        Raises:
+        ------
+            ValueError: If value at offset is not numeric
+        """
         index = self._stack_index_bp(offset)
-        self._stack[index] = copy(self._stack[index])
-        self._stack[index].value -= 1
+        new_value: StackObject = copy(self._stack[index])
+        if isinstance(new_value.value, int):
+            new_value.value -= 1
+        elif isinstance(new_value.value, float):
+            new_value.value -= 1.0
+        else:
+            msg = f"Cannot decrement non-numeric type {new_value.data_type}"
+            raise TypeError(msg)
+        self._stack[index] = new_value
 
     def addition_op(self):
-        value1 = self._stack.pop()
-        value2 = self._stack.pop()
-        self.add(value2.data_type, value2.value + value1.value)
+        """Perform addition operation on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in addition operation"
+            raise IndexError(msg)
+        index1 = -1  # top of stack
+        index2 = -2  # second from top
+        value1 = copy(self._stack[index1])
+        value2 = copy(self._stack[index2])
+        if not isinstance(value1.value, (int, float)) or not isinstance(value2.value, (int, float)):
+            msg = "Addition requires numeric operands"
+            raise TypeError(msg)
+        result = value2.value + value1.value
+        self._stack.pop()
+        self._stack.pop()
+        self.add(value2.data_type, result)
 
     def subtraction_op(self):
-        value1 = self._stack.pop()
-        value2 = self._stack.pop()
-        self.add(value2.data_type, value2.value - value1.value)
+        """Perform subtraction operation on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in subtraction operation"
+            raise IndexError(msg)
+        index1 = -1
+        index2 = -2
+        value1 = copy(self._stack[index1])
+        value2 = copy(self._stack[index2])
+        if not isinstance(value1.value, (int, float)) or not isinstance(value2.value, (int, float)):
+            msg = "Subtraction requires numeric operands"
+            raise TypeError(msg)
+        result = value2.value - value1.value
+        self._stack.pop()
+        self._stack.pop()
+        self.add(value2.data_type, result)
 
     def multiplication_op(self):
-        value1 = self._stack.pop()
-        value2 = self._stack.pop()
-        self.add(value1.data_type, value2.value * value1.value)
+        """Perform multiplication operation on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in multiplication operation"
+            raise IndexError(msg)
+        index1 = -1
+        index2 = -2
+        value1 = copy(self._stack[index1])
+        value2 = copy(self._stack[index2])
+        if not isinstance(value1.value, (int, float)) or not isinstance(value2.value, (int, float)):
+            msg = "Multiplication requires numeric operands"
+            raise TypeError(msg)
+        result = value2.value * value1.value
+        self._stack.pop()
+        self._stack.pop()
+        self.add(value2.data_type, result)
 
     def division_op(self):
-        value1 = self._stack.pop()
-        value2 = self._stack.pop()
-        self.add(value1.data_type, value2.value / value1.value)
+        """Perform division operation on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in division operation"
+            raise IndexError(msg)
+        index1 = -1
+        index2 = -2
+        value1 = copy(self._stack[index1])
+        value2 = copy(self._stack[index2])
+        if not isinstance(value1.value, (int, float)) or not isinstance(value2.value, (int, float)):
+            msg = "Division requires numeric operands"
+            raise TypeError(msg)
+        if value1.value == 0:
+            msg = "Division by zero in NCS interpreter"
+            raise ZeroDivisionError(msg)
+        result = float(value2.value) / float(value1.value)
+        self._stack.pop()
+        self._stack.pop()
+        self.add(value2.data_type, result)
 
     def modulus_op(self):
-        value1 = self._stack.pop()
-        value2 = self._stack.pop()
-        self.add(value1.data_type, value2.value % value1.value)
+        """Perform modulus operation on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in modulus operation"
+            raise IndexError(msg)
+        index1 = -1
+        index2 = -2
+        value1 = copy(self._stack[index1])
+        value2 = copy(self._stack[index2])
+        if not isinstance(value1.value, (int, float)) or not isinstance(value2.value, (int, float)):
+            msg = "Modulus requires numeric operands"
+            raise TypeError(msg)
+        if value1.value == 0:
+            msg = "Modulus by zero in NCS interpreter"
+            raise ZeroDivisionError(msg)
+        result = value2.value % value1.value
+        self._stack.pop()
+        self._stack.pop()
+        self.add(value2.data_type, result)
 
     def negation_op(self):
-        value1 = self._stack.pop()
-        self.add(value1.data_type, -value1.value)
+        """Perform unary negation on top stack value."""
+        if not self._stack:
+            msg = "Stack underflow in negation operation"
+            raise IndexError(msg)
+        index = -1
+        value1 = copy(self._stack[index])
+        if not isinstance(value1.value, (int, float)):
+            msg = f"Cannot negate non-numeric type {value1.data_type}"
+            raise TypeError(msg)
+        result = -value1.value
+        self._stack.pop()
+        self.add(value1.data_type, result)
+
 
     def logical_not_op(self):
+        """Perform logical NOT on top stack value."""
+        if not self._stack:
+            msg = "Stack underflow in logical NOT operation"
+            raise IndexError(msg)
         value1 = self._stack.pop()
-        self.add(value1.data_type, not value1.value)
+        # Convert to boolean for logical NOT
+        result = 0 if value1.value else 1
+        self.add(value1.data_type, result)
 
     def logical_and_op(self):
+        """Perform logical AND on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in logical AND operation"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, value1.value and value2.value)
+        # Logical AND: both must be non-zero
+        result = 1 if (value1.value and value2.value) else 0
+        self.add(value1.data_type, result)
 
     def logical_or_op(self):
+        """Perform logical OR on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in logical OR operation"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, value1.value or value2.value)
+        # Logical OR: at least one must be non-zero
+        result = 1 if (value1.value or value2.value) else 0
+        self.add(value1.data_type, result)
 
     def logical_equality_op(self):
+        """Perform equality comparison on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in equality comparison"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, value1.value == value2.value)
+        result = 1 if value1.value == value2.value else 0
+        self.add(value1.data_type, result)
 
     def logical_inequality_op(self):
+        """Perform inequality comparison on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in inequality comparison"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, value1.value != value2.value)
+        result = 1 if value1.value != value2.value else 0
+        self.add(value1.data_type, result)
 
     def bitwise_not_op(self):
+        """Perform bitwise NOT on top stack value."""
+        if not self._stack:
+            msg = "Stack underflow in bitwise NOT operation"
+            raise IndexError(msg)
         value1 = self._stack.pop()
+        if not isinstance(value1.value, int):
+            msg = f"Cannot perform bitwise NOT on non-integer type {value1.data_type}"
+            raise TypeError(msg)
         self.add(value1.data_type, ~value1.value)
 
     def bitwise_or_op(self):
+        """Perform bitwise OR on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in bitwise OR operation"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
+        if not isinstance(value1.value, int) or not isinstance(value2.value, int):
+            msg = "Bitwise OR requires integer operands"
+            raise TypeError(msg)
         self.add(value1.data_type, value1.value | value2.value)
 
     def bitwise_xor_op(self):
+        """Perform bitwise XOR on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in bitwise XOR operation"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
+        if not isinstance(value1.value, int) or not isinstance(value2.value, int):
+            msg = "Bitwise XOR requires integer operands"
+            raise TypeError(msg)
         self.add(value1.data_type, value1.value ^ value2.value)
 
     def bitwise_and_op(self):
+        """Perform bitwise AND on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in bitwise AND operation"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
+        if not isinstance(value1.value, int) or not isinstance(value2.value, int):
+            msg = "Bitwise AND requires integer operands"
+            raise TypeError(msg)
         self.add(value1.data_type, value1.value & value2.value)
 
     def bitwise_leftshift_op(self):
+        """Perform bitwise left shift on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in left shift operation"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
+        if not isinstance(value1.value, int) or not isinstance(value2.value, int):
+            msg = "Bitwise shift requires integer operands"
+            raise TypeError(msg)
         self.add(value1.data_type, value2.value << value1.value)
 
     def bitwise_rightshift_op(self):
+        """Perform bitwise right shift on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in right shift operation"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
+        if not isinstance(value1.value, int) or not isinstance(value2.value, int):
+            msg = "Bitwise shift requires integer operands"
+            raise TypeError(msg)
         self.add(value1.data_type, value2.value >> value1.value)
 
     def compare_greaterthan_op(self):
+        """Perform greater-than comparison on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in greater-than comparison"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, int(value2.value > value1.value))
+        if not isinstance(value2.value, (int, float)) or not isinstance(value1.value, (int, float)):
+            msg = "Comparison requires numeric operands"
+            raise TypeError(msg)
+        result = 1 if value2.value > value1.value else 0
+        self.add(value1.data_type, result)
 
     def compare_greaterthanorequal_op(self):
+        """Perform greater-than-or-equal comparison on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in greater-than-or-equal comparison"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, int(value2.value >= value1.value))
+        if not isinstance(value2.value, (int, float)) or not isinstance(value1.value, (int, float)):
+            msg = "Comparison requires numeric operands"
+            raise TypeError(msg)
+        result = 1 if value2.value >= value1.value else 0
+        self.add(value1.data_type, result)
 
     def compare_lessthan_op(self):
+        """Perform less-than comparison on top two stack values."""
+        if len(self._stack) < 2:
+            msg = "Stack underflow in less-than comparison"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, int(value2.value < value1.value))
+        if not isinstance(value2.value, (int, float)) or not isinstance(value1.value, (int, float)):
+            msg = "Comparison requires numeric operands"
+            raise TypeError(msg)
+        result = 1 if value2.value < value1.value else 0
+        self.add(value1.data_type, result)
 
     def compare_lessthanorequal_op(self):
+        """Perform less-than-or-equal comparison on top two stack values."""
+        if len(self._stack) < 2:  # noqa: PLR2004
+            msg = "Stack underflow in less-than-or-equal comparison"
+            raise IndexError(msg)
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, int(value2.value <= value1.value))
+        if not isinstance(value2.value, (int, float)) or not isinstance(value1.value, (int, float)):
+            msg = "Comparison requires numeric operands"
+            raise TypeError(msg)
+        result = 1 if value2.value <= value1.value else 0
+        self.add(value1.data_type, result)
 
     def store_state(self): ...
 
 
 class StackObject:
-    def __init__(self, data_type: DataType, value: Any):
+    def __init__(self, data_type: DataType, value: float | str | bool | object):  # noqa: FBT001
         self.data_type: DataType = data_type
         self.value = value
 
@@ -620,6 +1046,9 @@ class StackObject:
         if isinstance(other, StackObject):
             return self.value == other.value
         return self.value == other
+
+    def __hash__(self):
+        return hash((self.data_type, id(self.value)))
 
 
 class ActionStackValue(NamedTuple):

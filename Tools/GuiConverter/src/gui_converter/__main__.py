@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
@@ -8,8 +7,6 @@ import sys
 
 from copy import deepcopy
 
-from utility.system.path import Path
-
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.is_dir():
@@ -18,13 +15,11 @@ if getattr(sys, "frozen", False) is False:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
 
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
-from utility.system.agnostics import askdirectory, askopenfilenames, askretrycancel, showinfo
-
-if os.name == "nt":
-    from utility.system.win32.com.windialogs import open_file_and_folder_dialog
+from pykotor.tools.path import CaseAwarePath
+from utility.system.agnostics import askdirectory
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFList, GFFStruct
@@ -131,7 +126,6 @@ def log(message: str):
     """Function to log messages both on console and to a file if logging is enabled."""
     print(message)
     if LOGGING_ENABLED:
-        cast(Path, PARSER_ARGS.output).mkdir(parents=True, exist_ok=True)
         with PARSER_ARGS.output.joinpath("output.log").open("a", encoding="utf-8") as log_file:
             log_file.write(message + "\n")
 
@@ -175,8 +169,8 @@ def resize_extent_by_factor(
 
 
 def process_file(
-    gui_file: Path,
-    output_dir: Path,
+    gui_file: CaseAwarePath,
+    output_dir: CaseAwarePath,
     resolutions: list[tuple[int, int]],
 ):
     global PARSER_ARGS  # noqa: PLW0602
@@ -190,11 +184,11 @@ def process_file(
 
     if PARSER_ARGS.resolution.upper() == "ALL":
         for aspect_ratio in ASPECT_RATIO_TO_RESOLUTION:
-            aspect_ratio_dir: Path = output_dir / aspect_ratio.replace(":", "x")
+            aspect_ratio_dir: CaseAwarePath = output_dir / aspect_ratio.replace(":", "x")
 
             for width, height in ASPECT_RATIO_TO_RESOLUTION[aspect_ratio]:
                 adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
-                output_path: Path = aspect_ratio_dir / f"{width}x{height}" / gui_file.name
+                output_path: CaseAwarePath = aspect_ratio_dir / f"{width}x{height}" / gui_file.name
                 output_path.parent.mkdir(exist_ok=True, parents=True)
                 log(f"Created directory for aspect ratio {aspect_ratio} at {output_path}")
                 write_gff(adjusted_gui_data, output_path)
@@ -202,7 +196,7 @@ def process_file(
     else:
         for width, height in resolutions:
             adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
-            output_path: Path = output_dir / f"{width}x{height}" / gui_file.name
+            output_path: CaseAwarePath = output_dir / f"{width}x{height}" / gui_file.name
             output_path.parent.mkdir(exist_ok=True, parents=True)
             write_gff(adjusted_gui_data, output_path)
             log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path}")
@@ -214,11 +208,9 @@ def main():
     global TEST_MODE  # noqa: PLW0602
 
     if TEST_MODE:
-        input_dir = Path(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-10\\gui.1280x800"))
-        input_files = list(input_dir.rglob("*.gui"))
         PARSER_ARGS = argparse.Namespace(
-            input=input_files,
-            output=Path(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-9-test")),
+            input=CaseAwarePath(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-10\\gui.1280x800")),
+            output=CaseAwarePath(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-9-test\\gui.1280x800")),
             output_log=None,
             logging=True,
             resolution="1280x720",
@@ -226,7 +218,7 @@ def main():
     else:
         PARSER_ARGS = _parse_user_arg_inputs()
 
-    input_paths: list[Path] = PARSER_ARGS.input
+    input_path: CaseAwarePath = PARSER_ARGS.input
     resolution_arg: str = PARSER_ARGS.resolution
     resolutions_to_process = []
 
@@ -240,67 +232,39 @@ def main():
         except ValueError:
             print(f"Invalid resolution format: {resolution_arg}. Please use 'WIDTHxHEIGHT' format or 'ALL'.")
             return
+    if input_path.safe_isfile():
+        process_file(input_path, PARSER_ARGS.output, resolutions_to_process)
 
-    processed_files_count = 0
-    for input_path in input_paths:
-        if input_path.safe_isfile():
-            process_file(input_path, PARSER_ARGS.output, resolutions_to_process)
-            processed_files_count += 1
+    elif input_path.safe_isdir():
+        files_to_process = list(input_path.safe_rglob("*.gui"))
+        if not files_to_process:
+            print(f"Error: no .gui files to process in input path '{input_path}'", file=sys.stderr)
+        for gui_file in files_to_process:
+            new_output_dir: CaseAwarePath = PARSER_ARGS.output / gui_file.relative_to(input_path).parent
+            new_output_dir.mkdir(parents=True, exist_ok=True)
+            process_file(gui_file, new_output_dir, resolutions_to_process)
 
-        elif input_path.safe_isdir():
-            files_to_process = list(input_path.safe_rglob("*.gui"))
-            if not files_to_process:
-                print(f"Error: no .gui files to process in input path '{input_path}'", file=sys.stderr)
-            for gui_file in files_to_process:
-                new_output_dir: Path = PARSER_ARGS.output / gui_file.relative_to(input_path).parent
-                new_output_dir.mkdir(parents=True, exist_ok=True)
-                process_file(gui_file, new_output_dir, resolutions_to_process)
-                processed_files_count += 1
-
-        else:
-            print(f"Invalid input: '{input_path}'. It's neither a file nor a directory.")
-            return
+    else:
+        print(f"Invalid input: '{input_path}'. It's neither a file nor a directory.")
+        return
 
     if TEST_MODE:
-        comparison_dir = Path(os.path.expandvars(r"%USERPROFILE%\Documents\k1 mods\k1hrm-1.5\16-by-9\gui.1280x720"))
-        assert compare_directories(PARSER_ARGS.output / "1280x720", comparison_dir), "Test directories do not match."
-
-    # Display a summary info dialog after processing is complete
-    summary_message = f"GUI conversions complete!\nTotal files processed: {processed_files_count}"
-    showinfo("Processing Complete", summary_message)
+        comparison_dir = CaseAwarePath(os.path.expandvars(r"%USERPROFILE%\Documents\k1 mods\k1hrm-1.5\16-by-9\gui.1280x720"))
+        assert compare_directories(PARSER_ARGS.output, comparison_dir), "Test directories do not match."
 
 
+def compare_directories(dir1: CaseAwarePath, dir2: CaseAwarePath) -> bool:
+    dir1_files = {str(f).replace(str(dir1), "").replace("\\", ""): f for f in dir1.rglob("*.gui")}
+    dir2_files = {str(f).replace(str(dir2), "").replace("\\", ""): f for f in dir2.rglob("*.gui")}
 
-def compare_directories(dir1: Path, dir2: Path) -> bool:
-    dir1_files = {str(f.relative_to(dir1)).replace("\\", "/"): f for f in dir1.rglob("*.gui")}
-    dir2_files = {str(f.relative_to(dir2)).replace("\\", "/"): f for f in dir2.rglob("*.gui")}
-
-    all_relative_paths = set(dir1_files.keys()).union(set(dir2_files.keys()))
-
-    all_files_match = True
-
-    for relative_path in all_relative_paths:
-        file_in_dir1 = relative_path in dir1_files
-        file_in_dir2 = relative_path in dir2_files
-
-        if not file_in_dir1:
-            print(f"File {relative_path} found in {dir2} but not in {dir1}.")
-            all_files_match = False
-            continue
-
-        if not file_in_dir2:
-            print(f"File {relative_path} found in {dir1} but not in {dir2}.")
-            all_files_match = False
-            continue
-
-        gff1 = read_gff(dir1_files[relative_path])
+    for relative_path, file1 in dir1_files.items():
+        gff1 = read_gff(file1)
         gff2 = read_gff(dir2_files[relative_path])
-
         if not gff1.compare(gff2):
-            print(f"Files differ: {dir1_files[relative_path]} and {dir2_files[relative_path]}")
-            all_files_match = False
+            print(f"Files differ: {file1} and {dir2_files[relative_path]}")
+            return False
 
-    return all_files_match
+    return True
 
 
 def _parse_user_arg_inputs() -> argparse.Namespace:
@@ -311,52 +275,28 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
     parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
     parser.add_argument("--resolution", type=str, help="Specific resolution (e.g., 1920x1080) or 'ALL' for all resolutions")
 
-    lookup_function: Callable[[str], list[str]] | None = None  # pyright: ignore[reportRedeclaration, reportAssignmentType]
-
-    def get_lookup_function() -> Callable[[str], list[str]]:
-        nonlocal lookup_function
-        if lookup_function is not None:
-            return lookup_function
-        if os.name == "nt":
-            def lookup_function(title: str) -> list[str]:
-                return open_file_and_folder_dialog(title=title, allow_multiple_selection=True) or []
-        else:
-            choice = input("Do you want to pick a path using a ui-based file/directory picker? (y/N)").strip().lower()
-            if not choice or choice == "y":
-                file_or_dir_choice = input("Do you want to pick a file? (No for directory) (y/N)").strip().lower()
-                if file_or_dir_choice == "yes":
-                    def lookup_function(title: str) -> list[str]:
-                        return askopenfilenames(title=title)
-                else:
-                    def lookup_function(title: str) -> list[str]:
-                        return askdirectory(title=title)
-            else:
-                def lookup_function(title: str) -> str:
-                    return input(title)
-        return lookup_function
-
     result, unknown = parser.parse_known_args()
     while True:
-        result.input = result.input or (unknown if len(unknown) > 0 else None) or get_lookup_function()("Select K1/TSL GUI file(s) to convert")
-        if not result.input or not any(result.input):
-            if not askretrycancel("error: You cancelled the browse file dialog.", "You must choose at least one .gui file!"):
-                sys.exit()
-            result.input = None
-            continue
-        result.input = [Path(path).resolve() for path in result.input]
-        if all(path.exists() for path in result.input):
+        result.input = result.input or (unknown[0] if len(unknown) > 0 else None) or askdirectory(title="Select a folder of K1/TSL GUI files to convert")
+        if not result.input or not result.input.strip():
+            print("error: You cancelled the browse folder dialog. You must choose a path to load your input .ui file(s)!")
+            result.input = input("Path to the K1/TSL GUI file: ")
+            if not result.input or not result.input.strip():
+                continue
+        result.input = CaseAwarePath(result.input).resolve()
+        if result.input.exists():
             break
-        print("Invalid path(s):", result.input)
+        print("Invalid path:", result.input)
         parser.print_help()
         result.input = None
     while True:
         result.output = result.output or (unknown[0] if len(unknown) > 0 else None) or askdirectory(title="Select the output directory:")
         if not result.output or not result.output.strip():
-            if not askretrycancel("error: You cancelled the browse folder dialog.", "You must choose a path to save your input .ui file(s)!"):
-                sys.exit()
-            result.output = None
-            continue
-        result.output = Path(result.output).resolve()
+            print("error: You cancelled the browse folder dialog. You must choose a path to save your input .ui file(s)!")
+            result.output = input("Folder path to save the conversions at: ")
+            if not result.output or not result.output.strip():
+                continue
+        result.output = CaseAwarePath(result.output).resolve()
         if result.output.parent.exists():
             result.output.mkdir(exist_ok=True, parents=True)
             break

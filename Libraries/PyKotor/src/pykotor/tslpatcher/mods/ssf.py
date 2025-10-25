@@ -43,7 +43,7 @@ class ModificationsSSF(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes | Literal[True]:
+    ) -> bytes:
         ssf: SSF = SSFBinaryReader(source_ssf).load()
         self.apply(ssf, memory, logger, game)
         return bytes_ssf(ssf)

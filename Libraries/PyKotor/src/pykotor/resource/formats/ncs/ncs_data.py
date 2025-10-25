@@ -18,12 +18,13 @@ class NCSInstructionTypeValue(NamedTuple):
 
 
 class NCSByteCode(IntEnum):
-    NOP = 0x2D
+    RESERVED = 0x00  # Reserved/unknown opcode found in some compiled scripts
     CPDOWNSP = 0x01
     RSADDx = 0x02
     CPTOPSP = 0x03
     CONSTx = 0x04
     ACTION = 0x05
+    NOP = 0x2D
     LOGANDxx = 0x06
     LOGORxx = 0x07
     INCORxx = 0x08
@@ -91,6 +92,8 @@ class NCSInstructionQualifier(IntEnum):
 
 
 class NCSInstructionType(Enum):
+    RESERVED = NCSInstructionTypeValue(NCSByteCode.RESERVED, 0x00)  # Unknown/reserved instruction
+    RESERVED_01 = NCSInstructionTypeValue(NCSByteCode.RESERVED, 0x01)  # Variant with qualifier 0x01
     NOP = NCSInstructionTypeValue(NCSByteCode.NOP, 0x00)
     CPDOWNSP = NCSInstructionTypeValue(NCSByteCode.CPDOWNSP, 0x01)
     RSADDI = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Int)
@@ -202,6 +205,50 @@ class NCS(ComparableMixin):
     def __hash__(self):
         return hash(tuple(self.instructions))
 
+    def __repr__(self) -> str:
+        """Returns a detailed string representation of the NCS object."""
+        if not self.instructions:
+            return "NCS(instructions=[])"
+
+        # Show first few instructions for compact representation
+        max_preview: int = 3
+        inst_reprs: list[str] = []
+        for i, inst in enumerate(self.instructions[:max_preview]):
+            jump_idx = self.instructions.index(inst.jump) if inst.jump else None
+            jump_str = f"->#{jump_idx}" if jump_idx is not None else ""
+            args_str = f"({', '.join(repr(arg) for arg in inst.args)})" if inst.args else ""
+            inst_reprs.append(f"#{i}: {inst.ins_type.name}{args_str}{jump_str}")
+
+        preview = "; ".join(inst_reprs)
+        if len(self.instructions) > max_preview:
+            preview += f"; ... ({len(self.instructions) - max_preview} more)"
+
+        return f"NCS({preview})"
+
+    def __str__(self) -> str:
+        """Returns a human-readable string representation with all instructions."""
+        if not self.instructions:
+            return "NCS (empty - no instructions)"
+
+        lines = [f"NCS with {len(self.instructions)} instructions:"]
+        for i, inst in enumerate(self.instructions):
+            # Find jump target index if present
+            jump_idx: int | str | None = None
+            if inst.jump:
+                try:
+                    jump_idx = self.instructions.index(inst.jump)
+                except ValueError:
+                    jump_idx = "?"
+
+            # Format instruction
+            inst_name = inst.ins_type.name.ljust(15)
+            args_str = f"args={inst.args}" if inst.args else "no-args"
+            jump_str = f" jump->#{jump_idx}" if jump_idx is not None else ""
+
+            lines.append(f"  #{i:4d}: {inst_name} {args_str}{jump_str}")
+
+        return "\n".join(lines)
+
     def print(self):
         for i, instruction in enumerate(self.instructions):
             if instruction.jump:
@@ -280,6 +327,67 @@ class NCS(ComparableMixin):
         """
         self.instructions.extend(other.instructions)
 
+    def validate(self) -> list[str]:
+        """Validate the NCS bytecode for common issues.
+
+        Returns:
+        -------
+            list[str]: List of validation warnings/errors found
+        """
+        issues = []
+
+        # Check for jumps to invalid targets
+        for i, inst in enumerate(self.instructions):
+            if inst.jump is not None and inst.jump not in self.instructions:
+                issues.append(f"Instruction #{i} ({inst.ins_type.name}) jumps to instruction not in list")
+
+        # Check for instructions that require jumps but don't have them
+        jump_required = {
+            NCSInstructionType.JMP,
+            NCSInstructionType.JSR,
+            NCSInstructionType.JZ,
+            NCSInstructionType.JNZ,
+        }
+        for i, inst in enumerate(self.instructions):
+            if inst.ins_type in jump_required and inst.jump is None:
+                issues.append(f"Instruction #{i} ({inst.ins_type.name}) requires jump but has none")
+
+        # Check for missing required arguments
+        for i, inst in enumerate(self.instructions):
+            expected_args = self._expected_arg_count(inst.ins_type)
+            if expected_args is not None and len(inst.args) != expected_args:
+                issues.append(
+                    f"Instruction #{i} ({inst.ins_type.name}) has {len(inst.args)} args, expected {expected_args}"
+                )
+
+        return issues
+
+    @staticmethod
+    def _expected_arg_count(ins_type: NCSInstructionType) -> int | None:
+        """Get expected argument count for instruction type, or None if variable/complex."""
+        # Instructions with 2 args
+        if ins_type in {NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
+                        NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP,
+                        NCSInstructionType.ACTION, NCSInstructionType.STORE_STATE}:
+            return 2
+        # Instructions with 1 arg
+        if ins_type in {NCSInstructionType.CONSTI, NCSInstructionType.CONSTF,
+                          NCSInstructionType.CONSTS, NCSInstructionType.CONSTO,
+                          NCSInstructionType.MOVSP,
+                          NCSInstructionType.DECISP, NCSInstructionType.INCISP,
+                          NCSInstructionType.DECIBP, NCSInstructionType.INCIBP}:
+            return 1
+        # Instructions with 3 args
+        if ins_type == NCSInstructionType.DESTRUCT:
+            return 3
+        # Most other instructions have 0 args
+        if ins_type in {NCSInstructionType.RETN, NCSInstructionType.NOP,
+                          NCSInstructionType.SAVEBP, NCSInstructionType.RESTOREBP,
+                          NCSInstructionType.NOTI, NCSInstructionType.COMPI}:
+            return 0
+        # Complex/variable - return None
+        return None
+
 
 class NCSInstruction(ComparableMixin):
     """Initialize a NCS instruction object.
@@ -309,12 +417,15 @@ class NCSInstruction(ComparableMixin):
         self.args: list[Any] = [] if args is None else args
 
     def __str__(self):
-        if self.jump is None:
-            return f"Instruction: {self.ins_type.name} {self.args}"
-        return f"Instruction: {self.ins_type.name} jump to '{self.jump}'"
+        """Returns a human-readable string representation of the instruction."""
+        args_str = f" args={self.args}" if self.args else ""
+        jump_str = f" jump=<NCSInstruction#{id(self.jump)}>" if self.jump else ""
+        return f"{self.ins_type.name}{args_str}{jump_str}"
 
     def __repr__(self):
-        return f"NCSInstruction({self.ins_type}, {self.jump}, {self.args})"
+        """Returns a detailed string representation avoiding circular references."""
+        jump_repr = f"<jump#{id(self.jump)}>" if self.jump else "None"
+        return f"NCSInstruction(type={self.ins_type.name}, args={self.args!r}, jump={jump_repr})"
 
     def __eq__(self, other):
         if not isinstance(other, NCSInstruction):
@@ -329,6 +440,90 @@ class NCSInstruction(ComparableMixin):
     def __hash__(self):
         # Note: We use id() for jump since it's a circular reference
         return hash((self.ins_type, tuple(self.args), id(self.jump) if self.jump else None))
+
+    def is_jump_instruction(self) -> bool:
+        """Check if this instruction performs a jump/branch operation."""
+        return self.ins_type in {
+            NCSInstructionType.JMP,
+            NCSInstructionType.JSR,
+            NCSInstructionType.JZ,
+            NCSInstructionType.JNZ,
+        }
+
+    def is_stack_operation(self) -> bool:
+        """Check if this instruction operates on the stack."""
+        return self.ins_type in {
+            NCSInstructionType.CPDOWNSP,
+            NCSInstructionType.CPTOPSP,
+            NCSInstructionType.CPDOWNBP,
+            NCSInstructionType.CPTOPBP,
+            NCSInstructionType.MOVSP,
+            NCSInstructionType.RSADDI,
+            NCSInstructionType.RSADDF,
+            NCSInstructionType.RSADDS,
+            NCSInstructionType.RSADDO,
+            NCSInstructionType.RSADDEFF,
+            NCSInstructionType.RSADDEVT,
+            NCSInstructionType.RSADDLOC,
+            NCSInstructionType.RSADDTAL,
+        }
+
+    def is_constant(self) -> bool:
+        """Check if this instruction loads a constant value."""
+        return self.ins_type in {
+            NCSInstructionType.CONSTI,
+            NCSInstructionType.CONSTF,
+            NCSInstructionType.CONSTS,
+            NCSInstructionType.CONSTO,
+        }
+
+    def is_arithmetic(self) -> bool:
+        """Check if this instruction performs arithmetic operations."""
+        return self.ins_type in {
+            NCSInstructionType.ADDII, NCSInstructionType.ADDIF, NCSInstructionType.ADDFI, NCSInstructionType.ADDFF,
+            NCSInstructionType.ADDSS, NCSInstructionType.ADDVV,
+            NCSInstructionType.SUBII, NCSInstructionType.SUBIF, NCSInstructionType.SUBFI, NCSInstructionType.SUBFF,
+            NCSInstructionType.SUBVV,
+            NCSInstructionType.MULII, NCSInstructionType.MULIF, NCSInstructionType.MULFI, NCSInstructionType.MULFF,
+            NCSInstructionType.MULVF, NCSInstructionType.MULFV,
+            NCSInstructionType.DIVII, NCSInstructionType.DIVIF, NCSInstructionType.DIVFI, NCSInstructionType.DIVFF,
+            NCSInstructionType.DIVVF, NCSInstructionType.DIVFV,
+            NCSInstructionType.MODII,
+            NCSInstructionType.NEGI, NCSInstructionType.NEGF,
+        }
+
+    def is_comparison(self) -> bool:
+        """Check if this instruction performs comparison operations."""
+        return self.ins_type in {
+            NCSInstructionType.EQUALII, NCSInstructionType.EQUALFF, NCSInstructionType.EQUALSS,
+            NCSInstructionType.EQUALOO, NCSInstructionType.EQUALTT,
+            NCSInstructionType.NEQUALII, NCSInstructionType.NEQUALFF, NCSInstructionType.NEQUALSS,
+            NCSInstructionType.NEQUALOO, NCSInstructionType.NEQUALTT,
+            NCSInstructionType.GTII, NCSInstructionType.GTFF,
+            NCSInstructionType.GEQII, NCSInstructionType.GEQFF,
+            NCSInstructionType.LTII, NCSInstructionType.LTFF,
+            NCSInstructionType.LEQII, NCSInstructionType.LEQFF,
+        }
+
+    def is_logical(self) -> bool:
+        """Check if this instruction performs logical operations."""
+        return self.ins_type in {
+            NCSInstructionType.LOGANDII,
+            NCSInstructionType.LOGORII,
+            NCSInstructionType.NOTI,
+        }
+
+    def is_bitwise(self) -> bool:
+        """Check if this instruction performs bitwise operations."""
+        return self.ins_type in {
+            NCSInstructionType.BOOLANDII,
+            NCSInstructionType.INCORII,
+            NCSInstructionType.EXCORII,
+            NCSInstructionType.COMPI,
+            NCSInstructionType.SHLEFTII,
+            NCSInstructionType.SHRIGHTII,
+            NCSInstructionType.USHRIGHTII,
+        }
 
 
 class NCSOptimizer(ABC):
