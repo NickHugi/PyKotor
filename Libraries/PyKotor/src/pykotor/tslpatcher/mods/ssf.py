@@ -29,31 +29,31 @@ class ModificationsSSF(PatcherModifications):
     def __init__(
         self,
         filename: str,
-        replace_file: bool,  # noqa: FBT001
+        replace: bool,  # noqa: FBT001
         modifiers: list[ModifySSF] | None = None,
     ):
         super().__init__(filename)
-        self.replace_file: bool = replace_file
+        self.replace_file: bool = replace
         self.no_replacefile_check = True
         self.modifiers: list[ModifySSF] = [] if modifiers is None else modifiers
 
     def patch_resource(
         self,
-        source_ssf: SOURCE_TYPES,
+        source: SOURCE_TYPES,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
     ) -> bytes:
-        ssf: SSF = SSFBinaryReader(source_ssf).load()
+        ssf: SSF = SSFBinaryReader(source).load()
         self.apply(ssf, memory, logger, game)
         return bytes_ssf(ssf)
 
     def apply(
         self,
-        ssf: SSF,
+        mutable_data: SSF,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
     ):
         for modifier in self.modifiers:
-            modifier.apply(ssf, memory)
+            modifier.apply(mutable_data, memory)

@@ -16,14 +16,14 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff.gff_data import GFFStruct
 from pykotor.resource.formats.ssf.ssf_data import SSFSound
-from pykotor.tslpatcher.mods.gff import AddFieldGFF, FieldValueConstant, ModifyFieldGFF
+from pykotor.tslpatcher.mods.gff import AddFieldGFF, AddStructToListGFF, FieldValueConstant, ModifyFieldGFF
+from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.mods.twoda import AddColumn2DA, AddRow2DA, ChangeRow2DA, TargetType
 
 if TYPE_CHECKING:
     from kotordiff.__main__ import ModificationsByType
     from pykotor.tslpatcher.mods.gff import ModificationsGFF
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
-    from pykotor.tslpatcher.mods.tlk import ModificationsTLK
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 
@@ -300,7 +300,7 @@ class TSLPatcherINISerializer:
                 value_str = self._serialize_field_value(gff_modifier.value)
                 lines.append(f"{path_str}={value_str}")
 
-            elif isinstance(gff_modifier, AddFieldGFF):
+            elif isinstance(gff_modifier, (AddFieldGFF, AddStructToListGFF)):
                 addfield_modifiers.append(gff_modifier)
 
         # Add AddField# references
@@ -317,52 +317,72 @@ class TSLPatcherINISerializer:
 
         return lines
 
-    def _serialize_addfield_section(self, gff_modifier: AddFieldGFF, section_name: str) -> list[str]:  # noqa: C901
-        """Serialize an AddField subsection with exact TSLPatcher format."""
+    def _serialize_addfield_section(  # noqa: C901, PLR0912, PLR0915
+        self,
+        gff_modifier: AddFieldGFF | AddStructToListGFF,
+        section_name: str,
+    ) -> list[str]:
+        """Serialize an AddField or AddStructToListGFF subsection with exact TSLPatcher format."""
         from pykotor.resource.formats.gff.gff_data import GFFFieldType  # noqa: PLC0415
 
         lines: list[str] = []
         lines.append(f"[{section_name}]")
 
-        # FieldType is required for AddField
-        field_type_name = self._get_gff_field_type_name(gff_modifier.field_type)
+        # Determine if this is AddStructToListGFF or AddFieldGFF
+        is_add_struct_to_list = isinstance(gff_modifier, AddStructToListGFF)
+
+        # FieldType - AddStructToListGFF is always Struct type
+        if is_add_struct_to_list:
+            field_type_name = "Struct"
+        elif isinstance(gff_modifier, AddFieldGFF):
+            field_type_name = self._get_gff_field_type_name(gff_modifier.field_type)
+        else:
+            field_type_name = "Struct"  # Default fallback
         lines.append(f"FieldType={field_type_name}")
 
-        # Label and Path (use backslashes)
-        lines.append(f"Label={gff_modifier.label}")
+        # Label - AddStructToListGFF doesn't have label, use empty string
+        label = getattr(gff_modifier, "label", "")
+        lines.append(f"Label={label}")
+
+        # Path (use backslashes)
         path_str = str(gff_modifier.path).replace("/", "\\")
         lines.append(f"Path={path_str}")
 
         # Add field value based on type
-        if gff_modifier.field_type == GFFFieldType.Struct:
-            # For Struct, we need TypeId instead of Value
+        if is_add_struct_to_list:
+            # AddStructToListGFF always has TypeId
             if isinstance(gff_modifier.value, FieldValueConstant) and isinstance(gff_modifier.value.stored, GFFStruct):
                 lines.append(f"TypeId={gff_modifier.value.stored.struct_id}")
-        elif gff_modifier.field_type in (GFFFieldType.List,):
-            # Lists don't need a Value
-            pass
-        elif gff_modifier.field_type == GFFFieldType.LocalizedString:
-            # LocalizedString uses StrRef and lang# keys
-            self._serialize_localized_string_value(gff_modifier.value, lines)
-        else:
-            # Regular value
-            value_str = self._serialize_field_value(gff_modifier.value)
-            if value_str:  # Only add Value= if there's an actual value
-                lines.append(f"Value={value_str}")
+        elif hasattr(gff_modifier, "field_type"):
+            if gff_modifier.field_type == GFFFieldType.Struct:
+                # For Struct, we need TypeId instead of Value
+                if isinstance(gff_modifier.value, FieldValueConstant) and isinstance(gff_modifier.value.stored, GFFStruct):
+                    lines.append(f"TypeId={gff_modifier.value.stored.struct_id}")
+            elif gff_modifier.field_type in (GFFFieldType.List,):
+                # Lists don't need a Value
+                pass
+            elif gff_modifier.field_type == GFFFieldType.LocalizedString:
+                # LocalizedString uses StrRef and lang# keys
+                self._serialize_localized_string_value(gff_modifier.value, lines)
+            else:
+                # Regular value
+                value_str = self._serialize_field_value(gff_modifier.value)
+                if value_str:  # Only add Value= if there's an actual value
+                    lines.append(f"Value={value_str}")
 
         # Process nested modifiers (if any)
         if hasattr(gff_modifier, "modifiers") and gff_modifier.modifiers:
             for nested_idx, nested_mod in enumerate(gff_modifier.modifiers):
-                if isinstance(nested_mod, AddFieldGFF):
+                if isinstance(nested_mod, (AddFieldGFF, AddStructToListGFF)):
                     nested_section = nested_mod.identifier or f"{section_name}_nested_{nested_idx}"
                     lines.append(f"AddField{nested_idx}={nested_section}")
 
         lines.append("")
 
-        # Recursively generate nested AddField sections
+        # Recursively generate nested AddField/AddStructToListGFF sections
         if hasattr(gff_modifier, "modifiers") and gff_modifier.modifiers:
             for nested_idx, nested_mod in enumerate(gff_modifier.modifiers):
-                if isinstance(nested_mod, AddFieldGFF):
+                if isinstance(nested_mod, (AddFieldGFF, AddStructToListGFF)):
                     nested_section = nested_mod.identifier or f"{section_name}_nested_{nested_idx}"
                     lines.extend(self._serialize_addfield_section(nested_mod, nested_section))
 

@@ -136,10 +136,10 @@ class ConfigReader:
         logger: PatchLogger | None = None,
         tslpatchdata_path: os.PathLike | str | None = None,
     ):
-        self.previously_parsed_sections = set()
+        self.previously_parsed_sections: set[str] = set()
         self.ini: ConfigParser = ini
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
-        self.tslpatchdata_path: CaseAwarePath | None = tslpatchdata_path  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
+        self.tslpatchdata_path: CaseAwarePath | None = CaseAwarePath.pathify(tslpatchdata_path)  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
 
@@ -238,7 +238,11 @@ class ConfigReader:
             lower_key = key.lower()
             if (
                 lower_key == "required"
-                or lower_key.startswith("required") and len(key) > len("required") and not key[len("required"):].lower().startswith("msg")
+                or (
+                    lower_key.startswith("required")
+                    and len(key) > len("required")
+                    and not key[len("required"):].lower().startswith("msg")
+                )
             ):
                 if lower_key != "required" and not key[len("required"):].isdigit():
                     raise ValueError(f"Key '{key}' improperly defined in settings ini. Expected (Required) or (RequiredMsg)")
@@ -247,7 +251,10 @@ class ConfigReader:
 
             if (
                 lower_key == "requiredmsg"
-                or lower_key.startswith("requiredmsg") and len(key) > len("requiredmsg")
+                or (
+                    lower_key.startswith("requiredmsg")
+                    and len(key) > len("requiredmsg")
+                )
             ):
                 if lower_key != "requiredmsg" and not key[len("requiredmsg"):].isdigit():
                     raise ValueError(f"Key '{key}' improperly defined in settings ini. Expected (Required) or (RequiredMsg)")
@@ -291,7 +298,10 @@ class ConfigReader:
         for folder_key, foldername in self.ini[install_list_section].items():
             foldername_section: str | None = self.get_section_name(folder_key)
             if foldername_section is None:
-                raise KeyError(SECTION_NOT_FOUND_ERROR.format(foldername) + REFERENCES_TRACEBACK_MSG.format(folder_key, foldername, install_list_section))
+                raise KeyError(
+                    SECTION_NOT_FOUND_ERROR.format(foldername)
+                    + REFERENCES_TRACEBACK_MSG.format(folder_key, foldername, install_list_section)
+                )
 
             folder_section_dict = CaseInsensitiveDict(self.ini[foldername_section])
             sourcefolder: str = folder_section_dict.pop("!SourceFolder", ".")
@@ -402,7 +412,7 @@ class ConfigReader:
                         raise ValueError(msg)  # noqa: TRY301
                 else:
                     syntax_error_caught = True
-                    msg = f"Invalid syntax found in [TLKList] '{key}={value}'! Expected '{key}' to be one of ['AppendFile', 'ReplaceFile', '!SourceFile', 'StrRef', 'Text', 'Sound']"
+                    msg = f"Invalid syntax found in [TLKList] '{key}={value}'! Expected '{key}' to be one of ['AppendFile', 'ReplaceFile', '!SourceFile', 'StrRef', 'Text', 'Sound']"  # noqa: E501
                     raise ValueError(msg)  # noqa: TRY301
 
             except ValueError as e:
@@ -457,7 +467,7 @@ class ConfigReader:
 
                 modification_ids_dict = CaseInsensitiveDict(self.ini[modification_id])
                 manipulation: Modify2DA | None = self.discern_2da(key, modification_id, modification_ids_dict)
-                if not manipulation:  # TODO: Does this denote an error occurred? If so we should raise.
+                if not manipulation:  # TODO(th3w1zard1): Does this denote an error occurred? If so we should raise.
                     continue
                 modifications.modifiers.append(manipulation)
 
@@ -545,7 +555,7 @@ class ConfigReader:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, gff_list_section))
 
             replace: bool = identifier.lower().startswith("replace")
-            modifications = ModificationsGFF(file, replace)
+            modifications = ModificationsGFF(file, replace=replace)
             self.config.patches_gff.append(modifications)
 
             file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
@@ -623,6 +633,7 @@ class ConfigReader:
                 file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
                 modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
+            assert isinstance(nwnnsscomp_exepath, Path), f"{type(nwnnsscomp_exepath).__name__}: {nwnnsscomp_exepath}"
             modifications.nwnnsscomp_path = nwnnsscomp_exepath
             self.config.patches_nss.append(modifications)
 
@@ -647,6 +658,8 @@ class ConfigReader:
         default_destination: str = hacklist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
         default_source_folder = hacklist_section_dict.pop("!DefaultSourceFolder", ".")
 
+        file_section_dict: CaseInsensitiveDict[str] = CaseInsensitiveDict()
+        modifications: ModificationsNCS | None = None
         for identifier, file in hacklist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNCS(file, replace)
@@ -665,7 +678,7 @@ class ConfigReader:
                 offset = int(offset_str, 10)
             type_specifier = "u16"
             if ":" in value_str:
-                type_specifier, value_str = value_str.split(":", 1)
+                type_specifier, value_str = value_str.split(":", 1)  # noqa: PLW2901
             lower_value = value_str.lower()
 
             if lower_value.startswith("strref"):
@@ -673,23 +686,29 @@ class ConfigReader:
                     value = int(value_str[6:].strip(), 16)
                 else:
                     value = int(value_str[6:].strip(), 10)
+                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
                 modifications.hackdata.append(("StrRef", offset, value))
             elif lower_value.startswith("2damemory"):
                 if value_str[9:].strip().startswith("0x"):
                     value = int(value_str[9:].strip(), 16)
                 else:
                     value = int(value_str[9:].strip(), 10)
+                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
                 modifications.hackdata.append(("2DAMEMORY", offset, value))
             elif type_specifier == "u8":
                 value = int(value_str, 16) if value_str.startswith("0x") else int(value_str, 10)
+                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
                 modifications.hackdata.append(("UINT8", offset, value))
             elif type_specifier == "u32":
                 value = int(value_str, 16) if value_str.startswith("0x") else int(value_str, 10)
+                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
                 modifications.hackdata.append(("UINT32", offset, value))
             else:
                 value = int(value_str, 16) if value_str.startswith("0x") else int(value_str, 10)
+                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
                 modifications.hackdata.append(("UINT16", offset, value))
 
+            assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
             self.config.patches_ncs.append(modifications)
 
     #################
@@ -1053,7 +1072,7 @@ class ConfigReader:
         if field_type.return_type() == ResRef:
             value = ResRef(raw_value)
 
-        elif field_type.return_type() == str:
+        elif field_type.return_type() is str:
             value = ConfigReader.normalize_tslpatcher_crlf(raw_value)
 
         elif issubclass(field_type.return_type(), int):
@@ -1070,7 +1089,7 @@ class ConfigReader:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
             value = Vector4(*components)
 
-        elif field_type.return_type() == bytes:
+        elif field_type.return_type() is bytes:
             if not raw_value.strip().replace("1", "").replace("0", ""):
                 value = bytes(int(raw_value[i : i+8], 2) for i in range(0, len(raw_value), 8))
             elif raw_value.strip().lower().startswith("0x"):
@@ -1240,9 +1259,9 @@ class ConfigReader:
                 msg = f"[2DAList] parse error: '{key}' missing from [{identifier}] in ini."
                 raise ValueError(msg)
             lower_raw_value = raw_value.lower()
-            if lower_raw_value.startswith("strref") and len(raw_value) > "strref" and raw_value[6:].isdigit():
+            if lower_raw_value.startswith("strref") and len(raw_value) > len("strref") and raw_value[6:].isdigit():
                 value: str | int | RowValue2DAMemory | RowValueTLKMemory = RowValueTLKMemory(int(raw_value[6:]))
-            elif lower_raw_value.startswith("2damemory") and len(raw_value) > "2damemory" and raw_value[9:].isdigit():
+            elif lower_raw_value.startswith("2damemory") and len(raw_value) > len("2damemory") and raw_value[9:].isdigit():
                 value = RowValue2DAMemory(int(raw_value[9:]))
             else:
                 value = int(raw_value) if is_int else raw_value
@@ -1292,21 +1311,21 @@ class ConfigReader:
             is_store_2da: bool = (
                 lower_modifier.startswith("2damemory")
                 and len(lower_modifier) > len("2damemory")
-                and modifier[9:].isdigit()
+                and modifier[len("2damemory"):].isdigit()
             )
             is_store_tlk: bool = (
                 modifier.startswith("strref")
                 and len(lower_modifier) > len("strref")
-                and modifier[6:].isdigit()
+                and modifier[len("strref"):].isdigit()
             )
             is_row_label: bool = lower_modifier in {"rowlabel", "newrowlabel"}
 
             row_value: RowValue | None = None
             if lower_value.startswith("2damemory"):
-                token_id = int(value[9:])
+                token_id = int(value[len("2damemory"):])
                 row_value = RowValue2DAMemory(token_id)
             elif lower_value.startswith("strref"):
-                token_id = int(value[6:])
+                token_id = int(value[len("strref"):])
                 row_value = RowValueTLKMemory(token_id)
             elif lower_value == "high()":
                 row_value = RowValueHigh(None) if modifier == "rowlabel" else RowValueHigh(modifier)
@@ -1322,10 +1341,10 @@ class ConfigReader:
                 row_value = RowValueConstant(value)
 
             if is_store_2da:
-                token_id = int(modifier[9:])
+                token_id = int(modifier[len("2damemory"):])
                 store_2da[token_id] = row_value
             elif is_store_tlk:
-                token_id = int(modifier[6:])
+                token_id = int(modifier[len("strref"):])
                 store_tlk[token_id] = row_value
             elif not is_row_label:
                 cells[modifier] = row_value
@@ -1395,10 +1414,10 @@ class ConfigReader:
 
             row_value: RowValue | None = None
             if is_store_2da:
-                token_id = int(value[9:])
+                token_id = int(value[len("2damemory"):])
                 row_value = RowValue2DAMemory(token_id)
             elif is_store_tlk:
-                token_id = int(value[6:])
+                token_id = int(value[len("strref"):])
                 row_value = RowValueTLKMemory(token_id)
             else:
                 row_value = RowValueConstant(value)
@@ -1410,7 +1429,7 @@ class ConfigReader:
                 label: str = modifier[1:]
                 label_insert[label] = row_value
             elif modifier_lowercase.startswith("2damemory"):
-                token_id = int(modifier[9:])
+                token_id = int(modifier[len("2damemory"):])
                 store_2da[token_id] = value
 
         return index_insert, label_insert, store_2da

@@ -10,24 +10,17 @@ from abc import ABC, abstractmethod
 from pathlib import PurePath
 from typing import TYPE_CHECKING, Any
 
-from pykotor.common.geometry import Vector3, Vector4
-from pykotor.common.language import Gender, Language, LocalizedString
-from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff.gff_auto import read_gff
-from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct
+from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf.ssf_auto import read_ssf
-from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
+from pykotor.resource.formats.ssf.ssf_data import SSFSound
 from pykotor.resource.formats.tlk.tlk_auto import read_tlk
-from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.resource.formats.twoda.twoda_auto import read_2da
-from pykotor.resource.formats.twoda.twoda_data import TwoDA
-from pykotor.tslpatcher.memory import NoTokenUsage, PatcherMemory
+from pykotor.tslpatcher.memory import NoTokenUsage
 from pykotor.tslpatcher.mods.gff import (
     AddFieldGFF,
-    FieldValue2DAMemory,
+    AddStructToListGFF,
     FieldValueConstant,
-    FieldValueTLKMemory,
-    LocalizedStringDelta,
     ModificationsGFF,
     ModifyFieldGFF,
 )
@@ -38,15 +31,14 @@ from pykotor.tslpatcher.mods.twoda import (
     AddRow2DA,
     ChangeRow2DA,
     Modifications2DA,
-    RowValue2DAMemory,
     RowValueConstant,
-    RowValueHigh,
-    RowValueTLKMemory,
     Target,
     TargetType,
 )
 
 if TYPE_CHECKING:
+    from pykotor.resource.formats.tlk.tlk_data import TLKEntry
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.tslpatcher.mods.template import PatcherModifications
 
 
@@ -76,7 +68,7 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
         try:
             left_2da = read_2da(left_data)
             right_2da = read_2da(right_data)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
         modifications = Modifications2DA(identifier)
@@ -102,7 +94,7 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
         # Detect added columns
         added_columns = right_headers - left_headers
         for col_name in added_columns:
-            col_index = right_2da.get_headers().index(col_name)
+            _col_index = right_2da.get_headers().index(col_name)
 
             # Determine default value
             column_data = right_2da.get_column(col_name)
@@ -211,16 +203,16 @@ class GFFDiffAnalyzer(DiffAnalyzer):
         try:
             left_gff = read_gff(left_data)
             right_gff = read_gff(right_data)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
-        modifications = ModificationsGFF(identifier, False, [])
+        modifications = ModificationsGFF(identifier, replace=False, modifiers=[])
 
         # Analyze struct differences recursively
         self._analyze_struct(
             left_gff.root,
             right_gff.root,
-            PurePath(""),
+            PurePath(),
             modifications,
         )
 
@@ -235,8 +227,8 @@ class GFFDiffAnalyzer(DiffAnalyzer):
     ):
         """Recursively analyze struct differences."""
         # Get all fields
-        left_fields = set(left_struct.get_field_labels())
-        right_fields = set(right_struct.get_field_labels())
+        left_fields = {label for label, _, _ in left_struct}
+        right_fields = {label for label, _, _ in right_struct}
 
         # Common fields - check for modifications
         common_fields = left_fields & right_fields
@@ -270,8 +262,14 @@ class GFFDiffAnalyzer(DiffAnalyzer):
         modifications: ModificationsGFF,
     ):
         """Analyze a specific field for differences."""
-        left_field = left_struct.acquire(field_label)
-        right_field = right_struct.acquire(field_label)
+        left_field = left_struct.acquire(field_label, None)
+        if not left_field:
+            print(f"Field {field_label} not found in left struct: {left_struct}")
+            return
+        right_field = right_struct.acquire(field_label, None)
+        if not right_field:
+            print(f"Field {field_label} not found in right struct: {right_struct}")
+            return
 
         if left_field.field_type != right_field.field_type:
             # Type changed - treat as modification
@@ -296,15 +294,14 @@ class GFFDiffAnalyzer(DiffAnalyzer):
             right_list = right_struct.get_list(field_label)
             self._analyze_list(left_list, right_list, field_path, modifications)
 
-        else:
-            # Scalar value comparison
-            if not self._values_equal(left_field, right_field, left_struct, right_struct, field_label):
-                self._create_modify_field(
-                    right_struct,
-                    field_label,
-                    field_path,
-                    modifications,
-                )
+        # Scalar value comparison
+        elif not self._values_equal(left_field, right_field, left_struct, right_struct, field_label):
+            self._create_modify_field(
+                right_struct,
+                field_label,
+                field_path,
+                modifications,
+            )
 
     def _analyze_list(
         self,
@@ -314,18 +311,132 @@ class GFFDiffAnalyzer(DiffAnalyzer):
         modifications: ModificationsGFF,
     ):
         """Analyze list differences."""
-        left_size = left_list.size
-        right_size = right_list.size
+        left_size = len(left_list)
+        right_size = len(right_list)
 
-        # Check common elements
+        # Check common elements for modifications
         for idx in range(min(left_size, right_size)):
             item_path = path / str(idx)
             left_item = left_list.at(idx)
             right_item = right_list.at(idx)
+            if not left_item:
+                print(f"List item {idx} not found in left list: {left_list}")
+                continue
+            if not right_item:
+                print(f"List item {idx} not found in right list: {right_list}")
+                continue
             self._analyze_struct(left_item, right_item, item_path, modifications)
 
-        # Added elements (simplified - would need AddStructToListGFF in real implementation)
-        # This is complex and would require more sophisticated handling
+        # Handle added list elements
+        if right_size > left_size:
+            for idx in range(left_size, right_size):
+                right_item = right_list.at(idx)
+                if not right_item:
+                    print(f"List item {idx} not found in right list during add: {right_list}")
+                    continue
+
+                # Create AddStructToListGFF for each new list entry
+                # Generate unique identifier for this list addition
+                section_name = f"gff_{modifications.sourcefile.replace('.', '_')}_{path.name}_{idx}_0"
+
+                # Create a FieldValueConstant that wraps the GFFStruct
+                value = FieldValueConstant(right_item)
+
+                # Create the AddStructToListGFF modifier
+                add_struct = AddStructToListGFF(
+                    identifier=section_name,
+                    value=value,
+                    path=str(path),
+                    index_to_token=None,
+                    modifiers=[],
+                )
+
+                # Recursively add all fields from the new struct
+                self._add_all_struct_fields(right_item, add_struct, PurePath())
+
+                modifications.modifiers.append(add_struct)
+
+    def _add_all_struct_fields(  # noqa: C901, PLR0912
+        self,
+        struct: GFFStruct,
+        parent_modifier: AddStructToListGFF | AddFieldGFF,
+        base_path: PurePath,
+    ):
+        """Recursively add all fields from a struct as AddFieldGFF modifiers."""
+        # Iterate over struct fields (returns tuples of (label, field_type, value))
+        for field_info in struct:
+            field_label, field_type, field_value = field_info
+            field_path = base_path / field_label if base_path.name else PurePath(field_label)
+
+            # Generate unique section name for this field
+            parent_id = parent_modifier.identifier
+            section_name = f"{parent_id}_{field_label}_0".replace("\\", "_").replace("/", "_")
+
+            # Create AddFieldGFF for this field
+            if field_type == GFFFieldType.Struct:
+                # For structs, create AddFieldGFF with nested modifiers
+                value_constant = FieldValueConstant(field_value)
+                add_field = AddFieldGFF(
+                    identifier=section_name,
+                    value=value_constant,
+                    field_type=field_type,
+                    label=field_label,
+                    path=str(field_path),
+                    modifiers=[],
+                )
+
+                # Recursively add nested fields
+                if isinstance(field_value, GFFStruct):
+                    self._add_all_struct_fields(field_value, add_field, PurePath())
+
+                parent_modifier.modifiers.append(add_field)
+
+            elif field_type == GFFFieldType.List:
+                # For lists, create AddFieldGFF
+                value_constant = FieldValueConstant(field_value)
+                add_field = AddFieldGFF(
+                    identifier=section_name,
+                    value=value_constant,
+                    field_type=field_type,
+                    label=field_label,
+                    path=str(field_path),
+                    modifiers=[],
+                )
+
+                # Add nested structs from the list
+                if isinstance(field_value, GFFList):
+                    for list_idx in range(len(field_value)):
+                        list_item = field_value.at(list_idx)
+                        if isinstance(list_item, GFFStruct):
+                            list_section_name = f"{section_name}_{list_idx}_0"
+                            list_value = FieldValueConstant(list_item)
+
+                            add_list_struct = AddStructToListGFF(
+                                identifier=list_section_name,
+                                value=list_value,
+                                path="",
+                                index_to_token=None,
+                                modifiers=[],
+                            )
+
+                            # Recursively add all fields from the list item
+                            self._add_all_struct_fields(list_item, add_list_struct, PurePath())
+                            add_field.modifiers.append(add_list_struct)
+
+                parent_modifier.modifiers.append(add_field)
+
+            else:
+                # For simple fields, just create AddFieldGFF with the value
+                value_constant = FieldValueConstant(field_value)
+                add_field = AddFieldGFF(
+                    identifier=section_name,
+                    value=value_constant,
+                    field_type=field_type,
+                    label=field_label,
+                    path=str(field_path),
+                    modifiers=[],
+                )
+                parent_modifier.modifiers.append(add_field)
 
     def _create_modify_field(
         self,
@@ -335,7 +446,10 @@ class GFFDiffAnalyzer(DiffAnalyzer):
         modifications: ModificationsGFF,
     ):
         """Create a ModifyFieldGFF modifier."""
-        field = struct.acquire(field_label)
+        field = struct.acquire(field_label, None)
+        if not field:
+            print(f"Field {field_label} not found in struct: {struct}")
+            return
         value = self._get_field_value(struct, field_label, field.field_type)
 
         modify_field = ModifyFieldGFF(
@@ -352,7 +466,10 @@ class GFFDiffAnalyzer(DiffAnalyzer):
         modifications: ModificationsGFF,
     ):
         """Create an AddFieldGFF modifier."""
-        field = struct.acquire(field_label)
+        field = struct.acquire(field_label, None)
+        if not field:
+            print(f"Field {field_label} not found in struct: {struct}")
+            return
         value = self._get_field_value(struct, field_label, field.field_type)
 
         # Determine parent path
@@ -398,6 +515,8 @@ class GFFDiffAnalyzer(DiffAnalyzer):
 
         return None
 
+    GFF_FLOAT_TOLERANCE = 1e-6
+
     def _values_equal(
         self,
         left_field: Any,
@@ -412,7 +531,7 @@ class GFFDiffAnalyzer(DiffAnalyzer):
 
         # Special handling for floats
         if isinstance(left_value, float) and isinstance(right_value, float):
-            return abs(left_value - right_value) < 1e-6
+            return abs(left_value - right_value) < self.GFF_FLOAT_TOLERANCE
 
         return left_value == right_value
 
@@ -430,10 +549,12 @@ class TLKDiffAnalyzer(DiffAnalyzer):
         try:
             left_tlk = read_tlk(left_data)
             right_tlk = read_tlk(right_data)
-        except Exception:
+        except Exception as e:  # noqa: BLE001
+            print(f"Error reading TLK: {e}")
             return None
 
-        modifications = ModificationsTLK(identifier, False, [])
+        # Use "append.tlk" as the filename per TSLPatcher convention
+        modifications = ModificationsTLK(filename="append.tlk", replace=False, modifiers=[])
 
         left_size = len(left_tlk)
         right_size = len(right_tlk)
@@ -442,23 +563,36 @@ class TLKDiffAnalyzer(DiffAnalyzer):
 
         # Check for modified entries
         for idx in range(min(left_size, right_size)):
-            left_entry = left_tlk.get(idx)
-            right_entry = right_tlk.get(idx)
+            left_entry: TLKEntry | None = left_tlk.get(idx)
+            right_entry: TLKEntry | None = right_tlk.get(idx)
+            if left_entry is None:
+                print(f"TLK entry {idx} not found in left TLK: {left_tlk}")
+                continue
+            if right_entry is None:
+                print(f"TLK entry {idx} not found in right TLK: {right_tlk}")
+                continue
 
-            if left_entry.text != right_entry.text or left_entry.sound_resref != right_entry.sound_resref:
+            if left_entry.text != right_entry.text or left_entry.voiceover != right_entry.voiceover:
+                # Replacement: token_id is the memory token, mod_index is the actual TLK string ID to replace
                 modify = ModifyTLK(token_id, is_replacement=True)
+                modify.mod_index = idx  # The actual TLK index to replace
                 modify.text = right_entry.text
-                modify.sound = right_entry.sound_resref
+                modify.sound = right_entry.voiceover
                 modifications.modifiers.append(modify)
                 token_id += 1
 
-        # Check for added entries
+        # Check for added entries (appends)
         if right_size > left_size:
             for idx in range(left_size, right_size):
                 right_entry = right_tlk.get(idx)
+                if right_entry is None:
+                    print(f"TLK entry {idx} not found in right TLK: {right_tlk}")
+                    continue
+                # Append: token_id is the memory token, mod_index is the append.tlk index (0-based from start of appends)
                 modify = ModifyTLK(token_id, is_replacement=False)
+                modify.mod_index = idx  # Store the original TLK index for reference
                 modify.text = right_entry.text
-                modify.sound = right_entry.sound_resref
+                modify.sound = right_entry.voiceover
                 modifications.modifiers.append(modify)
                 token_id += 1
 
@@ -478,10 +612,11 @@ class SSFDiffAnalyzer(DiffAnalyzer):
         try:
             left_ssf = read_ssf(left_data)
             right_ssf = read_ssf(right_data)
-        except Exception:
+        except Exception as e:  # noqa: BLE001
+            print(f"Error reading SSF: {e}")
             return None
 
-        modifications = ModificationsSSF(identifier, False, [])
+        modifications = ModificationsSSF(identifier, replace=False, modifiers=[])
 
         # Check all SSF sounds
         for sound in SSFSound:
@@ -489,7 +624,10 @@ class SSFDiffAnalyzer(DiffAnalyzer):
             right_value = right_ssf.get(sound)
 
             if left_value != right_value:
-                modify = ModifySSF(sound, NoTokenUsage(right_value))
+                if right_value is None:
+                    print(f"SSF sound {sound} not found in right SSF: {right_ssf}")
+                    continue
+                modify = ModifySSF(sound, NoTokenUsage(str(right_value)))
                 modifications.modifiers.append(modify)
 
         return modifications if modifications.modifiers else None
@@ -505,11 +643,11 @@ class DiffAnalyzerFactory:
 
         if resource_type_lower in ("2da", "twoda"):
             return TwoDADiffAnalyzer()
-        elif resource_type_lower in ("gff", "utc", "uti", "utp", "ute", "utm", "utd", "utw", "dlg", "are", "git", "ifo", "gui", "jrl", "fac"):
+        if resource_type_lower in ("gff", "utc", "uti", "utp", "ute", "utm", "utd", "utw", "dlg", "are", "git", "ifo", "gui", "jrl", "fac"):
             return GFFDiffAnalyzer()
-        elif resource_type_lower == "tlk":
+        if resource_type_lower == "tlk":
             return TLKDiffAnalyzer()
-        elif resource_type_lower == "ssf":
+        if resource_type_lower == "ssf":
             return SSFDiffAnalyzer()
 
         return None

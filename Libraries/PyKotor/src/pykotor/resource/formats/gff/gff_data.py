@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import math
 
 from copy import copy, deepcopy
@@ -27,7 +28,6 @@ U = TypeVar("U")
 
 
 def format_diff(old_value: object, new_value: object, name: str) -> str:
-    import difflib
     # Convert values to strings if they aren't already
     str_old_value = str(old_value).splitlines(keepends=True)
     str_new_value = str(new_value).splitlines(keepends=True)
@@ -144,7 +144,7 @@ class GFFFieldType(IntEnum):
 
     def return_type(  # noqa: PLR0911, C901
         self,
-    ) -> type[int | str | ResRef | Vector3 | Vector4 | LocalizedString | GFFStruct | GFFList | bytes | float]:
+    ) -> type[int | str | ResRef | Vector3 | Vector4 | LocalizedString | GFFStruct | GFFList | bytes | float]:  # type: ignore[valid-type]
         if self in {
             GFFFieldType.UInt8,
             GFFFieldType.UInt16,
@@ -627,7 +627,7 @@ class GFFStruct(ComparableMixin):
         if (
             self.exists(label)
             and object_type is not None
-#           and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
+        #   and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
         ):
             value = self[label]
         if object_type is bool and value.__class__ is int:

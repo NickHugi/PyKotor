@@ -2506,7 +2506,7 @@ class SwitchStatement(Statement):
         break_instruction: NCSInstruction | None,
         continue_instruction: NCSInstruction | None,
     ):
-        self.real_block._parent = block
+        self.real_block._parent = block  # noqa: SLF001
         block.mark_break_scope()
 
         block = self.real_block

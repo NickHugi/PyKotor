@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Mapping
 
 from loggerplus import RobustLogger
 
@@ -66,10 +66,11 @@ class Target:
             - For label column, checks for label column, then iterates rows to find match
             - Returns matching row or None.
         """
-        if isinstance(self.value, (RowValueTLKMemory, RowValue2DAMemory)):
-            value = self.value.value(memory, twoda, None)
-        else:
-            value = self.value
+        value: str | int = (
+            self.value.value(memory, twoda, None)
+            if isinstance(self.value, (RowValueTLKMemory, RowValue2DAMemory))
+            else self.value
+        )
         source_row: TwoDARow | None = None
         if self.target_type == TargetType.ROW_INDEX:
             source_row = twoda.get_row(int(value))
@@ -238,13 +239,13 @@ class ChangeRow2DA(Modify2DA):
         self,
         identifier: str,
         target: Target,
-        cells: dict[str, RowValue],
+        cells: Mapping[str, RowValue],
         store_2da: dict[int, RowValue] | None = None,
         store_tlk: dict[int, RowValue] | None = None,
     ):
         self.identifier: str = identifier
         self.target: Target = target
-        self.cells: dict[str, RowValue] = cells
+        self.cells: dict[str, RowValue] = dict(cells)
         self.store_2da: dict[int, RowValue] = {} if store_2da is None else store_2da
         self.store_tlk: dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
@@ -282,19 +283,19 @@ class AddRow2DA(Modify2DA):
         modifiers: For the row, sets a cell under column KEY to have the text VALUE.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         identifier: str,
         exclusive_column: str | None,
         row_label: str | None,
-        cells: dict[str, RowValue],
+        cells: Mapping[str, RowValue],
         store_2da: dict[int, RowValue] | None = None,
         store_tlk: dict[int, RowValue] | None = None,
     ):
         self.identifier: str = identifier
         self.exclusive_column: str | None = exclusive_column
         self.row_label: str | None = row_label
-        self.cells: dict[str, RowValue] = cells
+        self.cells: dict[str, RowValue] = dict(cells)
         self.store_2da: dict[int, RowValue] = {} if store_2da is None else store_2da
         self.store_tlk: dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
@@ -367,7 +368,7 @@ class CopyRow2DA(Modify2DA):
         modifiers: For the row, sets a cell under column KEY to have the text VALUE.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         identifier: str,
         target: Target,
@@ -464,7 +465,7 @@ class AddColumn2DA(Modify2DA):
         label_insert: For the new column, if the row label is KEY then set cell to VALUE.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         identifier: str,
         header: str,
@@ -509,7 +510,7 @@ class AddColumn2DA(Modify2DA):
 
         for row_index, row_value in self.index_insert.items():
             index_str: str = row_value.value(memory, twoda, None)
-            this_row = twoda.get_row(row_index)
+            this_row: TwoDARow | None = twoda.get_row(row_index)
             if this_row:
                 this_row.set_string(self.header, index_str)
             else:
@@ -518,7 +519,7 @@ class AddColumn2DA(Modify2DA):
 
         for row_label, row_value in self.label_insert.items():
             label_str: str = row_value.value(memory, twoda, None)
-            this_row: TwoDARow | None = twoda.find_row(row_label)
+            this_row = twoda.find_row(row_label)
             if this_row:
                 this_row.set_string(self.header, label_str)
             else:
@@ -526,12 +527,16 @@ class AddColumn2DA(Modify2DA):
                 raise WarningError(msg)
 
         for token_id, value in self.store_2da.items():
-            # TODO: Exception handling
+            # TODO(NickHugi): Exception handling
             if value.startswith("I"):
-                cell = twoda.get_row(int(value[1:])).get_string(self.header)
+                cell: str = twoda.get_row(int(value[1:])).get_string(self.header)
                 memory.memory_2da[token_id] = cell
             elif value.startswith("L"):
-                cell = twoda.find_row(value[1:]).get_string(self.header)
+                row = twoda.find_row(value[1:])
+                if row is None:
+                    msg = f"Could not find row {value[1:]} in {self.header}"
+                    raise WarningError(msg)
+                cell = row.get_string(self.header)
                 memory.memory_2da[token_id] = cell
             else:
                 msg = f"store_2da dict has an invalid value at {token_id}: '{value}'"
@@ -548,25 +553,25 @@ class Modifications2DA(PatcherModifications):
 
     def patch_resource(
         self,
-        source_2da: SOURCE_TYPES,
+        source: SOURCE_TYPES,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
     ) -> bytes | Literal[True]:
-        twoda: TwoDA = read_2da(source_2da)
+        twoda: TwoDA = read_2da(source)
         self.apply(twoda, memory, logger, game)
         return bytes_2da(twoda)
 
     def apply(
         self,
-        twoda: TwoDA,
+        mutable_data: TwoDA,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
     ):
         for row in self.modifiers:
             try:
-                row.apply(twoda, memory)
+                row.apply(mutable_data, memory)
             except Exception as e:  # noqa: PERF203, BLE001
                 msg = f"{universal_simplify_exception(e)} when patching the file '{self.saveas}'"
                 RobustLogger().critical(str(e), exc_info=e)
