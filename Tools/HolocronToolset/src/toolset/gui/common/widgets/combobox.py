@@ -194,7 +194,8 @@ class FilterComboBox(QComboBox):
         # Make room for the filterbox
         margins = self.view().viewportMargins()
         self.view().setViewportMargins(margins.left(), margins.top() + self.filterLineEdit.height(), margins.right(), margins.bottom())
-        self.view().update()
+        # Force a repaint to ensure the margins are applied correctly
+        self.view().repaint()
         self.old_width = self.width()
         self.setMinimumWidth(200)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)

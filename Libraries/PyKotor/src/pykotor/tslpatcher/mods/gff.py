@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from itertools import zip_longest
 from typing import TYPE_CHECKING, Any
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]  # type: ignore[import-untyped]
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef

@@ -32,17 +32,37 @@ class ToolTip:
         text = insert_newlines(text, self.wordwrap_at_limit)
         if not text:
             return
-        bbox: tuple[int, int, int, int] | None = self.widget.bbox("insert")
-        if bbox is None:
-            return
 
-        x, y, _, _ = bbox
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
+        # Try Text widgets (which support 'insert'), otherwise fallback to cursor position or top-left
+        bbox: tuple[int, int, int, int] | None = None
+        try:
+            bbox = self.widget.bbox("insert")  # type: ignore[arg-type]  # Works for Text, Entry widgets
+        except Exception:  # noqa: BLE001
+            try:  # noqa: SIM105
+                bbox = self.widget.bbox()
+            except Exception:  # noqa: BLE001, S110
+                pass
+
+        if bbox is None:
+            x = self.widget.winfo_rootx() + 25
+            y = self.widget.winfo_rooty() + 20
+        else:
+            x, y, _, _ = bbox
+            x += self.widget.winfo_rootx() + 25
+            y += self.widget.winfo_rooty() + 20
+
         self.tip_window = tk.Toplevel(self.widget)
         self.tip_window.wm_overrideredirect(boolean=True)
         self.tip_window.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(self.tip_window, text=text, justify=tk.LEFT, background="#ffffff", relief=tk.SOLID, borderwidth=1, font=("tahoma", "8", "normal"))
+        label = tk.Label(
+            self.tip_window,
+            text=text,
+            justify=tk.LEFT,
+            background="#ffffff",
+            relief=tk.SOLID,
+            borderwidth=1,
+            font=("tahoma", 8, "normal"),
+        )
         label.pack(ipadx=1)
 
     def hide_tip(self, event: tk.Event | None = None):

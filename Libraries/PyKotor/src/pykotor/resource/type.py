@@ -10,7 +10,7 @@ import uuid
 
 from enum import Enum
 from functools import lru_cache
-from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
+from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union, cast
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from pykotor.common.stream import BinaryWriterBytearray, BinaryWriterFile
+
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
 BASE_SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview]
@@ -48,7 +49,7 @@ class ResourceWriter:
         self,
         target: TARGET_TYPES,
     ):
-        self._writer: BinaryWriterFile | BinaryWriterBytearray = BinaryWriter.to_auto(target)
+        self._writer: BinaryWriterFile | BinaryWriterBytearray = cast("BinaryWriterFile | BinaryWriterBytearray", BinaryWriter.to_auto(target))
 
     def close(
         self,
@@ -400,6 +401,9 @@ class ResourceType(Enum):
             msg = f"Invalid ResourceType: '{self!r}'"
             raise ValueError(msg)
         return self
+
+    def is_valid(self) -> bool:
+        return not self.is_invalid
 
 
 R = TypeVar("R")

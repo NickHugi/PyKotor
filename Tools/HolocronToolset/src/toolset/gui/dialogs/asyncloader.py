@@ -229,11 +229,19 @@ class AsyncLoader(QDialog, Generic[T]):
 
     def _onCompleted(self):
         print("_onCompleted")
-        if self.error is not None:
-            self.reject()
-            self._showErrorDialog()
-        else:
-            self.accept()
+        try:
+            if self.error is not None:
+                print("_onCompleted: error occurred, calling reject()")
+                self.reject()
+                self._showErrorDialog()
+            else:
+                print("_onCompleted: no error, calling accept()")
+                self.accept()
+                print("_onCompleted: accept() completed successfully")
+        except Exception as e:
+            print(f"_onCompleted: Exception occurred: {e.__class__.__name__}: {e}")
+            RobustLogger().exception("Exception in _onCompleted")
+            raise
 
     def _showErrorDialog(self):
         print("AsyncLoader._showErrorDialog")

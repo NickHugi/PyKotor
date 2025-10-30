@@ -1,0 +1,40 @@
+================================================================================
+RESOURCE EXTRACTION: plot.2da
+================================================================================
+Location: C:\Program Files (x86)\Steam\steamapps\common\swkotor - Vanilla\data\2da.bif
+Type: 2da (2D Arrays)
+
+Data:
+--------------------------------------------------------------------------------
+columns:
+  xp: [75 items]
+  label: [75 items]
+rows: 75
+data: [10 items]
+  [0]:
+    label: man28aa_security01
+    values:
+      xp: 100
+      label: man28aa_security01
+  [1]:
+    label: man28aa_security02
+    values:
+      xp: 200
+      label: man28aa_security02
+  [2]:
+    label: man28aa_security03
+    values:
+      xp: 300
+      label: man28aa_security03
+  [3]:
+    label: man28ad_final
+    values:
+      xp: 1000
+      label: man28ad_final
+  [4]:
+    label: qa_test_plot
+    values:
+      xp: 3000
+      label: QA_TEST_PLOT
+  ...
+note: Showing first 10 of 75 rows. Use --verbose for all rows.

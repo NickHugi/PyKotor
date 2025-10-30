@@ -1,2 +1,3 @@
 ply>=3.11,<4                    # required for the nss compiler lexer
 loggerplus>=0.1.3,<1            # RobustLogger
+merge3                          # required for tslpatcher diff functionality

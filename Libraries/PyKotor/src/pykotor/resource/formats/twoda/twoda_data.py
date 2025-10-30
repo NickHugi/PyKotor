@@ -93,6 +93,17 @@ class TwoDA(ComparableMixin):
 
         return [self._rows[i][header] for i in range(self.get_height())]
 
+    def get_columns(
+        self,
+    ) -> dict[str, list[str]]:
+        """Returns all columns as a dictionary mapping header names to their column values.
+
+        Returns:
+        -------
+            A dictionary where keys are column headers and values are lists of cells.
+        """
+        return {header: self.get_column(header) for header in self._headers}
+
     def add_column(
         self,
         header: str,
@@ -159,6 +170,22 @@ class TwoDA(ComparableMixin):
             Returns the row label.
         """
         return self._labels[row_index]
+
+    def get_row_label(
+        self,
+        row_index: int,
+    ) -> str:
+        """Returns the row label for the given row.
+
+        Args:
+        ----
+            row_index: The index of the row.
+
+        Returns:
+        -------
+            Returns the row label.
+        """
+        return self.get_label(row_index)
 
     def set_label(
         self,

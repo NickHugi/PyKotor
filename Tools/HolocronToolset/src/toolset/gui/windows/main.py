@@ -11,7 +11,7 @@ import sys
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, cast
 
 import qtpy
 
@@ -95,6 +95,7 @@ from toolset.gui.widgets.main_widgets import ResourceList
 from toolset.gui.widgets.settings.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
+from toolset.gui.windows.kotordiff import KotorDiffWindow
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
@@ -139,8 +140,23 @@ def run_module_designer(
     module_path: str | None = None,
 ):
     """An alternative way to start the ModuleDesigner: run this function in a new process so the main tool window doesn't wait on the module designer."""
+    from qtpy.QtGui import QSurfaceFormat
+
     from toolset.__main__ import main_init
     main_init()
+
+    # Set default OpenGL surface format before creating QApplication
+    # This is critical for PyPy and ensures proper OpenGL context initialization
+    fmt = QSurfaceFormat()
+    fmt.setDepthBufferSize(24)
+    fmt.setStencilBufferSize(8)
+    fmt.setVersion(3, 3)  # Request OpenGL 3.3
+    # Use CompatibilityProfile instead of CoreProfile - CoreProfile requires VAO to be bound
+    # before any buffer operations, which causes issues with PyOpenGL's lazy loading
+    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+    fmt.setSamples(4)  # Enable multisampling for antialiasing
+    QSurfaceFormat.setDefaultFormat(fmt)
+
     app = QApplication([])
     designerUi = ModuleDesigner(
         None,
@@ -154,7 +170,7 @@ def run_module_designer(
     if not QPixmap(icon_path).isNull():
         designerUi.log.debug(f"HT main window Icon loaded successfully from {icon_path}")
         designerUi.setWindowIcon(QIcon(QPixmap(icon_path)))
-        cast(QApplication, QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
+        cast("QApplication", QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
     else:
         print(f"Failed to load HT main window icon from {icon_path}")
     addWindow(designerUi, show=False)
@@ -237,12 +253,6 @@ class ToolWindow(QMainWindow):
         self.original_palette: QPalette = self.palette()
         self.change_theme(self.settings.selectedTheme)
 
-        # FileSystem explorer tab
-        try:
-            self.ui.fileSystemWidget.setRootPath(Path.home())
-        except Exception:
-            self.log.exception("Failed to setup the file system widget!")
-
         # Finalize the init
         self.reloadSettings()
         self.unsetInstallation()
@@ -276,7 +286,7 @@ class ToolWindow(QMainWindow):
         if not QPixmap(icon_path).isNull():
             self.log.debug(f"HT main window Icon loaded successfully from {icon_path}")
             self.setWindowIcon(QIcon(QPixmap(icon_path)))
-            cast(QApplication, QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
+            cast("QApplication", QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
         else:
             print(f"Failed to load HT main window icon from {icon_path}")
         self.setupModulesTab()
@@ -289,7 +299,7 @@ class ToolWindow(QMainWindow):
         self.erfEditorButton.hide()
 
         modulesResourceList = self.ui.modulesWidget.ui
-        modulesSectionCombo: FilterComboBox = cast(FilterComboBox, modulesResourceList.sectionCombo)  # type: ignore[]
+        modulesSectionCombo: FilterComboBox = cast("FilterComboBox", modulesResourceList.sectionCombo)  # type: ignore[]
         modulesSectionCombo.__class__ = FilterComboBox
         modulesSectionCombo.__init__(init=False)
         modulesSectionCombo.setEditable(False)
@@ -368,18 +378,30 @@ class ToolWindow(QMainWindow):
         self.ui.coreWidget.requestExtractResource.connect(self.onExtractResources)
         self.ui.coreWidget.requestOpenResource.connect(self.onOpenResources)
         self.ui.coreWidget.requestRefresh.connect(self.onCoreRefresh)
+        self.ui.coreWidget.requestMakeUnskippable.connect(self.onMakeUnskippable)
+        self.ui.coreWidget.requestConvertGFF.connect(self.onConvertGFF)
+        self.ui.coreWidget.requestConvertTPC.connect(self.onConvertTPC)
+        self.ui.coreWidget.requestConvertTGA.connect(self.onConvertTGA)
 
         self.ui.modulesWidget.sectionChanged.connect(self.onModuleChanged)
         self.ui.modulesWidget.requestReload.connect(self.onModuleReload)
         self.ui.modulesWidget.requestRefresh.connect(self.onModuleRefresh)
         self.ui.modulesWidget.requestExtractResource.connect(self.onExtractResources)
         self.ui.modulesWidget.requestOpenResource.connect(self.onOpenResources)
+        self.ui.modulesWidget.requestMakeUnskippable.connect(self.onMakeUnskippable)
+        self.ui.modulesWidget.requestConvertGFF.connect(self.onConvertGFF)
+        self.ui.modulesWidget.requestConvertTPC.connect(self.onConvertTPC)
+        self.ui.modulesWidget.requestConvertTGA.connect(self.onConvertTGA)
 
         self.ui.savesWidget.sectionChanged.connect(self.onSavepathChanged)
         self.ui.savesWidget.requestReload.connect(self.onSaveReload)
         self.ui.savesWidget.requestRefresh.connect(self.onSaveRefresh)
         self.ui.savesWidget.requestExtractResource.connect(self.onExtractResources)
         self.ui.savesWidget.requestOpenResource.connect(self.onOpenResources)
+        self.ui.savesWidget.requestMakeUnskippable.connect(self.onMakeUnskippable)
+        self.ui.savesWidget.requestConvertGFF.connect(self.onConvertGFF)
+        self.ui.savesWidget.requestConvertTPC.connect(self.onConvertTPC)
+        self.ui.savesWidget.requestConvertTGA.connect(self.onConvertTGA)
         self.ui.resourceTabs.currentChanged.connect(self.onTabChanged)
 
         def openModuleDesigner() -> ModuleDesigner | None:
@@ -415,16 +437,22 @@ class ToolWindow(QMainWindow):
             addWindow(designerUi, show=False)
             return designerUi
 
-        self.ui.specialActionButton.clicked.connect(lambda *args: openModuleDesigner() and None or None)
+        self.ui.specialActionButton.clicked.connect(lambda *args: (openModuleDesigner() and None) or None)
 
         self.ui.overrideWidget.sectionChanged.connect(self.onOverrideChanged)
         self.ui.overrideWidget.requestReload.connect(self.onOverrideReload)
         self.ui.overrideWidget.requestRefresh.connect(self.onOverrideRefresh)
         self.ui.overrideWidget.requestExtractResource.connect(self.onExtractResources)
         self.ui.overrideWidget.requestOpenResource.connect(self.onOpenResources)
+        self.ui.overrideWidget.requestMakeUnskippable.connect(self.onMakeUnskippable)
+        self.ui.overrideWidget.requestConvertGFF.connect(self.onConvertGFF)
+        self.ui.overrideWidget.requestConvertTPC.connect(self.onConvertTPC)
+        self.ui.overrideWidget.requestConvertTGA.connect(self.onConvertTGA)
 
         self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
+        self.ui.texturesWidget.requestConvertTPC.connect(self.onConvertTPC)
+        self.ui.texturesWidget.requestConvertTGA.connect(self.onConvertTGA)
 
         self.ui.extractButton.clicked.connect(
             lambda: self.onExtractResources(
@@ -442,7 +470,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
-        self.ui.actionExit.triggered.connect(lambda *args: self.close() and None or None)
+        self.ui.actionExit.triggered.connect(lambda *args: (self.close() and None) or None)
 
         self.ui.actionNewTLK.triggered.connect(lambda: addWindow(TLKEditor(self, self.active)))
         self.ui.actionNewDLG.triggered.connect(lambda: addWindow(DLGEditor(self, self.active)))
@@ -467,6 +495,8 @@ class ToolWindow(QMainWindow):
         self.ui.actionEditJRL.triggered.connect(self.openActiveJournal)
         self.ui.actionFileSearch.triggered.connect(self.openFileSearchDialog)
         self.ui.actionIndoorMapBuilder.triggered.connect(self.openIndoorMapBuilder)
+        self.ui.actionKotorDiff.triggered.connect(self.openKotorDiff)
+        self.ui.actionTSLPatchDataEditor.triggered.connect(self.openTSLPatchDataEditor)
 
         self.ui.actionInstructions.triggered.connect(self.openInstructionsWindow)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
@@ -565,7 +595,7 @@ class ToolWindow(QMainWindow):
             palette = standard_palette
         elif self.settings.selectedTheme == "Fusion (Light)":
             style = "Fusion"
-            self.apply_style(app, sheet, "Fusion")
+            palette = standard_palette
         elif self.settings.selectedTheme == "Fusion (Dark)":
             style = "Fusion"
             palette = self.create_palette(QColor(53, 53, 53), QColor(35, 35, 35), QColor(240, 240, 240),
@@ -575,7 +605,7 @@ class ToolWindow(QMainWindow):
             #return
         elif self.settings.selectedTheme == "QDarkStyle":
             try:
-                import qdarkstyle  # pyright: ignore[reportMissingTypeStubs]
+                import qdarkstyle  # pyright: ignore[reportMissingImports, reportMissingTypeStubs]
             except ImportError:
                 QMessageBox.critical(self, "Theme not found", "QDarkStyle is not installed in this environment.")
             else:
@@ -1030,11 +1060,6 @@ class ToolWindow(QMainWindow):
             self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
 
-        try:
-            self.ui.fileSystemWidget.setRootPath(Path(path))
-        except Exception:  # noqa: BLE001
-            self.log.exception("Failed to setup the experimental file system model view")
-
         active = self.installations.get(name)
         if active:
             self.active = active
@@ -1052,6 +1077,8 @@ class ToolWindow(QMainWindow):
                         assert loader is not None
                         loader._worker.progress.emit(data, mtype)  # noqa: SLF001
                 new_active = HTInstallation(CaseAwarePath(path), name, tsl=tsl, progress_callback=progress_callback)
+                # Trigger full load with progress callback
+                new_active.reload_all()
                 if self.settings.profileToolset and profiler is not None:
                     profiler.disable()
                     profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))
@@ -1291,7 +1318,7 @@ class ToolWindow(QMainWindow):
     # endregion
 
     # region Events
-    def closeEvent(self, e: QCloseEvent | None):
+    def closeEvent(self, e: QCloseEvent):  # type: ignore[override, note]
         self.ui.texturesWidget.doTerminations()
         instance = QCoreApplication.instance()
         print("<SDM> [closeEvent scope] instance: ", instance)
@@ -1303,7 +1330,7 @@ class ToolWindow(QMainWindow):
             print("ToolWindow closed, shutting down the app.")
             instance.quit()
 
-    def mouseMoveEvent(self, event: QMouseEvent):
+    def mouseMoveEvent(self, event: QMouseEvent):  # type: ignore[override, note]
         #print("mouseMoveEvent")
         if event.buttons() == Qt.MouseButton.LeftButton:
             #print("mouseMoveEvent (button passed)")
@@ -1316,20 +1343,20 @@ class ToolWindow(QMainWindow):
             self.move(self.mapFromGlobal(self.mapToGlobal(self.pos()) + (globalPos - mouseMovePos)))
             self._mouseMovePos = globalPos
 
-    def mousePressEvent(self, event: QMouseEvent):
+    def mousePressEvent(self, event: QMouseEvent):  # type: ignore[override, note]
         #print("mousePressEvent")
         if event.button() == Qt.MouseButton.LeftButton:
             #print("mousePressEvent (button passed)")
             self._mouseMovePos = event.globalPos()
             #print("<SDM> [mousePressEvent scope] self._mouseMovePos: ", self._mouseMovePos)
 
-    def mouseReleaseEvent(self, event: QMouseEvent):
+    def mouseReleaseEvent(self, event: QMouseEvent):  # type: ignore[override, note]
         #print("mouseReleaseEvent")
         if event.button() == Qt.MouseButton.LeftButton:
             #print("mouseReleaseEvent (button passed)")
             self._mouseMovePos = None
 
-    def keyPressEvent(self, event: QKeyEvent):
+    def keyPressEvent(self, event: QKeyEvent):  # type: ignore[override, note]
         super().keyPressEvent(event)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None):
@@ -1337,10 +1364,10 @@ class ToolWindow(QMainWindow):
             return
 
         #print_qt_object(e)
-        if not e.mimeData().hasUrls():
+        if not e.mimeData().hasUrls():  # pyright: ignore[reportOptionalMemberAccess]
             return
 
-        for url in e.mimeData().urls():
+        for url in e.mimeData().urls():  # pyright: ignore[reportOptionalMemberAccess]
             try:
                 filepath = url.toLocalFile()
                 print(f"URL: {url}")
@@ -1359,7 +1386,7 @@ class ToolWindow(QMainWindow):
         e.accept()
 
     def _handleWindowsZipExplorerDrop(self, e: QtGui.QDropEvent):
-        fd_data = e.mimeData().data('application/x-qt-windows-mime;value="FileGroupDescriptorW"').data()
+        fd_data = e.mimeData().data('application/x-qt-windows-mime;value="FileGroupDescriptorW"').data()  # pyright: ignore[reportOptionalMemberAccess]
         num_descriptors = struct.unpack("I", fd_data[:4])[0]
         print(f"Number of file descriptors: {num_descriptors}")
         offset = 4
@@ -1385,7 +1412,7 @@ class ToolWindow(QMainWindow):
         if e is None:
             return
 
-        for url in e.mimeData().urls():
+        for url in e.mimeData().urls():  # pyright: ignore[reportOptionalMemberAccess]
             filepath: str = url.toLocalFile()
             print("<SDM> [dropEvent scope] filepath: ", filepath)
 
@@ -1462,6 +1489,12 @@ class ToolWindow(QMainWindow):
         self.ui.actionModuleDesigner.setEnabled(self.active is not None)
         self.ui.actionIndoorMapBuilder.setEnabled(self.active is not None)
 
+        # KotorDiff is always available
+        self.ui.actionKotorDiff.setEnabled(True)
+
+        # TSLPatchData editor is always available
+        self.ui.actionTSLPatchDataEditor.setEnabled(True)
+
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def debounceModuleDesignerLoad(self):
@@ -1470,7 +1503,11 @@ class ToolWindow(QMainWindow):
 
     def openModuleDesigner(self):
         if self.active is None:
-            QMessageBox(QMessageBox.Icon.Information, "No installation loaded.", "Load an installation before opening the Module Designer.").exec_()
+            QMessageBox(
+                QMessageBox.Icon.Information,
+                "No installation loaded.",
+                "Load an installation before opening the Module Designer.",
+            ).exec_()
             return
         designer = ModuleDesigner(None, self.active)
         addWindow(designer, show=False)
@@ -1479,7 +1516,7 @@ class ToolWindow(QMainWindow):
         """Opens the Settings dialog and refresh installation combo list if changes."""
         dialog = SettingsDialog(self)
         if dialog.exec_() and dialog.installationEdited:
-            result = QMessageBox(
+            result = QMessageBox( # type: ignore[call-overload]
                 QMessageBox.Icon.Question,
                 "Reload the installations?",
                 "You appear to have made changes to your installations, would you like to reload?",
@@ -1524,10 +1561,10 @@ class ToolWindow(QMainWindow):
         relevant = journal_resources[jrl_ident]
         if len(relevant) > 1:
             dialog = FileSelectionWindow(relevant, self.active)
+            addWindow(dialog)
         else:
             jrl_resource = relevant[0].as_file_resource()
             openResourceEditor(jrl_resource.filepath(), jrl_resource.resname(), jrl_resource.restype(), jrl_resource.data(), self.active, self)
-        addWindow(dialog)
 
     def openFileSearchDialog(self):
         """Opens the FileSearcher dialog.
@@ -1546,6 +1583,22 @@ class ToolWindow(QMainWindow):
 
     def openIndoorMapBuilder(self):
         IndoorMapBuilder(self, self.active).show()
+
+    def openKotorDiff(self):
+        """Opens the KotorDiff window."""
+        window = KotorDiffWindow(self, self.installations, self.active)
+        window.setWindowIcon(self.windowIcon())
+        addWindow(window)
+        window.show()
+
+    def openTSLPatchDataEditor(self):
+        """Opens the TSLPatchData editor."""
+        from toolset.gui.dialogs.tslpatchdata_editor import TSLPatchDataEditor
+
+        dialog = TSLPatchDataEditor(self, self.active)
+        dialog.setWindowIcon(self.windowIcon())
+        addWindow(dialog)
+        dialog.show()
 
     def openInstructionsWindow(self):
         """Opens the instructions window."""
@@ -2223,7 +2276,7 @@ class ToolWindow(QMainWindow):
         assert self.active is not None
         from pykotor.common.module import Module
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
-        if curModuleName not in self.active._modules:
+        if curModuleName not in self.active._modules:  # noqa: SLF001
             RobustLogger().warning(f"'{curModuleName}' not a valid module.")
             BetterMessageBox("Invalid module.", f"'{curModuleName}' not a valid module, could not find it in the loaded installation.").exec_()
             return
@@ -2267,7 +2320,7 @@ class ToolWindow(QMainWindow):
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         print("<SDM> [extractAllModuleTextures scope] str: ", str)
 
-        if curModuleName not in self.active._modules:
+        if curModuleName not in self.active._modules:  # noqa: SLF001
             RobustLogger().warning(f"'{curModuleName}' not a valid module.")
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
@@ -2291,9 +2344,11 @@ class ToolWindow(QMainWindow):
     def extractAllModuleModels(self):
         from pykotor.common.module import Module
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
-        if curModuleName not in self.active._modules:
+        assert self.active is not None, "self.active is None"
+        if curModuleName not in self.active._modules:  # noqa: SLF001
             RobustLogger().warning(f"'{curModuleName}' not a valid module.")
             return
+        assert self.active is not None, "self.active is None"
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
         print("<SDM> [extractAllModuleModels scope] thisModule: ", thisModule)
 
@@ -2317,7 +2372,8 @@ class ToolWindow(QMainWindow):
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         print("<SDM> [extractModuleEverything scope] curModuleName: ", curModuleName)
 
-        if curModuleName not in self.active._modules:
+        assert self.active is not None, "self.active is None"
+        if curModuleName not in self.active._modules:  # noqa: SLF001
             RobustLogger().warning(f"'{curModuleName}' is not a valid module.")
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
@@ -2336,7 +2392,10 @@ class ToolWindow(QMainWindow):
             allModuleResources.append(ResourceResult(ident.resname, ident.restype, locations[0], data))
         FileSaveHandler(allModuleResources, self).save_files()
 
-    def build_extract_save_paths(self, resources: list[FileResource]) -> tuple[Path, dict[FileResource, Path]] | tuple[None, None]:
+    def build_extract_save_paths(
+        self,
+        resources: list[FileResource],
+    ) -> tuple[Path, dict[FileResource, Path]] | tuple[None, None]:
         # TODO(th3w1zard1): currently doesn't handle same filenames existing for extra extracts e.g. tpcTxiCheckbox.isChecked() or mdlTexturesCheckbox.isChecked()
         paths_to_write: dict[FileResource, Path] = {}
 
@@ -2398,15 +2457,18 @@ class ToolWindow(QMainWindow):
                 RobustLogger().debug("No paths to write: user must have cancelled the getExistingDirectory dialog.")
                 return
             failed_savepath_handlers: dict[Path, Exception] = {}
-            resource_save_paths = FileSaveHandler(selectedResources).determine_save_paths(paths_to_write, failed_savepath_handlers)
+            resource_save_paths: dict[FileResource, Path] = FileSaveHandler(selectedResources).determine_save_paths(
+                paths_to_write,
+                failed_savepath_handlers,
+            )
             print("<SDM> [onExtractResources scope] resource_save_paths: ", resource_save_paths)
 
             if not resource_save_paths:
                 RobustLogger().debug("No resources returned from FileSaveHandler.determine_save_paths")
                 return
             loader = AsyncLoader.__new__(AsyncLoader)
-            seen_resources = {}
-            tasks = [
+            seen_resources: dict[LocationResult, Path] = {}
+            tasks: list[Callable[[], None]] = [
                 lambda res=resource, fp=save_path: self._extractResource(res, fp, loader, seen_resources)
                 for resource, save_path in resource_save_paths.items()
             ]
@@ -2435,7 +2497,7 @@ class ToolWindow(QMainWindow):
                         QMessageBox.Icon.Information,
                         "Failed to extract some items.",
                         f"Failed to save {len(loader.errors)} files!",
-                        flags=Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint
+                        flags=Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint  # pyright: ignore[reportArgumentType]
                     )
 
                     msgBox.setDetailedText("\n".join(f"{e.__class__.__name__}: {e}" for e in loader.errors))
@@ -2444,7 +2506,7 @@ class ToolWindow(QMainWindow):
                         QMessageBox.Icon.Information,
                         "Extraction successful.",
                         f"Successfully saved {len(paths_to_write)} files to {folder_path}",
-                        flags=Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint
+                        flags=Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint  # pyright: ignore[reportArgumentType]
                     )
 
                     msgBox.setDetailedText("\n".join(str(p) for p in resource_save_paths.values()))
@@ -2471,12 +2533,12 @@ class ToolWindow(QMainWindow):
             - Extracts textures from MDL files
             - Writes extracted data to the file path
         """
-        loader._worker.progress.emit(f"Processing resource: {resource.identifier()}", "update_maintask_text")
+        loader._worker.progress.emit(f"Processing resource: {resource.identifier()}", "update_maintask_text")  # noqa: SLF001
         r_folderpath: Path = save_path.parent
         print("<SDM> [_extractResource scope] parent savepath: ", r_folderpath)
 
 
-        data: bytes = resource.data()
+        data: bytes | bytearray = resource.data()
 
 
         if resource.restype() is ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
@@ -2497,19 +2559,17 @@ class ToolWindow(QMainWindow):
                 if self.ui.tpcDecompileCheckbox.isChecked():
                     RobustLogger().info(f"Converting '{resource.identifier()}' to TGA because of settings.")
                     data = self._decompileTpc(tpc)
-                    #save_path = save_path.with_suffix(".tga")  # already handled
             except Exception as e:
                 loader.errors.append(e)
 
         if resource.restype() is ResourceType.MDL:
             if self.ui.mdlTexturesCheckbox.isChecked():
                 RobustLogger().info(f"Extracting MDL Textures because of settings: {resource.identifier()}")
-                self._extractMdlTextures(resource, r_folderpath, loader, data, seen_resources)
+                self._extractMdlTextures(resource, r_folderpath, loader, bytes(data), cast("Dict[LocationResult | Literal['all_locresults'], Path | Any]", {}))
 
             if self.ui.mdlDecompileCheckbox.isChecked():
                 RobustLogger().info(f"Converting '{resource.identifier()}' to ASCII MDL because of settings")
                 data = self._decompileMdl(resource, data)
-                #save_path = save_path.with_suffix(".mdl.ascii")  # already handled
 
         with save_path.open("wb") as file:
             RobustLogger().info(f"Saving extracted data of '{resource.identifier()}' to '{save_path}'")
@@ -2552,7 +2612,7 @@ class ToolWindow(QMainWindow):
 
         main_subfolder = folderpath.joinpath(f"model_{resource.resname()}")
 
-        all_locresults = cast(Dict[str, Dict[ResourceIdentifier, List[LocationResult]]], seen_resources.setdefault("all_locresults", {}))
+        all_locresults = cast("Dict[str, Dict[ResourceIdentifier, List[LocationResult]]]", seen_resources.setdefault("all_locresults", {}))
 
         for texlm in textures_and_lightmaps:
             if texlm in seenTextures:
@@ -2624,19 +2684,229 @@ class ToolWindow(QMainWindow):
                 loader.errors.append(ValueError(f"Failed to extract {tex_type} '{texlm}' for model '{resource.identifier()}':<br>    {e.__class__.__name__}: {e}"))
 
 
+    def onMakeUnskippable(self, resources: list[FileResource]):
+        """Make selected dialog files unskippable."""
+        from pykotor.resource.formats.gff import GFFContent, read_gff
+        from pykotor.resource.formats.gff.gff_auto import bytes_gff
+
+        modified_count = 0
+        errors = []
+
+        for resource in resources:
+            try:
+                if resource.restype() is not ResourceType.DLG:
+                    continue
+
+                gff = read_gff(resource.data())
+                if gff.content is not GFFContent.DLG:
+                    continue
+
+                skippable = gff.root.acquire("Skippable", None)
+                if skippable in {0, "0"}:
+                    continue  # Already unskippable
+
+                conversationtype = gff.root.acquire("ConversationType", None)
+                if conversationtype in {"1", 1}:
+                    continue  # Cinematic conversations
+
+                gff.root.set_uint8("Skippable", 0)
+                new_data = bytes_gff(gff)
+                resource.filepath().write_bytes(new_data)
+                modified_count += 1
+
+            except Exception as e:  # noqa: BLE001
+                errors.append(f"{resource.filename()}: {universal_simplify_exception(e)}")
+
+        if errors:
+            QMessageBox.warning(
+                self,
+                "Errors Occurred",
+                f"Successfully modified {modified_count} files, but {len(errors)} failed:\n" + "\n".join(errors[:5]),
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Success",
+                f"Successfully made {modified_count} dialog(s) unskippable.",
+            )
+
+    def onConvertGFF(self, resources: list[FileResource], target_game: str):
+        """Convert GFF files between K1 and TSL formats."""
+        from pykotor.common.misc import Game
+        from pykotor.resource.generics.are import read_are, write_are
+        from pykotor.resource.generics.dlg import read_dlg, write_dlg
+        from pykotor.resource.generics.git import read_git, write_git
+        from pykotor.resource.generics.jrl import read_jrl, write_jrl
+        from pykotor.resource.generics.pth import read_pth, write_pth
+        from pykotor.resource.generics.utc import read_utc, write_utc
+        from pykotor.resource.generics.utd import read_utd, write_utd
+        from pykotor.resource.generics.ute import read_ute, write_ute
+        from pykotor.resource.generics.uti import read_uti, write_uti
+        from pykotor.resource.generics.utm import read_utm, write_utm
+        from pykotor.resource.generics.utp import read_utp, write_utp
+        from pykotor.resource.generics.uts import read_uts, write_uts
+        from pykotor.resource.generics.utt import read_utt, write_utt
+        from pykotor.resource.generics.utw import read_utw, write_utw
+
+        to_game = Game.K1 if target_game == "K1" else Game.K2
+        converted_count = 0
+        errors: list[str] = []
+
+        for resource in resources:
+            try:
+                converted_data = bytearray()
+
+                if resource.restype() is ResourceType.ARE:
+                    generic = read_are(resource.data())
+                    write_are(generic, converted_data, to_game)
+                elif resource.restype() is ResourceType.DLG:
+                    generic = read_dlg(resource.data())
+                    write_dlg(generic, converted_data, to_game)
+                elif resource.restype() is ResourceType.GIT:
+                    generic = read_git(resource.data())
+                    write_git(generic, converted_data, to_game)
+                elif resource.restype() is ResourceType.JRL:
+                    generic = read_jrl(resource.data())
+                    write_jrl(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.PTH:
+                    generic = read_pth(resource.data())
+                    write_pth(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.UTC:
+                    generic = read_utc(resource.data())
+                    write_utc(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.UTD:
+                    generic = read_utd(resource.data())
+                    write_utd(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.UTE:
+                    generic = read_ute(resource.data())
+                    write_ute(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.UTI:
+                    generic = read_uti(resource.data())
+                    write_uti(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.UTM:
+                    generic = read_utm(resource.data())
+                    write_utm(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.UTP:
+                    generic = read_utp(resource.data())
+                    write_utp(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.UTS:
+                    generic = read_uts(resource.data())
+                    write_uts(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.UTT:
+                    generic = read_utt(resource.data())
+                    write_utt(generic, converted_data, game=to_game)
+                elif resource.restype() is ResourceType.UTW:
+                    generic = read_utw(resource.data())
+                    write_utw(generic, converted_data, game=to_game)
+                else:
+                    continue
+
+                resource.filepath().write_bytes(converted_data)
+                converted_count += 1
+
+            except Exception as e:  # noqa: BLE001
+                errors.append(f"{resource.filename()}: {universal_simplify_exception(e)}")
+
+        if errors:
+            QMessageBox.warning(
+                self,
+                "Errors Occurred",
+                f"Successfully converted {converted_count} files to {to_game.name}, but {len(errors)} failed:\n" + "\n".join(errors[:5]),
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Success",
+                f"Successfully converted {converted_count} file(s) to {to_game.name} format.",
+            )
+
+    def onConvertTPC(self, resources: list[FileResource]):
+        """Convert TGA files to TPC format."""
+        from pykotor.resource.formats.tpc.io_tga import TPCTGAReader
+        from pykotor.resource.formats.tpc.io_tpc import TPCBinaryWriter
+
+        converted_count: int = 0
+        errors: list[str] = []
+
+        for resource in resources:
+            try:
+                if resource.restype() is not ResourceType.TGA:
+                    continue
+
+                tpc = TPCTGAReader(resource.data()).load()
+                new_path = resource.filepath().with_suffix(".tpc")
+                TPCBinaryWriter(tpc, new_path).write()
+                converted_count += 1
+
+            except Exception as e:  # noqa: BLE001
+                errors.append(f"{resource.filename()}: {universal_simplify_exception(e)}")
+
+        if errors:
+            QMessageBox.warning(
+                self,
+                "Errors Occurred",
+                f"Successfully converted {converted_count} files to TPC, but {len(errors)} failed:\n" + "\n".join(errors[:5]),
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Success",
+                f"Successfully converted {converted_count} TGA file(s) to TPC.",
+            )
+
+    def onConvertTGA(self, resources: list[FileResource]):
+        """Convert TPC files to TGA format."""
+        from pykotor.resource.formats.tpc.io_tga import TPCTGAWriter
+        from pykotor.resource.formats.tpc.io_tpc import TPCBinaryReader
+
+        converted_count: int = 0
+        errors: list[str] = []
+
+        for resource in resources:
+            try:
+                if resource.restype() is not ResourceType.TPC:
+                    continue
+
+                tpc = TPCBinaryReader(resource.data()).load()
+                new_path = resource.filepath().with_suffix(".tga")
+                TPCTGAWriter(tpc, new_path).write()
+                converted_count += 1
+
+            except Exception as e:  # noqa: BLE001
+                errors.append(f"{resource.filename()}: {universal_simplify_exception(e)}")
+
+        if errors:
+            QMessageBox.warning(
+                self,
+                "Errors Occurred",
+                f"Successfully converted {converted_count} files to TGA, but {len(errors)} failed:\n" + "\n".join(errors[:5]),
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Success",
+                f"Successfully converted {converted_count} TPC file(s) to TGA.",
+            )
+
     def openFromFile(self):
-        filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
+        filepaths: list[str] = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
         print("<SDM> [openFromFile scope] filepaths: ", filepaths)
 
 
         for filepath in filepaths:
-            r_filepath = Path(filepath)
+            r_filepath: Path = Path(filepath)
             print("<SDM> [openFromFile scope] r_filepath: ", r_filepath)
 
             try:
                 with r_filepath.open("rb") as file:
                     data = file.read()
-                openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath).validate().unpack(), data, self.active, self)
+                openResourceEditor(
+                    filepath,
+                    *ResourceIdentifier.from_path(r_filepath).validate().unpack(),
+                    data,
+                    self.active,
+                    self,
+                )
             except (ValueError, OSError) as e:
                 etype, msg = universal_simplify_exception(e)
                 print("<SDM> [openFromFile scope] msg: ", msg)

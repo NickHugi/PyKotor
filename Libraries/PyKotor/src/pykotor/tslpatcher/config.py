@@ -5,7 +5,7 @@ from copy import copy
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from pykotor.tslpatcher.mods.gff import Memory2DAModifierGFF
+from pykotor.tslpatcher.mods.gff import AddFieldGFF, AddStructToListGFF, Memory2DAModifierGFF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 
@@ -133,29 +133,32 @@ class PatcherConfig:
 
         return namespace
 
-    def get_nested_gff_patches(self, arg_gff_modifier: ModifyGFF) -> list[ModifyGFF]:
-        nested_modifiers: list[ModifyGFF] = copy(getattr(arg_gff_modifier, "modifiers", []))
+    def get_nested_gff_patches(
+        self,
+        arg_gff_modifier: AddFieldGFF | AddStructToListGFF,
+    ) -> list[ModifyGFF]:
+        nested_modifiers: list[ModifyGFF] = copy(arg_gff_modifier.modifiers)
         for gff_modifier in nested_modifiers:
-            nested_modifiers.extend(self.get_nested_gff_patches(gff_modifier))
+            if isinstance(gff_modifier, (AddFieldGFF, AddStructToListGFF)):
+                nested_modifiers.extend(self.get_nested_gff_patches(gff_modifier))
         return nested_modifiers
 
     def flatten_gff_patches(self) -> list[ModifyGFF]:
         flattened_gff_patches: list[ModifyGFF] = []
         for gff_patch in self.patches_gff:
             for gff_modifier in gff_patch.modifiers:
-                nested_modifiers: list[ModifyGFF] | None = getattr(gff_modifier, "modifiers", None)
-
                 is_memory_modifier: bool = isinstance(gff_modifier, Memory2DAModifierGFF)
                 if not is_memory_modifier:
                     flattened_gff_patches.append(gff_modifier)
-                if not nested_modifiers or is_memory_modifier:
-                    continue
 
-                nested_modifiers = self.get_nested_gff_patches(gff_modifier)
-
-                # nested modifiers will reference the item from the flattened list.
-                gff_modifier.modifiers = nested_modifiers  # pyright: ignore[reportAttributeAccessIssue]
-                flattened_gff_patches.extend(nested_modifiers)
+                # Only AddFieldGFF and AddStructToListGFF have modifiers attribute
+                if isinstance(gff_modifier, (AddFieldGFF, AddStructToListGFF)):
+                    modifier_with_nested: AddFieldGFF | AddStructToListGFF = gff_modifier
+                    if modifier_with_nested.modifiers:
+                        nested_modifiers = self.get_nested_gff_patches(modifier_with_nested)
+                        # nested modifiers will reference the item from the flattened list.
+                        modifier_with_nested.modifiers = nested_modifiers
+                        flattened_gff_patches.extend(nested_modifiers)
         return flattened_gff_patches
 
     def patch_count(self) -> int:
@@ -167,4 +170,12 @@ class PatcherConfig:
         num_nss_patches: int = len(self.patches_nss)
         num_ncs_patches: int = len(self.patches_ncs)
 
-        return num_2da_patches + num_gff_patches + num_ssf_patches + num_tlk_patches + num_install_list_patches + num_nss_patches + num_ncs_patches
+        return (
+            num_2da_patches
+            + num_gff_patches
+            + num_ssf_patches
+            + num_tlk_patches
+            + num_install_list_patches
+            + num_nss_patches
+            + num_ncs_patches
+        )

@@ -8,8 +8,6 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
-import glm
-
 from OpenGL.GL import glReadPixels
 from OpenGL.raw.GL.ARB.vertex_shader import GL_FLOAT
 from OpenGL.raw.GL.VERSION.GL_1_0 import (
@@ -30,14 +28,14 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
     glEnable,
 )
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_BGRA, GL_UNSIGNED_INT_8_8_8_8
-from glm import mat4, quat, vec3, vec4
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingModuleSource]
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
+from pykotor.gl import glm, mat4, quat, vec3, vec4
 from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model
 from pykotor.gl.models.predefined_mdl import (
     CAMERA_MDL_DATA,
@@ -748,7 +746,7 @@ class Scene:
             self.selection.clear()
 
         self.buildCache()
-        actual_target: RenderObject
+        actual_target: RenderObject | None = None
         if isinstance(target, GITInstance):
             for obj in self.objects.values():
                 if obj.data is target:
@@ -757,6 +755,9 @@ class Scene:
         else:
             actual_target = target
 
+
+        if actual_target is None:
+            raise RuntimeError(f"Target {target} not found in scene")
         self.selection.append(actual_target)
 
     def screenToWorld(self, x: int, y: int) -> Vector3:
@@ -791,8 +792,8 @@ class Scene:
         name: str,
         *,
         lightmap: bool = False,
-    ):
-        """Load texture data asynchronously."""
+    ) -> Texture:
+        """Load texture data synchronously."""
         if name in self.textures:
             return self.textures[name]
         with self.textures_data_lock:

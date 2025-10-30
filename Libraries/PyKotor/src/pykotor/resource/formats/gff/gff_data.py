@@ -7,7 +7,7 @@ from copy import copy, deepcopy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
-from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
+from loggerplus import RobustLogger  # type: ignore[import-untyped]  # pyright: ignore[reportMissingTypeStubs]
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -104,6 +104,17 @@ class GFFContent(Enum):
                 continue
             gff_extensions.add(content_enum.value.lower().strip())
         return gff_extensions
+
+    @classmethod
+    def get_restypes(cls) -> set[ResourceType]:
+        gff_restypes: set[ResourceType] = set()
+        res_contents: set[GFFContent] = {cls.PTH, cls.NFO, cls.PT, cls.GVT, cls.INV}
+        for content_enum in cls:
+            if content_enum in res_contents:
+                gff_restypes.add(ResourceType.RES)
+                continue
+            gff_restypes.add(ResourceType.from_extension(content_enum.value.lower().strip()).target_type())
+        return gff_restypes
 
     @classmethod
     def from_res(cls, resname: str) -> GFFContent | None:
@@ -331,12 +342,12 @@ class GFF(ComparableMixin):
         """
         if not isinstance(other, GFF):
             log_func(f"GFF counts have changed at '{path}': '<unknown>' --> '<unknown>'")
-            log_func()
+            log_func("")
             is_same = False
             return is_same
         if len(self.root) != len(other.root):
             log_func(f"GFF counts have changed at '{path}': '{len(self.root)}' --> '{len(other.root)}'")
-            log_func()
+            log_func("")
             is_same = False
             return is_same
         return self.root.compare(other.root, log_func, path, ignore_default_changes)
@@ -627,7 +638,7 @@ class GFFStruct(ComparableMixin):
         if (
             self.exists(label)
             and object_type is not None
-        #   and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
+        #   and isinstance(self[label], object_type)  # TODO(th3w1zard1): uncomment this and assert type after fixing all the call typings
         ):
             value = self[label]
         if object_type is bool and value.__class__ is int:
@@ -1439,7 +1450,7 @@ class GFFList(ComparableMixin):
         # Show summary with struct IDs
         struct_ids = [f"Struct#{s.struct_id}" for s in self._structs[:3]]
         preview = ", ".join(struct_ids)
-        if len(self._structs) > 3:
+        if len(self._structs) > 3:  # noqa: PLR2004
             preview += f", ... ({len(self._structs) - 3} more)"
 
         return f"GFFList([{preview}], total={len(self._structs)})"
@@ -1547,13 +1558,13 @@ class GFFList(ComparableMixin):
 
         if not isinstance(other, GFFList):
             log_func(f"GFFList counts have changed at '{current_path}': '{len(self)}' --> '<unknown>'")
-            log_func()
+            log_func("")
             is_same_result = False
             return is_same_result
 
         if len(self) != len(other):
             log_func(f"GFFList counts have changed at '{current_path}': '{len(self)}' --> '{len(other)}'")
-            log_func()
+            log_func("")
             is_same_result = False
 
         # Use the indices in the original lists as keys
@@ -1569,8 +1580,8 @@ class GFFList(ComparableMixin):
             log_func(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")  # pyright: ignore[reportOptionalOperand]
             log_func("Contents of old struct:")
             for label, field_type, field_value in struct:
-                log_func(field_type.name, f"{label}: {format_text(field_value)}")
-            log_func()
+                log_func(f"{field_type.name}: {label}: {format_text(field_value)}")
+            log_func("")
             is_same_result = False
 
         for list_index in unique_to_new:
@@ -1578,8 +1589,8 @@ class GFFList(ComparableMixin):
             log_func(f"Extra GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")  # pyright: ignore[reportOptionalOperand]
             log_func("Contents of new struct:")
             for label, field_type, field_value in struct:
-                log_func(field_type.name, f"{label}: {format_text(field_value)}")
-            log_func()
+                log_func(f"{field_type.name}: {label}: {format_text(field_value)}")
+            log_func("")
             is_same_result = False
 
         # For items present in both lists

@@ -6,10 +6,11 @@ import logging
 import sys
 
 from enum import Enum
-from typing import TextIO
+from io import StringIO
+from typing import ClassVar, TextIO
 
 try:
-    import colorama
+    import colorama  # type: ignore[import-untyped]
 
     from colorama import Fore, Style
     colorama.init(autoreset=True)
@@ -60,6 +61,7 @@ class DiffLogger:
         self,
         level: LogLevel = LogLevel.INFO,
         output_mode: OutputMode = OutputMode.FULL,
+        *,
         use_colors: bool = True,
         output_file: TextIO | None = None,
     ):
@@ -81,18 +83,17 @@ class DiffLogger:
 
         # Create formatter
         if self.use_colors:
-            formatter = ColoredFormatter()
+            console_handler.setFormatter(ColoredFormatter())
         else:
-            formatter = logging.Formatter("%(levelname)s: %(message)s")
-
-        console_handler.setFormatter(formatter)
+            console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
         self._logger.addHandler(console_handler)
 
         # Add file handler if specified
         if output_file:
             file_handler = logging.StreamHandler(output_file)
             file_handler.setLevel(level.value)
-            file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s: %(message)s"))
+            file_formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s")
+            file_handler.setFormatter(file_formatter)
             self._logger.addHandler(file_handler)
 
     def debug(self, message: str, *args, **kwargs):
@@ -125,7 +126,14 @@ class DiffLogger:
         if self.output_file:
             print(message, *args, file=self.output_file, **kwargs)
 
-    def separator(self, message: str, char: str = "-", above: bool = False, below: bool = True):
+    def separator(
+        self,
+        message: str,
+        char: str = "-",
+        *,
+        above: bool = False,
+        below: bool = True,
+    ):
         """Output a separator line."""
         separator_line = char * len(message)
         if above:
@@ -138,7 +146,7 @@ class DiffLogger:
 class ColoredFormatter(logging.Formatter):
     """Custom formatter with color support."""
 
-    COLORS = {
+    COLORS: ClassVar[dict[int, str]] = {
         logging.DEBUG: Fore.CYAN,
         logging.INFO: Fore.GREEN,
         logging.WARNING: Fore.YELLOW,
@@ -161,12 +169,13 @@ _logger: DiffLogger | None = None
 def setup_logger(
     level: LogLevel = LogLevel.INFO,
     output_mode: OutputMode = OutputMode.FULL,
+    *,
     use_colors: bool = True,
     output_file: TextIO | None = None,
 ) -> DiffLogger:
     """Set up the global logger instance."""
-    global _logger
-    _logger = DiffLogger(level, output_mode, use_colors, output_file)
+    global _logger  # noqa: PLW0603
+    _logger = DiffLogger(level, output_mode, use_colors=use_colors, output_file=output_file)
     return _logger
 
 
@@ -208,6 +217,32 @@ def diff_output(message: str, *args, **kwargs):
     get_logger().diff_output(message, *args, **kwargs)
 
 
-def separator(message: str, char: str = "-", above: bool = False, below: bool = True):
+def separator(message: str, char: str = "-", *, above: bool = False, below: bool = True):
     """Output a separator line."""
-    get_logger().separator(message, char, above, below)
+    get_logger().separator(message, char=char, above=above, below=below)
+
+
+# ---------------------------------------------------------------------------
+# Legacy log_output functions for backwards compatibility with __main__.py
+# ---------------------------------------------------------------------------
+
+def log_output_basic(*args, **kwargs):
+    """Basic logging output without file handling (used when global config not set)."""
+    buffer = StringIO()
+    print(*args, file=buffer, **kwargs)
+    msg = buffer.getvalue()
+
+    # Print the captured output to console with Unicode error handling
+    try:
+        print(*args, **kwargs)
+    except UnicodeEncodeError:
+        # Fallback: encode with error handling for Windows console
+        try:
+            safe_msg = msg.encode(sys.stdout.encoding or "utf-8", errors="replace").decode(sys.stdout.encoding or "utf-8")
+            print(safe_msg, **kwargs)
+        except Exception:  # noqa: BLE001
+            # Last resort: use ASCII with backslashreplace
+            safe_msg = msg.encode("ascii", errors="backslashreplace").decode("ascii")
+            print(safe_msg, **kwargs)
+
+    return msg

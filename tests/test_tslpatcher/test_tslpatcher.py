@@ -7,6 +7,8 @@ import sys
 import tempfile
 import unittest
 
+import pytest
+
 from configparser import ConfigParser
 from typing import TYPE_CHECKING, Callable, cast
 
@@ -70,7 +72,6 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.twoda import CopyRow2DA
 
 
-
 # TODO(th3w1zard1): Make a decorator for test cases that use the _setupIniAndConfig method.
 class TestTSLPatcher(unittest.TestCase):
     def _setupIniAndConfig(self, ini_text: str, mod_path: Path | str = "") -> PatcherConfig:
@@ -78,8 +79,10 @@ class TestTSLPatcher(unittest.TestCase):
         ini.optionxform = lambda optionstr: optionstr
         ini.read_string(ini_text)
         result = PatcherConfig()
-        ConfigReader(ini, mod_path).load(result)  # type: ignore[arg-type]
+        actual_mod_path: Path | str = mod_path if mod_path else self.temp_dir
+        ConfigReader(ini, actual_mod_path, tslpatchdata_path=self.tslpatchdata_path).load(result)  # type: ignore[arg-type]
         return result
+
     def _setupTLK(self):
         self.test_tlk_data: TLK = self.create_test_tlk(
             {
@@ -111,31 +114,36 @@ class TestTSLPatcher(unittest.TestCase):
                 10: {"text": "Modified 10", "voiceover": "vo_mod_10"},
             }
         )
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            self.mod_path = Path(tmpdirname) / "tslpatchdata"
-        self.mod_path.mkdir(exist_ok=True, parents=True)
-        shutil.copy(Path("tests/files/complex.tlk").resolve(), self.mod_path / "complex.tlk")
-        shutil.copy(Path("tests/files/append.tlk").resolve(), self.mod_path / "append.tlk")
+        shutil.copy(Path("tests/files/complex.tlk").resolve(), self.tslpatchdata_path / "complex.tlk")
+        shutil.copy(Path("tests/files/append.tlk").resolve(), self.tslpatchdata_path / "append.tlk")
 
         # write it to a real file
         write_tlk(
             self.test_tlk_data,
-            str(Path(self.mod_path, "tlk_test_file.tlk")),
+            str(Path(self.tslpatchdata_path, "tlk_test_file.tlk")),
             ResourceType.TLK,
         )
         write_tlk(
             self.modified_tlk_data,
-            str(Path(self.mod_path, "tlk_modifications_file.tlk")),
+            str(Path(self.tslpatchdata_path, "tlk_modifications_file.tlk")),
             ResourceType.TLK,
         )
+
     def setUp(self):
-        pass
+        self.temp_dir: str = tempfile.mkdtemp()
+        self.tslpatchdata_path: pathlib.Path = pathlib.Path(self.temp_dir) / "tslpatchdata"
+        self.tslpatchdata_path.mkdir(exist_ok=True, parents=True)
+
+    def tearDown(self):
+        if hasattr(self, "temp_dir"):
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def create_test_tlk(self, data: dict[int, dict[str, str]]) -> TLK:
         tlk = TLK()
         for v in data.values():
             tlk.add(text=v["text"], sound_resref=v["voiceover"])
         return tlk
+
     # region Change Row
     def test_change_existing_rowindex(self):
         twoda = TwoDA(["Col1", "Col2", "Col3"])
@@ -155,7 +163,7 @@ class TestTSLPatcher(unittest.TestCase):
             Col1=X
         """
         config = PatcherConfig()
-        config.load(ini_text, "")
+        config.load(ini_text, self.temp_dir, tslpatchdata_path=self.tslpatchdata_path)
         self.assertEqual(1, len(config.patches_2da))
         self.assertEqual(1, len(config.patches_2da[0].modifiers))
         mod = cast(ChangeRow2DA, config.patches_2da[0].modifiers[0])
@@ -201,7 +209,7 @@ class TestTSLPatcher(unittest.TestCase):
         ini = ConfigParser(delimiters=("="), allow_no_value=True, strict=False, interpolation=None)
         ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
         ini.read_string(ini_text)
-        ConfigReader(ini, "").load(config)  # type: ignore[arg-type]
+        ConfigReader(ini, self.temp_dir, tslpatchdata_path=self.tslpatchdata_path).load(config)  # type: ignore[arg-type]
         self.assertEqual(1, len(config.patches_2da))
         self.assertEqual(1, len(config.patches_2da[0].modifiers))
         mod = cast(ChangeRow2DA, config.patches_2da[0].modifiers[0])
@@ -371,7 +379,6 @@ class TestTSLPatcher(unittest.TestCase):
         # Overlay and append both append extra parts, but base differences may show up if base path differs
         self.assertEqual(mod_1.path.parts[-1], "GrandChildField")
 
-
     def test_gff_modifier_path_partial_absolute(self):
         """Modifier path partially overlaps self.path — overlay preserves alignment, append may duplicate segments."""
         config: PatcherConfig = self._setupIniAndConfig(
@@ -452,6 +459,7 @@ class TestTSLPatcher(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers[0]
         self.assertEqual(mod_0.path.parts, tuple())
+
     # endregion
 
     # region 2DA: Change Row
@@ -628,6 +636,7 @@ class TestTSLPatcher(unittest.TestCase):
         self.assertEqual(["Test123"], twoda.get_column("label"))
         self.assertEqual(["42"], twoda.get_column("dialog"))
         self.assertEqual(["ABC"], twoda.get_column("appearance"))
+
     # endregion
 
     # region 2DA: Add Column
@@ -727,6 +736,7 @@ class TestTSLPatcher(unittest.TestCase):
         memory.memory_str[5] = 77
         mod_0.apply(twoda, memory)
         self.assertEqual(["abc", "mem4", "77"], twoda.get_column("NewColumn"))
+
     # endregion
 
     # region 2DA: Add Row
@@ -907,6 +917,7 @@ class TestTSLPatcher(unittest.TestCase):
         self.assertEqual("Test123", twoda.get_row(0).get_string("label"))
         self.assertEqual("4", twoda.get_row(0).get_string("dialog"))
         self.assertEqual("A", twoda.get_row(0).get_string("appearance"))
+
     # endregion
 
     # region 2DA: Copy Row
@@ -1145,6 +1156,7 @@ class TestTSLPatcher(unittest.TestCase):
         self.assertEqual(["A", "Test123"], twoda.get_column("label"))
         self.assertEqual(["1", "8"], twoda.get_column("dialog"))
         self.assertEqual(["B", "C"], twoda.get_column("appearance"))
+
     # endregion
 
     # region SSF
@@ -1296,6 +1308,7 @@ class TestTSLPatcher(unittest.TestCase):
         self.assertEqual(26, ssf.get(SSFSound.SEPARATED_FROM_PARTY))
         self.assertEqual(27, ssf.get(SSFSound.REJOINED_PARTY))
         self.assertEqual(28, ssf.get(SSFSound.POISONED))
+
     # endregion
 
     # region TLK
@@ -1375,7 +1388,6 @@ class TestTSLPatcher(unittest.TestCase):
             self.assertEqual("Modified 2", dialog_tlk.get(2).text)
 
     def test_tlk_complex_changes(self):
-      , remove-dict-keys, use-dict-items
         ini_text = """
         [TLKList]
         ReplaceFile10=complex.tlk
@@ -1409,15 +1421,14 @@ class TestTSLPatcher(unittest.TestCase):
         50302=11
         """
         self._setupTLK()
-        self.config: PatcherConfig = self._setupIniAndConfig(ini_text, self.mod_path)
+        self.config: PatcherConfig = self._setupIniAndConfig(ini_text, self.tslpatchdata_path)
 
         modifiers2: list[ModifyTLK] = self.config.patches_tlk.modifiers.copy()
         for modifier in modifiers2:
             modifier.load()
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
         modifiers_dict2: dict[int, dict[str, str | ResRef | bool]] = {
-            mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement}
-            for mod in modifiers2
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers2
         }
         for k in modifiers_dict2.copy():
             modifiers_dict2[k].pop("is_replacement")
@@ -1428,7 +1439,7 @@ class TestTSLPatcher(unittest.TestCase):
             {
                 0: {"text": "Yavin", "voiceover": ResRef.from_blank()},
                 1: {
-                    "text": "Climate: Artificially Controled\n" "Terrain: Space Station\n" "Docking: Orbital Docking\n" "Native Species: Unknown",
+                    "text": "Climate: Artificially Controled\nTerrain: Space Station\nDocking: Orbital Docking\nNative Species: Unknown",
                     "voiceover": ResRef.from_blank(),
                 },
                 2: {"text": "Tatooine", "voiceover": ResRef.from_blank()},
@@ -1438,7 +1449,7 @@ class TestTSLPatcher(unittest.TestCase):
                 },
                 4: {"text": "Manaan", "voiceover": ResRef.from_blank()},
                 5: {
-                    "text": "Climate: Temperate\n" "Terrain: Ocean\n" "Docking: Ahto City Docking Bay\n" "Native Species: Selkath",
+                    "text": "Climate: Temperate\nTerrain: Ocean\nDocking: Ahto City Docking Bay\nNative Species: Selkath",
                     "voiceover": ResRef.from_blank(),
                 },
                 6: {"text": "Kashyyyk", "voiceover": ResRef.from_blank()},
@@ -1475,7 +1486,7 @@ class TestTSLPatcher(unittest.TestCase):
                     "voiceover": ResRef.from_blank(),
                 },
                 123720: {
-                    "text": "Climate: Temperate\n" "Terrain: Decaying urban zones\n" "Docking: Refugee Landing Pad\n" "Native Species: None",
+                    "text": "Climate: Temperate\nTerrain: Decaying urban zones\nDocking: Refugee Landing Pad\nNative Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
                 123722: {
@@ -1487,11 +1498,11 @@ class TestTSLPatcher(unittest.TestCase):
                     "voiceover": ResRef.from_blank(),
                 },
                 123726: {
-                    "text": "Climate: Temperate\n" "Terrain: Grasslands\n" "Docking: Khoonda Plains Settlement\n" "Native Species: None",
+                    "text": "Climate: Temperate\nTerrain: Grasslands\nDocking: Khoonda Plains Settlement\nNative Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
                 123728: {
-                    "text": "Climate: Tectonic-Generated Storms\n" "Terrain: Shattered Planetoid\n" "Docking: No Docking Facilities Present\n" "Native Species: None",
+                    "text": "Climate: Tectonic-Generated Storms\nTerrain: Shattered Planetoid\nDocking: No Docking Facilities Present\nNative Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
                 123730: {
@@ -1499,11 +1510,11 @@ class TestTSLPatcher(unittest.TestCase):
                     "voiceover": ResRef.from_blank(),
                 },
                 124112: {
-                    "text": "Climate: Artificially Maintained \n" "Terrain: Droid Cityscape\n" "Docking: Landing Arm\n" "Native Species: Unknown",
+                    "text": "Climate: Artificially Maintained \nTerrain: Droid Cityscape\nDocking: Landing Arm\nNative Species: Unknown",
                     "voiceover": ResRef.from_blank(),
                 },
                 125863: {
-                    "text": "Climate: Artificially Maintained\n" "Terrain: Space Station\n" "Docking: Landing Zone\n" "Native Species: None",
+                    "text": "Climate: Artificially Maintained\nTerrain: Space Station\nDocking: Landing Zone\nNative Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
             },
@@ -1556,10 +1567,9 @@ class TestTSLPatcher(unittest.TestCase):
                 4: "",
             }
             self.assertEqual(expected, token_to_text)
+
     # endregion
 
 
 if __name__ == "__main__":
     unittest.main()
-
-

@@ -60,7 +60,7 @@ def safe_isinstance(obj: Any, cls: type) -> bool | object:  # sourcery skip: ass
     assert isinstance(cls, type)
     obj_cls_mro: tuple[type, ...] | object = fallback_unknown_getmro(obj)
     try:
-        return cls in obj_cls_mro
+        return cls in obj_cls_mro  # type: ignore[operator]
     except Exception:  # noqa: BLE001
         return SENTINEL
 
@@ -68,14 +68,14 @@ def safe_dir(obj_or_cls: Any) -> list[str]:  # sourcery skip: assign-if-exp, rei
     obj_or_cls_dict: dict[str, Any] | object = fallback_unknown_getattr(obj_or_cls, "__dict__")
     if obj_or_cls_dict is SENTINEL:
         return []
-    return list(obj_or_cls_dict.keys())
+    return list(obj_or_cls_dict.keys())  # type: ignore[union-attr]
 
 
 def inherits_type_or_object(obj: object | type) -> bool | object:
     """Determine if an object inherits from type or object without invoking custom methods."""
     cls_mro: tuple[type, ...] | object = fallback_unknown_getmro(obj)
     with contextlib.suppress(Exception):
-        return type in cls_mro or object in cls_mro
+        return type in cls_mro or object in cls_mro  # pyright: ignore[reportOperatorIssue]  # type: ignore[operator]
     return SENTINEL
 
 
@@ -94,7 +94,7 @@ def get_app_start_time() -> float:
     with open("/proc/self/stat", errors="replace") as f:  # noqa: PTH123
         fields = f.read().split()
         start_time_ticks = int(fields[21])
-        clock_ticks_per_second = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
+        clock_ticks_per_second = os.sysconf(os.sysconf_names["SC_CLK_TCK"])  # type: ignore[attr-defined]
         start_time = start_time_ticks / clock_ticks_per_second
         return time.time() - (time.time() - start_time)
 

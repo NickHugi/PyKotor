@@ -1,0 +1,598 @@
+name: Toolset Release (TEST)
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OS_RUNNERS_JSON: '["windows-latest", "ubuntu-20.04", "macos-12"]'
+  PYTHON_VERSIONS_JSON: '["3.8"]'
+  ARCHITECTURES_JSON: '["x86", "x64"]'
+  INTERPRETERS_JSON: '["python"]'
+  QT_VERSIONS_JSON: '["PyQt5"]'
+  UPX_VERSION: '4.2.2'
+  
+on:
+  release:
+    types: [prereleased]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check_tag.outputs.should_run }}
+      version: ${{ steps.extract_version.outputs.version }}
+      tag_name: ${{ steps.determine_tag.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine tag name
+        id: determine_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # For manual dispatch, find the most recent test toolset tag
+            git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
+            TAG=$(git tag --list 'test-*toolset*' | tail -n 1)
+          else
+            # For release event, use the release tag
+            TAG="${{ github.event.release.tag_name }}"
+          fi
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG"
+        shell: bash
+
+      - name: Check if tag contains 'test' and 'toolset'
+        id: check_tag
+        run: |
+          TAG="${{ steps.determine_tag.outputs.tag_name }}"
+          if [[ "$TAG" == test-*toolset* ]]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "Tag '$TAG' matches TEST toolset pattern"
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "Tag '$TAG' does not match TEST toolset pattern (test-*toolset*), skipping"
+          fi
+        shell: bash
+
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          TAG="${{ steps.determine_tag.outputs.tag_name }}"
+          # Remove 'test-v' prefix and '-toolset' suffix to get version (e.g., test-v3.1.2-toolset -> 3.1.2)
+          VERSION=$(echo "$TAG" | sed 's/^test-v//' | sed 's/^test-//' | sed 's/^v//' | sed 's/-toolset$//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+        shell: bash
+
+  update_version_pre_build:
+    needs: validate
+    if: needs.validate.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Create or update test-release branch
+        run: |
+          # Create test-release branch from master if it doesn't exist
+          git fetch origin
+          if git rev-parse --verify origin/test-release >/dev/null 2>&1; then
+            echo "Checking out existing test-release branch"
+            git checkout test-release
+            git pull origin test-release
+          else
+            echo "Creating new test-release branch from master"
+            git checkout -b test-release
+          fi
+        shell: bash
+
+      - name: Update currentVersion in config.py (TEST BRANCH ONLY)
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          CONFIG_FILE="Tools/HolocronToolset/src/toolset/config.py"
+          
+          echo "⚠️  TEST MODE: Updating $CONFIG_FILE currentVersion to $VERSION on test-release branch"
+          echo "⚠️  This will NOT affect master or production auto-updates"
+          
+          # Update currentVersion only
+          sed -i "s/\"currentVersion\": \"[^\"]*\"/\"currentVersion\": \"$VERSION\"/" "$CONFIG_FILE"
+          
+          echo "Updated currentVersion:"
+          grep "currentVersion" "$CONFIG_FILE"
+        shell: bash
+
+      - name: Commit and push to test-release branch
+        run: |
+          git add Tools/HolocronToolset/src/toolset/config.py
+          git commit -m "chore: [TEST] Bump currentVersion to ${{ needs.validate.outputs.version }} (pre-build)"
+          git push origin test-release
+        shell: bash
+
+      - name: Tag the commit and push to release tag
+        run: |
+          TAG="${{ needs.validate.outputs.tag_name }}"
+          git tag -f "$TAG"
+          git push origin "refs/tags/$TAG" --force
+          echo "⚠️  TEST MODE: Updated tag $TAG to point to test-release commit"
+        shell: bash
+
+  setup:
+    needs: [validate, update_version_pre_build]
+    if: needs.validate.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.set_env.outputs.os }}
+      python-version: ${{ steps.set_env.outputs.python-version }}
+      architecture: ${{ steps.set_env.outputs.architecture }}
+      python-pypy: ${{ steps.set_env.outputs.python-pypy }}
+      qt_version: ${{ steps.set_env.outputs.qt_version }}
+
+    steps:
+      - name: Set environment variables
+        id: set_env
+        run: |
+          $singleLineJson = '${{ env.OS_RUNNERS_JSON }}' -replace "`r", "" -replace "`n", ""
+          echo "os<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJson >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+
+          $singleLineJson = '${{ env.PYTHON_VERSIONS_JSON }}' -replace "`r", "" -replace "`n", ""
+          echo "python-version<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJson >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+
+          $singleLineJson = '${{ env.ARCHITECTURES_JSON }}' -replace "`r", "" -replace "`n", ""
+          echo "architecture<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJson >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+
+          $singleLineJson = '${{ env.INTERPRETERS_JSON }}' -replace "`r", "" -replace "`n", ""
+          echo "python-pypy<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJson >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+
+          $singleLineJson = '${{ env.QT_VERSIONS_JSON }}' -replace "`r", "" -replace "`n", ""
+          echo "qt_version<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJson >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+  build:
+    needs: [validate, update_version_pre_build, setup]
+    if: needs.validate.outputs.should_run == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false  # Disable automatic cancellation of other jobs
+      matrix:
+        os: ${{ fromJson(needs.setup.outputs.os) }}
+        python-version: ${{ fromJson(needs.setup.outputs.python-version) }}
+        architecture: ${{ fromJson(needs.setup.outputs.architecture) }}
+        python_pypy: ${{ fromJson(needs.setup.outputs.python-pypy) }}
+        qt_version: ${{ fromJson(needs.setup.outputs.qt_version) }}
+        include:
+          - arch: x86
+            vc_redist2015: "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x86.exe"
+            vc_redist-latest: "https://aka.ms/vs/17/release/vc_redist.x86.exe"
+            vc_redist2019: "https://aka.ms/vs/17/release/vc_redist.x86.exe"
+          - arch: x64
+            vc_redist2015: "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x64.exe"
+            vc_redist-latest: "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+            vc_redist2019: "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+        exclude:
+          # unix x86 is definitely not supported.
+          - os: ubuntu-20.04
+            architecture: x86
+          - os: macos-12
+            architecture: x86
+          # latest PyPy version as of 17/03/2024 is 3.10.
+          - python_pypy: 'pypy'
+            python-version: '3.11'
+          - python_pypy: 'pypy'
+            python-version: '3.12'
+          # PyQt5 doesn't seem to be compatible with PyPy
+          - python_pypy: "pypy"
+            qt_version: 'PyQt5'
+          - python_pypy: "pypy"
+            qt_version: 'PySide2'
+          - python_pypy: "pypy"
+            qt_version: 'PyQt6'
+          - python_pypy: "pypy"
+            python-version: '3.10'
+            os: 'windows-latest'
+          - qt_version: 'PyQt6'
+            architecture: x86
+          - qt_version: 'PySide6'
+            architecture: x86
+
+    outputs:
+      matrix-os: ${{ toJson(matrix.os) }}
+      matrix-python-version: ${{ toJson(matrix.python-version) }}
+
+    steps:
+    - name: Determine Python version string
+      id: set-python-version
+      run: |
+        if ( "${{ matrix.python_pypy }}" -eq "pypy" ) {
+          Add-Content -Path $env:GITHUB_ENV -Value "PYTHON_VERSION=pypy-${{ matrix.python-version }}"
+        } else {
+          Add-Content -Path $env:GITHUB_ENV -Value "PYTHON_VERSION=${{ matrix.python-version }}"
+        }
+      shell: pwsh
+
+    - uses: actions/checkout@v4
+      with:
+        ref: test-release
+    
+    - name: Test Powershell installer
+      if: ${{ runner.os != 'Windows' }}
+      id: setup-powershell
+      run: |
+        bash ./install_powershell.sh
+      shell: bash
+
+    - name: Set up pypy ${{ matrix.python-version }}
+      if: ${{ matrix.python_pypy == 'pypy' }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        architecture: ${{ matrix.architecture }}
+    
+    - name: Reset APT sources to default
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        echo "Resetting APT sources to default Ubuntu repositories"
+        sudo rm /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu $(lsb_release -cs)-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+        echo "deb http://security.ubuntu.com/ubuntu $(lsb_release -cs)-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+        sudo apt-get update -y
+      shell: bash
+
+    - name: Set UPX download URL
+      # upx docs express that crashes are happening on ventura and above with upx, don't use on mac.
+      if: runner.os != 'macOS'
+      id: upx_setup
+      run: |
+        $build = "no"
+        $archiveName = ""
+        if ("${{ runner.os }}" -eq "Windows") {
+          if ("${{ matrix.architecture }}" -eq "x86") {
+            $archiveName = "upx-${{ env.UPX_VERSION }}-win32.zip"
+          } else {
+            $archiveName = "upx-${{ env.UPX_VERSION }}-win64.zip"
+          }
+        } elseif ("${{ runner.os }}" -eq "Linux") {
+          $archiveName = "upx-${{ env.UPX_VERSION }}-amd64_linux.tar.xz"
+        } elseif ("${{ runner.os }}" -eq "macOS") {
+          $build = "yes"
+          $archiveName = "upx-${{ env.UPX_VERSION }}-src.tar.xz"
+        }
+        $url = "https://github.com/upx/upx/releases/download/v${{ env.UPX_VERSION }}/$archiveName"
+    
+        # Write to the GITHUB_OUTPUT environment file
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "build=$build"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "url=$url"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "archiveName=$archiveName"
+      shell: pwsh
+
+    - name: Download and prepare UPX
+      if: runner.os != 'macOS'
+      run: |        
+        $ext = "${{ runner.os }}" -eq "Windows" ? "zip" : "tar.xz"
+        $url = "${{ steps.upx_setup.outputs.url }}"
+        $archiveName = "${{ steps.upx_setup.outputs.archiveName }}"
+        $outputPath = "upx-dir"
+
+        # Use Invoke-WebRequest or curl depending on the OS
+        if ("${{ runner.os }}" -eq "Windows") {
+          Invoke-WebRequest -Uri $url -OutFile $archiveName
+        } elseif ("${{ runner.os }}" -eq "Linux") {
+          curl -L $url -o $archiveName
+        }
+        
+        New-Item -ItemType Directory -Force -Path "upx-dir" -ErrorAction SilentlyContinue
+        if ("${{ runner.os }}" -ne "macOS") {
+          if ($ext -eq "zip") {
+            $fileNameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($archiveName)
+            Expand-Archive -Path $archiveName -DestinationPath "temp_folder_upx"
+            # Ensure upx-dir exists; create it if it doesn't
+            if (-not (Test-Path -Path "upx-dir")) {
+                New-Item -ItemType Directory -Path "upx-dir"
+            }
+            Get-ChildItem -LiteralPath "temp_folder_upx/$fileNameWithoutExtension" -Recurse | Move-Item -Destination "upx-dir"
+            Remove-Item "temp_folder_upx" -Recurse -Force -ErrorAction SilentlyContinue
+          } else {
+            tar -xvf $archiveName --strip-components=1 -C "upx-dir"
+          }
+    
+          Remove-Item $archiveName # Clean up downloaded archive
+        }
+      shell: pwsh
+
+    - name: Set UPX directory path
+      if: runner.os != 'macOS'
+      id: upx_dir
+      run: |
+        $upx_dir = "./upx-dir"
+        $upx_dir = $([System.IO.Path]::GetFullPath('./upx-dir'))
+        Dir -Recurse $upx_dir | Get-Childitem
+        echo "UPX_DIR=$upx_dir" | Out-File -FilePath $env:GITHUB_ENV -Append
+        Write-Output "UPX_DIR set to '$upx_dir'"
+      shell: pwsh
+
+    - name: Install Visual Studio 2015 C++ Redistributable
+      if: runner.os == 'Windows'
+      run: |
+        $url = "${{ matrix.vc_redist2015 }}"
+        $output = "vc_redist.exe"
+        Invoke-WebRequest -Uri $url -OutFile $output
+        Start-Process $output -ArgumentList '/install', '/quiet', '/norestart' -Wait
+        Remove-Item -Path $output
+      shell: pwsh
+
+    - name: Install Visual Studio 2019 C++ Redistributable
+      if: runner.os == 'Windows'
+      run: |
+        $url = "${{ matrix.vc_redist2019 }}"
+        $output = "vc_redist.exe"
+        Invoke-WebRequest -Uri $url -OutFile $output
+        Start-Process $output -ArgumentList '/install', '/quiet', '/norestart' -Wait
+        Remove-Item -Path $output
+      shell: pwsh
+
+    - name: Install Visual Studio latest C++ Redistributable
+      if: runner.os == 'Windows'
+      run: |
+        $url = "${{ matrix.vc_redist-latest }}"
+        $output = "vc_redist.exe"
+        Invoke-WebRequest -Uri $url -OutFile $output
+        Start-Process $output -ArgumentList '/install', '/quiet', '/norestart' -Wait
+        Remove-Item -Path $output
+      shell: pwsh
+
+    - name: Set QT_API for macOS
+      if: runner.os == 'macOS'
+      run: echo "QT_API=${{ matrix.qt_version }}" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Install Holocron Toolset dependencies
+      if: ${{ success() || failure() }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
+        QT_API: ${{ matrix.qt_version }}
+      id: toolset_deps
+      run: |
+        try {
+          . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
+          Write-Host "Python executable path: $pythonExePath"
+          & $pythonExePath -m pip install --upgrade pip
+          if ("${{ runner.os }}" -eq "Windows") {
+            if ("${{ matrix.python-version }}" -eq "3.12") {
+              pip install pyinstaller --prefer-binary -U
+            } elseif ("${{ matrix.python-version }}" -eq "3.11") {
+              pip install "pyinstaller==5.13.2" --prefer-binary
+            } else {
+              pip install "pyinstaller==5.13.2" --prefer-binary
+            }
+            pip install comtypes pywin32 -U
+          } else {
+            pip install pyinstaller -U --prefer-binary
+          }
+          $env:QT_API = "${{ matrix.qt_version }}"
+          $output = ""
+          $errorLines = @()
+          . ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
+            Write-Output $_.ToString()
+            $output += $_.ToString() + "`n"
+            if($_ -match 'ERROR:') {
+              $errorLines += $_.ToString()
+            }
+          }
+          if ($errorLines.Count -gt 0) {
+            $errorLines | ForEach-Object { Write-Error $_ }
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+            exit 1
+          } else {
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+          }
+          pip install "setuptools==69.5.1"
+          pip install qdarkstyle -U
+        } catch {
+          Write-Host -ForegroundColor Red "Detailed Error Report:"
+          Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        }
+      shell: pwsh
+
+    - name: Compile Holocron Toolset
+      if: ${{ (success() || failure()) && steps.toolset_deps.outputs.success == 'true' }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
+        QT_API: ${{ matrix.qt_version }}
+      run: |
+        $upxDir = $env:UPX_DIR
+        Write-Host "Using UPX directory at '$upxDir'"
+        $output = ""
+        $env:PYTHONOPTIMIZE = "1"
+        $env:QT_API = "${{ matrix.qt_version }}"
+        . ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+          Write-Output $_.ToString()
+          $output += $_.ToString() + "`n"
+          if($_ -match 'ERROR:') {
+            $errorLines += $_.ToString()
+          }
+        }
+        $warningCount = 0
+        $output -split "`n" | ForEach-Object {
+            if ($_ -match 'WARNING: Library not found: could not resolve' -or
+                $_ -match 'WARNING: Cannot find ' -or
+                $_ -match 'WARNING: lib not found:' -or
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
+                $warningCount++
+            }
+        }
+        if ($errorLines.Count -gt 0) {
+          $errorLines | ForEach-Object { Write-Error $_ }
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } elseif ($warningCount -ge 3) {
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } else {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+        }
+      shell: pwsh
+
+    - name: Upload HolocronToolset binaries
+      if: ${{ success() || failure() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: HolocronToolset_TEST_${{ runner.os }}_${{ matrix.qt_version}}_${{ matrix.architecture }}
+        path: ./dist/**
+        retention-days: 7  # Shorter retention for test builds
+
+  package:
+    needs: [validate, build]
+    if: needs.validate.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: published_workflow_builds/
+          pattern: HolocronToolset_TEST_*
+      
+      - name: Compress into archives
+        run: |
+          $originalDir = Get-Location
+          $sourceFolder = Join-Path -Path $originalDir -ChildPath "published_workflow_builds"
+          Set-Location $sourceFolder
+          Get-ChildItem -LiteralPath "." -Directory | ForEach-Object {
+            $folderName = $_.Name
+            $archiveName = "$folderName.zip"
+            zip -r -9 $archiveName $folderName
+          }
+          Set-Location $originalDir
+        shell: pwsh
+      
+      - name: Upload artifacts to TEST release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ needs.validate.outputs.tag_name }}
+          files: "published_workflow_builds/*.zip"
+          fail_on_unmatched_files: true
+
+  finalize:
+    needs: [validate, package]
+    if: needs.validate.outputs.should_run == 'true' && success()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test-release
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Update toolsetLatestVersion and toolsetLatestBetaVersion (TEST BRANCH ONLY)
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          CONFIG_FILE="Tools/HolocronToolset/src/toolset/config.py"
+          
+          echo "⚠️  TEST MODE: Updating Latest versions on test-release branch"
+          echo "⚠️  This will NOT affect master or production auto-updates"
+          
+          # Update toolsetLatestVersion and toolsetLatestBetaVersion
+          sed -i "s/\"toolsetLatestVersion\": \"[^\"]*\"/\"toolsetLatestVersion\": \"$VERSION\"/" "$CONFIG_FILE"
+          sed -i "s/\"toolsetLatestBetaVersion\": \"[^\"]*\"/\"toolsetLatestBetaVersion\": \"$VERSION\"/" "$CONFIG_FILE"
+          
+          # Update notes
+          NOTES="${{ github.event.release.body }}"
+          if [ -n "$NOTES" ]; then
+            ESCAPED_NOTES=$(echo "$NOTES" | head -n 1 | sed 's/[&/\]/\\&/g' | sed 's/"/\\"/g')
+            sed -i "s/\"toolsetLatestNotes\": \"[^\"]*\"/\"toolsetLatestNotes\": \"[TEST] $ESCAPED_NOTES\"/" "$CONFIG_FILE"
+            sed -i "s/\"toolsetLatestBetaNotes\": \"[^\"]*\"/\"toolsetLatestBetaNotes\": \"[TEST] $ESCAPED_NOTES\"/" "$CONFIG_FILE"
+          fi
+          
+          echo "Updated config.py:"
+          grep -A 5 "toolsetLatestVersion" "$CONFIG_FILE"
+        shell: bash
+
+      - name: Commit and push to test-release branch
+        run: |
+          git add Tools/HolocronToolset/src/toolset/config.py
+          git commit -m "chore: [TEST] Update toolset latest versions to ${{ needs.validate.outputs.version }} (post-release)"
+          git push origin test-release
+        shell: bash
+
+      - name: Update release tag to point to test-release
+        run: |
+          TAG="${{ needs.validate.outputs.tag_name }}"
+          git tag -f "$TAG"
+          git push origin "refs/tags/$TAG" --force
+          echo "⚠️  TEST MODE: Updated tag $TAG to point to test-release commit"
+          echo "⚠️  Source archives will be regenerated with test-release code"
+        shell: bash
+
+      - name: Add TEST warning to release description
+        run: |
+          TAG="${{ needs.validate.outputs.tag_name }}"
+          
+          # Get the release
+          RELEASE_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
+          RELEASE_ID=$(echo "$RELEASE_JSON" | jq -r '.id')
+          CURRENT_BODY=$(echo "$RELEASE_JSON" | jq -r '.body')
+          
+          # Prepend warning to body
+          NEW_BODY="⚠️ **THIS IS A TEST RELEASE** ⚠️
+
+This release was created using the TEST workflow and should not be used in production.
+- Version updates are on test-release branch only
+- Master branch is NOT modified
+- Auto-update will NOT be triggered for end users
+
+---
+
+$CURRENT_BODY"
+          
+          # Update release body
+          ESCAPED_BODY=$(echo "$NEW_BODY" | jq -Rs .)
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID" \
+            -d "{\"body\": $ESCAPED_BODY}"
+          
+          echo "Added TEST warning to release description"
+        shell: bash
+
+      - name: Leave as pre-release (DO NOT convert to full release in TEST mode)
+        run: |
+          echo "⚠️  TEST MODE: Keeping release as pre-release"
+          echo "⚠️  Delete this release and tag when done testing"
+          echo "⚠️  Run 'git branch -D test-release && git push origin --delete test-release' to cleanup"
+        shell: bash
+

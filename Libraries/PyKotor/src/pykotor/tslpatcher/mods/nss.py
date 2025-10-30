@@ -9,10 +9,7 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.ncs import (
-    bytes_ncs,
-    compile_nss as compile_with_builtin,
-)
+from pykotor.resource.formats.ncs import bytes_ncs, compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -22,7 +19,7 @@ from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCS
@@ -44,14 +41,14 @@ class ModificationsNSS(PatcherModifications):
         super().__init__(filename, replace, modifiers)
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
-        self.nwnnsscomp_path: Path  # TODO: fix type. Default None or Path?
+        self.nwnnsscomp_path: Path  # TODO(th3w1zard1): fix type. Default None or Path?
         self.backup_nwnnsscomp_path: Path
         self.temp_script_folder: Path
         self.skip_if_not_replace = True
 
     def patch_resource(
         self,
-        nss_source: SOURCE_TYPES,
+        source: SOURCE_TYPES,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
@@ -77,18 +74,18 @@ class ModificationsNSS(PatcherModifications):
             3. Attempts to compile with external NWN compiler if on Windows
             4. Falls back to built-in compiler if external isn't available, fails, or not on Windows
         """
-        with BinaryReader.from_auto(nss_source) as reader:
+        with BinaryReader.from_auto(source) as reader:
             nss_bytes: bytes = reader.read_all()
         if nss_bytes is None:
             logger.add_error("Invalid nss source provided to ModificationsNSS.apply()")
             return True
 
         # Replace memory tokens in the script, and save to the file.
-        source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
-        self.apply(source, memory, logger, game)
+        mutable_source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
+        self.apply(mutable_source, memory, logger, game)
         temp_script_file = self.temp_script_folder / self.sourcefile
 
-        BinaryWriter.dump(temp_script_file, source.value.encode(encoding="windows-1252", errors="ignore"))
+        BinaryWriter.dump(temp_script_file, mutable_source.value.encode(encoding="windows-1252", errors="ignore"))
 
         # Compile with external on windows, fall back to built-in if mac/linux or if external fails.
         is_windows = os.name == "nt"
@@ -98,7 +95,7 @@ class ModificationsNSS(PatcherModifications):
             try:
                 detected_nwnnsscomp: str = nwnnsscompiler.get_info().name
             except ValueError:
-                detected_nwnnsscomp: str = "<UNKNOWN>"
+                detected_nwnnsscomp = "<UNKNOWN>"
             if detected_nwnnsscomp != "TSLPATCHER":
                 logger.add_warning(
                     "The nwnnsscomp.exe in the tslpatchdata folder is not the expected TSLPatcher version.\n"
@@ -121,9 +118,9 @@ class ModificationsNSS(PatcherModifications):
         # Compile using built-in script compiler if external compiler fails.
         try:
             ncs: NCS = compile_with_builtin(
-                source.value,
+                mutable_source.value,
                 game,
-                [],  # [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
+                [],  # [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO(th3w1zard1): ncs optimizers need testing
                 library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
             )
         except EntryPointError as e:
@@ -133,7 +130,7 @@ class ModificationsNSS(PatcherModifications):
 
     def apply(
         self,
-        nss_source: MutableString,
+        mutable_data: MutableString,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
@@ -153,12 +150,15 @@ class ModificationsNSS(PatcherModifications):
             - Searches string for #StrRef# patterns and replaces with string reference value
             - Repeats searches until no matches remain.
         """
-        def iterate_and_replace_tokens(token_name: str, memory_dict: dict[int, Any]):
+        def iterate_and_replace_tokens(
+            token_name: str,
+            memory_dict: dict[int, Any],
+        ):
             search_pattern = rf"#{token_name}\d+#"
-            match = re.search(search_pattern, nss_source.value)
+            match = re.search(search_pattern, mutable_data.value)
             while match:
                 start, end = match.start(), match.end()
-                token_id = int(nss_source.value[start + len(token_name) + 1 : end - 1])  # -3 adjusts for '#', the first digit and '#'
+                token_id = int(mutable_data.value[start + len(token_name) + 1 : end - 1])  # -3 adjusts for '#', the first digit and '#'
 
                 if token_id not in memory_dict:
                     msg = f"{token_name}{token_id} was not defined before use in '{self.sourcefile}'"
@@ -168,12 +168,12 @@ class ModificationsNSS(PatcherModifications):
                 if isinstance(replacement_value, PureWindowsPath):
                     msg = str(TypeError(f"{token_name} cannot be !FieldPath for [CompileList] patches, got '{token_name}{token_id}={replacement_value!r}'"))
                     logger.add_error(msg)
-                    match = re.search(search_pattern, nss_source.value)
+                    match = re.search(search_pattern, mutable_data.value)
                     continue
 
                 logger.add_verbose(f"{self.sourcefile}: Replacing '#{token_name}{token_id}#' with '{replacement_value}'")
-                nss_source.value = nss_source.value[:start] + str(replacement_value) + nss_source.value[end:]
-                match = re.search(search_pattern, nss_source.value)
+                mutable_data.value = mutable_data.value[:start] + str(replacement_value) + mutable_data.value[end:]
+                match = re.search(search_pattern, mutable_data.value)
 
         iterate_and_replace_tokens("2DAMEMORY", memory.memory_2da)
         iterate_and_replace_tokens("StrRef", memory.memory_str)

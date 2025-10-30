@@ -24,24 +24,33 @@ from qtpy.QtGui import (
 )
 from qtpy.QtWidgets import QHeaderView, QMenu, QToolTip, QWidget
 
-from pykotor.extract.file import FileResource
 from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.gff import GFFContent
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from pykotor.resource.type import ResourceType
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
 
 if TYPE_CHECKING:
+    from multiprocessing.managers import SyncManager
     from qtpy.QtCore import QEvent, QModelIndex, QObject
-    from qtpy.QtGui import QResizeEvent
+    from qtpy.QtGui import (
+        QEnterEvent,
+        QLeaveEvent,
+        QResizeEvent,
+    )
 
-    from pykotor.resource.type import ResourceType
+    from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
-    from utility.common.more_collections import CaseInsensitiveDict
 
 
 class MainWindowList(QWidget):
-    requestOpenResource = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
-    requestExtractResource = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
-    sectionChanged = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestOpenResource: ClassVar[QtCore.Signal] = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
+    requestExtractResource: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestMakeUnskippable: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestConvertGFF: ClassVar[QtCore.Signal] = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]  # resources, target_game
+    requestConvertTPC: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestConvertTGA: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    sectionChanged: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     @abstractmethod
     def selectedResources(self) -> list[FileResource]: ...
@@ -54,8 +63,8 @@ class ResourceStandardItem(QStandardItem):
 
 
 class ResourceList(MainWindowList):
-    requestReload = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
-    requestRefresh = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    requestReload: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestRefresh: ClassVar[QtCore.Signal] = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     HORIZONTAL_HEADER_LABELS: ClassVar[list[str]] = ["ResRef", "Type"]
 
@@ -182,12 +191,12 @@ class ResourceList(MainWindowList):
             category_item: QStandardItem | None = self.modulesModel.item(i)
             assert category_item is not None
             for j in range(category_item.rowCount()):
-                resourceItem: ResourceStandardItem = cast(ResourceStandardItem, category_item.child(j, 0))
+                resourceItem: ResourceStandardItem = cast("ResourceStandardItem", category_item.child(j, 0))
                 resourceItem.__class__ = ResourceStandardItem
 
                 flat_items.append(
                     cast(
-                        Tuple[FileResource, Tuple[ResourceStandardItem, QStandardItem]],
+                        "Tuple[FileResource, Tuple[ResourceStandardItem, QStandardItem]]",
                         (
                             resourceItem.resource,
                             tuple(category_item.child(j, col).clone() for col in range(category_item.columnCount())),  # pyright: ignore[reportOptionalMemberAccess]
@@ -265,7 +274,7 @@ class ResourceList(MainWindowList):
         if self.autoResizeEnabled:
             self.autoFitColumns()
 
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # pyright: ignore[reportIncompatibleMethodOverride]
         if event.type() == QtCore.QEvent.Type.MouseMove and obj is self.ui.resourceTree.viewport():
             assert isinstance(event, QMouseEvent)
             self.mouseMoveEvent(event)
@@ -283,23 +292,23 @@ class ResourceList(MainWindowList):
         self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceContextMenu)
         self.ui.resourceTree.doubleClicked.connect(self.onResourceDoubleClicked)
 
-    def enterEvent(self, event):
+    def enterEvent(self, event: QEnterEvent):  # type: ignore[override, note]
         self.tooltipTimer.stop()
         QToolTip.hideText()
         super().enterEvent(event)
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, event: QLeaveEvent):  # type: ignore[override, note]
         self.tooltipTimer.stop()
         QToolTip.hideText()
         super().leaveEvent(event)
 
-    def mouseMoveEvent(self, event: QMouseEvent):
+    def mouseMoveEvent(self, event: QMouseEvent):  # type: ignore[override, note]
         index = self.ui.resourceTree.indexAt(event.pos())  # type: ignore[arg-type]
         if index.isValid():
-            model_index: QModelIndex = cast(QSortFilterProxyModel, self.ui.resourceTree.model()).mapToSource(index)  # pyright: ignore[reportArgumentType]
+            model_index: QModelIndex = cast("QSortFilterProxyModel", self.ui.resourceTree.model()).mapToSource(index)  # pyright: ignore[reportArgumentType]
             item: ResourceStandardItem | QStandardItem | None = cast(
-                QStandardItemModel,
-                cast(QSortFilterProxyModel, self.ui.resourceTree.model()).sourceModel(),
+                "QStandardItemModel",
+                cast("QSortFilterProxyModel", self.ui.resourceTree.model()).sourceModel(),
             ).itemFromIndex(model_index)
             if isinstance(item, ResourceStandardItem):
                 self.tooltipText = str(item.resource.filepath())
@@ -364,7 +373,7 @@ class ResourceList(MainWindowList):
                     continue
                 if item.resource in resourceSet:
                     continue
-                item.parent().removeRow(item.row())
+                item.parent().removeRow(item.row())  # pyright: ignore[reportOptionalMemberAccess]  # type: ignore[union-attr]
         self.modulesModel.removeUnusedCategories()
         if self.autoResizeEnabled:
             self.autoFitColumns()
@@ -383,7 +392,7 @@ class ResourceList(MainWindowList):
         self,
         resource: FileResource,
     ):
-        model: ResourceModel = cast(QSortFilterProxyModel, self.ui.resourceTree.model()).sourceModel()  # type: ignore[attribute-access]
+        model: ResourceModel = cast("ResourceModel", cast("QSortFilterProxyModel", self.ui.resourceTree.model()).sourceModel())
         assert isinstance(model, ResourceModel)
 
         def select(parent, child):
@@ -401,6 +410,11 @@ class ResourceList(MainWindowList):
 
     def selectedResources(self) -> list[FileResource]:
         return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())  # type: ignore[arg-type]
+
+    def allResources(self) -> list[FileResource]:
+        """Returns all FileResource objects in the model."""
+        all_items = self.modulesModel.allResourcesItems()
+        return [item.resource for item in all_items if isinstance(item, ResourceStandardItem)]
 
     def _getSectionUserRoleData(self):
         return self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
@@ -421,21 +435,146 @@ class ResourceList(MainWindowList):
 
     def onResourceContextMenu(self, point: QPoint):
         resources: list[FileResource] = self.selectedResources()
+        all_resources: list[FileResource] = self.allResources()
+
         if not resources:
             return
         menu = QMenu(self)
-        menu.addAction("Open").triggered.connect(lambda: self.requestOpenResource.emit(resources, True))
+
+        # Add "Select All" option if there are multiple files
+        if len(all_resources) > len(resources):
+            menu.addAction(f"Select All ({len(all_resources)} files)").triggered.connect(  # type: ignore[union-attr]
+                lambda: self._selectAllResources(all_resources, point)
+            )
+            menu.addSeparator()
+
+        menu.addAction("Open").triggered.connect(lambda: self.requestOpenResource.emit(resources, True))  # type: ignore[union-attr]
         if all(resource.restype().contents == "gff" for resource in resources):
-            menu.addAction("Open with GFF Editor").triggered.connect(lambda: self.requestOpenResource.emit(resources, False))
+            menu.addAction("Open with GFF Editor").triggered.connect(lambda: self.requestOpenResource.emit(resources, False))  # type: ignore[union-attr]
+        menu.addSeparator()
+
+        # Add comparison submenu
+        if len(resources) >= 1:
+            compare_menu = menu.addMenu("Compare")
+
+            if len(resources) == 1:
+                compare_menu.addAction("Compare with...").triggered.connect(  # type: ignore[union-attr]
+                    lambda: self._show_resource_comparison(resources[0])
+                )
+            elif len(resources) == 2:
+                compare_menu.addAction("Compare Selected (Side-by-Side)").triggered.connect(  # type: ignore[union-attr]
+                    lambda: self._show_resource_comparison(resources[0], resources[1])
+                )
+
+            compare_menu.addSeparator()
+            compare_menu.addAction("Diff with Installation...").triggered.connect(  # type: ignore[union-attr]
+                lambda: self._show_kotordiff_for_resources(resources)
+            )
+            compare_menu.addAction("Create TSLPatchData...").triggered.connect(  # type: ignore[union-attr]
+                lambda: self._show_tslpatchdata_editor_for_resources(resources)
+            )
+
+        # Convert GFF between K1 and TSL
+        gff_types = set(GFFContent.get_extensions())
+        if all(resource.restype().extension in gff_types for resource in resources):
+            convert_menu = menu.addMenu("Convert GFF")
+            convert_menu.addAction("To K1 Format").triggered.connect(lambda: self.requestConvertGFF.emit(resources, "K1"))  # type: ignore[union-attr]
+            convert_menu.addAction("To TSL Format").triggered.connect(lambda: self.requestConvertGFF.emit(resources, "TSL"))  # type: ignore[union-attr]
+
+        # Convert TPC/TGA
+        if all(resource.restype() is ResourceType.TPC for resource in resources):
+            menu.addAction("Convert to TGA").triggered.connect(lambda: self.requestConvertTGA.emit(resources))  # type: ignore[union-attr]
+        elif all(resource.restype() is ResourceType.TGA for resource in resources):
+            menu.addAction("Convert to TPC").triggered.connect(lambda: self.requestConvertTPC.emit(resources))  # type: ignore[union-attr]
+
         menu.addSeparator()
         builder = ResourceItems(resources=resources)
         builder.viewport = lambda: self.ui.resourceTree
         builder.runContextMenu(point, menu=menu)
 
+    def _selectAllResources(self, all_resources: list[FileResource], point: QPoint):
+        """Select all resources and re-show context menu with batch operations."""
+        if not all_resources:
+            return
+
+        # Select all items in the tree
+        self.ui.resourceTree.selectAll()
+
+        # Create a new context menu for all resources
+        menu = QMenu(self)
+        menu.addAction("Open").triggered.connect(lambda: self.requestOpenResource.emit(all_resources, True))  # type: ignore[union-attr]
+        if all(resource.restype().contents == "gff" for resource in all_resources):
+            menu.addAction("Open with GFF Editor").triggered.connect(lambda: self.requestOpenResource.emit(all_resources, False))  # type: ignore[union-attr]
+        menu.addSeparator()
+
+        # Add comparison submenu
+        if len(all_resources) >= 1:
+            compare_menu = menu.addMenu("Compare")
+            compare_menu.addAction("Diff with Installation...").triggered.connect(  # type: ignore[union-attr]
+                lambda: self._show_kotordiff_for_resources(all_resources)
+            )
+            compare_menu.addAction("Create TSLPatchData...").triggered.connect(  # type: ignore[union-attr]
+                lambda: self._show_tslpatchdata_editor_for_resources(all_resources)
+            )
+
+        # Add batch patcher operations
+        from pykotor.resource.formats.gff import GFFContent
+        from pykotor.resource.type import ResourceType
+
+        # Make dialogs unskippable
+        if all(resource.restype() is ResourceType.DLG for resource in all_resources):
+            menu.addAction("Make Unskippable").triggered.connect(lambda: self.requestMakeUnskippable.emit(all_resources))  # type: ignore[union-attr]
+
+        # Convert GFF between K1 and TSL
+        gff_types = set(GFFContent.get_extensions())
+        if all(resource.restype().extension in gff_types for resource in all_resources):
+            convert_menu = menu.addMenu("Convert GFF")
+            convert_menu.addAction("To K1 Format").triggered.connect(lambda: self.requestConvertGFF.emit(all_resources, "K1"))  # type: ignore[union-attr]
+            convert_menu.addAction("To TSL Format").triggered.connect(lambda: self.requestConvertGFF.emit(all_resources, "TSL"))  # type: ignore[union-attr]
+
+        # Convert TPC/TGA
+        if all(resource.restype() is ResourceType.TPC for resource in all_resources):
+            menu.addAction("Convert to TGA").triggered.connect(lambda: self.requestConvertTGA.emit(all_resources))  # type: ignore[union-attr]
+        elif all(resource.restype() is ResourceType.TGA for resource in all_resources):
+            menu.addAction("Convert to TPC").triggered.connect(lambda: self.requestConvertTPC.emit(all_resources))  # type: ignore[union-attr]
+
+        menu.addSeparator()
+        builder = ResourceItems(resources=all_resources)
+        builder.viewport = lambda: self.ui.resourceTree
+        builder.runContextMenu(point, menu=menu)
+
+    def _show_resource_comparison(self, resource1: FileResource, resource2: FileResource | None = None):
+        """Show side-by-side resource comparison dialog."""
+        from toolset.gui.dialogs.resource_comparison import ResourceComparisonDialog
+        from toolset.utils.window import addWindow
+
+        dialog = ResourceComparisonDialog(self, resource1, resource2)
+        addWindow(dialog)
+
+    def _show_kotordiff_for_resources(self, resources: list[FileResource]):
+        """Show KotorDiff window pre-configured for these resources."""
+        # This would need parent window reference to get installations
+        # For now, just show a message
+        from qtpy.QtWidgets import QMessageBox
+
+        QMessageBox.information(
+            self,
+            "KotorDiff",
+            "Open KotorDiff from Tools menu to compare installations.",
+        )
+
+    def _show_tslpatchdata_editor_for_resources(self, resources: list[FileResource]):
+        """Show TSLPatchData editor for these resources."""
+        from toolset.gui.dialogs.tslpatchdata_editor import TSLPatchDataEditor
+        from toolset.utils.window import addWindow
+
+        dialog = TSLPatchDataEditor(self)
+        addWindow(dialog)
+
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: QResizeEvent):  # type: ignore[override, note]
         super().resizeEvent(event)
         self.ui.resourceTree.setColumnWidth(1, 10)
         self.ui.resourceTree.setColumnWidth(0, self.ui.resourceTree.width() - 80)
@@ -455,7 +594,7 @@ class ResourceProxyModel(QSortFilterProxyModel):
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
-        model: QStandardItemModel = self.sourceModel()  # pyright: ignore[reportAssignmentType]
+        model: QStandardItemModel = self.sourceModel()  # pyright: ignore[reportAssignmentType]  # type: ignore[assignment]
 
         resref_index = model.index(source_row, 0, source_parent)
         item: ResourceStandardItem | QStandardItem | None = model.itemFromIndex(resref_index)
@@ -532,7 +671,7 @@ class ResourceModel(QStandardItemModel):
         for index in indexes:
             sourceIndex = self._proxyModel.mapToSource(index) if proxy else index
             items.append(self.itemFromIndex(sourceIndex))
-        return self.resourceFromItems(items)
+        return self.resourceFromItems(items)  # type: ignore[arg-type]
 
     def resourceFromItems(
         self,
@@ -552,9 +691,9 @@ class ResourceModel(QStandardItemModel):
     def removeUnusedCategories(self):
         for row in range(self.rowCount())[::-1]:
             item = self.item(row)
-            if item.rowCount() != 0:
+            if item.rowCount() != 0:  # pyright: ignore[reportOptionalMemberAccess]  # type: ignore[union-attr]
                 continue
-            text = item.text()
+            text = item.text()  # pyright: ignore[reportOptionalMemberAccess]  # type: ignore[union-attr]
             if text not in self._categoryItems:
                 continue
             del self._categoryItems[text]
@@ -562,10 +701,10 @@ class ResourceModel(QStandardItemModel):
 
 
 class TextureList(MainWindowList):
-    requestReload = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestReload: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
-    requestRefresh = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
-    iconUpdate = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
+    requestRefresh: ClassVar[QtCore.Signal] = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    iconUpdate: ClassVar[QtCore.Signal] = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -573,11 +712,11 @@ class TextureList(MainWindowList):
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
@@ -587,6 +726,7 @@ class TextureList(MainWindowList):
 
         self._installation: HTInstallation | None = None
         self._scannedTextures: set[str] = set()
+        self._shutting_down: bool = False
 
         self.texturesModel: QStandardItemModel = QStandardItemModel()
         self.texturesProxyModel: QSortFilterProxyModel = QSortFilterProxyModel()
@@ -597,14 +737,27 @@ class TextureList(MainWindowList):
         self.sectionModel: QStandardItemModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.sectionModel)  # type: ignore[arg-type]
 
+        # Use Manager for better Windows compatibility with spawn method
+        self._manager: SyncManager = multiprocessing.Manager()
+
+        # Queue for requesting texture loads from disk
+        self._loadRequestQueue: multiprocessing.Queue = self._manager.Queue() # Queue for loaded TPC objects from disk
+        self._loadedTextureQueue: multiprocessing.Queue = self._manager.Queue()
+        # Queue for TPC conversion tasks
         self._taskQueue: multiprocessing.JoinableQueue = multiprocessing.JoinableQueue()
+        # Queue for converted texture results
         self._resultQueue: multiprocessing.Queue = multiprocessing.Queue()
+
+        # Texture loader process - loads TPCs from disk
+        self._loader: TextureLoaderProcess | None = None
+
+        # Texture conversion consumers - convert TPCs to RGB format
         self._consumers: list[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for _ in range(multiprocessing.cpu_count())]
         for consumer in self._consumers:
             consumer.start()
 
         self._scanner: QThread = QThread(self)
-        self._scanner.run = self.scan
+        self._scanner.run = self.scan  # type: ignore[method-assign]
         self._scanner.start()
 
     def setupSignals(self):
@@ -619,12 +772,54 @@ class TextureList(MainWindowList):
         self.ui.searchEdit.textChanged.connect(self.onTextureListScrolled)
 
     def doTerminations(self):
-        self._scanner.terminate()
+        # Signal scanner to stop gracefully
+        self._shutting_down = True
+
+        # Wait for scanner thread to finish (with timeout)
+        if self._scanner.isRunning():
+            self._scanner.quit()
+            if not self._scanner.wait(2000):  # Wait up to 2 seconds
+                RobustLogger().warning("Scanner thread did not stop gracefully, terminating forcefully: thread_id=%s", self._scanner)
+                self._scanner.terminate()
+
+        # Terminate consumer processes
         for consumer in self._consumers:
             consumer.terminate()
 
+        # Terminate loader process if exists
+        if self._loader is not None:
+            self._loader.terminate()
+
+        # Shutdown the manager server process
+        try:
+            self._manager.shutdown()
+        except Exception as manager_exc:
+            RobustLogger().warning("Error shutting down multiprocessing manager: manager_exc=%s", manager_exc)
+
     def setInstallation(self, installation: HTInstallation):
         self._installation = installation
+        # Terminate old loader if exists
+        if self._loader is not None:
+            self._loader.terminate()
+            self._loader = None
+        # Start new loader process with installation path
+        if installation is not None:
+            try:
+                self._loader = TextureLoaderProcess(
+                    str(installation.path()),
+                    installation.tsl,
+                    self._loadRequestQueue,
+                    self._loadedTextureQueue
+                )
+                self._loader.start()
+                RobustLogger().info(f"Started TextureLoader process for installation: {installation.path()}")
+            except PermissionError as perm_exc:
+                RobustLogger().exception(f"Permission error starting TextureLoader process: {perm_exc}")
+                RobustLogger().error("This is a Windows multiprocessing issue. Try running the application as administrator.")
+                self._loader = None
+            except Exception as start_exc:
+                RobustLogger().exception(f"Failed to start TextureLoader process: {start_exc}")
+                self._loader = None
 
     def setResources(
         self,
@@ -661,28 +856,30 @@ class TextureList(MainWindowList):
             if not sourceIndex.isValid():
                 continue
             item = self.texturesModel.item(sourceIndex.row())
-            resources.append(item.data(Qt.ItemDataRole.UserRole + 1))
+            resources.append(item.data(Qt.ItemDataRole.UserRole + 1))  # type: ignore[union-attr]
         return resources
 
     def visibleItems(self) -> list[QStandardItem]:
         if self.texturesModel.rowCount() == 0:
             return []
 
-        parent: QObject = self.parent()
+        parent: QObject | None = self.parent()
+        if parent is None:
+            return []
         assert isinstance(parent, QWidget)
         scanWidth: int = parent.width()
         scanHeight: int = parent.height()
 
-        proxyModel = self.texturesProxyModel
-        model = self.texturesModel
+        proxyModel: QSortFilterProxyModel = self.texturesProxyModel
+        model: QStandardItemModel = self.texturesModel
 
         firstItem: QStandardItem | None = None
         firstIndex: QModelIndex | None = None
 
         for y in range(2, 92, 2):
             for x in range(2, 92, 2):
-                proxyIndex = self.ui.resourceList.indexAt(QPoint(x, y))  # type: ignore[arg-type]
-                index = proxyModel.mapToSource(proxyIndex)
+                proxyIndex: QModelIndex = self.ui.resourceList.indexAt(QPoint(x, y))  # type: ignore[arg-type]
+                index: QModelIndex = proxyModel.mapToSource(proxyIndex)
                 item = model.itemFromIndex(index)
                 if not firstItem and item:
                     firstItem = item
@@ -697,13 +894,13 @@ class TextureList(MainWindowList):
             numVisible: int = min(proxyModel.rowCount(), widthCount * heightCount)
 
             for i in range(numVisible):
-                proxyIndex: QModelIndex = proxyModel.index(firstIndex.row() + i, 0)
+                proxyIndex = proxyModel.index(firstIndex.row() + i, 0)
                 if not proxyIndex.isValid():
                     continue
                 sourceIndex: QModelIndex = proxyModel.mapToSource(proxyIndex)
                 if not sourceIndex.isValid():
                     continue
-                item: QStandardItem | None = model.itemFromIndex(sourceIndex)
+                item = model.itemFromIndex(sourceIndex)
                 if item is None:
                     continue
                 items.append(item)
@@ -711,15 +908,47 @@ class TextureList(MainWindowList):
         return items
 
     def scan(self):
-        while True:
-            for row, _resname, width, height, data in iter(self._resultQueue.get, None):
-                image = QImage(data, width, height, QImage.Format.Format_RGB888)
-                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
-                item = self.texturesModel.item(row, 0)
-                if item is not None:
-                    self.iconUpdate.emit(item, QIcon(pixmap))
+        """Scanner thread that processes loaded textures and conversion results."""
+        while not self._shutting_down:
+            # Check for loaded textures from disk and queue them for conversion
+            try:
+                while not self._loadedTextureQueue.empty():
+                    if self._shutting_down:
+                        RobustLogger().info("Scanner exiting due to shutdown flag: _shutting_down=%s", self._shutting_down)
+                        return
+                    row, resname, tpc = self._loadedTextureQueue.get_nowait()
+                    if tpc is not None:
+                        task = TextureListTask(row, tpc, resname)
+                        self._taskQueue.put(task)
+            except (BrokenPipeError, EOFError) as pipe_err:
+                # Manager has been shut down, exit gracefully
+                RobustLogger().info("Scanner exiting due to manager shutdown: pipe_err=%s", pipe_err)
+                return
+            except Exception as e:
+                RobustLogger().exception("Error processing loaded texture: e=%s", e)
 
-            sleep(0.1)
+            # Check for converted texture results and update UI
+            try:
+                while not self._resultQueue.empty():
+                    if self._shutting_down:
+                        RobustLogger().info("Scanner exiting due to shutdown flag: _shutting_down=%s", self._shutting_down)
+                        return
+                    row, _resname, width, height, data = self._resultQueue.get_nowait()
+                    image = QImage(data, width, height, QImage.Format.Format_RGB888)
+                    pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+                    item = self.texturesModel.item(row, 0)
+                    if item is not None:
+                        self.iconUpdate.emit(item, QIcon(pixmap))
+            except (BrokenPipeError, EOFError) as pipe_err:
+                # Manager has been shut down, exit gracefully
+                RobustLogger().info("Scanner exiting due to manager shutdown: pipe_err=%s", pipe_err)
+                return
+            except Exception as e:
+                RobustLogger().exception("Error processing texture conversion result: e=%s", e)
+
+            sleep(0.05)  # Reduced sleep time for more responsive UI
+
+        RobustLogger().info("Scanner thread exiting normally: _shutting_down=%s", self._shutting_down)
 
     def onFilterStringUpdated(self):
         self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text())
@@ -734,30 +963,33 @@ class TextureList(MainWindowList):
         self.requestRefresh.emit()
 
     def onTextureListScrolled(self):
+        """Queue texture load requests without blocking the UI."""
         if self._installation is None:
-            print("No installation loaded, nothing to scroll through?")
+            RobustLogger().debug("No installation loaded, nothing to scroll through")
             return
-        # Avoid redundantly loading textures that have already been loaded
-        textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
-            [item.text() for item in self.visibleItems() if item.text().lower() not in self._scannedTextures],
-            [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
-        )
 
-        # Emit signals to load textures that have not had their icons assigned
-        for item in iter(self.visibleItems()):
+        if self._loader is None:
+            RobustLogger().warning("Texture loader process not started")
+            return
+
+        # Queue load requests for visible items that haven't been loaded yet
+        for item in self.visibleItems():
             itemText = item.text()
             lowerItemText = itemText.lower()
+
             if lowerItemText in self._scannedTextures:
                 continue
 
-            # Avoid trying to load the same texture multiple times.
+            # Mark as scanned to avoid duplicate requests
             self._scannedTextures.add(lowerItemText)
 
-            cache_tpc: TPC | None = textures.get(itemText)
-            tpc: TPC = TPC() if cache_tpc is None else cache_tpc
-
-            task = TextureListTask(item.row(), tpc, itemText)
-            self._taskQueue.put(task)
+            # Queue the load request - this won't block the UI
+            load_request = TextureLoadRequest(
+                item.row(),
+                itemText,
+                [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA]
+            )
+            self._loadRequestQueue.put(load_request)
             item.setData(True, Qt.ItemDataRole.UserRole)
 
     def onIconUpdate(
@@ -773,7 +1005,7 @@ class TextureList(MainWindowList):
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
 
-    def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=W0613
+    def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=W0613  # pyright: ignore[reportIncompatibleMethodOverride]  # type: ignore[override, note]
         self.onTextureListScrolled()
 
 
@@ -818,7 +1050,98 @@ class TextureListTask:
     def bestMipmap(self, tpc: TPC) -> int:
         for i in range(tpc.mipmap_count()):
             size = tpc.get(i).width
-            if size <= 64:
+            if size <= 64:  # noqa: PLR2004
                 return i
         return 0
+
+
+class TextureLoadRequest:
+    """Request to load a texture from disk."""
+    def __init__(
+        self,
+        row: int,
+        resname: str,
+        search_locations: list[SearchLocation],
+    ):
+        self.row: int = row
+        self.resname: str = resname
+        self.search_locations: list[SearchLocation] = search_locations
+
+    def __repr__(self):
+        return f"TextureLoadRequest(row={self.row}, resname='{self.resname}')"
+
+
+class TextureLoaderProcess(multiprocessing.Process):
+    """Process that loads textures from disk without blocking the UI."""
+    def __init__(
+        self,
+        installation_path: str,
+        is_tsl: bool,
+        request_queue: multiprocessing.Queue,
+        result_queue: multiprocessing.Queue,
+    ):
+        multiprocessing.Process.__init__(self)
+        self.installation_path: str = installation_path
+        self.is_tsl: bool = is_tsl
+        self.request_queue: multiprocessing.Queue = request_queue
+        self.result_queue: multiprocessing.Queue = result_queue
+        self.stopLoop: bool = False
+
+    def run(self):
+        """Load textures from disk in a separate process."""
+        import queue
+        import traceback
+
+        from toolset.data.installation import HTInstallation
+
+        # Create installation in this process
+        try:
+            installation = HTInstallation(self.installation_path, "TextureLoader", tsl=self.is_tsl)
+            RobustLogger().info(f"TextureLoader process started successfully for installation: {self.installation_path}")
+        except Exception as init_exc:
+            RobustLogger().exception(f"Failed to initialize HTInstallation in TextureLoader process: {init_exc}")
+            RobustLogger().error(f"Installation path: {self.installation_path}, TSL: {self.is_tsl}")
+            RobustLogger().error(f"Traceback:\n{''.join(traceback.format_exc())}")
+            return
+
+        while not self.stopLoop:
+            try:
+                # Get load request with timeout to allow checking stopLoop
+                try:
+                    request: TextureLoadRequest = self.request_queue.get(timeout=0.1)
+                except queue.Empty:  # noqa: S112
+                    # Timeout is expected when queue is empty - don't log
+                    continue
+                except Exception as get_exc:
+                    RobustLogger().exception(f"Unexpected error getting request from queue: {get_exc}")
+                    RobustLogger().error(f"Traceback:\n{''.join(traceback.format_exc())}")
+                    continue
+
+                # Load texture from disk (this is the blocking operation)
+                try:
+                    textures = installation.textures(
+                        [request.resname],
+                        request.search_locations
+                    )
+
+                    tpc: TPC | None = textures.get(request.resname)
+                    if tpc is None:
+                        RobustLogger().debug(f"Texture '{request.resname}' not found, using empty TPC")
+                        tpc = TPC()  # Empty TPC for missing textures
+
+                    # Put loaded texture in result queue
+                    self.result_queue.put((request.row, request.resname, tpc))
+                    RobustLogger().debug(f"Successfully loaded and queued texture '{request.resname}' for row {request.row}")
+
+                except Exception as load_exc:
+                    RobustLogger().exception(f"Error loading texture '{request.resname}': {load_exc}")
+                    RobustLogger().error(f"Request: {request}")
+                    RobustLogger().error(f"Search locations: {request.search_locations}")
+                    RobustLogger().error(f"Traceback:\n{''.join(traceback.format_exc())}")
+                    # Still put empty TPC in queue so UI doesn't hang waiting
+                    self.result_queue.put((request.row, request.resname, TPC()))
+
+            except Exception as outer_exc:
+                RobustLogger().exception(f"Unexpected error in TextureLoader main loop: {outer_exc}")
+                RobustLogger().error(f"Traceback:\n{''.join(traceback.format_exc())}")
 

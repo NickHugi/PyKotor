@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.5.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -23,7 +23,6 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame,
     QVBoxLayout, QWidget)
 
 from toolset.gui.widgets.main_widgets import (ResourceList, TextureList)
-from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemWidget
 from toolset.rcc import resources_rc_pyside6
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -206,6 +205,12 @@ class Ui_MainWindow(object):
         self.actionModuleDesigner = QAction(MainWindow)
         self.actionModuleDesigner.setObjectName(u"actionModuleDesigner")
         self.actionModuleDesigner.setEnabled(False)
+        self.actionKotorDiff = QAction(MainWindow)
+        self.actionKotorDiff.setObjectName(u"actionKotorDiff")
+        self.actionKotorDiff.setEnabled(False)
+        self.actionTSLPatchDataEditor = QAction(MainWindow)
+        self.actionTSLPatchDataEditor.setObjectName(u"actionTSLPatchDataEditor")
+        self.actionTSLPatchDataEditor.setEnabled(False)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.horizontalLayout = QHBoxLayout(self.centralwidget)
@@ -297,16 +302,6 @@ class Ui_MainWindow(object):
         self.verticalLayoutResourceListTab.addWidget(self.resourceTabs)
 
         self.outerTabWidget.addTab(self.resourceListTab, "")
-        self.fileSystemTab = QWidget()
-        self.fileSystemTab.setObjectName(u"fileSystemTab")
-        self.verticalLayoutFileSystemTab = QVBoxLayout(self.fileSystemTab)
-        self.verticalLayoutFileSystemTab.setObjectName(u"verticalLayoutFileSystemTab")
-        self.fileSystemWidget = ResourceFileSystemWidget(self.fileSystemTab)
-        self.fileSystemWidget.setObjectName(u"fileSystemWidget")
-
-        self.verticalLayoutFileSystemTab.addWidget(self.fileSystemWidget)
-
-        self.outerTabWidget.addTab(self.fileSystemTab, "")
 
         self.verticalLayout_4.addWidget(self.outerTabWidget)
 
@@ -459,6 +454,9 @@ class Ui_MainWindow(object):
         self.menuTools.addAction(self.actionModuleDesigner)
         self.menuTools.addAction(self.actionIndoorMapBuilder)
         self.menuTools.addSeparator()
+        self.menuTools.addAction(self.actionKotorDiff)
+        self.menuTools.addAction(self.actionTSLPatchDataEditor)
+        self.menuTools.addSeparator()
         self.menuTools.addAction(self.actionFileSearch)
         self.menuTools.addAction(self.actionCloneModule)
         self.menuHelp.addAction(self.actionHelpAbout)
@@ -539,6 +537,8 @@ class Ui_MainWindow(object):
         self.actionDiscordKotOR.setText(QCoreApplication.translate("MainWindow", u"KOTOR Community Portal", None))
         self.actionDiscordDeadlyStream.setText(QCoreApplication.translate("MainWindow", u"Deadly Stream", None))
         self.actionModuleDesigner.setText(QCoreApplication.translate("MainWindow", u"Module Designer", None))
+        self.actionKotorDiff.setText(QCoreApplication.translate("MainWindow", u"KotorDiff", None))
+        self.actionTSLPatchDataEditor.setText(QCoreApplication.translate("MainWindow", u"TSLPatchData Editor", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.coreTab), QCoreApplication.translate("MainWindow", u"Core", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.savesTab), QCoreApplication.translate("MainWindow", u"Saves", None))
         self.specialActionButton.setText(QCoreApplication.translate("MainWindow", u"Designer", None))
@@ -546,7 +546,6 @@ class Ui_MainWindow(object):
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.overrideTab), QCoreApplication.translate("MainWindow", u"Override", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.texturesTab), QCoreApplication.translate("MainWindow", u"Textures", None))
         self.outerTabWidget.setTabText(self.outerTabWidget.indexOf(self.resourceListTab), QCoreApplication.translate("MainWindow", u"Resource List", None))
-        self.outerTabWidget.setTabText(self.outerTabWidget.indexOf(self.fileSystemTab), QCoreApplication.translate("MainWindow", u"File System", None))
         self.openButton.setText(QCoreApplication.translate("MainWindow", u"Open Selected", None))
         self.extractButton.setText(QCoreApplication.translate("MainWindow", u"Extract Selected", None))
         self.tpcGroup_2.setTitle(QCoreApplication.translate("MainWindow", u"TPC", None))

@@ -113,8 +113,8 @@ class TestConfigReader(unittest.TestCase):
                 10: {"text": "Modified 10", "voiceover": "vo_mod_10"},
             }
         )
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            self.mod_path = Path(tmpdirname) / "tslpatchdata"
+        self.temp_dir = tempfile.mkdtemp()
+        self.mod_path = Path(self.temp_dir) / "tslpatchdata"
         self.mod_path.mkdir(exist_ok=True, parents=True)
         shutil.copy(Path("tests/files/complex.tlk").resolve(), self.mod_path / "complex.tlk")
         shutil.copy(Path("tests/files/append.tlk").resolve(), self.mod_path / "append.tlk")
@@ -132,7 +132,11 @@ class TestConfigReader(unittest.TestCase):
         )
 
         # Load the INI file and the TLK file
-        self.config_reader = ConfigReader(self.ini, self.mod_path)  # type: ignore
+        self.config_reader = ConfigReader(self.ini, self.mod_path, tslpatchdata_path=self.mod_path)  # type: ignore
+
+    def tearDown(self):
+        if hasattr(self, "temp_dir"):
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def create_test_tlk(self, data: dict[int, dict[str, str]]) -> TLK:
         tlk = TLK()
@@ -1704,7 +1708,7 @@ class TestConfigReader(unittest.TestCase):
         ini.optionxform = lambda optionstr: optionstr
         ini.read_string(ini_text)
         result = PatcherConfig()
-        ConfigReader(ini, "").load(result)
+        ConfigReader(ini, self.temp_dir, tslpatchdata_path=self.mod_path).load(result)
         return result
 
     # endregion

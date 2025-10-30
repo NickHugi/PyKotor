@@ -313,12 +313,23 @@ class UTSEditor(Editor):
         data: bytes | None = self._installation.sound(resname)
 
         if data:
-            # PyQt5 and PySide2 code path
-            from qtpy.QtMultimedia import QMediaContent
             self.buffer = QBuffer(self)
             self.buffer.setData(data)
             self.buffer.open(QIODevice.ReadOnly)
-            self.player.setMedia(QMediaContent(), self.buffer)
+
+            # Qt5 vs Qt6 API difference
+            if qtpy.QT5:
+                # PyQt5 and PySide2 use QMediaContent
+                from qtpy.QtMultimedia import QMediaContent
+                self.player.setMedia(QMediaContent(), self.buffer)
+            else:
+                # PyQt6 and PySide6 use setSourceDevice
+                from qtpy.QtMultimedia import QAudioOutput
+                if not hasattr(self, "audio_output"):
+                    self.audio_output = QAudioOutput(self)
+                    self.player.setAudioOutput(self.audio_output)
+                self.player.setSourceDevice(self.buffer)
+
             QtCore.QTimer.singleShot(0, self.player.play)
         else:
             QMessageBox(QMessageBox.Icon.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")

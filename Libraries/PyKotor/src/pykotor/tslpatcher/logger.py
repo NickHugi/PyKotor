@@ -11,6 +11,7 @@ from utility.event_util import Observable
 if TYPE_CHECKING:
     from typing_extensions import LiteralString
 
+
 class LogType(IntEnum):
     VERBOSE = 0
     NOTE = 1

@@ -405,7 +405,7 @@ class Module:  # noqa: PLR0904
         -------
             A tuple of linked capsules.
         """
-        return [cast(ModulePieceResource, cap) for cap in self._capsules.values() if cap is not None]
+        return [cast("ModulePieceResource", cap) for cap in self._capsules.values() if cap is not None]
 
     def reload_resources(self):
         """Reload resources from modules, LYT/VIS and overrides.
@@ -439,7 +439,7 @@ class Module:  # noqa: PLR0904
         for capsule in self._capsules.values():
             if capsule is None:
                 continue
-            typed_capsule = cast(ModulePieceResource, capsule)  # No idea why static types aren't working here as that's the whole point of the TypedDict...
+            typed_capsule = cast("ModulePieceResource", capsule)  # No idea why static types aren't working here as that's the whole point of the TypedDict...
             for resource in typed_capsule:
                 RobustLogger().info("Adding location '%s' for resource '%s' from erf/rim '%s'",
                                         typed_capsule.filepath(), resource.identifier(), typed_capsule.identifier())
@@ -584,10 +584,25 @@ class Module:  # noqa: PLR0904
             original_git_or_lyt.activate(location)
             try:
                 loaded_git_or_lyt: type[GIT | LYT | VIS] | None = original_git_or_lyt.resource()
-                if not isinstance(loaded_git_or_lyt, (GIT, LYT)):
-                    raise RuntimeError(errmsg)  # noqa: TRY004, TRY301
-                if not isinstance(loaded_git_or_lyt, VIS):
+                if loaded_git_or_lyt is None:
+                    RobustLogger().warning("Failed to load resource '%s' from location '%s'", original_git_or_lyt.identifier(), location)
+                    if useable_type != VIS:
+                        raise RuntimeError(errmsg)  # noqa: TRY004, TRY301
+                    continue  # VIS is optional, so we can skip if it fails to load
+                if isinstance(loaded_git_or_lyt, VIS):
+                    RobustLogger().debug("Loaded VIS resource '%s' from location '%s'", original_git_or_lyt.identifier(), location)
+                    # VIS files don't have resource identifiers to iterate, so just skip
+                    continue
+                if isinstance(loaded_git_or_lyt, (GIT, LYT)):
                     result.update(loaded_git_or_lyt.iter_resource_identifiers())
+                else:
+                    RobustLogger().error(
+                        "Unexpected resource type '%s' for '%s' (expected GIT, LYT, or VIS)",
+                        type(loaded_git_or_lyt).__name__,
+                        original_git_or_lyt.identifier(),
+                    )
+                    if useable_type != VIS:
+                        raise RuntimeError(errmsg)  # noqa: TRY004, TRY301
             except RuntimeError:
                 raise
             except Exception:  # noqa: BLE001

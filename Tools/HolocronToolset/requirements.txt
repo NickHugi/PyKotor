@@ -1,8 +1,9 @@
 idna  # Tested with 3.3
 qtpy
-PyQt5~=5.15
-PyQt5-Qt5~=5.15
-PyQt5-sip~=12.10
+PyQt5~=5.15; python_implementation == 'CPython'
+PyQt5-Qt5~=5.15; python_implementation == 'CPython'
+PyQt5-sip~=12.10; python_implementation == 'CPython'
+PySide6>=6.0; python_implementation == 'PyPy'
 urllib3<=2  # Tested with 1.26.18
 watchdog>=2.1 #,<3.1
 Markdown>=3.3 #,<3.6

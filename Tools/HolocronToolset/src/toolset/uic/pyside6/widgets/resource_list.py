@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'resource_list.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.5.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################

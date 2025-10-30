@@ -39,6 +39,7 @@ class ModificationsTLK(PatcherModifications):
         self.modifiers: list[ModifyTLK] = [] if modifiers is None else modifiers
         self.sourcefile_f: str = self.DEFAULT_SOURCEFILE_F  # Polish version of k1
         self.saveas = self.DEFAULT_SAVEAS_FILE
+        self.strref_mappings: dict[int, int] = {}  # Maps old StrRef -> token_id for reference analysis (changeedit usage only.)
 
     def pop_tslpatcher_vars(
         self,
@@ -46,6 +47,14 @@ class ModificationsTLK(PatcherModifications):
         default_destination: str | None = DEFAULT_DESTINATION,
         default_sourcefolder: str = ".",
     ):
+        """Populates the TSLPatcher variables from the file section dictionary.
+
+        Args:
+        ----
+            file_section_dict: CaseInsensitiveDict[str] - The file section dictionary
+            default_destination: str | None - The default destination
+            default_sourcefolder: str - The default source folder
+        """
         if "!ReplaceFile" in file_section_dict:
             msg = "!ReplaceFile is not supported in [TLKList]"
             raise ValueError(msg)
@@ -74,6 +83,15 @@ class ModificationsTLK(PatcherModifications):
         logger: PatchLogger,
         game: Game,
     ):
+        """Applies the TLK patches to the TLK.
+
+        Args:
+        ----
+            mutable_data: TLK - The TLK to apply the patches to
+            memory: PatcherMemory - The memory context
+            logger: PatchLogger - The logger
+            game: Game - The game
+        """
         for modifier in self.modifiers:
             modifier.apply(mutable_data, memory)
             logger.complete_patch()
@@ -93,7 +111,24 @@ class ModifyTLK:
         self.token_id: int = token_id
         self.is_replacement: bool = is_replacement
 
-    def apply(self, dialog: TLK, memory: PatcherMemory):
+    def apply(
+        self,
+        dialog: TLK,
+        memory: PatcherMemory,
+    ):
+        """Applies a TLK patch to a TLK.
+
+        Args:
+        ----
+            dialog: TLK - The TLK to apply the patch to
+            memory: PatcherMemory - The memory context
+
+        Processing Logic:
+        ----------------
+            - Loads the TLK file
+            - Replaces the token ID with the text and sound
+            - Stores the token ID in the memory context.
+        """
         self.load()
         if self.is_replacement:
             dialog.replace(self.token_id, self.text, str(self.sound))
@@ -102,6 +137,7 @@ class ModifyTLK:
             memory.memory_str[self.token_id] = dialog.add(self.text, str(self.sound))
 
     def load(self):
+        """Loads the TLK file."""
         if self.tlk_filepath is None:
             return
         lookup_tlk = TalkTable(self.tlk_filepath)

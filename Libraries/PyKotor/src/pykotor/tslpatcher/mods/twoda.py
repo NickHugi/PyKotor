@@ -34,7 +34,11 @@ class TargetType(IntEnum):
 
 
 class Target:
-    def __init__(self, target_type: TargetType, value: str | int | RowValue2DAMemory | RowValueTLKMemory):
+    def __init__(
+        self,
+        target_type: TargetType,
+        value: str | int | RowValue2DAMemory | RowValueTLKMemory,
+    ):
         self.target_type: TargetType = target_type
         self.value: str | int | RowValueTLKMemory | RowValue2DAMemory = value
 
@@ -55,9 +59,12 @@ class Target:
         Args:
         ----
             twoda: TwoDA - The TwoDA to search
-            target_type: TargetType - The type of target to search for
+            memory: PatcherMemory - The memory context
+
         Returns:
+        -------
             TwoDARow | None - The matching row if found, else None
+
         Processing Logic:
         ----------------
             - Checks target_type and searches twoda accordingly
@@ -93,7 +100,15 @@ class Target:
 # region Value Returners
 class RowValue(ABC):
     @abstractmethod
-    def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str: ...
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
+        """Returns the value of the row.
+
+        Args:
+        ----
+            memory: PatcherMemory - The memory context
+            twoda: TwoDA - The TwoDA to search
+            row: TwoDARow | None - The row to search
+        """
 
 
 class RowValueConstant(RowValue):
@@ -175,6 +190,7 @@ class RowValueHigh(RowValue):
 
 
 class RowValueRowIndex(RowValue):
+    """The row index of the row."""
     def __init__(self): ...
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
@@ -182,6 +198,7 @@ class RowValueRowIndex(RowValue):
 
 
 class RowValueRowLabel(RowValue):
+    """The row label of the row."""
     def __init__(self): ...
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
@@ -189,6 +206,7 @@ class RowValueRowLabel(RowValue):
 
 
 class RowValueRowCell(RowValue):
+    """The value of a cell in the row."""
     def __init__(self, column: str):
         self.column: str = column
 
@@ -196,6 +214,7 @@ class RowValueRowCell(RowValue):
         return f"{self.__class__.__name__}(column='{self.column}')"
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
+        """Returns the value of a cell in the row."""
         return "" if row is None else row.get_string(self.column)
 
 
@@ -259,6 +278,19 @@ class ChangeRow2DA(Modify2DA):
         )
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
+        """Applies a ChangeRow patch to a TwoDA.
+
+        Args:
+        ----
+            twoda: TwoDA - The TwoDA to apply the patch to
+            memory: PatcherMemory - The memory context
+
+        Processing Logic:
+        ----------------
+            - Searches for the target row
+            - Unpacks the cells and applies them to the target row
+            - Stores any 2DA or TLK values in the memory context.
+        """
         source_row: TwoDARow | None = self.target.search(twoda, memory)
 
         if source_row is None:
@@ -424,7 +456,7 @@ class CopyRow2DA(Modify2DA):
                 msg = f"Exclusive column {self.exclusive_column} does not exists"
                 raise WarningError(msg)
 
-            exclusive_value = self.cells[self.exclusive_column].value(
+            exclusive_value: str = self.cells[self.exclusive_column].value(
                 memory,
                 twoda,
                 None,
@@ -454,7 +486,10 @@ class CopyRow2DA(Modify2DA):
 
 
 class AddColumn2DA(Modify2DA):
-    """Adds a column. The new cells are either given a default value or can be given a value based on what the row index or row label is.
+    """Adds a column.
+
+    The new cells are either given a default value or can be given a
+    value based on what the row index or row label is.
 
     Attributes:
     ----------
@@ -527,7 +562,6 @@ class AddColumn2DA(Modify2DA):
                 raise WarningError(msg)
 
         for token_id, value in self.store_2da.items():
-            # TODO(NickHugi): Exception handling
             if value.startswith("I"):
                 cell: str = twoda.get_row(int(value[1:])).get_string(self.header)
                 memory.memory_2da[token_id] = cell

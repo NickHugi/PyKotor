@@ -17,16 +17,16 @@ from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from glm import vec3
     from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
+    from pykotor.gl import vec3
     from pykotor.resource.formats.bwm import BWMFace
     from toolset.data.installation import HTInstallation
 
 
-class ModuleRenderer(QOpenGLWidget):
+class ModuleRenderer(QOpenGLWidget):  # pyright: ignore[reportGeneralTypeIssues]
     rendererInitialized = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when the context is being setup, the QMainWindow must be in an activated/unhidden state."""
 
@@ -135,6 +135,9 @@ class ModuleRenderer(QOpenGLWidget):
 
     def initializeGL(self):
         RobustLogger().debug("ModuleRenderer.initializeGL called.")
+        # Ensure OpenGL context is current
+        self.makeCurrent()
+
         super().initializeGL()
         RobustLogger().debug("ModuleRenderer.initializeGL - opengl context setup.")
 
@@ -202,6 +205,9 @@ class ModuleRenderer(QOpenGLWidget):
         if not self.isReady():
             RobustLogger().warning("ModuleDesigner.paintGL - not initialized.")
             return  # Do nothing if not initialized
+
+        # Ensure OpenGL context is current before any GL calls
+        self.makeCurrent()
         #get_root_logger().debug("ModuleDesigner.paintGL called.")
         super().paintGL()
         start = datetime.now(tz=timezone.utc).astimezone()

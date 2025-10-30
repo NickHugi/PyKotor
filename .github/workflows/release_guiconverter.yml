@@ -12,9 +12,8 @@ env:
   UPX_VERSION: '4.2.2'
   
 on:
-  push:
-    tags:
-      - '*guiconverter*'
+  release:
+    types: [prereleased]
   workflow_dispatch:
 
 permissions:
@@ -22,7 +21,94 @@ permissions:
 
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check_tag.outputs.should_run }}
+      version: ${{ steps.extract_version.outputs.version }}
+      tag_name: ${{ steps.determine_tag.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine tag name
+        id: determine_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # For manual dispatch, find the most recent guiconverter tag
+            git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
+            TAG=$(git tag --list '*guiconverter*' | tail -n 1)
+          else
+            # For release event, use the release tag
+            TAG="${{ github.event.release.tag_name }}"
+          fi
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG"
+        shell: bash
+
+      - name: Check if tag contains 'guiconverter'
+        id: check_tag
+        run: |
+          TAG="${{ steps.determine_tag.outputs.tag_name }}"
+          if [[ "$TAG" == *"guiconverter"* ]]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "Tag '$TAG' matches guiconverter pattern"
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "Tag '$TAG' does not match guiconverter pattern, skipping"
+          fi
+        shell: bash
+
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          TAG="${{ steps.determine_tag.outputs.tag_name }}"
+          # Remove 'v' prefix and '-guiconverter' suffix to get version (e.g., v1.0.0-guiconverter -> 1.0.0)
+          VERSION=$(echo "$TAG" | sed 's/^v//' | sed 's/-guiconverter$//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+        shell: bash
+
+  update_version_pre_build:
+    needs: validate
+    if: needs.validate.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Update CURRENT_VERSION in __main__.py (if exists)
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          VERSION_FILE="Tools/GuiConverter/src/guiconverter/__main__.py"
+          
+          if [ -f "$VERSION_FILE" ]; then
+            echo "Updating $VERSION_FILE CURRENT_VERSION to $VERSION (pre-build)"
+            sed -i "s/CURRENT_VERSION = \"[^\"]*\"/CURRENT_VERSION = \"$VERSION\"/" "$VERSION_FILE"
+            echo "Updated CURRENT_VERSION:"
+            grep "CURRENT_VERSION" "$VERSION_FILE"
+            git add "$VERSION_FILE"
+            git commit -m "chore: Bump CURRENT_VERSION to $VERSION (pre-build)"
+            git push origin master
+            
+            TAG="${{ needs.validate.outputs.tag_name }}"
+            git tag -f "$TAG"
+            git push origin "refs/tags/$TAG" --force
+            echo "Updated tag $TAG to point to current commit"
+          else
+            echo "Version file not found: $VERSION_FILE (skipping pre-build version update)"
+          fi
+        shell: bash
+
   setup:
+    needs: [validate, update_version_pre_build]
+    if: needs.validate.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     outputs:
       os: ${{ steps.set_env.outputs.os }}
@@ -57,7 +143,8 @@ jobs:
         shell: pwsh
 
   build:
-    needs: setup
+    needs: [validate, update_version_pre_build, setup]
+    if: needs.validate.outputs.should_run == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false  # Disable automatic cancellation of other jobs
@@ -388,8 +475,8 @@ jobs:
         retention-days: 90
 
   package:
-    needs: build  # do not start this job until all 'build' jobs complete
-    if: ${{ success() || failure() }}
+    needs: [validate, build]  # do not start this job until all 'build' jobs complete
+    if: needs.validate.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -413,41 +500,19 @@ jobs:
           Set-Location $originalDir
         shell: pwsh
 
-      - name: Determine Release Tag Ending with 'guiconverter'
-        id: get_tag
-        run: |
-          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-            git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
-            # Get all tags ending with 'guiconverter', then pick the most recent one based on how they're listed
-            $tag = git tag --list '*guiconverter*' | Select-Object -Last 1
-          } else {
-            git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
-            # Get all tags ending with 'guiconverter', then pick the most recent one based on how they're listed
-            $tag = git tag --list '*guiconverter*' | Select-Object -Last 1
-          }
-          if (-not $tag) {
-            echo "No matching tag found ending with 'guiconverter'."
-            git tag --list
-            exit 1
-          }
-          echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-        shell: pwsh
-      
-      - name: Release
+      - name: Upload artifacts to release
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: ${{ steps.get_tag.outputs.tag }}
+          tag_name: ${{ needs.validate.outputs.tag_name }}
           files: "published_workflow_builds/*.zip"
           fail_on_unmatched_files: true
-          target_commitish: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.head_ref }}
 
       - name: Determine Release ID for fallback upload.
         if: ${{ failure() }}
         id: get_release_id
         run: |
-          # Filter tags ending with 'guiconverter', sort them by date, and pick the most recent one
-          $uri = "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.get_tag.outputs.tag }}"
+          $uri = "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ needs.validate.outputs.tag_name }}"
           $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
           $response = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
           $releaseId = $response.id
@@ -542,3 +607,64 @@ jobs:
             exit 1
           }
         shell: pwsh
+
+  finalize:
+    needs: [validate, package]
+    if: needs.validate.outputs.should_run == 'true' && success()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Update release tag to point to master
+        run: |
+          TAG="${{ needs.validate.outputs.tag_name }}"
+          
+          # Version was already updated in pre-build, just update tag to master
+          git tag -f "$TAG"
+          git push origin "refs/tags/$TAG" --force
+          echo "Updated tag $TAG to point to current master commit"
+        shell: bash
+
+      - name: Update release with new source code
+        run: |
+          TAG="${{ needs.validate.outputs.tag_name }}"
+          
+          # Get the release ID
+          RELEASE_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
+          RELEASE_ID=$(echo "$RELEASE_JSON" | jq -r '.id')
+          
+          echo "Updating release source code (ID: $RELEASE_ID)"
+          
+          # GitHub automatically updates source code archives when tag is updated
+          echo "Release source archives will be automatically regenerated by GitHub"
+        shell: bash
+
+      - name: Convert pre-release to full release
+        run: |
+          TAG="${{ needs.validate.outputs.tag_name }}"
+          
+          # Get the release ID
+          RELEASE_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
+          RELEASE_ID=$(echo "$RELEASE_JSON" | jq -r '.id')
+          
+          echo "Converting pre-release to full release (ID: $RELEASE_ID)"
+          
+          # Update the release to unset pre-release flag
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID" \
+            -d '{"prerelease": false}'
+          
+          echo "Release $TAG is now a full release with updated source code"
+        shell: bash

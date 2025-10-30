@@ -7,7 +7,6 @@ import struct
 from copy import copy
 from typing import TYPE_CHECKING
 
-import glm
 import numpy as np
 
 from OpenGL.GL import glGenBuffers, glGenVertexArrays, glVertexAttribPointer
@@ -20,9 +19,9 @@ from OpenGL.raw.GL.VERSION.GL_1_3 import GL_TEXTURE0, GL_TEXTURE1, glActiveTextu
 from OpenGL.raw.GL.VERSION.GL_1_5 import GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, glBindBuffer, glBufferData
 from OpenGL.raw.GL.VERSION.GL_2_0 import glEnableVertexAttribArray
 from OpenGL.raw.GL.VERSION.GL_3_0 import glBindVertexArray
-from glm import mat4, quat, vec3, vec4
 
 from pykotor.common.geometry import Vector3
+from pykotor.gl import glm, mat4, quat, vec3, vec4
 
 if TYPE_CHECKING:
     from _testbuffer import ndarray
@@ -119,8 +118,8 @@ class Model:
             - Transform vertices and update bounding box points
             - Recursively call function for each child node.
         """
-        transform = transform * glm.translate(node._position)
-        transform = transform * glm.mat4_cast(node._rotation)
+        transform = transform * glm.translate(node._position)  # noqa: SLF001
+        transform = transform * glm.mat4_cast(node._rotation)  # noqa: SLF001
 
         if node.mesh and node.render:
             vertex_count = len(node.mesh.vertex_data) // node.mesh.mdx_size
@@ -162,7 +161,7 @@ class Node:
     def root(self) -> Node | None:
         ancestor: Node | None = self._parent
         while ancestor:
-            ancestor = ancestor._parent
+            ancestor = ancestor._parent  # noqa: SLF001
         return ancestor
 
     def ancestors(self) -> list[Node]:
@@ -170,15 +169,15 @@ class Node:
         ancestor: Node | None = self._parent
         while ancestor:
             ancestors.append(ancestor)
-            ancestor = ancestor._parent
+            ancestor = ancestor._parent  # noqa: SLF001
         return list(reversed(ancestors))
 
     def global_position(self) -> vec3:  # sourcery skip: class-extract-method
         ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = transform * glm.translate(ancestor._position)
-            transform = transform * glm.mat4_cast(ancestor._rotation)
+            transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
+            transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         position = vec3()
         glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())
         return position
@@ -187,8 +186,8 @@ class Node:
         ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = transform * glm.translate(ancestor._position)
-            transform = transform * glm.mat4_cast(ancestor._rotation)
+            transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
+            transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         rotation = quat()
         glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())
         return rotation

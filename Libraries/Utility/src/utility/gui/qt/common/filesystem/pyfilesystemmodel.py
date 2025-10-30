@@ -1303,7 +1303,6 @@ class MainWindow(QMainWindow):
 
         self.fsTreeView: RobustTreeView = RobustTreeView(self, use_columns=True)
         self.fsModel: PyFileSystemModel = PyFileSystemModel(self)
-        self.fsWidget: ResourceFileSystemWidget = ResourceFileSystemWidget(self, view=self.fsTreeView, model=self.fsModel)
         self.fsModel.setRootPath(str(rootPath))
 
         central_widget = QWidget()
@@ -1365,7 +1364,6 @@ if __name__ == "__main__":
 
     from toolset.__main__ import main_init
     main_init()
-    from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemWidget
     app = QApplication(sys.argv)
     print("<SDM> [adjust_view_size scope] app: ", app)
 

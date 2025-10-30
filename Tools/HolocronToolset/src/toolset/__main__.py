@@ -84,6 +84,11 @@ def fix_sys_and_cwd_path():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
+    # Add KotorDiff to sys.path for kotordiff imports
+    kotordiff_path = file_absolute_path.parents[4] / "Tools" / "KotorDiff" / "src"
+    if kotordiff_path.exists():
+        update_sys_path(kotordiff_path)
+
 
 def fix_qt_env_var():
     qtpy_case_map: dict[str, str] = {
@@ -236,9 +241,22 @@ if __name__ == "__main__":
     main_init()
 
     from qtpy.QtCore import QThread
+    from qtpy.QtGui import QSurfaceFormat
     from qtpy.QtWidgets import QApplication, QMessageBox
 
     setupPreInitSettings()
+
+    # Set default OpenGL surface format before creating QApplication
+    # This is critical for PyPy and ensures proper OpenGL context initialization
+    fmt = QSurfaceFormat()
+    fmt.setDepthBufferSize(24)
+    fmt.setStencilBufferSize(8)
+    fmt.setVersion(3, 3)  # Request OpenGL 3.3
+    # Use CompatibilityProfile instead of CoreProfile - CoreProfile requires VAO to be bound
+    # before any buffer operations, which causes issues with PyOpenGL's lazy loading
+    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+    fmt.setSamples(4)  # Enable multisampling for antialiasing
+    QSurfaceFormat.setDefaultFormat(fmt)
 
     app = QApplication(sys.argv)
     app.setApplicationName("HolocronToolsetV3")

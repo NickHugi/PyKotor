@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shutil
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
@@ -95,7 +95,11 @@ def create_backup(
         processed_files.add(destination_file_str_lower)
 
 
-def create_uninstall_scripts(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: CaseAwarePath):
+def create_uninstall_scripts(
+    backup_dir: CaseAwarePath,
+    uninstall_folder: CaseAwarePath,
+    main_folder: CaseAwarePath,
+):
     with uninstall_folder.joinpath("uninstall.ps1").open("w", encoding="utf-8") as f:
         f.write(
             rf"""#!/usr/bin/env pwsh
@@ -204,7 +208,7 @@ foreach ($file in $filesInBackup) {{
     }}
 }}
 Pause
-""",
+""",  # noqa: E501
         )
     with uninstall_folder.joinpath("uninstall.sh").open("w", encoding="utf-8", newline="\n") as f:
         f.write(
@@ -297,7 +301,7 @@ done < <(find "$mostRecentBackupFolder" -type f ! -name 'remove these files.txt'
 
 read -rp "Press enter to continue..."
 
-    """,
+    """,  # noqa: E501
         )
 
 
@@ -306,14 +310,15 @@ class InstallFile(PatcherModifications):
         self,
         filename: str,
         *,
-        replace_existing: bool,
+        replace_existing: bool | None = None,
+        destination: str | None = None,
     ):
-        super().__init__(filename, replace_existing)
+        super().__init__(filename, replace=bool(replace_existing), destination=destination)
 
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
-    def __hash__(self):  # HACK: organize this into PatcherModifications class later, this is only used for nwscript.nss currently.
+    def __hash__(self):  # HACK(th3w1zard1): organize this into PatcherModifications class later, this is only used for nwscript.nss currently.
         return hash((self.destination, self.saveas, self.replace_file))
 
     def patch_resource(
@@ -327,4 +332,11 @@ class InstallFile(PatcherModifications):
         with BinaryReader.from_auto(source) as reader:
             return reader.read_all()
 
-    def apply(self, source, *args, **kwargs): ...
+    def apply(
+        self,
+        mutable_data: Any,
+        memory: PatcherMemory,
+        logger: PatchLogger,
+        game: Game
+    ):
+        ...

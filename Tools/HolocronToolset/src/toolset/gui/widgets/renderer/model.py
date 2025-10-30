@@ -4,14 +4,14 @@ import math
 
 from typing import TYPE_CHECKING
 
-from glm import vec3
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingModuleSource]
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QCursor
 from qtpy.QtWidgets import QOpenGLWidget
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.stream import BinaryReader
+from pykotor.gl import vec3
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
@@ -54,6 +54,9 @@ class ModelRenderer(QOpenGLWidget):
         self.installation = installation
 
     def initializeGL(self):
+        # Ensure OpenGL context is current
+        self.makeCurrent()
+
         self._scene = Scene(installation=self.installation)
         self.scene.camera.fov = ModuleDesignerSettings().fieldOfView
         self.scene.camera.distance = 0  # Set distance to 0
@@ -81,8 +84,11 @@ class ModelRenderer(QOpenGLWidget):
             - Loads creature if _creatureToLoad is not None
             - Renders the scene.
         """
-        if self.scene is None:
+        if self._scene is None:
             return
+
+        # Ensure OpenGL context is current before any GL calls
+        self.makeCurrent()
 
         if self._modelToLoad is not None:
             self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)

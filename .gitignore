@@ -78,3 +78,6 @@ venv
 this file has no permissions.txt
 Tools/KotorDiff/INI_GENERATOR_README.md
 Tools/KotorDiff/WINDOWS_PATH_GUIDE.md
+.history/
+pypy3.*-v*/
+tslpatchdata/

@@ -24,7 +24,7 @@ requires-python = ">= 3.8"
 dependencies = [
     "loggerplus>=0.1.3",
     "ply>=3.11,<4",
-    "pyqt5-sip>=12.15.0",
+    "pyqt5-sip>=12.15.0; python_implementation == 'CPython'",
     "qtpy>=2.4.3",
 ]  # required for the nss compiler lexer
 
@@ -37,7 +37,7 @@ gl = [
   "django>2.0; os_name == 'nt'",
   "numpy~=1.22",      # ( might need 1.22.2 )
   "PyOpenGL~=3.1",    # ( might need 3.1.6 )
-  "PyGLM>=2.0,<2.8",  # ( might need 2.5.7 )
+  "PyGLM>=2.0,<2.8; python_implementation == 'CPython'",  # ( might need 2.5.7 )
 ]
 
 [project.urls]
@@ -163,13 +163,12 @@ ignore = [
     "ANN003",   # Checks that function **kwargs arguments have type annotations.
     "ANN101",   # Checks that instance method self arguments have type annotations.
     "ANN102",   # Checks that class method cls arguments have type annotations.
-    "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed in {name}
     "ANN204",   # Missing return type annotation for special method
+    "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed in {name}
     "ARG002",   # Unused method argument: `method`
+    "BLE001",   # Do not catch blind exception: `Exception`
+    "C901",     # Function is too complex
     "COM812",   # missing-trailing-comma
-    "ERA001",   # Found commented out code.
-#    "FBT001",   # Boolean positional arg in function definition
-#    "FBT002",   # Boolean default value in function definition
     "D100",     # Missing docstring in public module
     "D101",     # Missing docstring in public class
     "D102",     # Missing docstring in public method
@@ -178,36 +177,44 @@ ignore = [
     "D105",     # Missing docstring in magic method
     "D107",     # Missing docstring in __init__
     "D205",     # 1 blank line required between summary line and description
-#    "D213",     # Multi-line docstring summary should start at the second line
-#    "D400",     # First line should end with a period
     "D401",     # First line of docstring should be in imperative mood
     "D413",     # Missing blank line after last section 'xyz'
-#    "D403",     # First word of the first line should be capitalized: {} -> {}
-#    "D404",     # First word of the docstring should not be "This"
     "D417",     # Missing argument description in the docstring for {definition}: {name}
+    "EM101",    # Exception must not use a string literal, assign to variable first
+    "EM102",    # Exception must not use an f-string literal, assign to variable first
+    "ERA001",   # Found commented out code.
     "G004",     # Logging statement uses f'' string.
     "N802",     # Function name `screenToWorld` should be lowercase
     "N806",     # Variable `jumpToOffset` in function should be lowercase
     "N815",     # Variable `var` in class scope should not be mixedCase
+    "PERF203",  # `try`-`except` within a loop incurs performance overhead
+    "PLC0415",  # `import` should be at the top-level of a file
     "PLR0904",  # Too many public methods
+    "PLR0911",  # Too many return statements
+    "PLR0912",  # Too many branches
+    "PLR0913",  # Too many arguments to function call (N > 5)
+    "PLR0915",  # Too many statements
+    "PLR2004",  # Magic value used in comparison, consider replacing X with a constant variable
     "RET504",   # Unnecessary assignment to `varname` before `return` statement
     "RUF100",   # Unused `noqa` directive (non-enabled: `PLC0415`)
+    "S101",     # Use of `assert` detected.
+    "SIM108",   # Use ternary operator instead of 'if' 'else' block
+    "SIM114",   # Combine `if` branches using logical `or` operator
     "T201",     # 'print' detected
     "TD001",    # Invalid TODO tag: `FIXME`
     "TRY003",   # Avoid specifying long messages outside the exception class
-    "EM101",    # Exception must not use a string literal, assign to variable first
-    "EM102",    # Exception must not use an f-string literal, assign to variable first
-    "SIM108",   # Use ternary operator instead of 'if' 'else' block
-    "SIM114",   # Combine `if` branches using logical `or` operator
-    "S101",     # Use of `assert` detected.
+#    "D213",     # Multi-line docstring summary should start at the second line
+#    "D400",     # First line should end with a period
+#    "D403",     # First word of the first line should be capitalized: {} -> {}
+#    "D404",     # First word of the docstring should not be "This"
+#    "FBT001",   # Boolean positional arg in function definition
+#    "FBT002",   # Boolean default value in function definition
 
 # The following are currently violated by the codebase.
 #    "D205",     # 1 blank line required between summary line and description
 #    "E402",     # Module level import not at top of file
 #    "FIX004",   # Line contains HACK, consider resolving the issue
 #    "PD901",    # df is a bad variable name. Be kinder to your future self.
-#    "PERF203",  # `try`-`except` within a loop incurs performance overhead
-#    "PLR0913",  # Too many arguments to function call (N > 5)
 #    "PLR2004",  # Magic value used in comparison, consider replacing X with a constant variable
 #    "S101",     # Use of assert detected
 #    "S314",     # Using `xml` to parse untrusted data is known to be vulnerable to XML attacks; use `defusedxml` equivalents

@@ -1,17 +1,30 @@
 #!/usr/bin/env python3
 """Structured diff objects for KotorDiff that separate diff logic from output formatting."""
+
 from __future__ import annotations
+
+import traceback
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+from pykotor.resource.formats import gff, tlk, twoda
+
+if TYPE_CHECKING:
+    from pykotor.common.geometry import Vector3, Vector4
+    from pykotor.common.language import LocalizedString
+    from pykotor.common.misc import ResRef
+    from pykotor.resource.formats import lip
+    from pykotor.resource.formats.gff.gff_data import GFFList, GFFStruct
 
 T = TypeVar("T")
 
 
 class DiffType(Enum):
     """Types of differences that can be detected."""
+
     IDENTICAL = "identical"
     MODIFIED = "modified"
     ADDED = "added"
@@ -21,9 +34,10 @@ class DiffType(Enum):
 
 class DiffFormat(Enum):
     """Supported diff output formats."""
+
     DEFAULT = "default"  # KotorDiff's native format
-    UNIFIED = "unified"   # Standard unified diff format
-    CONTEXT = "context"   # Context diff format
+    UNIFIED = "unified"  # Standard unified diff format
+    CONTEXT = "context"  # Context diff format
     SIDE_BY_SIDE = "side_by_side"  # Side-by-side comparison
 
 
@@ -80,8 +94,8 @@ class FieldDiff:
 
     field_path: str
     diff_type: DiffType
-    left_value: Any | None = None
-    right_value: Any | None = None
+    left_value: int | float | str | ResRef | LocalizedString | Vector3 | Vector4 | GFFStruct | GFFList | bytes | None = None
+    right_value: int | float | str | ResRef | LocalizedString | Vector3 | Vector4 | GFFStruct | GFFList | bytes | None = None
     field_type: str | None = None
 
 
@@ -148,6 +162,25 @@ class TLKDiffResult(DiffResult[Any]):
     """Result of comparing two TLK files."""
 
     entry_diffs: list[TLKEntryDiff] | None = None
+
+
+@dataclass
+class LIPDiffResult(DiffResult[Any]):
+    """Result of comparing two LIP files."""
+
+    entry_diffs: list[LIPEntryDiff] | None = None
+
+
+@dataclass
+class LIPEntryDiff:
+    """Difference in a LIP entry."""
+
+    entry_id: int
+    diff_type: DiffType
+    left_time: float | None = None
+    right_time: float | None = None
+    left_shape: lip.LIPShape | None = None
+    right_shape: lip.LIPShape | None = None
 
 
 @dataclass
@@ -221,7 +254,10 @@ class GFFDiffComparator(DiffComparator[Any]):
                 field_diffs=field_diffs if field_diffs else None,
                 struct_diffs=struct_diffs if struct_diffs else None,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
+            print("Full traceback:")
+            for line in traceback.format_exc().splitlines():
+                print(f"  {line}")
             return GFFDiffResult(
                 diff_type=DiffType.ERROR,
                 left_identifier=left_id,
@@ -233,7 +269,13 @@ class GFFDiffComparator(DiffComparator[Any]):
 class TwoDADiffComparator(DiffComparator[Any]):
     """Comparator for 2DA files using the existing compare mixin."""
 
-    def compare(self, left: Any, right: Any, left_id: str, right_id: str) -> TwoDADiffResult:
+    def compare(
+        self,
+        left: Any,
+        right: Any,
+        left_id: str,
+        right_id: str,
+    ) -> TwoDADiffResult:
         """Compare two 2DA objects."""
         try:
             # Use existing compare method but capture differences
@@ -259,7 +301,10 @@ class TwoDADiffComparator(DiffComparator[Any]):
                 row_diffs=row_diffs if row_diffs else None,
                 column_diffs=column_diffs if column_diffs else None,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
+            print("Full traceback:")
+            for line in traceback.format_exc().splitlines():
+                print(f"  {line}")
             return TwoDADiffResult(
                 diff_type=DiffType.ERROR,
                 left_identifier=left_id,
@@ -292,8 +337,53 @@ class TLKDiffComparator(DiffComparator[Any]):
                 right_value=right,
                 entry_diffs=entry_diffs if entry_diffs else None,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
+            print("Full traceback:")
+            for line in traceback.format_exc().splitlines():
+                print(f"  {line}")
             return TLKDiffResult(
+                diff_type=DiffType.ERROR,
+                left_identifier=left_id,
+                right_identifier=right_id,
+                error_message=str(e),
+            )
+
+
+class LIPDiffComparator(DiffComparator[Any]):
+    """Comparator for LIP files using the existing compare mixin."""
+
+    def compare(
+        self,
+        left: Any,
+        right: Any,
+        left_id: str,
+        right_id: str,
+    ) -> LIPDiffResult:
+        """Compare two LIP objects."""
+        try:
+            entry_diffs: list[LIPEntryDiff] = []
+
+            def diff_callback(message: str, *args, **kwargs):
+                """Capture diff information."""
+                # Parse and structure the diff information
+
+            is_same = left.compare(right, diff_callback)
+
+            diff_type = DiffType.IDENTICAL if is_same else DiffType.MODIFIED
+
+            return LIPDiffResult(
+                diff_type=diff_type,
+                left_identifier=left_id,
+                right_identifier=right_id,
+                left_value=left,
+                right_value=right,
+                entry_diffs=entry_diffs if entry_diffs else None,
+            )
+        except Exception as e:  # noqa: BLE001
+            print("Full traceback:")
+            for line in traceback.format_exc().splitlines():
+                print(f"  {line}")
+            return LIPDiffResult(
                 diff_type=DiffType.ERROR,
                 left_identifier=left_id,
                 right_identifier=right_id,
@@ -305,11 +395,12 @@ class DiffEngine:
     """Main diff engine that coordinates comparisons and returns structured results."""
 
     def __init__(self):
-        self.comparators = {
-            "gff": GFFDiffComparator(),
-            "2da": TwoDADiffComparator(),
-            "tlk": TLKDiffComparator(),
-            "bytes": BytesDiffComparator(),
+        self.comparators: dict[DiffResourceType, DiffComparator[Any]] = {
+            DiffResourceType.GFF: GFFDiffComparator(),
+            DiffResourceType.TWO_DA: TwoDADiffComparator(),
+            DiffResourceType.TLK: TLKDiffComparator(),
+            DiffResourceType.LIP: LIPDiffComparator(),
+            DiffResourceType.BYTES: BytesDiffComparator(),
         }
         # Import structured engine lazily to avoid circular imports
         self._structured_engine = None
@@ -318,7 +409,8 @@ class DiffEngine:
     def structured_engine(self):
         """Lazy load structured engine."""
         if self._structured_engine is None:
-            from kotordiff.structured_diff import StructuredDiffEngine
+            from pykotor.tslpatcher.diff.structured import StructuredDiffEngine  # noqa: PLC0415
+
             self._structured_engine = StructuredDiffEngine()
         return self._structured_engine
 
@@ -328,7 +420,7 @@ class DiffEngine:
         right_data: bytes,
         left_id: str,
         right_id: str,
-        resource_type: str,
+        resource_type: DiffResourceType,
     ) -> DiffResult[Any]:
         """Compare two resources and return structured diff results."""
         # Handle missing data
@@ -357,7 +449,7 @@ class DiffEngine:
             )
 
         # Get the appropriate comparator
-        comparator = self.comparators.get(resource_type, self.comparators["bytes"])
+        comparator = self.comparators.get(resource_type, self.comparators[DiffResourceType.BYTES])
 
         # For format-specific comparisons, we need to parse the data first
         if resource_type in ("gff", "2da", "tlk") and resource_type != "bytes":
@@ -365,17 +457,14 @@ class DiffEngine:
                 # Import here to avoid circular imports
                 left_parsed: Any
                 right_parsed: Any
-                
+
                 if resource_type == "gff":
-                    from pykotor.resource.formats import gff
                     left_parsed = gff.read_gff(left_data)
                     right_parsed = gff.read_gff(right_data)
                 elif resource_type == "2da":
-                    from pykotor.resource.formats import twoda
                     left_parsed = twoda.read_2da(left_data)
                     right_parsed = twoda.read_2da(right_data)
                 elif resource_type == "tlk":
-                    from pykotor.resource.formats import tlk
                     left_parsed = tlk.read_tlk(left_data)
                     right_parsed = tlk.read_tlk(right_data)
                 else:
@@ -384,7 +473,10 @@ class DiffEngine:
 
                 return comparator.compare(left_parsed, right_parsed, left_id, right_id)
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
+                print("Full traceback:")
+                for line in traceback.format_exc().splitlines():
+                    print(f"  {line}")
                 return DiffResult(
                     diff_type=DiffType.ERROR,
                     left_identifier=left_id,
@@ -394,3 +486,11 @@ class DiffEngine:
 
         # Fallback to bytes comparison
         return comparator.compare(left_data, right_data, left_id, right_id)
+
+
+class DiffResourceType(Enum):
+    GFF = "gff"
+    TWO_DA = "2da"
+    TLK = "tlk"
+    LIP = "lip"
+    BYTES = "bytes"

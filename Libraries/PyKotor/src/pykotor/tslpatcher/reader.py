@@ -29,7 +29,7 @@ from pykotor.tslpatcher.mods.gff import (
     ModifyFieldGFF,
 )
 from pykotor.tslpatcher.mods.install import InstallFile
-from pykotor.tslpatcher.mods.ncs import ModificationsNCS
+from pykotor.tslpatcher.mods.ncs import ModificationsNCS, ModifyNCS, NCSTokenType
 from pykotor.tslpatcher.mods.nss import ModificationsNSS
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
@@ -57,7 +57,7 @@ from utility.system.path import Path, PurePath, PureWindowsPath
 if TYPE_CHECKING:
     import os
 
-    from typing_extensions import Literal
+    from typing_extensions import Literal, Self
 
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.memory import TokenUsage
@@ -139,7 +139,9 @@ class ConfigReader:
         self.previously_parsed_sections: set[str] = set()
         self.ini: ConfigParser = ini
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
-        self.tslpatchdata_path: CaseAwarePath | None = CaseAwarePath.pathify(tslpatchdata_path)  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
+        self.tslpatchdata_path: CaseAwarePath | None = CaseAwarePath.pathify(
+            tslpatchdata_path
+        )  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
 
@@ -148,7 +150,7 @@ class ConfigReader:
         cls,
         file_path: os.PathLike | str,
         logger: PatchLogger | None = None,
-    ):
+    ) -> Self:
         """Load PatcherConfig from an INI file path.
 
         Args:
@@ -215,7 +217,11 @@ class ConfigReader:
     def get_section_name(self, section_name: str) -> str | None:
         """Resolves the case-insensitive section name string if found and returns the case-sensitive correct section name."""
         s: str | None = next(
-            (section for section in self.ini.sections() if section.lower() == section_name.lower()),
+            (
+                section
+                for section in self.ini.sections()
+                if section.lower() == section_name.lower()
+            ),
             None,
         )
         if s is not None:
@@ -236,27 +242,14 @@ class ConfigReader:
         self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         for key, value in settings_ini.items():
             lower_key = key.lower()
-            if (
-                lower_key == "required"
-                or (
-                    lower_key.startswith("required")
-                    and len(key) > len("required")
-                    and not key[len("required"):].lower().startswith("msg")
-                )
-            ):
-                if lower_key != "required" and not key[len("required"):].isdigit():
+            if lower_key == "required" or (lower_key.startswith("required") and len(key) > len("required") and not key[len("required") :].lower().startswith("msg")):
+                if lower_key != "required" and not key[len("required") :].isdigit():
                     raise ValueError(f"Key '{key}' improperly defined in settings ini. Expected (Required) or (RequiredMsg)")
                 these_files = tuple(filename.strip() for filename in value.split(","))
                 self.config.required_files.append(these_files)
 
-            if (
-                lower_key == "requiredmsg"
-                or (
-                    lower_key.startswith("requiredmsg")
-                    and len(key) > len("requiredmsg")
-                )
-            ):
-                if lower_key != "requiredmsg" and not key[len("requiredmsg"):].isdigit():
+            if lower_key == "requiredmsg" or (lower_key.startswith("requiredmsg") and len(key) > len("requiredmsg")):
+                if lower_key != "requiredmsg" and not key[len("requiredmsg") :].isdigit():
                     raise ValueError(f"Key '{key}' improperly defined in settings ini. Expected (Required) or (RequiredMsg)")
                 self.config.required_messages.append(value.strip())
         if len(self.config.required_files) != len(self.config.required_messages):
@@ -298,10 +291,7 @@ class ConfigReader:
         for folder_key, foldername in self.ini[install_list_section].items():
             foldername_section: str | None = self.get_section_name(folder_key)
             if foldername_section is None:
-                raise KeyError(
-                    SECTION_NOT_FOUND_ERROR.format(foldername)
-                    + REFERENCES_TRACEBACK_MSG.format(folder_key, foldername, install_list_section)
-                )
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(foldername) + REFERENCES_TRACEBACK_MSG.format(folder_key, foldername, install_list_section))
 
             folder_section_dict = CaseInsensitiveDict(self.ini[foldername_section])
             sourcefolder: str = folder_section_dict.pop("!SourceFolder", ".")
@@ -656,60 +646,121 @@ class ConfigReader:
         self.log.add_note("Loading [HACKList] patches from ini...")
         hacklist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
         default_destination: str = hacklist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
-        default_source_folder = hacklist_section_dict.pop("!DefaultSourceFolder", ".")
+        default_source_folder: str = hacklist_section_dict.pop("!DefaultSourceFolder", ".")
 
-        file_section_dict: CaseInsensitiveDict[str] = CaseInsensitiveDict()
-        modifications: ModificationsNCS | None = None
-        for identifier, file in hacklist_section_dict.items():
+        # Process each NCS file in HACKList
+        for identifier, filename in hacklist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
-            modifications = ModificationsNCS(file, replace)
+            modifications = ModificationsNCS(filename, replace)
 
-            file_section_name: str | None = self.get_section_name(file)
+            # Get the file-specific section
+            file_section_name: str | None = self.get_section_name(filename)
             if file_section_name is None:
-                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, hacklist_section))
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(filename) + REFERENCES_TRACEBACK_MSG.format(identifier, filename, hacklist_section))
 
             file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
             modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
+            # Parse all hack entries for this file
+            self._parse_ncs_hack_entries(file_section_dict, modifications)
+
+            # Add the completed modifications to config
+            self.config.patches_ncs.append(modifications)
+
+    def _parse_ncs_hack_entries(
+        self,
+        file_section_dict: CaseInsensitiveDict[str],
+        modifications: ModificationsNCS,
+    ):
+        """Parse NCS hack entries from a file section and add them to modifications.
+
+        Args:
+        ----
+            file_section_dict: Dictionary containing offset=value pairs from INI section
+            modifications: ModificationsNCS object to populate with ModifyNCS objects
+        """
         for offset_str, value_str in file_section_dict.items():
-            if offset_str.startswith("0x"):
-                offset = int(offset_str, 16)
+            # Parse offset (hex or decimal)
+            if offset_str.lower().startswith("0x"):
+                offset: int = int(offset_str, 16)
             else:
                 offset = int(offset_str, 10)
-            type_specifier = "u16"
+
+            # Parse type specifier and value
+            type_specifier: str = "u16"  # Default to 16-bit unsigned
+            parsed_value: str = value_str
             if ":" in value_str:
-                type_specifier, value_str = value_str.split(":", 1)  # noqa: PLW2901
-            lower_value = value_str.lower()
+                type_specifier, parsed_value = value_str.split(":", 1)
 
-            if lower_value.startswith("strref"):
-                if value_str[6:].strip().startswith("0x"):
-                    value = int(value_str[6:].strip(), 16)
-                else:
-                    value = int(value_str[6:].strip(), 10)
-                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
-                modifications.hackdata.append(("StrRef", offset, value))
-            elif lower_value.startswith("2damemory"):
-                if value_str[9:].strip().startswith("0x"):
-                    value = int(value_str[9:].strip(), 16)
-                else:
-                    value = int(value_str[9:].strip(), 10)
-                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
-                modifications.hackdata.append(("2DAMEMORY", offset, value))
-            elif type_specifier == "u8":
-                value = int(value_str, 16) if value_str.startswith("0x") else int(value_str, 10)
-                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
-                modifications.hackdata.append(("UINT8", offset, value))
-            elif type_specifier == "u32":
-                value = int(value_str, 16) if value_str.startswith("0x") else int(value_str, 10)
-                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
-                modifications.hackdata.append(("UINT32", offset, value))
-            else:
-                value = int(value_str, 16) if value_str.startswith("0x") else int(value_str, 10)
-                assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
-                modifications.hackdata.append(("UINT16", offset, value))
+            lower_value: str = parsed_value.lower()
 
-            assert isinstance(modifications, ModificationsNCS), f"{type(modifications).__name__}: {modifications}"
-            self.config.patches_ncs.append(modifications)
+            # Create appropriate ModifyNCS based on value type
+            modify_ncs: ModifyNCS = self._create_modify_ncs_from_value(
+                offset=offset,
+                value_str=parsed_value,
+                lower_value=lower_value,
+                type_specifier=type_specifier,
+            )
+
+            modifications.modifiers.append(modify_ncs)
+
+    def _create_modify_ncs_from_value(
+        self,
+        offset: int,
+        value_str: str,
+        lower_value: str,
+        type_specifier: str,
+    ) -> ModifyNCS:
+        """Create a ModifyNCS object from parsed INI value.
+
+        Args:
+        ----
+            offset: Byte offset in NCS file
+            value_str: Raw value string from INI
+            lower_value: Lowercased value string for comparison
+            type_specifier: Type specifier (u8, u16, u32)
+
+        Returns:
+        -------
+            ModifyNCS: Configured modification object
+        """
+        if lower_value.startswith("strref"):
+            # StrRef token reference
+            value = self._parse_int_value(value_str[6:].strip())
+            # Use STRREF32 for compatibility (handles both 16-bit and 32-bit cases)
+            return ModifyNCS(NCSTokenType.STRREF32, offset, value)
+
+        if lower_value.startswith("2damemory"):
+            # 2DA memory token reference
+            value = self._parse_int_value(value_str[9:].strip())
+            # Use MEMORY_2DA32 for compatibility (handles both 16-bit and 32-bit cases)
+            return ModifyNCS(NCSTokenType.MEMORY_2DA32, offset, value)
+
+        # Direct integer values
+        value = self._parse_int_value(value_str)
+
+        if type_specifier == "u8":
+            return ModifyNCS(NCSTokenType.UINT8, offset, value)
+        if type_specifier == "u32":
+            return ModifyNCS(NCSTokenType.UINT32, offset, value)
+        # Default to u16
+        return ModifyNCS(NCSTokenType.UINT16, offset, value)
+
+    @staticmethod
+    def _parse_int_value(value_str: str) -> int:
+        """Parse an integer value from string (hex or decimal).
+
+        Args:
+        ----
+            value_str: String representation of integer (may be hex with 0x prefix)
+
+        Returns:
+        -------
+            int: Parsed integer value
+        """
+        if value_str.startswith("0x"):
+            return int(value_str, 16)
+        return int(value_str, 10)
 
     #################
 
@@ -812,10 +863,12 @@ class ConfigReader:
                 if lower_iterated_value == "listindex":
                     index_in_list_token = int(key[9:])
                 elif lower_iterated_value == "!fieldpath":
-                    modifier = Memory2DAModifierGFF(identifier, dst_token_id=int(key[9:]), path=path/label)  # Assign current path to 2damemory.
+                    modifier = Memory2DAModifierGFF(identifier, dst_token_id=int(key[9:]), path=path / label)  # Assign current path to 2damemory.
                     modifiers.insert(0, modifier)
                 elif lower_iterated_value.startswith("2damemory"):
-                    modifier = Memory2DAModifierGFF(identifier, dst_token_id=int(key[9:]), src_token_id=int(iterated_value[9:]), path=path) # Assign field at path to a value or (path to field's value)
+                    modifier = Memory2DAModifierGFF(
+                        identifier, dst_token_id=int(key[9:]), src_token_id=int(iterated_value[9:]), path=path
+                    )  # Assign field at path to a value or (path to field's value)
                     modifiers.insert(0, modifier)
 
             # Handle nested AddField's and recurse
@@ -907,7 +960,10 @@ class ConfigReader:
         return value
 
     @classmethod
-    def field_value_from_localized_string(cls, ini_section_dict: CaseInsensitiveDict) -> FieldValueConstant:
+    def field_value_from_localized_string(
+        cls,
+        ini_section_dict: CaseInsensitiveDict,
+    ) -> FieldValueConstant:
         """Parses a localized string from an INI section dictionary (usually a GFF section).
 
         Args:
@@ -1032,11 +1088,11 @@ class ConfigReader:
             return FieldValueConstant(ConfigReader.normalize_tslpatcher_crlf(raw_value))
 
         # Three floats
-        if num_pipe_seps == 2:
+        if num_pipe_seps == 2:  # noqa: PLR2004
             return FieldValueConstant(Vector3(*components))
 
         # Four floats
-        if num_pipe_seps == 3:
+        if num_pipe_seps == 3:  # noqa: PLR2004
             return FieldValueConstant(Vector4(*components))
 
         msg = f"Cannot determine type/value from '{raw_value}'"
@@ -1091,7 +1147,7 @@ class ConfigReader:
 
         elif field_type.return_type() is bytes:
             if not raw_value.strip().replace("1", "").replace("0", ""):
-                value = bytes(int(raw_value[i : i+8], 2) for i in range(0, len(raw_value), 8))
+                value = bytes(int(raw_value[i : i + 8], 2) for i in range(0, len(raw_value), 8))
             elif raw_value.strip().lower().startswith("0x"):
                 hex_string = raw_value[2:]
                 if len(hex_string) % 2:
@@ -1107,6 +1163,7 @@ class ConfigReader:
             return None
 
         return FieldValueConstant(value)
+
     #################
 
     def discern_2da(
@@ -1308,24 +1365,16 @@ class ConfigReader:
             lower_modifier: str = modifier.lower().strip()
             lower_value: str = value.lower()
 
-            is_store_2da: bool = (
-                lower_modifier.startswith("2damemory")
-                and len(lower_modifier) > len("2damemory")
-                and modifier[len("2damemory"):].isdigit()
-            )
-            is_store_tlk: bool = (
-                modifier.startswith("strref")
-                and len(lower_modifier) > len("strref")
-                and modifier[len("strref"):].isdigit()
-            )
+            is_store_2da: bool = lower_modifier.startswith("2damemory") and len(lower_modifier) > len("2damemory") and modifier[len("2damemory") :].isdigit()
+            is_store_tlk: bool = modifier.startswith("strref") and len(lower_modifier) > len("strref") and modifier[len("strref") :].isdigit()
             is_row_label: bool = lower_modifier in {"rowlabel", "newrowlabel"}
 
             row_value: RowValue | None = None
             if lower_value.startswith("2damemory"):
-                token_id = int(value[len("2damemory"):])
+                token_id = int(value[len("2damemory") :])
                 row_value = RowValue2DAMemory(token_id)
             elif lower_value.startswith("strref"):
-                token_id = int(value[len("strref"):])
+                token_id = int(value[len("strref") :])
                 row_value = RowValueTLKMemory(token_id)
             elif lower_value == "high()":
                 row_value = RowValueHigh(None) if modifier == "rowlabel" else RowValueHigh(modifier)
@@ -1341,10 +1390,10 @@ class ConfigReader:
                 row_value = RowValueConstant(value)
 
             if is_store_2da:
-                token_id = int(modifier[len("2damemory"):])
+                token_id = int(modifier[len("2damemory") :])
                 store_2da[token_id] = row_value
             elif is_store_tlk:
-                token_id = int(modifier[len("strref"):])
+                token_id = int(modifier[len("strref") :])
                 store_tlk[token_id] = row_value
             elif not is_row_label:
                 cells[modifier] = row_value
@@ -1414,10 +1463,10 @@ class ConfigReader:
 
             row_value: RowValue | None = None
             if is_store_2da:
-                token_id = int(value[len("2damemory"):])
+                token_id = int(value[len("2damemory") :])
                 row_value = RowValue2DAMemory(token_id)
             elif is_store_tlk:
-                token_id = int(value[len("strref"):])
+                token_id = int(value[len("strref") :])
                 row_value = RowValueTLKMemory(token_id)
             else:
                 row_value = RowValueConstant(value)
@@ -1429,7 +1478,7 @@ class ConfigReader:
                 label: str = modifier[1:]
                 label_insert[label] = row_value
             elif modifier_lowercase.startswith("2damemory"):
-                token_id = int(modifier[len("2damemory"):])
+                token_id = int(modifier[len("2damemory") :])
                 store_2da[token_id] = value
 
         return index_insert, label_insert, store_2da
