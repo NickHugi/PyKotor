@@ -735,3 +735,6 @@ vendor/mdlops/src/pymdlops/**/*
 vendor/mdlops/src/pymdlops/*
 vendor
 /docs
+/pypy3.9-v7.3.15-win64
+/tslpatchdata
+/Tools/HolocronToolset/src/toolset/32d802b_extract
