@@ -14,7 +14,7 @@ on:
 #  push:
 #  pull_request:
 #    types: [opened, reopened]
-  workflow_dispatch:  # Kept enabled so it can still be manually triggered if needed
+#  workflow_dispatch:  # Kept enabled so it can still be manually triggered if needed
 #  schedule:
 #    - cron: '0 5 * * 1'  # Runs every Monday at 05:00 UTC
 
