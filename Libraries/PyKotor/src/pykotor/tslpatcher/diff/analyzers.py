@@ -45,6 +45,7 @@ from pykotor.tslpatcher.mods.twoda import (
     ChangeRow2DA,
     Modifications2DA,
     RowValueConstant,
+    RowValueRowIndex,
     RowValueTLKMemory,
     Target,
     TargetType,
@@ -66,8 +67,12 @@ class DiffAnalyzer(ABC):
         left_data: bytes,
         right_data: bytes,
         identifier: str,
-    ) -> PatcherModifications | None:
-        """Analyze differences and return a PatcherModifications object."""
+    ) -> PatcherModifications | tuple[PatcherModifications, dict[int, int]] | None:
+        """Analyze differences and return a PatcherModifications object.
+
+        TLK analyzers may return a tuple of (ModificationsTLK, strref_mappings).
+        All other analyzers return PatcherModifications | None.
+        """
 
 
 class TwoDADiffAnalyzer(DiffAnalyzer):
@@ -648,11 +653,14 @@ class TLKDiffAnalyzer(DiffAnalyzer):
         left_data: bytes,
         right_data: bytes,
         identifier: str,
-    ) -> ModificationsTLK | None:
+    ) -> tuple[ModificationsTLK, dict[int, int]] | None:
         """Analyze TLK differences and create modification object.
 
-        Both modified and new entries are appended. Stores strref_mappings on the
-        ModificationsTLK object for later reference analysis.
+        Both modified and new entries are appended.
+
+        Returns:
+            Tuple of (ModificationsTLK, strref_mappings) or None if no modifications.
+            strref_mappings maps old StrRef -> token_id for reference analysis.
         """
         try:
             left_tlk = read_tlk(left_data)
@@ -665,10 +673,16 @@ class TLKDiffAnalyzer(DiffAnalyzer):
         left_size = len(left_tlk)
         right_size = len(right_tlk)
 
-        # Use "append.tlk" as the filename per TSLPatcher convention
-        modifications = ModificationsTLK(filename="append.tlk", replace=False, modifiers=[])
+        # Extract the actual TLK filename from the identifier (e.g., "swkotor\dialog.tlk" -> "dialog.tlk")
+        # This is needed for StrRef reference finding
+        tlk_filename: str = PurePath(identifier).name
 
-        # Store strref mappings on the modifications object for later reference analysis
+        # Use "append.tlk" as the sourcefile per TSLPatcher convention (this is the OUTPUT file)
+        # But store the actual TLK filename for reference finding
+        modifications = ModificationsTLK(filename="append.tlk", replace=False, modifiers=[])
+        modifications.saveas = tlk_filename  # This is the actual TLK file being patched (dialog.tlk)
+
+        # StrRef mappings will be returned separately for storage in TLKModificationWithSource
         strref_mappings: dict[int, int] = {}  # old_strref -> token_id
 
         token_id = 0
@@ -728,13 +742,16 @@ class TLKDiffAnalyzer(DiffAnalyzer):
                 strref_mappings[idx] = token_id
                 token_id += 1
 
-        # Store strref mappings on the modifications object for later processing
-        modifications.strref_mappings = strref_mappings
+        # Note: strref_mappings are NOT stored on ModificationsTLK
+        # They will be returned as a tuple with the modifications object
+        # This keeps ModificationsTLK clean for reader/patcher code
 
         if modifications.modifiers:
-            print(f"TLK modifications: identifier={identifier}, modifier_count={len(modifications.modifiers)}")
-
-        return modifications if modifications.modifiers else None
+            print(f"TLK modifications: identifier={identifier}, modifier_count={len(modifications.modifiers)}, strref_count={len(strref_mappings)}")
+            # Return tuple: (modifications, strref_mappings)
+            # The caller will extract both and store in TLKModificationWithSource
+            return (modifications, strref_mappings)
+        return None
 
 
 class SSFDiffAnalyzer(DiffAnalyzer):
@@ -937,7 +954,8 @@ def _extract_ncs_consti_offsets(  # noqa: C901, PLR0912
 
 
 def analyze_tlk_strref_references(  # noqa: PLR0913
-    tlk_modifications: ModificationsTLK,
+    tlk_modifications: tuple[ModificationsTLK, dict[int, int]],
+    strref_mappings: dict[int, int],
     installation_or_folder_path: Path,
     gff_modifications: list[ModificationsGFF],
     twoda_modifications: list[Modifications2DA],
@@ -950,25 +968,17 @@ def analyze_tlk_strref_references(  # noqa: PLR0913
     not just files in the diff. Creates patches to update those references to use StrRef tokens.
 
     Args:
-        tlk_modifications: ModificationsTLK object with strref_mappings attribute
+        tlk_modifications: ModificationsTLK object
+        strref_mappings: Dictionary mapping old StrRef -> token_id for reference analysis
         installation_or_folder_path: Path to KOTOR installation or folder to search
         gff_modifications: List to append GFF modifications to
         twoda_modifications: List to append 2DA modifications to
         ssf_modifications: List to append SSF modifications to
         ncs_modifications: List to append NCS modifications to
     """
-    has_strref_mappings_attr = hasattr(tlk_modifications, "strref_mappings")
-    if not has_strref_mappings_attr:
-        print(f"No StrRef mappings attribute: has_attr={has_strref_mappings_attr}, installation_path={installation_or_folder_path}")
+    if not strref_mappings:
+        print(f"No StrRef mappings provided: installation_path={installation_or_folder_path}")
         return
-
-    has_strref_mappings_data = bool(tlk_modifications.strref_mappings)
-    if not has_strref_mappings_data:
-        mappings_count = len(tlk_modifications.strref_mappings) if tlk_modifications.strref_mappings else 0
-        print(f"No StrRef mappings data: has_data={has_strref_mappings_data}, mappings_count={mappings_count}, installation_path={installation_or_folder_path}")
-        return
-
-    strref_mappings = tlk_modifications.strref_mappings
     print(f"Analyzing StrRef references: {len(strref_mappings)} mappings")
 
     try:
@@ -1303,29 +1313,40 @@ def analyze_2da_memory_references(  # noqa: PLR0913, C901
 
         # Process each modifier to extract row indices and token IDs
         for modifier in mod_2da.modifiers:
-            if isinstance(modifier, AddRow2DA) and hasattr(modifier, "store_2da") and modifier.store_2da:
-                # For AddRow, we need to determine the row index
-                # This is tricky because we don't know the final row index until patch time
-                # We'll store with the store_2da tokens if they exist
+            if isinstance(modifier, AddRow2DA) and modifier.store_2da:
+                # AddRow rows have unknown indices until patch-time; we cannot create static mappings for RowIndex storage.
                 for token_id, _row_value in modifier.store_2da.items():
-                    # Check if this is storing the RowIndex
+                    if isinstance(_row_value, RowValueRowIndex):
+                        print(
+                            "Skipping AddRow2DA mapping for 2DAMEMORY token "
+                            f"{token_id}: row index is determined at install time"
+                        )
+                        continue
                     if isinstance(_row_value, RowValueConstant):
                         try:
                             row_idx = int(_row_value.string)
-                            row_to_token[(twoda_filename, row_idx)] = token_id
-                            print(f"Mapped {twoda_filename} row {row_idx} -> 2DAMEMORY{token_id}")
                         except (ValueError, AttributeError) as e:  # noqa: PERF203
-                            print(f"Failed to map {twoda_filename} row {_row_value.string} -> 2DAMEMORY{token_id}: {e.__class__.__name__}: {e}")
+                            print(
+                                f"Failed to map {twoda_filename} row {_row_value.string} -> "
+                                f"2DAMEMORY{token_id}: {e.__class__.__name__}: {e}"
+                            )
                             traceback.print_exc()
+                            continue
+                        row_to_token[(twoda_filename, row_idx)] = token_id
+                        print(f"Mapped {twoda_filename} row {row_idx} -> 2DAMEMORY{token_id}")
 
             elif isinstance(modifier, ChangeRow2DA) and modifier.target.target_type == TargetType.ROW_INDEX:
                 # For ChangeRow, extract the target row index
                 row_idx = modifier.target.value
-                if isinstance(row_idx, int) and hasattr(modifier, "store_2da") and modifier.store_2da:
-                    # Check if we're storing this row's index in a token
-                    for token_id, _row_value in modifier.store_2da.items():
-                        row_to_token[(twoda_filename, row_idx)] = token_id
-                        print(f"Mapped {twoda_filename} row {row_idx} -> 2DAMEMORY{token_id}")
+                if not isinstance(row_idx, int) or not modifier.store_2da:
+                    continue
+
+                # Check if we're storing this row's index in a token
+                for token_id, _row_value in modifier.store_2da.items():
+                    if not isinstance(_row_value, RowValueRowIndex):
+                        continue
+                    row_to_token[(twoda_filename, row_idx)] = token_id
+                    print(f"Mapped {twoda_filename} row {row_idx} -> 2DAMEMORY{token_id}")
 
     if not row_to_token:
         mappings_count = 0

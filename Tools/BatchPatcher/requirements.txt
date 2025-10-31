@@ -6,4 +6,5 @@ notify-py==0.3.42
 playwright>=1.30.0,<1.40
 pyquery==1.4.3
 arabic-reshaper==3.0.0
-Pillow>=9.5
+pillow>=9.5; python_implementation == 'CPython'         # required for TXI/TGA fonts (CPython)
+pillow>10,<11.1.0; python_implementation == 'PyPy'      # required for TXI/TGA fonts (PyPy)

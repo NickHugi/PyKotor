@@ -37,6 +37,7 @@ from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.diff.analyzers import DiffAnalyzerFactory
 from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyGFF
 from pykotor.tslpatcher.mods.install import InstallFile
+from pykotor.tslpatcher.mods.ncs import ModificationsNCS, ModifyNCS  # noqa: F401
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.twoda import Modifications2DA, Modify2DA
@@ -48,6 +49,18 @@ if TYPE_CHECKING:
     from pykotor.common.module import ResourceResult
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats._base import ComparableMixin
+    from pykotor.resource.formats.bwm.bwm_data import BWM
+    from pykotor.resource.formats.erf.erf_data import ERF
+    from pykotor.resource.formats.lip.lip_data import LIP
+    from pykotor.resource.formats.ltr.ltr_data import LTR
+    from pykotor.resource.formats.lyt.lyt_data import LYT
+    from pykotor.resource.formats.mdl.mdl_data import MDL
+    from pykotor.resource.formats.ncs.ncs_data import NCS
+    from pykotor.resource.formats.rim.rim_data import RIM
+    from pykotor.resource.formats.ssf.ssf_data import SSF
+    from pykotor.resource.formats.tlk.tlk_data import TLK
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.formats.vis.vis_data import VIS
     from pykotor.tslpatcher.diff.incremental_writer import IncrementalTSLPatchDataWriter
     from pykotor.tslpatcher.diff.resolution import determine_tslpatcher_destination  # noqa: F401
     from pykotor.tslpatcher.writer import ModificationsByType
@@ -74,17 +87,17 @@ def get_module_root(module_filepath: Path) -> str:
     return root
 
 
-def find_related_module_files(module_path: CaseAwarePath) -> list[Path]:
+def find_related_module_files(module_path: CaseAwarePath) -> list[CaseAwarePath]:
     """Find all related module files for a given module file."""
     root: str = get_module_root(module_path)
     module_dir: CaseAwarePath = module_path.parent
 
     # Possible extensions for related module files
     extensions: tuple[str, ...] = (".rim", ".mod", "_s.rim", "_dlg.erf")
-    related_files: list[Path] = []
+    related_files: list[CaseAwarePath] = []
 
     for ext in extensions:
-        candidate = module_dir / f"{root}{ext}"
+        candidate: CaseAwarePath = module_dir / f"{root}{ext}"
         if candidate.safe_isfile():
             related_files.append(candidate)
 
@@ -100,15 +113,19 @@ def _is_readonly_source(source_path: Path) -> bool:
     Returns:
         True if the source is read-only and cannot be directly modified
     """
-    source_lower = str(source_path).lower()
-    suffix_lower = source_path.suffix.lower()
+    source_lower: str = str(source_path).lower()
+    suffix_lower: str = source_path.suffix.lower()
 
     # RIM and ERF files are read-only
     if suffix_lower in (".rim", ".erf"):
         return True
 
     # Files in BIF archives (chitin references)
-    return bool("chitin" in source_lower or "bif" in source_lower or "data" in source_lower)
+    return bool(
+        "chitin" in source_lower
+        or "bif" in source_lower
+        or "data" in source_lower
+    )
 
 
 def _determine_tslpatchdata_source(
@@ -130,7 +147,7 @@ def _determine_tslpatchdata_source(
     """
     # For now, implement 2-way logic (use vanilla/base version)
     # TODO(th3w1zard1): Extend for N-way comparison when that's fully implemented
-    return f"vanilla ({file1_path.name})"
+    return f"vanilla ({file1_path.as_posix()})"
 
 
 def _determine_destination_for_source(
@@ -188,7 +205,7 @@ def _determine_destination_for_source(
                 log_func(f"    +-- Destination: {destination} (patch .mod directly)")
             return destination
 
-        if location_type in ("Modules (.rim)", "Modules (.rim/.erf)"):
+        if location_type in ("Modules (.rim)", "Modules (.rim/_s.rim/_dlg.erf)"):
             # Resource is in read-only .rim/.erf - redirect to corresponding .mod
             actual_filepath = source_filepath if source_filepath else source_path
             module_root = get_module_root(actual_filepath)
@@ -242,66 +259,8 @@ def _determine_destination_for_source(
     return "Override"
 
 
-def _add_missing_resource_to_install(
-    modifications_by_type: ModificationsByType,
-    vanilla_module_path: Path,
-    resref: str,
-    res_ext: str,
-    *,
-    is_from_modded: bool = True,
-    modded_module_path: Path | None = None,
-    modded_search_location: str | None = None,
-    log_func: Callable[[str], None] | None = None,
-) -> None:
-    """Add a missing resource to the install folders list.
-
-    Args:
-        modifications_by_type: Modifications collection to update
-        vanilla_module_path: Path to the vanilla module/file where resource is missing
-        resref: Resource reference name
-        res_ext: Resource extension
-        is_from_modded: If True, resource exists in modded but not vanilla (should be installed)
-        modded_module_path: Path where resource was found in modded installation
-        modded_search_location: SearchLocation where resource was found in modded installation
-        log_func: Optional logging function
-    """
-    if log_func is None:
-        log_func = lambda _: None  # noqa: E731
-    if not is_from_modded:
-        # Resource exists in vanilla but not modded - user removed it, don't install
-        return
-
-    filename = f"{resref}.{res_ext.lower()}"
-
-    # Use resolution order to determine destination
-    # Priority: use modded location if available, fallback to vanilla path
-    if modded_module_path and modded_search_location:
-        # Determine destination based on where resource was found in modded installation
-        from pykotor.tslpatcher.diff.resolution import determine_tslpatcher_destination  # noqa: PLC0415
-
-        destination = determine_tslpatcher_destination(
-            None,  # Not in vanilla
-            modded_search_location,
-            modded_module_path,
-        )
-        _add_to_install_folder(modifications_by_type, destination, filename, log_func=log_func)
-        return
-
-    # Fallback: Determine the install folder based on the vanilla path (legacy behavior)
-    parent_names_lower = [parent.name.lower() for parent in vanilla_module_path.parents]
-    if "modules" in parent_names_lower:
-        # Resource belongs in a module file
-        module_name = vanilla_module_path.name
-        install_folder = f"modules\\{module_name}"
-        _add_to_install_folder(modifications_by_type, install_folder, filename, log_func=log_func)
-    elif "override" in parent_names_lower:
-        # Resource belongs in Override folder
-        _add_to_install_folder(modifications_by_type, "Override", filename, log_func=log_func)
-    # Note: Other folders like streamwaves will be handled by directory-level missing files
-
-
 def _extract_and_add_capsule_resources(
-    capsule_path: Path,
+    capsule_path: CaseAwarePath,
     modifications_by_type: ModificationsByType,
     incremental_writer: IncrementalTSLPatchDataWriter | None,
     log_func: Callable[[str], None],
@@ -356,7 +315,7 @@ def _add_missing_file_to_install(
     rel_path: str,
     *,
     log_func: Callable[[str], None] | None = None,
-    file2_path: Path | None = None,
+    file2_path: CaseAwarePath | None = None,
     incremental_writer: IncrementalTSLPatchDataWriter | None = None,
 ) -> None:
     """Add a missing file to the install folders list.
@@ -372,7 +331,7 @@ def _add_missing_file_to_install(
         log_func = lambda _: None  # noqa: E731
 
     # Determine the install folder based on the relative path
-    filename = Path(rel_path).name
+    filename = PurePath(rel_path).name
 
     # Check if this is a capsule file (.mod/.rim/.erf)
     # If so, we need to extract resources from it, not copy the entire capsule
@@ -412,7 +371,7 @@ def _add_missing_file_to_install(
         file1_rel = Path(rel_path)  # Vanilla (missing)
         file2_rel = Path(rel_path)  # Modded (exists)
         ext = file2_path.suffix.casefold().lstrip(".")
-        modded_context = DiffContext(file1_rel, file2_rel, ext, skip_nss=False)
+        modded_context = DiffContext(file1_rel, file2_rel, ext)
 
     # Add to install folder (will also create patch if supported)
     _add_to_install_folder(
@@ -506,7 +465,6 @@ def _create_patch_for_missing_file(
         modifications = analyzer.analyze(empty_data, modded_data, identifier)
         if modifications:
             log_func(f"\n[PATCH] {filename}")
-            log_func("  |-- Reason: File NOT in vanilla -> [PatchList] (will patch after install)")
 
             # Set destination and sourcefile
             resource_name = Path(filename).name
@@ -627,7 +585,6 @@ def _add_to_install_folder(
         # Create new InstallFile entry
         modifications_by_type.install.append(InstallFile(filename, destination=folder))
         log_func(f"\n[INSTALL] {filename}")
-        log_func("  |-- Reason: File NOT in vanilla -> [InstallList]")
         log_func(f"  |-- Filename: {filename}")
         log_func(f"  |-- Destination: {folder}")
         log_func("  +-- tslpatchdata: File will be copied from appropriate source")
@@ -646,31 +603,54 @@ def _add_to_install_folder(
         )
 
 
-def _create_replacement_modification_for_missing_resource(  # noqa: PLR0913
-    modifications_by_type: ModificationsByType,  # noqa: ARG001
-    resource: FileResource,  # noqa: ARG001
-    vanilla_path: Path,  # noqa: ARG001
-    resref: str,  # noqa: ARG001
-    res_ext: str,  # noqa: ARG001
-    log_func: Callable,  # noqa: ARG001
-) -> None:
-    """Placeholder for missing resources - actual handling is done via _add_to_install_folder.
-
-    Args:
-        modifications_by_type: Modifications collection (unused - we use InstallList instead)
-        resource: The FileResource from the modded installation (unused)
-        vanilla_path: Path to the vanilla module/container (unused)
-        resref: Resource reference name (unused)
-        res_ext: Resource extension (unused)
-        log_func: Logging function (unused)
-    """
-    # Files missing from vanilla use [InstallList], not patch lists
-    # Logging is now handled in _add_to_install_folder for consistency
-
-
 # ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
+
+
+@dataclass
+class PathInfo:
+    """Metadata wrapper for a path in n-way comparison."""
+
+    path: Path | Installation
+    index: int  # Position in the paths list (0, 1, 2, ...)
+    name: str  # Display name for logging
+    is_installation: bool
+    is_file: bool
+    is_folder: bool
+
+    @classmethod
+    def from_path_or_installation(
+        cls,
+        path: Path | Installation,
+        index: int,
+    ) -> PathInfo:
+        """Create PathInfo from a Path or Installation object."""
+        if isinstance(path, Installation):
+            return cls(
+                path=path,
+                index=index,
+                name=path.path().name,
+                is_installation=True,
+                is_file=False,
+                is_folder=False,
+            )
+        return cls(
+            path=path,
+            index=index,
+            name=path.name,
+            is_installation=False,
+            is_file=bool(path.safe_isfile()),
+            is_folder=bool(path.safe_isdir()),
+        )
+
+    def get_path(self) -> Path:
+        """Get the filesystem path."""
+        if self.is_installation:
+            assert isinstance(self.path, Installation)
+            return self.path.path()
+        assert isinstance(self.path, Path)
+        return self.path
 
 
 @dataclass
@@ -680,6 +660,7 @@ class ComparableResource:
     identifier: str  # e.g. folder/file.ext   or  resref.type inside capsule
     ext: str  # normalized lowercase extension  (for external files) or resource type extension
     data: bytes
+    source_index: int = 0  # Which path this resource came from (for n-way comparison)
 
 
 class CompositeModuleCapsule:
@@ -688,7 +669,7 @@ class CompositeModuleCapsule:
     def __init__(self, primary_module_path: CaseAwarePath):
         """Initialize with a primary module file, finding all related files."""
         self.primary_path: Path = primary_module_path
-        self.related_files: list[Path] = find_related_module_files(primary_module_path)
+        self.related_files: list[CaseAwarePath] = find_related_module_files(primary_module_path)
         self._capsules: dict[Path, Capsule] = {}
 
         # Load all related capsules
@@ -764,7 +745,7 @@ class DiffDispatcher:
 
     @staticmethod
     def equals(res_a: ComparableResource, res_b: ComparableResource) -> bool:
-        if res_a.ext == res_b.ext:
+        if res_a.ext.casefold() == res_b.ext.casefold():
             cmp = _HANDLERS.get(res_a.ext)
             if cmp is not None:
                 try:
@@ -841,7 +822,11 @@ class ResourceWalker:
     def _from_capsule(self, file_path: Path) -> Iterable[ComparableResource]:
         # Check if this is a RIM file that should use composite module loading
         # Only use composite loading if both paths are module files
-        should_use_composite = is_rim_file(file_path.name) and not self._is_in_rims_folder(file_path) and self._should_use_composite_loading(file_path)
+        should_use_composite = (
+            is_rim_file(file_path.name) and
+            not self._is_in_rims_folder(file_path) and
+            self._should_use_composite_loading(file_path)
+        )
 
         if should_use_composite:
             # Use CompositeModuleCapsule to include related module files
@@ -901,12 +886,14 @@ class DiffContext:
     file2_rel: Path
     ext: str
     resname: str | None = None
-    skip_nss: bool = False  # Skip .nss files when comparing installations
 
     # Resolution order location types (for resolution-aware diffing)
     file1_location_type: str | None = None  # Location type in vanilla/older install (Override, Modules (.mod), etc.)
     file2_location_type: str | None = None  # Location type in modded/newer install
-    file2_filepath: Path | None = None  # Full filepath in modded install (for module name extraction)
+    file1_filepath: Path | None = None  # Full filepath in base installation (for StrRef reference finding)
+    file2_filepath: Path | None = None  # Full filepath in target installation (for module name extraction)
+    file1_installation: Installation | None = None  # Base installation object (for StrRef reference finding)
+    file2_installation: Installation | None = None  # Target installation object (for StrRef/2DA reference finding)
 
     @property
     def where(self) -> str:
@@ -950,7 +937,12 @@ def is_text_content(data: bytes) -> bool:
     PRINTABLE_ASCII_MAX = 126
     TEXT_THRESHOLD = 0.7
 
-    printable_count = sum(1 for b in data if PRINTABLE_ASCII_MIN <= b <= PRINTABLE_ASCII_MAX or b in (9, 10, 13))
+    printable_count: int = sum(
+        1
+        for b in data
+        if PRINTABLE_ASCII_MIN <= b <= PRINTABLE_ASCII_MAX
+        or b in (9, 10, 13)
+    )
     return printable_count / len(data) > TEXT_THRESHOLD
 
 
@@ -969,7 +961,7 @@ def compare_text_content(
     data1: bytes,
     data2: bytes,
     where: str,
-    log_func: Callable,
+    log_func: Callable[[str], None],
 ) -> bool:
     """Compare text content using line-by-line diffing."""
     MAX_LINE_LENGTH = 200  # Maximum characters to display per line
@@ -1004,7 +996,7 @@ def compare_text_content(
 
     diff_lines = list(diff)
     if diff_lines:
-        log_func(f"^ '{where}': Text content differs ^", separator=True)
+        log_func(f"^ '{where}': Text content differs ^", separator=True)  # pyright: ignore[reportCallIssue]
         for line in diff_lines:
             # Truncate excessively long lines (likely binary data that slipped through)
             if len(line) > MAX_LINE_LENGTH:
@@ -1022,26 +1014,26 @@ def compare_text_content(
 # ---------------------------------------------------------------------------
 
 
-def get_resource_reader_function(ext: str) -> Callable[[bytes], Any] | None:
+def get_resource_reader_function(ext: str) -> Callable[[bytes], GFF | TwoDA | TLK | LIP | ERF | RIM | SSF | MDL | NCS | BWM | LTR | LYT | VIS] | None:
     """Dynamically get the appropriate resource reader function for an extension."""
     # Map extensions to their reader functions
     reader_map: dict[str, Callable[[bytes], Any]] = {
-        "gff": gff.read_gff,
-        "2da": twoda.read_2da,
-        "tlk": tlk.read_tlk,
-        "lip": lip.read_lip,
+        "2da": lambda data: __import__("pykotor.resource.formats.twoda.twoda_auto", fromlist=["read_2da"]).read_2da(data),
+        "dwk": lambda data: __import__("pykotor.resource.formats.bwm.bwm_auto", fromlist=["read_bwm"]).read_bwm(data),
+        "wok": lambda data: __import__("pykotor.resource.formats.bwm.bwm_auto", fromlist=["read_bwm"]).read_bwm(data),
         "erf": lambda data: __import__("pykotor.resource.formats.erf.erf_auto", fromlist=["read_erf"]).read_erf(data),
-        "rim": lambda data: __import__("pykotor.resource.formats.rim.rim_auto", fromlist=["read_rim"]).read_rim(data),
+        "gff": lambda data: __import__("pykotor.resource.formats.gff.gff_auto", fromlist=["read_gff"]).read_gff(data),
         "mod": lambda data: __import__("pykotor.resource.formats.erf.erf_auto", fromlist=["read_erf"]).read_erf(data),
         "sav": lambda data: __import__("pykotor.resource.formats.erf.erf_auto", fromlist=["read_erf"]).read_erf(data),
-        "ssf": lambda data: __import__("pykotor.resource.formats.ssf.ssf_auto", fromlist=["read_ssf"]).read_ssf(data),
-        "mdl": lambda data: __import__("pykotor.resource.formats.mdl.mdl_auto", fromlist=["read_mdl"]).read_mdl(data),
-        "ncs": lambda data: __import__("pykotor.resource.formats.ncs.ncs_auto", fromlist=["read_ncs"]).read_ncs(data),
-        "wok": lambda data: __import__("pykotor.resource.formats.bwm.bwm_auto", fromlist=["read_bwm"]).read_bwm(data),
-        "pwk": lambda data: __import__("pykotor.resource.formats.bwm.bwm_auto", fromlist=["read_bwm"]).read_bwm(data),
-        "dwk": lambda data: __import__("pykotor.resource.formats.bwm.bwm_auto", fromlist=["read_bwm"]).read_bwm(data),
+        "rim": lambda data: __import__("pykotor.resource.formats.rim.rim_auto", fromlist=["read_rim"]).read_rim(data),
+        "lip": lambda data: __import__("pykotor.resource.formats.lip.lip_auto", fromlist=["read_lip"]).read_lip(data),
         "ltr": lambda data: __import__("pykotor.resource.formats.ltr.ltr_auto", fromlist=["read_ltr"]).read_ltr(data),
         "lyt": lambda data: __import__("pykotor.resource.formats.lyt.lyt_auto", fromlist=["read_lyt"]).read_lyt(data),
+        "mdl": lambda data: __import__("pykotor.resource.formats.mdl.mdl_auto", fromlist=["read_mdl"]).read_mdl(data),
+        "ncs": lambda data: __import__("pykotor.resource.formats.ncs.ncs_auto", fromlist=["read_ncs"]).read_ncs(data),
+        "pwk": lambda data: __import__("pykotor.resource.formats.bwm.bwm_auto", fromlist=["read_bwm"]).read_bwm(data),
+        "ssf": lambda data: __import__("pykotor.resource.formats.ssf.ssf_auto", fromlist=["read_ssf"]).read_ssf(data),
+        "tlk": lambda data: __import__("pykotor.resource.formats.tlk.tlk_auto", fromlist=["read_tlk"]).read_tlk(data),
         "vis": lambda data: __import__("pykotor.resource.formats.vis.vis_auto", fromlist=["read_vis"]).read_vis(data),
     }
 
@@ -1124,7 +1116,7 @@ def print_udiff(
     b = read_text_lines(to_file)
     if not a and not b:
         return
-    diff = difflib.unified_diff(
+    diff: Iterator[str] = difflib.unified_diff(
         a,
         b,
         fromfile=str(label_from),
@@ -1172,12 +1164,8 @@ def diff_data(  # noqa: PLR0913
     if not data1 and not data2:
         return True
 
-    # Skip .nss source files when comparing installations (they're dev files, not game data)
-    if context.skip_nss and context.ext == "nss":
-        return True  # Skip silently
-
     # Fast path: For large binary files (audio, video), check file size first before reading
-    LARGE_BINARY_FORMATS = {"wav", "mp3", "bik", "mve", "tga", "tpc"}
+    LARGE_BINARY_FORMATS = ("wav", "mp3", "bik", "mve", "tga", "tpc")
     if context.ext in LARGE_BINARY_FORMATS and isinstance(data1, Path) and isinstance(data2, Path):
         # Check file sizes first - if different, no need to read the files
         try:
@@ -1226,7 +1214,10 @@ def diff_data(  # noqa: PLR0913
         if not gff1 and not gff2:
             log_func(f"Both GFF resources missing in memory:\t'{context.where}'")
             return None
-        if gff1 and gff2 and not gff1.compare(gff2, log_func, PureWindowsPath(str(context.where))):
+        # Extract just the filename from context.where to avoid duplication in field paths
+        # If context.where is "swkotor\Override\journal.gui", use just "journal.gui" as the root path
+        compare_path = PureWindowsPath(Path(str(context.where)).name)
+        if gff1 and gff2 and not gff1.compare(gff2, log_func, compare_path):
             # Generate INI modifications if requested (log BEFORE final separator)
             if modifications_by_type is not None:
                 try:
@@ -1236,7 +1227,6 @@ def diff_data(  # noqa: PLR0913
                         if modifications:
                             # File exists in both vanilla and modded - this is a PATCH, not an install
                             log_func(f"\n[PATCH] {context.where}")
-                            log_func("  |-- Reason: File exists in vanilla -> [GFFList] (not INSTALL)")
                             log_func("  |-- !ReplaceFile: 0 (patch existing file, don't replace)")
 
                             # Set destination based on MODDED installation location (file2)
@@ -1268,7 +1258,8 @@ def diff_data(  # noqa: PLR0913
                             if incremental_writer is not None:
                                 # Get source data (vanilla version)
                                 gff_source_data: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
-                                incremental_writer.write_modification(modifications, gff_source_data)
+                                source_path = context.file1_installation if context.file1_installation else context.file1_filepath
+                                incremental_writer.write_modification(modifications, gff_source_data, source_path)
                 except Exception as e:  # noqa: BLE001, PERF203, S112
                     log_func(f"[Error] Failed to generate GFF modifications for '{context.where}': {e.__class__.__name__}: {e}")
                     log_func("Full traceback:")
@@ -1352,7 +1343,6 @@ def diff_data(  # noqa: PLR0913
                                     if context.ext == "2da":
                                         # 2DA files that exist in vanilla are PATCHED
                                         log_func(f"\n[PATCH] {context.where}")
-                                        log_func("  |-- Reason: File exists in vanilla -> [2DAList] (not INSTALL)")
                                         log_func("  |-- !ReplaceFile: 0 (patch existing 2DA)")
 
                                         # Set destination based on MODDED installation location (file2)
@@ -1364,10 +1354,9 @@ def diff_data(  # noqa: PLR0913
                                             location_type=context.file2_location_type,
                                             source_filepath=context.file2_filepath,
                                         )
+                                        assert isinstance(modifications, Modifications2DA), f"`modifications` is not a Modifications2DA: {modifications} (type: {type(modifications)}) for context: {context}"  # noqa: E501
                                         modifications.destination = destination
                                         modifications.sourcefile = resource_name  # Just the filename, not the full path
-
-                                        assert isinstance(modifications, Modifications2DA), f"`modifications` is not a Modifications2DA: {modifications} (type: {type(modifications)}) for context: {context}"  # noqa: E501
                                         modifications_by_type.twoda.append(modifications)
                                         twoda_modifiers: list[Modify2DA] = [m for m in modifications.modifiers if isinstance(m, Modify2DA)]
 
@@ -1381,15 +1370,39 @@ def diff_data(  # noqa: PLR0913
                                         # Write immediately if using incremental writer
                                         if incremental_writer is not None:
                                             twoda_vanilla_bytes: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
-                                            incremental_writer.write_modification(modifications, twoda_vanilla_bytes)
+                                            source_path = context.file1_installation if context.file1_installation else context.file1_filepath
+                                            incremental_writer.write_modification(modifications, twoda_vanilla_bytes, source_path)
                                     elif context.ext == "tlk":
                                         log_func(f"\n[PATCH] {context.where}")
-                                        log_func("  |-- Reason: File exists in vanilla -> [TLKList] (not INSTALL)")
                                         log_func("  |-- Mode: Append entries (TSLPatcher design)")
 
-                                        assert isinstance(modifications, ModificationsTLK), f"`modifications` is not a ModificationsTLK: {modifications} (type: {type(modifications)}) for context: {context}"  # noqa: E501
-                                        modifications_by_type.tlk.append(modifications)
-                                        tlk_modifiers: list[ModifyTLK] = [m for m in modifications.modifiers if isinstance(m, ModifyTLK)]
+                                        # TLK analyzer returns tuple: (ModificationsTLK, strref_mappings)
+                                        if not isinstance(modifications, tuple):
+                                            msg = f"TLK analyzer must return tuple (ModificationsTLK, dict), got {type(modifications)}"
+                                            raise TypeError(msg)  # noqa: TRY301
+                                        mod_tlk, strref_mappings = modifications
+                                        assert isinstance(mod_tlk, ModificationsTLK), f"`mod_tlk` is not a ModificationsTLK: {mod_tlk} (type: {type(mod_tlk)}) for context: {context}"  # noqa: E501
+                                        assert isinstance(strref_mappings, dict), f"`strref_mappings` is not a dict: {strref_mappings} (type: {type(strref_mappings)}) for context: {context}"  # noqa: E501
+
+                                        # Store metadata for StrRef reference finding
+                                        # For diff entries, we need to search BOTH installations (file1 and file2)
+                                        # because references to the old StrRef might exist in either installation
+                                        source_installations: list[Installation] = []
+                                        if context.file1_installation is not None:
+                                            source_installations.append(context.file1_installation)
+                                        if context.file2_installation is not None:
+                                            source_installations.append(context.file2_installation)
+
+                                        # Store metadata in incremental_writer if available
+                                        if incremental_writer is not None and strref_mappings:
+                                            incremental_writer._tlk_metadata[id(mod_tlk)] = {
+                                                "strref_mappings": strref_mappings,
+                                                "source_installations": source_installations,
+                                                "source_filepath": context.file1_filepath,
+                                            }
+
+                                        modifications_by_type.tlk.append(mod_tlk)
+                                        tlk_modifiers: list[ModifyTLK] = [m for m in mod_tlk.modifiers if isinstance(m, ModifyTLK)]
 
                                         if tlk_modifiers:
                                             log_func(f"  |-- Modifications: {len(tlk_modifiers)} TLK entries")
@@ -1398,11 +1411,11 @@ def diff_data(  # noqa: PLR0913
                                         # Write immediately if using incremental writer
                                         # TLK will trigger linking patch creation via StrRef cache
                                         if incremental_writer is not None:
-                                            incremental_writer.write_modification(modifications, None)
+                                            # No source_data needed for TLK files (they generate append.tlk)
+                                            incremental_writer.write_modification(mod_tlk, None)
                                     elif context.ext == "ssf":
                                         # SSF files that exist in vanilla are PATCHED
                                         log_func(f"\n[PATCH] {context.where}")
-                                        log_func("  |-- Reason: File exists in vanilla -> [SSFList] (not INSTALL)")
                                         log_func("  |-- !ReplaceFile: 0 (patch existing SSF)")
 
                                         # Set destination based on MODDED installation location (file2)
@@ -1431,11 +1444,11 @@ def diff_data(  # noqa: PLR0913
                                         # Write immediately if using incremental writer
                                         if incremental_writer is not None:
                                             ssf_vanilla_bytes: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
-                                            incremental_writer.write_modification(modifications, ssf_vanilla_bytes)
+                                            source_path = context.file1_installation if context.file1_installation else context.file1_filepath
+                                            incremental_writer.write_modification(modifications, ssf_vanilla_bytes, source_path)
                                     elif context.ext in gff_types:
                                         # GFF file exists in both vanilla and modded - this is a PATCH
                                         log_func(f"\n[PATCH] {context.where}")
-                                        log_func("  |-- Reason: File exists in vanilla -> [GFFList] (not INSTALL)")
                                         log_func("  |-- !ReplaceFile: 0 (patch existing file, don't replace)")
 
                                         # Set destination based on MODDED installation location (file2)
@@ -1466,7 +1479,8 @@ def diff_data(  # noqa: PLR0913
                                         # Write immediately if using incremental writer
                                         if incremental_writer is not None:
                                             gff2_source_data: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
-                                            incremental_writer.write_modification(modifications, gff2_source_data)
+                                            source_path = context.file1_installation if context.file1_installation else context.file1_filepath
+                                            incremental_writer.write_modification(modifications, gff2_source_data, source_path)
                         except Exception as e:  # noqa: BLE001, PERF203, S112
                             log_func(f"[Error] Failed to generate {context.ext.upper()} modifications for '{context.where}': {e.__class__.__name__}: {e}")
                             log_func("Full traceback:")
@@ -1516,7 +1530,6 @@ def diff_files(
     file2: Path,
     *,
     log_func: Callable,
-    skip_nss: bool = False,
     compare_hashes: bool = True,
     modifications_by_type: ModificationsByType | None = None,
     incremental_writer: IncrementalTSLPatchDataWriter | None = None,
@@ -1527,7 +1540,6 @@ def diff_files(
         file1: First file path
         file2: Second file path
         log_func: Logging function callback
-        skip_nss: Whether to skip .nss files
         compare_hashes: Whether to compare hashes for unsupported types
         modifications_by_type: ModificationsByType object for collecting changes
         incremental_writer: Optional incremental writer for immediate file/INI writes
@@ -1569,13 +1581,12 @@ def diff_files(
             c_file1_rel,
             c_file2_rel,
             log_func=log_func,
-            skip_nss=skip_nss,
             compare_hashes=compare_hashes,
             modifications_by_type=modifications_by_type,
             incremental_writer=incremental_writer,
         )
 
-    ctx = DiffContext(c_file1_rel, c_file2_rel, c_file1_rel.suffix.casefold()[1:], skip_nss=skip_nss)
+    ctx = DiffContext(c_file1_rel, c_file2_rel, c_file1_rel.suffix.casefold()[1:])
     return diff_data(
         file1,
         file2,
@@ -1594,7 +1605,6 @@ def diff_capsule_files(  # noqa: C901, PLR0913
     c_file2_rel: Path,
     *,
     log_func: Callable,
-    skip_nss: bool = False,
     compare_hashes: bool = True,
     modifications_by_type: ModificationsByType | None = None,
     incremental_writer: IncrementalTSLPatchDataWriter | None = None,
@@ -1626,7 +1636,7 @@ def diff_capsule_files(  # noqa: C901, PLR0913
     missing_in_capsule1: set[str] = capsule2_resources.keys() - capsule1_resources.keys()
     missing_in_capsule2: set[str] = capsule1_resources.keys() - capsule2_resources.keys()
 
-    # Report missing resources (skip NSS if skip_nss is enabled)
+    # Report missing resources
     for resref in sorted(missing_in_capsule1):
         res_ext: str = capsule2_resources[resref].restype().extension.upper()
         message = f"Resource missing:\t{c_file1_rel}\t{resref}\t{res_ext}"
@@ -1652,7 +1662,7 @@ def diff_capsule_files(  # noqa: C901, PLR0913
                 destination = "Override"
 
             # Create context for patch creation
-            ctx = DiffContext(c_file1_rel, c_file2_rel, res_ext.lower(), resref, skip_nss=skip_nss)
+            ctx = DiffContext(c_file1_rel, c_file2_rel, res_ext.lower(), resref)
 
             # Add to install folder (will also create patch if supported)
             _add_to_install_folder(
@@ -1673,8 +1683,6 @@ def diff_capsule_files(  # noqa: C901, PLR0913
 
     for resref in sorted(missing_in_capsule2):
         res_ext = capsule1_resources[resref].restype().extension.upper()
-        if skip_nss and res_ext == "NSS":
-            continue
         message = f"Resource missing:\t{c_file2_rel}\t{resref}\t{res_ext}"
         log_func(message)
 
@@ -1685,7 +1693,7 @@ def diff_capsule_files(  # noqa: C901, PLR0913
         res1: FileResource = capsule1_resources[resref]
         res2: FileResource = capsule2_resources[resref]
         ext: str = res1.restype().extension.casefold()
-        ctx = DiffContext(c_file1_rel, c_file2_rel, ext, resref, skip_nss=skip_nss)
+        ctx = DiffContext(c_file1_rel, c_file2_rel, ext, resref)
         result: bool | None = diff_data(
             res1.data(),
             res2.data(),
@@ -1814,7 +1822,7 @@ def apply_folder_resolution_order(
 ) -> set[str]:
     """Apply folder-level resolution order to module files.
 
-    When both .mod and .rim files exist for the same module, .mod takes priority.
+    When both .mod and .rim/_s.rim/_dlg.erf files exist for the same module, .mod takes priority.
     Resolution order (for same base name):
       - .rim/_s.rim/_dlg.erf (treated as single entity)
       - .mod (HIGHEST - takes priority over .rim group)
@@ -1826,58 +1834,77 @@ def apply_folder_resolution_order(
     Returns:
         Filtered set with lower-priority files removed
     """
-    # Group files by module root
     module_groups: dict[str, list[str]] = {}
     non_module_files: list[str] = []
 
+    def file_ext_match(name: str) -> str | None:
+        """Return normalized extension if file matches required RIM group (*.rim, *_s.rim, *_dlg.erf), else None."""
+        name_lower = name.lower()
+        if name_lower.endswith(".mod"):
+            return ".mod"
+        if name_lower.endswith("_dlg.erf"):
+            return "_dlg.erf"
+        if name_lower.endswith("_s.rim"):
+            return "_s.rim"
+        if name_lower.endswith(".rim"):
+            return ".rim"
+        return None
+
     for file_path in files:
-        file_name: str = Path(file_path).name.lower()
-        if file_name.endswith((".mod", ".rim", ".erf")):
+        file_name: str = Path(file_path).name
+        ext: str | None = file_ext_match(file_name)
+        if ext is not None:
             try:
                 root: str = get_module_root(Path(file_path))
                 if root not in module_groups:
                     module_groups[root] = []
                 module_groups[root].append(file_path)
             except Exception as e:  # noqa: BLE001
-                log_func(f"Warning: Could not determine module root for '{file_path}': {e}")
+                log_func(f"Warning: Could not determine module root for '{file_path}': {e.__class__.__name__}: {e}")
                 non_module_files.append(file_path)
         else:
             non_module_files.append(file_path)
 
-    # Apply resolution order within each module group
     resolved_files: set[str] = set(non_module_files)
 
     for root, group_files in module_groups.items():
-        # Find .mod files (highest priority)
-        mod_files: list[str] = [f for f in group_files if f.lower().endswith(".mod")]
-        rim_files: list[str] = [f for f in group_files if f.lower().endswith((".rim", ".erf"))]
+        # Partition into .mod (highest priority) and rim group (exclusively .rim, _s.rim, _dlg.erf)
+        mod_files: list[str] = [f for f in group_files if Path(f).name.lower().endswith(".mod")]
+        rimlike_files: list[str] = [
+            f
+            for f in group_files
+            if (
+                Path(f).name.lower().endswith(".rim") and not Path(f).name.lower().endswith("_s.rim")
+            ) or Path(f).name.lower().endswith("_s.rim") or Path(f).name.lower().endswith("_dlg.erf")
+        ]
 
-        if mod_files or rim_files:
+        # Only files with the same basename (no extension) are grouped; above already enforced by get_module_root
+
+        if mod_files or rimlike_files:
             log_func(f"\nFolder resolution for module '{root}':")
             log_func("  Files found:")
-            for rim_file in rim_files:
-                log_func(f"    - {Path(rim_file).name} (.rim/.erf)")
+            for rim_file in rimlike_files:
+                log_func(f"    - {Path(rim_file).name} (.rim/_s.rim/_dlg.erf)")
             for mod_file in mod_files:
                 log_func(f"    - {Path(mod_file).name} (.mod)")
 
         if mod_files:
-            # .mod exists - use it, ignore .rim files
+            # .mod exists - use it, ignore rimlike group
             if len(mod_files) > 1:
                 log_func(f"  Warning: Multiple .mod files for module '{root}'")
 
-            # Log resolution decision
-            if rim_files:
+            if rimlike_files:
                 log_func(f"  Resolution: .mod takes priority -> Using '{Path(mod_files[0]).name}'")
-                log_func(f"              (ignoring {len(rim_files)} .rim/.erf files)")
+                log_func(f"              (ignoring {len(rimlike_files)} .rim/_s.rim/_dlg.erf files)")
             else:
                 log_func(f"  Resolution: Using '{Path(mod_files[0]).name}' (.mod file)")
 
             resolved_files.add(mod_files[0])
         else:
-            # No .mod - use all .rim/.erf files
-            if rim_files:
-                log_func(f"  Resolution: No .mod found -> Using {len(rim_files)} .rim/.erf file(s)")
-            for file_path in group_files:
+            # No .mod - use all .rim/_s.rim/_dlg.erf files
+            if rimlike_files:
+                log_func(f"  Resolution: No .mod found -> Using {len(rimlike_files)} .rim/_s.rim/_dlg.erf file(s)")
+            for file_path in rimlike_files:
                 resolved_files.add(file_path)
 
     return resolved_files
@@ -1889,113 +1916,139 @@ def diff_module_directories(  # noqa: PLR0913
     files_path1: set[str],
     files_path2: set[str],
     *,
-    skip_nss: bool = False,
     log_func: Callable,
     diff_capsule_files_func: Callable,
 ) -> tuple[bool | None, set[str]]:
-    """Handle special diffing logic for modules directories.
+    """Special diffing for modules dirs. Only do composite module loading for filenames sharing the same basename, and only for .mod, .rim, _s.rim, _dlg.erf."""
+    # Acceptable extensions for composite module loading
+    valid_exts: set[str] = {".mod", ".rim", "_s.rim", "_dlg.erf"}
 
-    Applies folder-level resolution order:
-      - When both .mod and .rim files exist for the same module, .mod takes priority
-      - Then compares resolved files using composite loading when needed
+    def get_module_basename(fname: str) -> str:
+        lower = fname.lower()
+        if lower.endswith(".mod"):
+            return Path(fname).stem
+        if lower.endswith("_dlg.erf"):
+            return Path(fname).stem.replace("_dlg", "")
+        if lower.endswith("_s.rim"):
+            return Path(fname).stem.replace("_s", "")
+        if lower.endswith(".rim"):
+            return Path(fname).stem
+        return Path(fname).stem
 
-    Returns:
-        Tuple of (is_same_result, files_to_skip) where files_to_skip contains
-        files that were handled and should be skipped in normal diff_files logic
-    """
     is_same_result: bool | None = True
     files_to_skip: set[str] = set()
 
-    # Apply folder-level resolution order to each side
+    # Resolve each side to proper files using the previous resolution order logic
     resolved_files1: set[str] = apply_folder_resolution_order(files_path1, log_func)
     resolved_files2: set[str] = apply_folder_resolution_order(files_path2, log_func)
 
-    # Mark files filtered out by resolution order as handled (they shouldn't be compared separately)
     filtered_out1: set[str] = files_path1 - resolved_files1
     filtered_out2: set[str] = files_path2 - resolved_files2
     files_to_skip.update(filtered_out1)
     files_to_skip.update(filtered_out2)
 
-    # Group files by module root
-    modules1 = group_module_files(resolved_files1)
-    modules2 = group_module_files(resolved_files2)
+    # Build {basename -> [file]} mapping for valid module extensions on each side
+    def group_by_basename(files: set[str]) -> dict[str, list[str]]:
+        grouped: dict[str, list[str]] = {}
+        for f in files:
+            fname = Path(f).name
+            lower = fname.lower()
+            # Get rid of .mod, .rim, _s.rim, _dlg.erf only
+            base = None
+            if lower.endswith(".mod"):
+                base = fname[:-4]
+            elif lower.endswith("_dlg.erf"):
+                base = fname[:-8]
+            elif lower.endswith("_s.rim"):
+                base = fname[:-6]
+            elif lower.endswith(".rim"):
+                base = fname[:-4]
+            if base is not None:
+                grouped.setdefault(base.lower(), []).append(f)
+        return grouped
 
-    # Find all unique module roots
-    all_roots = set(modules1.keys()) | set(modules2.keys())
+    groups1 = group_by_basename(resolved_files1)
+    groups2 = group_by_basename(resolved_files2)
+    all_basenames: set[str] = set(groups1) | set(groups2)
 
-    for root in sorted(all_roots):
-        files1 = modules1.get(root, [])
-        files2 = modules2.get(root, [])
+    for basename in sorted(all_basenames):
+        files1: list[str] = groups1.get(basename, [])
+        files2: list[str] = groups2.get(basename, [])
 
-        # Skip if no files on either side
-        if not files1 and not files2:
-            continue
+        # No composite module logic unless both have >0, and at least two different extensions
+        exts1 = {Path(f).name.lower().split(basename)[-1] for f in files1}
+        exts2 = {Path(f).name.lower().split(basename)[-1] for f in files2}
 
-        # Check if one side has .mod and the other has .rim files
-        has_mod1: bool = any(f.lower().endswith(".mod") for f in files1)
-        has_mod2: bool = any(f.lower().endswith(".mod") for f in files2)
-        has_rim1: bool = any(f.lower().endswith(".rim") for f in files1)
-        has_rim2: bool = any(f.lower().endswith(".rim") for f in files2)
+        # Only consider .mod/.rim/_s.rim/_dlg.erf as per requirements
+        kind1, kind2 = set(), set()
+        for ext in exts1:
+            if ext in (".mod", ".rim") or ext.endswith(("_s.rim", "_dlg.erf")):
+                kind1.add(ext)
+        for ext in exts2:
+            if ext in (".mod", ".rim") or ext.endswith(("_s.rim", "_dlg.erf")):
+                kind2.add(ext)
 
-        # Case 1: One side has .mod, other has .rim files - use composite comparison
-        if (has_mod1 and has_rim2) or (has_mod2 and has_rim1):
-            mod_path: Path | None = None
-            rim_files: list[str] = []
-            rim_dir: Path | None = None
+        # Composite module loading logic: only run for basenames that have any of these extensions on both sides
+        if (kind1 and kind2):
+            # Does one side have .mod, the other has only rimlike?
+            filenames1 = [f for f in files1 if Path(f).name.lower().endswith(".mod")]
+            filenames2 = [f for f in files2 if Path(f).name.lower().endswith(".mod")]
 
-            if has_mod1 and has_rim2:
-                mod_file = next(f for f in files1 if f.lower().endswith(".mod"))
-                mod_path = c_dir1 / mod_file
-                rim_files = files2
-                rim_dir = c_dir2
-            else:  # has_mod2 and has_rim1
-                mod_file = next(f for f in files2 if f.lower().endswith(".mod"))
-                mod_path = c_dir2 / mod_file
-                rim_files = files1
-                rim_dir = c_dir1
+            rimlike1 = [f for f in files1 if Path(f).name.lower().endswith(".rim") or Path(f).name.lower().endswith("_s.rim") or Path(f).name.lower().endswith("_dlg.erf")]
+            rimlike2 = [f for f in files2 if Path(f).name.lower().endswith(".rim") or Path(f).name.lower().endswith("_s.rim") or Path(f).name.lower().endswith("_dlg.erf")]
 
-            # Find the main .rim file (without _s or _dlg suffix)
-            main_rim: str | None = None
-            for rim_file in rim_files:
-                rim_name = Path(rim_file).name
-                rim_root = get_module_root(Path(rim_name))
-                if rim_root.lower() == root.lower() and rim_name.lower().endswith(".rim") and not Path(rim_file).stem.lower().endswith("_s"):
-                    main_rim = rim_file
-                    break
-
-            if main_rim:
-                # Compare using composite module loading
-                rim_path: Path = rim_dir / main_rim
-
-                # Determine which needs composite loading
-                if has_mod1 and has_rim2:
-                    c_file1_rel: Path = relative_path_from_to(c_dir2, mod_path)
-                    c_file2_rel: Path = relative_path_from_to(c_dir1, rim_path)
-                    result: bool | None = diff_capsule_files_func(
-                        mod_path,
-                        rim_path,
-                        c_file1_rel,
-                        c_file2_rel,
-                        skip_nss=skip_nss,
-                    )
-                else:
-                    c_file1_rel = relative_path_from_to(c_dir2, rim_path)
-                    c_file2_rel = relative_path_from_to(c_dir1, mod_path)
-                    result = diff_capsule_files_func(
-                        rim_path,
-                        mod_path,
-                        c_file1_rel,
-                        c_file2_rel,
-                        skip_nss=skip_nss,
-                    )
-
-                is_same_result = None if result is None else (result and is_same_result)
-
-                # Mark all files in this module group as handled
-                files_to_skip.update(files1)
-                files_to_skip.update(files2)
+            side_case = None
+            if filenames1 and rimlike2:   # mod in #1, rimlike in #2
+                side_case = (c_dir1, c_dir2, filenames1[0], rimlike2)
+            elif filenames2 and rimlike1: # mod in #2, rimlike in #1
+                side_case = (c_dir2, c_dir1, filenames2[0], rimlike1)
             else:
-                log_func(f"Warning: Could not find main .rim for module root '{root}', using normal comparison")
+                side_case = None
+
+            if side_case:
+                mod_dir, rim_dir, mod_file, rim_files = side_case
+                # Pick 'main' .rim: the file that has extension ".rim" and not ending with "_s"
+                main_rim: str | None = None
+                for rf in rim_files:
+                    pname = Path(rf).name
+                    if pname.lower().endswith(".rim") and not pname.lower().endswith("_s.rim"):
+                        main_rim = rf
+                        break
+                if not main_rim and rim_files:
+                    # fallback: use first rimlike file (should not generally happen)
+                    main_rim = rim_files[0]
+
+                if main_rim:
+                    mod_path: Path = mod_dir / mod_file
+                    rim_path: Path = rim_dir / main_rim
+
+                    # always use relative paths for both
+                    c_file1_rel: Path = relative_path_from_to(rim_dir, mod_path)
+                    c_file2_rel: Path = relative_path_from_to(mod_dir, rim_path)
+                    # Compare using composite module loading via supplied function
+                    # (Order: "main" side resource, composite side resource, rel1, rel2)
+                    result: bool | None
+                    if mod_dir is c_dir1:
+                        # mod_dir1/mod_file vs rim_dir2/main_rim
+                        result = diff_capsule_files_func(
+                            mod_path,
+                            rim_path,
+                            c_file1_rel,
+                            c_file2_rel,
+                        )
+                    else:
+                        # mod_dir2/mod_file vs rim_dir1/main_rim
+                        result = diff_capsule_files_func(
+                            rim_path,
+                            mod_path,
+                            c_file2_rel,
+                            c_file1_rel,
+                        )
+                    is_same_result = None if result is None else (is_same_result and result)
+                    files_to_skip.update(files1)
+                    files_to_skip.update(files2)
+                else:
+                    log_func(f"Warning: Could not find main rim for basename '{basename}', using normal comparison")
 
     return is_same_result, files_to_skip
 
@@ -2049,15 +2102,14 @@ def diff_directories(
     dir2: Path,
     *,
     filters: list[str] | None = None,
-    skip_nss: bool = False,
-    log_func: Callable,
-    diff_files_func: Callable,
-    diff_cache: Any = None,
+    log_func: Callable[[str], None],
+    diff_files_func: Callable[[Path, Path], bool | None],
+    diff_cache: CachedFileComparison | None = None,
     modifications_by_type: ModificationsByType | None = None,
     incremental_writer: IncrementalTSLPatchDataWriter | None = None,
 ) -> bool | None:
     """Compare two directories recursively."""
-    log_func(f"Finding differences in the '{dir1.name}' folders...", separator_above=True)
+    log_func(f"Finding differences in the '{dir1.name}' folders...")
 
     # Store relative paths instead of just filenames
     files_path1: set[str] = {f.relative_to(dir1).as_posix().casefold() for f in dir1.safe_rglob("*") if f.safe_isfile()}
@@ -2065,10 +2117,6 @@ def diff_directories(
 
     # Merge both sets
     all_files: set[str] = files_path1.union(files_path2)
-
-    # Skip .nss files if requested
-    if skip_nss:
-        all_files = {f for f in all_files if not f.lower().endswith(".nss")}
 
     # Apply filters if provided
     if filters:
@@ -2088,7 +2136,6 @@ def diff_directories(
             dir2,
             files_path1,
             files_path2,
-            skip_nss=skip_nss,
             log_func=log_func,
             diff_capsule_files_func=lambda *args, **kwargs: diff_capsule_files(
                 *args,
@@ -2129,7 +2176,7 @@ def diff_directories(
         file1_path = dir1 / rel_path
         file2_path = dir2 / rel_path
 
-        result: bool | None = diff_files_func(file1_path, file2_path, skip_nss=skip_nss)
+        result: bool | None = diff_files_func(file1_path, file2_path)
         is_same_result = None if result is None else result and is_same_result
 
         # Record in cache if caching enabled
@@ -2204,8 +2251,8 @@ def diff_installs_with_objects(
     installation2: Installation,
     *,
     filters: list[str] | None = None,
-    log_func: Callable,
-    diff_installs_func: Callable,  # noqa: ARG001
+    log_func: Callable[[str], None],
+    diff_installs_func: Callable[[Installation, Installation], bool | None],  # noqa: ARG001
     compare_hashes: bool = True,
     modifications_by_type: ModificationsByType | None = None,
     incremental_writer: IncrementalTSLPatchDataWriter | None = None,
@@ -2245,8 +2292,7 @@ def diff_installs_with_objects(
     from pykotor.tslpatcher.diff.resolution import diff_installations_with_resolution  # noqa: PLC0415
 
     return diff_installations_with_resolution(
-        installation1,
-        installation2,
+        [installation1, installation2],
         filters=filters,
         log_func=log_func,
         compare_hashes=compare_hashes,
@@ -2260,9 +2306,9 @@ def diff_installs_implementation(
     install_path2: Path,
     *,
     filters: list[str] | None = None,
-    log_func: Callable,
-    diff_files_func: Callable,
-    diff_directories_func: Callable,
+    log_func: Callable[[str], None],
+    diff_files_func: Callable[[Path, Path], bool | None],
+    diff_directories_func: Callable[[Path, Path], bool | None],
 ) -> bool | None:
     """Compare two KOTOR installations by diffing their standard directories."""
     rinstall_path1: CaseAwarePath = CaseAwarePath.pathify(install_path1).resolve()
@@ -2296,7 +2342,6 @@ def diff_installs_implementation(
                 mine,
                 older,
                 filters=filters,
-                skip_nss=True,
             )
             and is_same_result
         )
@@ -2309,7 +2354,6 @@ def diff_installs_implementation(
             streamwaves_path1,
             streamwaves_path2,
             filters=filters,
-            skip_nss=True,
         )
         and is_same_result
     )
@@ -2372,7 +2416,7 @@ def resolve_resource_with_installation(
 def parse_resource_name_and_type(
     resource_name: str,
     resource_type: ResourceType | None,
-    log_func: Callable,
+    log_func: Callable[[str], None],
 ) -> tuple[str | None, ResourceType, str | None]:
     """Parse resource name and determine resource type."""
     if "." in resource_name and resource_type is None:
@@ -2484,8 +2528,8 @@ def load_container_capsule(
     container_path: CaseAwarePath,
     *,
     use_composite: bool,
-    log_func: Callable,
-) -> Capsule | Any | None:
+    log_func: Callable[[str], None],
+) -> Capsule | CompositeModuleCapsule | None:
     """Load container capsule with appropriate loading method."""
     try:
         if use_composite:
@@ -2550,10 +2594,10 @@ def process_container_resource(  # noqa: PLR0913
 
     try:
         if container_first:
-            ctx = DiffContext(container_rel, installation_rel, restype.extension.casefold(), skip_nss=True)
+            ctx = DiffContext(container_rel, installation_rel, restype.extension.casefold())
             result = diff_data_func(container_data, installation_data, ctx)
         else:
-            ctx = DiffContext(installation_rel, container_rel, restype.extension.casefold(), skip_nss=True)
+            ctx = DiffContext(installation_rel, container_rel, restype.extension.casefold())
             result = diff_data_func(installation_data, container_data, ctx)
     except Exception as e:  # noqa: BLE001
         log_func(f"Error comparing '{resource_identifier}': {universal_simplify_exception(e)}")
@@ -2573,8 +2617,8 @@ def diff_container_vs_installation(
     installation: Installation,
     *,
     container_first: bool = True,
-    log_func: Callable,
-    diff_data_func: Callable,
+    log_func: Callable[[str], None]  ,
+    diff_data_func: Callable[[bytes, bytes, DiffContext], bool],
 ) -> bool | None:
     """Compare all resources in a container against their resolved versions in an installation."""
     container_name = container_path.name
@@ -2687,10 +2731,10 @@ def diff_resource_vs_installation(
     ext = resource_path.suffix.casefold()[1:] if resource_path.suffix else ""
 
     if resource_first:
-        ctx = DiffContext(resource_rel, installation_rel, ext, skip_nss=True)
+        ctx = DiffContext(resource_rel, installation_rel, ext)
         result = diff_data_func(resource_data, installation_data, ctx)
     else:
-        ctx = DiffContext(installation_rel, resource_rel, ext, skip_nss=True)
+        ctx = DiffContext(installation_rel, resource_rel, ext)
         result = diff_data_func(installation_data, resource_data, ctx)
 
     # Only show installation search logs if a diff was found
@@ -2706,52 +2750,65 @@ def diff_resource_vs_installation(
 
 
 def validate_paths(
-    mine: Path,
-    older: Path,
+    files_and_folders_and_installations: list[Path | Installation],
     log_func: Callable,
 ) -> bool | None:
-    """Validate that both paths exist. Returns None if validation fails."""
-    if not mine.safe_exists():
-        log_func(f"--mine='{mine}' does not exist on disk, cannot diff")
-        return None
-    if not older.safe_exists():
-        log_func(f"--older='{older}' does not exist on disk, cannot diff")
-        return None
+    """Validate that all paths exist. Returns None if validation fails."""
+    for idx, path in enumerate(files_and_folders_and_installations):
+        if isinstance(path, Installation):
+            # Installation objects should already be valid
+            continue
+
+        if not path.safe_exists():
+            log_func(f"Path {idx} ('{path}') does not exist on disk, cannot diff")
+            return None
     return True
 
 
 def load_installations(
-    mine: Path,
-    older: Path,
+    files_and_folders_and_installations: list[Path | Installation],
     log_func: Callable,
-) -> tuple[Installation | None, Installation | None]:
-    """Load installations if the paths are KOTOR install directories."""
-    installation1 = None
-    installation2 = None
+) -> list[PathInfo]:
+    """Load installations for all paths, creating PathInfo objects.
 
-    if is_kotor_install_dir(mine):
-        log_func(f"Loading installation from: {mine}")
-        try:
-            installation1 = Installation(mine)
-        except Exception as e:  # noqa: BLE001
-            log_func(f"Error loading installation '{mine}': {universal_simplify_exception(e)}")
-            log_func("Full traceback:")
-            for line in traceback.format_exc().splitlines():
-                log_func(f"  {line}")
-            return None, None
+    Args:
+        files_and_folders_and_installations: List of Path or Installation objects
+        log_func: Logging function
 
-    if is_kotor_install_dir(older):
-        log_func(f"Loading installation from: {older}")
-        try:
-            installation2 = Installation(older)
-        except Exception as e:  # noqa: BLE001
-            log_func(f"Error loading installation '{older}': {universal_simplify_exception(e)}")
-            log_func("Full traceback:")
-            for line in traceback.format_exc().splitlines():
-                log_func(f"  {line}")
-            return None, None
+    Returns:
+        List of PathInfo objects with loaded Installation objects where applicable
+    """
+    path_infos: list[PathInfo] = []
 
-    return installation1, installation2
+    for idx, path in enumerate(files_and_folders_and_installations):
+        if isinstance(path, Installation):
+            # Already an Installation object
+            path_info = PathInfo.from_path_or_installation(path, idx)
+            path_infos.append(path_info)
+            log_func(f"Path {idx}: Using existing Installation object: {path.path()}")
+        # Check if it's a KOTOR install directory
+        elif is_kotor_install_dir(path):
+            log_func(f"Path {idx}: Loading installation from: {path}")
+            try:
+                installation = Installation(path)
+                path_info = PathInfo.from_path_or_installation(installation, idx)
+                path_infos.append(path_info)
+            except Exception as e:  # noqa: BLE001
+                log_func(f"Error loading installation from path {idx} '{path}': {universal_simplify_exception(e)}")
+                log_func("Full traceback:")
+                for line in traceback.format_exc().splitlines():
+                    log_func(f"  {line}")
+                    # Create PathInfo for the raw path anyway
+                    path_info = PathInfo.from_path_or_installation(path, idx)
+                    path_infos.append(path_info)
+        else:
+            # Regular path (file or folder)
+            path_info = PathInfo.from_path_or_installation(path, idx)
+            path_infos.append(path_info)
+            path_type = "File" if path.safe_isfile() else ("Folder" if path.safe_isdir() else "Unknown")
+            log_func(f"Path {idx}: Using {path_type} path: {path}")
+
+    return path_infos
 
 
 def handle_special_comparisons(
@@ -2788,52 +2845,309 @@ def handle_special_comparisons(
     return None  # Indicates no special case was handled
 
 
-def run_differ_from_args_impl(  # noqa: PLR0913
-    mine: Path,
-    older: Path,
+def collect_all_resources(
+    path_infos: list[PathInfo],
     *,
     filters: list[str] | None = None,
     log_func: Callable,
-    diff_directories_func: Callable,
-    diff_files_func: Callable,
-    diff_container_vs_installation_func: Callable,
-    diff_resource_vs_installation_func: Callable,
-    diff_installs_with_objects_func: Callable,
+) -> dict[str, dict[int, ComparableResource]]:
+    """Collect all resources from N paths, handling composite modules and mixed path types.
+
+    Returns a mapping of resource_id -> {path_index: ComparableResource}.
+    Handles composite module grouping across paths (e.g., .rim from path0 + _s.rim from path1).
+
+    Args:
+        path_infos: List of PathInfo objects for all paths
+        filters: Optional resource name filters
+        log_func: Logging function
+
+    Returns:
+        dict[str, dict[int, ComparableResource]] mapping resource identifiers to path-indexed resources
+    """
+    all_resources: dict[str, dict[int, ComparableResource]] = {}
+
+    for path_info in path_infos:
+        log_func(f"Collecting resources from path {path_info.index} ({path_info.name})...")
+
+        try:
+            # Use ResourceWalker to collect resources from this path
+            path = path_info.get_path()
+            walker = ResourceWalker(path)
+
+            resource_count: int = 0
+            for resource in walker:
+                # Apply filters if provided
+                if filters and not should_include_in_filtered_diff(resource.identifier, filters):
+                    continue
+
+                # Update resource with source index
+                resource.source_index = path_info.index
+
+                # Add to collection
+                if resource.identifier not in all_resources:
+                    all_resources[resource.identifier] = {}
+                all_resources[resource.identifier][path_info.index] = resource
+                resource_count += 1
+
+            log_func(f"  Collected {resource_count} resources from path {path_info.index}")
+
+        except Exception as e:  # noqa: BLE001
+            log_func(f"Error collecting resources from path {path_info.index}: {universal_simplify_exception(e)}")
+            log_func("Full traceback:")
+            for line in traceback.format_exc().splitlines():
+                log_func(f"  {line}")
+            continue
+
+    total_unique_resources: int = len(all_resources)
+    log_func(f"Total unique resources across all paths: {total_unique_resources}")
+
+    return all_resources
+
+
+def compare_resources_n_way(  # noqa: PLR0913
+    all_resources: dict[str, dict[int, ComparableResource]],
+    path_infos: list[PathInfo],
+    *,
+    log_func: Callable,
+    compare_hashes: bool = True,
+    modifications_by_type: ModificationsByType | None = None,
+    incremental_writer: IncrementalTSLPatchDataWriter | None = None,
 ) -> bool | None:
-    """Run 2-way differ with all the necessary dependencies."""
-    # Validate paths
-    validation_result = validate_paths(mine, older, log_func)
-    if validation_result is None:
+    """Compare resources across N paths and generate patches for differences.
+
+    Args:
+        all_resources: Dict mapping resource_id -> {path_index: ComparableResource}
+        path_infos: List of PathInfo objects
+        log_func: Logging function
+        compare_hashes: Whether to compare binary hashes
+        modifications_by_type: Optional TSLPatcher modifications collection
+        incremental_writer: Optional incremental writer
+
+    Returns:
+        True if all identical, False if differences found, None if errors
+    """
+    from itertools import combinations  # noqa: PLC0415
+
+    is_same_result: bool | None = True
+    processed_count: int = 0
+    diff_count: int = 0
+    error_count: int = 0
+
+    log_func(f"Comparing {len(all_resources)} unique resources across {len(path_infos)} paths...")
+
+    for resource_id, path_data in all_resources.items():
+        processed_count += 1
+
+        if processed_count % 100 == 0:
+            log_func(f"Progress: {processed_count}/{len(all_resources)} resources processed...")
+
+        # If resource only exists in one path, create install patch
+        if len(path_data) == 1:
+            path_index, resource = next(iter(path_data.items()))
+            path_info: PathInfo = path_infos[path_index]
+
+            log_func(f"\n[UNIQUE RESOURCE] {resource_id}")
+            log_func(f"  Only in path {path_index} ({path_info.name})")
+            log_func("  → Creating InstallList entry and patch")
+
+            # Generate install patch for unique resource
+            if modifications_by_type is not None:
+                filename: str = Path(resource_id).name
+
+                # Determine destination - default to Override for safety
+                destination: str = "Override"
+
+                # Create context for patch creation
+                file1_rel: Path = Path(f"path{path_index}") / filename
+                file2_rel: Path = Path("missing") / filename
+                context: DiffContext = DiffContext(file1_rel, file2_rel, resource.ext)
+
+                # Add to install folder
+                _add_to_install_folder(
+                    modifications_by_type,
+                    destination,
+                    filename,
+                    log_func=log_func,
+                    modded_data=resource.data,
+                    modded_path=path_info.get_path() if path_info.is_file else None,
+                    context=context,
+                    incremental_writer=incremental_writer,
+                )
+
+            diff_count += 1
+            is_same_result = False
+            continue
+
+        # Resource exists in multiple paths - compare all pairs
+        found_differences: bool = False
+
+        for (idx_a, resource_a), (idx_b, resource_b) in combinations(path_data.items(), 2):
+            path_a: PathInfo = path_infos[idx_a]
+            path_b: PathInfo = path_infos[idx_b]
+
+            # Compare the two resources
+            try:
+                if DiffDispatcher.equals(resource_a, resource_b):
+                    continue
+
+                if not found_differences:
+                    log_func(f"\n[DIFFERENT RESOURCE] {resource_id}")
+                    found_differences = True
+
+                log_func(f"  Difference between path {idx_a} ({path_a.name}) and path {idx_b} ({path_b.name})")
+
+                # Generate modification patch using diff_data
+                if modifications_by_type is not None:
+                    file1_rel = Path(f"path{idx_a}_{path_a.name}") / Path(resource_id).name
+                    file2_rel = Path(f"path{idx_b}_{path_b.name}") / Path(resource_id).name
+                    context = DiffContext(file1_rel, file2_rel, resource_a.ext)
+
+                    # Use diff_data to generate proper modifications
+                    diff_data(
+                        resource_a.data,
+                        resource_b.data,
+                        context,
+                        log_func=log_func,
+                        compare_hashes=compare_hashes,
+                        modifications_by_type=modifications_by_type,
+                        incremental_writer=incremental_writer,
+                    )
+
+                    # Always also add an InstallList entry so the file exists before patching
+                    try:
+                        destination = "Override"
+                        filename = Path(resource_id).name
+                        _add_to_install_folder(
+                            modifications_by_type,
+                            destination,
+                            filename,
+                            log_func=log_func,
+                            modded_data=resource_b.data,
+                            modded_path=None,
+                            context=context,
+                            incremental_writer=incremental_writer,
+                        )
+                    except Exception as e:  # noqa: BLE001, S110
+                        print(f"Error adding install entry for {resource_id}: {universal_simplify_exception(e)}")
+                        print("Full traceback:")
+                        for line in traceback.format_exc().splitlines():
+                            print(f"  {line}")
+
+            except Exception as e:  # noqa: BLE001
+                log_func(f"Error comparing {resource_id} between paths {idx_a} and {idx_b}: {universal_simplify_exception(e)}")
+                log_func("Full traceback:")
+                for line in traceback.format_exc().splitlines():
+                    log_func(f"  {line}")
+                error_count += 1
+                is_same_result = None
+
+        if found_differences:
+            diff_count += 1
+            is_same_result = False
+
+    # Summary
+    log_func("")
+    log_func("=" * 80)
+    log_func("N-WAY COMPARISON SUMMARY")
+    log_func("=" * 80)
+    log_func(f"Total resources processed: {processed_count}")
+    log_func(f"  Differences found: {diff_count}")
+    log_func(f"  Errors: {error_count}")
+    log_func("=" * 80)
+
+    return is_same_result
+
+
+def run_differ_from_args_impl(
+    files_and_folders_and_installations: list[Path | Installation],
+    *,
+    filters: list[str] | None = None,
+    log_func: Callable,
+    compare_hashes: bool = True,
+    modifications_by_type: ModificationsByType | None = None,
+    incremental_writer: IncrementalTSLPatchDataWriter | None = None,
+) -> bool | None:
+    """Run differ with N paths of any type.
+
+    Args:
+        files_and_folders_and_installations: List of paths/installations (2 or more)
+        filters: Optional resource name filters
+        log_func: Logging function
+        compare_hashes: Whether to compare binary hashes
+        modifications_by_type: Optional TSLPatcher modifications collection
+        incremental_writer: Optional incremental writer
+
+    Returns:
+        True if identical, False if different, None if errors
+    """
+    try:
+        if len(files_and_folders_and_installations) < 2:  # noqa: PLR2004
+            msg = f"At least 2 paths required for comparison, got {len(files_and_folders_and_installations)}"
+            raise ValueError(msg)  # noqa: TRY301
+
+        log_func(f"Starting {len(files_and_folders_and_installations)}-way comparison...")
+        for idx, path in enumerate(files_and_folders_and_installations):
+            path_type = "Installation" if isinstance(path, Installation) else ("Folder" if path.safe_isdir() else "File")
+            log_func(f"  Path {idx}: {path} ({path_type})")
+        log_func("-------------------------------------------")
+        log_func("")
+
+        # Validate all paths exist
+        log_func("[DEBUG] Validating paths...")
+        if validate_paths(files_and_folders_and_installations, log_func) is None:
+            log_func("[ERROR] Path validation failed")
+            return None
+        log_func("[DEBUG] Path validation successful")
+
+        # Load installations and create PathInfo objects
+        log_func("[DEBUG] Loading installations...")
+        path_infos: list[PathInfo] = load_installations(files_and_folders_and_installations, log_func)
+        log_func(f"[DEBUG] Loaded {len(path_infos)} PathInfo objects")
+        for info in path_infos:
+            log_func(f"[DEBUG]   Path {info.index}: is_installation={info.is_installation}, is_folder={info.is_folder}, is_file={info.is_file}")
+
+        # For Installation-to-Installation comparison, use resolution-aware comparison
+        all_installations: list[Installation] = [path for path in files_and_folders_and_installations if isinstance(path, Installation)]
+        log_func(f"[DEBUG] Found {len(all_installations)} Installation objects")
+
+        if len(all_installations) >= 2:  # noqa: PLR2004
+            log_func("Detected multiple installations - using resolution-aware comparison...")
+            from pykotor.tslpatcher.diff.resolution import diff_installations_with_resolution  # noqa: PLC0415
+
+            return diff_installations_with_resolution(
+                files_and_folders_and_installations,
+                filters=filters,
+                log_func=log_func,
+                compare_hashes=compare_hashes,
+                modifications_by_type=modifications_by_type,
+                incremental_writer=incremental_writer,
+            )
+
+        # Mixed path types or non-Installation comparison
+        log_func("[DEBUG] Using non-Installation comparison (folder/file diffing)...")
+
+        # Collect all resources from all paths
+        log_func("[DEBUG] Collecting resources...")
+        all_resources = collect_all_resources(path_infos, filters=filters, log_func=log_func)
+        log_func(f"[DEBUG] Collected {len(all_resources)} unique resources")
+
+        # Compare resources across all paths
+        log_func("[DEBUG] Starting n-way comparison...")
+        result: bool | None = compare_resources_n_way(
+            all_resources,
+            path_infos,
+            log_func=log_func,
+            compare_hashes=compare_hashes,
+            modifications_by_type=modifications_by_type,
+            incremental_writer=incremental_writer,
+        )
+
+    except Exception as e:  # noqa: BLE001
+        log_func(f"[CRITICAL ERROR] Exception in run_differ_from_args_impl: {universal_simplify_exception(e)}")
+        log_func("Full traceback:")
+        for line in traceback.format_exc().splitlines():
+            log_func(f"  {line}")
         return None
-
-    # Load installations if needed
-    installation1, installation2 = load_installations(mine, older, log_func)
-    if installation1 is None and is_kotor_install_dir(mine):
-        return None  # Installation loading failed
-    if installation2 is None and is_kotor_install_dir(older):
-        return None  # Installation loading failed
-
-    # Handle special comparison cases
-    result = handle_special_comparisons(
-        mine,
-        older,
-        installation1,
-        installation2,
-        filters,
-        diff_container_vs_installation_func,
-        diff_resource_vs_installation_func,
-        diff_installs_with_objects_func,
-    )
-    if result is not None:  # Special case was handled
+    else:
+        log_func(f"[DEBUG] Comparison complete, result={result}")
         return result
-
-    # Handle standard comparisons
-    if mine.safe_isdir() and older.safe_isdir():
-        return diff_directories_func(mine, older, filters=filters)
-
-    if mine.safe_isfile() and older.safe_isfile():
-        return diff_files_func(mine, older)
-
-    # If we get here, the paths are incompatible
-    msg: str = f"--mine='{mine.name}' and --older='{older.name}' must be the same type or one must be a resource and the other an installation"
-    raise ValueError(msg)

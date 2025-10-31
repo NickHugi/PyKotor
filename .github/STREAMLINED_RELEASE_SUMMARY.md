@@ -13,6 +13,7 @@ Your release workflow has been completely automated. You now only need to **crea
 ```
 
 That's it! The workflow automatically:
+
 1. ✅ Updates `currentVersion` in master
 2. ✅ Builds binaries with correct version
 3. ✅ Uploads artifacts to release
@@ -33,6 +34,7 @@ That's it! The workflow automatically:
 ## 📁 Files Modified/Created
 
 ### Modified Workflows (Production)
+
 - ✅ `.github/workflows/release_toolset.yml`
 - ✅ `.github/workflows/release_kotordiff.yml`
 - ✅ `.github/workflows/release_holopatcher.yml`
@@ -40,11 +42,13 @@ That's it! The workflow automatically:
 - ✅ `.github/workflows/release_translator.yml`
 
 ### New Test Infrastructure
+
 - ✅ `.github/workflows/TEST_release_toolset.yml` - Safe testing workflow
 - ✅ `.github/workflows/create_test_workflow.ps1` - Generate test workflows for other tools
 - ✅ `.github/workflows/validate_workflows.ps1` - Validate setup
 
 ### Documentation
+
 - ✅ `.github/workflows/README.md` - Central hub
 - ✅ `.github/workflows/RELEASE_WORKFLOW.md` - Complete production guide
 - ✅ `.github/workflows/QUICK_TEST_GUIDE.md` - Safe testing guide
@@ -57,21 +61,25 @@ That's it! The workflow automatically:
 Your requirement was met perfectly:
 
 ### Stage 1: Pre-Build (Immediate)
+
 ```python
 # Updates BEFORE building
 "currentVersion": "3.1.4"  # ← Updated first
 ```
+
 - Commits to `master`
 - Force-updates release tag
 - **Purpose**: Binaries report correct version
 
 ### Stage 2: Post-Upload (After artifacts uploaded)
+
 ```python
 # Updates AFTER uploading
 "toolsetLatestVersion": "3.1.4",  # ← Updated second
 "toolsetLatestBetaVersion": "3.1.4",  # ← Updated second
 "toolsetLatestNotes": "Your release notes"  # ← Updated second
 ```
+
 - Commits to `master`
 - Force-updates release tag again
 - Regenerates source archives
@@ -102,6 +110,7 @@ Your requirement was met perfectly:
 ## 📊 What Changed
 
 ### Old Process (Manual)
+
 ```
 1. Edit config.py → currentVersion
 2. Create release branch
@@ -110,23 +119,28 @@ Your requirement was met perfectly:
 5. Edit config.py → toolsetLatestVersion
 6. Manually convert to full release
 ```
+
 ⏱️ **Time**: 30+ minutes of manual work
 
 ### New Process (Automated)
+
 ```
 1. Create pre-release on GitHub
 ```
+
 ⏱️ **Time**: 30 seconds of manual work
 
 ## 🧪 How to Test Right Now
 
 ### Validation
+
 ```powershell
 cd .github/workflows
 .\validate_workflows.ps1
 ```
 
 ### Safe Test (Recommended First)
+
 ```bash
 git tag test-v3.1.99-toolset
 git push origin test-v3.1.99-toolset
@@ -151,6 +165,7 @@ gh release create test-v3.1.99-toolset --prerelease --title "TEST" --notes "Test
 ## ⚡ Common Commands
 
 ### Production Release
+
 ```bash
 # Toolset
 gh release create v3.1.4-toolset --prerelease --title "Toolset 3.1.4" --notes "Release notes"
@@ -163,12 +178,14 @@ gh release create v1.7.1-patcher --prerelease --title "HoloPatcher 1.7.1" --note
 ```
 
 ### Test Release
+
 ```bash
 # Add test- prefix to any production tag
 gh release create test-v3.1.99-toolset --prerelease --title "TEST" --notes "Testing"
 ```
 
 ### Monitor
+
 ```bash
 # Watch workflow
 gh run watch
@@ -181,6 +198,7 @@ gh run view <run-id> --log
 ```
 
 ### Cleanup
+
 ```bash
 # Delete test release
 gh release delete test-v3.1.99-toolset --yes
@@ -205,6 +223,7 @@ git push origin --delete test-release
 ## 🔥 Emergency Procedures
 
 ### Cancel Workflow
+
 ```bash
 # Via CLI
 gh run cancel <run-id>
@@ -213,12 +232,14 @@ gh run cancel <run-id>
 ```
 
 ### Delete Bad Release
+
 ```bash
 gh release delete v3.1.4-toolset --yes
 git push origin --delete v3.1.4-toolset
 ```
 
 ### Revert Version Commits
+
 ```bash
 # Find the commit
 git log origin/master --oneline | grep "Bump currentVersion"
@@ -255,4 +276,3 @@ If all ✅, you're ready for production releases!
 **You're all set!** 🚀
 
 Your streamlined release workflow is ready. Start with a test release to verify everything works, then enjoy your new one-click release process!
-

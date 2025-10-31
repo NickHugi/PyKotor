@@ -39,7 +39,6 @@ from pykotor.tslpatcher.diff.generator import (
     validate_tslpatchdata_arguments,
 )
 from pykotor.tslpatcher.diff.incremental_writer import IncrementalTSLPatchDataWriter
-from pykotor.tslpatcher.diff.merge3_utils import diff3_files_udiff
 from pykotor.tslpatcher.diff.objects import DiffEngine, DiffFormat, DiffType
 from pykotor.tslpatcher.diff.resolution import (
     ResolvedResource,

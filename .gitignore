@@ -81,3 +81,4 @@ Tools/KotorDiff/WINDOWS_PATH_GUIDE.md
 .history/
 pypy3.*-v*/
 tslpatchdata/
+test_output/

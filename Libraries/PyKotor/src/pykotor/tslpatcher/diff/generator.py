@@ -1036,18 +1036,14 @@ def _validate_installation_path(path: Path | None) -> bool:
 def validate_tslpatchdata_arguments(
     ini: str | None,
     tslpatchdata: str | None,
-    mine_path: Path | None,
-    older_path: Path | None,
-    yours_path: Path | None,
+    files_and_folders_and_installations: list[Path | Installation] | None,
 ) -> tuple[str, Path] | tuple[None, None]:
     """Validate --ini and --tslpatchdata arguments.
 
     Args:
-        ini: The --ini argument value
-        tslpatchdata: The --tslpatchdata argument value
-        mine_path: The --mine path
-        older_path: The --older path
-        yours_path: The --yours path
+        ini: The ini filename argument value
+        tslpatchdata: The tslpatchdata folder argument value
+        files_and_folders_and_installations: All user-provided paths (any length)
 
     Returns:
         Tuple of (validated_ini_filename, tslpatchdata_folder_path) or (None, None) if not applicable
@@ -1075,13 +1071,29 @@ def validate_tslpatchdata_arguments(
     # Validate and normalize INI filename
     validated_ini = _validate_ini_filename(ini)
 
-    # Validate at least one path is an Installation
-    is_mine_install = _validate_installation_path(mine_path)
-    is_older_install = _validate_installation_path(older_path)
-    is_yours_install = _validate_installation_path(yours_path)
+    # Validate at least one provided path is an Installation
+    has_any_install: bool = False
+    if files_and_folders_and_installations:
+        for p in files_and_folders_and_installations:
+            # Already an Installation object
+            if isinstance(p, Installation):
+                has_any_install = True
+                break
 
-    if not (is_mine_install or is_older_install or is_yours_install):
-        msg = "--tslpatchdata requires at least one path (--mine, --older, or --yours) to be a valid KOTOR Installation"
+            # Try to verify by constructing an Installation from the path
+            if isinstance(p, Path):
+                try:
+                    _ = Installation(p)
+                    has_any_install = True
+                    break
+                except Exception:
+                    # Fall back to determine_game heuristic
+                    if _validate_installation_path(p):
+                        has_any_install = True
+                        break
+
+    if not has_any_install:
+        msg = "--tslpatchdata requires at least one provided path to be a valid KOTOR Installation"
         raise ValueError(msg)
 
     # Normalize tslpatchdata path
@@ -1090,7 +1102,6 @@ def validate_tslpatchdata_arguments(
         tslpatchdata_path = tslpatchdata_path / "tslpatchdata"
 
     _log_debug(f"Validated arguments: ini={validated_ini}, tslpatchdata_path={tslpatchdata_path}")
-    _log_debug(f"Installation detected: mine={is_mine_install}, older={is_older_install}, yours={is_yours_install}")
 
     return validated_ini, tslpatchdata_path
 
