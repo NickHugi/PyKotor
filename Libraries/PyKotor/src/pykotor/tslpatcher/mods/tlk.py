@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
 
     from pykotor.common.misc import Game
+    from pykotor.extract.installation import Installation
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
@@ -39,7 +40,6 @@ class ModificationsTLK(PatcherModifications):
         self.modifiers: list[ModifyTLK] = [] if modifiers is None else modifiers
         self.sourcefile_f: str = self.DEFAULT_SOURCEFILE_F  # Polish version of k1
         self.saveas = self.DEFAULT_SAVEAS_FILE
-        self.strref_mappings: dict[int, int] = {}  # Maps old StrRef -> token_id for reference analysis (changeedit usage only.)
 
     def pop_tslpatcher_vars(
         self,

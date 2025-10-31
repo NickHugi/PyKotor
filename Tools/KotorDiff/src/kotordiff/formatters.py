@@ -8,18 +8,17 @@ This file is kept for backwards compatibility with existing kotordiff code.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from kotordiff.logger import diff_output, separator
 from pykotor.tslpatcher.diff.formatters import (
     ContextFormatter as _ContextFormatter,
     DefaultFormatter as _DefaultFormatter,
     DiffFormatter as _DiffFormatter,
-    FormatterFactory as _FormatterFactory,
     SideBySideFormatter as _SideBySideFormatter,
     UnifiedFormatter as _UnifiedFormatter,
 )
-from pykotor.tslpatcher.diff.objects import DiffFormat, DiffType
+from pykotor.tslpatcher.diff.objects import DiffFormat
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.diff.objects import DiffResult

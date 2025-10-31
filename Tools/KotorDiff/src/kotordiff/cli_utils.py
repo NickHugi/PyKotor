@@ -2,6 +2,8 @@
 """CLI utilities for KotorDiff including path normalization and argument handling."""
 from __future__ import annotations
 
+import argparse
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -58,7 +60,7 @@ def prompt_for_path(title: str) -> str:
     return normalize_path_arg(user_input) or ""
 
 
-def print_path_error_with_help(path: Path, parser) -> None:
+def print_path_error_with_help(path: Path, parser: argparse.ArgumentParser) -> None:
     """Print error message for invalid path with helpful quoting guidance."""
     print("Invalid path:", path)
     # Detect if this might be a quoting issue

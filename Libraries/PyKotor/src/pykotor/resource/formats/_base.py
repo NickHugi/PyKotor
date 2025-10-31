@@ -64,15 +64,16 @@ class ComparableMixin:
             try:
                 old_set_raw = getattr(self, set_name)
                 new_set_raw = getattr(other, set_name)
-            except AttributeError:
-                log_func(f"Missing set attribute '{set_name}' on one of the objects")
+            except AttributeError as e:
+                log_func(f"Missing set attribute '{set_name}' on one of the objects: {e.__class__.__name__}: {e}")
                 is_same = False
                 continue
 
             try:
                 old_set = set(old_set_raw)
                 new_set = set(new_set_raw)
-            except Exception:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
+                log_func(f"Error converting set '{set_name}' to set: {e.__class__.__name__}: {e}")
                 # Fallback to direct value compare if not set-like
                 if not self._compare_values(set_name, old_set_raw, new_set_raw, log_func):
                     is_same = False

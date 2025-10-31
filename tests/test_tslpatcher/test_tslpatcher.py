@@ -7,8 +7,6 @@ import sys
 import tempfile
 import unittest
 
-import pytest
-
 from configparser import ConfigParser
 from typing import TYPE_CHECKING, Callable, cast
 
@@ -131,8 +129,8 @@ class TestTSLPatcher(unittest.TestCase):
 
     def setUp(self):
         self.temp_dir: str = tempfile.mkdtemp()
-        self.tslpatchdata_path: pathlib.Path = pathlib.Path(self.temp_dir) / "tslpatchdata"
-        self.tslpatchdata_path.mkdir(exist_ok=True, parents=True)
+        self.tslpatchdata_path: pathlib.Path = pathlib.Path(self.temp_dir, "tslpatchdata")
+        self.tslpatchdata_path.mkdir(parents=True, exist_ok=True)
 
     def tearDown(self):
         if hasattr(self, "temp_dir"):
@@ -457,7 +455,9 @@ class TestTSLPatcher(unittest.TestCase):
             """
         )
 
-        mod_0 = config.patches_gff[0].modifiers[0]
+        mod_0: AddFieldGFF = cast(AddFieldGFF, config.patches_gff[0].modifiers[0])
+        assert isinstance(mod_0, AddFieldGFF)
+        self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertEqual(mod_0.path.parts, tuple())
 
     # endregion

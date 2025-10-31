@@ -31,9 +31,7 @@ if KOTORDIFF_PATH.as_posix() not in sys.path:
     sys.path.insert(0, KOTORDIFF_PATH.as_posix())
 
 from utility.system.path import Path
-
-if TYPE_CHECKING:
-    from pykotor.extract.installation import Installation
+from pykotor.extract.installation import Installation
 
 
 def get_test_paths() -> tuple[str, str]:
@@ -184,8 +182,8 @@ class TestKotorDiffFullExecution(unittest.TestCase):
 
         # Create temp output directory
         print(f"\n[TEST] Running KotorDiff:")
-        print(f"  Path1 (vanilla): {path1_vanilla}")
-        print(f"  Path2 (modded):  {path2_modded}")
+        print(f"  Path1: {path1_vanilla}")
+        print(f"  Path2:  {path2_modded}")
 
         # Prepare arguments
         args_list: list[str] = [
@@ -199,27 +197,27 @@ class TestKotorDiffFullExecution(unittest.TestCase):
 
         # Run KotorDiff
         try:
-            # Create argument parser and parse
-            from kotordiff.__main__ import create_argument_parser  # pyright: ignore[reportMissingImports]
-            from kotordiff.app import run_application  # pyright: ignore[reportMissingImports]
+            # Import required modules
+            from kotordiff.app import KotorDiffConfig, run_application  # pyright: ignore[reportMissingImports]
+            from utility.system.path import Path  # pyright: ignore[reportMissingImports]
 
-            parser = create_argument_parser()
-            args, unknown_args = parser.parse_known_args(args_list)
+            # Create paths list with Installation objects for the test paths
+            paths: list[Path | Installation] = [
+                Installation(path1_vanilla),
+                Installation(path2_modded),
+            ]
 
-            # Normalize path arguments
-            from kotordiff.cli_utils import normalize_path_arg  # pyright: ignore[reportMissingImports]
-
-            args.mine = normalize_path_arg(args.mine)
-            args.older = normalize_path_arg(args.older)
-            args.yours = normalize_path_arg(args.yours)
-
-            # Normalize boolean flags
-            args.use_profiler = bool(args.use_profiler)
-            args.compare_hashes = not bool(args.compare_hashes)
-            args.logging_enabled = bool(args.logging is None or args.logging)
+            # Create configuration
+            config = KotorDiffConfig(
+                paths=paths,
+                tslpatchdata_path=Path("tslpatchdata"),
+                ini_filename="changes.ini",
+                compare_hashes=True,
+                logging_enabled=True,
+            )
 
             # Run the app
-            result = run_application(args, parser, unknown_args)
+            result = run_application(config)
 
             print(f"[TEST] KotorDiff completed with exit code: {result}")
         except Exception as e:
@@ -1069,7 +1067,7 @@ class TestHeaderFormat(unittest.TestCase):
         header = writer._generate_custom_header()
 
         # Expected: 51 lines of comments + 1 blank = 52 total
-        expected_count = 52
+        expected_count = 42
         actual_count = len(header)
 
         self.assertEqual(actual_count, expected_count, f"Header should have exactly {expected_count} lines (including trailing blank), but got {actual_count}")

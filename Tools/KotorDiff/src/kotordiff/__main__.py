@@ -10,6 +10,9 @@ import traceback
 
 from argparse import ArgumentParser
 
+from pykotor.extract.installation import Installation
+from utility.system.path import Path
+
 # Configure sys.path for development mode
 if getattr(sys, "frozen", False) is False:
 
@@ -29,7 +32,7 @@ if getattr(sys, "frozen", False) is False:
     if kotordiff_path.exists():
         update_sys_path(kotordiff_path.parent)
 
-from kotordiff.app import run_application
+from kotordiff.app import KotorDiffConfig, run_application
 from kotordiff.cli_utils import normalize_path_arg
 
 CURRENT_VERSION = "1.0.0"
@@ -38,21 +41,21 @@ CURRENT_VERSION = "1.0.0"
 def create_argument_parser() -> ArgumentParser:
     """Create and configure the argument parser."""
     parser = ArgumentParser(
-        description="Finds differences between KOTOR files/dirs. Supports 2-way, 3-way, and N-way comparisons."
+        description="Finds differences between KOTOR files/dirs. Supports comparisons across any number of paths."
     )
 
-    # Path arguments
+    # Path arguments (multiple aliases for compatibility)
     parser.add_argument(
-        "--mine", "--path1", type=str,
-        help="Path to the first K1/TSL install, file, or directory to diff. Alias: --mine (BASE/REFERENCE)"
+        "--path1", type=str,
+        help="Path to compare. Multiple path flags can be supplied; at least two paths are required."
     )
     parser.add_argument(
-        "--older", "--path2", type=str,
-        help="Path to the second K1/TSL install, file, or directory to diff. Alias: --older"
+        "--path2", type=str,
+        help="Additional path to compare."
     )
     parser.add_argument(
-        "--yours", "--path3", type=str,
-        help="Path to the third/desired state for 3-way diff (for merge base scenarios). Alias: --yours"
+        "--path3", type=str,
+        help="Additional path to compare."
     )
     parser.add_argument(
         "--path",
@@ -74,16 +77,7 @@ def create_argument_parser() -> ArgumentParser:
         default="changes.ini",
         help="Filename for changes.ini (not path, just filename). Requires --tslpatchdata. Must have .ini extension (default: changes.ini).",
     )
-    parser.add_argument(
-        "--save-results",
-        type=str,
-         help="Save diff results and StrRef cache to YAML for later use. Includes file comparisons and StrRef reference data. Example: --save-results=results.yaml",
-    )
-    parser.add_argument(
-        "--from-results",
-        type=str,
-        help="Load diff results and StrRef cache from YAML instead of re-running diff. Skips file scanning and StrRef cache building. Example: --from-results=results.yaml",
-    )
+    # Cache options removed
     parser.add_argument(
         "--output-log",
         type=str,
@@ -209,7 +203,7 @@ def _normalize_path_argument(arg: str, next_arg: str | None = None) -> tuple[lis
     Returns:
         Tuple of (normalized arguments to append, whether next_arg was consumed)
     """
-    PATH_PREFIXES = ("--path", "--mine", "--older", "--yours")
+    PATH_PREFIXES = ("--path", "--path1", "--path2", "--path3")
 
     if not arg.startswith(PATH_PREFIXES):
         return [arg], False
@@ -236,7 +230,7 @@ def _normalize_argv_paths(argv: list[str]) -> list[str]:
         arg = argv[i]
         next_arg = argv[i + 1] if i + 1 < len(argv) else None
 
-        if arg.startswith(("--path", "--mine", "--older", "--yours")):
+        if arg.startswith(("--path", "--path1", "--path2", "--path3")):
             normalized_args, consumed_next = _normalize_path_argument(arg, next_arg)
             fixed_argv.extend(normalized_args)
             if consumed_next:
@@ -308,34 +302,70 @@ def main():
     parser: ArgumentParser = create_argument_parser()
     args, unknown_args = parser.parse_known_args()
 
-    # Normalize path argument aliases
-    args.mine = normalize_path_arg(args.mine)
-    args.older = normalize_path_arg(args.older)
-    args.yours = normalize_path_arg(args.yours)
+    # Cache options removed
 
-    # Handle unknown positional arguments (also normalize them)
-    cleaned_unknown: list[str] = []
-    i: int = 0
-    while i < len(unknown_args):
-        current: str = unknown_args[i]
-        if i + 1 < len(unknown_args) and ('" ' in current or "' " in current):
-            normalized: str | None = normalize_path_arg(current)
-            if normalized:
-                cleaned_unknown.append(normalized)
-            i += 1  # Skip the mangled continuation
-            continue
-        normalized = normalize_path_arg(current)
-        if normalized:
-            cleaned_unknown.append(normalized)
-        i += 1
+    # Gather all path inputs (already normalized by preprocess_argv_for_windows)
+    raw_path_inputs: list[str] = []
 
-    # Normalize boolean flags
-    args.use_profiler = bool(args.use_profiler)
-    args.compare_hashes = not bool(args.compare_hashes)  # Note: inverted logic from original
-    args.logging_enabled = bool(args.logging is None or args.logging)
+    if hasattr(args, "path1") and args.path1:
+        raw_path_inputs.append(args.path1)
+    if hasattr(args, "path2") and args.path2:
+        raw_path_inputs.append(args.path2)
+    if hasattr(args, "path3") and args.path3:
+        raw_path_inputs.append(args.path3)
+
+    if hasattr(args, "extra_paths") and args.extra_paths:
+        raw_path_inputs.extend(args.extra_paths)
+
+    # Treat remaining positional arguments as additional paths
+    raw_path_inputs.extend(unknown_args)
+
+    # Store all paths on args for downstream processing
+    args.paths = raw_path_inputs
+
+    # Clear legacy attributes
+    if hasattr(args, "path1"):
+        args.path1 = None
+    if hasattr(args, "path2"):
+        args.path2 = None
+    if hasattr(args, "path3"):
+        args.path3 = None
+    if hasattr(args, "extra_paths"):
+        args.extra_paths = None
+
+    # Convert string paths to Path/Installation objects
+    resolved_paths: list[Path | Installation] = []
+    for path_str in args.paths:
+        path_obj = Path(path_str)
+        try:
+            # Try to create an Installation object (for KOTOR installations)
+            installation = Installation(path_obj)
+            resolved_paths.append(installation)
+            print(f"[DEBUG] Loaded Installation for: {path_str}")
+        except Exception as e:
+            # Fall back to Path object (for folders/files)
+            resolved_paths.append(path_obj)
+            print(f"[DEBUG] Using Path (not Installation) for: {path_str}")
+            print(f"[DEBUG] Installation load failed: {e.__class__.__name__}: {e}")
+            print(traceback.format_exc())
+
+    # Create configuration object
+    config = KotorDiffConfig(
+        paths=resolved_paths,
+        tslpatchdata_path=Path(args.tslpatchdata) if args.tslpatchdata else None,
+        ini_filename=getattr(args, "ini", "changes.ini"),
+        output_log_path=Path(args.output_log) if args.output_log else None,
+        log_level=getattr(args, "log_level", "info"),
+        output_mode=getattr(args, "output_mode", "full"),
+        use_colors=not getattr(args, "no_color", False),
+        compare_hashes=not bool(args.compare_hashes),  # Note: inverted logic from original
+        use_profiler=bool(args.use_profiler),
+        filters=getattr(args, "filter", None),
+        logging_enabled=bool(args.logging is None or args.logging),
+    )
 
     # Run the application
-    exit_code: int = run_application(args, parser, cleaned_unknown)
+    exit_code: int = run_application(config)
     sys.exit(exit_code)
 
 

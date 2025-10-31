@@ -27,6 +27,7 @@ from pykotor.tslpatcher.mods.gff import (
     FieldValueTLKMemory,
     LocalizedStringDelta,
     Memory2DAModifierGFF,
+    ModificationsGFF,
     ModifyFieldGFF,
 )
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
@@ -34,21 +35,24 @@ from pykotor.tslpatcher.mods.twoda import (
     AddColumn2DA,
     AddRow2DA,
     ChangeRow2DA,
+    Modify2DA,  # noqa: F401
     RowValue2DAMemory,
     RowValueConstant,
     RowValueHigh,
+    RowValueRowCell,
+    RowValueRowIndex,
+    RowValueRowLabel,
     RowValueTLKMemory,
     TargetType,
 )
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.memory import TokenUsage
-    from pykotor.tslpatcher.mods.gff import ModificationsGFF
-    from pykotor.tslpatcher.mods.install import InstallFile  # noqa: F401
+    from pykotor.tslpatcher.mods.install import InstallFile
     from pykotor.tslpatcher.mods.ncs import ModificationsNCS
     from pykotor.tslpatcher.mods.nss import ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
-    from pykotor.tslpatcher.mods.twoda import Modifications2DA
+    from pykotor.tslpatcher.mods.twoda import Modifications2DA, RowValue
     from utility.system.path import Path
 
 # ---------------------------------------------------------------------------
@@ -135,7 +139,7 @@ class TSLPatcherINISerializer:
         Returns:
             Formatted value, wrapped in double quotes if it contains a single quote
         """
-        value_str = str(value)
+        value_str: str = str(value)
         if "'" in value_str:
             return f'"{value_str}"'
         return value_str
@@ -286,7 +290,7 @@ class TSLPatcherINISerializer:
         lines.append(f"[{mod_2da.sourcefile}]")
 
         # List all modifiers
-        modifier_idx = 0
+        modifier_idx: int = 0
         for modifier in mod_2da.modifiers:
             if isinstance(modifier, ChangeRow2DA):
                 section_name = modifier.identifier or f"{mod_2da.sourcefile}_changerow_{modifier_idx}"
@@ -315,17 +319,23 @@ class TSLPatcherINISerializer:
     ) -> list[str]:
         """Serialize a single 2DA modifier section with exact TSLPatcher format."""
         lines: list[str] = []
-        section_name = modifier.identifier
+        section_name: str = modifier.identifier
 
         if isinstance(modifier, ChangeRow2DA):
             lines.append(f"[{section_name}]")
 
             # Target specification (exactly as TSLPatcher expects)
             if modifier.target.target_type == TargetType.ROW_INDEX:
+                assert modifier.target.value is not None, "modifier.target.value is None"
+                assert isinstance(modifier.target.value, int), f"modifier.target.value is not int or RowValueRowIndex, but is {modifier.target.value.__class__.__name__}"
                 lines.append(f"RowIndex={self._format_ini_value(str(modifier.target.value))}")
             elif modifier.target.target_type == TargetType.ROW_LABEL:
+                assert modifier.target.value is not None, "modifier.target.value is None"
+                assert isinstance(modifier.target.value, str), f"modifier.target.value is not str, but is {modifier.target.value.__class__.__name__}"
                 lines.append(f"RowLabel={self._format_ini_value(modifier.target.value)}")
             elif modifier.target.target_type == TargetType.LABEL_COLUMN:
+                assert modifier.target.value is not None, "modifier.target.value is None"
+                assert isinstance(modifier.target.value, int), f"modifier.target.value is not int, but is {modifier.target.value.__class__.__name__}"
                 lines.append(f"LabelIndex={self._format_ini_value(str(modifier.target.value))}")
 
             # Cell modifications (preserve exact column names and values)
@@ -333,17 +343,15 @@ class TSLPatcherINISerializer:
                 cell_val = self._serialize_row_value(row_value)
                 lines.append(f"{col}={self._format_ini_value(cell_val)}")
 
-            # Store 2DA memory assignments (if any)
-            if hasattr(modifier, "store_2da") and modifier.store_2da:
-                for token_id, row_value in modifier.store_2da.items():
-                    store_val = self._serialize_row_value(row_value)
-                    lines.append(f"2DAMEMORY{token_id}={self._format_ini_value(store_val)}")
+            # Store 2DA memory assignments
+            for token_id, row_value in modifier.store_2da.items():
+                store_value = self._serialize_store_row_value(row_value)
+                lines.append(f"2DAMEMORY{token_id}={self._format_ini_value(store_value)}")
 
-            # Store TLK memory assignments (if any)
-            if hasattr(modifier, "store_tlk") and modifier.store_tlk:
-                for token_id, row_value in modifier.store_tlk.items():
-                    store_val = self._serialize_row_value(row_value)
-                    lines.append(f"StrRef{token_id}={self._format_ini_value(store_val)}")
+            # Store TLK memory assignments
+            for token_id, row_value in modifier.store_tlk.items():
+                store_value = self._serialize_store_row_value(row_value)
+                lines.append(f"StrRef{token_id}={self._format_ini_value(store_value)}")
 
             lines.append("")
 
@@ -352,10 +360,14 @@ class TSLPatcherINISerializer:
 
             # Exclusive column (prevents duplicate values)
             if modifier.exclusive_column:
+                assert modifier.exclusive_column is not None, "modifier.exclusive_column is None"
+                assert isinstance(modifier.exclusive_column, str), f"modifier.exclusive_column is not str, but is {modifier.exclusive_column.__class__.__name__}"
                 lines.append(f"ExclusiveColumn={self._format_ini_value(modifier.exclusive_column)}")
 
             # Row label (if specified)
             if modifier.row_label:
+                assert modifier.row_label is not None, "modifier.row_label is None"
+                assert isinstance(modifier.row_label, str), f"modifier.row_label is not str, but is {modifier.row_label.__class__.__name__}"
                 lines.append(f"RowLabel={self._format_ini_value(modifier.row_label)}")
 
             # Cell values
@@ -363,17 +375,15 @@ class TSLPatcherINISerializer:
                 cell_val = self._serialize_row_value(row_value)
                 lines.append(f"{col}={self._format_ini_value(cell_val)}")
 
-            # Store 2DA memory assignments (if any)
-            if hasattr(modifier, "store_2da") and modifier.store_2da:
-                for token_id, row_value in modifier.store_2da.items():
-                    store_val = self._serialize_row_value(row_value)
-                    lines.append(f"2DAMEMORY{token_id}={self._format_ini_value(store_val)}")
+            # Store 2DA memory assignments (if any and not empty)
+            for token_id, row_value in modifier.store_2da.items():
+                store_value = self._serialize_store_row_value(row_value)
+                lines.append(f"2DAMEMORY{token_id}={self._format_ini_value(store_value)}")
 
-            # Store TLK memory assignments (if any)
-            if hasattr(modifier, "store_tlk") and modifier.store_tlk:
-                for token_id, row_value in modifier.store_tlk.items():
-                    store_val = self._serialize_row_value(row_value)
-                    lines.append(f"StrRef{token_id}={self._format_ini_value(store_val)}")
+            # Store TLK memory assignments (if any and not empty)
+            for token_id, row_value in modifier.store_tlk.items():
+                store_value = self._serialize_store_row_value(row_value)
+                lines.append(f"StrRef{token_id}={self._format_ini_value(store_value)}")
 
             lines.append("")
 
@@ -393,10 +403,11 @@ class TSLPatcherINISerializer:
                 label_val = self._serialize_row_value(row_value)
                 lines.append(f"L{row_label}={self._format_ini_value(label_val)}")
 
-            # Store 2DA memory assignments (if any)
-            if hasattr(modifier, "store_2da") and modifier.store_2da:
-                for token_id, store_val in modifier.store_2da.items():
-                    lines.append(f"2DAMEMORY{token_id}={self._format_ini_value(store_val)}")
+            # Store 2DA memory assignments (if any and not empty)
+            for token_id, store_val in modifier.store_2da.items():
+                assert store_val is not None, "store_val is None"
+                assert isinstance(store_val, str), f"store_val is not str, but is {store_val.__class__.__name__}"
+                lines.append(f"2DAMEMORY{token_id}={self._format_ini_value(store_val)}")
 
             lines.append("")
 
@@ -433,10 +444,29 @@ class TSLPatcherINISerializer:
             return str(row_value.string)
         if isinstance(row_value, RowValueHigh):
             return f"High({row_value.column})" if row_value.column else "High()"
-        # Fallback for other RowValue types (RowValueRowIndex, RowValueRowLabel, RowValueRowCell)
-        if hasattr(row_value, "value") and callable(row_value.value):
-            return str(row_value.value(None, None, None))  # type: ignore[arg-type]
-        return str(row_value)
+        # RowValueRowIndex, RowValueRowLabel, RowValueRowCell should not appear in INI serialization
+        # They are runtime-only types used during patch application
+        msg = f"Cannot serialize runtime-only RowValue type: {type(row_value).__name__}"
+        raise TypeError(msg)
+
+    def _serialize_store_row_value(self, row_value: RowValue) -> str:
+        """Serialize a RowValue used for 2DAMEMORY/TLK storage assignments."""
+        if isinstance(row_value, RowValueRowIndex):
+            return "RowIndex"
+        if isinstance(row_value, RowValueRowLabel):
+            return "RowLabel"
+        if isinstance(row_value, RowValueRowCell):
+            return row_value.column
+        if isinstance(row_value, RowValue2DAMemory):
+            return f"2DAMEMORY{row_value.token_id}"
+        if isinstance(row_value, RowValueTLKMemory):
+            return f"StrRef{row_value.token_id}"
+        if isinstance(row_value, RowValueHigh):
+            return f"High({row_value.column})" if row_value.column else "High()"
+        if isinstance(row_value, RowValueConstant):
+            return row_value.string
+        msg = f"Unsupported RowValue type for memory storage serialization: {row_value.__class__.__name__}"
+        raise TypeError(msg)
 
     def _serialize_gff_list(
         self,
@@ -453,8 +483,9 @@ class TSLPatcherINISerializer:
         lines.append("[GFFList]")
 
         for idx, mod_gff in enumerate(modifications):
-            # Use Replace# or File# based on replace_file flag
-            prefix = "Replace" if getattr(mod_gff, "replace_file", False) else "File"
+            # Use Replace# or File# based on replace_file flag - ModificationsGFF always has replace_file
+            assert isinstance(mod_gff, ModificationsGFF), f"Expected ModificationsGFF, got {type(mod_gff).__name__}"
+            prefix = "Replace" if mod_gff.replace_file else "File"
             print(f"Adding GFF file {idx}: {prefix}{idx}={mod_gff.sourcefile} ({len(mod_gff.modifiers)} modifiers)")
             lines.append(f"{prefix}{idx}={self._format_ini_value(mod_gff.sourcefile)}")
         lines.append("")
@@ -473,12 +504,12 @@ class TSLPatcherINISerializer:
         lines: list[str] = []
         lines.append(f"[{mod_gff.sourcefile}]")
 
-        # Add TSLPatcher exclamation-point variables if present
-        if hasattr(mod_gff, "replace_file"):
-            lines.append(f"!ReplaceFile={'1' if mod_gff.replace_file else '0'}")
-        if hasattr(mod_gff, "destination") and mod_gff.destination != "Override":
+        # Add TSLPatcher exclamation-point variables - ModificationsGFF always has these attributes
+        assert isinstance(mod_gff, ModificationsGFF), f"mod_gff must be ModificationsGFF, got {type(mod_gff).__name__}"
+        lines.append(f"!ReplaceFile={'1' if mod_gff.replace_file else '0'}")
+        if mod_gff.destination != "Override":
             lines.append(f"!Destination={self._format_ini_value(mod_gff.destination)}")
-        if hasattr(mod_gff, "saveas") and mod_gff.saveas != mod_gff.sourcefile:
+        if mod_gff.saveas != mod_gff.sourcefile:
             lines.append(f"!Filename={self._format_ini_value(mod_gff.saveas)}")
 
         # Collect AddField indices first
@@ -489,8 +520,30 @@ class TSLPatcherINISerializer:
             if isinstance(gff_modifier, ModifyFieldGFF):
                 # Direct field modification: Path=Value (use backslashes per TSLPatcher)
                 path_str = str(gff_modifier.path).replace("/", "\\")
-                value_str = self._serialize_field_value(gff_modifier.value)
-                lines.append(f"{path_str}={self._format_ini_value(value_str)}")
+
+                # Check if this is a LocalizedString field (wrapped in FieldValueConstant containing LocalizedStringDelta)
+                value = gff_modifier.value
+                is_localized_string = False
+                loc_string_delta: LocalizedStringDelta | None = None
+                if isinstance(value, FieldValueConstant):
+                    stored = value.stored
+                    if isinstance(stored, LocalizedStringDelta):
+                        is_localized_string = True
+                        loc_string_delta = stored
+
+                if is_localized_string and loc_string_delta is not None:
+                    # For LocalizedString fields with LocalizedStringDelta, serialize inline using subsection reference
+                    # Generate a unique section name based on the path
+                    sanitized_path = path_str.replace("\\", "_").replace("[", "_").replace("]", "_")
+                    section_name = f"{mod_gff.sourcefile}_{sanitized_path}"
+                    lines.append(f"{path_str}=<{section_name}>")
+                    # Store for serialization after main section
+                    if not hasattr(self, "_pending_localized_string_subsections"):
+                        self._pending_localized_string_subsections = []
+                    self._pending_localized_string_subsections.append((section_name, loc_string_delta))
+                else:
+                    value_str = self._serialize_field_value(gff_modifier.value)
+                    lines.append(f"{path_str}={self._format_ini_value(value_str)}")
 
             elif isinstance(gff_modifier, Memory2DAModifierGFF):
                 # Memory assignment: 2DAMEMORY#=!FieldPath or 2DAMEMORY#=2DAMEMORY#
@@ -519,6 +572,27 @@ class TSLPatcherINISerializer:
             section_name = gff_modifier.identifier or f"addfield_{idx}"
             lines.extend(self._serialize_addfield_section(gff_modifier, section_name))
 
+        # Generate LocalizedString subsections (for inline LocalizedStringDelta fields)
+        if hasattr(self, "_pending_localized_string_subsections") and self._pending_localized_string_subsections:
+            for section_name, loc_string_delta in self._pending_localized_string_subsections:
+                lines.append("")
+                lines.append(f"[{section_name}]")
+                # Serialize the LocalizedStringDelta
+                # Add StrRef - handle FieldValueTLKMemory token reference
+                assert loc_string_delta is not None
+                if loc_string_delta.stringref is not None:
+                    strref_value = self._serialize_field_value(loc_string_delta.stringref)
+                    lines.append(f"StrRef={self._format_ini_value(strref_value)}")
+
+                # Add lang# entries (escape text for INI format)
+                for lang, gender, text in loc_string_delta:
+                    substring_id = LocalizedString.substring_id(lang, gender)
+                    escaped_text = escape_ini_value(text)
+                    lines.append(f"lang{substring_id}={self._format_ini_value(escaped_text)}")
+
+            # Clear the pending subsections list
+            self._pending_localized_string_subsections.clear()
+
         return lines
 
     def _serialize_addfield_section(  # noqa: C901, PLR0912
@@ -536,14 +610,15 @@ class TSLPatcherINISerializer:
         # FieldType - AddStructToListGFF is always Struct type
         if is_add_struct_to_list:
             field_type_name = "Struct"
+            label = ""  # AddStructToListGFF doesn't have label
         elif isinstance(gff_modifier, AddFieldGFF):
             field_type_name = self._get_gff_field_type_name(gff_modifier.field_type)
+            label = gff_modifier.label
         else:
-            field_type_name = "Struct"  # Default fallback
-        lines.append(f"FieldType={self._format_ini_value(field_type_name)}")
+            msg = f"gff_modifier must be AddStructToListGFF or AddFieldGFF, got {type(gff_modifier).__name__}"
+            raise TypeError(msg)
 
-        # Label - AddStructToListGFF doesn't have label, use empty string
-        label = getattr(gff_modifier, "label", "")
+        lines.append(f"FieldType={self._format_ini_value(field_type_name)}")
         lines.append(f"Label={self._format_ini_value(label)}")
 
         # Path (use backslashes)
@@ -552,14 +627,16 @@ class TSLPatcherINISerializer:
 
         # Add field value based on type
         if is_add_struct_to_list:
+            assert isinstance(gff_modifier, AddStructToListGFF), f"Expected AddStructToListGFF, got {type(gff_modifier).__name__}"
             # AddStructToListGFF always has TypeId
             if isinstance(gff_modifier.value, FieldValueConstant) and isinstance(gff_modifier.value.stored, GFFStruct):
                 lines.append(f"TypeId={self._format_ini_value(str(gff_modifier.value.stored.struct_id))}")
 
-            # Handle index_to_token for AddStructToListGFF
-            if hasattr(gff_modifier, "index_to_token") and gff_modifier.index_to_token is not None:
+            # Handle index_to_token for AddStructToListGFF (always present, may be None)
+            if gff_modifier.index_to_token is not None:
                 lines.append(f"2DAMEMORY{gff_modifier.index_to_token}=listindex")
-        elif hasattr(gff_modifier, "field_type"):
+        elif isinstance(gff_modifier, AddFieldGFF):
+            # AddFieldGFF always has field_type attribute
             if gff_modifier.field_type == GFFFieldType.Struct:
                 # For Struct, we need TypeId instead of Value
                 if isinstance(gff_modifier.value, FieldValueConstant) and isinstance(gff_modifier.value.stored, GFFStruct):
@@ -576,8 +653,9 @@ class TSLPatcherINISerializer:
                 if value_str:  # Only add Value= if there's an actual value
                     lines.append(f"Value={self._format_ini_value(value_str)}")
 
-        # Process nested modifiers (if any) - includes Memory2DAModifierGFF
-        if hasattr(gff_modifier, "modifiers") and gff_modifier.modifiers:
+        # Process nested modifiers - both AddFieldGFF and AddStructToListGFF have modifiers attribute
+        assert isinstance(gff_modifier, (AddFieldGFF, AddStructToListGFF)), f"Expected AddFieldGFF or AddStructToListGFF, got {type(gff_modifier).__name__}"
+        if gff_modifier.modifiers:
             # Count AddField modifiers and Memory2DAModifierGFF separately
             addfield_count = 0
             for nested_mod in gff_modifier.modifiers:
@@ -597,7 +675,7 @@ class TSLPatcherINISerializer:
         lines.append("")
 
         # Recursively generate nested AddField/AddStructToListGFF sections
-        if hasattr(gff_modifier, "modifiers") and gff_modifier.modifiers:
+        if gff_modifier.modifiers:
             for nested_idx, nested_mod in enumerate(gff_modifier.modifiers):
                 if isinstance(nested_mod, (AddFieldGFF, AddStructToListGFF)):
                     nested_section = nested_mod.identifier or f"{section_name}_nested_{nested_idx}"
@@ -613,26 +691,31 @@ class TSLPatcherINISerializer:
         """Serialize LocalizedString field value to TSLPatcher format."""
         # Extract the actual LocalizedString from FieldValue wrapper
         loc_string: LocalizedString | None = None
-        if hasattr(field_value, "stored"):
+        if isinstance(field_value, FieldValueConstant):
             loc_string = field_value.stored
         elif isinstance(field_value, LocalizedString):
             loc_string = field_value
 
-        if loc_string and isinstance(loc_string, LocalizedString):
-            # Add StrRef - handle both LocalizedStringDelta with token and regular LocalizedString
-            if isinstance(loc_string, LocalizedStringDelta) and loc_string.stringref is not None:
-                # LocalizedStringDelta can have a FieldValue token reference
+        if not isinstance(loc_string, LocalizedString):
+            msg = f"Expected LocalizedString but got {type(loc_string).__name__}: {loc_string}"
+            print(msg)
+            raise TypeError(msg)
+
+        # Add StrRef - handle both LocalizedStringDelta with token and regular LocalizedString
+        if isinstance(loc_string, LocalizedStringDelta):
+            # LocalizedStringDelta can have a FieldValue token reference or be None
+            if loc_string.stringref is not None:
                 strref_value = self._serialize_field_value(loc_string.stringref)
                 lines.append(f"StrRef={self._format_ini_value(strref_value)}")
-            elif hasattr(loc_string, "stringref"):
-                # Regular LocalizedString with numeric stringref
-                lines.append(f"StrRef={self._format_ini_value(str(loc_string.stringref))}")
+        else:
+            # Regular LocalizedString always has numeric stringref
+            lines.append(f"StrRef={self._format_ini_value(str(loc_string.stringref))}")
 
-            # Add lang# entries (escape text for INI format)
-            for lang, gender, text in loc_string:
-                substring_id = LocalizedString.substring_id(lang, gender)
-                escaped_text = escape_ini_value(text)
-                lines.append(f"lang{substring_id}={self._format_ini_value(escaped_text)}")
+        # Add lang# entries (escape text for INI format)
+        for lang, gender, text in loc_string:
+            substring_id = LocalizedString.substring_id(lang, gender)
+            escaped_text = escape_ini_value(text)
+            lines.append(f"lang{substring_id}={self._format_ini_value(escaped_text)}")
 
     def _get_gff_field_type_name(self, field_type: Any) -> str:
         """Convert GFFFieldType enum to TSLPatcher field type name."""
@@ -667,10 +750,9 @@ class TSLPatcherINISerializer:
             return f"StrRef{field_value.token_id}"
         if isinstance(field_value, FieldValueConstant):
             return self._format_gff_value(field_value.stored)
-        # Fallback for other FieldValue types
-        if hasattr(field_value, "value") and callable(field_value.value):
-            return self._format_gff_value(field_value.value(None, None))  # type: ignore[arg-type]
-        return self._format_gff_value(field_value)
+        # Should never reach here - all FieldValue types should be handled above
+        msg = f"Unexpected FieldValue type: {type(field_value).__name__}"
+        raise TypeError(msg)
 
     def _format_gff_value(  # noqa: PLR0911
         self,
@@ -840,6 +922,7 @@ class TSLPatcherINISerializer:
             sound_name = SOUND_NAMES.get(ssf_modifier.sound, f"Sound{ssf_modifier.sound.value}")
             # CRITICAL: Write token REFERENCE, not resolved value
             value = self._serialize_token_usage(ssf_modifier.stringref)
+            # TSLPatcher allows spaces in keys (e.g., "Battlecry 1", "Selected 1")
             lines.append(f"{sound_name}={self._format_ini_value(str(value))}")
 
         lines.append("")

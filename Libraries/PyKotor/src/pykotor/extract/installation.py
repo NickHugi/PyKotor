@@ -7,6 +7,7 @@ import sys
 
 from contextlib import suppress
 from copy import copy
+from dataclasses import dataclass
 from enum import Enum, IntEnum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence, overload
@@ -41,6 +42,13 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.ncs.ncs_data import NCS
     from pykotor.resource.formats.ssf.ssf_data import SSF
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+
+
+@dataclass
+class StrRefLocation:
+    """Represents a specific location where a StrRef was found."""
+    resource: FileResource
+    locations: list[str]  # Location strings like "row_12.name", "field.Path.To.Field", "sound_BATTLECRY1", "offset_0x1A4"
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -2000,6 +2008,16 @@ class Installation:
                 print(f"'{resource2da._path_ident_obj}' cannot be loaded, probably corrupted.")  # noqa: SLF001
                 return False
             filename_2da = resource2da.filename().lower()
+
+            # Get relative path for logging
+            try:
+                relative_path = resource2da.filepath().relative_to(self._path)
+                path_str = relative_path.as_posix()
+            except ValueError:
+                path_str = str(resource2da.filepath())
+
+            found_locations: list[tuple[str, int | None]] = []  # (column_name, row_index)
+
             for column_name in relevant_2da_filenames[filename_2da]:
                 if column_name == ">>##HEADER##<<":
                     for header in valid_2da.get_headers():
@@ -2010,7 +2028,9 @@ class Installation:
                                     self._log.warning(f"header '{header}' in '{filename_2da}' is invalid, expected a stringref number.")
                                 continue
                             if int(stripped_header) == query_stringref:
-                                return True
+                                found_locations.append((">>##HEADER##<<", None))
+                                if logger:
+                                    logger(f"    Found at: header '{header}' at {path_str}")
                         except Exception as e:  # noqa: BLE001
                             RobustLogger().error("Error parsing '%s' header '%s': %s", filename_2da, header, str(e), exc_info=False)
                 else:
@@ -2022,10 +2042,13 @@ class Installation:
                                     self._log.warning(f"column '{column_name}' rowindex {i} in '{filename_2da}' is invalid, expected a stringref number. Instead got '{cell}'")
                                 continue
                             if int(stripped_cell) == query_stringref:
-                                return True
+                                found_locations.append((column_name, i))
+                                if logger:
+                                    logger(f"    Found at: row {i}, column '{column_name}' at {path_str}")
                     except Exception as e:  # noqa: BLE001
                         RobustLogger().error("Error parsing '%s' column '%s': %s", filename_2da, column_name, str(e), exc_info=False)
-            return False
+
+            return len(found_locations) > 0
 
         def check_ssf(resource_ssf: FileResource) -> bool:
             """Check if an SSF file contains the query StrRef."""
@@ -2035,10 +2058,19 @@ class Installation:
             if not valid_ssf:
                 return False
 
+            # Get relative path for logging
+            try:
+                relative_path = resource_ssf.filepath().relative_to(self._path)
+                path_str = relative_path.as_posix()
+            except ValueError:
+                path_str = str(resource_ssf.filepath())
+
             # Check all sound slots for this StrRef
             for sound in SSFSound:
                 sound_strref = valid_ssf.get(sound)
                 if sound_strref == query_stringref:
+                    if logger:
+                        logger(f"    Found at: sound slot '{sound.name}' at {path_str}")
                     return True
             return False
 
@@ -2054,15 +2086,68 @@ class Installation:
             if not valid_ncs:
                 return False
 
-            # Extract all CONSTI values from the script
-            for instruction in valid_ncs.instructions:
-                if instruction.ins_type == NCSInstructionType.CONSTI:  # noqa: SIM102
-                    # CONSTI instructions have the integer value in args[0]
-                    if instruction.args and len(instruction.args) > 0:
-                        const_value = instruction.args[0]
-                        if isinstance(const_value, int) and const_value == query_stringref:
-                            return True
-            return False
+            # Get relative path for logging
+            try:
+                relative_path = resource_ncs.filepath().relative_to(self._path)
+                path_str = relative_path.as_posix()
+            except ValueError:
+                path_str = str(resource_ncs.filepath())
+
+            # Get byte offsets using the existing function
+            offsets = get_ncs_consti_offsets(resource_ncs, query_stringref)
+
+            # Log found offsets
+            if offsets and logger:
+                for offset in offsets:
+                    logger(f"    Found at: byte offset {offset:#X} (0x{offset:X}) at {path_str}")
+
+            return len(offsets) > 0
+
+        def check_gff(resource_gff: FileResource) -> bool:
+            """Check if a GFF file contains the query StrRef."""
+            valid_gff: GFF | None = None
+            with suppress(ValueError, OSError):
+                valid_gff = read_gff(resource_gff.data())
+            if valid_gff is None:
+                return False
+
+            # Get relative path for logging
+            try:
+                relative_path = resource_gff.filepath().relative_to(self._path)
+                path_str = relative_path.as_posix()
+            except ValueError:
+                path_str = str(resource_gff.filepath())
+
+            # Track found field paths for logging
+            found_paths: list[str] = []
+
+            def recurse_gff_structs_with_logging(gff_struct: GFFStruct, path_prefix: str = "") -> bool:
+                """Recursively scan GFF struct and collect field paths."""
+                for field_label, ftype, fval in gff_struct:
+                    field_path = f"{path_prefix}.{field_label}" if path_prefix else field_label
+
+                    if ftype == GFFFieldType.List and isinstance(fval, GFFList):
+                        for idx, list_struct in enumerate(fval):
+                            list_path = f"{field_path}[{idx}]"
+                            if recurse_gff_structs_with_logging(list_struct, list_path):
+                                found_paths.append(list_path)
+                    if ftype == GFFFieldType.Struct and isinstance(fval, GFFStruct) and recurse_gff_structs_with_logging(fval, field_path):
+                        found_paths.append(field_path)
+                    if ftype != GFFFieldType.LocalizedString or not isinstance(fval, LocalizedString):
+                        continue
+                    if fval.stringref == query_stringref:
+                        found_paths.append(field_path)
+                        return True
+                return False
+
+            result = recurse_gff_structs_with_logging(valid_gff.root)
+
+            # Log all found field paths
+            if result and logger:
+                for field_path in found_paths:
+                    logger(f"    Found at: field path '{field_path}' at {path_str}")
+
+            return result
 
         def get_ncs_consti_offsets(resource_ncs: FileResource, target_value: int) -> list[int]:
             """Get byte offsets of all CONSTI instructions with a specific value.
@@ -2148,7 +2233,7 @@ class Installation:
                         return True
                 if ftype != GFFFieldType.LocalizedString or not isinstance(fval, LocalizedString):
                     continue
-                if fval.stringref == query_stringref:
+                if fval.stringref == query_stringref:  # the matching strref was found
                     return True
             return False
 
@@ -2188,7 +2273,7 @@ class Installation:
                 if this_restype.extension not in gff_extensions:
                     continue
                 valid_gff: GFF | None = try_get_gff(resource.data())
-                if not valid_gff:
+                if valid_gff is None:
                     continue
                 if not recurse_gff_structs(valid_gff.root):
                     continue
@@ -2222,7 +2307,7 @@ class Installation:
                     if this_restype.extension not in gff_extensions:
                         continue
                     valid_gff: GFF | None = try_get_gff(resource.data())
-                    if not valid_gff:
+                    if valid_gff is None:
                         continue
                     if not recurse_gff_structs(valid_gff.root):
                         continue
@@ -2671,7 +2756,7 @@ class Installation:
         Returns:
         -------
             The ID of the area for the module.
-        """
+        """  # noqa: E501
         root: str = self.get_module_root(module_filename)
 
         try:

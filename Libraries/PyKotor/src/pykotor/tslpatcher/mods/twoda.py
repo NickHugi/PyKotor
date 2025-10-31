@@ -46,6 +46,19 @@ class Target:
             msg = "Target value must be int if type is row index."
             raise ValueError(msg)
 
+    def __str__(self):
+        value_str = str(self.value)
+        class_name = self.value.__class__.__name__
+        if class_name in ("RowValue2DAMemory", "RowValueTLKMemory"):
+            value_str = repr(self.value)
+        type_names = {
+            TargetType.ROW_INDEX: "row index",
+            TargetType.ROW_LABEL: "row label",
+            TargetType.LABEL_COLUMN: "label column",
+        }
+        type_name = type_names.get(self.target_type, self.target_type.name)
+        return f"Target({type_name}={value_str})"
+
     def __repr__(self):
         return f"{self.__class__.__name__}(target_type={self.target_type.__class__.__name__}.{self.target_type.name}, value={self.value!r})"
 
@@ -99,6 +112,12 @@ class Target:
 
 # region Value Returners
 class RowValue(ABC):
+    def __str__(self):
+        return f"{self.__class__.__name__}()"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
+
     @abstractmethod
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         """Returns the value of the row.
@@ -115,6 +134,9 @@ class RowValueConstant(RowValue):
     def __init__(self, string: str):
         self.string: str = string
 
+    def __str__(self):
+        return f"Constant('{self.string}')"
+
     def __repr__(self):
         return f"{self.__class__.__name__}(string='{self.string}')"
 
@@ -125,6 +147,9 @@ class RowValueConstant(RowValue):
 class RowValue2DAMemory(RowValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
+
+    def __str__(self):
+        return f"2DAMEMORY{self.token_id}"
 
     def __repr__(self):
         return f"{self.__class__.__name__}(token_id={self.token_id})"
@@ -143,6 +168,9 @@ class RowValue2DAMemory(RowValue):
 class RowValueTLKMemory(RowValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
+
+    def __str__(self):
+        return f"StrRef{self.token_id}"
 
     def __repr__(self):
         return f"{self.__class__.__name__}(token_id={self.token_id})"
@@ -164,6 +192,11 @@ class RowValueHigh(RowValue):
 
     def __init__(self, column: str | None):
         self.column: str | None = column
+
+    def __str__(self):
+        if self.column is None:
+            return "High(label_max)"
+        return f"High(column_max('{self.column}'))"
 
     def __repr__(self):
         return f"{self.__class__.__name__}(column='{self.column}')"
@@ -193,6 +226,12 @@ class RowValueRowIndex(RowValue):
     """The row index of the row."""
     def __init__(self): ...
 
+    def __str__(self):
+        return "RowIndex()"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
+
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return "" if row is None else str(twoda.row_index(row))
 
@@ -200,6 +239,12 @@ class RowValueRowIndex(RowValue):
 class RowValueRowLabel(RowValue):
     """The row label of the row."""
     def __init__(self): ...
+
+    def __str__(self):
+        return "RowLabel()"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return "" if row is None else row.label()
@@ -209,6 +254,9 @@ class RowValueRowCell(RowValue):
     """The value of a cell in the row."""
     def __init__(self, column: str):
         self.column: str = column
+
+    def __str__(self):
+        return f"RowCell('{self.column}')"
 
     def __repr__(self):
         return f"{self.__class__.__name__}(column='{self.column}')"
@@ -223,6 +271,12 @@ class RowValueRowCell(RowValue):
 
 # region Modify 2DA
 class Modify2DA(ABC):
+    def __str__(self):
+        return f"{self.__class__.__name__}()"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
+
     @abstractmethod
     def __init__(self): ...
 
