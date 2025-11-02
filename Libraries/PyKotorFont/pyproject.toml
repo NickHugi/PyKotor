@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 name="PyKotorFont"
 description="Work with KOTOR's font textures and txi files."
 version="1.7"
-requires-python = ">= 3.7"
+requires-python = ">= 3.8"
 dependencies = [
     "ply>=3.11,<4",     # required for the nss compiler lexer
     "numpy~=1.22",      # probably required by PyKotorGL

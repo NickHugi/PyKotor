@@ -10,10 +10,11 @@ KotorDiff INI generation system. It includes:
 
 from __future__ import annotations
 
+import contextlib
+import io
 import os
 import pathlib
 import sys
-import tempfile
 import unittest
 from typing import TYPE_CHECKING
 
@@ -32,6 +33,54 @@ if KOTORDIFF_PATH.as_posix() not in sys.path:
 
 from utility.system.path import Path
 from pykotor.extract.installation import Installation
+
+
+@contextlib.contextmanager
+def capture_output_to_file(log_file_path: Path):
+    """Context manager to capture stdout and stderr to a file.
+
+    Args:
+        log_file_path: Path to the log file where output will be saved.
+    """
+    log_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Create StringIO buffers for stdout and stderr
+    stdout_buffer = io.StringIO()
+    stderr_buffer = io.StringIO()
+
+    # Save the original streams
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+
+    try:
+        # Replace with our buffers
+        sys.stdout = stdout_buffer
+        sys.stderr = stderr_buffer
+
+        # Yield control
+        yield
+
+    finally:
+        # Restore original streams
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
+
+        # Get captured content
+        stdout_content = stdout_buffer.getvalue()
+        stderr_content = stderr_buffer.getvalue()
+
+        # Write to file
+        with log_file_path.open("w", encoding="utf-8") as log_file:
+            if stdout_content:
+                log_file.write("=== STDOUT ===\n")
+                log_file.write(stdout_content)
+                if not stdout_content.endswith("\n"):
+                    log_file.write("\n")
+            if stderr_content:
+                log_file.write("=== STDERR ===\n")
+                log_file.write(stderr_content)
+                if not stderr_content.endswith("\n"):
+                    log_file.write("\n")
 
 
 def get_test_paths() -> tuple[str, str]:
@@ -88,8 +137,8 @@ def get_expected_header_lines(today: str) -> list[str]:
         ";    • ai-researchwizard: AI-powered research assistant",
         ";        https://github.com/bolabaden/ai-researchwizard",
         ";",
-        "; ----------------------------------------------------------------------------",
         ";",
+        "; ----------------------------------------------------------------------------",
         ";  FORMATTING NOTES:",
         ";    • This file is TSLPatcher-compliant and machine-generated.",
         ";    • You may add blank lines between sections (for readability).",
@@ -110,7 +159,7 @@ def get_expected_ini_content_from_reference(today: str) -> str:
         Complete expected INI content
     """
     # Read the reference INI file
-    reference_path = pathlib.Path(__file__).resolve().parent / "reference_changes.ini"
+    reference_path = Path(__file__).resolve().parent / "reference_changes.ini"
     if not reference_path.exists():
         raise FileNotFoundError(f"Reference INI not found at {reference_path}")
 
@@ -148,21 +197,27 @@ class TestKotorDiffFullExecution(unittest.TestCase):
         """
         from datetime import datetime, timezone
 
-        # Collect all errors instead of failing fast
-        errors: list[str] = []
+        # Set up log file path
+        tslpatchdata_path = Path("tslpatchdata")
+        log_file_path = tslpatchdata_path / "generated_ini_output.log"
 
-        def check(condition: bool, error_msg: str) -> bool:
-            """Check condition and collect error if it fails."""
-            if not condition:
-                errors.append(error_msg)
-                print(f"[ERROR] {error_msg}")
-            return condition
+        # Capture all stdout/stderr to the log file
+        with capture_output_to_file(log_file_path):
+            # Collect all errors instead of failing fast
+            errors: list[str] = []
 
-        # Get test paths
-        path1_vanilla, path2_modded = get_test_paths()
+            def check(condition: bool, error_msg: str) -> bool:
+                """Check condition and collect error if it fails."""
+                if not condition:
+                    errors.append(error_msg)
+                    print(f"[ERROR] {error_msg}")
+                return condition
 
-        # Load reference INI
-        reference_path = pathlib.Path(__file__).resolve().parent / "reference_changes.ini"
+            # Get test paths
+            path1_vanilla, path2_modded = get_test_paths()
+
+            # Load reference INI
+            reference_path = THIS_SCRIPT_PATH.parent / "reference_changes.ini"
         reference_content = reference_path.read_text(encoding="utf-8")
         reference_lines = reference_content.split("\n")
         assert reference_path.exists(), f"Reference INI not found at {reference_path}"
@@ -175,9 +230,9 @@ class TestKotorDiffFullExecution(unittest.TestCase):
             reference_normalized.append(line.rstrip())
 
         # Verify paths exist
-        if not pathlib.Path(path1_vanilla).exists():
+        if not Path(path1_vanilla).exists():
             self.skipTest(f"Vanilla installation not found at {path1_vanilla}")
-        if not pathlib.Path(path2_modded).exists():
+        if not Path(path2_modded).exists():
             self.skipTest(f"Modded installation not found at {path2_modded}")
 
         # Create temp output directory
@@ -199,7 +254,6 @@ class TestKotorDiffFullExecution(unittest.TestCase):
         try:
             # Import required modules
             from kotordiff.app import KotorDiffConfig, run_application  # pyright: ignore[reportMissingImports]
-            from utility.system.path import Path  # pyright: ignore[reportMissingImports]
 
             # Create paths list with Installation objects for the test paths
             paths: list[Path | Installation] = [
@@ -298,8 +352,8 @@ class TestKotorDiffFullExecution(unittest.TestCase):
         # Validate Settings section specifically
         print(f"\n[TEST] Validating [Settings] section...")
 
-        settings_start = None
-        settings_end = None
+        settings_start: int | None = None
+        settings_end: int | None = None
         for i, line in enumerate(generated_lines):
             if line.strip() == "[Settings]":
                 settings_start = i

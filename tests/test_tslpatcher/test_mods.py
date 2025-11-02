@@ -146,14 +146,9 @@ class TestManipulateTLK(TestCase):
         self.assertEqual("Replace2", get_1.text)
         self.assertEqual("Replace3", get_2.text)
 
-        self.assertEqual(1, memory.memory_str[1])
-        self.assertEqual(2, memory.memory_str[2])
-
-        # [Dialog] [Append] [Token] [Text]
-        # 0        -        -       Old1
-        # 1        -        -       Old2
-        # 2        1        0       Append2
-        # 3        0        1       Append1
+        # Replace operations no longer store memory
+        self.assertNotIn(1, memory.memory_str)
+        self.assertNotIn(2, memory.memory_str)
 
 
 class TestManipulate2DA(TestCase):

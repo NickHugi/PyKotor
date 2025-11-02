@@ -137,6 +137,12 @@ class PatcherModifications(ABC):
         # TSLPatcher defaults to "ignore". However realistically, Override file shadowing is
         # a major problem, so HoloPatcher defaults to "warn"
         self.override_type = file_section_dict.pop("!OverrideType", OverrideType.WARN).lower()
+        # !SourceFolder: Relative path from mod_path (which is typically the tslpatchdata folder) to source files.
+        # Default value "." refers to mod_path itself (the tslpatchdata folder), not its parent.
+        # Path resolution: mod_path / sourcefolder / sourcefile
+        # For example: if mod_path = "C:/Mod/tslpatchdata" and sourcefolder = ".", then:
+        #   - Final path = "C:/Mod/tslpatchdata" / "." / "file.ext" = "C:/Mod/tslpatchdata/file.ext"
+        #   - If sourcefolder = "subfolder", then: "C:/Mod/tslpatchdata" / "subfolder" / "file.ext" = "C:/Mod/tslpatchdata/subfolder/file.ext"
         self.sourcefolder = file_section_dict.pop("!SourceFolder", default_sourcefolder)
 
 

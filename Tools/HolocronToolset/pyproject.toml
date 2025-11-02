@@ -1,40 +1,52 @@
 [build-system]
-requires = [
-    "setuptools>=67.8.0,<70",
-    "wheel"
-]
+requires = ["setuptools>=67.8.0,<70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="HolocronToolset"
-description="A PyQt5-backed program with a collection of tools and editors that make it easy to work with kotor files"
-version="3.1.1"
+name = "HolocronToolset"
+description = "A PyQt5-backed program with a collection of tools and editors that make it easy to work with kotor files"
+version = "3.1.1"
 requires-python = ">= 3.8"
 dependencies = [
-    "idna",  # Tested with 3.3
-    "PyQt5~=5.15; python_implementation == 'CPython'",
-    "PyQt5-Qt5~=5.15; python_implementation == 'CPython'",
-    "PyQt5-sip~=12.10; python_implementation == 'CPython'",
-    "PySide6; python_implementation == 'PyPy'",
-    "urllib3~=1.26",
-    "watchdog>=2.1,<3.1",
-    "Markdown>=3.3,<3.6",
-    "jsmin~=3.0",
-    "requests>=2.27,<2.32",
-    "certifi==2021.10.8",
-    "qtpy",
-#    "pykotor>=1.7",
-#    "pykotor[gl]>=1.7"
+  "idna",                                                 # Tested with 3.3
+  "PyQt5~=5.15; python_implementation == 'CPython'",
+  "PyQt5-Qt5~=5.15; python_implementation == 'CPython'",
+  "PyQt5-sip~=12.10; python_implementation == 'CPython'",
+  "PySide6; python_implementation == 'PyPy'",
+  "urllib3~=1.26",
+  "watchdog>=2.1,<3.1",
+  "Markdown>=3.3,<3.6",
+  "jsmin~=3.0",
+  "requests>=2.27,<2.32",
+  "certifi==2021.10.8",
+  "qtpy",
+  #    "pykotor>=1.7",
+  #    "pykotor[gl]>=1.7"
 ]
-authors = [
-  {name = "NickHugi"},
+authors = [{ name = "NickHugi" }]
+maintainers = [{ name = "th3w1zard1", email = "halomastar@gmail.com" }]
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { text = "LGPL-3.0-or-later License" }
+keywords = [
+  "kotor",
+  "pyqt5",
+  "holocron",
+  "toolset",
+  "pykotor",
+  "star",
+  "wars",
+  "starwars",
+  "toolset",
+  "toolkit",
+  "opengl",
+  "designer",
+  "module",
+  "modding",
+  "dlgeditor",
+  "AIO",
+  "editor",
+  "GFF",
 ]
-maintainers = [
-  {name = "th3w1zard1", email = "halomastar@gmail.com"},
-]
-readme = {file = "README.md", content-type = "text/markdown"}
-license = {text = "LGPL-3.0-or-later License"}
-keywords = ["kotor", "pyqt5", "holocron", "toolset", "pykotor", "star", "wars", "starwars", "toolset", "toolkit", "opengl", "designer", "module", "modding", "dlgeditor", "AIO", "editor", "GFF"]
 
 [project.urls]
 Homepage = "https://github.com/NickHugi/PyKotor"
@@ -72,10 +84,10 @@ extend = "../../pyproject.toml"
 
 [tool.ruff.lint]
 ignore = [
-    "N",       # disable snake_case vs PascalCase/camelCase checks for pyqt5
-    "SLF001",  # private member access
-    "PLR0913", # too many arguments in function definition
-    "FBT001",  # boolean-typed positional argument in function definition
+  "N",       # disable snake_case vs PascalCase/camelCase checks for pyqt5
+  "SLF001",  # private member access
+  "PLR0913", # too many arguments in function definition
+  "FBT001",  # boolean-typed positional argument in function definition
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -84,7 +96,7 @@ ignore = [
 "__init__.py" = ["I001", "F401"]
 "globalsettings.py" = ["I001", "F401"]
 "./src/toolset/*.py" = ["FBT003", "N802", "N803", "N806", "A001"]
-"./src/toolset/uic/*.py" = ["ALL"]  # uic's are auto-generated
+"./src/toolset/uic/*.py" = ["ALL"]                                # uic's are auto-generated
 "resources_rc.py" = ["ALL"]
 ".mdx" = ["ALL"]
 ".mdl" = ["ALL"]

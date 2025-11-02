@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 name="HoloPatcher"
 description="A faster, cross-platform alternative to TSLPatcher written in Python."
 version="1.5.3"
-requires-python = ">= 3.7"
+requires-python = ">= 3.8"
 dependencies = [
     "requests",                     # for 'check for updates' feature.
     "charset-normalizer>=2.0,<3.4"  # optional but recommended, auto-detect encoding of INI files

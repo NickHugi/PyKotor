@@ -294,6 +294,11 @@ class ConfigReader:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(foldername) + REFERENCES_TRACEBACK_MSG.format(folder_key, foldername, install_list_section))
 
             folder_section_dict = CaseInsensitiveDict(self.ini[foldername_section])
+            # !SourceFolder: Relative path from mod_path (which is typically the tslpatchdata folder) to source files.
+            # Default value "." refers to mod_path itself (the tslpatchdata folder), not its parent.
+            # For example: if mod_path = "C:/Mod/tslpatchdata", then:
+            #   - !SourceFolder="." resolves to "C:/Mod/tslpatchdata"
+            #   - !SourceFolder="textures" resolves to "C:/Mod/tslpatchdata/textures"
             sourcefolder: str = folder_section_dict.pop("!SourceFolder", ".")
             for file_key, filename in folder_section_dict.items():
                 file_install = InstallFile(
@@ -329,6 +334,11 @@ class ConfigReader:
         tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section])
 
         default_destination = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
+        # !DefaultSourceFolder: Relative path from mod_path (which is typically the tslpatchdata folder) to source files.
+        # Default value "." refers to mod_path itself (the tslpatchdata folder), not its parent.
+        # For example: if mod_path = "C:/Mod/tslpatchdata", then:
+        #   - !DefaultSourceFolder="." resolves to "C:/Mod/tslpatchdata"
+        #   - !DefaultSourceFolder="textures" resolves to "C:/Mod/tslpatchdata/textures"
         default_sourcefolder = tlk_list_edits.pop("!DefaultSourceFolder", ".")
         self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination, default_sourcefolder)
 
@@ -344,6 +354,9 @@ class ConfigReader:
         ):
             modifier = ModifyTLK(dialog_tlk_index, is_replacement)
             modifier.mod_index = mod_tlk_index
+            # Path resolution: mod_path / sourcefolder / tlk_filename
+            # mod_path is typically the tslpatchdata folder (parent of changes.ini).
+            # If sourcefolder = ".", this resolves to mod_path itself (tslpatchdata folder).
             modifier.tlk_filepath = self.mod_path / self.config.patches_tlk.sourcefolder / tlk_filename
             self.config.patches_tlk.modifiers.append(modifier)
 
@@ -438,6 +451,11 @@ class ConfigReader:
 
         twoda_section_dict = CaseInsensitiveDict(self.ini[twoda_section_name])
         default_destination: str = twoda_section_dict.pop("!DefaultDestination", Modifications2DA.DEFAULT_DESTINATION)
+        # !DefaultSourceFolder: Relative path from mod_path (which is typically the tslpatchdata folder) to source files.
+        # Default value "." refers to mod_path itself (the tslpatchdata folder), not its parent.
+        # For example: if mod_path = "C:/Mod/tslpatchdata", then:
+        #   - !DefaultSourceFolder="." resolves to "C:/Mod/tslpatchdata"
+        #   - !DefaultSourceFolder="2da" resolves to "C:/Mod/tslpatchdata/2da"
         default_source_folder = twoda_section_dict.pop("!DefaultSourceFolder", ".")
         for identifier, file in twoda_section_dict.items():
             file_section: str | None = self.get_section_name(file)
@@ -484,6 +502,11 @@ class ConfigReader:
 
         ssf_section_dict = CaseInsensitiveDict(self.ini[ssf_list_section])
         default_destination: str = ssf_section_dict.pop("!DefaultDestination", ModificationsSSF.DEFAULT_DESTINATION)
+        # !DefaultSourceFolder: Relative path from mod_path (which is typically the tslpatchdata folder) to source files.
+        # Default value "." refers to mod_path itself (the tslpatchdata folder), not its parent.
+        # For example: if mod_path = "C:/Mod/tslpatchdata", then:
+        #   - !DefaultSourceFolder="." resolves to "C:/Mod/tslpatchdata"
+        #   - !DefaultSourceFolder="voices" resolves to "C:/Mod/tslpatchdata/voices"
         default_source_folder = ssf_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in ssf_section_dict.items():
@@ -537,6 +560,11 @@ class ConfigReader:
         self.log.add_note("Loading [GFFList] patches from ini...")
         gff_section_dict = CaseInsensitiveDict(self.ini[gff_list_section])
         default_destination: str = gff_section_dict.pop("!DefaultDestination", ModificationsGFF.DEFAULT_DESTINATION)
+        # !DefaultSourceFolder: Relative path from mod_path (which is typically the tslpatchdata folder) to source files.
+        # Default value "." refers to mod_path itself (the tslpatchdata folder), not its parent.
+        # For example: if mod_path = "C:/Mod/tslpatchdata", then:
+        #   - !DefaultSourceFolder="." resolves to "C:/Mod/tslpatchdata"
+        #   - !DefaultSourceFolder="gff" resolves to "C:/Mod/tslpatchdata/gff"
         default_source_folder = gff_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in gff_section_dict.items():
@@ -606,8 +634,16 @@ class ConfigReader:
         self.log.add_note("Loading [CompileList] patches from ini...")
         compilelist_section_dict = CaseInsensitiveDict(self.ini[compilelist_section])
         default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNSS.DEFAULT_DESTINATION)
+        # !DefaultSourceFolder: Relative path from mod_path (which is typically the tslpatchdata folder) to source files.
+        # Default value "." refers to mod_path itself (the tslpatchdata folder), not its parent.
+        # For example: if mod_path = "C:/Mod/tslpatchdata", then:
+        #   - !DefaultSourceFolder="." resolves to "C:/Mod/tslpatchdata"
+        #   - !DefaultSourceFolder="scripts" resolves to "C:/Mod/tslpatchdata/scripts"
         default_source_folder = compilelist_section_dict.pop("!DefaultSourceFolder", ".")
 
+        # Path resolution: mod_path / default_source_folder / "nwnnsscomp.exe"
+        # mod_path is typically the tslpatchdata folder (parent of changes.ini).
+        # If default_source_folder = ".", this resolves to mod_path itself (tslpatchdata folder).
         nwnnsscomp_exepath = self.mod_path / default_source_folder / "nwnnsscomp.exe"
         if not nwnnsscomp_exepath.safe_isfile():
             nwnnsscomp_exepath = None if self.tslpatchdata_path is None else self.tslpatchdata_path / "nwnnsscomp.exe"  # TSLPatcher default
@@ -646,6 +682,11 @@ class ConfigReader:
         self.log.add_note("Loading [HACKList] patches from ini...")
         hacklist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
         default_destination: str = hacklist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
+        # !DefaultSourceFolder: Relative path from mod_path (which is typically the tslpatchdata folder) to source files.
+        # Default value "." refers to mod_path itself (the tslpatchdata folder), not its parent.
+        # For example: if mod_path = "C:/Mod/tslpatchdata", then:
+        #   - !DefaultSourceFolder="." resolves to "C:/Mod/tslpatchdata"
+        #   - !DefaultSourceFolder="scripts" resolves to "C:/Mod/tslpatchdata/scripts"
         default_source_folder: str = hacklist_section_dict.pop("!DefaultSourceFolder", ".")
 
         # Process each NCS file in HACKList

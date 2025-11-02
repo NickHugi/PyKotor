@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
 
     from pykotor.common.misc import Game
-    from pykotor.extract.installation import Installation
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
@@ -127,12 +126,11 @@ class ModifyTLK:
         ----------------
             - Loads the TLK file
             - Replaces the token ID with the text and sound
-            - Stores the token ID in the memory context.
+            - Stores the new stringref in the memory context for append operations only.
         """
         self.load()
         if self.is_replacement:
             dialog.replace(self.token_id, self.text, str(self.sound))
-            memory.memory_str[self.token_id] = self.token_id
         else:
             memory.memory_str[self.token_id] = dialog.add(self.text, str(self.sound))
 

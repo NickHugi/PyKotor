@@ -1,34 +1,27 @@
 [build-system]
-requires = [
-    "setuptools>=42,<70",
-    "wheel",
-]
+requires = ["setuptools>=42,<70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="BatchPatcher"
-description="A translator/font creator tool useful for patching/working with many files at once."
-version="2.2.0"
-requires-python = ">= 3.8"  # 64-bit, 3.7 might be compatible
+name = "BatchPatcher"
+description = "A translator/font creator tool useful for patching/working with many files at once."
+version = "2.2.0"
+requires-python = ">= 3.8" # 64-bit, 3.7 might be compatible
 dependencies = [
-    "setuptools>=67.8.0,<70",
-    "deep_translator==1.9.2",
-    "deepl-cli==0.3.0",
-    "requests==2.28.2",
-    "opencv-contrib-python==4.7.0.68",
-    "notify-py==0.3.42",
-    "playwright>=1.30.0,<1.40",
-    "pyquery==1.4.3",
-    "arabic-reshaper==3.0.0",
+  "setuptools>=67.8.0,<70",
+  "deep_translator==1.9.2",
+  "deepl-cli==0.3.0",
+  "requests==2.28.2",
+  "opencv-contrib-python==4.7.0.68",
+  "notify-py==0.3.42",
+  "playwright>=1.30.0,<1.40",
+  "pyquery==1.4.3",
+  "arabic-reshaper==3.0.0",
 ]
-authors = [
-  {name = "NickHugi"},
-]
-maintainers = [
-  {name = "th3w1zard1", email = "halomastar@gmail.com"},
-]
-readme = {file = "README.md", content-type = "text/markdown"}
-license = {text = "LGPL-3.0-or-later License"}
+authors = [{ name = "NickHugi" }]
+maintainers = [{ name = "th3w1zard1", email = "halomastar@gmail.com" }]
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { text = "LGPL-3.0-or-later License" }
 keywords = ["kotor", "pyqt5", "holocron", "toolset", "pykotor"]
 
 [project.urls]

@@ -245,6 +245,9 @@ class ModInstaller:
         """
         try:
             if patch.replace_file or not exists_at_output_location:
+                # Path resolution: mod_path / sourcefolder / sourcefile
+                # mod_path is typically the tslpatchdata folder (parent of changes.ini).
+                # If sourcefolder = ".", this resolves to mod_path itself (tslpatchdata folder).
                 return self.load_resource_file(self.mod_path / patch.sourcefolder / patch.sourcefile)
             if capsule is None:
                 return self.load_resource_file(output_container_path / patch.saveas)
@@ -387,8 +390,9 @@ class ModInstaller:
             *self.get_tlk_patches(config),
             *config.patches_2da,
             *config.patches_gff,
+            # Note: TSLPatcher runs [CompileList] *after* [HACKList], which is objectively bad, so HoloPatcher here will do the inverse.
             *config.patches_nss,
-            *config.patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
+            *config.patches_ncs,
             *config.patches_ssf,
         ]
 
