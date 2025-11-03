@@ -1,0 +1,1 @@
+git submodule foreach 'git checkout master && git pull origin master' && git add . && git commit -m "Update submodules to latest main"

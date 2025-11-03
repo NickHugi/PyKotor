@@ -15,7 +15,9 @@ readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "LGPL-3.0-or-later License"}
 keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
 requires-python = ">= 3.7"
-dependencies = ["ply>=3.11,<4"]  # required for the nss compiler lexer
+dependencies = [
+    "ply>=3.11,<4",  # required for the nss compiler lexer
+]
 
 [project.optional-dependencies]
 font = [

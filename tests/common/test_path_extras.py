@@ -73,7 +73,7 @@ class TestPathExtras(unittest.TestCase):
         # self.run_command(isfile_or_dir_args(["icacls", path_str, "/deny", "dummy_user:(D,WDAC,WO)"]))
         # self.run_command(["cipher", "/e", path_str])
 
-    @unittest.skipIf(os.name == "posix", "This test can only run on Windows.")
+    @unittest.skip("skipped - requires admin permissions and overall an exhaustively involved test.")
     def test_gain_file_access(self):  # sourcery skip: extract-method
         test_file = Path("this file has no permissions.txt").absolute()
         try:

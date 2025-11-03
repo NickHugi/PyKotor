@@ -130,7 +130,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     def __new__(cls, *args, **kwargs) -> Self:
         # sourcery skip: remove-unreachable-code
         if cls is PurePath:
-            cls = PureWindowsPath if os.name == "nt" else PurePosixPath  # type: ignore[assignment]
+            cls = PureWindowsPath if os.name == "nt" else PurePosixPath  # type: ignore[assignment]  # noqa: PLW0642
         # disable caching for now by making it unreachable, remove below line to re-enable.
         return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[arg-type]
         instance_id = (cls, args, tuple(kwargs.items()))
@@ -256,7 +256,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     def __repr__(self):
         return f"{self.__class__.__name__}({self!s})"
 
-    def __eq__(self, __value):
+    def __eq__(self, __value):  # noqa: PYI063
         if __value is None:
             return False
         if self is __value:
@@ -278,7 +278,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
                 self_compare = self_compare.lower()
                 other_compare = other_compare.lower()
 
-        return cast(bool, self_compare == other_compare)
+        return cast("bool", self_compare == other_compare)
 
     def __hash__(self):
         return hash(self.as_posix() if self._flavour.sep == "/" else self.as_windows())  # pyright: ignore[reportAttributeAccessIssue]
@@ -456,7 +456,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
     def with_stem(self, stem: str) -> Self:  # type: ignore[type-var, misc]
         """Return a new path with the stem changed."""
-        self: PurePath = self  # type: ignore[] # noqa: PLW0127
+        self: PurePath = self  # type: ignore[]  # noqa: PLW0127, PLW0642
         return self.with_name(stem + self.suffix)  # type: ignore[return-value]
 
     def endswith(
@@ -497,18 +497,47 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
 
 class PurePosixPath(PurePath, pathlib.PurePosixPath):  # type: ignore[misc]
-    ...
+    if sys.version_info >= (3, 12):
+        import posixpath as _posixpath
+        _flavour = _posixpath  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info >= (3, 13):
+        class _PosixFlavourProxy:
+            def __init__(self, module):
+                self._module = module
+                self.sep = module.sep
+                self.altsep = getattr(module, "altsep", None)
+
+            def __getattr__(self, name):
+                return getattr(self._module, name)
+
+        _flavour = _PosixFlavourProxy(_posixpath)
 
 
 class PureWindowsPath(PurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
-    ...
+    if sys.version_info >= (3, 12):
+        import ntpath as _ntpath
+        _flavour = _ntpath  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info >= (3, 13):
+        class _WindowsFlavourProxy:
+            def __init__(self, module):
+                self._module = module
+                self.sep = module.sep
+                self.altsep = getattr(module, "altsep", None)
+
+            def __getattr__(self, name):
+                return getattr(self._module, name)
+
+        _flavour = _WindowsFlavourProxy(_ntpath)
 
 
 class Path(PurePath, pathlib.Path):  # type: ignore[misc]
+    if sys.version_info >= (3, 13):
+        _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore[assignment]  # noqa: SLF001  # pyright: ignore[reportUnreachable]
+
     def __new__(cls, *args, **kwargs) -> Self:
         if cls is Path:
-            cls = WindowsPath if os.name == "nt" else PosixPath
-        return super().__new__(cls, *args, **kwargs)  # pyright: ignore[reportReturnType]
+            cls = WindowsPath if os.name == "nt" else PosixPath  # type: ignore[assignment]  # noqa: PLW0642, SLF001
+        return super().__new__(cls, *args, **kwargs)  # pyright: ignore[reportArgumentType, reportReturnType]
 
     def __init__(self, *args, **kwargs):
         self._last_stat_result: os.stat_result | None = None
@@ -841,9 +870,9 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
 
                 # Execute the batch script
                 if block_until_complete:
-                    subprocess.run(run_script_cmd, check=False, creationflags=creation_flags, timeout=5)
+                    subprocess.run(run_script_cmd, check=False, creationflags=creation_flags, timeout=5)  # noqa: S603
                 else:
-                    subprocess.Popen(run_script_cmd, creationflags=creation_flags, timeout=5)
+                    subprocess.Popen(run_script_cmd, creationflags=creation_flags, timeout=5)  # noqa: S603  # pyright: ignore[reportCallIssue]
 
             # Delete the batch script after execution
             with suppress(Exception):
@@ -923,7 +952,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                     log_func(f"Permissions set successfully. Output:\n{icacls_result.stdout}")
 
             print(f"Step 4: Removing system/hidden/read-only attribute from '{self_path_str}'...")
-            is_read_only, is_hidden, is_system = self.get_win_attrs(self_path_str.replace('"', ""))
+            _is_read_only, is_hidden, is_system = self.get_win_attrs(self_path_str.replace('"', ""))
             attrib_args: list[str] = ["attrib", "-R", self_path_str]
             if is_system:
                 attrib_args.insert(1, "-S")
@@ -957,7 +986,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 if elevate:
                     commands.append(" ".join(rehide_args))
                 else:
-                    rehide_result: subprocess.CompletedProcess[str] = subprocess.run(rehide_args, timeout=60, check=False, capture_output=True, text=True)
+                    rehide_result: subprocess.CompletedProcess[str] = subprocess.run(rehide_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                     if rehide_result.returncode != 0:
                         log_func(
                             f"Could not set Windows icacls permissions at '{self_path_str}':\n"
@@ -982,12 +1011,21 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             current_gid = os.getuid() if gid is None else gid  # noqa: F841
 
 
+
 class PosixPath(Path):  # type: ignore[misc]
-    _flavour = pathlib.PurePosixPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info < (3, 12):
+        # In Python 3.12+, _flavour attribute was removed
+        _flavour = pathlib.PurePosixPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info >= (3, 13):
+        _flavour = PurePosixPath._flavour
 
 
 class WindowsPath(Path):  # type: ignore[misc]
-    _flavour = pathlib.PureWindowsPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info < (3, 12):
+        # In Python 3.12+, _flavour attribute was removed
+        _flavour = pathlib.PureWindowsPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info >= (3, 13):
+        _flavour = PureWindowsPath._flavour
 
 
 

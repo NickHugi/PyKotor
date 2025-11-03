@@ -87,6 +87,6 @@ tests/test_tslpatcher/test_kotordiff_comprehensive.py
 Libraries/PyKotor/src/pykotor/tslpatcher/diff
 Libraries/PyKotor/src/pykotor/tslpatcher/writer.py
 tests/test_tslpatcher/reference_changes.ini
-TSLPatcher-2DAList-Syntax.md
+TSLPatcher-2DAList-Syntax.md/
 2DAMEMORY_COMPREHENSIVE_ANALYSIS.md
 .cursorignore

@@ -34,7 +34,7 @@ font_writer = [
 xml         = ["defusedxml~=0.7"]         # secure XML parsing
 gl          = [
   "PyGLM>=2.0,<2.8",
-  "PyOpenGL~=3.1",
+  "PyOpenGL>=3.1.10",
   "django>2.1; os_name != 'nt'",
   "django>2.0; os_name == 'nt'",
 ]

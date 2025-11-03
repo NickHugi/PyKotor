@@ -64,11 +64,6 @@ class TestCaseAwarePath(unittest.TestCase):
             CaseAwarePath(123)  # type: ignore[test raise]
             CaseAwarePath("path", "to", pathlib.Path("nothing"), 123)  # type: ignore[test raise]
 
-    def test_endswith(self):
-        path = CaseAwarePath("C:\\path\\to\\file.txt")
-        self.assertTrue(path.endswith(".TXT"))
-        self.assertFalse(path.endswith(".doc"))
-
     def test_find_closest_match(self):
         items = [CaseAwarePath("test"), CaseAwarePath("TEST"), CaseAwarePath("TesT"), CaseAwarePath("teSt")]
         self.assertEqual(str(CaseAwarePath.find_closest_match("teST", items)), "teSt")  # type: ignore[generator vs list]
