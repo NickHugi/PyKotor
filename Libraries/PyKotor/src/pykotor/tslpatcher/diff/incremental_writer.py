@@ -102,6 +102,27 @@ class PendingStrRefReference:
     location_data: dict[str, Any]
 
 
+@dataclass
+class Pending2DARowReference:
+    """Temporarily stored 2DA row reference that will be applied when the GFF file is diffed.
+
+    Attributes:
+        gff_filename: The GFF resource filename (e.g., "item.uti")
+        source_path: The installation or path where this 2DA row reference was found
+        twoda_filename: The 2DA filename (e.g., "appearance.2da")
+        row_index: The 2DA row index being referenced
+        token_id: The 2DAMEMORY token ID to use
+        field_paths: List of GFF field paths that reference this row
+    """
+
+    gff_filename: str
+    source_path: Installation | Path
+    twoda_filename: str
+    row_index: int
+    token_id: int
+    field_paths: list[str]
+
+
 class IncrementalTSLPatchDataWriter:
     """Writes tslpatchdata files and INI sections incrementally during diff."""
 
@@ -192,6 +213,10 @@ class IncrementalTSLPatchDataWriter:
         # Track pending StrRef references that will be applied when files are diffed
         # Key: filename (lowercase) -> list of PendingStrRefReference
         self._pending_strref_references: dict[str, list[PendingStrRefReference]] = {}
+
+        # Track pending 2DA row references that will be applied when GFF files are diffed
+        # Key: gff_filename (lowercase) -> list of Pending2DARowReference
+        self._pending_2da_row_references: dict[str, list[Pending2DARowReference]] = {}
 
     def register_tlk_modification_with_source(
         self,
@@ -340,6 +365,10 @@ class IncrementalTSLPatchDataWriter:
         # Check for and apply pending StrRef references before writing
         filename_lower = modification.sourcefile.lower()
         self._apply_pending_strref_references(filename_lower, modification, source_data, source_path)
+
+        # Check for and apply pending 2DA row references before writing (for GFF files)
+        if isinstance(modification, ModificationsGFF):
+            self._apply_pending_2da_row_references(filename_lower, modification, source_data, source_path)
 
         # Determine modification type and dispatch
         if isinstance(modification, Modifications2DA):
@@ -964,7 +993,15 @@ class IncrementalTSLPatchDataWriter:
                     # Find field paths in this GFF that reference our row index
                     field_paths = self._find_2da_row_in_gff(data, field_names, row_index)
                     if field_paths:
-                        self._create_immediate_gff_2da_patches(filename, field_paths, token_id)
+                        # Store reference temporarily instead of creating patches immediately
+                        self._store_pending_2da_row_reference(
+                            filename,
+                            source,
+                            twoda_filename,
+                            row_index,
+                            token_id,
+                            field_paths,
+                        )
                         found_count += 1
 
                 except Exception as e:
@@ -990,7 +1027,15 @@ class IncrementalTSLPatchDataWriter:
 
                             field_paths = self._find_2da_row_in_gff(data, field_names, row_index)
                             if field_paths:
-                                self._create_immediate_gff_2da_patches(filename, field_paths, token_id)
+                                # Store reference temporarily instead of creating patches immediately
+                                self._store_pending_2da_row_reference(
+                                    filename,
+                                    source,
+                                    twoda_filename,
+                                    row_index,
+                                    token_id,
+                                    field_paths,
+                                )
                                 found_count += 1
 
                         except Exception as e:
@@ -1005,7 +1050,15 @@ class IncrementalTSLPatchDataWriter:
 
                         field_paths = self._find_2da_row_in_gff(data, field_names, row_index)
                         if field_paths:
-                            self._create_immediate_gff_2da_patches(filename, field_paths, token_id)
+                            # Store reference temporarily instead of creating patches immediately
+                            self._store_pending_2da_row_reference(
+                                filename,
+                                source,
+                                twoda_filename,
+                                row_index,
+                                token_id,
+                                field_paths,
+                            )
                             found_count += 1
                 except Exception as e:
                     self.log_func(f"[Warning] Error scanning file: {e.__class__.__name__}: {e}")
@@ -1065,7 +1118,7 @@ class IncrementalTSLPatchDataWriter:
         row_index: int,
     ) -> list[str]:
         """Find GFF field paths that reference a specific 2DA row index."""
-        field_paths = []
+        field_paths: list[str] = []
         try:
             gff = read_gff(data)
             self._scan_gff_for_2da_row(gff.root, field_names, row_index, "", field_paths)
@@ -1110,34 +1163,13 @@ class IncrementalTSLPatchDataWriter:
         field_paths: list[str],
         token_id: int,
     ) -> None:
-        """Create GFF patches that replace 2DA row references with 2DAMEMORY tokens."""
-        # Find or create ModificationsGFF for this file
-        existing_mod = next((m for m in self.all_modifications.gff if m.sourcefile == gff_filename), None)
-        is_new = existing_mod is None
+        """Create GFF patches that replace 2DA row references with 2DAMEMORY tokens.
 
-        if existing_mod is None:
-            existing_mod = ModificationsGFF(gff_filename, replace=False, modifiers=[])
-            self.all_modifications.gff.append(existing_mod)
-
-        # Create ModifyFieldGFF entries for each field path
-        for field_path in field_paths:
-            # Create a FieldValue2DAMemory value
-            field_value = FieldValue2DAMemory(token_id)
-
-            modifier = ModifyFieldGFF(field_path, field_value)
-            existing_mod.modifiers.append(modifier)
-
-            self.log_func(f"  Created patch: {gff_filename} -> {field_path} = 2DAMEMORY{token_id}")
-
-        # Write to changes.ini IMMEDIATELY
-        if is_new:
-            self._write_gff_modification(existing_mod, None)
-        else:
-            # Re-append to update existing section
-            if existing_mod.sourcefile in self.written_sections:
-                self.written_sections.discard(existing_mod.sourcefile)
-            self._write_to_ini([existing_mod], "gff")
-            self.written_sections.add(existing_mod.sourcefile)
+        DEPRECATED: This method is kept for backward compatibility but should not be used.
+        Use _create_gff_2da_patch instead, which properly handles deferred application.
+        """
+        # Redirect to the new method (without modification parameter for backward compatibility)
+        self._create_gff_2da_patch(gff_filename, field_paths, token_id, None)
 
     def _find_strref_locations_in_2da(
         self,
@@ -1187,7 +1219,7 @@ class IncrementalTSLPatchDataWriter:
         strref: int,
     ) -> list[str]:
         """Find specific field paths in a GFF file that contain the StrRef."""
-        locations = []
+        locations: list[str] = []
         try:
             gff = read_gff(data)
             self._scan_gff_for_single_strref(gff.root, strref, "", locations)
@@ -1518,6 +1550,246 @@ class IncrementalTSLPatchDataWriter:
 
         return False
 
+    def _store_pending_2da_row_reference(
+        self,
+        gff_filename: str,
+        source_path: Installation | Path,
+        twoda_filename: str,
+        row_index: int,
+        token_id: int,
+        field_paths: list[str],
+    ) -> None:
+        """Store a 2DA row reference temporarily until the GFF file is diffed.
+
+        Args:
+            gff_filename: GFF resource filename (lowercase)
+            source_path: Installation or Path where the 2DA row reference was found
+            twoda_filename: The 2DA filename (e.g., "appearance.2da")
+            row_index: The 2DA row index being referenced
+            token_id: The 2DAMEMORY token ID to use
+            field_paths: List of GFF field paths that reference this row
+        """
+        if gff_filename not in self._pending_2da_row_references:
+            self._pending_2da_row_references[gff_filename] = []
+
+        pending_ref = Pending2DARowReference(
+            gff_filename=gff_filename,
+            source_path=source_path,
+            twoda_filename=twoda_filename,
+            row_index=row_index,
+            token_id=token_id,
+            field_paths=field_paths,
+        )
+        self._pending_2da_row_references[gff_filename].append(pending_ref)
+        self.log_func(f"    Stored pending 2DA row reference: {gff_filename} -> {twoda_filename} row {row_index} = 2DAMEMORY{token_id} ({len(field_paths)} field(s))")
+
+    def _apply_pending_2da_row_references(
+        self,
+        gff_filename: str,
+        modification: PatcherModifications,
+        source_data: bytes | None,
+        source_path: Installation | Path | None = None,
+    ) -> None:
+        """Check and apply pending 2DA row references for a GFF file being diffed.
+
+        Only applies references if:
+        - The GFF file matches the pending reference filename
+        - AND it comes from the same path as where the 2DA row reference was found
+        - AND the 2DA row still exists at the expected location in the source data
+
+        References are only relevant to the path they're from.
+
+        Args:
+            gff_filename: The GFF filename being diffed (lowercase)
+            modification: The GFF modification object being written
+            source_data: Optional source data to verify 2DA row still exists
+            source_path: Optional path where this file is coming from
+        """
+        if gff_filename not in self._pending_2da_row_references:
+            return
+
+        pending_refs = self._pending_2da_row_references[gff_filename]
+        if not pending_refs:
+            return
+
+        applied_refs: list[Pending2DARowReference] = []
+        for pending_ref in pending_refs:
+            # Only apply references if they come from the same path
+            # References are only relevant to the path they're from
+            should_apply = False
+
+            if source_path is not None:
+                # Check if paths match exactly
+                if isinstance(pending_ref.source_path, Installation) and isinstance(source_path, Installation):
+                    should_apply = pending_ref.source_path.path() == source_path.path()
+                elif isinstance(pending_ref.source_path, Path) and isinstance(source_path, Path):
+                    should_apply = pending_ref.source_path == source_path
+
+            # If source_path is None, we can't verify the path match, so don't apply
+            # Also verify the 2DA row still exists at the expected location in the source data
+            if should_apply and source_data is not None:
+                should_apply = self._verify_2da_row_location(source_data, pending_ref)
+
+            if should_apply:
+                # Apply the reference to the modification object being written
+                self._create_gff_2da_patch(
+                    gff_filename,
+                    pending_ref.field_paths,
+                    pending_ref.token_id,
+                    modification,  # Pass the modification object being written
+                )
+                applied_refs.append(pending_ref)
+
+        # Remove applied references
+        for applied_ref in applied_refs:
+            pending_refs.remove(applied_ref)
+        if not pending_refs:
+            del self._pending_2da_row_references[gff_filename]
+
+    def _verify_2da_row_location(
+        self,
+        data: bytes,
+        pending_ref: Pending2DARowReference,
+    ) -> bool:
+        """Verify that a 2DA row reference still exists at the expected locations in the GFF data.
+
+        Args:
+            data: The GFF file data to check
+            pending_ref: The pending 2DA row reference
+
+        Returns:
+            True if the 2DA row reference exists at all expected field paths, False otherwise
+        """
+        try:
+            gff_obj = read_gff(data)
+            # Get the field names that should reference this 2DA file
+            twoda_resname = pending_ref.twoda_filename.lower().replace(".2da", "")
+            relevant_field_names: list[str] = []
+            for field_name, resource_id in GFF_FIELD_TO_2DA_MAPPING.items():
+                if resource_id.resname.lower() == twoda_resname:
+                    relevant_field_names.append(field_name)
+
+            # Verify all field paths in the pending reference still have the row index
+            return all(
+                self._check_gff_field_2da_row(gff_obj.root, field_path, pending_ref.row_index, relevant_field_names)
+                for field_path in pending_ref.field_paths
+            )
+
+        except Exception as e:  # noqa: BLE001
+            _log_debug(f"Error verifying 2DA row location: {e.__class__.__name__}: {e}")
+            return False
+
+    def _check_gff_field_2da_row(
+        self,
+        struct: GFFStruct,
+        field_path: str,
+        row_index: int,
+        relevant_field_names: list[str],
+    ) -> bool:
+        """Check if a GFF field at the given path contains the 2DA row index.
+
+        Args:
+            struct: The GFF struct to search
+            field_path: The field path (e.g., "Appearance_Type", "PropertiesList[0].Subtype")
+            row_index: The 2DA row index value to check for
+            relevant_field_names: List of field names that should reference this 2DA
+
+        Returns:
+            True if the field contains the row index, False otherwise
+        """
+        from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFList
+
+        # Parse field path (handle array indices)
+        parts = field_path.split(".")
+        current = struct
+
+        for i, part in enumerate(parts):
+            if "[" in part and "]" in part:
+                # Array access like "ItemList[0]"
+                field_label = part[: part.index("[")]
+                index = int(part[part.index("[") + 1 : part.index("]")])
+                # Get the field from current struct
+                for field_label_check, field_type, field_value in current:
+                    if field_label_check == field_label and field_type == GFFFieldType.List and isinstance(field_value, GFFList):
+                        if index < len(field_value):
+                            current = field_value[index]
+                            break
+                        return False
+                else:
+                    return False
+            # Regular field access
+            if i == len(parts) - 1:
+                # Last part - check if it has the row index
+                for field_label_check, _field_type, field_value in current:
+                    if field_label_check == part:
+                        # Check if this field name is relevant and has the correct row index
+                        if field_label_check in relevant_field_names and isinstance(field_value, int):
+                            return field_value == row_index
+                        return False
+                return False
+
+            # Not the last part - navigate deeper
+            for field_label_check, field_type, field_value in current:
+                if field_label_check == part:
+                    if field_type == GFFFieldType.Struct and isinstance(field_value, GFFStruct):
+                        current = field_value
+                        break
+                    return False
+            else:
+                return False
+
+        return False
+
+    def _create_gff_2da_patch(
+        self,
+        gff_filename: str,
+        field_paths: list[str],
+        token_id: int,
+        modification: PatcherModifications | None = None,
+    ) -> None:
+        """Create GFF patches that replace 2DA row references with 2DAMEMORY tokens.
+
+        Args:
+            gff_filename: GFF filename
+            field_paths: List of GFF field paths that reference the 2DA row
+            token_id: The 2DAMEMORY token ID to use
+            modification: Optional modification object to add to (if provided, use this instead of searching)
+        """
+        # Use the provided modification if it matches, otherwise find or create one
+        if modification is not None and isinstance(modification, ModificationsGFF) and modification.sourcefile.lower() == gff_filename.lower():
+            existing_mod = modification
+            is_new = existing_mod.sourcefile not in self.written_sections
+        else:
+            # Find or create ModificationsGFF from all_modifications
+            found_mod = next((m for m in self.all_modifications.gff if m.sourcefile == gff_filename), None)
+            is_new = found_mod is None
+
+            if found_mod is None:
+                existing_mod = ModificationsGFF(gff_filename, replace=False, modifiers=[])
+                self.all_modifications.gff.append(existing_mod)
+            else:
+                existing_mod = found_mod
+
+        # Create ModifyFieldGFF entries for each field path
+        for field_path in field_paths:
+            # Create a FieldValue2DAMemory value
+            field_value = FieldValue2DAMemory(token_id)
+
+            modifier = ModifyFieldGFF(field_path, field_value)
+            existing_mod.modifiers.append(modifier)
+
+            self.log_func(f"    Creating patch: {gff_filename} -> {field_path} = 2DAMEMORY{token_id}")
+
+        # Write to changes.ini
+        if is_new:
+            self._write_gff_modification(existing_mod, None)
+        else:
+            # Re-append to update existing section
+            if existing_mod.sourcefile in self.written_sections:
+                self.written_sections.discard(existing_mod.sourcefile)
+            self._write_to_ini([existing_mod], "gff")
+            self.written_sections.add(existing_mod.sourcefile)
+
     def _create_immediate_2da_strref_patch_single(
         self,
         filename: str,
@@ -1552,12 +1824,14 @@ class IncrementalTSLPatchDataWriter:
             is_new_mod = existing_mod.sourcefile not in self.written_sections
         else:
             # Get or create 2DA modification from all_modifications
-            existing_mod = next((m for m in self.all_modifications.twoda if m.sourcefile == filename), None)
-            is_new_mod = existing_mod is None
+            found_mod = next((m for m in self.all_modifications.twoda if m.sourcefile == filename), None)
+            is_new_mod = found_mod is None
 
-            if not existing_mod:
+            if found_mod is None:
                 existing_mod = Modifications2DA(filename)
                 self.all_modifications.twoda.append(existing_mod)
+            else:
+                existing_mod = found_mod
 
         # Create the patch
         change_row = ChangeRow2DA(
@@ -1605,12 +1879,14 @@ class IncrementalTSLPatchDataWriter:
             is_new_mod = existing_mod.sourcefile not in self.written_sections
         else:
             # Get or create SSF modification from all_modifications
-            existing_mod = next((m for m in self.all_modifications.ssf if m.sourcefile == filename), None)
-            is_new_mod = existing_mod is None
+            found_mod = next((m for m in self.all_modifications.ssf if m.sourcefile == filename), None)
+            is_new_mod = found_mod is None
 
-            if not existing_mod:
+            if found_mod is None:
                 existing_mod = ModificationsSSF(filename, replace=False, modifiers=[])
                 self.all_modifications.ssf.append(existing_mod)
+            else:
+                existing_mod = found_mod
 
         # Create the patch
         modify_ssf = ModifySSF(sound, TokenUsageTLK(token_id))
@@ -1651,12 +1927,14 @@ class IncrementalTSLPatchDataWriter:
             is_new_mod = existing_mod.sourcefile not in self.written_sections
         else:
             # Get or create GFF modification from all_modifications
-            existing_mod = next((m for m in self.all_modifications.gff if m.sourcefile == filename), None)
-            is_new_mod = existing_mod is None
+            found_mod = next((m for m in self.all_modifications.gff if m.sourcefile == filename), None)
+            is_new_mod = found_mod is None
 
-            if not existing_mod:
+            if found_mod is None:
                 existing_mod = ModificationsGFF(filename, replace=False, modifiers=[])
                 self.all_modifications.gff.append(existing_mod)
+            else:
+                existing_mod = found_mod
 
         # Create the patch
         locstring_delta = LocalizedStringDelta(FieldValueTLKMemory(token_id))
@@ -1696,12 +1974,14 @@ class IncrementalTSLPatchDataWriter:
             is_new_mod = existing_mod.sourcefile not in self.written_sections
         else:
             # Get or create NCS modification from all_modifications
-            existing_mod = next((m for m in self.all_modifications.ncs if m.sourcefile == filename), None)
-            is_new_mod = existing_mod is None
+            found_mod = next((m for m in self.all_modifications.ncs if m.sourcefile == filename), None)
+            is_new_mod = found_mod is None
 
-            if not existing_mod:
+            if found_mod is None:
                 existing_mod = ModificationsNCS(filename, replace=False, modifiers=[])
                 self.all_modifications.ncs.append(existing_mod)
+            else:
+                existing_mod = found_mod
 
         # Create the patch
         # CONSTI instructions store 32-bit signed integers, so use STRREF32 token type
@@ -1952,8 +2232,8 @@ class IncrementalTSLPatchDataWriter:
 
         # Find the folder section
         folder_section_idx: int | None = None
-        for i, line in enumerate(lines):
-            if line == folder_section:
+        for i, section_line in enumerate(lines):
+            if section_line == folder_section:
                 folder_section_idx = i
                 break
 
@@ -1963,8 +2243,8 @@ class IncrementalTSLPatchDataWriter:
             # Re-read to find the section
             current_content = self.ini_path.read_text(encoding="utf-8")
             lines = current_content.splitlines()
-            for i, line in enumerate(lines):
-                if line == folder_section:
+            for i, section_line in enumerate(lines):
+                if section_line == folder_section:
                     folder_section_idx = i
                     break
 
@@ -1978,12 +2258,12 @@ class IncrementalTSLPatchDataWriter:
 
         # Find where existing files end in this section
         for i in range(folder_section_idx + 1, len(lines)):
-            line: str = lines[i].strip()
+            file_line: str = lines[i].strip()
             # Stop at next section marker
-            if line.startswith("[") and line.endswith("]") and line != folder_section:
+            if file_line.startswith("[") and file_line.endswith("]") and file_line != folder_section:
                 break
             # Check if this is a File#= line
-            if line and not line.startswith(";") and line.startswith("File") and "=" in line:
+            if file_line and not file_line.startswith(";") and file_line.startswith("File") and "=" in file_line:
                 last_file_idx = i
 
         # Insert after the last file entry (or after section header if no files yet)
