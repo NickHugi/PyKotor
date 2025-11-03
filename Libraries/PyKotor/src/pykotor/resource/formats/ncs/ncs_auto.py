@@ -7,7 +7,7 @@ import re
 
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Sequence, cast
+from typing import TYPE_CHECKING, Sequence, Union, cast
 
 from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
@@ -20,7 +20,7 @@ from pykotor.resource.type import ResourceType
 
 logger = logging.getLogger(__name__)
 
-LibraryLookupType = Sequence[str | Path | os.PathLike[str]] | str | Path | os.PathLike[str] | None
+LibraryLookupType = Union[Sequence[Union[str, Path, os.PathLike[str]]], str, Path, os.PathLike[str], None]
 
 if TYPE_CHECKING:
     from ply import yacc  # type: ignore[import]  # pyright: ignore[reportMissingTypeStubs]

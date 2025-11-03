@@ -78,19 +78,17 @@ class MDLControllerType(IntEnum):
     ORIENTATION = 20
     SCALE = 36
     COLOR = 76
-    RADIUS = 88
-    SHADOWRADIUS = 96
-    VERTICALDISPLACEMENT = 100
-    ILLUM_COLOR = 100
-    ALPHA = 132
-    P2P_BEZIER_2 = 132
-    MULTIPLIER = 140
     ALPHAEND = 80
     ALPHASTART = 84
+    RADIUS = 88
     BIRTHRATE = 88
     BOUNCECO = 92
+    SHADOWRADIUS = 96
     COMBINEETIME = 96
+    VERTICALDISPLACEMENT = 100
     DRAG = 100
+    ILLUM_COLOR = 100
+    ILLUM = 100
     FOCUSZONETX = 104
     FOCUSZONETY = 108
     FRAME = 112
@@ -98,8 +96,11 @@ class MDLControllerType(IntEnum):
     LIFEEXP = 120
     MASS = 124
     P2P_BEZIER2 = 128
+    ALPHA = 132
+    P2P_BEZIER_2 = 132
     P2P_BEZIER3 = 132
     PARTICLEROTX = 136
+    MULTIPLIER = 140
     PARTICLEROTY = 140
     PARTICLEROTZ = 144
     RANDVELX = 148
@@ -127,9 +128,6 @@ class MDLControllerType(IntEnum):
     RANDOMVELY = 236
     RANDOMVELZ = 240
     TILING = 244
-    ILLUM = 100
-    ILLUM_COLOR = 100  # Alias for backwards compatibility
-    ALPHA = 132
 
 
 class MDLTrimeshProps(IntFlag):
