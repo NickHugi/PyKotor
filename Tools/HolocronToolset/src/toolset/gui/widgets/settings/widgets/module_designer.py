@@ -213,11 +213,11 @@ class ModuleDesignerSettings(Settings):
     )
     moveCameraPlane3dBind: SettingsProperty[Bind] = Settings.addSetting(
         "moveCameraPlane3dBind",
-        ({Qt.Key.Key_Control, Qt.Key.Key_Alt}, {Qt.MouseButton.LeftButton}),
+        (set(), {Qt.MouseButton.MiddleButton}),
     )
     rotateCamera3dBind: SettingsProperty[Bind] = Settings.addSetting(
         "rotateCamera3dBind",
-        ({Qt.Key.Key_Control}, {Qt.MouseButton.MiddleButton}),
+        (set(), {Qt.MouseButton.LeftButton}),
     )
     zoomCamera3dBind: SettingsProperty[Bind] = Settings.addSetting(
         "zoomCamera3dBind",
@@ -225,7 +225,7 @@ class ModuleDesignerSettings(Settings):
     )
     zoomCameraMM3dBind: SettingsProperty[Bind] = Settings.addSetting(
         "zoomCameraMM3dBind",
-        ({Qt.Key.Key_Control}, {Qt.MouseButton.RightButton}),
+        (set(), {Qt.MouseButton.RightButton}),
     )
     rotateSelected3dBind: SettingsProperty[Bind] = Settings.addSetting(
         "rotateSelected3dBind",
@@ -318,6 +318,10 @@ class ModuleDesignerSettings(Settings):
     duplicateObject3dBind: SettingsProperty[Bind] = Settings.addSetting(
         "duplicateObject3dBind",
         ({Qt.Key.Key_Alt}, {Qt.MouseButton.LeftButton}),
+    )
+    resetCameraView3dBind: SettingsProperty[Bind] = Settings.addSetting(
+        "resetCameraView3dBind",
+        ({Qt.Key.Key_Home}, set()),
     )
     # endregion
 
