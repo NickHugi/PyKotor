@@ -13,7 +13,7 @@ def read_txi(
 ):
     # if isinstance(source, (os.PathLike, str)):
     #    txi = TXI()
-    #    with Path.pathify(source).open("r", encoding="utf-8") as f:
+    #    with Path(source).open("r", encoding="utf-8") as f:
     #        for line in f.readlines():
     #            key, value = line.split(" ", maxsplit=1)
     #            setattr(txi, key, value)

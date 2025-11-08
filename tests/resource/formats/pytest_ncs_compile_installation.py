@@ -31,8 +31,6 @@ if UTILITY_PATH.joinpath("utility").is_dir():
 
 
 from pykotor.common.misc import Game  # noqa: E402
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS  # noqa: E402
-from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY  # noqa: E402
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.ncs.compiler.classes import CompileError, EntryPointError  # noqa: E402
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer  # noqa: E402
@@ -43,7 +41,7 @@ from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs  # noqa
 from pykotor.resource.formats.ncs.ncs_data import NCS  # noqa: E402
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception  # noqa: E402
-from utility.system.path import Path  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from _pytest.reports import TestReport
@@ -51,6 +49,17 @@ if TYPE_CHECKING:
 
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
+    
+    from pykotor.common.script import ScriptConstant, ScriptFunction
+    KOTOR_CONSTANTS: list[ScriptConstant] = []
+    KOTOR_FUNCTIONS: list[ScriptFunction] = []
+    TSL_CONSTANTS: list[ScriptConstant] = []
+    TSL_FUNCTIONS: list[ScriptFunction] = []
+    KOTOR_LIBRARY: dict[str, bytes] = {}
+    TSL_LIBRARY: dict[str, bytes] = {}
+else:
+    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+    from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 
 K1_PATH: str | None = os.environ.get("K1_PATH")
 K2_PATH: str | None = os.environ.get("K2_PATH")
@@ -122,7 +131,7 @@ def log_file(
     # Print the captured output to console
     print(*args, **kwargs)  # noqa: T201
 
-    filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path.pathify(filepath)
+    filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path(filepath)
     with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
         f.write(msg)
 
@@ -445,7 +454,7 @@ def save_profiler_output(
     filepath: os.PathLike | str,
 ):
     profiler.disable()
-    profiler_output_file = Path.pathify(filepath)
+    profiler_output_file = Path(filepath)
     profiler_output_file_str = str(profiler_output_file)
     profiler.dump_stats(profiler_output_file_str)
 

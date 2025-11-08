@@ -17,19 +17,18 @@ import traceback
 
 from collections import defaultdict
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff.gff_data import GFFContent
 from pykotor.tslpatcher.diff.engine import get_module_root
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.extract.file import FileResource, ResourceIdentifier
-    from pykotor.tslpatcher.diff.incremental_writer import IncrementalTSLPatchDataWriter
     from pykotor.tslpatcher.mods.tlk import ModificationsTLK
-    from pykotor.tslpatcher.writer import ModificationsByType
+    from pykotor.tslpatcher.writer import IncrementalTSLPatchDataWriter, ModificationsByType
 
 
 @dataclass
@@ -53,6 +52,7 @@ class TLKModificationWithSource:
         source_filepath: Path to the source TLK file for StrRef reference finding (base installation)
         source_installation: Source installation for StrRef reference finding (base installation)
     """
+
     modification: ModificationsTLK
     source_path: Installation | Path  # Installation or Path (order matters for type checking)
     source_index: int
@@ -198,8 +198,8 @@ def resolve_resource_in_installation(
             # Add winner to appropriate category
             if winner_path.suffix.lower() == ".mod":
                 module_mod_files.append(winner_path)
-            else:
-                module_rim_files.append(winner_path)
+                continue
+            module_rim_files.append(winner_path)
 
         # Apply resolution order: Override > .mod > .rim > Chitin
         chosen_filepath: Path | None = None
@@ -370,12 +370,7 @@ def _log_consolidated_resolution(  # noqa: PLR0913
     all_installations_with_paths: list[Installation | Path] = [install1, install2]
     if additional_installs:
         all_installations_with_paths.extend(additional_installs)
-    all_installations_with_paths = [
-        install
-        if isinstance(install, Installation)
-        else Path(install)
-        for install in all_installations_with_paths
-    ]
+    all_installations_with_paths = [install if isinstance(install, Installation) else Path(install) for install in all_installations_with_paths]
 
     # Track if we've found a chosen file yet (only ONE chosen across all installations)
     found_chosen: bool = False
@@ -533,6 +528,7 @@ def determine_tslpatcher_destination(
         # It's in a .rim - need to redirect to corresponding .mod
         if ".rim" in filepath_str:
             from pykotor.tslpatcher.diff.engine import get_module_root  # noqa: PLC0415
+
             module_root = get_module_root(filepath_b)
             return f"modules\\{module_root}.mod"
 
@@ -638,12 +634,7 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
     - Modules (.rim/_s.rim/_dlg.erf)
     - Chitin/BIFs (lowest)
 
-    InstallList Logic:
-    - File exists in target but NOT in base → [InstallList] (new file to install)
-    - File exists in both → [GFFList]/[2DAList]/etc (patch existing file)
-    - File exists in base but NOT in target → Removed (no action)
-
-    Supports N-way comparisons (3+ installations):
+    (todo): Will support N-way comparisons (3+ installations):
     - install1: Base/reference installation (index 0)
     - install2: Target installation (index 1) - generates patches against install1
     - additional_installs: Optional list of additional installations (indices 2+) for future n-way support
@@ -737,7 +728,6 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
 
     # Process filtered TLK files
     if filtered_tlk_identifiers:
-
         log_func(f"Processing {len(filtered_tlk_identifiers)} TLK files...")
         log_func("")
         for idx, identifier in enumerate(filtered_tlk_identifiers, start=1):
@@ -799,6 +789,7 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
 
             # Create a temporary log buffer to capture diff_data output
             tlk_diff_output_lines: list[str] = []
+
             def tlk_buffered_log_func(
                 msg: str,
                 *,
@@ -825,11 +816,7 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
                 log_func(line)
 
     # Remove TLK identifiers from the main list since we've processed them
-    all_identifiers: list[ResourceIdentifier] = [
-        ident
-        for ident in all_identifiers
-        if ident.restype.extension.lower() != "tlk"
-    ]
+    all_identifiers: list[ResourceIdentifier] = [ident for ident in all_identifiers if ident.restype.extension.lower() != "tlk"]
     log_func("TLK processing complete.")
     log_func("")
 
@@ -860,11 +847,7 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
     # This ensures TLK StrRef references are found and linked early (fast fail)
     assert modifications_by_type is not None, "modifications_by_type must not be None"
     total_mods: int = (
-        len(modifications_by_type.gff) +
-        len(modifications_by_type.twoda) +
-        len(modifications_by_type.ssf) +
-        len(modifications_by_type.ncs) +
-        len(modifications_by_type.tlk)
+        len(modifications_by_type.gff) + len(modifications_by_type.twoda) + len(modifications_by_type.ssf) + len(modifications_by_type.ncs) + len(modifications_by_type.tlk)
     )
     assert total_mods > 0, (
         "No modifications found in modifications_by_type before resource processing! "
@@ -893,6 +876,9 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
         all_identifiers = list(filtered_identifiers_set)
         log_func("")
 
+    # Cache for resolved resources to avoid re-resolution
+    resolution_cache: dict[tuple[int, ResourceIdentifier], ResolvedResource] = {}
+
     # Compare each resource
     is_same_result: bool | None = True
     processed_count: int = 0
@@ -912,8 +898,15 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
             log_func(f"Progress: {processed_count}/{len(all_identifiers)} resources processed...")
 
         # Resolve in both installations using indices (O(1) lookups instead of O(n) scans)
-        resolved1: ResolvedResource = resolve_resource_in_installation(install1, identifier, log_func=log_func, verbose=False, resource_index=index1)
-        resolved2: ResolvedResource = resolve_resource_in_installation(install2, identifier, log_func=log_func, verbose=False, resource_index=index2)
+        # Use cache to avoid re-resolving the same resource
+        cache_key1 = (0, identifier)
+        cache_key2 = (1, identifier)
+        if cache_key1 not in resolution_cache:
+            resolution_cache[cache_key1] = resolve_resource_in_installation(install1, identifier, log_func=log_func, verbose=False, resource_index=index1)
+        if cache_key2 not in resolution_cache:
+            resolution_cache[cache_key2] = resolve_resource_in_installation(install2, identifier, log_func=log_func, verbose=False, resource_index=index2)
+        resolved1: ResolvedResource = resolution_cache[cache_key1]
+        resolved2: ResolvedResource = resolution_cache[cache_key2]
 
         # Check if resource exists in both
         if resolved1.data is None and resolved2.data is None:
@@ -926,7 +919,7 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
 
             # Re-resolve with verbose logging to show where it was found
             log_func(f"Installation 1 (target - {install2_name}):")
-            resolve_resource_in_installation(install2, identifier, log_func=log_func, verbose=True)
+            resolve_resource_in_installation(install2, identifier, log_func=log_func, verbose=True, resource_index=index2)
 
             log_func(f"\n[NEW RESOURCE] {identifier}")
             log_func(f"  Source (target/install1): {resolved2.source_location}")
@@ -980,7 +973,7 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
 
             # Re-resolve with verbose logging to show where it was found
             log_func(f"Installation 0 ({install1_name}):")
-            resolve_resource_in_installation(install1, identifier, log_func=log_func, verbose=True)
+            resolve_resource_in_installation(install1, identifier, log_func=log_func, verbose=True, resource_index=index1)
 
             log_func(f"\n[RESOURCE IN INSTALL0 ONLY] {identifier}")
             log_func(f"  Source (install0 - {install1_name}): {resolved1.source_location}")
@@ -1027,10 +1020,7 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
             continue
 
         # Both exist - check if both are from BIFs (read-only, skip comparison)
-        both_from_bif: bool = (
-            resolved1.location_type == "Chitin BIFs"
-            and resolved2.location_type == "Chitin BIFs"
-        )
+        both_from_bif: bool = resolved1.location_type == "Chitin BIFs" and resolved2.location_type == "Chitin BIFs"
         if both_from_bif:
             # Both from read-only BIFs - skip comparison (can't be patched anyway)
             identical_count += 1
@@ -1061,9 +1051,8 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
         # For loose files, resname should be None to avoid duplication in 'where' property
         # The 'where' property uses resname to build paths like "container.ext/resource.ext"
         # For loose files, file2_rel already contains the full path, so no resname needed
-        is_in_container: bool | None = (
-            resolved2.location_type == "Chitin BIFs"
-            or (resolved2.filepath and resolved2.filepath.suffix.lower() in (".bif", ".rim", ".erf", ".mod", ".sav"))
+        is_in_container: bool | None = resolved2.location_type == "Chitin BIFs" or (
+            resolved2.filepath and resolved2.filepath.suffix.lower() in (".bif", ".rim", ".erf", ".mod", ".sav")
         )
         resname_for_context: str | None = identifier.resname if is_in_container else None
 
@@ -1082,11 +1071,11 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
         original_mod_count: int = 0
         if modifications_by_type is not None:
             original_mod_count = (
-                len(modifications_by_type.gff) +
-                len(modifications_by_type.twoda) +
-                len(modifications_by_type.ssf) +
-                len(modifications_by_type.tlk) +
-                len(modifications_by_type.ncs)
+                len(modifications_by_type.gff)
+                + len(modifications_by_type.twoda)
+                + len(modifications_by_type.ssf)
+                + len(modifications_by_type.tlk)
+                + len(modifications_by_type.ncs)
             )
 
         # Create a temporary log buffer to capture diff_data output
@@ -1150,11 +1139,11 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
             # Validate TSLPatcher destination was set correctly (now set directly in engine.py)
             if modifications_by_type is not None:
                 new_mod_count = (
-                    len(modifications_by_type.gff) +
-                    len(modifications_by_type.twoda) +
-                    len(modifications_by_type.ssf) +
-                    len(modifications_by_type.tlk) +
-                    len(modifications_by_type.ncs)
+                    len(modifications_by_type.gff)
+                    + len(modifications_by_type.twoda)
+                    + len(modifications_by_type.ssf)
+                    + len(modifications_by_type.tlk)
+                    + len(modifications_by_type.ncs)
                 )
 
                 if new_mod_count > original_mod_count:
@@ -1194,6 +1183,7 @@ def _diff_installations_with_resolution_impl(  # noqa: PLR0913, PLR0915, C901
                     )
                     filename_for_install = f"{identifier.resname}.{identifier.restype.extension}"
                     from pykotor.tslpatcher.diff.engine import _add_to_install_folder  # noqa: PLC0415
+
                     _add_to_install_folder(
                         modifications_by_type,
                         destination_for_install,
@@ -1287,19 +1277,12 @@ def explain_resolution_order(
         log_func("")
 
     # Explain what this means for modding (compare base vs target)
-    if (
-        install1_resolved.data is not None
-        and install2_resolved.data is not None
-        and install1_resolved.location_type != install2_resolved.location_type
-    ):
+    if install1_resolved.data is not None and install2_resolved.data is not None and install1_resolved.location_type != install2_resolved.location_type:
         log_func("  What this means:")
         if install2_resolved.location_type == "Override folder":
             log_func("    ✓ Resource was moved to Override (will override base version)")
             log_func("    ✓ TSLPatcher should install to Override")
-        elif (
-            install1_resolved.location_type == "Chitin BIFs"
-            and install2_resolved.location_type and "Modules" in install2_resolved.location_type
-        ):
+        elif install1_resolved.location_type == "Chitin BIFs" and install2_resolved.location_type and "Modules" in install2_resolved.location_type:
             log_func("    ✓ Resource extracted from BIF to Modules (now modifiable)")
             log_func("    ✓ TSLPatcher should install to appropriate module")
         else:
@@ -1308,4 +1291,3 @@ def explain_resolution_order(
             log_func(f"    → Priority changed from {loc1_name} to {loc2_name}")
 
     log_func("")
-

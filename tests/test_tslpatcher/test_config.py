@@ -26,7 +26,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pykotor.extract.capsule import Capsule
 from pykotor.tslpatcher.patcher import ModInstaller
-from utility.system.path import Path
+from pathlib import Path
 
 
 class TestLookupResourceFunction(unittest.TestCase):
@@ -283,7 +283,7 @@ class TestShouldPatchFunction(unittest.TestCase):
     def test_capsule_not_exist(self):
         patch = MagicMock(destination="capsule", action="Patching", sourcefile="file1")
         capsule = MagicMock()
-        cast(Capsule, capsule).filepath().safe_isfile.return_value = False
+        cast(Capsule, capsule).filepath().is_file.return_value = False
         result = self.patcher.should_patch(patch, capsule=capsule)
         self.assertFalse(result)
 

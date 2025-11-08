@@ -44,6 +44,8 @@ if getattr(sys, "frozen", False) is False:
         add_sys_path(utility_path.parent)
 
 
+from pathlib import Path, PurePath
+
 from loggerplus import RobustLogger
 
 from batchpatcher.translate.language_translator import TranslationOption, Translator
@@ -85,7 +87,6 @@ from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -182,8 +183,8 @@ def get_font_paths_windows() -> list[Path]:
             font_path: Path = fonts_dir / value[1]
             if font_path.suffix.lower() == ".ttf":  # Filtering for .ttf files
                 font_paths.add(font_path)
-    for file in fonts_dir.safe_rglob("*"):
-        if file.suffix.lower() == ".ttf" and file.safe_isfile():
+    for file in fonts_dir.rglob("*"):
+        if file.suffix.lower() == ".ttf" and file.is_file():
             font_paths.add(file)
 
     return list(font_paths)
@@ -282,7 +283,7 @@ def patch_nested_gff(
         if sound and sound_str.strip() and sound_str in ALIEN_SOUNDS:
             alien_vo_count += 1
 
-    current_path = PurePath.pathify(current_path or "GFFRoot")
+    current_path = PurePath(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
         if label.lower() == "mod_name":
             continue
@@ -315,7 +316,7 @@ def recurse_through_list(
     made_change: bool = False,
     alien_vo_count: int = -1,
 ) -> tuple[bool, int]:
-    current_path = PurePath.pathify(current_path or "GFFListRoot")
+    current_path = PurePath(current_path or "GFFListRoot")
     for list_index, gff_struct in enumerate(gff_list):
         result_made_change, alien_vo_count = patch_nested_gff(gff_struct, gff_content, gff, current_path / str(list_index), made_change, alien_vo_count)
         made_change |= result_made_change
@@ -717,7 +718,7 @@ def patch_erf_or_rim(
 
 
 def patch_file(file: os.PathLike | str):
-    c_file = Path.pathify(file)
+    c_file = Path(file)
     if c_file in processed_files:
         return
 
@@ -729,9 +730,9 @@ def patch_file(file: os.PathLike | str):
 
 
 def patch_folder(folder_path: os.PathLike | str):
-    c_folderpath = Path.pathify(folder_path)
+    c_folderpath = Path(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
-    for file_path in c_folderpath.safe_rglob("*"):
+    for file_path in c_folderpath.rglob("*"):
         patch_file(file_path)
 
 
@@ -763,7 +764,7 @@ def patch_install(install_path: os.PathLike | str):
             filename = str(res_ident)
             filepath = k_install.path().joinpath("Modules", filename)
             if res_ident.restype is ResourceType.RIM:
-                if filepath.with_suffix(".mod").safe_isfile():
+                if filepath.with_suffix(".mod").is_file():
                     log_output(f"Skipping {filepath}, a .mod already exists at this path.")
                     continue
                 new_rim = RIM()
@@ -813,12 +814,12 @@ def patch_install(install_path: os.PathLike | str):
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
     c_path: CaseAwarePath = CaseAwarePath(path)
-    return bool(c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_isfile())
+    return bool(c_path.is_dir() and c_path.joinpath("chitin.key").is_file())
 
 
 def determine_input_path(path: Path) -> None:
     # sourcery skip: assign-if-exp, reintroduce-else
-    if not path.safe_exists() or path.resolve() == Path.cwd().resolve():
+    if not path.exists() or path.resolve() == Path.cwd().resolve():
         import errno
 
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(path))
@@ -826,10 +827,10 @@ def determine_input_path(path: Path) -> None:
     if is_kotor_install_dir(path):
         return patch_install(path)
 
-    if path.safe_isdir():
+    if path.is_dir():
         return patch_folder(path)
 
-    if path.safe_isfile():
+    if path.is_file():
         return patch_file(path)
     return None
 
@@ -853,7 +854,7 @@ def do_main_patchloop() -> str:
             return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
         if SCRIPT_GLOBALS.create_fonts:
             return messagebox.showwarning("No language chosen", "Select a language first to create fonts.")
-    if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).safe_isfile()):
+    if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).is_file()):
         return messagebox.showwarning(f"Font path not found {SCRIPT_GLOBALS.font_path}", "Please set your font path to a valid TTF font file.")
     if SCRIPT_GLOBALS.translate and not SCRIPT_GLOBALS.translation_applied:
         return messagebox.showwarning(
@@ -1310,7 +1311,7 @@ class KOTORPatchingToolUI:
             except OSError as e:
                 return messagebox.showerror("Error", f"Invalid path '{SCRIPT_GLOBALS.path}'\n{universal_simplify_exception(e)}")
             else:
-                if not path.safe_exists():
+                if not path.exists():
                     return messagebox.showerror("Error", "Invalid path")
             SCRIPT_GLOBALS.pytranslator = Translator(Language.ENGLISH)
             SCRIPT_GLOBALS.pytranslator.translation_option = TranslationOption[self.translation_option.get()]

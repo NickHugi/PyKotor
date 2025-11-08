@@ -178,13 +178,13 @@ class NCSInstructionType(Enum):
     RETN = NCSInstructionTypeValue(NCSByteCode.RETN, 0x00)
     DESTRUCT = NCSInstructionTypeValue(NCSByteCode.DESTRUCT, 0x01)
     NOTI = NCSInstructionTypeValue(NCSByteCode.NOTx, NCSInstructionQualifier.Int)
-    DECISP = NCSInstructionTypeValue(NCSByteCode.DECxSP, NCSInstructionQualifier.Int)
-    INCISP = NCSInstructionTypeValue(NCSByteCode.INCxSP, NCSInstructionQualifier.Int)
+    DECxSP = NCSInstructionTypeValue(NCSByteCode.DECxSP, NCSInstructionQualifier.Int)
+    INCxSP = NCSInstructionTypeValue(NCSByteCode.INCxSP, NCSInstructionQualifier.Int)
     JNZ = NCSInstructionTypeValue(NCSByteCode.JNZ, 0x00)
     CPDOWNBP = NCSInstructionTypeValue(NCSByteCode.CPDOWNBP, 0x01)
     CPTOPBP = NCSInstructionTypeValue(NCSByteCode.CPTOPBP, 0x01)
-    DECIBP = NCSInstructionTypeValue(NCSByteCode.DECxBP, NCSInstructionQualifier.Int)
-    INCIBP = NCSInstructionTypeValue(NCSByteCode.INCxBP, NCSInstructionQualifier.Int)
+    DECxBP = NCSInstructionTypeValue(NCSByteCode.DECxBP, NCSInstructionQualifier.Int)
+    INCxBP = NCSInstructionTypeValue(NCSByteCode.INCxBP, NCSInstructionQualifier.Int)
     SAVEBP = NCSInstructionTypeValue(NCSByteCode.SAVEBP, 0x00)
     RESTOREBP = NCSInstructionTypeValue(NCSByteCode.RESTOREBP, 0x00)
     STORE_STATE = NCSInstructionTypeValue(NCSByteCode.STORE_STATE, 0x10)
@@ -200,10 +200,50 @@ class NCS(ComparableMixin):
     def __eq__(self, other):
         if not isinstance(other, NCS):
             return NotImplemented
-        return self.instructions == other.instructions
+
+        if len(self.instructions) != len(other.instructions):
+            return False
+
+        self_index_map = {id(instruction): idx for idx, instruction in enumerate(self.instructions)}
+        other_index_map = {id(instruction): idx for idx, instruction in enumerate(other.instructions)}
+
+        for instruction, other_instruction in zip(self.instructions, other.instructions):
+            if instruction.ins_type != other_instruction.ins_type:
+                return False
+
+            if instruction.args != other_instruction.args:
+                return False
+
+            if (instruction.jump is None) != (other_instruction.jump is None):
+                return False
+
+            if instruction.jump is not None:
+                jump_target = id(instruction.jump)
+                other_jump_target = id(other_instruction.jump)
+
+                if jump_target not in self_index_map or other_jump_target not in other_index_map:
+                    return False
+
+                if self_index_map[jump_target] != other_index_map[other_jump_target]:
+                    return False
+
+        return True
 
     def __hash__(self):
-        return hash(tuple(self.instructions))
+        index_map = {id(instruction): idx for idx, instruction in enumerate(self.instructions)}
+        signature: list[tuple[Any, tuple[Any, ...], int | None]] = []
+        for instruction in self.instructions:
+            jump_index: int | None = None
+            if instruction.jump is not None:
+                jump_index = index_map.get(id(instruction.jump))
+            signature.append(
+                (
+                    instruction.ins_type,
+                    tuple(instruction.args),
+                    jump_index,
+                ),
+            )
+        return hash(tuple(signature))
 
     def __repr__(self) -> str:
         """Returns a detailed string representation of the NCS object."""
@@ -362,6 +402,113 @@ class NCS(ComparableMixin):
 
         return issues
 
+    def get_instruction_at_index(self, index: int) -> NCSInstruction | None:
+        """Get instruction at the specified index.
+
+        Args:
+        ----
+            index: Instruction index
+
+        Returns:
+        -------
+            NCSInstruction or None if index out of bounds
+        """
+        if 0 <= index < len(self.instructions):
+            return self.instructions[index]
+        return None
+
+    def get_instruction_index(self, instruction: NCSInstruction) -> int:
+        """Get the index of an instruction in the instruction list.
+
+        Args:
+        ----
+            instruction: Instruction to find
+
+        Returns:
+        -------
+            int: Index of instruction, or -1 if not found
+        """
+        try:
+            return self.instructions.index(instruction)
+        except ValueError:
+            return -1
+
+    def get_reachable_instructions(self) -> set[NCSInstruction]:
+        """Get all instructions reachable from the entry point.
+
+        Returns:
+        -------
+            set[NCSInstruction]: Set of reachable instructions
+        """
+        reachable = set()
+        if not self.instructions:
+            return reachable
+
+        # Start from first instruction (entry point)
+        to_check = [self.instructions[0]]
+        while to_check:
+            inst = to_check.pop(0)
+            if inst in reachable:
+                continue
+            reachable.add(inst)
+
+            # Add next instruction
+            inst_idx = self.get_instruction_index(inst)
+            if inst_idx >= 0 and inst_idx + 1 < len(self.instructions):
+                next_inst = self.instructions[inst_idx + 1]
+                if next_inst not in reachable:
+                    to_check.append(next_inst)
+
+            # Add jump target if present
+            if inst.jump and inst.jump not in reachable:
+                to_check.append(inst.jump)
+
+            # For conditional jumps, add fall-through
+            if inst.ins_type in {NCSInstructionType.JZ, NCSInstructionType.JNZ}:
+                inst_idx = self.get_instruction_index(inst)
+                if inst_idx >= 0 and inst_idx + 1 < len(self.instructions):
+                    next_inst = self.instructions[inst_idx + 1]
+                    if next_inst not in reachable:
+                        to_check.append(next_inst)
+
+        return reachable
+
+    def get_basic_blocks(self) -> list[list[NCSInstruction]]:
+        """Partition instructions into basic blocks for decompilation.
+
+        A basic block is a sequence of instructions with a single entry point
+        and a single exit point (no jumps into the middle, no branches except at end).
+
+        Returns:
+        -------
+            list[list[NCSInstruction]]: List of basic blocks
+        """
+        blocks = []
+        if not self.instructions:
+            return blocks
+
+        current_block: list[NCSInstruction] = []
+        jump_targets = {inst.jump for inst in self.instructions if inst.jump}
+
+        for _i, inst in enumerate(self.instructions):
+            # Start new block if this is a jump target
+            if inst in jump_targets and current_block:
+                blocks.append(current_block)
+                current_block = [inst]
+            else:
+                current_block.append(inst)
+
+            # End block if this instruction branches
+            if inst.is_control_flow() and inst.ins_type != NCSInstructionType.JSR:
+                blocks.append(current_block)
+                current_block = []
+
+        # Add final block
+        if current_block:
+            blocks.append(current_block)
+
+        return blocks
+
     @staticmethod
     def _expected_arg_count(ins_type: NCSInstructionType) -> int | None:
         """Get expected argument count for instruction type, or None if variable/complex."""
@@ -374,8 +521,8 @@ class NCS(ComparableMixin):
         if ins_type in {NCSInstructionType.CONSTI, NCSInstructionType.CONSTF,
                           NCSInstructionType.CONSTS, NCSInstructionType.CONSTO,
                           NCSInstructionType.MOVSP,
-                          NCSInstructionType.DECISP, NCSInstructionType.INCISP,
-                          NCSInstructionType.DECIBP, NCSInstructionType.INCIBP}:
+                          NCSInstructionType.DECxSP, NCSInstructionType.INCxSP,
+                          NCSInstructionType.DECxBP, NCSInstructionType.INCxBP}:
             return 1
         # Instructions with 3 args
         if ins_type == NCSInstructionType.DESTRUCT:
@@ -415,6 +562,7 @@ class NCSInstruction(ComparableMixin):
         self.ins_type: NCSInstructionType = ins_type
         self.jump: NCSInstruction | None = jump
         self.args: list[Any] = [] if args is None else args
+        self.offset: int = -1
 
     def __str__(self):
         """Returns a human-readable string representation of the instruction."""
@@ -524,6 +672,75 @@ class NCSInstruction(ComparableMixin):
             NCSInstructionType.SHRIGHTII,
             NCSInstructionType.USHRIGHTII,
         }
+
+    def is_control_flow(self) -> bool:
+        """Check if this instruction affects control flow.
+
+        Returns:
+        -------
+            bool: True if instruction affects program flow
+        """
+        return self.ins_type in {
+            NCSInstructionType.JMP,
+            NCSInstructionType.JSR,
+            NCSInstructionType.JZ,
+            NCSInstructionType.JNZ,
+            NCSInstructionType.RETN,
+        }
+
+    def is_function_call(self) -> bool:
+        """Check if this instruction calls a function.
+
+        Returns:
+        -------
+            bool: True if instruction is a function call
+        """
+        return self.ins_type == NCSInstructionType.ACTION
+
+    def get_operand_count(self) -> int:
+        """Get the number of operands this instruction consumes from stack.
+
+        Returns:
+        -------
+            int: Number of stack operands consumed (0, 1, or 2)
+        """
+        # Binary operations consume 2 operands
+        if self.is_arithmetic() or self.is_comparison() or self.is_logical():
+            if self.ins_type in {NCSInstructionType.NEGI, NCSInstructionType.NEGF, NCSInstructionType.NOTI, NCSInstructionType.COMPI}:
+                return 1
+            return 2
+        # Unary operations consume 1 operand
+        if self.ins_type in {NCSInstructionType.NEGI, NCSInstructionType.NEGF, NCSInstructionType.NOTI, NCSInstructionType.COMPI}:
+            return 1
+        # Constants produce 1 operand
+        if self.is_constant():
+            return 0  # Produces, doesn't consume
+        # Function calls consume arguments (count in args)
+        if self.is_function_call():
+            return self.args[1] if len(self.args) >= 2 else 0
+        return 0
+
+    def get_result_count(self) -> int:
+        """Get the number of results this instruction produces on stack.
+
+        Returns:
+        -------
+            int: Number of stack results produced (typically 0 or 1)
+        """
+        # Most operations produce 1 result
+        if self.is_arithmetic() or self.is_comparison() or self.is_logical():
+            return 1
+        if self.is_constant():
+            return 1
+        if self.is_function_call():
+            return 1  # Functions return a value (void functions return 0)
+        # Control flow doesn't produce results
+        if self.is_control_flow():
+            return 0
+        # Stack operations may produce results depending on context
+        if self.is_stack_operation():
+            return 0  # Stack operations modify stack but don't produce values
+        return 0
 
 
 class NCSOptimizer(ABC):

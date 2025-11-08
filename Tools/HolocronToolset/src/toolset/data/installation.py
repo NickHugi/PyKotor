@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Callable, Collection, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from loggerplus import RobustLogger
 from qtpy.QtCore import Qt
@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
     import os
 
+    from pathlib import PurePath
+
     from qtpy.QtGui import QStandardItemModel
     from qtpy.QtWidgets import QPlainTextEdit
     from typing_extensions import Literal, Self
@@ -28,7 +30,6 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
-    from utility.system.path import PurePath
 
 
 class HTInstallation(Installation):

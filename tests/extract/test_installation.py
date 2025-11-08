@@ -36,7 +36,7 @@ K1_PATH: str | None = os.environ.get("K1_PATH")
 
 
 @unittest.skipIf(
-    not K1_PATH or not CaseAwarePath(K1_PATH).joinpath("chitin.key").safe_isfile(),
+    not K1_PATH or not CaseAwarePath(K1_PATH).joinpath("chitin.key").is_file(),
     "K1_PATH environment variable is not set or not found on disk.",
 )
 class TestInstallation(TestCase):

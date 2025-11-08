@@ -999,25 +999,13 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 self.run_commands_as_admin(commands)
                 return
 
-    if os.name == "posix":
-        def get_highest_posix_permission(
-            self: Path,  # pyright: ignore[reportGeneralTypeIssues]
-            uid: int | None = None,
-            gid: int | None = None,
-        ) -> int:
-            """Similar to get_highest_permission but will not take runtime elevation (e.g. sudo) into account."""
-            # Retrieve the current user's UID and GID
-            current_uid = os.getuid() if uid is None else uid  # noqa: F841
-            current_gid = os.getuid() if gid is None else gid  # noqa: F841
-
-
 
 class PosixPath(Path):  # type: ignore[misc]
     if sys.version_info < (3, 12):
         # In Python 3.12+, _flavour attribute was removed
         _flavour = pathlib.PurePosixPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
     if sys.version_info >= (3, 13):
-        _flavour = PurePosixPath._flavour
+        _flavour = PurePosixPath._flavour  # noqa: SLF001
 
 
 class WindowsPath(Path):  # type: ignore[misc]
@@ -1025,7 +1013,7 @@ class WindowsPath(Path):  # type: ignore[misc]
         # In Python 3.12+, _flavour attribute was removed
         _flavour = pathlib.PureWindowsPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
     if sys.version_info >= (3, 13):
-        _flavour = PureWindowsPath._flavour
+        _flavour = PureWindowsPath._flavour  # noqa: SLF001
 
 
 

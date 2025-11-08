@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 
+from pathlib import Path, PurePath, PureWindowsPath
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
 
@@ -16,7 +17,6 @@ from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
@@ -89,7 +89,7 @@ class ModificationsNSS(PatcherModifications):
 
         # Compile with external on windows, fall back to built-in if mac/linux or if external fails.
         is_windows = os.name == "nt"
-        nwnnsscomp_exists: bool | None = self.nwnnsscomp_path.safe_isfile()
+        nwnnsscomp_exists: bool | None = self.nwnnsscomp_path.is_file()
         if is_windows and self.nwnnsscomp_path and nwnnsscomp_exists:
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
             try:
@@ -121,7 +121,7 @@ class ModificationsNSS(PatcherModifications):
                 mutable_source.value,
                 game,
                 [],  # [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO(th3w1zard1): ncs optimizers need testing
-                library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
+                library_lookup=[CaseAwarePath(self.temp_script_folder)],
             )
         except EntryPointError as e:
             logger.add_note(str(e))

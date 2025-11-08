@@ -9,9 +9,9 @@ import sys
 import traceback
 
 from argparse import ArgumentParser
+from pathlib import Path
 
 from pykotor.extract.installation import Installation
-from utility.system.path import Path
 
 # Configure sys.path for development mode
 if getattr(sys, "frozen", False) is False:

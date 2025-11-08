@@ -5,6 +5,7 @@ import math
 
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
+from pathlib import PureWindowsPath  # pyright: ignore[reportMissingImports]
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from loggerplus import RobustLogger  # type: ignore[import-untyped]  # pyright: ignore[reportMissingTypeStubs]
@@ -16,7 +17,6 @@ from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 from utility.error_handling import safe_repr  # pyright: ignore[reportMissingImports]
 from utility.string_util import format_text  # pyright: ignore[reportMissingImports]
-from utility.system.path import PureWindowsPath  # pyright: ignore[reportMissingImports]
 
 if TYPE_CHECKING:
     import os
@@ -198,7 +198,7 @@ class Difference:
             old_value (object): The value from the original GFFStruct at the specified path.
             new_value (object): The value from the compared GFFStruct at the specified path.
         """
-        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
+        self.path: PureWindowsPath = PureWindowsPath(path)
         self.old_value: object = old_value
         self.new_value: object = new_value
 
@@ -426,6 +426,45 @@ class GFFStruct(ComparableMixin):
     ):
         self.struct_id: int = struct_id
         self._fields: dict[str, _GFFField] = {}
+
+    def __repr__(self) -> str:
+        if not self._fields:
+            return f"GFFStruct(struct_id={self.struct_id}, fields=[])"
+
+        summary_items = []
+        for idx, (label, field) in enumerate(self._fields.items()):
+            if idx >= 3:
+                summary_items.append(f"... ({len(self._fields) - 3} more)")
+                break
+            field_label = label or f"<unnamed:{idx}>"
+            summary_items.append(f"{field_label}:{field.field_type().name}")
+
+        summary = ", ".join(summary_items)
+        return f"GFFStruct(struct_id={self.struct_id}, fields=[{summary}])"
+
+    def __str__(self) -> str:
+        def _format_value(value: Any) -> str:
+            if isinstance(value, GFFStruct):
+                return f"<Struct#{value.struct_id}>"
+            if isinstance(value, GFFList):
+                return f"<List[{len(value)}]>"
+            if isinstance(value, bytes):
+                return f"<bytes len={len(value)}>"
+            value_str = repr(value) if isinstance(value, (str, int, float, bool)) else str(value)
+            return value_str if len(value_str) <= 80 else f"{value_str[:77]}..."
+
+        lines: list[str] = [f"GFFStruct #{self.struct_id} ({len(self._fields)} fields)"]
+        if not self._fields:
+            lines.append("  <empty>")
+            return "\n".join(lines)
+
+        for label, field in self._fields.items():
+            field_label = label or "<unnamed>"
+            field_type = field.field_type().name
+            value = field.value()
+            lines.append(f"  {field_label} ({field_type}): {_format_value(value)}")
+
+        return "\n".join(lines)
 
     def __len__(
         self,
@@ -1496,6 +1535,29 @@ class GFFList(ComparableMixin):
         self._structs.append(new_struct)
         return new_struct
 
+    def append(
+        self,
+        struct: GFFStruct,
+    ) -> None:
+        """Appends an existing struct to the list without creating a copy.
+
+        Args:
+        ----
+            struct: The `GFFStruct` instance to append.
+
+        Raises:
+        ------
+            TypeError: If `struct` is not an instance of `GFFStruct`.
+        """
+        if not isinstance(struct, GFFStruct):
+            struct_type = type(struct)
+            RobustLogger().error(f"Failed to append struct; expected GFFStruct, received {struct_type!r}.")
+            msg = f"The struct must be a GFFStruct instance, got {struct_type!r} instead."
+            raise TypeError(msg)
+
+        self._structs.append(struct)
+        RobustLogger().debug(f"Appended Struct#{struct.struct_id} to GFFList; list_length={len(self._structs)}.")
+
     def at(
         self,
         index: int,
@@ -1532,15 +1594,17 @@ class GFFList(ComparableMixin):
         *,
         ignore_default_changes: bool = False,  # noqa: FBT001, FBT002
     ) -> bool:
-        """Compare two GFFLists recursively.
+        """Compare two GFFLists recursively with content-based detection of moved/reordered entries.
 
         Functionally the same as __eq__, but will also log/print the differences.
+        Similar to TLK comparison, this detects when structs have been shifted/reordered but still exist.
 
         Args:
         ----
             other: object - the GFF List to compare to
             log_func: the function to use for logging. Defaults to print.
             current_path: PureWindowsPath - Path being compared
+            ignore_default_changes: bool - Whether to ignore default value changes
 
         Returns:
         -------
@@ -1548,10 +1612,11 @@ class GFFList(ComparableMixin):
 
         Processing Logic:
         ----------------
+            - Build content-based lookup to detect moved/reordered structs
             - Compare list lengths and log differences
-            - Create dictionaries to index lists for comparison
-            - Detect unique items in each list and log differences
-            - Compare common items and log structural differences.
+            - Detect truly added/removed structs (content-based, not index-based)
+            - Detect moved/reordered structs (same content, different index)
+            - Compare structs at same index that haven't moved
         """
         current_path = current_path or PureWindowsPath("GFFList")
         is_same_result = True
@@ -1562,43 +1627,183 @@ class GFFList(ComparableMixin):
             is_same_result = False
             return is_same_result
 
-        if len(self) != len(other):
-            log_func(f"GFFList counts have changed at '{current_path}': '{len(self)}' --> '{len(other)}'")
+        # Build content-based lookup to detect moved/reordered structs
+        def _hashable_value(value: Any) -> Any:
+            """Convert a GFF field value into a hashable, comparable representation."""
+            from pykotor.common.geometry import Vector3, Vector4  # Local import to avoid circular deps
+            from pykotor.common.language import LocalizedString
+            from pykotor.common.misc import ResRef
+            if value is None or isinstance(value, (int, float, str, bool, bytes)):
+                return value
+            if isinstance(value, ResRef):
+                return ("ResRef", str(value))
+            if isinstance(value, Vector3):
+                return ("Vector3", value.x, value.y, value.z)
+            if isinstance(value, Vector4):
+                return ("Vector4", value.x, value.y, value.z, value.w)
+            if isinstance(value, LocalizedString):
+                return (
+                    "LocalizedString",
+                    value.stringref,
+                    tuple((lang, gender, text) for lang, gender, text in value),
+                )
+            if isinstance(value, GFFStruct):
+                return struct_key(value)
+            if isinstance(value, GFFList):
+                return tuple(struct_key(child_struct) for child_struct in value)
+            if isinstance(value, (list, tuple, set)):
+                return tuple(_hashable_value(item) for item in value)
+            if isinstance(value, dict):
+                return tuple(sorted((key, _hashable_value(val)) for key, val in value.items()))
+
+            # Fallback: use repr for deterministic but comparable form
+            return ("repr", repr(value))
+
+        def struct_key(struct: GFFStruct) -> tuple[int, tuple[tuple[str, GFFFieldType, Any], ...]]:
+            """Create a hashable key for a struct based on struct_id and field contents.
+
+            This allows us to detect when structs have been moved/reordered.
+            """
+            fields_tuple: tuple[tuple[str, GFFFieldType, Any], ...] = tuple(
+                sorted(
+                    (
+                        label,
+                        field_type,
+                        _hashable_value(value),
+                    )
+                    for label, field_type, value in struct
+                )
+            )
+            return (struct.struct_id, fields_tuple)
+
+        # Build maps of content to indices
+        old_structs_map: dict[tuple[int, tuple[tuple[str, GFFFieldType, Any], ...]], list[int]] = {}  # content -> list of indices
+        new_structs_map: dict[tuple[int, tuple[tuple[str, GFFFieldType, Any], ...]], list[int]] = {}  # content -> list of indices
+
+        for idx, struct in enumerate(self):
+            key = struct_key(struct)
+            if key not in old_structs_map:
+                old_structs_map[key] = []
+            old_structs_map[key].append(idx)
+
+        for idx, struct in enumerate(other):
+            key = struct_key(struct)
+            if key not in new_structs_map:
+                new_structs_map[key] = []
+            new_structs_map[key].append(idx)
+
+        # Find structs that exist in both (at any index) vs truly added/removed
+        added_keys = set(new_structs_map.keys()) - set(old_structs_map.keys())
+        removed_keys = set(old_structs_map.keys()) - set(new_structs_map.keys())
+        common_keys = set(old_structs_map.keys()) & set(new_structs_map.keys())
+
+        # Track which indices we've reported
+        reported_indices_old: set[int] = set()
+        reported_indices_new: set[int] = set()
+
+        # Report size difference
+        len1 = len(self)
+        len2 = len(other)
+
+        if len1 != len2:
+            log_func(f"GFFList size mismatch at '{current_path}': Old has {len1} structs, New has {len2} structs (diff: {len2 - len1:+d})")
+
+        # Report added structs (in new file only, by content)
+        if added_keys:
+            log_func(f"\n{len(added_keys)} struct(s) added in new GFFList at '{current_path}':")
+            for key in sorted(added_keys, key=lambda k: new_structs_map[k][0]):  # Sort by first occurrence
+                indices = new_structs_map[key]
+                for idx in indices:
+                    struct = other[idx]
+                    log_func(f"  [New:{idx}] Struct#{struct.struct_id} (struct_id={struct.struct_id})")
+                    log_func("  Contents of new struct:")
+                    for label, field_type, field_value in struct:
+                        log_func(f"    {field_type.name}: {label}: {format_text(field_value)}")
+                    log_func("")
+                    reported_indices_new.add(idx)
+            is_same_result = False
+
+        # Report removed structs (in old file only, by content)
+        if removed_keys:
+            log_func(f"\n{len(removed_keys)} struct(s) removed from old GFFList at '{current_path}':")
+            for key in sorted(removed_keys, key=lambda k: old_structs_map[k][0]):  # Sort by first occurrence
+                indices = old_structs_map[key]
+                for idx in indices:
+                    struct = self[idx]
+                    log_func(f"  [Old:{idx}] Struct#{struct.struct_id} (struct_id={struct.struct_id})")
+                    log_func("  Contents of old struct:")
+                    for label, field_type, field_value in struct:
+                        log_func(f"    {field_type.name}: {label}: {format_text(field_value)}")
+                    log_func("")
+                    reported_indices_old.add(idx)
+            is_same_result = False
+
+        # Detect moved/reordered structs (same content, different index)
+        moved_count = 0
+        for key in common_keys:
+            old_indices = old_structs_map[key]
+            new_indices = new_structs_map[key]
+
+            # If indices don't match, structs have been moved/reordered
+            if set(old_indices) != set(new_indices):
+                if moved_count == 0:
+                    log_func(f"\nStructs moved/reordered in GFFList at '{current_path}':")
+                moved_count += 1
+                struct_id = key[0]
+                old_indices_str = ", ".join(str(i) for i in sorted(old_indices))
+                new_indices_str = ", ".join(str(i) for i in sorted(new_indices))
+                log_func(f"  Struct#{struct_id}: moved from index [{old_indices_str}] to [{new_indices_str}]")
+                # Mark these indices as reported so we don't double-report them
+                reported_indices_old.update(old_indices)
+                reported_indices_new.update(new_indices)
+
+        if moved_count > 0:
             log_func("")
             is_same_result = False
 
-        # Use the indices in the original lists as keys
-        old_dict = dict(enumerate(self))
-        new_dict = dict(enumerate(other))
+        # Check for structs at same index that have different content (genuine modifications)
+        modified_count = 0
+        max_index = min(len1, len2)
+        for idx in range(max_index):
+            if idx in reported_indices_old or idx in reported_indices_new:
+                continue
 
-        # Detect unique items in both lists
-        unique_to_old = set(old_dict.keys()) - set(new_dict.keys())
-        unique_to_new = set(new_dict.keys()) - set(old_dict.keys())
+            old_struct = self[idx]
+            new_struct = other[idx]
 
-        for list_index in unique_to_old:
-            struct = old_dict[list_index]
-            log_func(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")  # pyright: ignore[reportOptionalOperand]
-            log_func("Contents of old struct:")
-            for label, field_type, field_value in struct:
-                log_func(f"{field_type.name}: {label}: {format_text(field_value)}")
-            log_func("")
-            is_same_result = False
+            # Compare structs at same index
+            old_key = struct_key(old_struct)
+            new_key = struct_key(new_struct)
 
-        for list_index in unique_to_new:
-            struct = new_dict[list_index]
-            log_func(f"Extra GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")  # pyright: ignore[reportOptionalOperand]
-            log_func("Contents of new struct:")
-            for label, field_type, field_value in struct:
-                log_func(f"{field_type.name}: {label}: {format_text(field_value)}")
-            log_func("")
-            is_same_result = False
+            if old_key != new_key:
+                # This is a genuine content change at the same index
+                if modified_count == 0:
+                    log_func(f"\nStructs modified at same index in GFFList at '{current_path}':")
+                modified_count += 1
+                log_func(f"  [{idx}] Old: Struct#{old_struct.struct_id}")
+                log_func(f"  [{idx}] New: Struct#{new_struct.struct_id}")
+                # Do detailed comparison of the structs
+                if not old_struct.compare(new_struct, log_func, current_path / str(idx), ignore_default_changes):
+                    is_same_result = False
+                reported_indices_old.add(idx)
+                reported_indices_new.add(idx)
 
-        # For items present in both lists
-        common_items = old_dict.keys() & new_dict.keys()
-        for list_index in common_items:
-            old_child: GFFStruct = old_dict[list_index]
-            new_child: GFFStruct = new_dict[list_index]
-            if not old_child.compare(new_child, log_func, current_path / str(list_index), ignore_default_changes):  # pyright: ignore[reportOptionalOperand]
+        # For structs at same index with same content (not moved, not modified), still do comparison
+        # to catch any nested differences
+        for idx in range(max_index):
+            if idx in reported_indices_old or idx in reported_indices_new:
+                continue
+
+            old_struct = self[idx]
+            new_struct = other[idx]
+
+            # These should be identical at the top level, but check nested structures
+            if not old_struct.compare(new_struct, log_func, current_path / str(idx), ignore_default_changes):
                 is_same_result = False
 
-        return is_same_result
+        # Summary
+        has_differences = bool(added_keys or removed_keys or moved_count or modified_count)
+        if has_differences:
+            log_func(f"\nGFFList Summary at '{current_path}': {len(added_keys)} added, {len(removed_keys)} removed, {moved_count} moved/reordered, {modified_count} modified")
+
+        return not has_differences

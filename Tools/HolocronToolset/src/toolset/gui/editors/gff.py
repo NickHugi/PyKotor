@@ -390,7 +390,7 @@ class GFFEditor(Editor):
                     child.widget().deleteLater()
 
         self.ui.fieldBox.setEnabled(True)
-        item_type = cast(GFFFieldType, item.data(_TYPE_NODE_ROLE))
+        item_type = cast("GFFFieldType", item.data(_TYPE_NODE_ROLE))
         self.ui.typeCombo.setCurrentText(item_type.name)
         self.ui.labelEdit.setText(item.data(_LABEL_NODE_ROLE))
 
@@ -489,7 +489,7 @@ class GFFEditor(Editor):
         proxyIndex = selectedIndices[0]
         sourceIndex = self.proxyModel.mapToSource(proxyIndex)
         item: QStandardItem = self.model.itemFromIndex(sourceIndex)
-        item_type = cast(GFFFieldType, item.data(_TYPE_NODE_ROLE))
+        item_type = cast("GFFFieldType", item.data(_TYPE_NODE_ROLE))
 
         item.setData(self.ui.labelEdit.text(), _LABEL_NODE_ROLE)
 
@@ -517,7 +517,7 @@ class GFFEditor(Editor):
             vec4 = Vector4(self.ui.xVec4Spin.value(), self.ui.yVec4Spin.value(), self.ui.zVec4Spin.value(), self.ui.wVec4Spin.value())
             item.setData(vec4, _VALUE_NODE_ROLE)
         elif item_type == GFFFieldType.LocalizedString:
-            value_locstring = cast(LocalizedString, item.data(_VALUE_NODE_ROLE))
+            value_locstring = cast("LocalizedString", item.data(_VALUE_NODE_ROLE))
             value_locstring.stringref = self.ui.stringrefSpin.value()
         elif item_type == GFFFieldType.Struct or item_type is None:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)

@@ -14,6 +14,7 @@ except (ImportError, ModuleNotFoundError):
 
 import zipfile
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 import markdown
@@ -30,7 +31,6 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
 from utility.system.os_helper import is_frozen
-from utility.system.path import Path
 from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
@@ -188,7 +188,7 @@ class HelpWindow(QMainWindow):
             help_zip_path.unlink()
 
     def displayFile(self, filepath: os.PathLike | str):
-        filepath = Path.pathify(filepath)
+        filepath = Path(filepath)
         try:
             text: str = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
             html: str = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.suffix.lower() == ".md" else text

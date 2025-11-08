@@ -2,12 +2,12 @@
 """CLI utilities for KotorDiff including path normalization and argument handling."""
 from __future__ import annotations
 
-import argparse
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from utility.system.path import Path
+    import argparse
+
+    from pathlib import Path
 
 
 def normalize_path_arg(path_str: str | None) -> str | None:
@@ -51,7 +51,7 @@ def normalize_path_arg(path_str: str | None) -> str | None:
 
 def is_kotor_install_dir(path: Path) -> bool | None:
     """Check if a path is a KOTOR installation directory."""
-    return path.safe_isdir() and path.joinpath("chitin.key").safe_isfile()
+    return path.is_dir() and path.joinpath("chitin.key").is_file()
 
 
 def prompt_for_path(title: str) -> str:
@@ -65,7 +65,7 @@ def print_path_error_with_help(path: Path, parser: argparse.ArgumentParser) -> N
     print("Invalid path:", path)
     # Detect if this might be a quoting issue
     path_str = str(path)
-    if '"' in path_str or not path.parent.safe_exists():
+    if '"' in path_str or not path.parent.exists():
         print("\nNote: If using paths with spaces and trailing backslashes in PowerShell:")
         print('  - Remove trailing backslash: --path1="C:\\Program Files\\folder"')
         print('  - Or double the backslash: --path1="C:\\Program Files\\folder\\\\"')

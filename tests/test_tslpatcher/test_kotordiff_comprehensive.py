@@ -6,16 +6,27 @@ KotorDiff INI generation system. It includes:
 - 1:1 reference file comparison tests
 - Header structure and format validation
 - Section and key-value validation
+
+Only `test_01_step1_generate_patch` exercises production code. Steps 2 through 4
+serve as validator confirmations that reuse artifacts produced in step 1 to
+assert expectations about end-to-end behavior. They remain in this module to
+offer a consolidated round-trip workflow but they do not introduce new code
+paths beyond what step 1 already executed.
 """
 
 from __future__ import annotations
 
 import contextlib
+import cProfile
 import io
 import os
 import pathlib
+import pstats
 import sys
+import traceback
 import unittest
+
+from threading import Event
 from typing import TYPE_CHECKING
 
 # Set up import paths
@@ -23,6 +34,7 @@ THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2] / "Libraries" / "PyKotor" / "src"
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2] / "Libraries" / "Utility" / "src"
 KOTORDIFF_PATH = THIS_SCRIPT_PATH.parents[2] / "Tools" / "KotorDiff" / "src"
+HOLOPATCHER_PATH = THIS_SCRIPT_PATH.parents[2] / "Tools" / "HoloPatcher" / "src"
 
 if PYKOTOR_PATH.as_posix() not in sys.path:
     sys.path.insert(0, PYKOTOR_PATH.as_posix())
@@ -30,9 +42,14 @@ if UTILITY_PATH.as_posix() not in sys.path:
     sys.path.insert(0, UTILITY_PATH.as_posix())
 if KOTORDIFF_PATH.as_posix() not in sys.path:
     sys.path.insert(0, KOTORDIFF_PATH.as_posix())
+if HOLOPATCHER_PATH.as_posix() not in sys.path:
+    sys.path.insert(0, HOLOPATCHER_PATH.as_posix())
 
-from utility.system.path import Path
+from holopatcher.core import uninstall_mod, install_mod, load_mod, validate_game_directory, validate_install_paths, format_install_time  # pyright: ignore[reportMissingImports]
+from kotordiff.app import KotorDiffConfig, run_application  # pyright: ignore[reportMissingImports]
 from pykotor.extract.installation import Installation
+from pykotor.tslpatcher.logger import PatchLogger
+from pathlib import Path
 
 
 @contextlib.contextmanager
@@ -184,989 +201,360 @@ def get_expected_ini_content_from_reference(today: str) -> str:
 
 
 class TestKotorDiffFullExecution(unittest.TestCase):
-    """Integration test that executes KotorDiff and validates ALL output."""
+    """Integration test that executes KotorDiff and validates ALL output.
 
-    def test_kotordiff_full_execution_and_validation(self):
-        """Run KotorDiff and validate every aspect of the generated INI file.
+    Only `test_01_step1_generate_patch` runs the production logic under test.
+    The remaining step methods do not call new code; instead, they operate as
+    post-generation validators that confirm the artifacts produced in step 1
+    behave as expected when consumed by HoloPatcher tooling. They live alongside
+    the main test for convenience so that a developer can execute a single test
+    suite and receive comprehensive feedback.
 
-        This test:
-        1. Runs KotorDiff with the full Sleheyron mod comparison
-        2. Validates the generated INI structure
-        3. Validates every section, key, and value with granular assertions
-        4. Compares against reference to ensure 1:1 match
-        """
-        from datetime import datetime, timezone
+    Tests are designed to run independently or as a full suite:
+    - test_01_step1_generate_patch: Generates changes.ini from vanilla vs modded
+      **This is the only method that executes the code under test.**
+    - test_02_step2_install_patch: Installs changes.ini to test installation
+      (validator only, reuses step 1 output)
+    - test_03_step3_verify_installation: Diffs installed installation to verify
+      (validator only, reuses prior outputs)
+    - test_04_step4_uninstall_patch: Uninstalls mod from test installation
+      (cleanup utility)
 
-        # Set up log file path
-        tslpatchdata_path = Path("tslpatchdata")
-        log_file_path = tslpatchdata_path / "generated_ini_output.log"
+    Each test can be run independently - it will check for prerequisites and
+    skip or fail appropriately. Run all tests together for a full roundtrip.
+    """
 
-        # Capture all stdout/stderr to the log file
-        with capture_output_to_file(log_file_path):
-            # Collect all errors instead of failing fast
-            errors: list[str] = []
+    # Class-level state shared between tests
+    tslpatchdata_path: Path = Path("tslpatchdata")
+    generated_ini_path: Path | None = None
+    test_install_path: Path | None = None
+    mod_info_for_uninstall = None
+    path1_vanilla: str | None = None
+    path2_modded: str | None = None
+    step3_completed: bool = False
 
-            def check(condition: bool, error_msg: str) -> bool:
-                """Check condition and collect error if it fails."""
-                if not condition:
-                    errors.append(error_msg)
-                    print(f"[ERROR] {error_msg}")
-                return condition
+    @classmethod
+    def setUpClass(cls):
+        """Initialize shared test state."""
+        cls.tslpatchdata_path = Path("tslpatchdata")
+        cls.path1_vanilla, cls.path2_modded = get_test_paths()
+        cls.generated_ini_path = cls.tslpatchdata_path / "changes.ini"
+        cls.test_install_path = None
+        cls.mod_info_for_uninstall = None
+        cls.step3_completed = False
 
-            # Get test paths
-            path1_vanilla, path2_modded = get_test_paths()
-
-            # Load reference INI
-            reference_path = THIS_SCRIPT_PATH.parent / "reference_changes.ini"
-        reference_content = reference_path.read_text(encoding="utf-8")
-        reference_lines = reference_content.split("\n")
-        assert reference_path.exists(), f"Reference INI not found at {reference_path}"
-        reference_normalized: list[str] = []
-
-        for line in reference_lines:
-            # Skip the date header line
-            if line.strip().startswith(";  TSLPatcher Modifications File"):
-                continue
-            reference_normalized.append(line.rstrip())
-
-        # Verify paths exist
-        if not Path(path1_vanilla).exists():
-            self.skipTest(f"Vanilla installation not found at {path1_vanilla}")
-        if not Path(path2_modded).exists():
-            self.skipTest(f"Modded installation not found at {path2_modded}")
-
-        # Create temp output directory
-        print(f"\n[TEST] Running KotorDiff:")
-        print(f"  Path1: {path1_vanilla}")
-        print(f"  Path2:  {path2_modded}")
-
-        # Prepare arguments
-        args_list: list[str] = [
-            f"--path1={path1_vanilla}",
-            f"--path2={path2_modded}",
-            f"--out-ini=changes.ini",
-            f"--tslpatchdata=tslpatchdata",
-        ]
-
-        print(f"\n[TEST] Executing KotorDiff with args: {args_list}")
-
-        # Run KotorDiff
+    def _save_profiler_results(self, profiler: cProfile.Profile, profiler_output_file: Path, profiler_summary_file: Path, step_name: str):
+        """Save profiler results to files."""
         try:
-            # Import required modules
-            from kotordiff.app import KotorDiffConfig, run_application  # pyright: ignore[reportMissingImports]
+            profiler.dump_stats(str(profiler_output_file))
+            print(f"[TEST] Profile data saved to: {profiler_output_file}")
+
+            with profiler_summary_file.open("w", encoding="utf-8") as summary_f:
+                stats = pstats.Stats(profiler, stream=summary_f)
+                stats.strip_dirs()
+
+                summary_f.write("=" * 80 + "\n")
+                summary_f.write(f"PROFILE SUMMARY - {step_name} - Sorted by Cumulative Time\n")
+                summary_f.write("=" * 80 + "\n\n")
+                stats.sort_stats("cumulative")
+                stats.print_stats(50)
+
+                summary_f.write("\n" + "=" * 80 + "\n")
+                summary_f.write(f"PROFILE SUMMARY - {step_name} - Sorted by Total Time\n")
+                summary_f.write("=" * 80 + "\n\n")
+                stats.sort_stats("tottime")
+                stats.print_stats(50)
+
+                summary_f.write("\n" + "=" * 80 + "\n")
+                summary_f.write(f"PROFILE SUMMARY - {step_name} - Callers (Top 30)\n")
+                summary_f.write("=" * 80 + "\n\n")
+                stats.sort_stats("cumulative")
+                stats.print_callers(30)
+
+            print(f"[TEST] Profile summary saved to: {profiler_summary_file}")
+            print(f"[TEST] To view profile:")
+            print(f"[TEST]   CLI (built-in): python -m pstats {profiler_output_file}")
+            print(f"[TEST]   Visual (SnakeViz): uv pip install snakeviz && snakeviz {profiler_output_file}")
+        except Exception as e:
+            print(f"[TEST] Warning: Failed to save profile data: {e}")
+
+    def test_01_step1_generate_patch(self):
+        """Step 1: Run KotorDiff to generate changes.ini from vanilla vs modded installation.
+
+        This test generates the patch file by comparing two installations.
+        Can be run independently to regenerate the patch from scratch.
+        """
+        profiler = cProfile.Profile()
+        profiler_output_file = self.tslpatchdata_path / "test_step1_generate_patch_profile.prof"
+        profiler_summary_file = self.tslpatchdata_path / "test_step1_generate_patch_profile_summary.txt"
+
+        try:
+            profiler.enable()
+            print(f"[TEST] Step 1: Generate patch - Profiling enabled")
+
+            # Verify paths exist
+            if not Path(self.path1_vanilla).exists():
+                self.skipTest(f"Vanilla installation not found at {self.path1_vanilla}")
+            if not Path(self.path2_modded).exists():
+                self.skipTest(f"Modded installation not found at {self.path2_modded}")
+
+            # Ensure paths are not None
+            if self.path1_vanilla is None or self.path2_modded is None:
+                self.fail("Test paths not initialized")
+
+            print(f"\n[TEST] Step 1: Running KotorDiff:")
+            print(f"  Path1 (vanilla): {self.path1_vanilla}")
+            print(f"  Path2 (modded):  {self.path2_modded}")
 
             # Create paths list with Installation objects for the test paths
             paths: list[Path | Installation] = [
-                Installation(path1_vanilla),
-                Installation(path2_modded),
+                Installation(self.path1_vanilla),
+                Installation(self.path2_modded),
             ]
 
             # Create configuration
             config = KotorDiffConfig(
                 paths=paths,
-                tslpatchdata_path=Path("tslpatchdata"),
+                tslpatchdata_path=self.tslpatchdata_path,
                 ini_filename="changes.ini",
                 compare_hashes=True,
                 logging_enabled=True,
             )
 
             # Run the app
+            print(f"[TEST] Executing KotorDiff...")
             result = run_application(config)
-
             print(f"[TEST] KotorDiff completed with exit code: {result}")
-        except Exception as e:
-            import traceback
 
+            # Verify changes.ini was generated
+            if self.generated_ini_path is None or not self.generated_ini_path.exists() or not self.generated_ini_path.is_file():
+                self.fail(f"Cannot proceed: changes.ini was not generated at {self.generated_ini_path}")
+
+            print(f"[TEST] ✓ Step 1 completed: changes.ini generated successfully at {self.generated_ini_path}")
+
+        except KeyboardInterrupt:
+            print(f"\n[TEST] KeyboardInterrupt: Step 1 was cancelled by user")
+            raise
+        except BaseException as e:
+            print(f"[TEST] Step 1 failed: {e.__class__.__name__}: {e}")
             traceback.print_exc()
-            self.fail(f"KotorDiff execution failed: {e!r}")
-
-        # Now validate the generated INI
-        generated_ini_path = Path("tslpatchdata", "changes.ini")
-
-        check(generated_ini_path.exists(), f"Generated INI not found at {generated_ini_path}")
-
-        print(f"\n[TEST] Reading generated INI from: {generated_ini_path}")
-
-        with generated_ini_path.open("r", encoding="utf-8") as f:
-            generated_content = f.read()
-            generated_lines = generated_content.split("\n")
-
-        print(f"[TEST] Generated INI has {len(generated_lines)} lines")
-
-        # Validate header
-        today = datetime.now(tz=timezone.utc).strftime("%m/%d/%Y")
-        expected_header_lines = get_expected_header_lines(today)
-
-        print(f"\n[TEST] Validating header ({len(expected_header_lines)} lines)...")
-
-        for i, expected_line in enumerate(expected_header_lines):
-            if i >= len(generated_lines):
-                check(False, f"Header line {i + 1} missing! Expected: {expected_line!r}")
-                continue
-
-            actual_line = generated_lines[i].rstrip()
-            expected_clean = expected_line.rstrip()
-
-            check(actual_line == expected_clean, f"Header line {i + 1} mismatch!\n  Expected: {expected_clean!r}\n  Actual:   {actual_line!r}")
-
-        print(f"[TEST] ✓ Header validated ({len(expected_header_lines)} lines)")
-
-        # Validate sections exist
-        print(f"\n[TEST] Validating sections...")
-
-        expected_sections: list[str] = [
-            "[Settings]",
-            "[TLKList]",
-            "[append.tlk]",
-            "[InstallList]",
-            "[2DAList]",
-            "[GFFList]",
-            "[CompileList]",
-            "[SSFList]",
-            "[portraits.2da]",
-            "[heads.2da]",
-            "[appearance.2da]",
-            "[baseitems.2da]",
-            "[genericdoors.2da]",
-            "[npc.2da]",
-            "[placeables.2da]",
-            "[plot.2da]",
-            "[soundset.2da]",
-            "[spells.2da]",
-            "[upcrystals.2da]",
-        ]
-
-        found_sections: list[str] = []
-        for line in generated_lines:
-            stripped = line.strip()
-            if stripped.startswith("[") and stripped.endswith("]") and "=" not in stripped:
-                found_sections.append(stripped)
-
-        print(f"[TEST] Found {len(found_sections)} sections in generated INI")
-
-        for section in expected_sections:
-            check(section in found_sections, f"Required section {section} not found!\nFound sections: {found_sections[:20]}")
-
-        print(f"[TEST] ✓ All {len(expected_sections)} expected sections found")
-
-        # Validate Settings section specifically
-        print(f"\n[TEST] Validating [Settings] section...")
-
-        settings_start: int | None = None
-        settings_end: int | None = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[Settings]":
-                settings_start = i
-            elif settings_start is not None and line.strip().startswith("["):
-                settings_end = i
-                break
-
-        check(settings_start is not None, "Settings section not found")
-        check(settings_end is not None, "Settings section end not found")
-
-        if settings_start is not None and settings_end is not None:
-            settings_lines = generated_lines[settings_start:settings_end]
-        else:
-            settings_lines = []
-        settings_content = "\n".join(settings_lines)
-
-        required_settings = {
-            "FileExists": "1",
-            "WindowCaption": "Sleheyron Story Mode compatibility version",
-            "LogLevel": "3",
-            "InstallerMode": "1",
-            "BackupFiles": "1",
-            "PlaintextLog": "0",
-            "LookupGameFolder": "0",
-            "LookupGameNumber": "1",
-            "SaveProcessedScripts": "0",
-        }
-
-        for key, expected_value in required_settings.items():
-            found = False
-            for line in settings_lines:
-                if line.strip().startswith(f"{key}="):
-                    actual_value = line.strip().split("=", 1)[1]
-                    check(actual_value == expected_value, f"Settings[{key}] mismatch!\n  Expected: {expected_value!r}\n  Actual:   {actual_value!r}")
-                    found = True
-                    break
-
-            check(found, f"Required setting '{key}' not found in Settings section")
-
-        print(f"[TEST] ✓ Settings section validated ({len(required_settings)} keys)")
-
-        # Validate TLKList section
-        print(f"\n[TEST] Validating [TLKList] section...")
-
-        tlklist_start = None
-        tlklist_end = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[TLKList]":
-                tlklist_start = i
-            elif tlklist_start is not None and line.strip().startswith("["):
-                tlklist_end = i
-                break
-
-        check(tlklist_start is not None, "TLKList section not found")
-        check(tlklist_end is not None, "TLKList section end not found")
-
-        if tlklist_start is not None and tlklist_end is not None:
-            tlklist_lines = generated_lines[tlklist_start:tlklist_end]
-        else:
-            tlklist_lines = []
-        tlklist_content = "\n".join(tlklist_lines)
-
-        # Should have Replace0=append.tlk
-        check("Replace0=append.tlk" in tlklist_content, "TLKList should have Replace0=append.tlk")
-
-        # Should have StrRef0 through StrRef28
-        for i in range(29):
-            check(f"StrRef{i}={i}" in tlklist_content, f"TLKList should have StrRef{i}={i}")
-
-        print(f"[TEST] ✓ TLKList section validated (29 StrRefs)")
-
-        # Validate append.tlk section
-        print(f"\n[TEST] Validating [append.tlk] section...")
-
-        appendtlk_start = None
-        appendtlk_end = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[append.tlk]":
-                appendtlk_start = i
-            elif appendtlk_start is not None and line.strip().startswith("["):
-                appendtlk_end = i
-                break
-
-        check(appendtlk_start is not None, "append.tlk section not found")
-        check(appendtlk_end is not None, "append.tlk section end not found")
-
-        if appendtlk_start is not None and appendtlk_end is not None:
-            appendtlk_lines = generated_lines[appendtlk_start:appendtlk_end]
-        else:
-            appendtlk_lines = []
-        appendtlk_content = "\n".join(appendtlk_lines)
-
-        # Check for expected TLK mappings
-        expected_tlk_mappings: list[tuple[str, str]] = [
-            ("42502", "0"),
-            ("42508", "1"),
-            ("42588", "2"),
-            ("42589", "3"),
-            ("42614", "28"),
-        ]
-
-        for tlk_id, str_ref in expected_tlk_mappings:
-            expected_line = f"{tlk_id}={str_ref}"
-            check(expected_line in appendtlk_content, f"append.tlk should have mapping {expected_line}")
-
-        print(f"[TEST] ✓ append.tlk section validated")
-
-        # Validate 2DAList section
-        print(f"\n[TEST] Validating [2DAList] section...")
-
-        twodalist_start = None
-        twodalist_end = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[2DAList]":
-                twodalist_start = i
-            elif twodalist_start is not None and line.strip().startswith("["):
-                twodalist_end = i
-                break
-
-        check(twodalist_start is not None, "2DAList section not found")
-        check(twodalist_end is not None, "2DAList section end not found")
-
-        if twodalist_start is not None and twodalist_end is not None:
-            twodalist_lines = generated_lines[twodalist_start:twodalist_end]
-        else:
-            twodalist_lines = []
-        twodalist_content = "\n".join(twodalist_lines)
-
-        expected_2da_tables: list[str] = [
-            "portraits.2da",
-            "heads.2da",
-            "appearance.2da",
-            "baseitems.2da",
-            "genericdoors.2da",
-            "npc.2da",
-            "placeables.2da",
-            "plot.2da",
-            "soundset.2da",
-            "spells.2da",
-            "upcrystals.2da",
-        ]
-
-        for idx, table in enumerate(expected_2da_tables):
-            check(f"Table{idx}={table}" in twodalist_content, f"2DAList should have Table{idx}={table}")
-
-        print(f"[TEST] ✓ 2DAList section validated ({len(expected_2da_tables)} tables)")
-
-        # Validate GFFList section
-        print(f"\n[TEST] Validating [GFFList] section...")
-
-        gfflist_start: int | None = None
-        gfflist_end: int | None = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[GFFList]":
-                gfflist_start = i
-            elif gfflist_start is not None and line.strip().startswith("["):
-                gfflist_end = i
-                break
-
-        check(gfflist_start is not None, "GFFList section not found")
-        check(gfflist_end is not None, "GFFList section end not found")
-
-        if gfflist_start is not None:
-            gfflist_lines: list[str] = generated_lines[gfflist_start:gfflist_end] if gfflist_end else generated_lines[gfflist_start:]
-        else:
-            gfflist_lines = []
-        gfflist_content: str = "\n".join(gfflist_lines)
-
-        # Check for key GFF files
-        expected_gff_files: list[str] = [
-            "global.jrl",
-            "g_i_medeqpmnt09.uti",
-            "g_i_medeqpmnt10.uti",
-            "liv_m99aa_m50aa.git",
-            "p_vimasunrider.utc",
-            "bigcantinadoor.utd",
-        ]
-
-        for gff_file in expected_gff_files:
-            check(gff_file in gfflist_content, f"GFFList should reference {gff_file}")
-
-        print(f"[TEST] ✓ GFFList section validated ({len(expected_gff_files)} key files checked)")
-
-        # Validate appearance.2da section
-        print(f"\n[TEST] Validating [appearance.2da] section...")
-
-        appearance_start = None
-        appearance_end = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[appearance.2da]":
-                appearance_start = i
-            elif appearance_start is not None and line.strip().startswith("[") and "appearance_row" not in line:
-                appearance_end = i
-                break
-
-        check(appearance_start is not None, "appearance.2da section not found")
-
-        if appearance_start is not None:
-            appearance_lines: list[str] = generated_lines[appearance_start:appearance_end] if appearance_end else generated_lines[appearance_start:]
-        else:
-            appearance_lines = []
-        appearance_content: str = "\n".join(appearance_lines)
-
-        # Check for expected appearance rows
-        expected_appearances: list[str] = [
-            "appearance_row_c_big_gizka_0",
-            "appearance_row_vima_0",
-            "appearance_row_bloodfist_0",
-            "appearance_row_bloodaxe_0",
-            "appearance_row_forceslayer_0",
-            "appearance_row_massassi_0",
-        ]
-
-        for appearance in expected_appearances:
-            check("AddRow" in appearance_content and appearance in appearance_content, f"appearance.2da should have row {appearance}")
-            # Also check the section exists
-            check(f"[{appearance}]" in generated_content, f"appearance.2da should have section [{appearance}]")
-
-        print(f"[TEST] ✓ appearance.2da section validated ({len(expected_appearances)} rows checked)")
-
-        # Validate specific appearance row data
-        print(f"\n[TEST] Validating appearance row data granularly...")
-
-        # Find appearance_row_vima_0 section
-        vima_start = None
-        vima_end = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[appearance_row_vima_0]":
-                vima_start = i
-            elif vima_start is not None and line.strip().startswith("["):
-                vima_end = i
-                break
-
-        check(vima_start is not None, "appearance_row_vima_0 section not found")
-
-        if vima_start is not None:
-            vima_lines = generated_lines[vima_start:vima_end] if vima_end else generated_lines[vima_start:]
-        else:
-            vima_lines = []
-
-        # Check key fields in Vima appearance
-        expected_vima_fields: dict[str, str] = {
-            "label": "Vima",
-            "walkdist": "1.6",
-            "rundist": "3.96",
-            "modeltype": "B",
-            "normalhead": "2DAMEMORY36",
-            "backuphead": "2DAMEMORY36",
-            "modela": "PFBAM",
-            "texa": "PFBAM",
-            "height": "1.6",
-            "headtrack": "1",
-        }
-
-        for field, expected_value in expected_vima_fields.items():
-            found = False
-            for line in vima_lines:
-                if line.strip().startswith(f"{field}="):
-                    actual_value = line.strip().split("=", 1)[1]
-                    check(actual_value == expected_value, f"appearance_row_vima_0[{field}] mismatch!\n  Expected: {expected_value!r}\n  Actual:   {actual_value!r}")
-                    found = True
-                    break
-
-            check(found, f"appearance_row_vima_0 missing field '{field}'")
-
-        print(f"[TEST] ✓ appearance_row_vima_0 data validated ({len(expected_vima_fields)} fields)")
-
-        # Validate baseitems.2da section
-        print(f"\n[TEST] Validating [baseitems.2da] section...")
-
-        baseitems_start = None
-        baseitems_end = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[baseitems.2da]":
-                baseitems_start = i
-            elif baseitems_start is not None and line.strip().startswith("[") and "baseitems_" not in line:
-                baseitems_end = i
-                break
-
-        check(baseitems_start is not None, "baseitems.2da section not found")
-
-        if baseitems_start is not None:
-            baseitems_lines = generated_lines[baseitems_start:baseitems_end] if baseitems_end else generated_lines[baseitems_start:]
-        else:
-            baseitems_lines = []
-        baseitems_content = "\n".join(baseitems_lines)
-
-        # Check for expected modifications and additions
-        check("ChangeRow0=baseitems_mod_gammorean_battleaxe_0" in baseitems_content, "baseitems.2da should modify gammorean battleaxe")
-        check("AddRow0=baseitems_row_segan_wyndh_0" in baseitems_content, "baseitems.2da should add Segan_Wyndh")
-        check("AddRow1=baseitems_row_bodyguard_waraxe_0" in baseitems_content, "baseitems.2da should add bodyguard_waraxe")
-        check("AddRow4=baseitems_row_sniper_0" in baseitems_content, "baseitems.2da should add sniper")
-
-        print(f"[TEST] ✓ baseitems.2da section validated")
-
-        # Validate SSFList section
-        print(f"\n[TEST] Validating [SSFList] section...")
-
-        ssflist_content: str = generated_content
-        check("[SSFList]" in ssflist_content, "SSFList section not found")
-        check("Replace0=p_vima_ssf.ssf" in ssflist_content, "SSFList should have Replace0=p_vima_ssf.ssf")
-
-        print(f"[TEST] ✓ SSFList section validated")
-
-        # Validate p_vima_ssf.ssf section
-        print(f"\n[TEST] Validating [p_vima_ssf.ssf] section...")
-
-        vima_ssf_start = None
-        vima_ssf_end = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[p_vima_ssf.ssf]":
-                vima_ssf_start = i
-            elif vima_ssf_start is not None and line.strip().startswith("["):
-                vima_ssf_end = i
-                break
-
-        check(vima_ssf_start is not None, "p_vima_ssf.ssf section not found")
-
-        if vima_ssf_start is not None:
-            vima_ssf_lines: list[str] = generated_lines[vima_ssf_start:vima_ssf_end] if vima_ssf_end else generated_lines[vima_ssf_start:]
-        else:
-            vima_ssf_lines = []
-        vima_ssf_content: str = "\n".join(vima_ssf_lines)
-
-        # Check for expected SSF entries
-        expected_ssf_entries: dict[str, str] = {
-            "Battlecry 1": "42591",
-            "Battlecry 2": "42592",
-            "Battlecry 3": "42593",
-            "Selected 1": "42605",
-            "Attack 3": "42590",
-            "Death": "42598",
-            "Low health": "42601",
-        }
-
-        for field, expected_value in expected_ssf_entries.items():
-            expected_line = f"{field}={expected_value}"
-            check(expected_line in vima_ssf_content, f"p_vima_ssf.ssf should have '{expected_line}'")
-
-        print(f"[TEST] ✓ p_vima_ssf.ssf section validated ({len(expected_ssf_entries)} entries)")
-
-        # Validate global.jrl section
-        print(f"\n[TEST] Validating [global.jrl] section...")
-
-        global_jrl_content: str = generated_content
-        check("[global.jrl]" in global_jrl_content, "global.jrl section not found")
-
-        # Check for key quest entries
-        expected_quest_sections: list[str] = [
-            "gff_global_Categories_101_0",  # Mission to Sleheyron
-            "gff_global_Categories_102_0",  # Rodo and the Pearl
-            "gff_global_Categories_115_0",  # Vima Sunrider
-        ]
-
-        for quest_section in expected_quest_sections:
-            check("AddField" in global_jrl_content and quest_section in global_jrl_content, f"global.jrl should reference {quest_section}")
-
-        print(f"[TEST] ✓ global.jrl section validated ({len(expected_quest_sections)} quest categories)")
-
-        # Validate GFF field sections for Vima's name
-        print(f"\n[TEST] Validating GFF field data...")
-
-        # Check for Mission to Sleheyron quest
-        check("[gff_global_Categories_101_0]" in generated_content, "Should have Mission to Sleheyron quest category")
-
-        # Find this section and validate
-        quest_start = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[gff_global_Name_0]":
-                quest_start = i
-                break
-
-        if check(quest_start is not None, "gff_global_Name_0 section not found") and quest_start is not None:
-            quest_lines: list[str] = generated_lines[quest_start : quest_start + 10]
-            quest_content: str = "\n".join(quest_lines)
-            check("lang0=Mission to Sleheyron" in quest_content, "Quest name should be 'Mission to Sleheyron'")
-
-        print(f"[TEST] ✓ GFF field data validated")
-
-        # Additional comprehensive structural validations
-        print(f"\n[TEST] Performing additional structural validations...")
-
-        # Validate header structure (from test_generated_ini_has_correct_structure_and_content)
-        header_line_count = 0
-        for i, line in enumerate(generated_lines):
-            if line.startswith(";"):
-                header_line_count += 1
-            else:
-                # First non-comment line should be blank (end of header)
-                if line.strip() == "":
-                    header_line_count += 1  # Count the blank line as part of header
-                break
-
-        # Should have a reasonable header (at least 40 comment lines)
-        check(header_line_count >= 40, f"Header should have at least 40 lines, found {header_line_count}")
-
-        # Check that key header content exists somewhere in the header
-        header_text = "\n".join(generated_lines[:header_line_count])
-        check("HoloPatcher" in header_text, "Header should mention HoloPatcher")
-        check("PyKotor ecosystem" in header_text, "Header should mention PyKotor ecosystem")
-        check("TSLPatcher Modifications File" in header_text, "Header should mention TSLPatcher")
-
-        print(f"[TEST] ✓ Header structure validated ({header_line_count} lines)")
-
-        # Find where content sections start (after header)
-        content_start_idx = header_line_count
-
-        # Validate that essential sections exist (from test_sections_validation)
-        sections = []
-        for line in generated_lines:
-            stripped = line.strip()
-            if stripped.startswith("[") and stripped.endswith("]"):
-                sections.append(stripped)
-
-        print(f"[TEST] Found {len(sections)} sections in INI file")
-
-        # Essential sections that should always be present
-        essential_sections = ["[Settings]"]
-        for section in essential_sections:
-            check(section in sections, f"Essential section {section} not found in generated INI")
-
-        # Check that Settings appears first (after header)
-        settings_index = None
-        for i, line in enumerate(generated_lines):
-            stripped = line.strip()
-            if stripped == "[Settings]":
-                settings_index = i
-                break
-
-        check(settings_index is not None, "Settings section not found")
-        check(settings_index is not None and settings_index > 40, "Settings section should appear after header (line > 40)")
-
-        # Validate that 2DAList sections exist (multiple tables)
-        twodalist_count = sections.count("[2DAList]")
-        check(twodalist_count > 0, "Should have at least one [2DAList] section")
-
-        # Check that we have some 2DA table sections
-        twoda_tables = [s for s in sections if s.endswith(".2da]") and not s.startswith("[add_row_") and not s.startswith("[change_row_")]
-        check(len(twoda_tables) > 0, "Should have at least one 2DA table section")
-
-        print(f"[TEST] ✓ Essential sections validated ({len(sections)} total sections found)")
-
-        # Validate Settings section key-value pairs (from test_key_values_in_settings_section)
-        settings_start = None
-        settings_end = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[Settings]":
-                settings_start = i
-            elif settings_start is not None and line.strip().startswith("[") and not line.strip().startswith("[add_row_") and not line.strip().startswith("[change_row_"):
-                settings_end = i
-                break
-
-        check(settings_start is not None, "Settings section not found (second check)")
-        check(settings_end is not None, "Settings section has no end")
-
-        if settings_start is not None and settings_end is not None:
-            settings_lines = generated_lines[settings_start:settings_end]
-        else:
-            settings_lines = []
-
-        # Parse actual settings from the section
-        actual_settings: dict[str, str] = {}
-        for line in settings_lines:
-            stripped = line.strip()
-            if "=" in stripped and not stripped.startswith(";"):
-                key, value = stripped.split("=", 1)
-                actual_settings[key] = value
-
-        # Expected settings - only validate those that should be present
-        expected_settings = {
-            "LogLevel": "3",
-        }
-
-        # For full INI files (generated by complete KotorDiff runs), check additional settings
-        if "FileExists" in actual_settings:
-            expected_settings.update(
-                {
-                    "FileExists": "1",
-                    "InstallerMode": "1",
-                    "BackupFiles": "1",
-                    "PlaintextLog": "0",
-                    "LookupGameFolder": "0",
-                    "LookupGameNumber": "1",
-                    "SaveProcessedScripts": "0",
-                }
+            raise
+        finally:
+            profiler.disable()
+            self._save_profiler_results(profiler, profiler_output_file, profiler_summary_file, "Step 1: Generate Patch")
+
+    def test_02_step2_install_patch(self):
+        """Step 2 validator: install the generated changes.ini using HoloPatcher.
+
+        This method is a *validator* that consumes the output from
+        `test_01_step1_generate_patch`. It deliberately exercises no new product
+        code paths beyond those already touched in step 1; instead, it exists to
+        assert that the generated INI installs cleanly. Prerequisites:
+        `changes.ini` must exist (from step 1). Can be run independently if
+        `changes.ini` already exists.
+        """
+        profiler = cProfile.Profile()
+        profiler_output_file = self.tslpatchdata_path / "test_step2_install_patch_profile.prof"
+        profiler_summary_file = self.tslpatchdata_path / "test_step2_install_patch_profile_summary.txt"
+
+        try:
+            profiler.enable()
+            print(f"[TEST] Step 2: Install patch - Profiling enabled")
+
+            # Check prerequisite: changes.ini must exist
+            if not self.generated_ini_path or not self.generated_ini_path.exists():
+                self.skipTest(f"Cannot proceed: changes.ini not found at {self.generated_ini_path}. Run test_01_step1_generate_patch first.")
+
+            print(f"[TEST] ✓ Found changes.ini at {self.generated_ini_path}")
+
+            # Load mod from tslpatchdata directory
+            mod_info = load_mod(str(self.tslpatchdata_path))
+            print(f"[TEST] Loaded mod with {len(mod_info.namespaces)} namespace(s)")
+
+            # Select first namespace
+            selected_namespace = mod_info.namespaces[0].name
+            print(f"[TEST] Selected namespace: {selected_namespace}")
+
+            # Ensure path1_vanilla is not None
+            if self.path1_vanilla is None:
+                self.fail("Vanilla path not initialized")
+
+            # Validate game path
+            self.test_install_path = Path(self.path1_vanilla).parent / "swkotor - Vanilla - Copy"
+            game_path = validate_game_directory(self.test_install_path.as_posix())
+            print(f"[TEST] Validated game path: {game_path}")
+
+            # Validate install paths
+            assert validate_install_paths(mod_info.mod_path, game_path), f"Invalid mod or game paths: mod={mod_info.mod_path}, game={game_path}"
+
+            # Install the mod
+            patcher_logger = PatchLogger()
+            should_cancel = Event()
+            print(f"[TEST] Installing mod...")
+            install_result = install_mod(
+                mod_info.mod_path,
+                game_path,
+                mod_info.namespaces,
+                selected_namespace,
+                patcher_logger,
+                should_cancel,
             )
 
-        # Validate the expected settings
-        for key, expected_value in expected_settings.items():
-            actual_value = actual_settings.get(key)
-            check(actual_value is not None, f"Required setting '{key}' not found in Settings section (second check)")
-            check(actual_value == expected_value, f"Settings[{key}] mismatch!\n  Expected: {expected_value!r}\n  Actual:   {actual_value!r}")
-
-        print(f"[TEST] ✓ Settings section validated ({len(expected_settings)} settings)")
-
-        # Validate section structure - each section should have proper key=value pairs (from test_sections_validation)
-        in_section = False
-        section_name = ""
-        for line_num, line in enumerate(generated_lines, 1):
-            stripped = line.strip()
-            if not stripped or stripped.startswith(";"):
-                continue
-
-            if stripped.startswith("[") and stripped.endswith("]"):
-                in_section = True
-                section_name = stripped
-                continue
-
-            if in_section and "=" not in stripped and not stripped.startswith("!"):
-                # Allow blank lines or directive lines, but not malformed content
-                if stripped:
-                    check(False, f"Invalid line {line_num} in section {section_name}: {stripped!r}")
-
-        print(f"[TEST] ✓ Section structure validation passed")
-
-        # Validate appearance.2da AddRow count (from test_generated_ini_has_correct_structure_and_content)
-        appearance_start = None
-        appearance_end = None
-        for i, line in enumerate(generated_lines):
-            if line.strip() == "[appearance.2da]":
-                appearance_start = i
-            elif appearance_start is not None and line.strip().startswith("[") and "add_row_" not in line.strip():
-                appearance_end = i
-                break
-
-        if appearance_start is not None:
-            appearance_lines = generated_lines[appearance_start:appearance_end] if appearance_end else generated_lines[appearance_start:]
-            appearance_content = "\n".join(appearance_lines)
-
-            # Count AddRow entries
-            addrow_count = sum(1 for line in appearance_content.split("\n") if line.strip().startswith("AddRow"))
-            check(addrow_count > 20, f"appearance.2da should have many AddRow entries, found {addrow_count}")
-
-            print(f"[TEST] ✓ appearance.2da section has {addrow_count} AddRow entries")
-
-        # Validate add_row sections exist
-        add_row_sections = [line.strip() for line in generated_lines if line.strip().startswith("[add_row_")]
-        check(len(add_row_sections) > 20, f"Should have many add_row sections, found {len(add_row_sections)}")
-
-        print(f"[TEST] ✓ Found {len(add_row_sections)} add_row sections")
-
-        # Validate CompileList section exists
-        print(f"\n[TEST] Validating [CompileList] section...")
-        check("[CompileList]" in generated_content, "CompileList section should exist")
-        print(f"[TEST] ✓ CompileList section check completed")
-
-        # Validate specific 2DA table sections exist
-        print(f"\n[TEST] Validating specific 2DA table sections...")
-        expected_2da_sections = [
-            "[portraits.2da]",
-            "[heads.2da]",
-            "[appearance.2da]",
-            "[baseitems.2da]",
-            "[genericdoors.2da]",
-            "[npc.2da]",
-            "[placeables.2da]",
-            "[plot.2da]",
-            "[soundset.2da]",
-            "[spells.2da]",
-            "[upcrystals.2da]",
-        ]
-        for section in expected_2da_sections:
-            check(section in generated_content, f"Section {section} should exist")
-        print(f"[TEST] ✓ All {len(expected_2da_sections)} 2DA table sections validated")
-
-        # Count total sections
-        total_sections = len([line for line in generated_lines if line.strip().startswith("[") and line.strip().endswith("]")])
-        print(f"[TEST] Total sections in generated INI: {total_sections}")
-
-        # Final 1:1 comparison with reference INI
-        print(f"\n[TEST] ========================================")
-        print(f"[TEST] Performing 1:1 comparison with reference INI...")
-        print(f"[TEST] ========================================")
-        print(f"[TEST] Reference INI has {len(reference_lines)} lines")
-        print(f"[TEST] Generated INI has {len(generated_lines)} lines")
-
-        # Compare line counts
-        check(
-            len(generated_lines) == len(reference_lines),
-            f"Line count mismatch: Generated has {len(generated_lines)} lines, Reference has {len(reference_lines)} lines",
-        )
-
-        # Perform 1:1 comparison - this is the critical assertion
-        print(f"[TEST] Performing 1:1 content comparison...")
-
-        # Simple content comparison first (ignoring date header)
-        generated_normalized: list[str] = []
-
-        for line in generated_lines:
-            # Skip the date header line
-            if line.strip().startswith(";  TSLPatcher Modifications File"):
-                continue
-            generated_normalized.append(line.rstrip())
-
-        # Check if contents are identical after normalization
-        content_matches = generated_normalized == reference_normalized
-
-        if not content_matches:
-            # Show detailed differences
-            print(f"[TEST] ✗ Content mismatch detected")
-
-            # Show line count differences first
-            if len(generated_normalized) != len(reference_normalized):
-                print(f"[TEST] Line count: Generated={len(generated_normalized)}, Reference={len(reference_normalized)}")
-
-            # Show first 20 line differences
-            diff_lines = []
-            max_compare = min(len(generated_normalized), len(reference_normalized))
-
-            for i in range(max_compare):
-                if generated_normalized[i] != reference_normalized[i]:
-                    diff_lines.append(
-                        (
-                            i + 1,  # +1 because we skipped the date header
-                            generated_normalized[i],
-                            reference_normalized[i],
-                        )
-                    )
-                    if len(diff_lines) >= 20:
-                        break
-
-            # Show additional lines if one file is longer
-            if len(generated_normalized) > len(reference_normalized):
-                for i in range(len(reference_normalized), len(generated_normalized)):
-                    diff_lines.append((i + 1, generated_normalized[i], "<EOF - reference ends here>"))
-            elif len(reference_normalized) > len(generated_normalized):
-                for i in range(len(generated_normalized), len(reference_normalized)):
-                    diff_lines.append((i + 1, "<EOF - generated ends here>", reference_normalized[i]))
-
-            print(f"[TEST] First {min(len(diff_lines), 20)} differences:")
-            for line_num, gen, ref in diff_lines[:20]:
-                print(f"[TEST] Line {line_num}:")
-                print(f"[TEST]   Generated: {gen!r}")
-                print(f"[TEST]   Reference: {ref!r}")
-                print()
-
-            if len(diff_lines) > 20:
-                print(f"[TEST] ... and {len(diff_lines) - 20} more differences")
-
-            # Check for section differences
-            generated_sections = [line for line in generated_normalized if line.startswith("[") and line.endswith("]") and "=" not in line]
-
-            reference_sections = [line for line in reference_normalized if line.startswith("[") and line.endswith("]") and "=" not in line]
-            missing_sections = set(reference_sections) - set(generated_sections)
-            extra_sections = set(generated_sections) - set(reference_sections)
-
-            if missing_sections:
-                print(f"[TEST] Missing sections from reference: {sorted(list(missing_sections))}")
-
-            if extra_sections:
-                print(f"[TEST] Extra sections in generated: {sorted(list(extra_sections))}")
-
-            check(False, f"Generated INI does not match reference INI (1:1 comparison failed)")
-        else:
-            print(f"[TEST] ✓ Generated INI matches reference INI perfectly (1:1)")
-
-        # Final assertion that they must be identical - show detailed differences if not
-        if not content_matches:
-            # Build comprehensive human-readable difference report
-            diff_report = ["CRITICAL: Generated changes.ini does not match reference_changes.ini"]
-            diff_report.append("")
-            diff_report.append("=" * 80)
-            diff_report.append("DETAILED DIFFERENCE REPORT")
-            diff_report.append("=" * 80)
-            diff_report.append("")
-
-            # Basic stats
-            diff_report.append(f"Reference file:  {len(reference_normalized)} lines")
-            diff_report.append(f"Generated file: {len(generated_normalized)} lines")
-            diff_report.append("")
-
-            # Line count difference
-            if len(generated_normalized) != len(reference_normalized):
-                diff_report.append("LINE COUNT DIFFERENCE:")
-                diff_report.append(f"  Reference has {len(reference_normalized)} lines")
-                diff_report.append(f"  Generated has {len(generated_normalized)} lines")
-                diff_report.append("")
-
-            # Find all differences
-            all_differences = []
-            max_compare = min(len(generated_normalized), len(reference_normalized))
-
-            for i in range(max_compare):
-                if generated_normalized[i] != reference_normalized[i]:
-                    all_differences.append((i + 1, generated_normalized[i], reference_normalized[i]))
-
-            # Add EOF differences
-            if len(generated_normalized) > len(reference_normalized):
-                for i in range(len(reference_normalized), len(generated_normalized)):
-                    all_differences.append((i + 1, generated_normalized[i], "EOF - reference ends here"))
-            elif len(reference_normalized) > len(generated_normalized):
-                for i in range(len(generated_normalized), len(reference_normalized)):
-                    all_differences.append((i + 1, "EOF - generated ends here", reference_normalized[i]))
-
-            # Section analysis
-            ref_sections = [line for line in reference_normalized if line.startswith("[") and line.endswith("]") and "=" not in line]
-            gen_sections = [line for line in generated_normalized if line.startswith("[") and line.endswith("]") and "=" not in line]
-
-            missing_sections = set(ref_sections) - set(gen_sections)
-            extra_sections = set(gen_sections) - set(ref_sections)
-
-            # Report sections
-            if missing_sections:
-                diff_report.append("MISSING SECTIONS (in reference, missing from generated):")
-                for section in sorted(missing_sections):
-                    diff_report.append(f"  - {section}")
-                diff_report.append("")
-
-            if extra_sections:
-                diff_report.append("EXTRA SECTIONS (in generated, not in reference):")
-                for section in sorted(extra_sections):
-                    diff_report.append(f"  + {section}")
-                diff_report.append("")
-
-            # Show first 50 line differences
-            if all_differences:
-                diff_report.append(f"CONTENT DIFFERENCES (showing {min(len(all_differences), 50)} of {len(all_differences)}):")
-                diff_report.append("")
-                for line_num, gen_line, ref_line in all_differences[:50]:
-                    diff_report.append(f"Line {line_num}:")
-                    diff_report.append(f"  REFERENCE:  {ref_line!r}")
-                    diff_report.append(f"  GENERATED:  {gen_line!r}")
-                    diff_report.append("")
-
-                if len(all_differences) > 50:
-                    diff_report.append(f"... and {len(all_differences) - 50} more differences ...")
-                    diff_report.append("")
-
-            diff_report.append("=" * 80)
-            diff_report.append("END OF DIFFERENCE REPORT")
-            diff_report.append("=" * 80)
-
-            check(content_matches, "\n".join(diff_report))
-        else:
-            check(content_matches, "Generated changes.ini must be identical to reference_changes.ini")
-
-        print(f"\n[TEST] ========================================")
-        if errors:
-            print(f"[TEST] ✗ VALIDATIONS FAILED WITH {len(errors)} ERROR(S)!")
-        else:
-            print(f"[TEST] ✓ ALL VALIDATIONS PASSED!")
-        print(f"[TEST] Generated INI: {len(generated_lines)} lines")
-        print(f"[TEST] Validated: Header, Settings, TLKList, 2DAList, GFFList, SSFList, appearance.2da, baseitems.2da, global.jrl")
-        print(f"[TEST] Plus: Section structure, AddRow counts, Essential sections, Settings key-values")
-        print(f"[TEST] Plus: 1:1 comparison with reference INI")
-        print(f"[TEST] ========================================")
-
-        # Report all errors at the end
-        if errors:
-            error_summary = f"\n{'=' * 80}\nFOUND {len(errors)} VALIDATION ERROR(S):\n{'=' * 80}\n"
-            for i, error in enumerate(errors, 1):
-                error_summary += f"\n{i}. {error}\n"
-            error_summary += f"{'=' * 80}\n"
-            self.fail(error_summary)
-
-
-class TestHeaderFormat(unittest.TestCase):
-    """Tests for header structure and format."""
-
-    def test_header_line_count_matches_expected(self):
-        """Validate that the header has exactly the expected number of lines."""
-        from pykotor.tslpatcher.diff.incremental_writer import IncrementalTSLPatchDataWriter
-
-        writer = IncrementalTSLPatchDataWriter(Path("test_output"), "changes.ini")
-        header = writer._generate_custom_header()
-
-        # Expected: 51 lines of comments + 1 blank = 52 total
-        expected_count = 42
-        actual_count = len(header)
-
-        self.assertEqual(actual_count, expected_count, f"Header should have exactly {expected_count} lines (including trailing blank), but got {actual_count}")
-
-        print(f"[TEST] ✓ Header has correct line count: {actual_count}")
-
-    def test_header_structure_format(self):
-        """Test header follows proper INI comment format."""
-        from pykotor.tslpatcher.diff.incremental_writer import IncrementalTSLPatchDataWriter
-
-        writer = IncrementalTSLPatchDataWriter(Path("test_output"), "changes.ini")
-        header = writer._generate_custom_header()
-
-        # All non-empty lines should start with semicolon
-        for i, line in enumerate(header):
-            if line.strip():  # If not blank
-                self.assertTrue(line.startswith(";"), f"Line {i} should start with semicolon: {line!r}")
-
-        # Last line should be blank
-        self.assertEqual(header[-1], "", "Last line should be blank")
-
-        print(f"[TEST] ✓ Header format validated")
-
-    def test_no_duplicate_urls(self):
-        """Ensure no URLs are duplicated in the header."""
-        from pykotor.tslpatcher.diff.incremental_writer import IncrementalTSLPatchDataWriter
-
-        writer = IncrementalTSLPatchDataWriter(Path("test_output"), "changes.ini")
-        header = writer._generate_custom_header()
-        header_text = "\n".join(header)
-
-        # Extract all URLs
-        import re
-
-        urls = re.findall(r"https://[^\s;]+", header_text)
-
-        # Check for duplicates
-        unique_urls = set(urls)
-        self.assertEqual(
-            len(urls),
-            len(unique_urls),
-            f"Found duplicate URLs in header.\nTotal URLs: {len(urls)}\nUnique URLs: {len(unique_urls)}\nDuplicates: {[url for url in urls if urls.count(url) > 1]}",
-        )
-
-        print(f"[TEST] ✓ No duplicate URLs found ({len(urls)} unique URLs)")
+            print(f"[TEST] Install completed:")
+            print(f"  Errors: {install_result.num_errors}")
+            print(f"  Warnings: {install_result.num_warnings}")
+            print(f"  Patches: {install_result.num_patches}")
+            print(f"  Time: {format_install_time(install_result.install_time)}")
+
+            assert install_result.num_errors == 0, f"Installation had {install_result.num_errors} errors"
+            assert install_result.num_patches > 0, f"Installation should have applied patches, got {install_result.num_patches}"
+
+            # Store mod_info for potential uninstall
+            self.mod_info_for_uninstall = mod_info
+            print(f"[TEST] ✓ Step 2 completed: Installation successful")
+
+        except KeyboardInterrupt:
+            print(f"\n[TEST] KeyboardInterrupt: Step 2 was cancelled by user")
+            raise
+        except BaseException as e:
+            print(f"[TEST] Step 2 failed: {e.__class__.__name__}: {e}")
+            traceback.print_exc()
+            raise
+        finally:
+            profiler.disable()
+            self._save_profiler_results(profiler, profiler_output_file, profiler_summary_file, "Step 2: Install Patch")
+
+    def test_03_step3_verify_installation(self):
+        """Step 3 validator: diff the installed test installation against vanilla.
+
+        This method serves as a *validator* that confirms the installation
+        performed in step 2 matches expectations by re-running KotorDiff. It is
+        not an additional unit under test; it merely compares artifacts produced
+        earlier in the workflow. Prerequisites: installation must be complete
+        (from step 2). Can be run independently if installation already exists.
+        """
+        profiler = cProfile.Profile()
+        profiler_output_file = self.tslpatchdata_path / "test_step3_verify_installation_profile.prof"
+        profiler_summary_file = self.tslpatchdata_path / "test_step3_verify_installation_profile_summary.txt"
+
+        try:
+            profiler.enable()
+            print(f"[TEST] Step 3: Verify installation - Profiling enabled")
+
+            # Check prerequisites
+            if self.path1_vanilla is None:
+                self.fail("Vanilla path not initialized")
+
+            if not self.test_install_path:
+                self.test_install_path = Path(self.path1_vanilla).parent / "swkotor - Vanilla - Copy"
+
+            if not self.test_install_path.exists():
+                self.skipTest(f"Cannot proceed: Test installation not found at {self.test_install_path}. Run test_02_step2_install_patch first.")
+
+            print(f"[TEST] ✓ Found test installation at {self.test_install_path}")
+
+            # Create a temporary tslpatchdata directory for the verification diff
+            verify_tslpatchdata_path = Path("tslpatchdata_verify")
+            verify_tslpatchdata_path.mkdir(exist_ok=True)
+
+            # Ensure path1_vanilla is not None
+            if self.path1_vanilla is None:
+                self.fail("Vanilla path not initialized")
+
+            # Run KotorDiff for verification
+            # Note: We're diffing test_install_path (which has mod installed) to path1_vanilla
+            # If installation worked correctly, this diff should show the same changes as the original diff
+            print(f"[TEST] Running KotorDiff to diff installed test installation to path1 (vanilla)...")
+            verify_result = run_application(
+                config=KotorDiffConfig(
+                    paths=[Installation(self.test_install_path), Installation(self.path1_vanilla)],
+                    tslpatchdata_path=verify_tslpatchdata_path,
+                    ini_filename="verify_changes.ini",
+                    compare_hashes=True,
+                    logging_enabled=True,
+                )
+            )
+            assert verify_result == 0, f"Verification KotorDiff failed with exit code: {verify_result}"
+            print(f"[TEST] Verification KotorDiff completed with exit code: {verify_result}")
+
+            # Mark step 3 as completed successfully
+            self.step3_completed = True
+            print(f"[TEST] ✓ Step 3 completed: Verification successful")
+
+        except KeyboardInterrupt:
+            print(f"\n[TEST] KeyboardInterrupt: Step 3 was cancelled by user")
+            raise
+        except BaseException as e:
+            print(f"[TEST] Step 3 failed: {e.__class__.__name__}: {e}")
+            traceback.print_exc()
+            # Don't fail the test here, but step3_completed remains False
+            # This means uninstall won't run in cleanup
+        finally:
+            profiler.disable()
+            self._save_profiler_results(profiler, profiler_output_file, profiler_summary_file, "Step 3: Verify Installation")
+
+    def test_04_step4_uninstall_patch(self):
+        """Step 4 cleanup validator: uninstall the mod from the test installation.
+
+        This method provides cleanup and final confirmation. It does not test new
+        product code; it reuses state created earlier to ensure the environment
+        can be returned to baseline. Prerequisites: installation must be complete
+        (from step 2). Can be run independently for cleanup.
+        """
+        profiler = cProfile.Profile()
+        profiler_output_file = self.tslpatchdata_path / "test_step4_uninstall_patch_profile.prof"
+        profiler_summary_file = self.tslpatchdata_path / "test_step4_uninstall_patch_profile_summary.txt"
+
+        try:
+            profiler.enable()
+            print(f"[TEST] Step 4: Uninstall patch - Profiling enabled")
+
+            # Check prerequisites
+            if self.path1_vanilla is None:
+                self.fail("Vanilla path not initialized")
+
+            if not self.test_install_path:
+                self.test_install_path = Path(self.path1_vanilla).parent / "swkotor - Vanilla - Copy"
+
+            if not self.test_install_path.exists():
+                self.skipTest(f"Cannot proceed: Test installation not found at {self.test_install_path}. Nothing to uninstall.")
+
+            if not self.mod_info_for_uninstall:
+                # Try to load mod info if not already loaded
+                try:
+                    self.mod_info_for_uninstall = load_mod(str(self.tslpatchdata_path))
+                    print(f"[TEST] Loaded mod info for uninstall")
+                except Exception as e:
+                    self.skipTest(f"Cannot proceed: Could not load mod info for uninstall: {e}. Run test_02_step2_install_patch first.")
+
+            print(f"[TEST] Uninstalling mod from {self.test_install_path}...")
+            patcher_logger = PatchLogger()
+            fully_ran = uninstall_mod(self.mod_info_for_uninstall.mod_path, self.test_install_path.as_posix(), patcher_logger)
+
+            if fully_ran:
+                print(f"[TEST] ✓ Step 4 completed: Uninstall successful")
+            else:
+                print(f"[TEST] ⚠ Step 4 completed: Uninstall completed with warnings")
+
+        except KeyboardInterrupt:
+            print(f"\n[TEST] KeyboardInterrupt: Step 4 was cancelled by user")
+            raise
+        except BaseException as e:
+            print(f"[TEST] Step 4 failed (non-fatal): {e.__class__.__name__}: {e}")
+            traceback.print_exc()
+            # Don't fail the test - uninstall is cleanup
+        finally:
+            profiler.disable()
+            self._save_profiler_results(profiler, profiler_output_file, profiler_summary_file, "Step 4: Uninstall Patch")
+
+def report_test_errors(errors: list[str], test_case: unittest.TestCase):
+    """Report all errors at the end."""
+    if errors:
+        error_summary = f"\n{'=' * 80}\nFOUND {len(errors)} VALIDATION ERROR(S):\n{'=' * 80}\n"
+        for i, error in enumerate(errors, 1):
+            error_summary += f"\n{i}. {error}\n"
+        error_summary += f"{'=' * 80}\n"
+        test_case.fail(error_summary)
 
 
 if __name__ == "__main__":

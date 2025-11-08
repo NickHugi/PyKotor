@@ -50,12 +50,13 @@ if toolset_path.exists():
     os.chdir(toolset_path)
 
 
+from pathlib import Path  # noqa: E402
+
 from pykotor.extract.file import FileResource  # noqa: E402
 from toolset.gui.common.style.delegates import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
 from toolset.gui.common.widgets.tree import RobustTreeView  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.utils.window import openResourceEditor  # noqa: E402
-from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint

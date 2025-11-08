@@ -8,11 +8,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 from loggerplus import RobustLogger
 from qtpy.QtCore import QEvent, QObject, QSortFilterProxyModel, Qt
-from qtpy.QtGui import QKeyEvent, QStandardItemModel
+from qtpy.QtGui import QStandardItemModel
 from qtpy.QtWidgets import QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex
+    from qtpy.QtGui import QKeyEvent
 
 
 class TemplateFilterProxyModel(QSortFilterProxyModel):
@@ -116,7 +117,7 @@ class HoverEventFilter(QObject):
         elif event.type() == QEvent.Type.HoverLeave:
             if self.current_widget == obj:
                 self.current_widget = None
-        elif event.type() == QEvent.Type.KeyPress and cast(QKeyEvent, event).key() == self.debugKey:
+        elif event.type() == QEvent.Type.KeyPress and cast("QKeyEvent", event).key() == self.debugKey:
             if self.current_widget:
                 print(f"Hovered control: {self.current_widget.__class__.__name__} ({self.current_widget.objectName()})")
             else:

@@ -23,11 +23,12 @@ class NCSBinaryReader(ResourceReader):
         super().__init__(source, offset, size)
         self._ncs: NCS | None = None
         self._instructions: dict[int, NCSInstruction] = {}
-        self._jumps: dict[NCSInstruction, int] = {}
+        self._jumps: list[tuple[NCSInstruction, int]] = []
 
     @autoclose
     def load(
         self,
+        *,
         auto_close: bool = True,
     ) -> NCS:
         """Loads an NCS file from the reader.
@@ -66,6 +67,7 @@ class NCSBinaryReader(ResourceReader):
             raise ValueError(msg)
 
         self._instructions = {}  # offset -> instruction
+        self._jumps = []
 
         # Read the header fields
         magic_byte = self._reader.read_uint8()  # Position 8
@@ -145,7 +147,7 @@ class NCSBinaryReader(ResourceReader):
                 enhanced_msg = f"Failed to parse NCS instruction at offset {offset}: {error_msg}"
                 raise ValueError(enhanced_msg) from e
 
-        for instruction, jumpToOffset in self._jumps.items():
+        for instruction, jumpToOffset in self._jumps:
             instruction.jump = self._instructions[jumpToOffset]
 
         self._ncs.instructions = list(self._instructions.values())
@@ -202,6 +204,7 @@ class NCSBinaryReader(ResourceReader):
         type_value = NCSInstructionTypeValue(byte_code, qualifier)
 
         instruction = NCSInstruction()
+        instruction.offset = instruction_offset
 
         # Special handling for RESERVED opcode - it appears with various qualifiers
         # Treat all RESERVED variants as simple 2-byte no-ops
@@ -258,7 +261,7 @@ class NCSBinaryReader(ResourceReader):
             NCSInstructionType.JNZ,
         }:
             jumpOffset = self._reader.read_int32(big=True) + self._reader.position() - 6
-            self._jumps[instruction] = jumpOffset
+            self._jumps.append((instruction, jumpOffset))
 
         elif instruction.ins_type == NCSInstructionType.DESTRUCT:
             instruction.args.extend(
@@ -270,10 +273,10 @@ class NCSBinaryReader(ResourceReader):
             )
 
         elif instruction.ins_type in {
-            NCSInstructionType.DECISP,
-            NCSInstructionType.INCISP,
-            NCSInstructionType.DECIBP,
-            NCSInstructionType.INCIBP,
+            NCSInstructionType.DECxSP,
+            NCSInstructionType.INCxSP,
+            NCSInstructionType.DECxBP,
+            NCSInstructionType.INCxBP,
         }:
             instruction.args.extend([self._reader.read_uint32(big=True)])
 
@@ -461,12 +464,13 @@ class NCSBinaryWriter(ResourceWriter):
     ):
         super().__init__(target)
         self._ncs: NCS = ncs
-        self._offsets: dict[NCSInstruction, int] = {}
-        self._sizes: dict[NCSInstruction, int] = {}
+        self._offsets: dict[int, int] = {}
+        self._sizes: dict[int, int] = {}
 
     @autoclose
     def write(
         self,
+        *,
         auto_close: bool = True,
     ):
         """Writes the NCS file.
@@ -484,9 +488,11 @@ class NCSBinaryWriter(ResourceWriter):
         """
         offset = NCS_HEADER_SIZE
         for instruction in self._ncs.instructions:
-            self._sizes[instruction] = self.determine_size(instruction)
-            self._offsets[instruction] = offset
-            offset += self._sizes[instruction]
+            inst_id = id(instruction)
+            instruction_size = self.determine_size(instruction)
+            self._sizes[inst_id] = instruction_size
+            self._offsets[inst_id] = offset
+            offset += instruction_size
 
         self._writer.write_string("NCS ")
         self._writer.write_string("V1.0")
@@ -542,10 +548,10 @@ class NCSBinaryWriter(ResourceWriter):
             NCSInstructionType.JSR,
             NCSInstructionType.JZ,
             NCSInstructionType.JNZ,
-            NCSInstructionType.DECISP,
-            NCSInstructionType.INCISP,
-            NCSInstructionType.DECIBP,
-            NCSInstructionType.INCIBP,
+            NCSInstructionType.DECxSP,
+            NCSInstructionType.INCxSP,
+            NCSInstructionType.DECxBP,
+            NCSInstructionType.INCxBP,
         }:
             size += 4  # 1 + 4 - 1 = 4
 
@@ -638,12 +644,12 @@ class NCSBinaryWriter(ResourceWriter):
 
         # Handle instruction-specific arguments
         if instruction.ins_type in {
-            NCSInstructionType.DECISP,
-            NCSInstructionType.INCISP,
-            NCSInstructionType.DECIBP,
-            NCSInstructionType.INCIBP,
+            NCSInstructionType.DECxSP,
+            NCSInstructionType.INCxSP,
+            NCSInstructionType.DECxBP,
+            NCSInstructionType.INCxBP,
         }:
-            self._writer.write_int32(instruction.args[0], big=True)
+            self._writer.write_int32(to_signed_32bit(instruction.args[0]), big=True)
 
         elif instruction.ins_type in {NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP, NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP}:
             self._writer.write_int32(instruction.args[0], big=True)
@@ -660,8 +666,8 @@ class NCSBinaryWriter(ResourceWriter):
             self._writer.write_int32(instruction.args[0], big=True)
         elif instruction.ins_type == NCSInstructionType.CONSTI:
             # Integer constants stored as unsigned 32-bit per DeNCS Decoder.java line 137
-            # However Python ints can represent any value, write as signed int32
-            self._writer.write_int32(instruction.args[0], big=True)
+            # Convert to signed representation for struct packing
+            self._writer.write_int32(to_signed_32bit(instruction.args[0]), big=True)
         elif instruction.ins_type == NCSInstructionType.CONSTS:
             # CONSTS with string length and string data
             self._writer.write_string(instruction.args[0], big=True, prefix_length=2)
@@ -815,7 +821,9 @@ class NCSBinaryWriter(ResourceWriter):
         }:
             jump = instruction.jump
             assert jump is not None, f"{instruction} has a NoneType jump."
-            relative = self._offsets[jump] - self._offsets[instruction]
+            instruction_id = id(instruction)
+            jump_id = id(jump)
+            relative = self._offsets[jump_id] - self._offsets[instruction_id]
             self._writer.write_int32(to_signed_32bit(relative), big=True)
 
         elif instruction.ins_type == NCSInstructionType.RETN:

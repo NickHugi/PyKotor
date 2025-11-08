@@ -4,6 +4,7 @@ import subprocess
 
 from datetime import date
 from enum import Enum
+from pathlib import Path  # pyright: ignore[reportMissingImports]
 from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.misc import Game
@@ -13,7 +14,6 @@ from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.misc import generate_hash  # pyright: ignore[reportMissingImports]
-from utility.system.path import Path  # pyright: ignore[reportMissingImports]
 
 if TYPE_CHECKING:
     import os
@@ -44,7 +44,7 @@ class InbuiltNCSCompiler(NCSCompiler):
         *,
         debug: bool = False,
     ):
-        source_filepath: Path = Path.pathify(source_path)
+        source_filepath: Path = Path(source_path)
         nss_data: bytes = BinaryReader.load_file(source_filepath)
         nss_contents: str = decode_bytes_with_fallbacks(nss_data)
         ncs: NCS = compile_nss(nss_contents, game, optimizers, library_lookup=[source_filepath.parent], debug=debug)
@@ -188,7 +188,7 @@ class ExternalNCSCompiler(NCSCompiler):
         return KnownExternalCompilers.from_sha256(self.filehash)
 
     def change_nwnnsscomp_path(self, nwnnsscomp_path: os.PathLike | str):
-        self.nwnnsscomp_path: Path = Path.pathify(nwnnsscomp_path)
+        self.nwnnsscomp_path: Path = Path(nwnnsscomp_path)
         self.filehash: str = generate_hash(self.nwnnsscomp_path, hash_algo="sha256").upper()
 
     def config(
@@ -218,7 +218,7 @@ class ExternalNCSCompiler(NCSCompiler):
             - Converts game arg to Game enum if integer
             - Returns NwnnsscompConfig object configured with args useable with the compile_script and decompile_script functions.
         """
-        source_filepath, output_filepath = map(Path.pathify, (source_file, output_file))
+        source_filepath, output_filepath = map(Path, (source_file, output_file))
         if not isinstance(game, Game):
             game = Game(game)
         return NwnnsscompConfig(self.filehash, source_filepath, output_filepath, game)
@@ -262,12 +262,12 @@ class ExternalNCSCompiler(NCSCompiler):
             EntryPointError: If file has no entry point and is an include file
             subprocess.TimeoutExpired: If compilation exceeds timeout
         """
-        source_path = Path.pathify(source_file)
-        if not source_path.safe_isfile():
+        source_path = Path(source_file)
+        if not source_path.is_file():
             msg = f"Source file not found: {source_path}"
             raise FileNotFoundError(msg)
 
-        if not self.nwnnsscomp_path.safe_isfile():
+        if not self.nwnnsscomp_path.is_file():
             msg = f"Compiler executable not found: {self.nwnnsscomp_path}"
             raise RuntimeError(msg)
 
@@ -334,12 +334,12 @@ class ExternalNCSCompiler(NCSCompiler):
             RuntimeError: If compiler doesn't support decompilation or fails
             subprocess.TimeoutExpired: If decompilation exceeds timeout
         """
-        source_path = Path.pathify(source_file)
-        if not source_path.safe_isfile():
+        source_path = Path(source_file)
+        if not source_path.is_file():
             msg = f"Source file not found: {source_path}"
             raise FileNotFoundError(msg)
 
-        if not self.nwnnsscomp_path.safe_isfile():
+        if not self.nwnnsscomp_path.is_file():
             msg = f"Compiler executable not found: {self.nwnnsscomp_path}"
             raise RuntimeError(msg)
 

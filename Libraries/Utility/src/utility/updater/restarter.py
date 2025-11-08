@@ -6,13 +6,13 @@ import sys
 import time
 
 from enum import Enum
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Callable
 
 from loggerplus import RobustLogger
 
 from utility.system.os_helper import is_frozen, requires_admin
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -42,9 +42,9 @@ class Restarter:
         logger: Logger | None = None,
     ):
         self.log = logger or RobustLogger()
-        self.current_app: Path = Path.pathify(current_app)
+        self.current_app: Path = Path(current_app)
         self.log.debug("Current App: %s resolved to %s", current_app, self.current_app)
-        if is_frozen() and not self.current_app.safe_exists():
+        if is_frozen() and not self.current_app.exists():
             raise ValueError(f"Bad path to current_app provided to Restarter: '{self.current_app}'")
 
         self.filename: str = self.current_app.name if filename is None else filename
@@ -55,7 +55,7 @@ class Restarter:
         self.data_dirpath = Path(self.data_dir.name)
         self.log.debug("Restart script dir: %s", self.data_dirpath)
         self.exithook = exithook
-        self.updated_app: Path = Path.pathify(updated_app)
+        self.updated_app: Path = Path(updated_app)
         self.log.debug("Update path: %s", self.updated_app)
         if not self.updated_app.exists():
             self.updated_app = self.updated_app.joinpath(self.updated_app.name)
@@ -121,7 +121,7 @@ class Restarter:
 
     def _win_overwrite(self):  # sourcery skip: class-extract-method
         self.log.info("Calling _win_overwrite for updated app '%s'", self.updated_app)
-        is_folder = self.updated_app.safe_isdir()
+        is_folder = self.updated_app.is_dir()
         if is_folder:
             needs_admin = requires_admin(self.updated_app) or requires_admin(self.current_app)
         else:
@@ -220,7 +220,7 @@ move /Y "{self.updated_app}" "{self.current_app}"
     @classmethod
     def _win_kill_self(cls):
         taskkill_path = cls.win_get_system32_dir() / "taskkill.exe"
-        if taskkill_path.safe_isfile():
+        if taskkill_path.is_file():
             subprocess.run([str(taskkill_path), "/F", "/PID", str(os.getpid())], check=True)  # noqa: S603
         else:
             log = RobustLogger()

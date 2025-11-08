@@ -13,8 +13,6 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from utility.error_handling import format_exception_with_variables
-
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "Utility", "src")
@@ -34,7 +32,8 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.common.misc import Game  # noqa: E402
 from pykotor.extract.installation import Installation  # noqa: E402
 from pykotor.resource.type import ResourceType  # noqa: E402
-from utility.system.path import Path  # noqa: E402
+from pathlib import Path  # noqa: E402
+from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     from typing_extensions import Literal
@@ -78,7 +77,7 @@ def pytest_report_teststatus(report: pytest.TestReport, config: pytest.Config) -
 
 def save_profiler_output(profiler: cProfile.Profile, filepath: os.PathLike | str):
     profiler.disable()
-    profiler_output_file = Path.pathify(filepath)
+    profiler_output_file = Path(filepath)
     profiler_output_file_str = str(profiler_output_file)
     profiler.dump_stats(profiler_output_file_str)
     # Generate reports from the profile stats
@@ -97,7 +96,7 @@ def log_file(
     msg: str = buffer.getvalue()
     print(*args, **kwargs)  # noqa: T201
 
-    filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path.pathify(filepath)
+    filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path(filepath)
     with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
         f.write(msg)
 
@@ -112,9 +111,9 @@ def _setup_and_profile_installation() -> dict[Game, Installation]:
         profiler = cProfile.Profile()
         profiler.enable()
 
-    if K1_PATH and Path(K1_PATH).joinpath("chitin.key").safe_isfile():
+    if K1_PATH and Path(K1_PATH).joinpath("chitin.key").is_file():
         ALL_INSTALLATIONS[Game.K1] = Installation(K1_PATH)
-    if K2_PATH and Path(K2_PATH).joinpath("chitin.key").safe_isfile():
+    if K2_PATH and Path(K2_PATH).joinpath("chitin.key").is_file():
         ALL_INSTALLATIONS[Game.K2] = Installation(K2_PATH)
 
     if profiler:
@@ -295,7 +294,7 @@ def cleanup_temp_dirs():
     for temp_dir in temp_dirs:
         temp_dirpath = Path(temp_dir)
         # temp_dirpath.gain_access(recurse=True)
-        for temp_file in temp_dirpath.safe_rglob("*"):
+        for temp_file in temp_dirpath.rglob("*"):
             with suppress(Exception):
                 temp_file.unlink(missing_ok=True)
         with suppress(Exception):

@@ -4,6 +4,7 @@ import multiprocessing
 
 from contextlib import contextmanager
 from operator import attrgetter
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 import qtpy
@@ -22,7 +23,6 @@ from qtpy.QtGui import (
 )
 from qtpy.QtWidgets import QDialog, QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
@@ -33,7 +33,6 @@ from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigu
 from toolset.utils.script import compileScript, decompileScript
 from utility.error_handling import universal_simplify_exception
 from utility.misc import is_debug_mode
-from utility.system.path import Path, PurePath
 from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
@@ -43,6 +42,12 @@ if TYPE_CHECKING:
 
     from pykotor.common.script import ScriptConstant, ScriptFunction
     from toolset.data.installation import HTInstallation
+    KOTOR_CONSTANTS: list[ScriptConstant] = []
+    KOTOR_FUNCTIONS: list[ScriptFunction] = []
+    TSL_CONSTANTS: list[ScriptConstant] = []
+    TSL_FUNCTIONS: list[ScriptFunction] = []
+else:
+    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 
 
 def download_script(

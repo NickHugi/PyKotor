@@ -4,6 +4,7 @@ import tempfile
 
 from abc import abstractmethod
 from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import qtpy
@@ -52,7 +53,6 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from ui import stylesheet_resources  # noqa: PLC0415, F401, I001  # pylint: disable=C0415
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.system.os_helper import remove_any
-from utility.system.path import Path
 
 if qtpy.API_NAME == "PySide2":
     from toolset.rcc import resources_rc_pyside2  # noqa: PLC0415, F401  # pylint: disable=C0415
@@ -68,6 +68,8 @@ else:
 if TYPE_CHECKING:
     import os
 
+    from pathlib import PurePath
+
     from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer
     from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer
     from qtpy.QtGui import QFocusEvent, QMouseEvent, QShowEvent
@@ -75,7 +77,6 @@ if TYPE_CHECKING:
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
-    from utility.system.path import PurePath
 
 
 class MediaPlayerWidget(QWidget):
@@ -647,7 +648,7 @@ class Editor(QMainWindow):
         assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
 
         # Determine the physical file and the nested paths.
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(self._filepath)
         nested_paths: list[PurePath] = []
         if is_any_erf_type_file(c_filepath) or is_rim_file(c_filepath):
             nested_paths.append(c_filepath)
@@ -656,7 +657,7 @@ class Editor(QMainWindow):
         while (  # Iterate all parents until we find a physical folder on disk.
             ResourceType.from_extension(c_parent_filepath.suffix).name
             in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV, ResourceType.RIM)
-        ) and not c_parent_filepath.safe_isdir():
+        ) and not c_parent_filepath.is_dir():
             nested_paths.append(c_parent_filepath)
             c_filepath = c_parent_filepath
             c_parent_filepath = c_filepath.parent
@@ -719,7 +720,7 @@ class Editor(QMainWindow):
         assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
 
         erftype: ERFType = ERFType.from_extension(self._filepath)
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(self._filepath)
 
         if c_filepath.is_file():
             erf: ERF = read_erf(c_filepath)
@@ -747,7 +748,7 @@ class Editor(QMainWindow):
 
     def _saveEndsWithOther(self, data: bytes, data_ext: bytes):
         assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(self._filepath)
         with c_filepath.open("wb") as file:
             file.write(data)
 
@@ -831,7 +832,7 @@ class Editor(QMainWindow):
             - Refresh window title
             - Emit loadedFile signal with load details.
         """
-        self._filepath = Path.pathify(filepath)  # pyright: ignore[reportGeneralTypeIssues]
+        self._filepath = Path(filepath)  # pyright: ignore[reportGeneralTypeIssues]
         self._resname = resref
         self._restype = restype
         self._revert = data
@@ -940,7 +941,7 @@ class Editor(QMainWindow):
         tempFile.seek(0)
         tempFile.close()
 
-        player: PyQt6MediaPlayer | PySide6MediaPlayer = cast(Any, self.mediaPlayer.player)
+        player: PyQt6MediaPlayer | PySide6MediaPlayer = cast("Any", self.mediaPlayer.player)
         audioOutput = QAudioOutput(self)  # pyright: ignore[reportCallIssue]
         player.setAudioOutput(audioOutput)  # type: ignore[attr-name]
         player.setSource(QUrl.fromLocalFile(tempFile.name))  # type: ignore[attr-name]

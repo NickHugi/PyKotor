@@ -23,7 +23,7 @@ from pykotor.resource.generics.uts import read_uts, write_uts
 from pykotor.resource.generics.utt import read_utt, write_utt
 from pykotor.resource.generics.utw import read_utw, write_utw
 from pykotor.resource.type import ResourceType
-from utility.system.path import Path
+from pathlib import Path
 
 if TYPE_CHECKING:
     import os
@@ -109,7 +109,7 @@ def save_profiler_output(
     filepath: os.PathLike | str,
 ):
     profiler.disable()
-    profiler_output_file = Path.pathify(filepath)
+    profiler_output_file = Path(filepath)
     profiler_output_file_str = str(profiler_output_file)
     profiler.dump_stats(profiler_output_file_str)
 

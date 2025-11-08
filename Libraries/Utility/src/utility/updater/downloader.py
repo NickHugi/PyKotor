@@ -9,6 +9,7 @@ import shutil
 import tempfile
 import time
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 import certifi
@@ -19,7 +20,6 @@ from Crypto.Cipher import AES
 from Crypto.Util import Counter
 from loggerplus import RobustLogger
 
-from utility.system.path import Path
 from utility.updater.crypto import a32_to_str, base64_to_a32, base64_url_decode, decrypt_mega_attr, get_chunks, str_to_a32
 
 if TYPE_CHECKING:
@@ -74,7 +74,7 @@ class FileDownloader:
         # to create the download link
         if not filepath:
             raise FileDownloaderError("No filename provided", expected=True)
-        self.filepath = Path.pathify(filepath)
+        self.filepath = Path(filepath)
         self.log = logger or RobustLogger()
 
         self.file_binary_data: list = []  # Hold all binary data once file has been downloaded
@@ -243,8 +243,8 @@ class FileDownloader:
                 for block in self.file_binary_data:
                     f.write(block)
         else:
-            filepath = Path.pathify(self.filepath)
-            if filepath.safe_exists():
+            filepath = Path(self.filepath)
+            if filepath.exists():
                 filepath.unlink(missing_ok=True)
             self.file_binary_path.rename(self.filepath)
 
@@ -326,7 +326,7 @@ def _download_file(
     file: dict[str, Any] | None = None,
     progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
 ):
-    dest_path = Path.pathify(dest or Path.cwd()).absolute()
+    dest_path = Path(dest or Path.cwd()).absolute()
     if file is None:
         if is_public:
             file_key = base64_to_a32(file_key)
@@ -442,7 +442,7 @@ def _download_file(
     if dest_path.name == file_name:
         dest_path = dest_path.parent
     dest_filepath = dest_path / file_name
-    if not dest_filepath.parent.safe_isdir():
+    if not dest_filepath.parent.is_dir():
         dest_filepath.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(temp_output_file.name, dest_filepath)
 

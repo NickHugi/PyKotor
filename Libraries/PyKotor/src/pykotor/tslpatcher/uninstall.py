@@ -4,6 +4,7 @@ import os
 import shutil
 
 from datetime import datetime
+from pathlib import Path
 from tkinter import messagebox
 from typing import TYPE_CHECKING
 
@@ -15,7 +16,6 @@ from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
@@ -44,11 +44,11 @@ def uninstall_all_mods(installation: Installation):
     write_tlk(dialog_tlk, dialog_tlk_path)
 
     # Remove all override files
-    for file_path in override_path.safe_iterdir():
+    for file_path in override_path.iterdir():
         file_path.unlink()
 
     # Remove any .MOD files
-    for file_path in modules_path.safe_iterdir():
+    for file_path in modules_path.iterdir():
         if is_mod_file(file_path.name):
             file_path.unlink()
 
@@ -131,7 +131,7 @@ class ModUninstaller:
             - Return None if no valid backups found
             - Otherwise return the subfolder with the maximum datetime parsed from folder name.
         """
-        backup_folder_path = Path.pathify(backup_folder)
+        backup_folder_path = Path(backup_folder)
         valid_backups: list[Path] = [
             subfolder
             for subfolder in backup_folder_path.iterdir()  # type: ignore[attr-defined]
@@ -175,7 +175,7 @@ class ModUninstaller:
             file_path.unlink(missing_ok=True)  # type: ignore[attr-defined]
             self.log.add_note(f"Removed {rel_filepath}...")
         for file in files_in_backup:
-            file_path = Path.pathify(file)
+            file_path = Path(file)
             if file_path.name == "remove these files.txt":
                 continue
             destination_path = self.game_path / file_path.relative_to(backup_folder)  # type: ignore[attr-defined]
@@ -235,12 +235,12 @@ class ModUninstaller:
             return False
         self.log.add_note(f"Using backup folder '{most_recent_backup_folder}'")
 
-        if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
+        if len(files_in_backup) < 6:
             for item in files_in_backup:
                 self.log.add_note(f"Would restore file '{item.relative_to(most_recent_backup_folder)}'")
         if not messagebox.askyesno(
             "Confirmation",
-            f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?\nNote: This uses the most recent mod-specific backup, the namespace option displayed does not affect this tool.",
+            f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?\nNote: This uses the most recent mod-specific backup, the namespace option displayed does not affect this tool.",  # noqa: E501
         ):
             return False
         try:

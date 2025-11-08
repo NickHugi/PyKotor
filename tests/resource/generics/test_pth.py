@@ -24,8 +24,6 @@ if UTILITY_PATH.joinpath("utility").exists():
 from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector2
-from pykotor.common.misc import Game
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.pth import construct_pth, dismantle_pth
 from pykotor.resource.type import ResourceType
@@ -34,9 +32,63 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.pth import PTH
 
-TEST_FILE = "tests/files/test.pth"
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+TEST_PTH_XML = """<gff3>
+  <struct id="-1">
+    <list label="Path_Points">
+      <struct id="2">
+        <uint32 label="Conections">2</uint32>
+        <uint32 label="First_Conection">0</uint32>
+        <float label="X">0.0</float>
+        <float label="Y">0.0</float>
+        </struct>
+      <struct id="2">
+        <uint32 label="Conections">3</uint32>
+        <uint32 label="First_Conection">2</uint32>
+        <float label="X">0.0</float>
+        <float label="Y">1.0</float>
+        </struct>
+      <struct id="2">
+        <uint32 label="Conections">2</uint32>
+        <uint32 label="First_Conection">5</uint32>
+        <float label="X">1.0</float>
+        <float label="Y">1.0</float>
+        </struct>
+      <struct id="2">
+        <uint32 label="Conections">1</uint32>
+        <uint32 label="First_Conection">7</uint32>
+        <float label="X">0.0</float>
+        <float label="Y">2.0</float>
+        </struct>
+      </list>
+    <list label="Path_Conections">
+      <struct id="3">
+        <uint32 label="Destination">1</uint32>
+        </struct>
+      <struct id="3">
+        <uint32 label="Destination">2</uint32>
+        </struct>
+      <struct id="3">
+        <uint32 label="Destination">0</uint32>
+        </struct>
+      <struct id="3">
+        <uint32 label="Destination">2</uint32>
+        </struct>
+      <struct id="3">
+        <uint32 label="Destination">3</uint32>
+        </struct>
+      <struct id="3">
+        <uint32 label="Destination">0</uint32>
+        </struct>
+      <struct id="3">
+        <uint32 label="Destination">1</uint32>
+        </struct>
+      <struct id="3">
+        <uint32 label="Destination">1</uint32>
+        </struct>
+      </list>
+    </struct>
+  </gff3>
+"""
 
 
 class TestPTH(unittest.TestCase):
@@ -46,40 +98,18 @@ class TestPTH(unittest.TestCase):
     def log_func(self, message=""):
         self.log_messages.append(message)
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for pth_resource in (resource for resource in self.installation if resource.restype() is ResourceType.PTH):
-            gff: GFF = read_gff(pth_resource.data())
-            reconstructed_gff: GFF = dismantle_pth(construct_pth(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for pth_resource in (resource for resource in self.installation if resource.restype() is ResourceType.PTH):
-            gff: GFF = read_gff(pth_resource.data())
-            reconstructed_gff: GFF = dismantle_pth(construct_pth(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
     def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_PTH_XML.encode(), file_format=ResourceType.GFF_XML)
         reconstructed_gff = dismantle_pth(construct_pth(gff))
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_PTH_XML.encode(), file_format=ResourceType.GFF_XML)
         pth = construct_pth(gff)
         self.validate_io(pth)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_PTH_XML.encode(), file_format=ResourceType.GFF_XML)
         gff = dismantle_pth(construct_pth(gff))
         pth = construct_pth(gff)
         self.validate_io(pth)

@@ -8,18 +8,18 @@ exclusively on CLI argument parsing.
 from __future__ import annotations
 
 import cProfile
-import contextlib
 import sys
 import traceback
 
 from dataclasses import dataclass
 from io import StringIO
-from typing import TYPE_CHECKING, Any, Callable, TextIO
+from pathlib import Path
+from typing import TYPE_CHECKING, TextIO
 
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
-from pykotor.extract.talktable import StrRefReferenceCache
 from pykotor.resource.formats import gff
+from pykotor.tools.reference_cache import StrRefReferenceCache
 
 # Cache support removed
 from pykotor.tslpatcher.diff.analyzers import analyze_tlk_strref_references
@@ -31,21 +31,19 @@ from pykotor.tslpatcher.diff.engine import (
 from pykotor.tslpatcher.diff.generator import (
     TSLPatchDataGenerator,
     determine_install_folders,
-    validate_tslpatchdata_arguments,
 )
-from pykotor.tslpatcher.diff.incremental_writer import IncrementalTSLPatchDataWriter
-from pykotor.tslpatcher.writer import ModificationsByType, TSLPatcherINISerializer
+from pykotor.tslpatcher.writer import IncrementalTSLPatchDataWriter, ModificationsByType, TSLPatcherINISerializer
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
 
 if TYPE_CHECKING:
-    from pykotor.extract.twoda import TwoDAMemoryReferenceCache
+    from pykotor.tools.reference_cache import TwoDAMemoryReferenceCache
     from pykotor.tslpatcher.diff.engine import DiffContext
 
 
 @dataclass
 class KotorDiffConfig:
     """Configuration for KotorDiff operations."""
+
     paths: list[Path | Installation]
     tslpatchdata_path: Path | None = None
     ini_filename: str = "changes.ini"
@@ -57,6 +55,7 @@ class KotorDiffConfig:
     use_profiler: bool = False
     filters: list[str] | None = None
     logging_enabled: bool = True
+    use_incremental_writer: bool = False
 
 
 gff_types: list[str] = list(gff.GFFContent.get_extensions())
@@ -121,16 +120,12 @@ def log_output(*args, **kwargs):
         chosen_log_file_path: str = "log_install_differ.log"
         _global_config.output_log = Path(chosen_log_file_path).resolve()
         assert _global_config.output_log is not None
-        if not _global_config.output_log.parent.safe_isdir():
+        if not _global_config.output_log.parent.is_dir():
             while True:
-                chosen_log_file_path = str(
-                    _global_config.config.output_log_path
-                    or input("Filepath of the desired output logfile: ").strip()
-                    or "log_install_differ.log"
-                )
+                chosen_log_file_path = str(_global_config.config.output_log_path or input("Filepath of the desired output logfile: ").strip() or "log_install_differ.log")
                 _global_config.output_log = Path(chosen_log_file_path).resolve()
                 assert _global_config.output_log is not None
-                if _global_config.output_log.parent.safe_isdir():
+                if _global_config.output_log.parent.is_dir():
                     break
                 print("Invalid path:", _global_config.output_log)
 
@@ -294,8 +289,6 @@ def _format_comparison_output(
     return 0 if comparison is True else (2 if comparison is False else 3)
 
 
-
-
 def generate_tslpatcher_data(
     tslpatchdata_path: Path,
     ini_filename: str,
@@ -322,8 +315,12 @@ def generate_tslpatcher_data(
 
         for tlk_mod in modifications.tlk:
             try:
+                # Build the tuple expected by new analyze_tlk_strref_references signature.
+                # Here we do not have strref_mappings directly, so pass empty mapping for now.
+                strref_mappings: dict[int, int] = {}
                 analyze_tlk_strref_references(
-                    tlk_mod,
+                    (tlk_mod, strref_mappings),
+                    strref_mappings,
                     base_data_path,
                     modifications.gff,
                     modifications.twoda,
@@ -331,8 +328,8 @@ def generate_tslpatcher_data(
                     modifications.ncs,
                 )
             except Exception as e:  # noqa: BLE001, PERF203
-                log_output(f"[Warning] StrRef analysis failed: {e.__class__.__name__}: {e}")
-                log_output("Full traceback:")
+                log_output(f"[Warning] StrRef analysis failed for tlk_mod={tlk_mod}: {e.__class__.__name__}: {e}")
+                log_output(f"Full traceback (tlk_mod={tlk_mod}):")
                 for line in traceback.format_exc().splitlines():
                     log_output(f"  {line}")
 
@@ -374,12 +371,6 @@ def generate_tslpatcher_data(
     log_output(f"  SSF modifications: {len(modifications.ssf)}")
     log_output(f"  NCS modifications: {len(modifications.ncs)}")
     log_output(f"  Install folders: {len(modifications.install)}")
-
-
-def handle_cached_results(args: Namespace) -> int:  # noqa: ARG001, C901
-    """Cache support removed."""
-    log_output("[ERROR] Cache support has been removed.")
-    return 1
 
 
 def handle_diff_internal(
@@ -437,49 +428,50 @@ def handle_diff(config: KotorDiffConfig) -> tuple[bool | None, int | None]:
     # Use paths from config
     all_paths: list[Path | Installation] = config.paths
 
-    # Create incremental writer if tslpatchdata is specified
+    # Create incremental writer if requested
     incremental_writer = None
+    base_path: Path | Installation | None = None
     if config.tslpatchdata_path:
-        # Determine game from first valid directory path
-        base_path: Path | Installation | None = None
-        for path in all_paths:
-            if isinstance(path, Installation) or path.safe_isdir():
-                base_path = path
+        for candidate_path in all_paths:
+            if isinstance(candidate_path, Installation) or candidate_path.is_dir():
+                base_path = candidate_path
                 break
 
-        game: Game | None = None
-        if base_path is not None:
-            try:
-                game = base_path.game() if isinstance(base_path, Installation) else Game.K1
-            except Exception as e:  # noqa: BLE001
-                log_output(f"[Warning] Could not determine game: {e.__class__.__name__}: {e}")
-                log_output("Full traceback:")
-                for line in traceback.format_exc().splitlines():
-                    log_output(f"  {line}")
+        if config.use_incremental_writer:
+            # Determine game from first valid directory path
+            game: Game | None = None
+            if base_path is not None:
+                try:
+                    game = base_path.game() if isinstance(base_path, Installation) else Game.K1
+                except Exception as e:  # noqa: BLE001
+                    log_output(f"[Warning] Could not determine game: {e.__class__.__name__}: {e}")
+                    log_output("Full traceback:")
+                    for line in traceback.format_exc().splitlines():
+                        log_output(f"  {line}")
 
-        # Create StrRef cache if we have a valid game
-        strref_cache = StrRefReferenceCache(game) if game else None
+            # Create StrRef cache if we have a valid game
+            strref_cache = StrRefReferenceCache(game) if game else None
 
-        # Create 2DA memory caches if we have a valid game
-        # Structure: {installation_index: CaseInsensitiveDict[TwoDAMemoryReferenceCache]}
-        # Initialize caches for all installations
-        from utility.common.more_collections import CaseInsensitiveDict  # noqa: PLC0415
+            # Create 2DA memory caches if we have a valid game
+            # Structure: {installation_index: CaseInsensitiveDict[TwoDAMemoryReferenceCache]}
+            # Initialize caches for all installations
+            from utility.common.more_collections import CaseInsensitiveDict  # noqa: PLC0415
 
-        twoda_caches: dict[int, CaseInsensitiveDict[TwoDAMemoryReferenceCache]] = {}
-        if game:
-            # Initialize caches for each path index
-            for idx in range(len(all_paths)):
-                twoda_caches[idx] = CaseInsensitiveDict()
+            twoda_caches: dict[int, CaseInsensitiveDict[TwoDAMemoryReferenceCache]] = {}
+            if game:
+                # Initialize caches for each path index
+                for idx in range(len(all_paths)):
+                    twoda_caches[idx] = CaseInsensitiveDict()
 
-        incremental_writer = IncrementalTSLPatchDataWriter(
-            config.tslpatchdata_path,
-            config.ini_filename,
-            base_data_path=base_path if isinstance(base_path, Path) else None,
-            strref_cache=strref_cache,
-            twoda_caches=twoda_caches if twoda_caches else None,
-            log_func=log_output,
-        )
-        log_output(f"Using incremental writer for tslpatchdata: {config.tslpatchdata_path}")
+            incremental_writer = IncrementalTSLPatchDataWriter(
+                config.tslpatchdata_path,
+                config.ini_filename,
+                base_data_path=base_path if isinstance(base_path, Path) else None,
+                strref_cache=strref_cache,
+                twoda_caches=twoda_caches if twoda_caches else None,
+                log_func=log_output,
+            )
+            log_output(f"Using incremental writer for tslpatchdata: {config.tslpatchdata_path}")
 
     comparison, _ = handle_diff_internal(
         all_paths,
@@ -487,33 +479,50 @@ def handle_diff(config: KotorDiffConfig) -> tuple[bool | None, int | None]:
         incremental_writer=incremental_writer,
     )
 
-    # Finalize TSLPatcher data if tslpatchdata is specified
-    if config.tslpatchdata_path and incremental_writer:
-        try:
-            # Finalize INI by writing InstallList section
-            incremental_writer.finalize()
+    # Finalize TSLPatcher data if requested
+    if config.tslpatchdata_path:
+        if config.use_incremental_writer and incremental_writer:
+            try:
+                # Finalize INI by writing InstallList section
+                incremental_writer.finalize()
 
-            # Summary
-            log_output("\nTSLPatcher data generation complete:")
-            log_output(f"  Location: {config.tslpatchdata_path}")
-            log_output(f"  INI file: {config.ini_filename}")
-            log_output(f"  TLK modifications: {len(incremental_writer.all_modifications.tlk)}")
-            log_output(f"  2DA modifications: {len(incremental_writer.all_modifications.twoda)}")
-            log_output(f"  GFF modifications: {len(incremental_writer.all_modifications.gff)}")
-            log_output(f"  SSF modifications: {len(incremental_writer.all_modifications.ssf)}")
-            log_output(f"  NCS modifications: {len(incremental_writer.all_modifications.ncs)}")
-            total_install_files: int = sum(len(files) for files in incremental_writer.install_folders.values())
-            log_output(f"  Install files: {total_install_files}")
-            log_output(f"  Install folders: {len(incremental_writer.install_folders)}")
-            # Return early on success
-        except Exception as gen_error:  # noqa: BLE001
-            log_output(f"[Error] Failed to finalize TSLPatcher data: {universal_simplify_exception(gen_error)}")
-            log_output("Full traceback:")
-            for line in traceback.format_exc().splitlines():
-                log_output(f"  {line}")
-            return None, 1
-        else:
-            return None, 0
+                # Summary
+                log_output("\nTSLPatcher data generation complete:")
+                log_output(f"  Location: {config.tslpatchdata_path}")
+                log_output(f"  INI file: {config.ini_filename}")
+                log_output(f"  TLK modifications: {len(incremental_writer.all_modifications.tlk)}")
+                log_output(f"  2DA modifications: {len(incremental_writer.all_modifications.twoda)}")
+                log_output(f"  GFF modifications: {len(incremental_writer.all_modifications.gff)}")
+                log_output(f"  SSF modifications: {len(incremental_writer.all_modifications.ssf)}")
+                log_output(f"  NCS modifications: {len(incremental_writer.all_modifications.ncs)}")
+                total_install_files: int = sum(len(files) for files in incremental_writer.install_folders.values())
+                log_output(f"  Install files: {total_install_files}")
+                log_output(f"  Install folders: {len(incremental_writer.install_folders)}")
+            except Exception as gen_error:  # noqa: BLE001
+                log_output(f"[Error] Failed to finalize TSLPatcher data: {universal_simplify_exception(gen_error)}")
+                log_output("Full traceback:")
+                for line in traceback.format_exc().splitlines():
+                    log_output(f"  {line}")
+                return None, 1
+            else:
+                return None, 0
+        elif not config.use_incremental_writer:
+            try:
+                assert _global_config.modifications_by_type is not None
+                generate_tslpatcher_data(
+                    config.tslpatchdata_path,
+                    config.ini_filename,
+                    _global_config.modifications_by_type,
+                    base_data_path=base_path if isinstance(base_path, Path) else None,
+                )
+            except Exception as gen_error:  # noqa: BLE001
+                log_output(f"[Error] Failed to generate TSLPatcher data: {universal_simplify_exception(gen_error)}")
+                log_output("Full traceback:")
+                for line in traceback.format_exc().splitlines():
+                    log_output(f"  {line}")
+                return None, 1
+            else:
+                return None, 0
 
     return comparison, None
 

@@ -313,28 +313,41 @@ class CaseSensitiveTempDirectory:
         return True
 
 
-# Determine if we should skip the entire test class
-_should_skip_tests = False
-_skip_reason = ""
+def _determine_skip_reason() -> str | None:
+    """
+    Determine whether the entire test class should be skipped.
 
-if os.name == "nt":
-    if not is_windows_case_sensitivity_supported():
-        _should_skip_tests = True
-        _skip_reason = (
-            "Windows case sensitivity not supported. "
-            "Requires Windows 10 (1803+) or Windows 11, NTFS filesystem, "
-            "and fsutil.exe must be available."
-        )
-elif os.name == "posix":
-    # On Unix, we'll check per-test if the filesystem is case-sensitive
-    pass
-else:
-    _should_skip_tests = True
-    _skip_reason = f"Unsupported operating system: {os.name}"
+    Returns a string reason when skipping is required, otherwise None.
+    """
+    if os.name == "nt":
+        windows_supported = is_windows_case_sensitivity_supported()
+        print(f"Windows case sensitivity support check result: {windows_supported}")
+        if not windows_supported:
+            reason = (
+                "Windows case sensitivity not supported. "
+                "Requires Windows 10 (1803+) or Windows 11, NTFS filesystem, "
+                "and fsutil.exe must be available."
+            )
+            print(f"Windows skip reason: {reason}")
+            return reason
+        return None
+    if os.name == "posix":
+        print(f"POSIX environment detected, skip reason: None")
+        return None
+    reason = f"Unsupported operating system: {os.name}"
+    print(f"Non-Windows skip reason computed: {reason}")
+    return reason
 
 
-@unittest.skipIf(_should_skip_tests, _skip_reason)
 class TestCaseAwarePath(TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        skip_reason = _determine_skip_reason()
+        print(f"Evaluated skip reason in setUpClass: {skip_reason}")
+        if skip_reason:
+            raise unittest.SkipTest(skip_reason)
+
     def setUp(self):
         """Set up a case-sensitive temporary directory for testing."""
         self.case_sensitive_dir = CaseSensitiveTempDirectory()

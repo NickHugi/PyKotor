@@ -4,6 +4,7 @@ import uuid
 
 from collections import deque
 from enum import IntEnum
+from pathlib import PureWindowsPath
 from typing import TYPE_CHECKING, Any, Dict, Generator, Generic, Sequence, TypeVar, cast
 
 from loggerplus import RobustLogger
@@ -14,7 +15,6 @@ from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
 from pykotor.resource.type import ResourceType
-from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from typing_extensions import Literal, Self
@@ -151,7 +151,7 @@ class DLG:
                 self._find_paths_recursive(node.links, target, current_path / node_path / link_list_name, paths, seen_links_and_nodes)
 
     def lookup_from_path(self, path: PureWindowsPath | str) -> list[DLGNode] | DLGNode | list[DLGLink] | DLGLink | None:
-        path = PureWindowsPath.pathify(path)
+        path = PureWindowsPath(path)
         if not path.parts or not path.name:
             return None
         num_of_parts = len(path.parts)
@@ -589,7 +589,7 @@ class DLGNode:
         node_map[node_key] = node
 
         node._hash_cache = int(node_key)  # noqa: SLF001
-        for key, value in cast(Dict[str, dict], node_data).items():
+        for key, value in cast("Dict[str, dict]", node_data).items():
             if value is None:
                 continue
             py_type = value.get("py_type")
@@ -841,7 +841,7 @@ class DLGLink(Generic[T]):
         link = object.__new__(cls)
         link._hash_cache = int(link_key)  # noqa: SLF001
         link.list_index = link_dict.get("link_list_index", -1)
-        for key, value in cast(Dict[str, dict], link_dict["data"]).items():
+        for key, value in cast("Dict[str, dict]", link_dict["data"]).items():
             if value is None:
                 continue
             py_type = value.get("py_type")

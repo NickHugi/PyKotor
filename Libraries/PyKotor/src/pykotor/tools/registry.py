@@ -3,13 +3,13 @@ from __future__ import annotations
 import os
 
 from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from loggerplus import RobustLogger
 
 from pykotor.common.misc import Game
 from utility.misc import ProcessorArchitecture
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import types
@@ -104,8 +104,9 @@ def check_reg_keys_existence_and_validity() -> tuple[list[tuple[str, str]], list
     """Check registry keys for their existence and validity against default paths."""
     import winreg
 
+    from pathlib import WindowsPath
+
     from pykotor.tools.path import find_kotor_paths_from_default
-    from utility.system.path import WindowsPath
 
     non_existent_keys = []
     invalid_path_keys = []
@@ -248,7 +249,7 @@ class SpoofKotorRegistry:
 
         # Key name at the path containing the value.
         self.key: str = "Path"
-        self.spoofed_path: Path = Path.pathify(installation_path).resolve()
+        self.spoofed_path: Path = Path(installation_path).resolve()
 
         if game is not None:
             determined_game = game

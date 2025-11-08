@@ -50,6 +50,8 @@ else:
     raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
 
 
+from pathlib import Path  # noqa: E402
+
 from loggerplus import RobustLogger  # noqa: E402
 from qtpy.QtCore import (  # noqa: E402
     QAbstractItemModel,  # noqa: F401
@@ -71,7 +73,6 @@ from qtpy.QtWidgets import QApplication, QFileIconProvider, QFileSystemModel, QM
 
 from utility.gui.qt.common.filesystem.pyfileinfogatherer import PyFileInfoGatherer  # noqa: E402
 from utility.gui.qt.common.filesystem.pyfilesystemnode import PyFileSystemNode  # noqa: E402
-from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from ctypes import c_bool
@@ -444,7 +445,7 @@ class PyFileSystemModel(QAbstractItemModel):
 
     def _handle_node_path_arg(self, path: os.PathLike | str, fetch: bool) -> PyFileSystemNode:  # noqa: FBT001, C901, PLR0911, PLR0912, PLR0915
         # sourcery skip: low-code-quality
-        pathObj = Path.pathify(path)
+        pathObj = Path(path)
         if not pathObj.parent.name or pathObj.anchor.startswith(":"):
             print("<SDM> [_handle_node_arg_str scope] path: ", path)
 
@@ -858,13 +859,13 @@ class PyFileSystemModel(QAbstractItemModel):
         print("<SDM> [_handle_from_path_arg scope] pathNodeResult: ", pathNodeResult.fileInfo() and pathNodeResult.fileInfo().path(), "row", pathNodeResult.row(), "children count:", pathNodeResult.children.__len__())  # noqa: E501
 
         idx = self.index(pathNodeResult)
-        print("<SDM> [_handle_from_path_arg scope] pathNodeResult idx: ", idx.isValid() and typing.cast(PyFileSystemNode, idx.internalPointer()).fileInfo().path())
+        print("<SDM> [_handle_from_path_arg scope] pathNodeResult idx: ", idx.isValid() and typing.cast("PyFileSystemNode", idx.internalPointer()).fileInfo().path())
 
         if not idx.isValid():
             return QModelIndex()
         if idx.column() != column:
             idx = idx.sibling(idx.row(), column)
-        print("<SDM> [_handle_from_path_arg scope] final idx: ", idx.isValid() and typing.cast(PyFileSystemNode, idx.internalPointer()).fileInfo().path())
+        print("<SDM> [_handle_from_path_arg scope] final idx: ", idx.isValid() and typing.cast("PyFileSystemNode", idx.internalPointer()).fileInfo().path())
 
         return idx
 
@@ -1156,8 +1157,8 @@ class PyFileSystemModel(QAbstractItemModel):
         resolvedPath = Path(os.path.normpath(newPath).strip()).resolve()
         print("<SDM> [setRootPath scope] resolvedPath: ", resolvedPath)
 
-        if not resolvedPath.safe_exists():
-            print("setRootPath, not resolvedPath.safe_exists()")
+        if not resolvedPath.exists():
+            print("setRootPath, not resolvedPath.exists()")
             return QModelIndex()
 
         self._setRootPath = True
@@ -1345,7 +1346,7 @@ class MainWindow(QMainWindow):
             width += self.fsTreeView.columnWidth(i)
         print("all column's widths:", width)
         if QDesktopWidget is None:
-            app = typing.cast(QApplication, QApplication.instance())
+            app = typing.cast("QApplication", QApplication.instance())
             screen = app.primaryScreen()
             print("<SDM> [adjust_view_size scope] screen: ", screen)
 

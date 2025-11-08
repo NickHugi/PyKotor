@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Set, cast
 import qtpy
 import send2trash
 
-from qtpy.QtCore import QAbstractItemModel, QUrl, Qt
+from qtpy.QtCore import QUrl, Qt
 from qtpy.QtGui import QDesktopServices, QKeySequence
 from qtpy.QtWidgets import (
     QAction,
@@ -69,6 +69,8 @@ if __name__ == "__main__":
             update_sys_path(toolset_path.parent)
             os.chdir(toolset_path)
 
+from pathlib import Path
+
 from loggerplus import RobustLogger
 
 from pykotor.common.misc import Game
@@ -85,12 +87,11 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.misc import is_float, is_int
 from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from qtpy.QtCore import QPoint
+    from qtpy.QtCore import QAbstractItemModel, QPoint
 
     from pykotor.extract.file import LocationResult, ResourceResult
     from pykotor.tools.path import CaseAwarePath
@@ -286,7 +287,7 @@ class FileItems(CustomItem):
         detailedMsg: str | None = None,
     ) -> int | QMessageBox.StandardButton:
         if not detailedMsg or not detailedMsg.strip():
-            selected = cast(Set[FileTableWidgetItem], {*self.selectedItems()})
+            selected = cast("Set[FileTableWidgetItem]", {*self.selectedItems()})
             detailedMsg = ""
             for selection in selected:
                 file_path = selection.filepath
@@ -308,7 +309,7 @@ class FileItems(CustomItem):
         self,
         selected: list[FileTableWidgetItem] | set[FileTableWidgetItem],
     ) -> bool:
-        return all(Path(tableItem.filepath).safe_exists() for tableItem in {*selected})
+        return all(Path(tableItem.filepath).exists() for tableItem in {*selected})
 
     def _rename_file(self, file_path: Path, tableItem: FileTableWidgetItem):
         new_filename, ok = QInputDialog.getText(
@@ -323,7 +324,7 @@ class FileItems(CustomItem):
         self,
     ) -> OrderedDict[str, tuple[QAction, Callable]]:
         menu_dict = super().create_context_menu_dict()
-        selected = cast(Set[FileTableWidgetItem], {*self.selectedItems()})
+        selected = cast("Set[FileTableWidgetItem]", {*self.selectedItems()})
         if not selected:
             return menu_dict
         openAction = self.create_action(menu_dict, f"Open ({platform.system()})", lambda: self.do_file_action(self._open_file, "Open file(s) with system"))
@@ -333,7 +334,7 @@ class FileItems(CustomItem):
         sendToTrash = self.create_action(menu_dict, "Delete (to Recycle Bin)", lambda: self.do_file_action(self._sendToRecycleBin, "Send to Recycle Bin"))
         deleteAction = self.create_action(menu_dict, "Delete (no way to undelete!)", lambda: self.do_file_action(self._delete_files_permanently, "Delete PERMANENTLY", confirmation=True))
 
-        file_paths_exist = all(Path(tableItem.filepath).safe_exists() for tableItem in {*selected})
+        file_paths_exist = all(Path(tableItem.filepath).exists() for tableItem in {*selected})
         inside_bif = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_bif for item in selected)
         inside_capsule = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_capsule for item in selected)
 
@@ -453,7 +454,7 @@ class FileItems(CustomItem):
         tableItem: FileTableWidgetItem,
     ):
         from utility.system.win32.context_menu import windows_context_menu_file
-        windows_context_menu_file(file_path, int(cast(QApplication, QApplication.instance()).activeWindow().winId()))
+        windows_context_menu_file(file_path, int(cast("QApplication", QApplication.instance()).activeWindow().winId()))
 
     def _open_file(
         self,
@@ -678,7 +679,7 @@ class ResourceItems(FileItems):
 
             atexit.register(cleanup_tempdir)
             tempdir_path = Path(tempdir)
-            assert tempdir_path.safe_isdir()
+            assert tempdir_path.is_dir()
             temp_file = tempdir_path / resource.filename()
             with BinaryWriterFile.to_file(temp_file) as writer:
                 writer.write_bytes(resource.data())
@@ -936,7 +937,7 @@ class CustomTableWidget(CustomItem, QTableWidget):
                 if headerItem.text() == column_name:
                     return i
         elif isinstance(self, (QTreeView, QTableView)):
-            model = cast(QAbstractItemModel, self.model())
+            model = cast("QAbstractItemModel", self.model())
             for i in range(model.columnCount()):
                 if model.headerData(i, Qt.Horizontal) == column_name:
                     return i
@@ -1056,7 +1057,7 @@ class FileSelectionWindow(QMainWindow):
                     self.add_file_item(i, resource.filepath(), res_stat_result, resource)
                     if resource.offset():
                         # Replace some of the above stat results with ones specific for this resource.
-                        data = resource.data() if resource.filepath().safe_isfile() else None
+                        data = resource.data() if resource.filepath().is_file() else None
                         if data is None:
                             continue
                         with TemporaryDirectory("_tmpext", "toolset_") as tempdir:

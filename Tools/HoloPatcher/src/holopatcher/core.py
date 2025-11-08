@@ -7,6 +7,7 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import IntEnum
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from holopatcher.config import CURRENT_VERSION
@@ -20,7 +21,6 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.string_util import striprtf
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -123,7 +123,7 @@ def load_mod(
         FileNotFoundError: If no valid mod found at path
     """
     tslpatchdata_path = CaseAwarePath(directory_path, "tslpatchdata")
-    if not tslpatchdata_path.safe_isdir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
+    if not tslpatchdata_path.is_dir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
         tslpatchdata_path = tslpatchdata_path.parent
 
     mod_path = str(tslpatchdata_path.parent)
@@ -133,10 +133,10 @@ def load_mod(
     namespaces: list[PatcherNamespace]
     config_reader: ConfigReader | None = None
 
-    if namespace_path.safe_isfile():
+    if namespace_path.is_file():
         namespaces = NamespaceReader.from_filepath(namespace_path)
-    elif changes_path.safe_isfile():
-        config_reader = ConfigReader.from_filepath(changes_path)
+    elif changes_path.is_file():
+        config_reader = ConfigReader.from_filepath(changes_path, tslpatchdata_path=tslpatchdata_path)
         namespaces = [config_reader.config.as_namespace(changes_path)]
     else:
         raise FileNotFoundError(f"No namespaces.ini or changes.ini found in {tslpatchdata_path}")
@@ -175,7 +175,8 @@ def load_namespace_config(
     if namespace_option is None:
         raise ValueError(f"Namespace '{selected_namespace_name}' not found in namespaces list")
     changes_ini_path = CaseAwarePath(mod_path, "tslpatchdata", namespace_option.changes_filepath())
-    reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path)
+    tslpatchdata_path = CaseAwarePath(mod_path, "tslpatchdata")
+    reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path, tslpatchdata_path=tslpatchdata_path)
     reader.load_settings()
 
     game_number: int | None = reader.config.game_number
@@ -190,10 +191,10 @@ def load_namespace_config(
     info_rte_path = info_rtf_path.with_suffix(".rte")
 
     info_content: str | None = None
-    if info_rte_path.safe_isfile():
+    if info_rte_path.is_file():
         data: bytes = BinaryReader.load_file(info_rte_path)
         info_content = decode_bytes_with_fallbacks(data, errors="replace")
-    elif info_rtf_path.safe_isfile():
+    elif info_rtf_path.is_file():
         data = BinaryReader.load_file(info_rtf_path)
         rtf_text = decode_bytes_with_fallbacks(data, errors="replace")
         info_content = striprtf(rtf_text)
@@ -219,7 +220,7 @@ def validate_game_directory(
         ValueError: If directory is invalid
     """
     directory = CaseAwarePath(directory_path)
-    if not directory.safe_isdir():
+    if not directory.is_dir():
         raise ValueError(f"Invalid KOTOR directory: {directory_path}")
     return str(directory)
 
@@ -269,9 +270,9 @@ def validate_install_paths(
     """
     return (
         bool(mod_path)
-        and CaseAwarePath(mod_path).safe_isdir()
+        and CaseAwarePath(mod_path).is_dir()
         and bool(game_path)
-        and CaseAwarePath(game_path).safe_isdir()
+        and CaseAwarePath(game_path).is_dir()
     )
 
 
@@ -443,8 +444,9 @@ def validate_config(
     if namespace_option is None:
         raise ValueError(f"Namespace '{selected_namespace_name}' not found in namespaces list")
     ini_file_path = CaseAwarePath(mod_path, "tslpatchdata", namespace_option.changes_filepath())
+    tslpatchdata_path = CaseAwarePath(mod_path, "tslpatchdata")
 
-    reader = ConfigReader.from_filepath(ini_file_path, logger)
+    reader = ConfigReader.from_filepath(ini_file_path, logger, tslpatchdata_path=tslpatchdata_path)
     reader.load(reader.config)
 
 
@@ -470,7 +472,7 @@ def uninstall_mod(
         FileNotFoundError: If backup folder not found
     """
     backup_parent_folder = Path(mod_path, "backup")
-    if not backup_parent_folder.safe_isdir():
+    if not backup_parent_folder.is_dir():
         raise FileNotFoundError(f"Backup folder not found: {backup_parent_folder}")
 
     uninstaller = ModUninstaller(backup_parent_folder, Path(game_path), logger)
@@ -533,7 +535,7 @@ def gain_directory_access(
     ------
         PermissionError: If access cannot be gained
     """
-    path: Path = Path.pathify(directory)
+    path: Path = Path(directory)
     access: bool = path.gain_access(recurse=True, log_func=logger.add_verbose)
     if not access:
         raise PermissionError(f"Permission denied to {directory}")
@@ -561,7 +563,7 @@ def get_log_file_path(mod_path: str) -> Path:
     -------
         Path: Path to log file
     """
-    return Path.pathify(mod_path) / "installlog.txt"
+    return Path(mod_path) / "installlog.txt"
 
 
 def write_log_entry(

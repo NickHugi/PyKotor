@@ -324,13 +324,13 @@ def rim_to_mod(
         rim_folderpath: Folderpath where the rims can be found for this module.
             The filestem of the filepath will be used to determine which rim to load.
     """
-    r_outpath: CaseAwarePath = CaseAwarePath.pathify(filepath)
+    r_outpath: CaseAwarePath = CaseAwarePath(filepath)
     if not is_mod_file(r_outpath):
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
     module_root = Installation.get_module_root(module_root or filepath)
-    r_rim_folderpath = CaseAwarePath.pathify(rim_folderpath) if rim_folderpath else r_outpath.parent
+    r_rim_folderpath = CaseAwarePath(rim_folderpath) if rim_folderpath else r_outpath.parent
 
     filepath_rim: CaseAwarePath = r_rim_folderpath / f"{module_root}.rim"
     filepath_rim_s: CaseAwarePath = r_rim_folderpath / f"{module_root}_s.rim"

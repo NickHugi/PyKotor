@@ -251,6 +251,192 @@ class NCSType:
             raise ValueError(msg)
         return self
 
+    def get_component_type(self) -> NCSTypeCode:
+        """Get the component type for compound types.
+
+        Returns:
+        -------
+            NCSTypeCode: Component type code
+
+        Examples:
+        --------
+            INTINT -> INTEGER
+            FLOATFLOAT -> FLOAT
+            VECTOR -> FLOAT (each component is float)
+        """
+        if self._type_code in {NCSTypeCode.INTINT, NCSTypeCode.INTFLOAT}:
+            return NCSTypeCode.INTEGER
+        if self._type_code in {NCSTypeCode.FLOATFLOAT, NCSTypeCode.FLOATINT, NCSTypeCode.FLOATVECTOR}:
+            return NCSTypeCode.FLOAT
+        if self._type_code in {NCSTypeCode.STRINGSTRING}:
+            return NCSTypeCode.STRING
+        if self._type_code in {NCSTypeCode.OBJECTOBJECT}:
+            return NCSTypeCode.OBJECT
+        if self._type_code == NCSTypeCode.VECTOR:
+            return NCSTypeCode.FLOAT  # Vector components are floats
+        return self._type_code
+
+    def get_left_type(self) -> NCSTypeCode:
+        """Get the left operand type for compound binary operations.
+
+        Returns:
+        -------
+            NCSTypeCode: Left operand type code
+        """
+        if self._type_code in {NCSTypeCode.INTINT, NCSTypeCode.INTFLOAT}:
+            return NCSTypeCode.INTEGER
+        if self._type_code in {NCSTypeCode.FLOATFLOAT, NCSTypeCode.FLOATINT, NCSTypeCode.FLOATVECTOR}:
+            return NCSTypeCode.FLOAT
+        if self._type_code in {NCSTypeCode.STRINGSTRING}:
+            return NCSTypeCode.STRING
+        if self._type_code in {NCSTypeCode.OBJECTOBJECT}:
+            return NCSTypeCode.OBJECT
+        if self._type_code in {NCSTypeCode.EFFECTEFFECT}:
+            return NCSTypeCode.EFFECT
+        if self._type_code in {NCSTypeCode.EVENTEVENT}:
+            return NCSTypeCode.EVENT
+        if self._type_code in {NCSTypeCode.LOCLOC}:
+            return NCSTypeCode.LOCATION
+        if self._type_code in {NCSTypeCode.TALTAL}:
+            return NCSTypeCode.TALENT
+        if self._type_code in {NCSTypeCode.VECTORVECTOR, NCSTypeCode.VECTORFLOAT}:
+            return NCSTypeCode.VECTOR
+        if self._type_code in {NCSTypeCode.STRUCTSTRUCT}:
+            return NCSTypeCode.STRUCT
+        return self._type_code
+
+    def get_right_type(self) -> NCSTypeCode:
+        """Get the right operand type for compound binary operations.
+
+        Returns:
+        -------
+            NCSTypeCode: Right operand type code
+        """
+        if self._type_code in {NCSTypeCode.INTINT, NCSTypeCode.FLOATINT}:
+            return NCSTypeCode.INTEGER
+        if self._type_code in {NCSTypeCode.FLOATFLOAT, NCSTypeCode.INTFLOAT, NCSTypeCode.VECTORFLOAT}:
+            return NCSTypeCode.FLOAT
+        if self._type_code in {NCSTypeCode.STRINGSTRING}:
+            return NCSTypeCode.STRING
+        if self._type_code in {NCSTypeCode.OBJECTOBJECT}:
+            return NCSTypeCode.OBJECT
+        if self._type_code in {NCSTypeCode.EFFECTEFFECT}:
+            return NCSTypeCode.EFFECT
+        if self._type_code in {NCSTypeCode.EVENTEVENT}:
+            return NCSTypeCode.EVENT
+        if self._type_code in {NCSTypeCode.LOCLOC}:
+            return NCSTypeCode.LOCATION
+        if self._type_code in {NCSTypeCode.TALTAL}:
+            return NCSTypeCode.TALENT
+        if self._type_code in {NCSTypeCode.VECTORVECTOR, NCSTypeCode.FLOATVECTOR}:
+            return NCSTypeCode.VECTOR
+        if self._type_code in {NCSTypeCode.STRUCTSTRUCT}:
+            return NCSTypeCode.STRUCT
+        return self._type_code
+
+    def is_compound(self) -> bool:
+        """Check if this is a compound type (e.g., INTINT, FLOATFLOAT).
+
+        Returns:
+        -------
+            bool: True if compound type
+        """
+        return self._type_code in {
+            NCSTypeCode.INTINT, NCSTypeCode.FLOATFLOAT, NCSTypeCode.OBJECTOBJECT,
+            NCSTypeCode.STRINGSTRING, NCSTypeCode.STRUCTSTRUCT,
+            NCSTypeCode.INTFLOAT, NCSTypeCode.FLOATINT,
+            NCSTypeCode.EFFECTEFFECT, NCSTypeCode.EVENTEVENT,
+            NCSTypeCode.LOCLOC, NCSTypeCode.TALTAL,
+            NCSTypeCode.VECTORVECTOR, NCSTypeCode.VECTORFLOAT, NCSTypeCode.FLOATVECTOR,
+        }
+
+    def is_vector(self) -> bool:
+        """Check if this is a vector type.
+
+        Returns:
+        -------
+            bool: True if vector type
+        """
+        return self._type_code == NCSTypeCode.VECTOR
+
+    def is_struct(self) -> bool:
+        """Check if this is a struct type.
+
+        Returns:
+        -------
+            bool: True if struct type
+        """
+        return self._type_code == NCSTypeCode.STRUCT
+
+    def can_convert_to(self, target_type: NCSTypeCode) -> bool:
+        """Check if this type can be converted to target type.
+
+        Args:
+        ----
+            target_type: Target type code
+
+        Returns:
+        -------
+            bool: True if conversion is possible
+        """
+        # Numeric types can convert between each other
+        if self.is_numeric() and target_type in {NCSTypeCode.INTEGER, NCSTypeCode.FLOAT}:
+            return True
+        # Same type always works
+        if self._type_code == target_type:
+            return True
+        # Vector to float (component access)
+        return bool(self._type_code == NCSTypeCode.VECTOR and target_type == NCSTypeCode.FLOAT)
+
+    @staticmethod
+    def create_compound(left_type: NCSTypeCode, right_type: NCSTypeCode) -> NCSTypeCode:
+        """Create a compound type code from two operand types.
+
+        Args:
+        ----
+            left_type: Left operand type
+            right_type: Right operand type
+
+        Returns:
+        -------
+            NCSTypeCode: Compound type code
+
+        Examples:
+        --------
+            INTEGER, INTEGER -> INTINT
+            FLOAT, FLOAT -> FLOATFLOAT
+            INTEGER, FLOAT -> INTFLOAT
+        """
+        if left_type == NCSTypeCode.INTEGER and right_type == NCSTypeCode.INTEGER:
+            return NCSTypeCode.INTINT
+        if left_type == NCSTypeCode.FLOAT and right_type == NCSTypeCode.FLOAT:
+            return NCSTypeCode.FLOATFLOAT
+        if left_type == NCSTypeCode.INTEGER and right_type == NCSTypeCode.FLOAT:
+            return NCSTypeCode.INTFLOAT
+        if left_type == NCSTypeCode.FLOAT and right_type == NCSTypeCode.INTEGER:
+            return NCSTypeCode.FLOATINT
+        if left_type == NCSTypeCode.STRING and right_type == NCSTypeCode.STRING:
+            return NCSTypeCode.STRINGSTRING
+        if left_type == NCSTypeCode.OBJECT and right_type == NCSTypeCode.OBJECT:
+            return NCSTypeCode.OBJECTOBJECT
+        if left_type == NCSTypeCode.EFFECT and right_type == NCSTypeCode.EFFECT:
+            return NCSTypeCode.EFFECTEFFECT
+        if left_type == NCSTypeCode.EVENT and right_type == NCSTypeCode.EVENT:
+            return NCSTypeCode.EVENTEVENT
+        if left_type == NCSTypeCode.LOCATION and right_type == NCSTypeCode.LOCATION:
+            return NCSTypeCode.LOCLOC
+        if left_type == NCSTypeCode.TALENT and right_type == NCSTypeCode.TALENT:
+            return NCSTypeCode.TALTAL
+        if left_type == NCSTypeCode.VECTOR and right_type == NCSTypeCode.VECTOR:
+            return NCSTypeCode.VECTORVECTOR
+        if left_type == NCSTypeCode.VECTOR and right_type == NCSTypeCode.FLOAT:
+            return NCSTypeCode.VECTORFLOAT
+        if left_type == NCSTypeCode.FLOAT and right_type == NCSTypeCode.VECTOR:
+            return NCSTypeCode.FLOATVECTOR
+        if left_type == NCSTypeCode.STRUCT and right_type == NCSTypeCode.STRUCT:
+            return NCSTypeCode.STRUCTSTRUCT
+        return NCSTypeCode.INVALID
+
     def __str__(self) -> str:
         """String representation of the type."""
         return self.to_string()

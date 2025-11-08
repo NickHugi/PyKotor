@@ -7,6 +7,8 @@ import math
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats._base import ComparableMixin
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -57,6 +59,9 @@ class Vector2:
         isclose_x = math.isclose(self.x, other.x)
         isclose_y = math.isclose(self.y, other.y)
         return isclose_x and isclose_y
+
+    def __hash__(self) -> int:
+        return hash((self.x, self.y))
 
     def __add__(
         self,
@@ -395,6 +400,9 @@ class Vector3:
         isclose_z = math.isclose(self.z, other.z)
         return isclose_x and isclose_y and isclose_z
 
+    def __hash__(self) -> int:
+        return hash((self.x, self.y, self.z))
+
     def __add__(
         self,
         other: Vector3,
@@ -704,6 +712,9 @@ class Vector4:
         isclose_z = math.isclose(self.z, other.z)
         isclose_w = math.isclose(self.w, other.w)
         return isclose_x and isclose_y and isclose_z and isclose_w
+
+    def __hash__(self) -> int:
+        return hash((self.x, self.y, self.z, self.w))
 
     def __add__(
         self,
@@ -1091,7 +1102,7 @@ class SurfaceMaterial(IntEnum):
         }
 
 
-class Face:
+class Face(ComparableMixin):
     """Represents a triangle in 3D space.
 
     Attributes:
@@ -1113,6 +1124,21 @@ class Face:
         self.v2: Vector3 = v2
         self.v3: Vector3 = v3
         self.material: SurfaceMaterial = material
+
+    COMPARABLE_FIELDS = ("v1", "v2", "v3", "material")
+
+    def __eq__(self, other):
+        if not isinstance(other, Face):
+            return NotImplemented
+        return (
+            self.v1 == other.v1
+            and self.v2 == other.v2
+            and self.v3 == other.v3
+            and self.material == other.material
+        )
+
+    def __hash__(self):
+        return hash((self.v1, self.v2, self.v3, self.material))
 
     def normal(
         self,

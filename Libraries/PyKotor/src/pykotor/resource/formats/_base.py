@@ -1,10 +1,21 @@
 from __future__ import annotations
 
+import pathlib
+import sys
+
 from contextlib import suppress
 from itertools import zip_longest
 from typing import Any, Callable, ClassVar, Sequence
 
-from utility.string_util import compare_and_format, format_text  # type: ignore[attr-defined]
+THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve().parent
+PYKOTOR_LIB = THIS_SCRIPT_PATH.parents[5].joinpath("Libraries", "PyKotor", "src")
+UTILITY_LIB = THIS_SCRIPT_PATH.parents[5].joinpath("Libraries", "Utility", "src")
+for lib_path in (PYKOTOR_LIB, UTILITY_LIB):
+    lib_str = str(lib_path)
+    if lib_path.exists() and lib_str not in sys.path:
+        sys.path.append(lib_str)
+
+from utility.string_util import compare_and_format, format_text  # type: ignore[attr-defined]  # noqa: E402
 
 
 class ComparableMixin:

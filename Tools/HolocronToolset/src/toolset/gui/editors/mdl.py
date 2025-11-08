@@ -86,7 +86,7 @@ class MDLEditor(Editor):
             - Sets model data on renderer if both MDL and MDX found
             - Displays error if unable to find associated data.
         """
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(filepath)
         super().load(c_filepath, resref, restype, data)
 
         mdl_data: bytes | None = None

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import qtpy
@@ -23,7 +24,6 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -313,7 +313,7 @@ class ERFEditor(Editor):
 
         data: tuple[bytes, bytes] = self.build()
         self._revert = data[0]
-        if is_capsule_file(self._filepath.parent) and not self._filepath.safe_isfile():
+        if is_capsule_file(self._filepath.parent) and not self._filepath.is_file():
             try:
                 self._saveNestedCapsule(*data)
             except ValueError as e:
@@ -644,8 +644,8 @@ class ERFEditorTable(QTableView):
             event.setDropAction(QtCore.Qt.DropAction.CopyAction)
             event.accept()
             links: list[str] = [str(url.toLocalFile()) for url in event.mimeData().urls()]
-            filterModel = cast(ERFSortFilterProxyModel, self.model())
-            sourceModel = cast(QStandardItemModel, filterModel.sourceModel())
+            filterModel = cast("ERFSortFilterProxyModel", self.model())
+            sourceModel = cast("QStandardItemModel", filterModel.sourceModel())
             existing_items = {
                 f"{sourceModel.index(row, 0).data()}.{sourceModel.index(row, 1).data()}".strip().lower()
                 for row in range(sourceModel.rowCount())
@@ -721,18 +721,18 @@ class ERFEditorTable(QTableView):
         """
         tempDir = Path(GlobalSettings().extractPath)
 
-        if not tempDir.safe_isdir():
-            if tempDir.safe_isfile() or tempDir.exists():
+        if not tempDir.is_dir():
+            if tempDir.is_file() or tempDir.exists():
                 RobustLogger().error(f"tempDir '{tempDir}' exists but was not a valid filesystem folder.")
             else:
                 tempDir.mkdir(parents=True, exist_ok=True)
-            if not tempDir.safe_isdir():
+            if not tempDir.is_dir():
                 RobustLogger().error(f"Temp directory not valid: {tempDir}")
             return
 
         urls: list[QtCore.QUrl] = []
-        filterModel = cast(ERFSortFilterProxyModel, self.model())
-        sourceModel = cast(QStandardItemModel, filterModel.sourceModel())
+        filterModel = cast("ERFSortFilterProxyModel", self.model())
+        sourceModel = cast("QStandardItemModel", filterModel.sourceModel())
         for index in (
             index for index in self.selectedIndexes() if not index.column()
         ):

@@ -16,6 +16,7 @@
         "./Libraries/PyKotorFont/src",
         "./Libraries/Utility/src"
     ],
+    "python.envFile": "${workspaceFolder}/.env",
     "python.missingPackage.severity": "Information",
 
     "python.terminal.launchArgs": [

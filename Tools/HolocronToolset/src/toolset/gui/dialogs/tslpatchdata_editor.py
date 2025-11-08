@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import configparser
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qtpy.QtCore import Qt
@@ -27,8 +28,6 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from utility.system.path import Path
-
 if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
 
@@ -48,7 +47,7 @@ class TSLPatchDataEditor(QDialog):
 
         self.installation = installation
         self.tslpatchdata_path = tslpatchdata_path or Path("tslpatchdata")
-        self.ini_config = configparser.ConfigParser()
+        self.ini_config = configparser.ConfigParser(delimiters=("="), allow_no_value=True, strict=False, interpolation=None, inline_comment_prefixes=(";", "#"))
 
         self._setup_ui()
         if tslpatchdata_path and tslpatchdata_path.exists():
@@ -490,7 +489,7 @@ class TSLPatchDataEditor(QDialog):
             from toolset.utils.window import openResourceEditor
 
             tlk_path = self.installation.path() / "dialog.tlk"
-            if tlk_path.safe_isfile():
+            if tlk_path.is_file():
                 openResourceEditor(
                     tlk_path,
                     "dialog",

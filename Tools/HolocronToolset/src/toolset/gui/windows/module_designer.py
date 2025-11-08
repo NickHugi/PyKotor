@@ -75,6 +75,8 @@ from utility.error_handling import safe_repr
 if TYPE_CHECKING:
     import os
 
+    from pathlib import Path
+
     from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
     from qtpy.QtWidgets import QCheckBox
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
@@ -89,7 +91,6 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
     from toolset.utils.misc import QtKey
-    from utility.system.path import Path
 
 
 class ModuleDesigner(QMainWindow):

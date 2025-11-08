@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import shutil
 
+from pathlib import PurePath
 from typing import TYPE_CHECKING, Any
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     import os
@@ -73,7 +73,7 @@ def create_backup(
             # Check if the backup path exists and generate a new one if necessary
             i = 2
             filestem: str = backup_filepath.stem
-            while backup_filepath.safe_exists():
+            while backup_filepath.exists():
                 backup_filepath = backup_filepath.parent / f"{filestem} ({i}){backup_filepath.suffix}"
                 i += 1
 

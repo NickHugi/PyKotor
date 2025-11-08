@@ -3,12 +3,11 @@ __pycache__
 .aider.chat.history.md
 .aider.input.history
 .aiderignore
+.cursorignore
 .env
 .git
-.history
-.history*
-.idea
-.idea/*
+.history/
+.idea/
 .idea/misc.xml
 .idea/PyKotor.iml
 .mypy_cache
@@ -61,9 +60,12 @@ output.prof
 PKG-*.toc
 powershell-bin/
 pyinstaller.exe
+pypy3.*-v*/
 tests/results/
+tests/test_tslpatcher/reference_changes.ini
 tests/tmp/*
 tests/tslpatcher/tmp/*
+this file has no permissions.txt
 Tools/HolocronToolset/src/toolset/32d802b_extract
 Tools/HolocronToolset/src/toolset/kits
 Tools/HolocronToolset/src/toolset/kits/*/*
@@ -72,16 +74,17 @@ Tools/HolocronToolset/src/toolset/uic
 Tools/HoloPatcher/src/holopatcher/node_modules
 Tools/HoloPatcher/src/holopatcher/package-lock.json
 Tools/HoloPatcher/src/holopatcher/package.json
-Tree-*.toc
-typings/*
-venv
-this file has no permissions.txt
 Tools/KotorDiff/INI_GENERATOR_README.md
 Tools/KotorDiff/WINDOWS_PATH_GUIDE.md
-.history/
-pypy3.*-v*/
+Tree-*.toc
 tslpatchdata/*
 !tslpatchdata/*.ini
 !tslpatchdata/generated_ini_output.log
-tests/test_tslpatcher/reference_changes.ini
-.cursorignore
+typings/*
+venv
+!tslpatchdata/test_kotordiff_profile_summary.txt
+!tslpatchdata/test_kotordiff_profile.prof
+!tslpatchdata/test_step1_generate_patch_profile_summary.txt
+!tslpatchdata/test_step1_generate_patch_profile.prof
+!tslpatchdata/test_step2_install_patch_profile_summary.txt
+!tslpatchdata/test_step2_install_patch_profile.prof

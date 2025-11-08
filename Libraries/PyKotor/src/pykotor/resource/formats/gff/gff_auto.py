@@ -75,6 +75,7 @@ def read_gff(
     source: SOURCE_TYPES,
     offset: int = 0,
     size: int | None = None,
+    file_format: ResourceType | None = None,
 ) -> GFF:  # sourcery skip: hoist-statement-from-if, reintroduce-else
     """Returns an GFF instance from the source.
 
@@ -85,6 +86,7 @@ def read_gff(
         source: The source of the data.
         offset: The byte offset of the file inside the data.
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
+        file_format: The file format to use (ResourceType.GFF or ResourceType.GFF_XML or ResourceType.GFF_JSON). If not specified, it will be detected automatically.
 
     Raises:
     ------
@@ -97,7 +99,8 @@ def read_gff(
     -------
         A GFF instance.
     """
-    file_format = detect_gff(source, offset)
+    if file_format is None:
+        file_format = detect_gff(source, offset)
 
     if file_format is ResourceType.GFF:
         return GFFBinaryReader(source, offset, size or 0).load()
@@ -130,11 +133,19 @@ def write_gff(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format is ResourceType.GFF:
+    if file_format.is_gff():
         GFFBinaryWriter(gff, target).write()
-    elif file_format is ResourceType.GFF_XML:
+    elif (
+        file_format.name.endswith("_XML")
+        and file_format.is_gff()
+        and file_format.target_type().is_gff()
+    ):
         GFFXMLWriter(gff, target).write()
-    elif file_format is ResourceType.GFF_JSON:
+    elif (
+        file_format.name.endswith("_JSON")
+        and file_format.is_gff()
+        and file_format.target_type().is_gff()
+    ):
         GFFJSONWriter(gff, target).write()
     else:
         msg = "Unsupported format specified; use GFF, GFF_XML, or GFF_JSON."

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, cast
 from configobj import ConfigObj
 
 if TYPE_CHECKING:
-    from utility.system.path import Path
+    from pathlib import Path
 
 
 class INIManager:

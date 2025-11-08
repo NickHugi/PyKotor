@@ -88,13 +88,13 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(False, Path(test_path).is_file())  # This is the bug
         self.assertEqual(False, Path(test_path).is_dir())  # This is the bug
         for PathType in test_classes:
-            test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
+            test_pathtype_exists: bool | None = PathType(test_path).exists()
             self.assertEqual(test_pathtype_exists, True, repr(PathType))
             self.assertEqual(True, PathType(test_path).exists(), repr(PathType))
-            test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
+            test_pathtype_isfile: bool | None = PathType(test_path).is_file()
             self.assertEqual(test_pathtype_isfile, False, repr(PathType))
             self.assertEqual(False, PathType(test_path).is_file(), repr(PathType))  # This is the bug
-            test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
+            test_pathtype_isdir: bool | None = PathType(test_path).is_dir()
             self.assertEqual(test_pathtype_isdir, False, repr(PathType))
             self.assertEqual(False, PathType(test_path).is_dir(), repr(PathType))  # This is the bug
 

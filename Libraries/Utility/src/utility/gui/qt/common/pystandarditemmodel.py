@@ -500,7 +500,7 @@ class PyQStandardItem:
 
     def takeColumn(self, column: int) -> list[PyQStandardItem]:
         return cast(
-            list[PyQStandardItem],
+            "list[PyQStandardItem]",
             [
                 row.takeChild(column)
                 for row in self._children

@@ -6,6 +6,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Collection, Generic, TypeVar, TypedDict, cast
 
 from loggerplus import RobustLogger
@@ -41,7 +42,6 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
 from pykotor.tools.path import CaseAwarePath
-from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -156,7 +156,7 @@ class ModulePieceResource(Capsule):
     ):
         new_cls = cls
         if new_cls is ModulePieceResource:
-            path_obj = CaseAwarePath.pathify(path)
+            path_obj = CaseAwarePath(path)
             piece_info = ModulePieceInfo.from_filename(path_obj.name)
             if piece_info.modtype is KModuleType.DATA:
                 new_cls = ModuleDataPiece
@@ -174,7 +174,7 @@ class ModulePieceResource(Capsule):
         *args,
         **kwargs,
     ):
-        path_obj = CaseAwarePath.pathify(path)
+        path_obj = CaseAwarePath(path)
         self.piece_info: ModulePieceInfo = ModulePieceInfo.from_filename(path_obj.name)
         self.missing_resources: list[FileResource] = []  # TODO(th3w1zard1):
         super().__init__(path_obj, *args, **kwargs)
@@ -277,7 +277,7 @@ class Module:  # noqa: PLR0904
         }
         if self.dot_mod:
             mod_filepath = installation.module_path().joinpath(self._root + KModuleType.MOD.value)
-            if mod_filepath.safe_isfile():
+            if mod_filepath.is_file():
                 self._capsules[KModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
             else:
                 self.dot_mod = False
@@ -316,7 +316,7 @@ class Module:  # noqa: PLR0904
         module_path: Path | CaseAwarePath = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
         if filename.lower().endswith(".mod"):
             mod_filepath = module_path.joinpath(root + KModuleType.MOD.value)
-            if mod_filepath.safe_isfile():
+            if mod_filepath.is_file():
                 capsules[KModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
             elif not strict:
                 capsules[KModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + KModuleType.MAIN.value))
@@ -392,7 +392,7 @@ class Module:  # noqa: PLR0904
         -------
             The string for the root name of a module.
         """
-        root: str = PurePath.pathify(filepath).stem
+        root: str = PurePath(filepath).stem
         lower_root: str = root.lower()
         root = root[:-2] if lower_root.endswith("_s") else root
         root = root[:-4] if lower_root.endswith("_dlg") else root
@@ -1691,7 +1691,7 @@ class ModuleResource(Generic[T]):
         if filepath is None:
             self._active = next(iter(self._locations), None)
         else:
-            r_filepath = Path.pathify(filepath)
+            r_filepath = Path(filepath)
             if r_filepath not in self._locations:
                 self._locations.append(r_filepath)
             self._active = r_filepath

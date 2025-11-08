@@ -33,11 +33,12 @@ if not is_frozen():
         update_sys_path(pathlib.Path(__file__).parents[1])
 
 
+from pathlib import Path  # noqa: E402, F401
+
 from loggerplus import RobustLogger  # noqa: E402, F401
 
 from holopatcher import core  # noqa: E402, F401
 from utility.error_handling import universal_simplify_exception  # noqa: E402, F401
-from utility.system.path import Path  # noqa: E402, F401
 from utility.system.process import terminate_main_process  # noqa: E402, F401  # noqa: E402, F401
 
 if TYPE_CHECKING:

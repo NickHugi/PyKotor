@@ -9,12 +9,14 @@ from __future__ import annotations
 import os
 import traceback
 
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import Installation
+from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff.gff_auto import read_gff, write_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.lip.lip_auto import read_lip, write_lip
@@ -29,15 +31,15 @@ from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.gff import AddFieldGFF, AddStructToListGFF, FieldValue, FieldValueConstant, ModifyFieldGFF
 from pykotor.tslpatcher.mods.install import InstallFile
 from pykotor.tslpatcher.mods.ssf import ModifySSF
-from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    from pathlib import PureWindowsPath
+
     from pykotor.tslpatcher.mods.gff import FieldValue2DAMemory, FieldValueTLKMemory, ModificationsGFF
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
     from pykotor.tslpatcher.mods.tlk import ModificationsTLK
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
     from pykotor.tslpatcher.writer import ModificationsByType
-    from utility.system.path import PureWindowsPath
 
 
 # Logging helpers
@@ -158,27 +160,24 @@ class TSLPatchDataGenerator:
         for folder, filenames in files_by_folder.items():
             _log_debug(f"Processing install folder: {folder} ({len(filenames)} files)")
 
-            # Determine source folder in the base installation
-            if folder == "Override":
-                source_folder = base_data_path / "Override"
-            elif folder == "modules":
-                source_folder = base_data_path / "modules"
-            elif folder.startswith("modules\\"):
-                # Module-specific folder, files are inside the module
-                source_folder = base_data_path / "modules"
-            elif folder == "streamwaves":
-                source_folder = base_data_path / "streamwaves"
-                if not source_folder.safe_isdir():
-                    source_folder = base_data_path / "streamvoice"
-            elif folder == "streamsounds":
-                source_folder = base_data_path / "streamsounds"
-            elif folder == "movies":
-                source_folder = base_data_path / "movies"
-            else:
-                source_folder = base_data_path / folder
-
+            source_folder = base_data_path / folder
             for filename in filenames:
                 source_file = source_folder / filename
+
+                if folder == "modules":
+                    dest_file = self.tslpatchdata_path / filename
+                    try:
+                        if base_data_path is not None and source_file.is_file():
+                            dest_file.write_bytes(source_file.read_bytes())
+                            _log_debug(f"Copied module capsule: {filename}")
+                        else:
+                            empty_mod = ERF(ERFType.MOD)
+                            write_erf(empty_mod, dest_file, ResourceType.MOD)
+                            _log_debug(f"Created empty module capsule: {filename}")
+                        copied_files[filename] = dest_file
+                    except Exception as e:  # noqa: BLE001
+                        _log_error(f"Failed to prepare module capsule {filename}: {e}")
+                    continue
 
                 # For module-specific resources, need to extract from capsule
                 if folder.startswith("modules\\"):
@@ -186,7 +185,7 @@ class TSLPatchDataGenerator:
                     module_name = folder.split("\\")[1]
                     module_path = base_data_path / "modules" / module_name
 
-                    if module_path.safe_isfile():
+                    if module_path.is_file():
                         try:
                             capsule = Capsule(module_path)
 
@@ -207,13 +206,12 @@ class TSLPatchDataGenerator:
                     continue
 
                 # For regular files, copy from source folder
-                if source_file.safe_isfile():
-                    # Check if this is a capsule file - if so, skip it
-                    # Capsule files should never be in InstallList themselves, only their contents
+                if source_file.is_file():
                     from pykotor.tools.misc import is_capsule_file  # noqa: PLC0415
 
                     if is_capsule_file(filename):
-                        _log_error(f"Skipping capsule file in InstallList (should contain resources, not capsule): {filename}")
+                        # Capsule entries should have been handled earlier (e.g., folder == "modules")
+                        _log_debug(f"Skipping capsule resource already processed: {filename}")
                         continue
 
                     dest_file = self.tslpatchdata_path / filename
@@ -374,7 +372,7 @@ class TSLPatchDataGenerator:
                 ]
 
                 for potential_path in potential_paths:
-                    if potential_path.safe_isfile():
+                    if potential_path.is_file():
                         try:
                             # Copy using io_2da to ensure proper format
                             twoda_obj = read_2da(potential_path)
@@ -464,7 +462,7 @@ class TSLPatchDataGenerator:
         # Try to load base file if base_data_path provided
         if base_data_path is not None:
             potential_base = base_data_path / filename
-            if potential_base.safe_isfile():
+            if potential_base.is_file():
                 try:
                     base_gff = read_gff(potential_base)
                     _log_debug(f"Loaded base GFF from: {potential_base}")
@@ -939,7 +937,7 @@ class TSLPatchDataGenerator:
             ssf: SSF | None = None
             if base_data_path:
                 potential_base = base_data_path / mod_ssf.sourcefile
-                if potential_base.safe_isfile():
+                if potential_base.is_file():
                     try:
                         ssf = read_ssf(potential_base)
                         _log_debug(f"Loaded base SSF from: '{potential_base}'")
@@ -1020,7 +1018,7 @@ def _validate_installation_path(path: Path | None) -> bool:
     Returns:
         True if path is a valid installation directory
     """
-    if not path or not path.safe_isdir():
+    if not path or not path.is_dir():
         return False
 
     try:

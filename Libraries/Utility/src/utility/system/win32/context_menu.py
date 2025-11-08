@@ -113,7 +113,7 @@ def get_cursor_pos(c_getcursorpos: Callable, *, use_pywin32: bool) -> _Vector2:
         return _Vector2(*c_getcursorpos())
     pt = _POINT()
     c_getcursorpos(byref(pt))
-    return cast(_Vector2, pt)
+    return cast("_Vector2", pt)
 
 
 def show_context_menu(context_menu: CDispatch | ShellFolderItemVerbs, hwnd: int | None):

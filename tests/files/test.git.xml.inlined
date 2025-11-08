@@ -1,0 +1,157 @@
+<gff3>
+  <struct id="-1">
+    <byte label="UseTemplates">1</byte>
+    <struct label="AreaProperties" id="100">
+      <sint32 label="AmbientSndDay">17</sint32>
+      <sint32 label="AmbientSndNight">17</sint32>
+      <sint32 label="AmbientSndDayVol">127</sint32>
+      <sint32 label="AmbientSndNitVol">127</sint32>
+      <sint32 label="EnvAudio">1</sint32>
+      <sint32 label="MusicBattle">41</sint32>
+      <sint32 label="MusicDay">15</sint32>
+      <sint32 label="MusicNight">15</sint32>
+      <sint32 label="MusicDelay">20000</sint32>
+      </struct>
+    <list label="Creature List">
+      <struct id="4">
+        <float label="XPosition">-41.23826599121094</float>
+        <float label="YPosition">-53.214324951171875</float>
+        <float label="ZPosition">0.0</float>
+        <float label="XOrientation">-0.8314653635025024</float>
+        <float label="YOrientation">0.5555765628814697</float>
+        <resref label="TemplateResRef">c_ithorian001</resref>
+        </struct>
+      </list>
+    <list label="Door List">
+      <struct id="8">
+        <resref label="TemplateResRef">sw_door_taris007</resref>
+        <exostring label="Tag">Ithorian</exostring>
+        <resref label="LinkedToModule">resref</resref>
+        <exostring label="LinkedTo">linkedto</exostring>
+        <byte label="LinkedToFlags">1</byte>
+        <locstring label="TransitionDestin" strref="13" />
+        <float label="X">-43.76350021362305</float>
+        <float label="Y">-20.14310073852539</float>
+        <float label="Z">1.0</float>
+        <float label="Bearing">1.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">10197915</uint32>
+        </struct>
+      </list>
+    <list label="Encounter List">
+      <struct id="7">
+        <resref label="TemplateResRef">mercenariesentry</resref>
+        <float label="XPosition">-41.31961441040039</float>
+        <float label="YPosition">-19.222841262817383</float>
+        <float label="ZPosition">1.0</float>
+        <list label="Geometry">
+          <struct id="1">
+            <float label="X">-5.890754699707031</float>
+            <float label="Y">3.072599411010742</float>
+            <float label="Z">0.025000059977173805</float>
+            </struct>
+          </list>
+        <list label="SpawnPointList">
+          <struct id="2">
+            <float label="X">-48.936973571777344</float>
+            <float label="Y">-29.831298828125</float>
+            <float label="Z">1.0</float>
+            <float label="Orientation">0.19634968042373657</float>
+            </struct>
+          </list>
+        </struct>
+      </list>
+    <list label="List" />
+    <list label="SoundList">
+      <struct id="6">
+        <resref label="TemplateResRef">computerpanne001</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">-78.53829193115234</float>
+        <float label="YPosition">13.498023986816406</float>
+        <float label="ZPosition">2.0</float>
+        </struct>
+      </list>
+    <list label="StoreList">
+      <struct id="11">
+        <float label="XPosition">106.23011016845703</float>
+        <float label="YPosition">-16.590370178222656</float>
+        <float label="ZPosition">0.0634458065032959</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="ResRef">m_chano</resref>
+        </struct>
+      </list>
+    <list label="TriggerList">
+      <struct id="1">
+        <resref label="TemplateResRef">newgeneric001</resref>
+        <exostring label="Tag">to_203TEL</exostring>
+        <locstring label="TransitionDestin" strref="104245" />
+        <resref label="LinkedToModule">203tel</resref>
+        <exostring label="LinkedTo">from_204TEL</exostring>
+        <byte label="LinkedToFlags">2</byte>
+        <float label="XPosition">-29.903594970703125</float>
+        <float label="YPosition">-11.463098526000977</float>
+        <float label="ZPosition">-2.384000062942505</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">0.0</float>
+        <float label="ZOrientation">0.0</float>
+        <list label="Geometry">
+          <struct id="3">
+            <float label="PointX">-7.433097839355469</float>
+            <float label="PointY">1.2834482192993164</float>
+            <float label="PointZ">0.025282764807343483</float>
+            </struct>
+          </list>
+        </struct>
+      </list>
+    <list label="WaypointList">
+      <struct id="5">
+        <byte label="Appearance">1</byte>
+        <exostring label="LinkedTo" />
+        <resref label="TemplateResRef">wp_transabort</resref>
+        <exostring label="Tag">wp_transabort</exostring>
+        <locstring label="LocalizedName" strref="135283" />
+        <locstring label="Description" strref="-1" />
+        <byte label="HasMapNote">1</byte>
+        <locstring label="MapNote" strref="123" />
+        <byte label="MapNoteEnabled">1</byte>
+        <float label="XPosition">-33.620662689208984</float>
+        <float label="YPosition">-16.065120697021484</float>
+        <float label="ZPosition">1.0</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        </struct>
+      </list>
+    <list label="Placeable List">
+      <struct id="9">
+        <resref label="TemplateResRef">k_trans_abort</resref>
+        <float label="X">-33.26881408691406</float>
+        <float label="Y">-15.299334526062012</float>
+        <float label="Z">9.53600025177002</float>
+        <float label="Bearing">1.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">10197915</uint32>
+        </struct>
+      </list>
+    <list label="CameraList">
+      <struct id="14">
+        <sint32 label="CameraID">1</sint32>
+        <vector label="Position">
+          <double>-57.16752624511719</double>
+          <double>-28.255794525146484</double>
+          <double>0.0</double>
+          </vector>
+        <float label="Pitch">69.69999694824219</float>
+        <float label="MicRange">0.0</float>
+        <orientation label="Orientation">
+          <double>0.9719610214233398</double>
+          <double>0.0</double>
+          <double>0.0</double>
+          <double>0.23514211177825928</double>
+          </orientation>
+        <float label="Height">3.0</float>
+        <float label="FieldOfView">55.0</float>
+        </struct>
+      </list>
+    </struct>
+  </gff3>

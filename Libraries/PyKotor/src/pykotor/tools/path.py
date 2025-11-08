@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import atexit
+import errno
 import os
 import pathlib
 import platform
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -26,7 +29,23 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from pykotor.common.misc import Game
-    from utility.system.path import PathElem
+
+# Try to import fusepy for optional FUSE support on POSIX systems
+_fuse_available = False
+_fuse_operations_class = None
+_fuse_class = None
+
+if os.name == "posix":
+    try:
+        from fuse import FUSE, FuseOSError, Operations  # pyright: ignore[reportMissingImports]
+
+        _fuse_available = True
+        _fuse_operations_class = Operations
+        _fuse_class = FUSE
+    except (ImportError, Exception) as e:
+        # fusepy not installed or FUSE not available on system
+        print(f"FUSE support unavailable, falling back to standard implementation: {e}")
+        _fuse_available = False
 
 
 def is_filesystem_case_sensitive(path: os.PathLike | str) -> bool | None:
@@ -44,6 +63,386 @@ def is_filesystem_case_sensitive(path: os.PathLike | str) -> bool | None:
             return not test_file_upper.exists()
     except Exception:
         return None
+
+
+# FUSE-based case-insensitive filesystem implementation
+if _fuse_available:
+
+    def _get_case_insensitive_path_fast(
+        path: str,
+        ret_found: bool = False,  # noqa: FBT001, FBT002
+    ) -> tuple[str, bool] | str:
+        """Fast case-insensitive path resolution for FUSE.
+
+        Args:
+        ----
+            path: Path to resolve
+            ret_found: Whether to return a tuple with found status
+
+        Returns:
+        -------
+            Resolved path, or tuple of (path, found) if ret_found is True
+        """
+        if path == "" or os.path.exists(path):  # noqa: PTH110
+            return (path, True) if ret_found else path
+
+        f = os.path.basename(path)  # noqa: PTH119
+        d = os.path.dirname(path)  # noqa: PTH120
+        suffix = ""
+        if not f:
+            if len(d) < len(path):
+                suffix = path[: len(path) - len(d)]
+            f = os.path.basename(d)  # noqa: PTH119
+            d = os.path.dirname(d)  # noqa: PTH120
+
+        if not os.path.exists(d):  # noqa: PTH110
+            result = _get_case_insensitive_path_fast(d, ret_found=True)
+            if isinstance(result, tuple):
+                d, found = result
+                if not found:
+                    return (path, False) if ret_found else path
+            else:
+                # This shouldn't happen but handle it safely
+                return (path, False) if ret_found else path
+
+        try:
+            files = os.listdir(d)  # noqa: PTH208
+        except Exception as e:
+            print(f"Failed to list directory {d}: {e}")
+            return (path, False) if ret_found else path
+
+        f_low = f.lower()
+        try:
+            f_nocase = next(fl for fl in files if fl.lower() == f_low)
+        except StopIteration:
+            f_nocase = None
+
+        if f_nocase:
+            return (
+                (os.path.join(d, f_nocase) + suffix, True)  # noqa: PTH118
+                if ret_found
+                else os.path.join(d, f_nocase) + suffix  # noqa: PTH118
+            )
+        return (path, False) if ret_found else path
+
+    class _CaseInsensitiveFS(_fuse_operations_class):  # type: ignore[misc,valid-type]
+        """Case-insensitive passthrough filesystem using FUSE."""
+
+        def __init__(self, root: str):
+            """Initialize the filesystem.
+
+            Args:
+            ----
+                root: Root directory to make case-insensitive
+            """
+            self.root = root
+            print(f"Initialized FUSE case-insensitive filesystem for root: {root}")
+
+        def _full_path(self, partial: str) -> str:
+            """Resolve partial path to full path with case-insensitive matching.
+
+            Args:
+            ----
+                partial: Partial path relative to mount point
+
+            Returns:
+            -------
+                Full resolved path
+            """
+            if partial.startswith("/"):
+                partial = partial[1:]
+            path = os.path.join(self.root, partial)  # noqa: PTH118
+            path = _get_case_insensitive_path_fast(path)
+            return path[0] if isinstance(path, tuple) else path
+
+        def access(self, path: str, mode: int):
+            """Check file access permissions."""
+            full_path = self._full_path(path)
+            if not os.access(full_path, mode):
+                raise FuseOSError(errno.EACCES)  # type: ignore[name-defined]
+
+        def chmod(self, path: str, mode: int) -> None:
+            """Change file permissions."""
+            full_path = self._full_path(path)
+            return os.chmod(full_path, mode)  # noqa: PTH101
+
+        def chown(self, path: str, uid: int, gid: int) -> None:
+            """Change file ownership."""
+            full_path = self._full_path(path)
+            return os.chown(full_path, uid, gid)
+
+        def getattr(self, path: str, fh: int | None = None) -> dict[str, Any]:
+            """Get file attributes."""
+            full_path = self._full_path(path)
+            st = os.lstat(full_path)
+            return {
+                key: getattr(st, key)
+                for key in (
+                    "st_atime",
+                    "st_ctime",
+                    "st_gid",
+                    "st_mode",
+                    "st_mtime",
+                    "st_nlink",
+                    "st_size",
+                    "st_uid",
+                )
+            }
+
+        def readdir(self, path: str, fh: int):
+            """Read directory contents."""
+            full_path = self._full_path(path)
+            dirents = [".", ".."]
+            if os.path.isdir(full_path):  # noqa: PTH112
+                dirents.extend(os.listdir(full_path))  # noqa: PTH208
+            yield from dirents
+
+        def readlink(self, path: str) -> str:
+            """Read symbolic link target."""
+            pathname = os.readlink(self._full_path(path))
+            if pathname.startswith("/"):
+                return os.path.relpath(pathname, self.root)
+            return pathname
+
+        def mknod(self, path: str, mode: int, dev: int) -> None:
+            """Create a filesystem node."""
+            return os.mknod(self._full_path(path), mode, dev)
+
+        def rmdir(self, path: str):  # noqa: ANN202
+            """Remove directory."""
+            full_path = self._full_path(path)
+            return os.rmdir(full_path)  # noqa: PTH106
+
+        def mkdir(self, path: str, mode: int) -> None:
+            """Create directory."""
+            return os.mkdir(self._full_path(path), mode)  # noqa: PTH102
+
+        def statfs(self, path: str) -> dict[str, Any]:
+            """Get filesystem statistics."""
+            full_path = self._full_path(path)
+            stv = os.statvfs(full_path)
+            return {
+                key: getattr(stv, key)
+                for key in (
+                    "f_bavail",
+                    "f_bfree",
+                    "f_blocks",
+                    "f_bsize",
+                    "f_favail",
+                    "f_ffree",
+                    "f_files",
+                    "f_flag",
+                    "f_frsize",
+                    "f_namemax",
+                )
+            }
+
+        def unlink(self, path: str) -> None:
+            """Remove file."""
+            return os.unlink(self._full_path(path))  # noqa: PTH108
+
+        def symlink(self, name: str, target: str) -> None:
+            """Create symbolic link."""
+            return os.symlink(target, self._full_path(name))  # noqa: PTH211
+
+        def rename(self, old: str, new: str) -> None:
+            """Rename file or directory."""
+            return os.rename(self._full_path(old), self._full_path(new))  # noqa: PTH104
+
+        def link(self, target: str, name: str) -> None:
+            """Create hard link."""
+            return os.link(self._full_path(name), self._full_path(target))  # noqa: PTH200
+
+        def utimens(self, path: str, times: tuple[float, float] | None = None) -> None:
+            """Update file access and modification times."""
+            return os.utime(self._full_path(path), times)
+
+        def open(self, path: str, flags: int) -> int:
+            """Open file."""
+            full_path = self._full_path(path)
+            return os.open(full_path, flags)
+
+        def create(self, path: str, mode: int, fi: Any = None) -> int:
+            """Create and open file."""
+            full_path = self._full_path(path)
+            return os.open(full_path, os.O_WRONLY | os.O_CREAT, mode)
+
+        def read(self, path: str, length: int, offset: int, fh: int) -> bytes:
+            """Read from file."""
+            os.lseek(fh, offset, os.SEEK_SET)
+            return os.read(fh, length)
+
+        def write(self, path: str, buf: bytes, offset: int, fh: int) -> int:
+            """Write to file."""
+            os.lseek(fh, offset, os.SEEK_SET)
+            return os.write(fh, buf)
+
+        def truncate(self, path: str, length: int, fh: int | None = None):
+            """Truncate file."""
+            full_path = self._full_path(path)
+            with open(full_path, "r+", encoding="utf-8") as f:  # noqa: PTH123
+                f.truncate(length)
+
+        def flush(self, path: str, fh: int) -> None:
+            """Flush file buffers."""
+            return os.fsync(fh)
+
+        def release(self, path: str, fh: int) -> None:
+            """Release file handle."""
+            return os.close(fh)
+
+        def fsync(self, path: str, fdatasync: int, fh: int) -> None:
+            """Sync file to disk."""
+            return self.flush(path, fh)
+
+
+# Global mount management for FUSE
+_fuse_mounts: dict[str, str] = {}  # Maps real_path -> mount_point
+_fuse_mount_tempdir: tempfile.TemporaryDirectory | None = None
+
+
+def _cleanup_fuse_mounts():
+    """Unmount all FUSE filesystems and cleanup on exit."""
+    global _fuse_mounts, _fuse_mount_tempdir  # noqa: PLW0602, PLW0603
+    for _real_path, mount_point in list(_fuse_mounts.items()):
+        try:
+            print(f"Unmounting FUSE filesystem: {mount_point}")
+            subprocess.run(  # noqa: S603
+                ["fusermount", "-u", mount_point],  # noqa: S607
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+        except Exception:
+            print(f"Failed to unmount {mount_point}")
+
+    _fuse_mounts.clear()
+
+    if _fuse_mount_tempdir:
+        try:
+            _fuse_mount_tempdir.cleanup()
+        except Exception:
+            print("Failed to cleanup FUSE temp directory")
+        _fuse_mount_tempdir = None
+
+
+# Register cleanup on exit
+if _fuse_available:
+    atexit.register(_cleanup_fuse_mounts)
+
+
+def _get_or_create_fuse_mount(root_path: str) -> str | None:
+    """Get existing FUSE mount or create a new one for the given root path.
+
+    Args:
+    ----
+        root_path: Root directory to mount as case-insensitive
+
+    Returns:
+    -------
+        Mount point path if successful, None if mounting failed
+    """
+    global _fuse_mounts, _fuse_mount_tempdir  # noqa: PLW0602, PLW0603
+
+    if not _fuse_available:
+        return None
+
+    # Normalize root path
+    root_path = str(pathlib.Path(root_path).resolve())
+
+    # Check if already mounted
+    if root_path in _fuse_mounts:
+        mount_point = _fuse_mounts[root_path]
+        if os.path.isdir(mount_point):  # noqa: PTH112
+            return mount_point
+        # Mount point disappeared, remove from dict
+        print(f"Mount point {mount_point} no longer exists, will remount {root_path}")
+        del _fuse_mounts[root_path]
+
+    # Create temp directory for mounts if needed
+    if _fuse_mount_tempdir is None:
+        try:
+            _fuse_mount_tempdir = tempfile.TemporaryDirectory(prefix="pykotor_fuse_")
+        except Exception as e:
+            print(f"Failed to create FUSE mount temp directory: {e}")
+            return None
+
+    # Create mount point
+    try:
+        mount_point = os.path.join(  # noqa: PTH118
+            _fuse_mount_tempdir.name, f"mount_{len(_fuse_mounts)}"
+        )
+        os.makedirs(mount_point, exist_ok=True)  # noqa: PTH103
+    except Exception as e:
+        print(f"Failed to create mount point directory: {e}")
+        return None
+
+    # Mount the filesystem in background using ProcessPoolExecutor
+    try:
+        if _fuse_class is None:
+            print(f"FUSE class not available, cannot mount {root_path}")
+            return None
+
+        print(f"Mounting FUSE case-insensitive filesystem: {root_path} -> {mount_point}")
+
+        # Start FUSE in a background process using ProcessPoolExecutor
+        from concurrent.futures import ProcessPoolExecutor
+
+        def mount_process(root: str, mount: str) -> None:
+            """Run FUSE mount in a separate process.
+
+            Args:
+            ----
+                root: Root directory to mount
+                mount: Mount point directory
+            """
+            try:
+                # Import here to avoid pickling issues
+                from fuse import FUSE  # noqa: PLC0415  # pyright: ignore[reportMissingImports]
+
+                fs = _CaseInsensitiveFS(root)
+                FUSE(
+                    fs,
+                    mount,
+                    nothreads=True,
+                    foreground=True,
+                    allow_other=False,
+                )
+            except Exception as e:
+                print(f"FUSE mount process failed for {root}: {e}")
+                import traceback
+                traceback.print_exc()
+
+        # Submit to process pool executor
+        executor = ProcessPoolExecutor(max_workers=1)
+        _future = executor.submit(mount_process, root_path, mount_point)
+
+        # Don't wait for it to complete, it runs indefinitely
+        # The process will be killed when program exits
+
+        # Give it a moment to mount
+        import time
+
+        time.sleep(0.5)
+
+        # Verify mount succeeded
+        if not os.path.ismount(mount_point):
+            print(f"FUSE mount verification failed for {root_path}")
+            executor.shutdown(wait=False, cancel_futures=True)
+            return None
+
+        _fuse_mounts[root_path] = mount_point
+        print(f"Successfully mounted {root_path} at {mount_point}")
+
+    except Exception as e:
+        print(f"Failed to mount FUSE filesystem for {root_path}: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return None
+    else:
+        return mount_point
 
 
 def simple_wrapper(fn_name: str, wrapped_class_type: type[CaseAwarePath]) -> Callable[..., Any]:
@@ -132,7 +531,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type[CaseAwarePath]) -> Cal
         new_args: tuple[CaseAwarePath | Any, ...] = tuple(parse_arg(arg) for arg in args)
         new_kwargs: dict[str, CaseAwarePath | Any] = {k: parse_arg(v) for k, v in kwargs.items()}
 
-        # TODO(th3w1zard1): when orig_fn doesn't exist, the AttributeException should be raised by
+        # TODO(th3w1zard1): when orig_fn doesn't exist, the AttributeException should be raised by  # noqa: TD003
         # the prior stack instead of here, as that's what would normally happen.
 
         return orig_fn(actual_self_or_cls, *new_args, **new_kwargs)
@@ -193,8 +592,8 @@ def create_case_insensitive_pathlib_class(cls: type[CaseAwarePath]):
                 wrapped_methods.add(attr_name)
 
 
-# TODO(th3w1zard1): Move to pykotor.common
-class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
+# TODO(th3w1zard1): Move to pykotor.common  # noqa: TD003
+class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc, no-redef]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
 
     __slots__: tuple[str] = ("_tail_cached",)
@@ -286,7 +685,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
     def relative_to(
         self,
-        *args: PathElem,
+        *args: os.PathLike | str,
         walk_up: bool = False,
         **kwargs,
     ) -> InternalPath:
@@ -306,7 +705,13 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             resolved_self = self
 
         if isinstance(other, (str, os.PathLike)):
-            parsed_other = self.with_segments(other, *_deprecated)
+            # Construct the "other" path with the same type as self (handling any _deprecated args)
+            if _deprecated:
+                # If there are additional arguments, join them as segments.
+                segments = (other, *_deprecated)
+                parsed_other = self.__class__(*segments)
+            else:
+                parsed_other = self.__class__(other)
             pathlib_parsed_other = pathlib.Path(parsed_other)
             if isinstance(parsed_other, InternalPath) and pathlib_parsed_other.is_absolute():
                 # Ensure path is absolute and CaseAwarePath for case-insensitive comparison
@@ -318,8 +723,14 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             if isinstance(self, CaseAwarePath) and not isinstance(parsed_other, CaseAwarePath):
                 parsed_other = CaseAwarePath(parsed_other)
         else:
-            parsed_other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
-            parsed_other = parsed_other.with_segments(other, *_deprecated)
+            # If not a string/PathLike, ensure it's an InternalPurePath, then join further segments if present
+            if not isinstance(other, InternalPurePath):
+                parsed_other = InternalPurePath(other)
+            else:
+                parsed_other = other
+            if _deprecated:
+                # Join segments if provided
+                parsed_other = parsed_other.__class__(str(parsed_other), *_deprecated)
             # Ensure parsed_other is a CaseAwarePath if self is
             if isinstance(self, CaseAwarePath) and not isinstance(parsed_other, CaseAwarePath):
                 parsed_other = CaseAwarePath(parsed_other)
@@ -403,7 +814,10 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             resolved_self = self
 
         if isinstance(other, (str, os.PathLike)):
-            parsed_other = self.with_segments(other, *_deprecated)
+            # Convert 'other' to a Path instance (InternalPath) and apply any _deprecated tail elements using joinpath
+            parsed_other = InternalPath(other)
+            for extra in _deprecated:
+                parsed_other = parsed_other.joinpath(extra)
             pathlib_parsed_other = pathlib.Path(parsed_other)
             if isinstance(parsed_other, InternalPath) and pathlib_parsed_other.is_absolute():
                 # Ensure path is absolute and CaseAwarePath for case-insensitive comparison
@@ -415,8 +829,10 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             if isinstance(self, CaseAwarePath) and not isinstance(parsed_other, CaseAwarePath):
                 parsed_other = CaseAwarePath(parsed_other)
         else:
+            # If other is already InternalPurePath, use it, else convert to InternalPurePath
             parsed_other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
-            parsed_other = parsed_other.with_segments(other, *_deprecated)
+            for extra in _deprecated:
+                parsed_other = parsed_other.joinpath(extra)
             # Ensure parsed_other is a CaseAwarePath if self is
             if isinstance(self, CaseAwarePath) and not isinstance(parsed_other, CaseAwarePath):
                 parsed_other = CaseAwarePath(parsed_other)
@@ -513,7 +929,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         # Final fallback
         return parsed_other == resolved_self
 
-    def replace(self, target: PathElem) -> Self:
+    def replace(self, target: os.PathLike | str) -> Self:
         """Replace this path with target.
 
         This override ensures that both self and target have their case resolved
@@ -598,14 +1014,15 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
     @classmethod
     def get_case_sensitive_path(
         cls,
-        path: PathElem,
+        path: os.PathLike | str,
         prefixes: list[str] | tuple[str, ...] | None = None,
     ) -> Self:
-        """Get a case sensitive path.
+        """Get a case sensitive path with optional FUSE optimization.
 
         Args:
         ----
             path: The path to resolve case sensitivity for
+            prefixes: Optional prefix components
 
         Returns:
         -------
@@ -613,23 +1030,60 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
         Processing Logic:
         ----------------
+            - On POSIX with FUSE available: Try to use FUSE-mounted case-insensitive filesystem
+            - Fallback: Use standard iterative case resolution
             - Convert the path to a pathlib Path object
             - Iterate through each path part starting from index 1
             - Check if the current path part and the path up to that part exist
             - If not, find the closest matching file/folder name in the existing path
             - Return a CaseAwarePath instance with case sensitivity resolved.
         """
-        prefixes = prefixes or []
+        prefixes = tuple(prefixes or [])
         pathlib_path = pathlib.Path(path)
-        pathlib_abspath = pathlib.Path(*prefixes, path).absolute() if prefixes else pathlib_path.absolute()
+        try:
+            pathlib_abspath = pathlib.Path(*prefixes, path).absolute() if prefixes else pathlib_path.absolute()
+        except RuntimeError:
+            pathlib_abspath = pathlib_path.absolute()
+
         num_differing_parts = len(pathlib_abspath.parts) - len(pathlib_path.parts)  # keeps the path relative if it already was.
+
+        # Try FUSE optimization on POSIX systems
+        if _fuse_available and os.name == "posix" and pathlib_abspath.is_absolute():
+            try:
+                # Identify a good root to mount (e.g., first 3-4 path components)
+                # Don't mount the entire filesystem root, find a reasonable subdirectory
+                parts = pathlib_abspath.parts
+                if len(parts) >= 3:
+                    # Mount at a reasonable level (e.g., /home/user or /mnt/data)
+                    mount_root = str(pathlib.Path(*parts[:min(3, len(parts) - 1)]))
+                    mount_point = _get_or_create_fuse_mount(mount_root)
+
+                    if mount_point:
+                        # Translate the path to use the mount point
+                        relative_to_mount = str(pathlib_abspath)[len(mount_root):].lstrip("/")
+                        mounted_path = pathlib.Path(mount_point) / relative_to_mount
+
+                        # If the path exists in the mount, use it (case-insensitive access works!)
+                        if mounted_path.exists():
+                            print(f"Using FUSE mount for {pathlib_abspath}: {mounted_path}")
+                            # Get the real path from the mount to preserve case
+                            real_resolved = mounted_path.resolve()
+                            # Map back to original filesystem
+                            real_path_str = str(real_resolved).replace(mount_point, mount_root, 1)
+                            result_path = pathlib.Path(real_path_str)
+                            return cls._create_instance(*result_path.parts[num_differing_parts:], called_from_getcase=True)
+            except Exception as e:
+                print(f"FUSE optimization failed, falling back to standard resolution: {e}")
+                # Fall through to standard implementation
+
+        # Standard implementation (fallback or when FUSE not available)
         parts = list(pathlib_abspath.parts)
 
         for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
             base_path: InternalPath = InternalPath(*parts[:i])
             next_path: InternalPath = InternalPath(*parts[: i + 1])
 
-            if not next_path.safe_isdir() and base_path.safe_isdir():
+            if not next_path.is_dir() and base_path.is_dir():
                 # Find the first non-existent case-sensitive file/folder in hierarchy
                 # if multiple are found, use the one that most closely matches our case
                 # A closest match is defined, in this context, as the file/folder's name that contains the most case-sensitive positional character matches
@@ -637,10 +1091,10 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
                 last_part: bool = i == len(parts) - 1
                 parts[i] = cls.find_closest_match(
                     parts[i],
-                    (item for item in base_path.safe_iterdir() if last_part or item.safe_isdir()),
+                    (item for item in base_path.iterdir() if last_part or item.is_dir()),
                 )
 
-            elif not next_path.safe_exists():
+            elif not next_path.exists():
                 break
 
         # Return a CaseAwarePath instance
@@ -793,11 +1247,11 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             result = result.replace("\\", os.sep).replace("/", os.sep)
         return result
 
+if os.name == "posix":
+    create_case_insensitive_pathlib_class(CaseAwarePath)
 
-create_case_insensitive_pathlib_class(CaseAwarePath)
 
-
-def get_default_paths() -> dict[str, dict[Game, list[str]]]:  # TODO(th3w1zard1): Many of these paths are incomplete and need community input.
+def get_default_paths() -> dict[str, dict[Game, list[str]]]:  # TODO(th3w1zard1): Many of these paths are incomplete and need community input.  # noqa: TD003
     from pykotor.common.misc import Game  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
 
     return {
@@ -895,7 +1349,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
     # Build hardcoded default kotor locations
     raw_locations: dict[str, dict[Game, list[str]]] = get_default_paths()
     locations: dict[Game, set[CaseAwarePath]] = {
-        game: {case_path for case_path in (CaseAwarePath(path).expanduser().resolve() for path in paths) if case_path.safe_isdir()}
+        game: {case_path for case_path in (CaseAwarePath(path).expanduser().resolve() for path in paths) if case_path.is_dir()}
         for game, paths in raw_locations.get(os_str, {}).items()
     }
 
@@ -907,10 +1361,10 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
             for reg_key, reg_valname in possible_game_paths:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)
                 path = CaseAwarePath(path_str).resolve() if path_str else None
-                if path and path.name and path.safe_isdir():
+                if path and path.name and path.is_dir():
                     locations[game].add(path)
         amazon_k1_path_str: str | None = find_software_key("AmazonGames/Star Wars - Knights of the Old")
-        if amazon_k1_path_str is not None and InternalPath(amazon_k1_path_str).safe_isdir():
+        if amazon_k1_path_str is not None and InternalPath(amazon_k1_path_str).is_dir():
             locations[Game.K1].add(CaseAwarePath(amazon_k1_path_str))
 
     # don't return nested sets, return as lists.

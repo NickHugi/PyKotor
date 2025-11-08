@@ -6,6 +6,7 @@ import os
 import sys
 import traceback
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qtpy import QtCore
@@ -30,7 +31,6 @@ from qtpy.QtWidgets import (
 )
 
 from kotordiff.app import run_application  # type: ignore[import-not-found]
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser, Namespace

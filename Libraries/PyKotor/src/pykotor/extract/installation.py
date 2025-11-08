@@ -5,16 +5,16 @@ import os
 import platform
 import sys
 
-from contextlib import suppress
 from copy import copy
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 from functools import lru_cache
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence, overload
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingModuleSource]
 
-from pykotor.common.language import Gender, Language, LocalizedString
+from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
@@ -22,31 +22,28 @@ from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList, GFFStruct
+from pykotor.resource.formats.gff.gff_data import GFFFieldType
 from pykotor.resource.formats.tpc import TPC, read_tpc
-from pykotor.resource.formats.twoda.twoda_auto import read_2da
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import deobfuscate_audio
 from utility.common.more_collections import CaseInsensitiveDict
-from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from logging import Logger
 
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
+    from pykotor.common.language import LocalizedString
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
-    from pykotor.resource.formats.ncs.ncs_data import NCS
-    from pykotor.resource.formats.ssf.ssf_data import SSF
-    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 @dataclass
 class StrRefLocation:
     """Represents a specific location where a StrRef was found."""
+
     resource: FileResource
     locations: list[str]  # Location strings like "row_12.name", "field.Path.To.Field", "sound_BATTLECRY1", "offset_0x1A4"
 
@@ -152,11 +149,10 @@ class Installation:
         self,
         path: os.PathLike | str,
         *,
-        progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = None
+        progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = None,
     ):
-
         self._log: Logger = RobustLogger()
-        self._path: CaseAwarePath = CaseAwarePath.pathify(path)
+        self._path: CaseAwarePath = CaseAwarePath(path)
 
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
         self._female_talktable: TalkTable = TalkTable(self._path / "dialogf.tlk")
@@ -323,7 +319,7 @@ class Installation:
         if self.progress_callback:
             self.progress_callback(message, "update_maintask_text")
             self.progress_callback(1, "increment")
-        #self._log.info(message)
+        # self._log.info(message)
 
     # region Load Data
     def _build_single_resource(
@@ -379,13 +375,13 @@ class Installation:
         -------
             dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
         """
-        r_path = Path.pathify(path)
-        if not r_path.safe_isdir():
+        r_path = Path(path)
+        if not r_path.is_dir():
             self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
             return {}
 
         self._log.info("Loading '%s' from installation...", r_path.relative_to(self._path))
-        files_iter = r_path.safe_rglob("*") if recurse else r_path.safe_iterdir()
+        files_iter = r_path.rglob("*") if recurse else r_path.iterdir()
 
         resources_dict: dict[str, list[FileResource]] = {}
 
@@ -415,17 +411,13 @@ class Installation:
         -------
             list[FileResource]: The list where resources at the path have been stored.
         """
-        r_path = Path.pathify(path)
-        if not r_path.safe_isdir():
+        r_path = Path(path)
+        if not r_path.is_dir():
             self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
             return []
 
         self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
-        files_iter = (
-            path.safe_rglob("*")
-            if recurse
-            else path.safe_iterdir()
-        )
+        files_iter = path.rglob("*") if recurse else path.iterdir()
 
         resources_list: list[FileResource] = []
 
@@ -443,7 +435,7 @@ class Installation:
         if self._chitin_loaded:
             return
         chitin_path: CaseAwarePath = self._path / "chitin.key"
-        chitin_exists: bool | None = chitin_path.safe_isfile()
+        chitin_exists: bool | None = chitin_path.is_file()
         if chitin_exists:
             self._log.info("Loading BIFs from chitin.key at '%s'...", self._path)
             self._chitin_data = list(Chitin(key_path=chitin_path))
@@ -510,7 +502,7 @@ class Installation:
             self._log.debug(f"Found an active save location at '{save_location}'")
             self.saves[save_location] = {}
             for this_save_path in save_location.iterdir():
-                if not this_save_path.safe_isdir():
+                if not this_save_path.is_dir():
                     continue
                 self._log.debug(f"Discovered a save bundle '{this_save_path.name}'")
                 self.saves[save_location][this_save_path] = []
@@ -550,17 +542,16 @@ class Installation:
                 is_k1 = True
                 RobustLogger().exception("Failed to get the game of your installation!")
             if is_k1:
-                target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
+                target_dirs = [f for f in override_path.rglob("*") if f.is_dir()]
             target_dirs.append(override_path)
             self._override_data = {}
 
         for folder in target_dirs:
             try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
                 relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
+                self._override_data[relative_folder] = self.load_resources_list(folder, recurse=True)
             except Exception:  # noqa: BLE001
                 RobustLogger().exception(f"Failed to get the relative folder of '{folder}' and '{override_path}'")
-                relative_folder = folder.safe_relative_to(override_path).replace("\\", "/")
-            self._override_data[relative_folder] = self.load_resources_list(folder, recurse=True)
 
         if not directory:
             self._override_loaded = True
@@ -586,7 +577,7 @@ class Installation:
         self,
         file: os.PathLike | str,
     ):
-        filepath: Path = Path.pathify(file)
+        filepath: Path = Path(file)
         parent_folder = filepath.parent
         rel_folderpath: str = str(parent_folder.relative_to(self.override_path())) if parent_folder.name else "."
         if rel_folderpath not in self._override_data:
@@ -629,7 +620,7 @@ class Installation:
         """
         files: list[FileResource] = []
         try:
-            if not folder_path.safe_isdir():
+            if not folder_path.is_dir():
                 return files
             stack: list[str] = [str(folder_path)]
             install_path_str = str(self.path())
@@ -641,7 +632,7 @@ class Installation:
                         if entry.is_file():
                             try:
                                 if self.progress_callback:
-                                    relpath = entry.path[len(install_path_str):].strip("\\").strip("/")
+                                    relpath = entry.path[len(install_path_str) :].strip("\\").strip("/")
                                     self.progress_callback(f"Loading '{relpath}'...", "update_subtask_text")
                                 files.append(FileResource.from_path(entry.path))
                             except Exception:  # noqa: BLE001
@@ -672,7 +663,7 @@ class Installation:
             return
         if self.game().is_k1():
             patch_erf_path = self.path().joinpath("patch.erf")
-            if patch_erf_path.safe_isfile():
+            if patch_erf_path.is_file():
                 if self.progress_callback:
                     self.progress_callback("Loading patch.erf...", "update_maintask_text")
                 self._patch_erf_data.extend(Capsule(patch_erf_path))
@@ -783,16 +774,16 @@ class Installation:
         save_paths: list[Path] = [self._find_resource_folderpath("saves", optional=True)]
         if self.game().is_k2():
             cloudsave_dir = self._find_resource_folderpath("cloudsaves", optional=True)
-            if cloudsave_dir.safe_isdir():
+            if cloudsave_dir.is_dir():
                 for folder in cloudsave_dir.iterdir():
-                    if not folder.safe_isdir():
+                    if not folder.is_dir():
                         continue
                     save_paths.append(folder)
         system = platform.system()
 
         if system == "Windows":
             roamingappdata_env: str = os.getenv("APPDATA", "")
-            if not roamingappdata_env.strip() or not Path(roamingappdata_env).safe_isdir():
+            if not roamingappdata_env.strip() or not Path(roamingappdata_env).is_dir():
                 roamingappdata_path = Path.home().joinpath("AppData", "Roaming")
             else:
                 roamingappdata_path = Path(roamingappdata_env)
@@ -801,7 +792,7 @@ class Installation:
             save_paths.append(roamingappdata_path.joinpath("LucasArts", game_folder1, "saves"))
 
             localappdata_env: str = os.getenv("LOCALAPPDATA", "")
-            if not localappdata_env.strip() or not Path(localappdata_env).safe_isdir():
+            if not localappdata_env.strip() or not Path(localappdata_env).is_dir():
                 localappdata_path = Path.home().joinpath("AppData", "Local")
             else:
                 localappdata_path = Path(localappdata_env)
@@ -811,7 +802,7 @@ class Installation:
             save_paths.extend(
                 (
                     local_virtual_store.joinpath("Program Files", "LucasArts", game_folder2, "saves"),
-                    local_virtual_store.joinpath("Program Files (x86)", "LucasArts", game_folder2, "saves")
+                    local_virtual_store.joinpath("Program Files (x86)", "LucasArts", game_folder2, "saves"),
                 )
             )
 
@@ -820,20 +811,21 @@ class Installation:
             save_paths.extend(
                 (
                     home.joinpath("Library", "Application Support", "Star Wars Knights of the Old Republic II", "saves"),
-                    home.joinpath("Library", "Containers", "com.aspyr.kotor2.appstore", "Data", "Library", "Application Support",
-                                  "Star Wars Knights of the Old Republic II", "saves")
+                    home.joinpath(
+                        "Library", "Containers", "com.aspyr.kotor2.appstore", "Data", "Library", "Application Support", "Star Wars Knights of the Old Republic II", "saves"
+                    ),
                 )
             )
 
         elif system == "Linux":  # TODO(th3w1zard1): Linux save paths
             xdg_data_home = os.getenv("XDG_DATA_HOME", "")
             remaining_path_parts = PurePath("aspyr-media", "kotor2", "saves")
-            if xdg_data_home.strip() and CaseAwarePath(xdg_data_home).safe_isdir():
+            if xdg_data_home.strip() and CaseAwarePath(xdg_data_home).is_dir():
                 save_paths.append(CaseAwarePath(xdg_data_home, remaining_path_parts))
             save_paths.append(CaseAwarePath.home().joinpath(".local", "share", remaining_path_parts))
 
         # Filter and return existing paths
-        return [path for path in save_paths if path.safe_isdir()]
+        return [path for path in save_paths if path.is_dir()]
 
     def _find_resource_folderpath(
         self,
@@ -864,7 +856,7 @@ class Installation:
                 folder_names = (folder_names,)
             for folder_name in folder_names:
                 resource_path: CaseAwarePath = self._path / folder_name
-                if resource_path.safe_isdir():
+                if resource_path.is_dir():
                     return resource_path
         except Exception as e:  # noqa: BLE001
             msg = f"An error occurred while finding the '{' or '.join(folder_names)}' folder in '{self._path}'."
@@ -898,7 +890,7 @@ class Installation:
         tlk_path = self._path / "dialog.tlk"
         yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
         female_tlk_path = self._path / "dialogf.tlk"
-        if female_tlk_path.safe_isfile():
+        if female_tlk_path.is_file():
             yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
 
     def chitin_resources(self) -> list[FileResource]:
@@ -1027,13 +1019,7 @@ class Installation:
             self.load_override()
 
         return (
-            self._override[directory]
-            if directory
-            else [
-                override_resource
-                for ov_subfolder_name in self._override
-                for override_resource in self._override[ov_subfolder_name]
-            ]
+            self._override[directory] if directory else [override_resource for ov_subfolder_name in self._override for override_resource in self._override[ov_subfolder_name]]
         )
 
     # endregion
@@ -1057,11 +1043,11 @@ class Installation:
             3. Run checks and score games
             4. Return game with highest score or None if scores are equal or all checks fail
         """
-        r_path: CaseAwarePath = CaseAwarePath.pathify(path)
+        r_path: CaseAwarePath = CaseAwarePath(path)
 
         def check(x: str) -> bool:
             c_path: CaseAwarePath = r_path.joinpath(x)
-            return c_path.safe_exists() is not False
+            return c_path.exists() is not False
 
         # Checks for each game
         game1_pc_checks: list[bool] = [
@@ -1413,15 +1399,7 @@ class Installation:
                 location.filepath,
                 data,
             )
-            result.set_file_resource(
-                FileResource(
-                    query.resname,
-                    query.restype,
-                    location.size,
-                    location.offset,
-                    location.filepath
-                )
-            )
+            result.set_file_resource(FileResource(query.resname, query.restype, location.size, location.offset, location.filepath))
             results[query] = result
 
         # Close all open handles
@@ -1514,7 +1492,9 @@ class Installation:
             elif isinstance(resname, ResourceIdentifier):
                 query = resname
             else:
-                raise TypeError(f"Invalid argument at position 0. Expected filename or filepath (os.PathLike | str), got {resname} ({resname!r}) of type {resname.__class__.__name__}")  # noqa: E501
+                raise TypeError(
+                    f"Invalid argument at position 0. Expected filename or filepath (os.PathLike | str), got {resname} ({resname!r}) of type {resname.__class__.__name__}"
+                )  # noqa: E501
         elif isinstance(restype, ResourceType) and isinstance(resname, str):
             query = ResourceIdentifier(resname, restype)
         else:
@@ -1624,10 +1604,7 @@ class Installation:
 
         def check_list(resource_list: list[FileResource]):
             # Index resources by identifier
-            lookup_dict: dict[ResourceIdentifier, FileResource] = {
-                resource.identifier(): resource
-                for resource in resource_list
-            }
+            lookup_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in resource_list}
 
             for query in real_queries:
                 resource = lookup_dict.get(query)
@@ -1658,8 +1635,8 @@ class Installation:
 
         def check_folders(resource_folders: list[Path]):
             for folder in resource_folders:
-                for file in folder.safe_rglob("*"):
-                    if not file.safe_isfile():
+                for file in folder.rglob("*"):
+                    if not file.is_file():
                         continue
                     identifier = ResourceIdentifier.from_path(file)
                     if identifier not in real_queries:
@@ -1671,15 +1648,7 @@ class Installation:
                         size=file.get_stat_with_cache().st_size,
                     )
 
-                    location.set_file_resource(
-                        FileResource(
-                            identifier.resname,
-                            identifier.restype,
-                            location.size,
-                            location.offset,
-                            location.filepath
-                        )
-                    )
+                    location.set_file_resource(FileResource(identifier.resname, identifier.restype, location.size, location.offset, location.filepath))
                     locations[identifier].append(location)
 
         def check_modules():
@@ -1688,11 +1657,7 @@ class Installation:
                 check_dict(self._modules)
             else:
                 # Filter modules by root name
-                filtered_modules = {
-                    filename: resources
-                    for filename, resources in self._modules.items()
-                    if self.get_module_root(filename) == module_root.lower()
-                }
+                filtered_modules = {filename: resources for filename, resources in self._modules.items() if self.get_module_root(filename) == module_root.lower()}
                 check_dict(filtered_modules)
 
         function_map: dict[SearchLocation, Callable] = {
@@ -1859,11 +1824,7 @@ class Installation:
 
         def get_txi_from_list(case_resname: str, resource_list: list[FileResource]) -> str:
             txi_resource: FileResource | None = next(
-                (
-                    resource
-                    for resource in resource_list
-                    if resource.restype() is ResourceType.TXI and resource.identifier().lower_resname == case_resname
-                ),
+                (resource for resource in resource_list if resource.restype() is ResourceType.TXI and resource.identifier().lower_resname == case_resname),
                 None,
             )
             if txi_resource is not None:
@@ -1915,12 +1876,8 @@ class Installation:
             for folder in resource_folders:
                 queried_texture_files.update(
                     file
-                    for file in folder.safe_rglob("*")
-                    if (
-                        file.stem.casefold() in case_resnames
-                        and ResourceType.from_extension(file.suffix) in texture_types
-                        and file.safe_isfile()
-                    )
+                    for file in folder.rglob("*")
+                    if (file.stem.casefold() in case_resnames and ResourceType.from_extension(file.suffix) in texture_types and file.is_file())
                 )
             for texture_file in queried_texture_files:
                 case_resnames.remove(texture_file.stem.casefold())
@@ -1950,441 +1907,6 @@ class Installation:
             function_map.get(item, lambda: None)()
 
         return textures
-
-    def find_tlk_entry_references(
-        self,
-        query_stringref: int,
-        order: list[SearchLocation] | None = None,
-        *,
-        capsules: list[Capsule] | None = None,
-        folders: list[Path] | None = None,
-        logger: Callable[[str], None] | None = None,
-    ) -> set[FileResource]:
-        """Finds all gffs that utilize this stringref in their localizedstring.
-
-        If no gffs could not be found the value will return None.
-
-        Args:
-        ----
-            stringref: A number representing the locstring to find.
-            order: The ordered list of locations to check.
-            capsules: An extra list of capsules to search in.
-            folders: An extra list of folders to search in.
-            logger: A logger to use for logging. (Optional)
-
-        Returns:
-        -------
-            A set of FileResources.
-        """
-        capsules = [] if capsules is None else capsules
-        folders = [] if folders is None else folders
-        if order is None:
-            order = [
-                SearchLocation.CUSTOM_FOLDERS,
-                SearchLocation.OVERRIDE,
-                SearchLocation.CUSTOM_MODULES,
-                SearchLocation.CHITIN,
-                SearchLocation.MODULES,
-                # SearchLocation.RIMS intentionally omitted from defaults - must be specified explicitly
-            ]
-
-        found_resources: set[FileResource] = set()
-        gff_extensions: set[str] = GFFContent.get_extensions()
-        relevant_2da_filenames: dict[str, set[str]] = {}
-        from pykotor.extract.twoda import K1Columns2DA, K2Columns2DA  # noqa: F401, PLC0415
-        from pykotor.resource.formats.ncs import NCSInstructionType, read_ncs  # noqa: F401, PLC0415
-        from pykotor.resource.formats.ssf import SSFSound, read_ssf  # noqa: F401, PLC0415
-
-        if self.game().is_k1():  # TODO(th3w1zard1): TSL:
-            relevant_2da_filenames = K1Columns2DA.StrRefs.as_dict()
-        elif self.game().is_k2():
-            relevant_2da_filenames = K2Columns2DA.StrRefs.as_dict()
-
-        def check_2da(resource2da: FileResource) -> bool:
-            valid_2da: TwoDA | None = None
-            with suppress(ValueError, OSError):
-                valid_2da = read_2da(resource2da.data())
-            if not valid_2da:
-                print(f"'{resource2da._path_ident_obj}' cannot be loaded, probably corrupted.")  # noqa: SLF001
-                return False
-            filename_2da = resource2da.filename().lower()
-
-            # Get relative path for logging
-            try:
-                relative_path = resource2da.filepath().relative_to(self._path)
-                path_str = relative_path.as_posix()
-            except ValueError:
-                path_str = str(resource2da.filepath())
-
-            found_locations: list[tuple[str, int | None]] = []  # (column_name, row_index)
-
-            for column_name in relevant_2da_filenames[filename_2da]:
-                if column_name == ">>##HEADER##<<":
-                    for header in valid_2da.get_headers():
-                        try:
-                            stripped_header = header.strip()
-                            if not stripped_header.isdigit():
-                                if stripped_header and stripped_header not in ("****", "*****", "-1"):
-                                    self._log.warning(f"header '{header}' in '{filename_2da}' is invalid, expected a stringref number.")
-                                continue
-                            if int(stripped_header) == query_stringref:
-                                found_locations.append((">>##HEADER##<<", None))
-                                if logger:
-                                    logger(f"    Found at: header '{header}' at {path_str}")
-                        except Exception as e:  # noqa: BLE001
-                            RobustLogger().error("Error parsing '%s' header '%s': %s", filename_2da, header, str(e), exc_info=False)
-                else:
-                    try:
-                        for i, cell in enumerate(valid_2da.get_column(column_name)):
-                            stripped_cell = cell.strip()
-                            if not stripped_cell.isdigit():
-                                if stripped_cell and stripped_cell not in ("****", "*****", "-1"):
-                                    self._log.warning(f"column '{column_name}' rowindex {i} in '{filename_2da}' is invalid, expected a stringref number. Instead got '{cell}'")
-                                continue
-                            if int(stripped_cell) == query_stringref:
-                                found_locations.append((column_name, i))
-                                if logger:
-                                    logger(f"    Found at: row {i}, column '{column_name}' at {path_str}")
-                    except Exception as e:  # noqa: BLE001
-                        RobustLogger().error("Error parsing '%s' column '%s': %s", filename_2da, column_name, str(e), exc_info=False)
-
-            return len(found_locations) > 0
-
-        def check_ssf(resource_ssf: FileResource) -> bool:
-            """Check if an SSF file contains the query StrRef."""
-            valid_ssf: SSF | None = None
-            with suppress(ValueError, OSError):
-                valid_ssf = read_ssf(resource_ssf.data())
-            if not valid_ssf:
-                return False
-
-            # Get relative path for logging
-            try:
-                relative_path = resource_ssf.filepath().relative_to(self._path)
-                path_str = relative_path.as_posix()
-            except ValueError:
-                path_str = str(resource_ssf.filepath())
-
-            # Check all sound slots for this StrRef
-            for sound in SSFSound:
-                sound_strref = valid_ssf.get(sound)
-                if sound_strref == query_stringref:
-                    if logger:
-                        logger(f"    Found at: sound slot '{sound.name}' at {path_str}")
-                    return True
-            return False
-
-        def check_ncs(resource_ncs: FileResource) -> bool:
-            """Check if an NCS (compiled script) file contains the query StrRef.
-
-            StrRefs in scripts appear as CONSTI (constant integer) instructions.
-            We extract all CONSTI values and check if any match the query.
-            """
-            valid_ncs: NCS | None = None
-            with suppress(ValueError, OSError):
-                valid_ncs = read_ncs(resource_ncs.data())
-            if not valid_ncs:
-                return False
-
-            # Get relative path for logging
-            try:
-                relative_path = resource_ncs.filepath().relative_to(self._path)
-                path_str = relative_path.as_posix()
-            except ValueError:
-                path_str = str(resource_ncs.filepath())
-
-            # Get byte offsets using the existing function
-            offsets = get_ncs_consti_offsets(resource_ncs, query_stringref)
-
-            # Log found offsets
-            if offsets and logger:
-                for offset in offsets:
-                    logger(f"    Found at: byte offset {offset:#X} (0x{offset:X}) at {path_str}")
-
-            return len(offsets) > 0
-
-        def check_gff(resource_gff: FileResource) -> bool:
-            """Check if a GFF file contains the query StrRef."""
-            valid_gff: GFF | None = None
-            with suppress(ValueError, OSError):
-                valid_gff = read_gff(resource_gff.data())
-            if valid_gff is None:
-                return False
-
-            # Get relative path for logging
-            try:
-                relative_path = resource_gff.filepath().relative_to(self._path)
-                path_str = relative_path.as_posix()
-            except ValueError:
-                path_str = str(resource_gff.filepath())
-
-            # Track found field paths for logging
-            found_paths: list[str] = []
-
-            def recurse_gff_structs_with_logging(gff_struct: GFFStruct, path_prefix: str = "") -> bool:
-                """Recursively scan GFF struct and collect field paths."""
-                for field_label, ftype, fval in gff_struct:
-                    field_path = f"{path_prefix}.{field_label}" if path_prefix else field_label
-
-                    if ftype == GFFFieldType.List and isinstance(fval, GFFList):
-                        for idx, list_struct in enumerate(fval):
-                            list_path = f"{field_path}[{idx}]"
-                            if recurse_gff_structs_with_logging(list_struct, list_path):
-                                found_paths.append(list_path)
-                    if ftype == GFFFieldType.Struct and isinstance(fval, GFFStruct) and recurse_gff_structs_with_logging(fval, field_path):
-                        found_paths.append(field_path)
-                    if ftype != GFFFieldType.LocalizedString or not isinstance(fval, LocalizedString):
-                        continue
-                    if fval.stringref == query_stringref:
-                        found_paths.append(field_path)
-                        return True
-                return False
-
-            result = recurse_gff_structs_with_logging(valid_gff.root)
-
-            # Log all found field paths
-            if result and logger:
-                for field_path in found_paths:
-                    logger(f"    Found at: field path '{field_path}' at {path_str}")
-
-            return result
-
-        def get_ncs_consti_offsets(resource_ncs: FileResource, target_value: int) -> list[int]:
-            """Get byte offsets of all CONSTI instructions with a specific value.
-
-            Returns list of byte offsets where the 4-byte integer value starts
-            (i.e., offset + 2 from instruction start).
-            """
-            from pykotor.common.stream import BinaryReader  # noqa: PLC0415
-
-            offsets: list[int] = []
-            try:
-                # Re-read with offset tracking
-                with BinaryReader.from_auto(resource_ncs.data()) as reader:
-                    # Skip NCS header (13 bytes)
-                    if reader.read_string(4) != "NCS ":
-                        return offsets
-                    if reader.read_string(4) != "V1.0":
-                        return offsets
-                    magic_byte = reader.read_uint8()
-                    if magic_byte != 0x42:  # noqa: PLR2004
-                        return offsets
-                    total_size = reader.read_uint32(big=True)
-
-                    # Now read instructions and track offsets
-                    while reader.position() < total_size and reader.remaining() > 0:
-                        opcode = reader.read_uint8()
-                        qualifier = reader.read_uint8()
-
-                        # Check if this is CONSTI (opcode=0x04, qualifier=0x03)
-                        if opcode == 0x04 and qualifier == 0x03:  # CONSTI  # noqa: PLR2004
-                            value_offset = reader.position()  # Current position is where the 4-byte value starts
-                            const_value = reader.read_int32(big=True)
-                            if const_value == target_value:
-                                offsets.append(value_offset)
-                        # Skip to next instruction based on opcode/qualifier
-                        # This is simplified - just skip common patterns
-                        elif opcode == 0x04:  # CONSTx  # noqa: PLR2004
-                            if qualifier == 0x04:  # CONSTF  # noqa: PLR2004
-                                reader.skip(4)
-                            elif qualifier == 0x05:  # CONSTS  # noqa: PLR2004
-                                str_len = reader.read_uint16(big=True)
-                                reader.skip(str_len)
-                            elif qualifier == 0x06:  # CONSTO  # noqa: PLR2004
-                                reader.skip(4)
-                        elif opcode in (0x01, 0x03, 0x26, 0x27):  # CPDOWNSP, CPTOPSP, CPDOWNBP, CPTOPBP
-                            reader.skip(6)
-                        elif opcode == 0x2C:  # STORE_STATE  # noqa: PLR2004
-                            reader.skip(8)
-                        elif opcode in (0x1B, 0x1D, 0x1E, 0x1F, 0x23, 0x24, 0x25, 0x28, 0x29):  # MOVSP, jumps, inc/dec
-                            reader.skip(4)
-                        elif opcode == 0x05:  # ACTION  # noqa: PLR2004
-                            reader.skip(3)
-                        elif opcode == 0x21:  # DESTRUCT  # noqa: PLR2004
-                            reader.skip(6)
-                        elif opcode == 0x0B and qualifier == 0x24:  # EQUALTT  # noqa: PLR2004
-                            reader.skip(2)
-                        elif opcode == 0x0C and qualifier == 0x24:  # NEQUALTT  # noqa: PLR2004
-                            reader.skip(2)
-                            # Other instructions have no additional data
-
-            except Exception:  # noqa: BLE001, S110
-                # If anything fails, return what we found so far
-                pass
-
-            return offsets
-
-        def recurse_gff_lists(gff_list: GFFList) -> bool:
-            for gff_struct in gff_list:
-                result = recurse_gff_structs(gff_struct)
-                if result:
-                    return True
-            return False
-
-        def recurse_gff_structs(gff_struct: GFFStruct) -> bool:
-            for _label, ftype, fval in gff_struct:
-                if ftype == GFFFieldType.List and isinstance(fval, GFFList):
-                    result = recurse_gff_lists(fval)
-                    if result:
-                        return True
-                if ftype == GFFFieldType.Struct and isinstance(fval, GFFStruct):
-                    result = recurse_gff_structs(fval)
-                    if result:
-                        return True
-                if ftype != GFFFieldType.LocalizedString or not isinstance(fval, LocalizedString):
-                    continue
-                if fval.stringref == query_stringref:  # the matching strref was found
-                    return True
-            return False
-
-        def try_get_gff(gff_data: bytes) -> GFF | None:
-            with suppress(OSError, ValueError):
-                return read_gff(gff_data)
-            return None
-
-        def check_dict(resource_dict: dict[str, list[FileResource]]):
-            for resources in resource_dict.values():
-                check_list(resources)
-
-        def check_list(resource_list: list[FileResource]):
-            for resource in resource_list:
-                this_restype: ResourceType = resource.restype()
-
-                # Check 2DA files
-                if (
-                    resource.filename().lower() in relevant_2da_filenames
-                    and this_restype is ResourceType.TwoDA
-                    and check_2da(resource)
-                ):
-                    found_resources.add(resource)
-                    continue
-
-                # Check SSF files
-                if this_restype is ResourceType.SSF and check_ssf(resource):
-                    found_resources.add(resource)
-                    continue
-
-                # Check NCS files
-                if this_restype is ResourceType.NCS and check_ncs(resource):
-                    found_resources.add(resource)
-                    continue
-
-                # Check GFF files
-                if this_restype.extension not in gff_extensions:
-                    continue
-                valid_gff: GFF | None = try_get_gff(resource.data())
-                if valid_gff is None:
-                    continue
-                if not recurse_gff_structs(valid_gff.root):
-                    continue
-                found_resources.add(resource)
-
-        def check_capsules(capsules_list: list[Capsule]):
-            for capsule in capsules_list:
-                for resource in capsule.resources():
-                    this_restype: ResourceType = resource.restype()
-
-                    # Check 2DA files
-                    if (
-                        resource.filename().lower() in relevant_2da_filenames
-                        and this_restype is ResourceType.TwoDA
-                        and check_2da(resource)
-                    ):
-                        found_resources.add(resource)
-                        continue
-
-                    # Check SSF files
-                    if this_restype is ResourceType.SSF and check_ssf(resource):
-                        found_resources.add(resource)
-                        continue
-
-                    # Check NCS files
-                    if this_restype is ResourceType.NCS and check_ncs(resource):
-                        found_resources.add(resource)
-                        continue
-
-                    # Check GFF files
-                    if this_restype.extension not in gff_extensions:
-                        continue
-                    valid_gff: GFF | None = try_get_gff(resource.data())
-                    if valid_gff is None:
-                        continue
-                    if not recurse_gff_structs(valid_gff.root):
-                        continue
-                    found_resources.add(resource)
-
-        def check_folders(values: list[Path]):
-            relevant_files: set[Path] = set()
-            for folder in values:  # Having two loops makes it easier to filter out irrelevant files when stepping through the 2nd
-                relevant_files.update(
-                    file
-                    for file in folder.safe_rglob("*")
-                    if (
-                        file.suffix
-                        and (
-                            file.suffix[1:].casefold() in gff_extensions
-                            or (
-                                file.name.lower() in relevant_2da_filenames
-                                and file.suffix.casefold() == ".2da"
-                            )
-                            or file.suffix.casefold() == ".ssf"
-                            or file.suffix.casefold() == ".ncs"
-                        )
-                        and file.safe_isfile()
-                    )
-                )
-            for gff_file in relevant_files:
-                restype: ResourceType | None = ResourceType.from_extension(gff_file.suffix)
-                if not restype:
-                    continue
-                fileres = FileResource(
-                    resname=gff_file.stem,
-                    restype=restype,
-                    size=gff_file.stat().st_size,
-                    offset=0,
-                    filepath=gff_file
-                )
-
-                # Check 2DA files
-                if restype is ResourceType.TwoDA and check_2da(fileres):
-                    found_resources.add(fileres)
-                    continue
-
-                # Check SSF files
-                if restype is ResourceType.SSF and check_ssf(fileres):
-                    found_resources.add(fileres)
-                    continue
-
-                # Check NCS files
-                if restype is ResourceType.NCS and check_ncs(fileres):
-                    found_resources.add(fileres)
-                    continue
-
-                # Check GFF files
-                gff_data = BinaryReader.load_file(gff_file)
-                valid_gff: GFF | None = None
-                with suppress(ValueError, OSError):
-                    valid_gff = read_gff(gff_data)
-                if not valid_gff:
-                    continue
-                if not recurse_gff_structs(valid_gff.root):
-                    continue
-                found_resources.add(fileres)
-
-        function_map: dict[SearchLocation, Callable] = {
-            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
-            SearchLocation.MODULES: lambda: check_dict(self._modules),
-            SearchLocation.RIMS: lambda: check_dict(self._rims),
-            SearchLocation.CHITIN: lambda: check_list(self._chitin) or check_list(self._patch_erf),
-            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
-            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
-        }
-
-        for item in order:
-            assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
-            function_map.get(item, lambda: None)()
-
-        return found_resources
 
     def sound(
         self,
@@ -2493,12 +2015,8 @@ class Installation:
             for folder in values:
                 queried_sound_files.update(
                     file
-                    for file in folder.safe_rglob("*")
-                    if (
-                        file.stem.casefold() in case_resnames
-                        and ResourceType.from_extension(file.suffix) in sound_formats
-                        and file.safe_isfile()
-                    )
+                    for file in folder.rglob("*")
+                    if (file.stem.casefold() in case_resnames and ResourceType.from_extension(file.suffix) in sound_formats and file.is_file())
                 )
             for sound_file in queried_sound_files:
                 self._log.debug("Found sound file resource at '%s'", sound_file)
@@ -2568,7 +2086,7 @@ class Installation:
         stringrefs: list[int] = [locstring.stringref for locstring in queries]
 
         batch: dict[int, StringResult] = self.talktable().batch(stringrefs)
-        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().safe_isfile() else {}
+        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().is_file() else {}
 
         results: dict[LocalizedString, str] = {}
         for locstring in queries:
@@ -2610,7 +2128,7 @@ class Installation:
             lower_module = module.lower()
             root = self.get_module_root(lower_module)
             lower_root = root.lower()
-            qualifier = lower_module[len(root):]
+            qualifier = lower_module[len(root) :]
 
             if lower_root not in root_to_extensions:
                 root_to_extensions[lower_root] = {".rim": None, ".mod": None, "_s.rim": None, "_dlg.erf": None}
@@ -2652,7 +2170,7 @@ class Installation:
             lower_module = module.lower()
             root = self.get_module_root(lower_module)
             lower_root = root.lower()
-            qualifier = lower_module[len(root):]
+            qualifier = lower_module[len(root) :]
 
             if lower_root not in root_to_extensions:
                 root_to_extensions[lower_root] = {".rim": None, ".mod": None, "_s.rim": None, "_dlg.erf": None}
@@ -2713,13 +2231,7 @@ class Installation:
             self._log.exception(f"Could not build capsule for 'Modules/{module_filename}'")
             return root
 
-        area_resource: FileResource | None = next(
-            (
-                resource for resource in relevant_capsule.resources()
-                if resource.restype() is ResourceType.ARE
-            ),
-            None
-        )
+        area_resource: FileResource | None = next((resource for resource in relevant_capsule.resources() if resource.restype() is ResourceType.ARE), None)
         try:
             if area_resource is not None:
                 are: GFF = read_gff(area_resource.data())
@@ -2742,7 +2254,7 @@ class Installation:
         *,
         use_hardcoded: bool = True,
         use_alternate: bool = False,
-    ) -> str:    # sourcery skip: assign-if-exp, remove-unreachable-code
+    ) -> str:  # sourcery skip: assign-if-exp, remove-unreachable-code
         """Returns an identifier for the module that matches the filename/IFO/ARE resname.
 
         NOTE: Since this is only used for sorting currently, does not parse Mod_Area_list or Mod_VO_ID.
@@ -2760,6 +2272,7 @@ class Installation:
         root: str = self.get_module_root(module_filename)
 
         try:
+
             @lru_cache(maxsize=1000)
             def quick_id(filename: str) -> str:
                 base_name: str = filename.rsplit(".")[0]  # Strip extension
@@ -2780,7 +2293,7 @@ class Installation:
                         mod_id = "_".join(parts[1:-1])
                     else:  # ...except when the last part matches a qualifier
                         mod_id = "_".join(parts[1:-2])
-                #self._log.debug("parts: %s id: '%s'", parts, mod_id)
+                # self._log.debug("parts: %s id: '%s'", parts, mod_id)
                 return mod_id
 
             if use_alternate:
@@ -2801,43 +2314,9 @@ class Installation:
 
         try:
             return next(
-                (
-                    resource.resname()
-                    for resource in relevant_capsule.resources()
-                    if resource.restype() is ResourceType.GIT
-                ),
-                next(
-                    (
-                        resource.resname()
-                        for resource in relevant_capsule.resources()
-                        if resource.restype() is ResourceType.ARE
-                    ),
-                    quick_id(module_filename)
-                )
+                (resource.resname() for resource in relevant_capsule.resources() if resource.restype() is ResourceType.GIT),
+                next((resource.resname() for resource in relevant_capsule.resources() if resource.restype() is ResourceType.ARE), quick_id(module_filename)),
             )
         except Exception:  # noqa: BLE001
             self._log.exception("Error occurred while recursing nested resources in func module_id()")
             return root
-
-        # Old logic.
-        ifo = self.ifo()
-        if ifo.root.exists("Mod_Area_List"):
-            actual_ftype = ifo.root.what_type("Mod_Area_List")
-            if actual_ftype is not GFFFieldType.List:
-                RobustLogger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_List' type '{actual_ftype.name}', expected 'List'")
-            else:
-                area_list = ifo.root.get_list("Mod_Area_List")
-                area_localized_name = next(
-                    (
-                        gff_struct.get_resref("Area_Name")
-                        for gff_struct in area_list
-                        if gff_struct.exists("Area_Name")
-                    ),
-                    None
-                )
-                if area_localized_name is not None and str(area_localized_name).strip():
-                    return area_localized_name
-            RobustLogger().error(f"{self.filename()}: Module.IFO does not contain a valid Mod_Area_List. Could not get the area name.")
-        else:
-            RobustLogger().error(f"{self.filename()}: Module.IFO does not have an existing Mod_Area_List.")
-        raise ValueError(f"Failed to get the area name from module filename '{self.filename()}'")

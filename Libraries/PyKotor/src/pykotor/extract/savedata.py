@@ -35,7 +35,7 @@ class SaveInfo:
 
     def __init__(self, path: os.PathLike | str, ident: ResourceIdentifier | None = None):
         ident = self.IDENTIFIER if ident is None else ident
-        self.save_info_path: CaseAwarePath = CaseAwarePath.pathify(path) / str(ident)
+        self.save_info_path: CaseAwarePath = CaseAwarePath(path) / str(ident)
 
         self.area_name: str = ""
         self.cheat_used: bool = False  # Also in PartyTable?
@@ -98,7 +98,7 @@ class PartyTable:
 
     def __init__(self, path: os.PathLike | str, ident: ResourceIdentifier | None = None):
         ident = self.IDENTIFIER if ident is None else ident
-        self.party_table_path: CaseAwarePath = CaseAwarePath.pathify(path) / str(ident)
+        self.party_table_path: CaseAwarePath = CaseAwarePath(path) / str(ident)
         self.galaxy_map: dict | None = None
         self.jnl_entries: list[JournalEntry] = []
         self.jnl_sort_order: int = 0
@@ -131,7 +131,7 @@ class GlobalVars:
 
     def __init__(self, path: os.PathLike | str, ident: ResourceIdentifier | None = None):
         ident = self.IDENTIFIER if ident is None else ident
-        self.globals_filepath = CaseAwarePath.pathify(path) / str(ident)
+        self.globals_filepath = CaseAwarePath(path) / str(ident)
 
         self.global_bools: list[tuple[str, bool]] = []
         self.global_locs: list[tuple[str, Vector4]] = []
@@ -203,7 +203,7 @@ class SaveNestedCapsule:
 
     def __init__(self, path: os.PathLike | str, ident: ResourceIdentifier | None = None):
         ident = self.IDENTIFIER if ident is None else ident
-        self.nested_capsule_path = CaseAwarePath.pathify(path) / str(ident)
+        self.nested_capsule_path = CaseAwarePath(path) / str(ident)
         self.nested_resources_path = Capsule(self.nested_capsule_path)
         self.cached_modules: list[ERF] = []  # cached modules inside the sav
         self.cached_characters: list[UTC] = []  # cached availnpc utc's
@@ -255,7 +255,7 @@ class SaveFolderEntry:
             - Sets the save path to the given save folder path.
             - Initializes all resources and abstracts them away.
         """
-        self.save_path: CaseAwarePath = CaseAwarePath.pathify(save_folder_path)
+        self.save_path: CaseAwarePath = CaseAwarePath(save_folder_path)
 
         self.sav: SaveNestedCapsule = SaveNestedCapsule(self.save_path)
         self.partytable: PartyTable = PartyTable(self.save_path)

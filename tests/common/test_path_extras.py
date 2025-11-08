@@ -24,7 +24,7 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.tools.path import CaseAwarePath
-from utility.system.path import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
+from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 
 
 class TestPathExtras(unittest.TestCase):

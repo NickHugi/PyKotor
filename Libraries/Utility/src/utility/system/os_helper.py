@@ -7,9 +7,9 @@ import sys
 import time
 import uuid
 
-from loggerplus import RobustLogger
+from pathlib import Path
 
-from utility.system.path import Path
+from loggerplus import RobustLogger
 
 
 def get_size_on_disk(
@@ -81,11 +81,11 @@ def is_frozen() -> bool:
 
 def requires_admin(path: os.PathLike | str) -> bool:    # pragma: no cover
     """Check if a dir or a file requires admin permissions for read/write."""
-    path_obj = Path.pathify(path)
-    isdir_check = path_obj.safe_isdir()
+    path_obj = Path(path)
+    isdir_check = path_obj.is_dir()
     if isdir_check is True:
         return dir_requires_admin(path)
-    isfile_check = path_obj.safe_isfile()
+    isfile_check = path_obj.is_file()
     if isfile_check:
         return file_requires_admin(path)
     return isdir_check is None or isfile_check is None
@@ -94,7 +94,7 @@ def requires_admin(path: os.PathLike | str) -> bool:    # pragma: no cover
 def file_requires_admin(file_path: os.PathLike | str) -> bool:  # pragma: no cover
     """Check if a file requires admin permissions for read/write."""
     try:
-        with Path.pathify(file_path).open("a"):
+        with Path(file_path).open("a"):
             ...
     except PermissionError:
         return True
@@ -111,7 +111,7 @@ def dir_requires_admin(
 
     If dir is a file test it's directory.
     """
-    _dirpath = Path.pathify(dirpath)
+    _dirpath = Path(dirpath)
     dummy_filepath = _dirpath / str(uuid.uuid4())
     try:
         with dummy_filepath.open("w"):
@@ -133,9 +133,9 @@ def remove_any(
     ignore_errors: bool = True,
     missing_ok: bool = True
 ):
-    path_obj = Path.pathify(path)
-    isdir_func = Path.safe_isdir if ignore_errors else Path.is_dir
-    isfile_func = Path.safe_exists if ignore_errors else Path.exists
+    path_obj = Path(path)
+    isdir_func = Path.is_dir if ignore_errors else Path.is_dir
+    isfile_func = Path.exists if ignore_errors else Path.exists
     if not isfile_func(path_obj):
         if missing_ok:
             return
@@ -187,7 +187,7 @@ def get_mac_dot_app_dir(directory: os.PathLike | str) -> Path:
     -------
        (pathlib.Path): Path to the .app
     """
-    return Path.pathify(directory).parents[2]
+    return Path(directory).parents[2]
 
 
 def win_get_system32_dir() -> Path:

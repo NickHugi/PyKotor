@@ -46,11 +46,10 @@ if toolset_path.exists():
     os.chdir(toolset_path)
 
 
+from pathlib import Path  # noqa: E402
 from typing import TYPE_CHECKING  # noqa: E402
 
 from qtpy.QtCore import QDateTime, QFileInfo  # noqa: E402
-
-from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject
@@ -404,7 +403,7 @@ class PyWrappedQFileInfo:
 
     def setFile(self, file: str | os.PathLike, dir: str | os.PathLike | None = None):  # noqa: A002
         """Sets the file path for this object."""
-        file_obj = Path.pathify(file)
+        file_obj = Path(file)
         if dir is None or file_obj.is_absolute():
             self._path: Path = file_obj
         else:

@@ -412,7 +412,7 @@ R = TypeVar("R")
 def autoclose(func: Callable[..., R]) -> Callable[..., R]:
     def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
         try:
-            resource: R = func(self, auto_close)
+            resource: R = func(self, auto_close=auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration, struct.error) as e:
             msg = "Tried to save or load an unsupported or corrupted file."
             raise ValueError(msg) from e

@@ -22,48 +22,48 @@ import traceback
 from contextlib import suppress
 from dataclasses import dataclass
 from io import StringIO
+from pathlib import Path, PurePath, PureWindowsPath
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Mapping, Protocol
 
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats import gff, lip, ssf, tlk, twoda
+from pykotor.resource.formats._base import ComparableMixin
+from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent
+from pykotor.resource.formats.ncs.ncs_data import NCS
 from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from pykotor.tslpatcher.diff.analyzers import DiffAnalyzerFactory
+from pykotor.tslpatcher.diff.analyzers import DiffAnalyzer, DiffAnalyzerFactory
 from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyGFF
 from pykotor.tslpatcher.mods.install import InstallFile
 from pykotor.tslpatcher.mods.ncs import ModificationsNCS, ModifyNCS  # noqa: F401
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
+from pykotor.tslpatcher.mods.template import PatcherModifications
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.twoda import Modifications2DA, Modify2DA
 from utility.error_handling import universal_simplify_exception
 from utility.misc import generate_hash
-from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.common.module import ResourceResult
     from pykotor.extract.file import FileResource
-    from pykotor.resource.formats._base import ComparableMixin
     from pykotor.resource.formats.bwm.bwm_data import BWM
-    from pykotor.resource.formats.erf.erf_data import ERF
     from pykotor.resource.formats.lip.lip_data import LIP
     from pykotor.resource.formats.ltr.ltr_data import LTR
     from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.mdl.mdl_data import MDL
-    from pykotor.resource.formats.ncs.ncs_data import NCS
     from pykotor.resource.formats.rim.rim_data import RIM
     from pykotor.resource.formats.ssf.ssf_data import SSF
     from pykotor.resource.formats.tlk.tlk_data import TLK
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.resource.formats.vis.vis_data import VIS
-    from pykotor.tslpatcher.diff.incremental_writer import IncrementalTSLPatchDataWriter
-    from pykotor.tslpatcher.diff.resolution import determine_tslpatcher_destination  # noqa: F401
-    from pykotor.tslpatcher.writer import ModificationsByType
+    from pykotor.tslpatcher.diff.cache import DiffCache
+    from pykotor.tslpatcher.writer import IncrementalTSLPatchDataWriter, ModificationsByType
 
 
 gff_types: list[str] = list(gff.GFFContent.get_extensions())
@@ -71,7 +71,7 @@ gff_types: list[str] = list(gff.GFFContent.get_extensions())
 
 def is_kotor_install_dir(path: Path) -> bool | None:
     """Check if a path is a KOTOR installation directory."""
-    return path.safe_isdir() and path.joinpath("chitin.key").safe_isfile()
+    return path.is_dir() and path.joinpath("chitin.key").is_file()
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +98,7 @@ def find_related_module_files(module_path: CaseAwarePath) -> list[CaseAwarePath]
 
     for ext in extensions:
         candidate: CaseAwarePath = module_dir / f"{root}{ext}"
-        if candidate.safe_isfile():
+        if candidate.is_file():
             related_files.append(candidate)
 
     return related_files
@@ -121,11 +121,7 @@ def _is_readonly_source(source_path: Path) -> bool:
         return True
 
     # Files in BIF archives (chitin references)
-    return bool(
-        "chitin" in source_lower
-        or "bif" in source_lower
-        or "data" in source_lower
-    )
+    return bool("chitin" in source_lower or "bif" in source_lower or "data" in source_lower)
 
 
 def _determine_tslpatchdata_source(
@@ -230,19 +226,19 @@ def _determine_destination_for_source(
     parent_names_lower: set[str] = {parent.name.lower() for parent in (source_filepath.parents if source_filepath is not None else [])}
     if "override" in parent_names_lower:
         # Determine if it's a read-only source (RIM/ERF)
-        if _is_readonly_source(source_path):
-            # Read-only module file - redirect to .mod
-            module_root = get_module_root(source_path)
-            destination = f"modules\\{module_root}.mod"
+        if not _is_readonly_source(source_path):
+            # MOD file - can patch directly
+            destination = f"modules\\{source_path.name}"
             if verbose:
-                log_func(f"    +-- Path inference: {display_name} in read-only {source_path.suffix}")
-                log_func(f"    +-- Destination: {destination} (.mod overrides read-only)")
+                log_func(f"    +-- Path inference: {display_name} in writable .mod")
+                log_func(f"    +-- Destination: {destination} (patch directly)")
             return destination
-        # MOD file - can patch directly
-        destination = f"modules\\{source_path.name}"
+        # Read-only module file - redirect to .mod
+        module_root = get_module_root(source_path)
+        destination = f"modules\\{module_root}.mod"
         if verbose:
-            log_func(f"    +-- Path inference: {display_name} in writable .mod")
-            log_func(f"    +-- Destination: {destination} (patch directly)")
+            log_func(f"    +-- Path inference: {display_name} in read-only {source_path.suffix}")
+            log_func(f"    +-- Destination: {destination} (.mod overrides read-only)")
         return destination
 
     # BIF/chitin sources go to Override
@@ -259,8 +255,66 @@ def _determine_destination_for_source(
     return "Override"
 
 
+def _ensure_capsule_install(
+    modifications_by_type: ModificationsByType,
+    capsule_destination: str,
+    *,
+    capsule_path: Path | None,
+    log_func: Callable[[str], None],
+    incremental_writer: IncrementalTSLPatchDataWriter | None,
+) -> None:
+    r"""Ensure a capsule (.mod) exists in tslpatchdata and is listed before patching."""
+    normalized_destination = capsule_destination.replace("/", "\\")
+    capsule_pure = PureWindowsPath(normalized_destination)
+    capsule_filename = capsule_pure.name
+    capsule_suffix = capsule_pure.suffix.lower()
+
+    if capsule_suffix != ".mod":
+        return
+
+    capsule_folder = "\\".join(capsule_pure.parts[:-1]) or "."
+
+    filename_lower = capsule_filename.lower()
+    folder_lower = capsule_folder.lower()
+
+    already_present = any(
+        install_file.destination.lower() == folder_lower and install_file.saveas.lower() == filename_lower
+        for install_file in modifications_by_type.install
+    )
+
+    if not already_present:
+        install_entry = InstallFile(
+            capsule_filename,
+            replace_existing=True,
+            destination=capsule_folder,
+        )
+        modifications_by_type.install.append(install_entry)
+
+    if incremental_writer is None or already_present:
+        return
+
+    def _path_is_file(path_obj: Path | None) -> bool:
+        if path_obj is None:
+            return False
+        if hasattr(path_obj, "safe_isfile"):
+            return bool(path_obj.is_file())  # type: ignore[attr-defined]
+        return path_obj.is_file()
+
+    if _path_is_file(capsule_path):
+        incremental_writer.add_install_file(capsule_folder, capsule_filename, capsule_path)
+        log_func(f"    Staged module '{capsule_filename}' for installation")
+        return
+
+    incremental_writer._add_to_install_folder(capsule_folder, capsule_filename)  # noqa: SLF001
+    output_path = incremental_writer.tslpatchdata_path / capsule_filename
+    if not output_path.exists():
+        empty_mod = ERF(ERFType.MOD)
+        write_erf(empty_mod, output_path, ResourceType.MOD)
+        log_func(f"    Created empty module '{capsule_filename}' in tslpatchdata")
+
+
 def _extract_and_add_capsule_resources(
-    capsule_path: CaseAwarePath,
+    capsule_path: Path,
     modifications_by_type: ModificationsByType,
     incremental_writer: IncrementalTSLPatchDataWriter | None,
     log_func: Callable[[str], None],
@@ -282,9 +336,19 @@ def _extract_and_add_capsule_resources(
         # Determine destination based on capsule location and type
         parent_names_lower: list[str] = [parent.name.lower() for parent in capsule_path.parents]
         if "modules" in parent_names_lower:
-            destination: str = f"modules/{capsule_name}"
+            destination: str = f"modules\\{capsule_name}"
         else:
             destination = "Override"
+
+        if capsule_path.suffix.lower() == ".mod":
+            capsule_destination_str = destination if destination.lower().endswith(".mod") else f"{destination}\\{capsule_name}"
+            _ensure_capsule_install(
+                modifications_by_type,
+                capsule_destination_str,
+                capsule_path=capsule_path,
+                log_func=log_func,
+                incremental_writer=incremental_writer,
+            )
 
         resource_count: int = 0
         for resource in capsule:
@@ -315,7 +379,7 @@ def _add_missing_file_to_install(
     rel_path: str,
     *,
     log_func: Callable[[str], None] | None = None,
-    file2_path: CaseAwarePath | None = None,
+    file2_path: Path | None = None,
     incremental_writer: IncrementalTSLPatchDataWriter | None = None,
 ) -> None:
     """Add a missing file to the install folders list.
@@ -337,6 +401,15 @@ def _add_missing_file_to_install(
     # If so, we need to extract resources from it, not copy the entire capsule
     if file2_path and is_capsule_file(filename):
         log_func(f"  Extracting resources from capsule: {filename}")
+        if filename.lower().endswith(".mod"):
+            capsule_destination = rel_path.replace("/", "\\")
+            _ensure_capsule_install(
+                modifications_by_type,
+                capsule_destination,
+                capsule_path=file2_path,
+                log_func=log_func,
+                incremental_writer=incremental_writer,
+            )
         _extract_and_add_capsule_resources(
             file2_path,
             modifications_by_type,
@@ -362,7 +435,7 @@ def _add_missing_file_to_install(
 
     # Load modded file data for patch creation
     modded_data = None
-    if file2_path is not None and file2_path.safe_isfile():
+    if file2_path is not None and file2_path.is_file():
         modded_data = file2_path.read_bytes()
 
     # Create context for patch creation
@@ -434,11 +507,10 @@ def _create_patch_for_missing_file(
 
     # Get modded file data
     if modded_data is None:
-        if modded_path is not None and modded_path.safe_isfile():
-            modded_data = modded_path.read_bytes()
-        else:
+        if modded_path is None or not modded_path.is_file():
             log_func(f"  Warning: Cannot create patch for {filename} - no data provided")
             return
+        modded_data = modded_path.read_bytes()
 
     # Determine file extension
     file_ext = Path(filename).suffix.casefold().lstrip(".")
@@ -462,39 +534,56 @@ def _create_patch_for_missing_file(
         identifier = str(context.where) if context else filename
 
         # Analyze differences (comparing modded file against empty)
-        modifications = analyzer.analyze(empty_data, modded_data, identifier)
-        if modifications:
-            log_func(f"\n[PATCH] {filename}")
+        assert isinstance(analyzer, DiffAnalyzer), f"`analyzer` is not a DiffAnalyzer: {analyzer} (type: {type(analyzer)}) for context: {context}"  # noqa: E501
+        result: PatcherModifications | tuple[PatcherModifications, dict[int, int]] | None = analyzer.analyze(empty_data, modded_data, identifier)
+        assert result is not None, f"Analyzer returned None for context: {context}"
+        if isinstance(result, tuple):
+            modifications, _strref_mappings = result
+            assert isinstance(modifications, PatcherModifications), (
+                f"`modifications` is not a PatcherModifications: {modifications} (type: {type(modifications)}) for context: {context}"
+            )  # noqa: E501
+        else:
+            modifications = result
+            assert isinstance(modifications, PatcherModifications), (
+                f"`modifications` is not a PatcherModifications: {modifications} (type: {type(modifications)}) for context: {context}"
+            )  # noqa: E501
+        if not modifications:
+            return
 
-            # Set destination and sourcefile
-            resource_name = Path(filename).name
-            modifications.destination = folder
-            modifications.sourcefile = resource_name
+        log_func(f"\n[PATCH] {filename}")
 
-            if isinstance(modifications, Modifications2DA):
-                modifications_by_type.twoda.append(modifications)
-                log_func("  |-- Type: [2DAList]")
-            elif isinstance(modifications, ModificationsGFF):
-                modifications.saveas = resource_name
-                modifications_by_type.gff.append(modifications)
-                log_func("  |-- Type: [GFFList]")
-            elif isinstance(modifications, ModificationsSSF):
-                modifications_by_type.ssf.append(modifications)
-                log_func("  |-- Type: [SSFList]")
-            else:
-                # Unknown type, skip
-                return
+        # Set destination and sourcefile
+        resource_name = Path(filename).name
+        assert isinstance(modifications, PatcherModifications), (
+            f"`modifications` is not a PatcherModifications: {modifications} (type: {type(modifications)}) for context: {context}"
+        )  # noqa: E501
+        modifications.destination = folder
+        modifications.sourcefile = resource_name
 
-            modifiers_count = len(modifications.modifiers) if modifications.modifiers else 0
-            if modifiers_count > 0:
-                log_func(f"  |-- Modifications: {modifiers_count} changes")
+        if isinstance(modifications, Modifications2DA):
+            modifications_by_type.twoda.append(modifications)
+            log_func("  |-- Type: [2DAList]")
+        elif isinstance(modifications, ModificationsGFF):
+            modifications.saveas = resource_name
+            modifications_by_type.gff.append(modifications)
+            log_func("  |-- Type: [GFFList]")
+        elif isinstance(modifications, ModificationsSSF):
+            modifications_by_type.ssf.append(modifications)
+            log_func("  |-- Type: [SSFList]")
+        else:
+            # Unknown type, skip
+            return
 
-            log_func("  +-- tslpatchdata: Will use installed file as base, then apply patch")
+        modifiers_count = len(modifications.modifiers) if modifications.modifiers else 0
+        if modifiers_count > 0:
+            log_func(f"  |-- Modifications: {modifiers_count} changes")
 
-            # Write immediately if using incremental writer
-            if incremental_writer is not None:
-                # Use the modded file as the "vanilla" source (it's what will be installed)
-                incremental_writer.write_modification(modifications, modded_data)
+        log_func("  +-- tslpatchdata: Will use installed file as base, then apply patch")
+
+        # Write immediately if using incremental writer
+        if incremental_writer is not None:
+            # Use the modded file as the "vanilla" source (it's what will be installed)
+            incremental_writer.write_modification(modifications, modded_data)
 
     except Exception as e:  # noqa: BLE001
         log_func(f"  Warning: Failed to create patch for {filename}: {e.__class__.__name__}: {e}")
@@ -555,6 +644,7 @@ def _add_to_install_folder(
     modded_path: Path | None = None,
     context: DiffContext | None = None,
     incremental_writer: IncrementalTSLPatchDataWriter | None = None,
+    create_patch: bool = True,
 ) -> None:
     """Add a file to an install folder, creating the folder entry if needed.
 
@@ -567,6 +657,7 @@ def _add_to_install_folder(
         modded_path: Optional path to modded file for creating patch modifications
         context: Optional diff context for creating patch modifications
         incremental_writer: Optional incremental writer for immediate file writes
+        create_patch: Whether to create a patch modification (default: True)
     """
     if log_func is None:
         log_func = lambda _: None  # noqa: E731
@@ -575,8 +666,7 @@ def _add_to_install_folder(
     file_exists: bool = False
     for install_file in modifications_by_type.install:
         if (  # must be case-insensitive.
-            install_file.destination.lower() == folder.lower() and
-            install_file.saveas.lower() == filename.lower()
+            install_file.destination.lower() == folder.lower() and install_file.saveas.lower() == filename.lower()
         ):
             file_exists = True
             break
@@ -589,8 +679,29 @@ def _add_to_install_folder(
         log_func(f"  |-- Destination: {folder}")
         log_func("  +-- tslpatchdata: File will be copied from appropriate source")
 
+    # Ensure host capsule is staged when targeting resources within a .mod
+    folder_lower = folder.lower()
+    if folder_lower.endswith(".mod"):
+        capsule_destination = folder if folder_lower.endswith(".mod") else f"{folder}\\{filename}"
+        capsule_source_path: Path | None = None
+        if modded_path is not None:
+            if hasattr(modded_path, "safe_isfile"):
+                if modded_path.is_file():  # type: ignore[attr-defined]
+                    capsule_source_path = modded_path
+            elif modded_path.is_file():
+                capsule_source_path = modded_path
+
+        _ensure_capsule_install(
+            modifications_by_type,
+            capsule_destination,
+            capsule_path=capsule_source_path,
+            log_func=log_func,
+            incremental_writer=incremental_writer,
+        )
+
     # Also create a patch modification (file will be patched after installation)
-    if modded_data is not None or modded_path is not None:
+    # Only create patch if requested (avoid duplicates when diff_data already created one)
+    if create_patch and (modded_data is not None or modded_path is not None):
         _create_patch_for_missing_file(
             modifications_by_type,
             filename,
@@ -640,8 +751,8 @@ class PathInfo:
             index=index,
             name=path.name,
             is_installation=False,
-            is_file=bool(path.safe_isfile()),
-            is_folder=bool(path.safe_isdir()),
+            is_file=bool(path.is_file()),
+            is_folder=bool(path.is_dir()),
         )
 
     def get_path(self) -> Path:
@@ -772,7 +883,7 @@ class ResourceWalker:
     def __iter__(self) -> Iterator[ComparableResource]:
         if is_capsule_file(self.root.name):
             yield from self._from_capsule(self.root)
-        elif self.root.safe_isfile():
+        elif self.root.is_file():
             yield self._from_file(self.root, base_prefix="")
         elif self._looks_like_install(self.root):
             yield from self._from_install(self.root)
@@ -785,7 +896,7 @@ class ResourceWalker:
 
     @staticmethod
     def _looks_like_install(path: Path) -> bool:
-        return bool(path.safe_isdir()) and bool(path.joinpath("chitin.key").safe_isfile())
+        return bool(path.is_dir()) and bool(path.joinpath("chitin.key").is_file())
 
     @staticmethod
     def _is_in_rims_folder(file_path: Path) -> bool:
@@ -801,7 +912,7 @@ class ResourceWalker:
             return True  # Default to composite loading if no comparison context
 
         # Check if the other root is also a module file
-        if self.other_root.safe_isfile() and is_capsule_file(self.other_root.name):
+        if self.other_root.is_file() and is_capsule_file(self.other_root.name):
             # Both are capsule files - check if they're both module files (not in rims folder)
             return not self._is_in_rims_folder(self.other_root)
 
@@ -814,23 +925,19 @@ class ResourceWalker:
         return ComparableResource(identifier, ext, file_path.read_bytes())
 
     def _from_directory(self, dir_path: Path) -> Iterable[ComparableResource]:
-        for f in sorted(dir_path.safe_rglob("*")):
-            if f.safe_isfile():
+        for f in sorted(dir_path.rglob("*")):
+            if f.is_file():
                 rel = f.relative_to(dir_path).as_posix()
                 yield self._from_file(f, base_prefix=f"{rel[: -len(f.name)]}")
 
     def _from_capsule(self, file_path: Path) -> Iterable[ComparableResource]:
         # Check if this is a RIM file that should use composite module loading
         # Only use composite loading if both paths are module files
-        should_use_composite = (
-            is_rim_file(file_path.name) and
-            not self._is_in_rims_folder(file_path) and
-            self._should_use_composite_loading(file_path)
-        )
+        should_use_composite = is_rim_file(file_path.name) and not self._is_in_rims_folder(file_path) and self._should_use_composite_loading(file_path)
 
         if should_use_composite:
             # Use CompositeModuleCapsule to include related module files
-            composite = CompositeModuleCapsule(CaseAwarePath.pathify(file_path))
+            composite = CompositeModuleCapsule(CaseAwarePath(file_path))
             for res in composite:
                 resname = res.resname()
                 ext = res.restype().extension.casefold()
@@ -863,11 +970,11 @@ class ResourceWalker:
             yield from self._from_capsule(Path(cap))
         # RIMs - Skip the rims folder as it often contains corrupted/incompatible files
         # I don't believe the game uses these even.
-        # for rim in inst.rims_path().safe_iterdir():
+        # for rim in inst.rims_path().iterdir():
         #     if is_capsule_file(rim.name):
         #         yield from self._from_capsule(Path(rim))
         # Lips
-        for lip_file in inst.lips_path().safe_iterdir():
+        for lip_file in inst.lips_path().iterdir():
             if lip_file.suffix.casefold() == ".mod":
                 yield from self._from_capsule(Path(lip_file))
         # Override subfolders already handled in override_resources
@@ -937,12 +1044,7 @@ def is_text_content(data: bytes) -> bool:
     PRINTABLE_ASCII_MAX = 126
     TEXT_THRESHOLD = 0.7
 
-    printable_count: int = sum(
-        1
-        for b in data
-        if PRINTABLE_ASCII_MIN <= b <= PRINTABLE_ASCII_MAX
-        or b in (9, 10, 13)
-    )
+    printable_count: int = sum(1 for b in data if PRINTABLE_ASCII_MIN <= b <= PRINTABLE_ASCII_MAX or b in (9, 10, 13))
     return printable_count / len(data) > TEXT_THRESHOLD
 
 
@@ -1040,11 +1142,6 @@ def get_resource_reader_function(ext: str) -> Callable[[bytes], GFF | TwoDA | TL
     return reader_map.get(ext.lower())
 
 
-def has_comparable_interface(obj: ComparableMixin) -> bool:
-    """Check if an object has a compare method (ComparableMixin interface)."""
-    return hasattr(obj, "compare") and callable(obj.compare)
-
-
 # ---------------------------------------------------------------------------
 # Path and file utilities
 # ---------------------------------------------------------------------------
@@ -1083,11 +1180,11 @@ def visual_length(
 
 def walk_files(root: Path) -> set[str]:
     """Walk all files in a directory tree."""
-    if not root.safe_exists():
+    if not root.exists():
         return set()
-    if root.safe_isfile():
+    if root.is_file():
         return {root.name.casefold()}
-    return {f.relative_to(root).as_posix().casefold() for f in root.safe_rglob("*") if f.safe_isfile()}
+    return {f.relative_to(root).as_posix().casefold() for f in root.rglob("*") if f.is_file()}
 
 
 def ext_of(path: Path) -> str:
@@ -1155,14 +1252,14 @@ def diff_data(  # noqa: PLR0913
     """
     where = context.where
 
-    if not data1 and data2:
-        log_func(f"[Error] Cannot determine data for '{where}' in '{context.file1_rel}'")
-        return None
-    if data1 and not data2:
-        log_func(f"[Error] Cannot determine data for '{where}' in '{context.file2_rel}'")
-        return None
     if not data1 and not data2:
         return True
+    if not data1:
+        log_func(f"[Error] Cannot determine data for '{where}' in '{context.file1_rel}'")
+        return None
+    if not data2:
+        log_func(f"[Error] Cannot determine data for '{where}' in '{context.file2_rel}'")
+        return None
 
     # Fast path: For large binary files (audio, video), check file size first before reading
     LARGE_BINARY_FORMATS = ("wav", "mp3", "bik", "mve", "tga", "tpc")
@@ -1172,10 +1269,10 @@ def diff_data(  # noqa: PLR0913
             size1 = data1.stat().st_size
             size2 = data2.stat().st_size
             if size1 != size2:
-                if compare_hashes:
-                    log_func(f"'{context.where}': File sizes differ ({size1} vs {size2} bytes)")
-                    return False
-                return True  # Sizes differ but not comparing hashes
+                if not compare_hashes:
+                    return True  # Sizes differ but not comparing hashes
+                log_func(f"'{context.where}': File sizes differ ({size1} vs {size2} bytes)")
+                return False
         except Exception:  # noqa: BLE001, PERF203, S110, S112
             pass  # Fall through to normal comparison
 
@@ -1205,71 +1302,100 @@ def diff_data(  # noqa: PLR0913
             for line in traceback.format_exc().splitlines():
                 log_func(f"  {line}")
             return None
-        if gff1 and not gff2:
-            log_func(f"GFF resource missing in memory:\t'{context.file1_rel.parent / where}'")
-            return None
-        if not gff1 and gff2:
-            log_func(f"GFF resource missing in memory:\t'{context.file2_rel.parent / where}'")
-            return None
         if not gff1 and not gff2:
             log_func(f"Both GFF resources missing in memory:\t'{context.where}'")
+            return None
+        if not gff1:
+            log_func(f"GFF resource missing in memory:\t'{context.file1_rel.parent / where}'")
+            return None
+        if not gff2:
+            log_func(f"GFF resource missing in memory:\t'{context.file2_rel.parent / where}'")
             return None
         # Extract just the filename from context.where to avoid duplication in field paths
         # If context.where is "swkotor\Override\journal.gui", use just "journal.gui" as the root path
         compare_path = PureWindowsPath(Path(str(context.where)).name)
-        if gff1 and gff2 and not gff1.compare(gff2, log_func, compare_path):
-            # Generate INI modifications if requested (log BEFORE final separator)
-            if modifications_by_type is not None:
-                try:
-                    analyzer = DiffAnalyzerFactory.get_analyzer("gff")
-                    if analyzer:
-                        modifications = analyzer.analyze(data1, data2, str(context.where))
-                        if modifications:
-                            # File exists in both vanilla and modded - this is a PATCH, not an install
-                            log_func(f"\n[PATCH] {context.where}")
-                            log_func("  |-- !ReplaceFile: 0 (patch existing file, don't replace)")
+        if not (gff1 and gff2) or gff1.compare(gff2, log_func, compare_path):
+            return True
 
-                            # Set destination based on MODDED installation location (file2)
-                            resource_name = Path(str(context.where)).name
-                            destination = _determine_destination_for_source(
-                                context.file2_rel,  # Use MODDED installation, not vanilla
-                                resource_name,
-                                log_func=log_func,
-                                location_type=context.file2_location_type,
-                                source_filepath=context.file2_filepath,
-                            )
-                            modifications.destination = destination
-                            modifications.sourcefile = resource_name  # Just the filename, not the full path
-                            # saveas should also be just the filename, NOT the full path
-                            modifications.saveas = resource_name
-
-                            assert isinstance(modifications, ModificationsGFF), f"`modifications` is not a ModificationsGFF: {modifications} (type: {type(modifications)}) for context: {context}"  # noqa: E501
-                            modifications_by_type.gff.append(modifications)
-
-                            modifiers: list | None = getattr(modifications, "modifiers", None)
-                            if modifiers:
-                                log_func(f"  |-- Modifications: {len(modifiers)} field/struct changes")
-
-                            # Determine which source file to copy to tslpatchdata
-                            source_to_copy = _determine_tslpatchdata_source(context.file1_rel, context.file2_rel)
-                            log_func(f"  +-- tslpatchdata: Will copy from {source_to_copy}")
-
-                            # Write immediately if using incremental writer
-                            if incremental_writer is not None:
-                                # Get source data (vanilla version)
-                                gff_source_data: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
-                                source_path = context.file1_installation if context.file1_installation else context.file1_filepath
-                                incremental_writer.write_modification(modifications, gff_source_data, source_path)
-                except Exception as e:  # noqa: BLE001, PERF203, S112
-                    log_func(f"[Error] Failed to generate GFF modifications for '{context.where}': {e.__class__.__name__}: {e}")
-                    log_func("Full traceback:")
-                    for line in traceback.format_exc().splitlines():
-                        log_func(f"  {line}")
-
+        # Generate INI modifications if requested (log BEFORE final separator)
+        if modifications_by_type is None:
             # Log final separator AFTER all patch info
             log_func(f"^ '{context.where}': GFF is different ^", separator=True)
             return False
-        return True
+
+        try:
+            analyzer = DiffAnalyzerFactory.get_analyzer("gff")
+            if analyzer is None:
+                # Log final separator AFTER all patch info
+                log_func(f"^ '{context.where}': GFF is different ^", separator=True)
+                return False
+
+            strref_mappings: dict[int, int] = {}
+            result: PatcherModifications | tuple[PatcherModifications, dict[int, int]] | None = analyzer.analyze(data1, data2, str(context.where))
+            assert result is not None, f"Analyzer returned None for context: {context}"
+            if isinstance(result, tuple):
+                modifications, strref_mappings = result
+                assert isinstance(modifications, PatcherModifications), (
+                    f"`modifications` is not a PatcherModifications: {modifications} (type: {type(modifications)}) for context: {context}"
+                )  # noqa: E501
+            else:
+                modifications = result
+                assert isinstance(modifications, PatcherModifications), (
+                    f"`modifications` is not a PatcherModifications: {modifications} (type: {type(modifications)}) for context: {context}"
+                )  # noqa: E501
+
+            if modifications is None:
+                # Log final separator AFTER all patch info
+                log_func(f"^ '{context.where}': GFF is different ^", separator=True)
+                return False
+
+            # File exists in both vanilla and modded - this is a PATCH, not an install
+            log_func(f"\n[PATCH] {context.where}")
+            log_func("  |-- !ReplaceFile: 0 (patch existing file, don't replace)")
+
+            # Set destination based on MODDED installation location (file2)
+            resource_name = Path(str(context.where)).name
+            destination = _determine_destination_for_source(
+                context.file2_rel,  # Use MODDED installation, not vanilla
+                resource_name,
+                log_func=log_func,
+                location_type=context.file2_location_type,
+                source_filepath=context.file2_filepath,
+            )
+            modifications.destination = destination
+            modifications.sourcefile = resource_name  # Just the filename, not the full path
+            # saveas should also be just the filename, NOT the full path
+            modifications.saveas = resource_name
+
+            assert isinstance(modifications, ModificationsGFF), (
+                f"`modifications` is not a ModificationsGFF: {modifications} (type: {type(modifications)}) for context: {context}"
+            )  # noqa: E501
+            modifications_by_type.gff.append(modifications)
+
+            modifiers: list | None = getattr(modifications, "modifiers", None)
+            if modifiers:
+                log_func(f"  |-- Modifications: {len(modifiers)} field/struct changes")
+
+            # Determine which source file to copy to tslpatchdata
+            source_to_copy = _determine_tslpatchdata_source(context.file1_rel, context.file2_rel)
+            log_func(f"  +-- tslpatchdata: Will copy from {source_to_copy}")
+
+            # Write immediately if using incremental writer
+            if incremental_writer is not None:
+                # Get source data (vanilla version)
+                gff_source_data: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
+                source_path = context.file1_installation if context.file1_installation else context.file1_filepath
+                incremental_writer.write_modification(modifications, gff_source_data, source_path)
+
+        except Exception as e:  # noqa: BLE001, PERF203, S112
+            log_func(f"[Error] Failed to generate GFF modifications for '{context.where}': {e.__class__.__name__}: {e}")
+            log_func("Full traceback:")
+            for line in traceback.format_exc().splitlines():
+                log_func(f"  {line}")
+
+        # Log final separator AFTER all patch info
+        log_func(f"^ '{context.where}': GFF is different ^", separator=True)
+        return False
 
     # Define known binary formats that should never be treated as text
     BINARY_FORMATS = {
@@ -1297,11 +1423,13 @@ def diff_data(  # noqa: PLR0913
             obj2 = reader_func(data2)
 
             # Check if the parsed objects have ComparableMixin interface
-            if has_comparable_interface(obj1) and has_comparable_interface(obj2):
+            if isinstance(obj1, ComparableMixin) and isinstance(obj2, ComparableMixin):
                 # Special handling for NCS files - provide summary instead of exhaustive diff
                 if context.ext == "ncs":
+                    assert isinstance(obj1, NCS), f"`obj1` is not a NCS: {obj1} (type: {type(obj1)}) for context: {context}"  # noqa: E501
+                    assert isinstance(obj2, NCS), f"`obj2` is not a NCS: {obj2} (type: {type(obj2)}) for context: {context}"  # noqa: E501
                     # Capture comparison output to summarize it
-                    comparison_lines = []
+                    comparison_lines: list[str] = []
 
                     def capture_log(*args, **kwargs):
                         buffer = StringIO()
@@ -1310,188 +1438,221 @@ def diff_data(  # noqa: PLR0913
 
                     is_same = obj1.compare(obj2, capture_log)
 
-                    if not is_same:
-                        # Provide a summary of differences
-                        log_func("NCS scripts differ:")
-                        log_func(f"  Old: {len(obj1.instructions)} instructions")
-                        log_func(f"  New: {len(obj2.instructions)} instructions")
+                    if is_same:
+                        return True
 
-                        # Show first few differences only
-                        MAX_DIFF_LINES = 20
-                        if len(comparison_lines) > MAX_DIFF_LINES:
-                            for line in comparison_lines[:MAX_DIFF_LINES]:
-                                log_func(line.rstrip())
-                            log_func(f"  ... ({len(comparison_lines) - MAX_DIFF_LINES} more difference lines omitted)")
-                        else:
-                            for line in comparison_lines:
-                                log_func(line.rstrip())
+                    # Provide a summary of differences
+                    log_func("NCS scripts differ:")
+                    log_func(f"  Old: {len(obj1.instructions)} instructions")
+                    log_func(f"  New: {len(obj2.instructions)} instructions")
 
-                        log_func(f"^ '{context.where}': {context.ext.upper()} is different ^", separator=True)
-                        return False
-                    return True
+                    # Show first few differences only
+                    MAX_DIFF_LINES = 20
+                    if len(comparison_lines) > MAX_DIFF_LINES:
+                        for line in comparison_lines[:MAX_DIFF_LINES]:
+                            log_func(line.rstrip())
+                        log_func(f"  ... ({len(comparison_lines) - MAX_DIFF_LINES} more difference lines omitted)")
+                    else:
+                        for line in comparison_lines:
+                            log_func(line.rstrip())
+
+                    log_func(f"^ '{context.where}': {context.ext.upper()} is different ^", separator=True)
+                    return False
 
                 # Use the structured compare method for other files
-                if not obj1.compare(obj2, log_func):
-                    # Generate INI modifications if requested (log BEFORE final separator)
-                    if modifications_by_type is not None:
-                        try:
-                            analyzer = DiffAnalyzerFactory.get_analyzer(context.ext)
-                            if analyzer:
-                                modifications = analyzer.analyze(data1, data2, str(context.where))
-                                if modifications:
-                                    # Add to appropriate list based on resource type
-                                    if context.ext == "2da":
-                                        # 2DA files that exist in vanilla are PATCHED
-                                        log_func(f"\n[PATCH] {context.where}")
-                                        log_func("  |-- !ReplaceFile: 0 (patch existing 2DA)")
+                # Both obj1 and obj2 are already verified as ComparableMixin above
+                # Since both come from the same reader_func, they should be the same type
+                # Check that they're the same type to satisfy type checker
+                if type(obj1) is not type(obj2):
+                    log_func(f"[Error] Type mismatch in comparison: {type(obj1).__name__} vs {type(obj2).__name__}")
+                    return False
 
-                                        # Set destination based on MODDED installation location (file2)
-                                        resource_name = Path(str(context.where)).name
-                                        destination = _determine_destination_for_source(
-                                            context.file2_rel,  # Use MODDED installation, not vanilla
-                                            resource_name,
-                                            log_func=log_func,
-                                            location_type=context.file2_location_type,
-                                            source_filepath=context.file2_filepath,
-                                        )
-                                        assert isinstance(modifications, Modifications2DA), f"`modifications` is not a Modifications2DA: {modifications} (type: {type(modifications)}) for context: {context}"  # noqa: E501
-                                        modifications.destination = destination
-                                        modifications.sourcefile = resource_name  # Just the filename, not the full path
-                                        modifications_by_type.twoda.append(modifications)
-                                        twoda_modifiers: list[Modify2DA] = [m for m in modifications.modifiers if isinstance(m, Modify2DA)]
+                # Both objects are the same type, so compare will work correctly
+                # Access the compare method from the base class to use the base signature (other: object)
+                # This avoids type checker issues with subclass overrides that have specific types
+                # Get the method from the class and call it with obj1 as self
+                base_compare = ComparableMixin.compare
+                if base_compare(obj1, obj2, log_func):
+                    return True
 
-                                        if twoda_modifiers:
-                                            log_func(f"  |-- Modifications: {len(twoda_modifiers)} row/column changes")
-
-                                        # Determine which source file to copy
-                                        source_to_copy = _determine_tslpatchdata_source(context.file1_rel, context.file2_rel)
-                                        log_func(f"  +-- tslpatchdata: Will copy from {source_to_copy}")
-
-                                        # Write immediately if using incremental writer
-                                        if incremental_writer is not None:
-                                            twoda_vanilla_bytes: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
-                                            source_path = context.file1_installation if context.file1_installation else context.file1_filepath
-                                            incremental_writer.write_modification(modifications, twoda_vanilla_bytes, source_path)
-                                    elif context.ext == "tlk":
-                                        log_func(f"\n[PATCH] {context.where}")
-                                        log_func("  |-- Mode: Append entries (TSLPatcher design)")
-
-                                        # TLK analyzer returns tuple: (ModificationsTLK, strref_mappings)
-                                        if not isinstance(modifications, tuple):
-                                            msg = f"TLK analyzer must return tuple (ModificationsTLK, dict), got {type(modifications)}"
-                                            raise TypeError(msg)  # noqa: TRY301
-                                        mod_tlk, strref_mappings = modifications
-                                        assert isinstance(mod_tlk, ModificationsTLK), f"`mod_tlk` is not a ModificationsTLK: {mod_tlk} (type: {type(mod_tlk)}) for context: {context}"  # noqa: E501
-                                        assert isinstance(strref_mappings, dict), f"`strref_mappings` is not a dict: {strref_mappings} (type: {type(strref_mappings)}) for context: {context}"  # noqa: E501
-
-                                        # Store metadata for StrRef reference finding
-                                        # For diff entries, we need to search BOTH installations (file1 and file2)
-                                        # because references to the old StrRef might exist in either installation
-                                        source_installations: list[Installation] = []
-                                        if context.file1_installation is not None:
-                                            source_installations.append(context.file1_installation)
-                                        if context.file2_installation is not None:
-                                            source_installations.append(context.file2_installation)
-
-                                        # Store metadata in incremental_writer if available
-                                        if incremental_writer is not None and strref_mappings:
-                                            incremental_writer._tlk_metadata[id(mod_tlk)] = {
-                                                "strref_mappings": strref_mappings,
-                                                "source_installations": source_installations,
-                                                "source_filepath": context.file1_filepath,
-                                            }
-
-                                        modifications_by_type.tlk.append(mod_tlk)
-                                        tlk_modifiers: list[ModifyTLK] = [m for m in mod_tlk.modifiers if isinstance(m, ModifyTLK)]
-
-                                        if tlk_modifiers:
-                                            log_func(f"  |-- Modifications: {len(tlk_modifiers)} TLK entries")
-                                        log_func("  +-- tslpatchdata: append.tlk and/or replace.tlk will be generated")
-
-                                        # Write immediately if using incremental writer
-                                        # TLK will trigger linking patch creation via StrRef cache
-                                        if incremental_writer is not None:
-                                            # No source_data needed for TLK files (they generate append.tlk)
-                                            incremental_writer.write_modification(mod_tlk, None)
-                                    elif context.ext == "ssf":
-                                        # SSF files that exist in vanilla are PATCHED
-                                        log_func(f"\n[PATCH] {context.where}")
-                                        log_func("  |-- !ReplaceFile: 0 (patch existing SSF)")
-
-                                        # Set destination based on MODDED installation location (file2)
-                                        resource_name = Path(str(context.where)).name
-                                        destination = _determine_destination_for_source(
-                                            context.file2_rel,  # Use MODDED installation, not vanilla
-                                            resource_name,
-                                            log_func=log_func,
-                                            location_type=context.file2_location_type,
-                                            source_filepath=context.file2_filepath,
-                                        )
-                                        modifications.destination = destination
-                                        modifications.sourcefile = resource_name  # Just the filename, not the full path
-
-                                        assert isinstance(modifications, ModificationsSSF), f"`modifications` is not a ModificationsSSF: {modifications} (type: {type(modifications)}) for context: {context}"  # noqa: E501
-                                        modifications_by_type.ssf.append(modifications)
-                                        ssf_modifiers: list[ModifySSF] = [m for m in modifications.modifiers if isinstance(m, ModifySSF)]
-
-                                        if ssf_modifiers:
-                                            log_func(f"  |-- Modifications: {len(ssf_modifiers)} sound slot changes")
-
-                                        # Determine which source file to copy
-                                        source_to_copy = _determine_tslpatchdata_source(context.file1_rel, context.file2_rel)
-                                        log_func(f"  +-- tslpatchdata: Will copy from {source_to_copy}")
-
-                                        # Write immediately if using incremental writer
-                                        if incremental_writer is not None:
-                                            ssf_vanilla_bytes: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
-                                            source_path = context.file1_installation if context.file1_installation else context.file1_filepath
-                                            incremental_writer.write_modification(modifications, ssf_vanilla_bytes, source_path)
-                                    elif context.ext in gff_types:
-                                        # GFF file exists in both vanilla and modded - this is a PATCH
-                                        log_func(f"\n[PATCH] {context.where}")
-                                        log_func("  |-- !ReplaceFile: 0 (patch existing file, don't replace)")
-
-                                        # Set destination based on MODDED installation location (file2)
-                                        resource_name = PurePath(str(context.where)).name
-                                        destination = _determine_destination_for_source(
-                                            context.file2_rel,  # Use MODDED installation, not vanilla
-                                            resource_name,
-                                            log_func=log_func,
-                                            location_type=context.file2_location_type,
-                                            source_filepath=context.file2_filepath,
-                                        )
-                                        modifications.destination = destination
-                                        modifications.sourcefile = resource_name  # Just the filename, not the full path
-                                        # saveas should also be just the filename, NOT the full path
-                                        modifications.saveas = resource_name
-
-                                        assert isinstance(modifications, ModificationsGFF), f"`modifications` is not a ModificationsGFF: {modifications} (type: {type(modifications)}) for context: {context}"  # noqa: E501
-                                        modifications_by_type.gff.append(modifications)
-                                        gff_modifiers: list[ModifyGFF] = [m for m in modifications.modifiers if isinstance(m, ModifyGFF)]
-
-                                        if gff_modifiers:
-                                            log_func(f"  |-- Modifications: {len(gff_modifiers)} field/struct changes")
-
-                                        # Determine which source file to copy
-                                        source_to_copy = _determine_tslpatchdata_source(context.file1_rel, context.file2_rel)
-                                        log_func(f"  +-- tslpatchdata: Will copy from {source_to_copy}")
-
-                                        # Write immediately if using incremental writer
-                                        if incremental_writer is not None:
-                                            gff2_source_data: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
-                                            source_path = context.file1_installation if context.file1_installation else context.file1_filepath
-                                            incremental_writer.write_modification(modifications, gff2_source_data, source_path)
-                        except Exception as e:  # noqa: BLE001, PERF203, S112
-                            log_func(f"[Error] Failed to generate {context.ext.upper()} modifications for '{context.where}': {e.__class__.__name__}: {e}")
-                            log_func("Full traceback:")
-                            for line in traceback.format_exc().splitlines():
-                                log_func(f"  {line}")
-
+                # Generate INI modifications if requested (log BEFORE final separator)
+                if modifications_by_type is None:
                     # Log final separator AFTER all patch info
                     log_func(f"^ '{context.where}': {context.ext.upper()} is different ^", separator=True)
                     return False
-                return True
-            # Objects don't have compare method, fall through to other methods
+
+                try:
+                    analyzer = DiffAnalyzerFactory.get_analyzer(context.ext)
+                    if analyzer is None:
+                        # Log final separator AFTER all patch info
+                        log_func(f"^ '{context.where}': {context.ext.upper()} is different ^", separator=True)
+                        return False
+
+                    modifications: PatcherModifications | tuple[PatcherModifications, dict[int, int]] | None = analyzer.analyze(data1, data2, str(context.where))
+                    if modifications is None:
+                        # Log final separator AFTER all patch info
+                        log_func(f"^ '{context.where}': {context.ext.upper()} is different ^", separator=True)
+                        return False
+
+                    # Add to appropriate list based on resource type
+                    if context.ext == "2da":
+                        # 2DA files that exist in vanilla are PATCHED
+                        log_func(f"\n[PATCH] {context.where}")
+                        log_func("  |-- !ReplaceFile: 0 (patch existing 2DA)")
+
+                        # Set destination based on MODDED installation location (file2)
+                        resource_name = Path(str(context.where)).name
+                        destination = _determine_destination_for_source(
+                            context.file2_rel,  # Use MODDED installation, not vanilla
+                            resource_name,
+                            log_func=log_func,
+                            location_type=context.file2_location_type,
+                            source_filepath=context.file2_filepath,
+                        )
+                        assert isinstance(modifications, Modifications2DA), (
+                            f"`modifications` is not a Modifications2DA: {modifications} (type: {type(modifications)}) for context: {context}"
+                        )  # noqa: E501
+                        modifications.destination = destination
+                        modifications.sourcefile = resource_name  # Just the filename, not the full path
+                        modifications_by_type.twoda.append(modifications)
+                        twoda_modifiers: list[Modify2DA] = [m for m in modifications.modifiers if isinstance(m, Modify2DA)]
+
+                        if twoda_modifiers:
+                            log_func(f"  |-- Modifications: {len(twoda_modifiers)} row/column changes")
+
+                        # Determine which source file to copy
+                        source_to_copy = _determine_tslpatchdata_source(context.file1_rel, context.file2_rel)
+                        log_func(f"  +-- tslpatchdata: Will copy from {source_to_copy}")
+
+                        # Write immediately if using incremental writer
+                        if incremental_writer is not None:
+                            twoda_vanilla_bytes: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
+                            source_path = context.file1_installation if context.file1_installation else context.file1_filepath
+                            modded_source_path = context.file2_installation if context.file2_installation else context.file2_filepath
+                            log_func(f"[DEBUG] Passing to writer: source_path={source_path}, modded_source_path={modded_source_path}")
+                            incremental_writer.write_modification(modifications, twoda_vanilla_bytes, source_path, modded_source_path)
+                    elif context.ext == "tlk":
+                        log_func(f"\n[PATCH] {context.where}")
+                        log_func("  |-- Mode: Append entries (TSLPatcher design)")
+
+                        # TLK analyzer returns tuple: (ModificationsTLK, strref_mappings)
+                        if not isinstance(modifications, tuple):
+                            msg = f"TLK analyzer must return tuple (ModificationsTLK, dict), got {type(modifications)}"
+                            raise TypeError(msg)  # noqa: TRY301
+                        mod_tlk, strref_mappings = modifications
+                        assert isinstance(mod_tlk, ModificationsTLK), f"`mod_tlk` is not a ModificationsTLK: {mod_tlk} (type: {type(mod_tlk)}) for context: {context}"  # noqa: E501
+                        assert isinstance(strref_mappings, dict), f"`strref_mappings` is not a dict: {strref_mappings} (type: {type(strref_mappings)}) for context: {context}"  # noqa: E501
+
+                        # Store metadata for StrRef reference finding
+                        # For diff entries, we need to search BOTH installations (file1 and file2)
+                        # because references to the old StrRef might exist in either installation
+                        source_installations: list[Installation] = []
+                        if context.file1_installation is not None:
+                            source_installations.append(context.file1_installation)
+                        if context.file2_installation is not None:
+                            source_installations.append(context.file2_installation)
+
+                        # Store metadata in incremental_writer if available
+                        if incremental_writer is not None and strref_mappings:
+                            incremental_writer._tlk_metadata[id(mod_tlk)] = {  # noqa: SLF001
+                                "strref_mappings": strref_mappings,
+                                "source_installations": source_installations,
+                                "source_filepath": context.file1_filepath,
+                            }
+
+                        modifications_by_type.tlk.append(mod_tlk)
+                        tlk_modifiers: list[ModifyTLK] = [m for m in mod_tlk.modifiers if isinstance(m, ModifyTLK)]
+
+                        if tlk_modifiers:
+                            log_func(f"  |-- Modifications: {len(tlk_modifiers)} TLK entries")
+                        log_func("  +-- tslpatchdata: append.tlk and/or replace.tlk will be generated")
+
+                        # Write immediately if using incremental writer
+                        # TLK will trigger linking patch creation via StrRef cache
+                        if incremental_writer is not None:
+                            # No source_data needed for TLK files (they generate append.tlk)
+                            incremental_writer.write_modification(mod_tlk, None)
+                    elif context.ext == "ssf":
+                        # SSF files that exist in vanilla are PATCHED
+                        log_func(f"\n[PATCH] {context.where}")
+                        log_func("  |-- !ReplaceFile: 0 (patch existing SSF)")
+
+                        # Set destination based on MODDED installation location (file2)
+                        resource_name = Path(str(context.where)).name
+                        destination = _determine_destination_for_source(
+                            context.file2_rel,  # Use MODDED installation, not vanilla
+                            resource_name,
+                            log_func=log_func,
+                            location_type=context.file2_location_type,
+                            source_filepath=context.file2_filepath,
+                        )
+                        assert isinstance(modifications, ModificationsSSF), (
+                            f"`modifications` is not a ModificationsSSF: {modifications} (type: {type(modifications)}) for context: {context}"
+                        )  # noqa: E501
+                        modifications.destination = destination
+                        modifications.sourcefile = resource_name  # Just the filename, not the full path
+                        modifications_by_type.ssf.append(modifications)
+                        ssf_modifiers: list[ModifySSF] = [m for m in modifications.modifiers if isinstance(m, ModifySSF)]
+
+                        if ssf_modifiers:
+                            log_func(f"  |-- Modifications: {len(ssf_modifiers)} sound slot changes")
+
+                        # Determine which source file to copy
+                        source_to_copy = _determine_tslpatchdata_source(context.file1_rel, context.file2_rel)
+                        log_func(f"  +-- tslpatchdata: Will copy from {source_to_copy}")
+
+                        # Write immediately if using incremental writer
+                        if incremental_writer is not None:
+                            ssf_vanilla_bytes: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
+                            source_path = context.file1_installation if context.file1_installation else context.file1_filepath
+                            incremental_writer.write_modification(modifications, ssf_vanilla_bytes, source_path)
+                    elif context.ext in gff_types:
+                        # GFF file exists in both vanilla and modded - this is a PATCH
+                        log_func(f"\n[PATCH] {context.where}")
+                        log_func("  |-- !ReplaceFile: 0 (patch existing file, don't replace)")
+
+                        # Set destination based on MODDED installation location (file2)
+                        resource_name = PurePath(str(context.where)).name
+                        destination = _determine_destination_for_source(
+                            context.file2_rel,  # Use MODDED installation, not vanilla
+                            resource_name,
+                            log_func=log_func,
+                            location_type=context.file2_location_type,
+                            source_filepath=context.file2_filepath,
+                        )
+                        assert isinstance(modifications, ModificationsGFF), (
+                            f"`modifications` is not a ModificationsGFF: {modifications} (type: {type(modifications)}) for context: {context}"
+                        )  # noqa: E501
+                        modifications.destination = destination
+                        modifications.sourcefile = resource_name  # Just the filename, not the full path
+                        # saveas should also be just the filename, NOT the full path
+                        modifications.saveas = resource_name
+
+                        modifications_by_type.gff.append(modifications)
+                        gff_modifiers: list[ModifyGFF] = [m for m in modifications.modifiers if isinstance(m, ModifyGFF)]
+
+                        if gff_modifiers:
+                            log_func(f"  |-- Modifications: {len(gff_modifiers)} field/struct changes")
+
+                        # Determine which source file to copy
+                        source_to_copy = _determine_tslpatchdata_source(context.file1_rel, context.file2_rel)
+                        log_func(f"  +-- tslpatchdata: Will copy from {source_to_copy}")
+
+                        # Write immediately if using incremental writer
+                        if incremental_writer is not None:
+                            gff2_source_data: bytes = data1 if isinstance(data1, bytes) else data1.read_bytes()
+                            source_path = context.file1_installation if context.file1_installation else context.file1_filepath
+                            incremental_writer.write_modification(modifications, gff2_source_data, source_path)
+
+                except Exception as e:  # noqa: BLE001, PERF203, S112
+                    log_func(f"[Error] Failed to generate {context.ext.upper()} modifications for '{context.where}': {e.__class__.__name__}: {e}")
+                    log_func("Full traceback:")
+                    for line in traceback.format_exc().splitlines():
+                        log_func(f"  {line}")
+
+                # Log final separator AFTER all patch info
+                log_func(f"^ '{context.where}': {context.ext.upper()} is different ^", separator=True)
+                return False
 
         except Exception as e:  # noqa: BLE001, PERF203, S112
             # Parsing failed, fall through to other comparison methods
@@ -1507,7 +1668,9 @@ def diff_data(  # noqa: PLR0913
             # For known binary formats, skip text comparison and go straight to hash
             if context.ext.lower() in BINARY_FORMATS:
                 log_func("  Falling back to hash comparison")
-                if compare_hashes and generate_hash(data1) != generate_hash(data2):
+                if not compare_hashes:
+                    return True
+                if generate_hash(data1) != generate_hash(data2):
                     log_func(f"'{context.where}': SHA256 is different")
                     return False
                 return True
@@ -1550,10 +1713,10 @@ def diff_files(
     c_file1_rel: Path = file1.relative_to(file2.parent) if file2.parent != file1.parent else file1
     c_file2_rel: Path = file2.relative_to(file1.parent) if file1.parent != file2.parent else file2
 
-    if not file1.safe_isfile():
+    if not file1.is_file():
         log_func(f"Missing file:\t{c_file1_rel}")
         return False
-    if not file2.safe_isfile():
+    if not file2.is_file():
         log_func(f"Missing file:\t{c_file2_rel}")
         return False
 
@@ -1619,12 +1782,32 @@ def diff_capsule_files(  # noqa: C901, PLR0913
     if use_composite_file2:
         log_func(f"Using composite module loading for {c_file2_rel.name} ({c_file2_rel.stem}.rim + {c_file2_rel.stem}._s.rim + {c_file2_rel.stem}._dlg.erf)")
 
+    if modifications_by_type is not None:
+        capsule_destination: str | None = None
+        capsule_source_path: Path | None = None
+
+        if c_file2.suffix.lower() == ".mod":
+            capsule_destination = str(PureWindowsPath(c_file2_rel.as_posix()))
+            capsule_source_path = c_file2
+        elif c_file1.suffix.lower() == ".mod":
+            capsule_destination = str(PureWindowsPath(c_file1_rel.as_posix()))
+            capsule_source_path = c_file2 if c_file2.is_file() else c_file1
+
+        if capsule_destination is not None:
+            _ensure_capsule_install(
+                modifications_by_type,
+                capsule_destination,
+                capsule_path=capsule_source_path,
+                log_func=log_func,
+                incremental_writer=incremental_writer,
+            )
+
     # Load capsules
-    file1_capsule = load_capsule(CaseAwarePath.pathify(c_file1), use_composite=use_composite_file1, log_func=log_func)
+    file1_capsule = load_capsule(CaseAwarePath(c_file1), use_composite=use_composite_file1, log_func=log_func)
     if file1_capsule is None:
         return None
 
-    file2_capsule = load_capsule(CaseAwarePath.pathify(c_file2), use_composite=use_composite_file2, log_func=log_func)
+    file2_capsule = load_capsule(CaseAwarePath(c_file2), use_composite=use_composite_file2, log_func=log_func)
     if file2_capsule is None:
         return None
 
@@ -1873,9 +2056,9 @@ def apply_folder_resolution_order(
         rimlike_files: list[str] = [
             f
             for f in group_files
-            if (
-                Path(f).name.lower().endswith(".rim") and not Path(f).name.lower().endswith("_s.rim")
-            ) or Path(f).name.lower().endswith("_s.rim") or Path(f).name.lower().endswith("_dlg.erf")
+            if (Path(f).name.lower().endswith(".rim") and not Path(f).name.lower().endswith("_s.rim"))
+            or Path(f).name.lower().endswith("_s.rim")
+            or Path(f).name.lower().endswith("_dlg.erf")
         ]
 
         # Only files with the same basename (no extension) are grouped; above already enforced by get_module_root
@@ -1921,7 +2104,7 @@ def diff_module_directories(  # noqa: PLR0913
 ) -> tuple[bool | None, set[str]]:
     """Special diffing for modules dirs. Only do composite module loading for filenames sharing the same basename, and only for .mod, .rim, _s.rim, _dlg.erf."""
     # Acceptable extensions for composite module loading
-    valid_exts: set[str] = {".mod", ".rim", "_s.rim", "_dlg.erf"}
+    valid_exts: set[str] = {".mod", ".rim", "_s.rim", "_dlg.erf"}  # noqa: F841
 
     def get_module_basename(fname: str) -> str:
         lower = fname.lower()
@@ -1989,7 +2172,7 @@ def diff_module_directories(  # noqa: PLR0913
                 kind2.add(ext)
 
         # Composite module loading logic: only run for basenames that have any of these extensions on both sides
-        if (kind1 and kind2):
+        if kind1 and kind2:
             # Does one side have .mod, the other has only rimlike?
             filenames1 = [f for f in files1 if Path(f).name.lower().endswith(".mod")]
             filenames2 = [f for f in files2 if Path(f).name.lower().endswith(".mod")]
@@ -1998,9 +2181,9 @@ def diff_module_directories(  # noqa: PLR0913
             rimlike2 = [f for f in files2 if Path(f).name.lower().endswith(".rim") or Path(f).name.lower().endswith("_s.rim") or Path(f).name.lower().endswith("_dlg.erf")]
 
             side_case = None
-            if filenames1 and rimlike2:   # mod in #1, rimlike in #2
+            if filenames1 and rimlike2:  # mod in #1, rimlike in #2
                 side_case = (c_dir1, c_dir2, filenames1[0], rimlike2)
-            elif filenames2 and rimlike1: # mod in #2, rimlike in #1
+            elif filenames2 and rimlike1:  # mod in #2, rimlike in #1
                 side_case = (c_dir2, c_dir1, filenames2[0], rimlike1)
             else:
                 side_case = None
@@ -2104,7 +2287,7 @@ def diff_directories(
     filters: list[str] | None = None,
     log_func: Callable[[str], None],
     diff_files_func: Callable[[Path, Path], bool | None],
-    diff_cache: CachedFileComparison | None = None,
+    diff_cache: DiffCache | None = None,
     modifications_by_type: ModificationsByType | None = None,
     incremental_writer: IncrementalTSLPatchDataWriter | None = None,
 ) -> bool | None:
@@ -2112,8 +2295,8 @@ def diff_directories(
     log_func(f"Finding differences in the '{dir1.name}' folders...")
 
     # Store relative paths instead of just filenames
-    files_path1: set[str] = {f.relative_to(dir1).as_posix().casefold() for f in dir1.safe_rglob("*") if f.safe_isfile()}
-    files_path2: set[str] = {f.relative_to(dir2).as_posix().casefold() for f in dir2.safe_rglob("*") if f.safe_isfile()}
+    files_path1: set[str] = {f.relative_to(dir1).as_posix().casefold() for f in dir1.rglob("*") if f.is_file()}
+    files_path2: set[str] = {f.relative_to(dir2).as_posix().casefold() for f in dir2.rglob("*") if f.is_file()}
 
     # Merge both sets
     all_files: set[str] = files_path1.union(files_path2)
@@ -2159,9 +2342,9 @@ def diff_directories(
         file1_path: Path = dir1 / rel_path
         file2_path: Path = dir2 / rel_path
 
-        if not file1_path.safe_isfile():
+        if not file1_path.is_file():
             missing_files.append((rel_path, True))
-        elif not file2_path.safe_isfile():
+        elif not file2_path.is_file():
             missing_files.append((rel_path, False))
         else:
             existing_in_both.append(rel_path)
@@ -2180,7 +2363,7 @@ def diff_directories(
         is_same_result = None if result is None else result and is_same_result
 
         # Record in cache if caching enabled
-        if diff_cache is not None:
+        if diff_cache is not None and diff_cache.files is not None:
             ext = Path(rel_path).suffix.casefold()[1:] if Path(rel_path).suffix else ""
             status = "identical" if result else "modified"
             diff_cache.files.append(
@@ -2207,11 +2390,11 @@ def diff_directories(
                     modifications_by_type,
                     rel_path,
                     log_func=log_func,
-                    file2_path=file2_path,
+                    file2_path=Path(file2_path),
                     incremental_writer=incremental_writer,
                 )
 
-            if diff_cache is not None:
+            if diff_cache is not None and diff_cache.files is not None:
                 ext = Path(rel_path).suffix.casefold()[1:] if Path(rel_path).suffix else ""
                 diff_cache.files.append(
                     CachedFileComparison(
@@ -2227,7 +2410,7 @@ def diff_directories(
             c_file2_rel = relative_path_from_to(dir1, file2_path)
             log_func(f"Missing file:\t{c_file2_rel}")
 
-            if diff_cache is not None:
+            if diff_cache is not None and diff_cache.files is not None:
                 ext = Path(rel_path).suffix.casefold()[1:] if Path(rel_path).suffix else ""
                 diff_cache.files.append(
                     CachedFileComparison(
@@ -2301,6 +2484,21 @@ def diff_installs_with_objects(
     )
 
 
+class DiffDirectoriesFunc(Protocol):
+    """Protocol for diff_directories_func that accepts filters and other parameters."""
+
+    def __call__(
+        self,
+        dir1: Path,
+        dir2: Path,
+        *,
+        filters: list[str] | None = ...,
+        **kwargs: Any,
+    ) -> bool | None:
+        """Compare two directories."""
+        ...
+
+
 def diff_installs_implementation(
     install_path1: Path,
     install_path2: Path,
@@ -2308,11 +2506,11 @@ def diff_installs_implementation(
     filters: list[str] | None = None,
     log_func: Callable[[str], None],
     diff_files_func: Callable[[Path, Path], bool | None],
-    diff_directories_func: Callable[[Path, Path], bool | None],
+    diff_directories_func: DiffDirectoriesFunc,
 ) -> bool | None:
     """Compare two KOTOR installations by diffing their standard directories."""
-    rinstall_path1: CaseAwarePath = CaseAwarePath.pathify(install_path1).resolve()
-    rinstall_path2: CaseAwarePath = CaseAwarePath.pathify(install_path2).resolve()
+    rinstall_path1: CaseAwarePath = CaseAwarePath(install_path1).resolve()
+    rinstall_path2: CaseAwarePath = CaseAwarePath(install_path2).resolve()
     log_func("")
     log_func((max(len(str(rinstall_path1)) + 29, len(str(rinstall_path2)) + 30)) * "-")
     log_func(f"Searching first install dir: {rinstall_path1}")
@@ -2347,8 +2545,8 @@ def diff_installs_implementation(
         )
 
     # Streamwaves (may be named streamvoice)
-    streamwaves_path1 = rinstall_path1.joinpath("streamwaves") if rinstall_path1.joinpath("streamwaves").safe_isdir() else rinstall_path1.joinpath("streamvoice")
-    streamwaves_path2 = rinstall_path2.joinpath("streamwaves") if rinstall_path2.joinpath("streamwaves").safe_isdir() else rinstall_path2.joinpath("streamvoice")
+    streamwaves_path1 = rinstall_path1.joinpath("streamwaves") if rinstall_path1.joinpath("streamwaves").is_dir() else rinstall_path1.joinpath("streamvoice")
+    streamwaves_path2 = rinstall_path2.joinpath("streamwaves") if rinstall_path2.joinpath("streamwaves").is_dir() else rinstall_path2.joinpath("streamvoice")
     is_same_result = (
         diff_directories_func(
             streamwaves_path1,
@@ -2517,7 +2715,7 @@ def determine_composite_loading(container_path: Path) -> tuple[bool, list[Path],
 
     for ext in [".mod", ".rim", "_s.rim", "_dlg.erf"]:
         related_file = container_dir / f"{module_root}{ext}"
-        if related_file.safe_exists():
+        if related_file.exists():
             related_files.append(related_file)
 
     use_composite = len(related_files) > 1
@@ -2617,7 +2815,7 @@ def diff_container_vs_installation(
     installation: Installation,
     *,
     container_first: bool = True,
-    log_func: Callable[[str], None]  ,
+    log_func: Callable[[str], None],
     diff_data_func: Callable[[bytes, bytes, DiffContext], bool],
 ) -> bool | None:
     """Compare all resources in a container against their resolved versions in an installation."""
@@ -2631,7 +2829,7 @@ def diff_container_vs_installation(
         log_func(f"Found {len(related_files)} related module files for '{module_root}': {[f.name for f in related_files]}")
 
     # Load the container
-    container_capsule = load_container_capsule(CaseAwarePath.pathify(container_path), use_composite=use_composite, log_func=log_func)
+    container_capsule = load_container_capsule(CaseAwarePath(container_path), use_composite=use_composite, log_func=log_func)
     if container_capsule is None:
         return None
 
@@ -2759,7 +2957,7 @@ def validate_paths(
             # Installation objects should already be valid
             continue
 
-        if not path.safe_exists():
+        if not path.exists():
             log_func(f"Path {idx} ('{path}') does not exist on disk, cannot diff")
             return None
     return True
@@ -2805,7 +3003,7 @@ def load_installations(
             # Regular path (file or folder)
             path_info = PathInfo.from_path_or_installation(path, idx)
             path_infos.append(path_info)
-            path_type = "File" if path.safe_isfile() else ("Folder" if path.safe_isdir() else "Unknown")
+            path_type = "File" if path.is_file() else ("Folder" if path.is_dir() else "Unknown")
             log_func(f"Path {idx}: Using {path_type} path: {path}")
 
     return path_infos
@@ -2823,15 +3021,15 @@ def handle_special_comparisons(
 ) -> bool | None:
     """Handle special comparison cases (container vs installation, resource vs installation, etc.)."""
     # Handle container vs installation comparison
-    if mine.safe_isfile() and is_capsule_file(mine.name) and installation2:
+    if mine.is_file() and is_capsule_file(mine.name) and installation2:
         return diff_container_vs_installation_func(mine, installation2, container_first=True)
-    if installation1 and older.safe_isfile() and is_capsule_file(older.name):
+    if installation1 and older.is_file() and is_capsule_file(older.name):
         return diff_container_vs_installation_func(older, installation1, container_first=False)
 
     # Handle single resource vs installation comparison
-    if mine.safe_isfile() and not is_capsule_file(mine.name) and installation2:
+    if mine.is_file() and not is_capsule_file(mine.name) and installation2:
         return diff_resource_vs_installation_func(mine, installation2, resource_first=True)
-    if installation1 and older.safe_isfile() and not is_capsule_file(older.name):
+    if installation1 and older.is_file() and not is_capsule_file(older.name):
         return diff_resource_vs_installation_func(older, installation1, resource_first=False)
 
     # Handle installation vs installation comparison
@@ -3014,6 +3212,7 @@ def compare_resources_n_way(  # noqa: PLR0913
                     )
 
                     # Always also add an InstallList entry so the file exists before patching
+                    # Don't create patch here - diff_data already created one above
                     try:
                         destination = "Override"
                         filename = Path(resource_id).name
@@ -3026,6 +3225,7 @@ def compare_resources_n_way(  # noqa: PLR0913
                             modded_path=None,
                             context=context,
                             incremental_writer=incremental_writer,
+                            create_patch=False,  # Patch already created by diff_data above
                         )
                     except Exception as e:  # noqa: BLE001, S110
                         print(f"Error adding install entry for {resource_id}: {universal_simplify_exception(e)}")
@@ -3087,7 +3287,7 @@ def run_differ_from_args_impl(
 
         log_func(f"Starting {len(files_and_folders_and_installations)}-way comparison...")
         for idx, path in enumerate(files_and_folders_and_installations):
-            path_type = "Installation" if isinstance(path, Installation) else ("Folder" if path.safe_isdir() else "File")
+            path_type = "Installation" if isinstance(path, Installation) else ("Folder" if path.is_dir() else "File")
             log_func(f"  Path {idx}: {path} ({path_type})")
         log_func("-------------------------------------------")
         log_func("")

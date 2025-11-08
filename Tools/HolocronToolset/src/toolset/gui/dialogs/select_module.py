@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 import qtpy
@@ -9,7 +10,6 @@ from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QFileDialog, QListWidgetItem
 
 from pykotor.common.module import Module
-from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget

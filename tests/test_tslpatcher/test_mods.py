@@ -64,7 +64,7 @@ from pykotor.tslpatcher.mods.twoda import (
     Target,
     TargetType,
 )
-from utility.system.path import PureWindowsPath
+from pathlib import PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.gff import (

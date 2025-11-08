@@ -4,6 +4,7 @@ import tempfile
 import time
 
 from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import qtpy
@@ -18,7 +19,6 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
 from utility.system.os_helper import remove_any
-from utility.system.path import Path
 
 if TYPE_CHECKING:
 
@@ -75,7 +75,7 @@ class AudioPlayer(QMainWindow):
         self.player.stop()
         data = sound.deobfuscate_audio(data)
         # Clear any existing temporary file
-        if self.tempFile and Path(self.tempFile.name).safe_isfile():
+        if self.tempFile and Path(self.tempFile.name).is_file():
             self.tempFile.delete = True
             remove_any(self.tempFile.name)
         self.tempFile = None

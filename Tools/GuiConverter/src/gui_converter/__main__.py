@@ -232,11 +232,11 @@ def main():
         except ValueError:
             print(f"Invalid resolution format: {resolution_arg}. Please use 'WIDTHxHEIGHT' format or 'ALL'.")
             return
-    if input_path.safe_isfile():
+    if input_path.is_file():
         process_file(input_path, PARSER_ARGS.output, resolutions_to_process)
 
-    elif input_path.safe_isdir():
-        files_to_process = list(input_path.safe_rglob("*.gui"))
+    elif input_path.is_dir():
+        files_to_process = list(input_path.rglob("*.gui"))
         if not files_to_process:
             print(f"Error: no .gui files to process in input path '{input_path}'", file=sys.stderr)
         for gui_file in files_to_process:

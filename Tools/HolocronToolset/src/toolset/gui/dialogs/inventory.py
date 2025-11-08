@@ -604,7 +604,7 @@ class InventoryTable(QTableWidget):
         """
         rowID: int = self.rowCount()
         self.insertRow(rowID)
-        filepath, name, uti = cast(InventoryEditor, self.window()).getItem(resname, "")
+        filepath, name, uti = cast("InventoryEditor", self.window()).getItem(resname, "")
         iconItem: QTableWidgetItem = self._set_uti(uti)
         nameItem = QTableWidgetItem(name)
         nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)

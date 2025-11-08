@@ -32,6 +32,7 @@ from toolset.gui.dialogs.load_from_location_result import ResourceItems
 
 if TYPE_CHECKING:
     from multiprocessing.managers import SyncManager
+
     from qtpy.QtCore import QEvent, QModelIndex, QObject
     from qtpy.QtGui import (
         QEnterEvent,

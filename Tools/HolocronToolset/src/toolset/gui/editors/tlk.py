@@ -251,10 +251,17 @@ class TLKEditor(Editor):
         # Implement the logic to find references based on the provided index
         stringref = index.row()
         print(f"Finding references to stringref: {stringref}")
+        from pykotor.tools.reference_cache import find_tlk_entry_references  # noqa: PLC0415
+
+        def run_find_references():
+            assert self._installation is not None, "Installation is required to find references"
+            return find_tlk_entry_references(self._installation, stringref)
+
+        assert self._installation is not None, "Installation is required to find references"
         loader = AsyncLoader(
             self,
             f"Looking for stringref '{stringref}' in {self._installation.path()}...",
-            lambda: self._installation.find_tlk_entry_references(stringref),
+            run_find_references,
             errorTitle="An unexpected error occurred searching the installation.",
             startImmediately=False,
         )
@@ -262,7 +269,9 @@ class TLKEditor(Editor):
         loader.show()
         loader.optionalFinishHook.connect(
             lambda results: self.handleSearchCompleted(
-                stringref, results, self._installation
+                stringref,
+                results,
+                self._installation,
             )
         )
         loader.startWorker()
@@ -294,7 +303,7 @@ class TLKEditor(Editor):
         selection: FileResource,
     ):
         # Open relevant tab then select resource in the tree
-        filepath, editor = openResourceEditor(
+        _filepath, _editor = openResourceEditor(
             selection.filepath(),
             selection.resname(),
             selection.restype(),

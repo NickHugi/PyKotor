@@ -37,7 +37,6 @@ from qtpy.QtGui import (
     QCursor,
     QDrag,
     QFont,
-    QHoverEvent,
     QKeySequence,
     QPainter,
     QPen,
@@ -115,6 +114,8 @@ if TYPE_CHECKING:
 
     import os
 
+    from pathlib import PureWindowsPath
+
     from qtpy.QtCore import QItemSelection, QObject
     from qtpy.QtGui import (
         QCloseEvent,
@@ -123,6 +124,7 @@ if TYPE_CHECKING:
         QDragMoveEvent,
         QDropEvent,
         QFocusEvent,
+        QHoverEvent,
         QKeyEvent,
         QMouseEvent,
         QPaintEvent,
@@ -133,7 +135,6 @@ if TYPE_CHECKING:
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.resource.generics.dlg import DLGAnimation, DLGNode, DLGStunt
-    from utility.system.path import PureWindowsPath
 
 _LINK_PARENT_NODE_PATH_ROLE = Qt.ItemDataRole.UserRole + 1
 _EXTRA_DISPLAY_ROLE = Qt.ItemDataRole.UserRole + 2
@@ -372,10 +373,10 @@ class DLGListWidget(QListWidget):
         super().scrollToItem(item, *args)
 
     def findItems(self, text: str, flags: Qt.MatchFlags) -> list[DLGListWidgetItem]:  # type: ignore[override, misc]
-        return cast(List[DLGListWidgetItem], super().findItems(text, flags))
+        return cast("List[DLGListWidgetItem]", super().findItems(text, flags))
 
     def selectedItems(self) -> list[DLGListWidgetItem]:  # type: ignore[override, misc]
-        return cast(List[DLGListWidgetItem], super().selectedItems())
+        return cast("List[DLGListWidgetItem]", super().selectedItems())
 
     def closePersistentEditor(self, item: DLGListWidgetItem | None = None) -> None:  # type: ignore[override, misc]
         assert isinstance(item, (DLGListWidgetItem, type(None)))
@@ -718,7 +719,7 @@ class DLGStandardItem(QStandardItem):
 
     def appendRow(self, item: DLGStandardItem) -> None:  # type: ignore[override, misc]
         #print(f"{self.__class__.__name__}.appendRow(item={item!r})")
-        assert isinstance(item, DLGStandardItem) or cast(QStandardItem, item).data(_DUMMY_ITEM)
+        assert isinstance(item, DLGStandardItem) or cast("QStandardItem", item).data(_DUMMY_ITEM)
         super().appendRow(item)
         model = self.model()
         if (
@@ -735,7 +736,7 @@ class DLGStandardItem(QStandardItem):
 
     def insertRow(self, row: int, item: DLGStandardItem) -> None:  # type: ignore[override, misc]
         print(f"{self.__class__.__name__}.insertRow(row={row}, item={item})")
-        assert isinstance(item, DLGStandardItem) or cast(QStandardItem, item).data(_DUMMY_ITEM)
+        assert isinstance(item, DLGStandardItem) or cast("QStandardItem", item).data(_DUMMY_ITEM)
         super().insertRow(row, item)
         model = self.model()
         if (
@@ -764,7 +765,7 @@ class DLGStandardItem(QStandardItem):
                 if not isinstance(item, DLGStandardItem):
                     continue
                 model._removeLinkFromParent(self, item.link)  # noqa: SLF001
-        return cast(List[DLGStandardItem], items)
+        return cast("List[DLGStandardItem]", items)
 
     def removeRows(self, row: int, count: int) -> None:
         print(f"{self.__class__.__name__}.removeRows(row={row}, count={count})")
@@ -775,7 +776,7 @@ class DLGStandardItem(QStandardItem):
         print(f"{self.__class__.__name__}.setChild(row={row}, args={args!r})")
         super().setChild(row, *args)
         item = args[1] if len(args) == 3 else args[0]
-        assert isinstance(item, DLGStandardItem) or cast(QStandardItem, item).data(_DUMMY_ITEM)
+        assert isinstance(item, DLGStandardItem) or cast("QStandardItem", item).data(_DUMMY_ITEM)
         model = self.model()
         if (
             model is not None
@@ -786,7 +787,7 @@ class DLGStandardItem(QStandardItem):
 
     def takeChild(self, row: int, column: int = 0) -> Self | None:  # type: ignore[override]
         #print(f"{self.__class__.__name__}.takeChild(row={row}, column={column})")
-        item = cast(Union[QStandardItem, None], super().takeChild(row, column))
+        item = cast("Union[QStandardItem, None]", super().takeChild(row, column))
         if item is None:
             return None
         assert isinstance(item, DLGStandardItem) or item.data(_DUMMY_ITEM)
@@ -812,7 +813,7 @@ class DLGStandardItem(QStandardItem):
                 if not isinstance(item, DLGStandardItem):
                     continue
                 model._removeLinkFromParent(self, item.link)  # noqa: SLF001
-        return cast(List[DLGStandardItem], items)
+        return cast("List[DLGStandardItem]", items)
 
     def takeColumn(self, column: int) -> list[DLGStandardItem]:  # type: ignore[override]
         raise NotImplementedError("takeColumn is not supported in this model.")
@@ -997,14 +998,14 @@ class DLGStandardItemModel(QStandardItemModel):
 
     def takeItem(self, row: int, column: int) -> DLGStandardItem:  # type: ignore[override]
         print(f"{self.__class__.__name__}.takeItem(row={row}, column={column})")
-        item = cast(DLGStandardItem, super().takeItem(row, column))
+        item = cast("DLGStandardItem", super().takeItem(row, column))
         if not self.ignoring_updates:
             self._removeLinkFromParent(None, item.link)
         return item
 
     def takeRow(self, row: int) -> list[DLGStandardItem]:  # type: ignore[override]
         print(f"{self.__class__.__name__}.takeRow(row={row})")
-        items = cast(List[DLGStandardItem], super().takeRow(row))
+        items = cast("List[DLGStandardItem]", super().takeRow(row))
         if not items:
             return items
         if self.ignoring_updates:
@@ -1923,7 +1924,7 @@ class DropTarget:
 def install_immediate_tooltip(widget: QWidget, tooltip_text: str):
     widget.setToolTip(tooltip_text)
     widget.setMouseTracking(True)
-    widget.event = lambda event: QToolTip.showText(cast(QHoverEvent, event).pos(), widget.toolTip(), widget)  # type: ignore[method-assign]
+    widget.event = lambda event: QToolTip.showText(cast("QHoverEvent", event).pos(), widget.toolTip(), widget)  # type: ignore[method-assign]
 
 
 class DLGLinkSync(DLGLink):
@@ -3138,17 +3139,17 @@ Should return 1 or 0, representing a boolean.
             if evaluate_conditions(item):
                 matching_items.append(item)
             for row in range(item.rowCount()):
-                child_item = cast(DLGStandardItem, item.child(row))
+                child_item = cast("DLGStandardItem", item.child(row))
                 if child_item:
                     search_item(child_item)
 
         def search_children(parent_item: DLGStandardItem):
             for row in range(parent_item.rowCount()):
-                child_item = cast(DLGStandardItem, parent_item.child(row))
+                child_item = cast("DLGStandardItem", parent_item.child(row))
                 search_item(child_item)
                 search_children(child_item)
 
-        search_children(cast(DLGStandardItem, self.model.invisibleRootItem()))
+        search_children(cast("DLGStandardItem", self.model.invisibleRootItem()))
         return list({*matching_items})
 
     def highlight_result(self, item: DLGStandardItem):
@@ -3264,7 +3265,7 @@ Should return 1 or 0, representing a boolean.
         if not selectedTreeIndexes or not selectedTreeIndexes[0]:
             QMessageBox(QMessageBox.Icon.Information, "No target specified", "Select a position in the tree to insert this orphan at then try again.")
             return
-        selectedTreeItem: DLGStandardItem | None = cast(DLGStandardItem, self.model.itemFromIndex(selectedTreeIndexes[0]))
+        selectedTreeItem: DLGStandardItem | None = cast("DLGStandardItem", self.model.itemFromIndex(selectedTreeIndexes[0]))
         if selectedTreeItem is None:
             print("restoreOrphanedNodes: selected index was not a standard item.")
             self.blinkWindow()
@@ -4107,7 +4108,7 @@ Should return 1 or 0, representing a boolean.
         elif not isRoot:
             self.ui.dialogTree.collapse(itemIndex)
         for row in range(item.rowCount()):
-            childItem: DLGStandardItem = cast(DLGStandardItem, item.child(row))
+            childItem: DLGStandardItem = cast("DLGStandardItem", item.child(row))
             if childItem is None:
                 continue
             childIndex: QModelIndex = childItem.index()

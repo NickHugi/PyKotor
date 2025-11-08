@@ -7,7 +7,6 @@ This module provides:
 - enhanced_engine: Enhanced diff engine with formatting support
 - formatters: Output formatters for different diff formats
 - generator: Generate complete tslpatchdata folder structures
-- merge3_utils: 3-way diff and merge utilities
 - objects: Structured diff result objects
 - resolution: Resource resolution order handling for installation comparisons
 - structured: Detailed diff results for INI generation
@@ -38,7 +37,7 @@ from pykotor.tslpatcher.diff.generator import (
     determine_install_folders,
     validate_tslpatchdata_arguments,
 )
-from pykotor.tslpatcher.diff.incremental_writer import IncrementalTSLPatchDataWriter
+from pykotor.tslpatcher.writer import IncrementalTSLPatchDataWriter
 from pykotor.tslpatcher.diff.objects import DiffEngine, DiffFormat, DiffType
 from pykotor.tslpatcher.diff.resolution import (
     ResolvedResource,
@@ -50,7 +49,7 @@ from pykotor.tslpatcher.diff.resolution import (
     get_location_display_name,
     resolve_resource_in_installation,
 )
-from pykotor.extract.talktable import StrRefReferenceCache
+from pykotor.tools.reference_cache import StrRefReferenceCache
 
 __all__ = [
     "CachedFileComparison",
@@ -75,7 +74,6 @@ __all__ = [
     "collect_all_resource_identifiers",
     "determine_install_folders",
     "determine_tslpatcher_destination",
-    "diff3_files_udiff",
     "diff_capsule_files",
     "diff_data",
     "diff_directories",
@@ -88,4 +86,3 @@ __all__ = [
     "save_diff_cache",
     "validate_tslpatchdata_arguments",
 ]
-

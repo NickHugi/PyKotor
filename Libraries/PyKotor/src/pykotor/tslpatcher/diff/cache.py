@@ -23,9 +23,10 @@ import yaml
 from pykotor.tslpatcher.diff.engine import CachedFileComparison
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from pykotor.common.misc import Game
-    from pykotor.extract.talktable import StrRefReferenceCache
-    from utility.system.path import Path
+    from pykotor.tools.reference_cache import StrRefReferenceCache
 
 
 @dataclass
@@ -152,14 +153,14 @@ def save_diff_cache(
     for file_comp in files_list:
         if file_comp.status in ("modified", "missing_right") and file_comp.left_exists:
             src = mine / file_comp.rel_path
-            if src.safe_isfile():
+            if src.is_file():
                 dst = left_dir / file_comp.rel_path
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 dst.write_bytes(src.read_bytes())
 
         if file_comp.status in ("modified", "missing_left") and file_comp.right_exists:
             src = older / file_comp.rel_path
-            if src.safe_isfile():
+            if src.is_file():
                 dst = right_dir / file_comp.rel_path
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 dst.write_bytes(src.read_bytes())
@@ -227,7 +228,7 @@ def restore_strref_cache_from_cache(
     Returns:
         Restored StrRefReferenceCache or None if no cache data available
     """
-    from pykotor.extract.talktable import StrRefReferenceCache  # noqa: PLC0415
+    from pykotor.tools.reference_cache import StrRefReferenceCache  # noqa: PLC0415
 
     if cache.strref_cache_data is None:
         return None

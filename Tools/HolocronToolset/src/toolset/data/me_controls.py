@@ -4,6 +4,7 @@ import json
 import math
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn
 
 from jsmin import jsmin
@@ -15,7 +16,6 @@ from pykotor.common.geometry import Vector3
 from pykotor.common.stream import BinaryReader
 from pykotor.gl.scene import Camera
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.common.geometry import Vector2

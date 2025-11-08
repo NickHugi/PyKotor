@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCSBinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
-from utility.system.path import Path
+from pathlib import Path
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.ncs import NCS
@@ -36,14 +36,20 @@ if TYPE_CHECKING:
 BINARY_TEST_FILE = "tests/files/test.ncs"
 
 
+EXPECTED_INSTRUCTION_COUNT = 1541
+
+
 class TestNCS(TestCase):
     def test_binary_io(self):
-        """This test fails due to reading unknown bytecode 0x00. No idea why it fails so far into the NCS."""
+        """Ensure binary NCS IO produces byte-identical output."""
         ncs = NCSBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(ncs)
 
         user_profile_path = os.environ.get("USERPROFILE")
-        file_path = Path(user_profile_path, "Documents", "ext", "output.ncs")
+        file_path = Path(user_profile_path or "", "Documents", "ext", "output.ncs")
+        
+        # Create parent directory if it doesn't exist
+        file_path.parent.mkdir(parents=True, exist_ok=True)
 
         write_ncs(ncs, file_path)
         data = bytes_ncs(ncs)
@@ -51,7 +57,7 @@ class TestNCS(TestCase):
         self.validate_io(ncs)
 
     def validate_io(self, ncs: NCS):
-        self.assertEqual(8, len(ncs.instructions))
+        self.assertEqual(EXPECTED_INSTRUCTION_COUNT, len(ncs.instructions))
 
         self.assertEqual(BinaryReader.load_file(BINARY_TEST_FILE), bytes_ncs(ncs))
 

@@ -6,6 +6,7 @@ import shutil
 import zipfile
 
 from copy import copy, deepcopy
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
@@ -45,7 +46,6 @@ from toolset.gui.windows.help import HelpWindow
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.misc import is_debug_mode
 from utility.system.os_helper import is_frozen
-from utility.system.path import Path
 from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
@@ -1070,7 +1070,7 @@ class KitDownloader(QDialog):
             for kitName, kitDict in updateInfoData["kits"].items():
                 kitId = kitDict["id"]
                 kitPath = Path(f"kits/{kitId}.json")
-                if kitPath.safe_isfile():
+                if kitPath.is_file():
                     button = QPushButton("Already Downloaded")
                     button.setEnabled(True)
                     localKitDict = None
@@ -1162,7 +1162,7 @@ class KitDownloader(QDialog):
                     shutil.copytree(src_path, str(this_kit_dst_path))
                     this_kit_json_filename = f"{kitId}.json"
                     src_kit_json_path = tempdir_path / this_kit_json_filename
-                    if not src_kit_json_path.safe_isfile():
+                    if not src_kit_json_path.is_file():
                         msg = f"Kit '{kitId}' is missing the '{this_kit_json_filename}' file, cannot complete download"
                         print(msg)
                         return False
@@ -1172,7 +1172,7 @@ class KitDownloader(QDialog):
                 return False
             finally:
                 try:
-                    if tempdir and Path(tempdir).safe_isdir():
+                    if tempdir and Path(tempdir).is_dir():
                         shutil.rmtree(tempdir)
                 except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
                     print(format_exception_with_variables(exc))

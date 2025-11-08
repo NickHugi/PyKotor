@@ -8,9 +8,8 @@ import sys
 
 from contextlib import suppress
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, OrderedDict, SupportsFloat, SupportsInt, TypeVar
-
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -237,7 +236,7 @@ def generate_hash(
         else:
             hasher.update(data_input)
     else:
-        with Path.pathify(data_input).open("rb") as f:
+        with Path(data_input).open("rb") as f:
             for chunk in iter(lambda: f.read(chunk_size), b""):
                 hasher.update(chunk)
 

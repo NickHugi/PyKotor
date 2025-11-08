@@ -12,9 +12,8 @@ import typing
 from abc import ABC
 from contextlib import suppress
 from dataclasses import MISSING, dataclass, fields
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, Union, get_args, get_origin, overload
-
-from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
 
@@ -660,8 +659,8 @@ def download_github_directory_fallback(
     repo_path: os.PathLike | str,
 ):
     """There were two versions of this function and I can't remember which one worked."""
-    repo = PurePath.pathify(repo)
-    repo_path = PurePath.pathify(repo_path)
+    repo = PurePath(repo)
+    repo_path = PurePath(repo_path)
     api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
     data = _request_api_data(api_url)
     for item in data:

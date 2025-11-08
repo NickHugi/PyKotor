@@ -11,6 +11,7 @@ import sys
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, cast
 
 import qtpy
@@ -50,7 +51,7 @@ from qtpy.QtWidgets import (
 from watchdog.events import FileSystemEventHandler
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
+from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
@@ -102,7 +103,6 @@ from toolset.utils.window import addWindow, openResourceEditor
 from ui import stylesheet_resources  # noqa: F401
 from utility.error_handling import universal_simplify_exception
 from utility.misc import ProcessorArchitecture, is_debug_mode
-from utility.system.path import Path, PurePath
 from utility.tricks import debug_reload_pymodules
 from utility.updater.update import AppUpdate
 
@@ -127,6 +127,7 @@ if TYPE_CHECKING:
     from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
 
+    from pykotor.extract.file import LocationResult
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
@@ -984,7 +985,7 @@ class ToolWindow(QMainWindow):
 
         if not file_or_folder_path.is_relative_to(self.active.override_path()):
             raise ValueError(f"'{file_or_folder_path}' is not relative to the override folder, cannot reload")
-        if file_or_folder_path.safe_isfile():
+        if file_or_folder_path.is_file():
             rel_folderpath = file_or_folder_path.parent.relative_to(self.active.override_path())
             print("<SDM> [onOverrideReload scope] rel_folderpath: ", rel_folderpath)
 
@@ -1047,7 +1048,7 @@ class ToolWindow(QMainWindow):
 
 
         # If the user has not set a path for the particular game yet, ask them too.
-        if not path or not path.strip() or not CaseAwarePath(path).safe_isdir():
+        if not path or not path.strip() or not CaseAwarePath(path).is_dir():
             if path and path.strip():
                 QMessageBox(QMessageBox.Icon.Warning, f"Installation '{path}' not found", "Select another path now.").exec_()
             path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}", "Knights of the Old Republic II" if tsl else "swkotor")
@@ -1272,7 +1273,7 @@ class ToolWindow(QMainWindow):
         erf_filepath = self.active.module_path() / filename
         print("<SDM> [onOpenResources scope] erf_filepath: ", erf_filepath)
 
-        if not erf_filepath.safe_isfile():
+        if not erf_filepath.is_file():
             self.log.info(f"Not loading '{erf_filepath}'. File does not exist")
             return
         res_ident = ResourceIdentifier.from_path(erf_filepath)
@@ -1538,7 +1539,7 @@ class ToolWindow(QMainWindow):
             return
         filepath = self.active.path() / "dialog.tlk"
         print("<SDM> [openActiveTalktable scope] filepath: ", filepath)
-        if not filepath.safe_isfile():
+        if not filepath.is_file():
             QMessageBox(QMessageBox.Icon.Information, "dialog.tlk not found", f"Could not open the TalkTable editor, dialog.tlk not found at the expected location<br><br>{filepath}.").exec_()
             return
         data = BinaryReader.load_file(filepath)
@@ -1872,7 +1873,7 @@ class ToolWindow(QMainWindow):
         erf_filepath = self.active.module_path() / filename
         print("<SDM> [openERFEditor scope] erf_filepath: ", erf_filepath)
 
-        if not erf_filepath.safe_isfile():
+        if not erf_filepath.is_file():
             self.log.warning(f"Not loading '{erf_filepath}'. File does not exist")
             return
         res_ident = ResourceIdentifier.from_path(erf_filepath)
@@ -2652,7 +2653,7 @@ class ToolWindow(QMainWindow):
                             shutil.copy(str(previous_save_path), str(subfolder))
                             if self.ui.tpcTxiCheckbox.isChecked():
                                 txi_path = previous_save_path.with_suffix(".txi")
-                                if txi_path.safe_isfile():
+                                if txi_path.is_file():
                                     shutil.copy(str(txi_path), str(subfolder))
                             continue
                         file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
@@ -2937,7 +2938,7 @@ class FolderObserver(FileSystemEventHandler):
         print("<SDM> [on_any_event scope] modified_path: ", modified_path)
 
 
-        if not modified_path.safe_isfile():
+        if not modified_path.is_file():
             return
 
         module_path: Path = self.window.active.module_path()

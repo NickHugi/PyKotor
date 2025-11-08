@@ -28,12 +28,39 @@ from pykotor.resource.generics.utm import construct_utm, dismantle_utm
 if TYPE_CHECKING:
     from pykotor.resource.generics.utm import UTM
 
-TEST_FILE = "tests/files/test.utm"
+TEST_UTM_XML = """<gff3>
+  <struct id="-1">
+    <resref label="ResRef">dan_droid</resref>
+    <locstring label="LocName" strref="33399" />
+    <exostring label="Tag">dan_droid</exostring>
+    <sint32 label="MarkUp">100</sint32>
+    <sint32 label="MarkDown">25</sint32>
+    <resref label="OnOpenStore">onopenstore</resref>
+    <byte label="BuySellFlag">3</byte>
+    <list label="ItemList">
+      <struct id="0">
+        <resref label="InventoryRes">g_i_drdltplat001</resref>
+        <uint16 label="Repos_PosX">0</uint16>
+        <uint16 label="Repos_Posy">0</uint16>
+        </struct>
+      <struct id="1">
+        <resref label="InventoryRes">g_i_drdltplat002</resref>
+        <uint16 label="Repos_PosX">1</uint16>
+        <uint16 label="Repos_Posy">0</uint16>
+        <byte label="Infinite">1</byte>
+        </struct>
+      </list>
+    <byte label="ID">5</byte>
+    <exostring label="Comment">comment</exostring>
+    </struct>
+  </gff3>
+"""
 
 
 class TestUTM(unittest.TestCase):
     def test_io(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTM_XML.encode())
+        gff = read_gff(TEST_UTM_XML.encode())
         utm = construct_utm(gff)
         self.validate_io(utm)
 

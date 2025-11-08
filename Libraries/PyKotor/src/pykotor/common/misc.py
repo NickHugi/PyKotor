@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, ClassVar, Generic, Iterable, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Iterable, TypeVar
 
 from pykotor.common.geometry import Vector3
 
@@ -170,7 +170,7 @@ class ResRef:
             InvalidFormatError - text starts/ends with a space or contains windows invalid filename characters.
             All of the above exceptions inherit ValueError.
         """
-        parsed_text: str = str(text)
+        parsed_text: str = str(text).strip()
 
         # Ensure text only contains ASCII characters.
         if not text.isascii():
@@ -179,20 +179,14 @@ class ResRef:
         # Validate text length.
         if len(parsed_text) > self.MAX_LENGTH:
             if not truncate:
-                ...
-                # raise self.ExceedsMaxLengthError(parsed_text)  # FIXME: pykotor isn't stable enough to enforce this yet.
+                raise self.ExceedsMaxLengthError(parsed_text)
             parsed_text = parsed_text[: self.MAX_LENGTH]
-
-        # Ensure text doesn't start/end with whitespace.
-        if parsed_text != parsed_text.strip():
-            msg = f"ResRef '{text}' cannot start or end with a space."
-            # raise self.InvalidFormatError(msg)  # FIXME: pykotor isn't stable enough to enforce this yet.
 
         # Ensure text doesn't contain any invalid ASCII characters.
         for i in range(len(parsed_text)):
             if parsed_text[i] in self.INVALID_CHARACTERS:
                 msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
-                # raise self.InvalidFormatError(msg)  # FIXME: pykotor isn't stable enough to enforce this yet.
+                raise self.InvalidFormatError(msg)
 
         self._value = parsed_text.strip()
 
@@ -565,7 +559,7 @@ class CaseInsensitiveHashSet(set, Generic[T]):
             for item in iterable:
                 self.add(item)
 
-    def _normalize_key(self, item: T):
+    def _normalize_key(self, item: T) -> str | object:
         return item.casefold() if isinstance(item, str) else item
 
     def add(self, item: T):
@@ -604,6 +598,22 @@ class CaseInsensitiveHashSet(set, Generic[T]):
         if self is other:
             return True
         return super().__eq__({self._normalize_key(item) for item in other})
+
+    def __hash__(self) -> int:  # type: ignore[override]
+        # Use a normalized, immutable representation for the hash
+        def _sort_key(x: Any) -> str:
+            return x if isinstance(x, str) else str(x)
+
+        normalized_items = tuple(
+            sorted(
+                (
+                    self._normalize_key(item)
+                    for item in self
+                ),
+                key=_sort_key
+            )
+        )
+        return hash(normalized_items)
 
     def __ne__(self, other):
         return super().__ne__({self._normalize_key(item) for item in other})

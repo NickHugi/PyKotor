@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import logging
+
 from typing import TYPE_CHECKING, NoReturn
 
 from pykotor.resource.formats.ncs.ncs_data import NCSInstructionType, NCSOptimizer
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.ncs.ncs_data import NCS, NCSInstruction
+
+
+logger = logging.getLogger(__name__)
 
 
 class RemoveNopOptimizer(NCSOptimizer):
@@ -27,16 +32,50 @@ class RemoveNopOptimizer(NCSOptimizer):
             - For each NOP, finds all links jumping to it and updates them to jump to the next instruction instead
             - Removes all NOP instructions from the NCS instruction list.
         """
+        def find_index(target: NCSInstruction) -> int:
+            for idx, instruction in enumerate(ncs.instructions):
+                if instruction is target:
+                    return idx
+            msg = f"NOP not present by identity lookup. nop_id={id(target)}"
+            raise ValueError(msg)
+
         nops: list[NCSInstruction] = [inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.NOP]
 
-        # Process instructions which jump to a NOP and set them to jump to the proceeding instruction instead
-        for nop in nops:
-            nop_index: int = ncs.instructions.index(nop)
-            for link in ncs.links_to(nop):
-                link.jump = ncs.instructions[nop_index + 1]
+        if not nops:
+            return
 
-        # It is now safe to remove all NOP instructions
-        ncs.instructions = [inst for inst in ncs.instructions if inst.ins_type != NCSInstructionType.NOP]
+        removable_ids: set[int] = set()
+
+        # Process instructions which jump to a NOP and set them to jump to the proceeding non-NOP instruction instead.
+        for nop in nops:
+            try:
+                nop_index: int = find_index(nop)
+            except ValueError:
+                logger.warning("Skipping NOP removal; lookup failed. nop_id=%s", id(nop), exc_info=True)
+                continue
+
+            inbound_links = ncs.links_to(nop)
+            replacement: NCSInstruction | None = None
+
+            for candidate in ncs.instructions[nop_index + 1 :]:
+                if candidate.ins_type != NCSInstructionType.NOP:
+                    replacement = candidate
+                    break
+
+            if inbound_links and replacement is None:
+                # We cannot safely retarget inbound jumps, so keep this NOP.
+                continue
+
+            for link in inbound_links:
+                link.jump = replacement
+
+            removable_ids.add(id(nop))
+
+        if not removable_ids:
+            return
+
+        ncs.instructions = [inst for inst in ncs.instructions if id(inst) not in removable_ids]
+        self.instructions_cleared += len(removable_ids)
 
 
 class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
@@ -44,18 +83,6 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
         super().__init__()
 
     def optimize(self, ncs: NCS):
-        """Optimizes an NCS script by removing unnecessary MOVSP=0 instructions.
-
-        Args:
-        ----
-            ncs (NCS): The NCS script to optimize
-
-        Processing Logic:
-        ----------------
-            - Finds all MOVSP=0 instructions
-            - Changes any jumps to those instructions to jump to the next instruction instead
-            - Removes all MOVSP=0 instructions from the program.
-        """
         movsp0: list[NCSInstruction] = [inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.MOVSP and inst.args[0] == 0]
 
         # Process instructions which jump to a MOVSP=0 and set them to jump to the proceeding instruction instead
@@ -79,19 +106,6 @@ class MergeAdjacentMoveSPOptimizer(NCSOptimizer):
     """
 
     def optimize(self, ncs: NCS):
-        """Merge adjacent MOVSP instructions.
-
-        Args:
-        ----
-            ncs: NCS object to optimize
-
-        Processing Logic:
-        ----------------
-            - Find sequences of consecutive MOVSP instructions
-            - Sum their offset values
-            - Replace sequence with single MOVSP containing the sum
-            - Update any jumps that target removed instructions
-        """
         i = 0
         while i < len(ncs.instructions) - 1:
             instruction = ncs.instructions[i]
@@ -125,18 +139,6 @@ class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
     """
 
     def optimize(self, ncs: NCS):
-        """Remove redundant adjacent jumps.
-
-        Args:
-        ----
-            ncs: NCS object to optimize
-
-        Processing Logic:
-        ----------------
-            - Find all JMP instructions
-            - Check if jump target is the immediately following instruction
-            - Remove such redundant JMP instructions
-        """
         removals = []
 
         for i, instruction in enumerate(ncs.instructions[:-1]):  # Skip last instruction
@@ -160,18 +162,6 @@ class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
 
 class RemoveUnusedBlocksOptimizer(NCSOptimizer):
     def optimize(self, ncs: NCS):
-        """Optimizes the NCS by removing unreachable instructions.
-
-        Args:
-        ----
-            ncs: NCS - The NCS object to optimize
-
-        Processing Logic:
-        ----------------
-            - Find list of reachable instructions using breadth first search
-            - Instructions not in reachable list are unreachable
-            - Remove unreachable instructions from NCS.
-        """
         # Find list of unreachable instructions
         reachable = set()
         checking: list[int] = [0]

@@ -5,12 +5,12 @@ import base64
 from typing import TYPE_CHECKING, Any
 
 # Try to import defusedxml, fallback to ElementTree if not available
-from xml.etree import ElementTree
+from xml.etree import ElementTree as ET
 
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
 
-    ElementTree.fromstring = _fromstring
+    ET.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
     print("warning: defusedxml is not available but recommended due to security concerns.")
 
@@ -43,7 +43,7 @@ class GFFXMLReader(ResourceReader):
         self._gff = GFF()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
-        xml_root: ElementTree.Element | None = ElementTree.fromstring(data).find("struct")  # noqa: S314
+        xml_root: ET.Element | None = ET.fromstring(data).find("struct")  # noqa: S314
         self._load_struct(self._gff.root, xml_root)
 
         return self._gff
@@ -51,7 +51,7 @@ class GFFXMLReader(ResourceReader):
     def _load_struct(
         self,
         gff_struct: GFFStruct,
-        xml_struct: ElementTree.Element,
+        xml_struct: ET.Element,
     ):
         gff_struct.struct_id = int(xml_struct.get("id"))
 
@@ -61,7 +61,7 @@ class GFFXMLReader(ResourceReader):
     def _load_field(
         self,
         gff_struct: GFFStruct,
-        xml_field: ElementTree.Element,
+        xml_field: ET.Element,
     ):
         label: str | None = xml_field.get("label")
 
@@ -86,9 +86,9 @@ class GFFXMLReader(ResourceReader):
         elif xml_field.tag == "double":
             gff_struct.set_double(label, float(xml_field.text))
         elif xml_field.tag == "exostring":
-            gff_struct.set_string(label, xml_field.text)
+            gff_struct.set_string(label, xml_field.text or "")
         elif xml_field.tag == "resref":
-            gff_struct.set_resref(label, ResRef(xml_field.text))
+            gff_struct.set_resref(label, ResRef(xml_field.text or ""))
         elif xml_field.tag == "locstring":
             locstring = LocalizedString(-1)
             locstring.stringref = -1 if xml_field.get("strref") == "4294967295" else int(xml_field.get("strref"))
@@ -99,7 +99,7 @@ class GFFXMLReader(ResourceReader):
                 locstring.set_data(language, gender, substring.text)
             gff_struct.set_locstring(label, locstring)
         elif xml_field.tag == "data":
-            data = base64.b64decode(xml_field.text)
+            data = base64.b64decode(xml_field.text or b"")
             gff_struct.set_binary(label, data)
         elif xml_field.tag == "orientation":
             coords = xml_field.findall("double")
@@ -138,7 +138,7 @@ class GFFXMLWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self.xml_root = ElementTree.Element("xml")
+        self.xml_root = ET.Element("xml")
         self.gff: GFF = gff
 
     @autoclose
@@ -148,17 +148,17 @@ class GFFXMLWriter(ResourceWriter):
     ):
         self.xml_root.tag = "gff3"
 
-        xml_struct = ElementTree.Element("struct")
+        xml_struct = ET.Element("struct")
         self.xml_root.append(xml_struct)
         self._build_struct(self.gff.root, xml_struct)
 
         indent(self.xml_root)
-        self._writer.write_bytes(ElementTree.tostring(self.xml_root))
+        self._writer.write_bytes(ET.tostring(self.xml_root))
 
     def _build_struct(
         self,
         gff_struct: GFFStruct,
-        xml_struct: ElementTree.Element,
+        xml_struct: ET.Element,
     ):
         xml_struct.set("id", str(gff_struct.struct_id))
 
@@ -170,9 +170,9 @@ class GFFXMLWriter(ResourceWriter):
         label: str,
         value: Any,
         field_type: GFFFieldType,
-        xml_struct: ElementTree.Element,
+        xml_struct: ET.Element,
     ):
-        xml_field = ElementTree.Element("")
+        xml_field = ET.Element("")
         xml_field.set("label", label)
         xml_struct.append(xml_field)
 
@@ -217,7 +217,7 @@ class GFFXMLWriter(ResourceWriter):
             locstring: LocalizedString = value
             xml_field.set("strref", str(locstring.stringref))
             for language, gender, string in locstring:
-                subelement = ElementTree.Element("string")
+                subelement = ET.Element("string")
                 subelement.set(
                     "language",
                     str(LocalizedString.substring_id(language, gender)),
@@ -237,28 +237,28 @@ class GFFXMLWriter(ResourceWriter):
         elif field_type == GFFFieldType.List:
             xml_field.tag = "list"
             for gff_struct in value:
-                subelement = ElementTree.Element("struct")
+                subelement = ET.Element("struct")
                 xml_field.append(subelement)
                 self._build_struct(gff_struct, subelement)
 
-    def _build_vector3(self, xml_field: ElementTree.Element, value: Vector3):
+    def _build_vector3(self, xml_field: ET.Element, value: Vector3):
         xml_field.tag = "vector"
-        x_element = ElementTree.Element("double")
+        x_element = ET.Element("double")
         x_element.text = str(value.x)
-        y_element = ElementTree.Element("double")
+        y_element = ET.Element("double")
         y_element.text = str(value.y)
-        z_element = ElementTree.Element("double")
+        z_element = ET.Element("double")
         z_element.text = str(value.z)
         xml_field.extend([x_element, y_element, z_element])
 
-    def _build_vector4(self, xml_field: ElementTree.Element, value: Vector4):
+    def _build_vector4(self, xml_field: ET.Element, value: Vector4):
         xml_field.tag = "orientation"
-        x_element = ElementTree.Element("double")
+        x_element = ET.Element("double")
         x_element.text = str(value.x)
-        y_element = ElementTree.Element("double")
+        y_element = ET.Element("double")
         y_element.text = str(value.y)
-        z_element = ElementTree.Element("double")
+        z_element = ET.Element("double")
         z_element.text = str(value.z)
-        w_element = ElementTree.Element("double")
+        w_element = ET.Element("double")
         w_element.text = str(value.w)
         xml_field.extend([x_element, y_element, z_element, w_element])

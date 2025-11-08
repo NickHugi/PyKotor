@@ -1,22 +1,15 @@
 from __future__ import annotations
 
-import traceback
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, NamedTuple
 
 # Import for runtime usage
 from pykotor.extract.file import ResourceIdentifier  # pyright: ignore[reportMissingImports]
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.type import ResourceType
-from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     from typing_extensions import Literal
 
-    from pykotor.common.misc import Game
-    from pykotor.extract.file import FileResource
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.twoda.twoda_data import TwoDARow
     from pykotor.tools.path import CaseAwarePath
@@ -359,6 +352,7 @@ class K2Columns2DA:
 
             @dataclass(frozen=True, init=False, repr=False)
             class Doors(ABSColumns2DA):
+                """All 2DA columns that reference door model resrefs."""
                 doortypes: ClassVar[set[str]] = {"model"}
                 genericdoors: ClassVar[set[str]] = {"modelname"}
 
@@ -406,6 +400,7 @@ class K2Columns2DA:
 
         @dataclass(frozen=True, init=False, repr=False)
         class Textures(ABSColumns2DA):
+            """All 2DA columns that reference texture resrefs."""
             actions: ClassVar[set[str]] = {"iconresref"}
             appearance: ClassVar[set[str]] = {"racetex", "texa", "texb", "texc", "texd", "texe", "texf", "texg", "texh", "texi", "texj",
                                               "headtexve", "headtexe", "headtexvg", "headtexg"}
@@ -615,11 +610,6 @@ class TwoDAManager:
             result.extend(columns)
         return list(set(result))
 
-    @classmethod
-    def lookup(cls, query: str, data_type: str) -> LookupResult2DA | None:
-        """Deprecated: use instance.lookup_in_installation."""
-        return None
-
     def lookup_in_installation(self, query: str, data_type: Literal["resref", "strref"]) -> LookupResult2DA | None:
         from pykotor.resource.formats.twoda.twoda_auto import read_2da  # lazy import
         from pykotor.tools.path import CaseAwarePath
@@ -650,299 +640,3 @@ class TwoDAManager:
                             entire_row=row,
                         )
         return None
-
-
-# Logging disabled intentionally (no-op)
-_log_level = 0
-
-
-def _log_debug(msg: str) -> None:
-    return
-
-
-def _log_verbose(msg: str) -> None:
-    return
-
-
-# GFF field name to 2DA filename mappings
-# Maps GFF field names to the 2DA files they reference
-#
-# Sources consulted for this mapping:
-# - reone engine (C++): vendor/reone/src/libs/resource/parser/gff/*.cpp
-#   Specifically: utc.cpp, uti.cpp, utd.cpp, utp.cpp, utt.cpp, ute.cpp, utm.cpp,
-#                  are.cpp, git.cpp, ifo.cpp, dlg.cpp
-# - HolocronToolset: Tools/HolocronToolset/src/toolset/data/installation.py
-#   Constants like TwoDA_APPEARANCES, TwoDA_FACTIONS, etc.
-# - KotOR.js (TypeScript): vendor/KotOR.js/src/resource/ (reference only)
-# - xoreos (C++): vendor/xoreos/src/aurora/ (reference only)
-#
-# Note: Some fields are context-dependent (e.g. "Appearance" in doors vs placeables).
-# The mapping should handle the most common case or be disambiguated by file type.
-GFF_FIELD_TO_2DA_MAPPING: dict[str, ResourceIdentifier] = TwoDARegistry.gff_field_mapping()
-    # mapping provided by TwoDARegistry
-
-
-class TwoDAMemoryReferenceCache:
-    """Cache of 2DA memory token references found during resource scanning.
-
-    Maps (2da_filename, row_index) -> list of (resource_identifier, field_paths)
-    where that row is referenced.
-
-    This enables automatic generation of linking patches when 2DA rows are modified,
-    similar to how StrRef linking works.
-    """
-
-    def __init__(self, game: Game):
-        """Initialize cache.
-
-        Args:
-            game: Game instance (for potential game-specific logic)
-        """
-        self.game: Game = game
-
-        # Map: (2da_filename, row_index) -> [(resource_identifier, [field_paths])]
-        self._cache: dict[tuple[str, int], list[tuple[ResourceIdentifier, list[str]]]] = {}
-
-        # Statistics
-        self._total_references_found: int = 0
-        self._files_with_2da_refs: set[str] = set()
-
-    def scan_resource(
-        self,
-        resource: FileResource,
-        data: bytes,
-    ) -> None:
-        """Scan a resource for 2DA memory references and cache them.
-
-        Args:
-            resource: FileResource being scanned
-            data: Resource data bytes
-        """
-        identifier: ResourceIdentifier = resource.identifier()
-        restype: ResourceType = resource.restype()
-
-        try:
-            # Only scan GFF files for 2DA references
-            if restype in GFFContent.get_restypes():
-                try:
-                    gff_obj = read_gff(data)
-                    self._scan_gff(identifier, gff_obj.root)
-                except Exception as e:  # noqa: BLE001, S110
-                    print(f"Not a valid GFF file or failed to parse: {identifier.resname}, skipping: {e.__class__.__name__}")
-                    traceback.print_exc()
-
-        except Exception:  # noqa: BLE001, S110
-            # Skip files that fail to scan
-            pass
-
-    def _scan_gff(
-        self,
-        identifier: ResourceIdentifier,
-        gff_struct: GFFStruct,
-        current_path: PurePath | None = None,
-    ) -> None:
-        """Recursively scan GFF structure for 2DA references.
-
-        Args:
-            identifier: Resource identifier
-            gff_struct: GFF struct to scan
-            current_path: Current path in the GFF hierarchy
-        """
-        if current_path is None:
-            current_path = PurePath()
-
-        for label, field_type, value in gff_struct:
-            field_path = current_path / label
-
-            # Check if this field references a 2DA
-            if label in GFF_FIELD_TO_2DA_MAPPING:
-                # This field references a 2DA file
-                twoda_identifier: ResourceIdentifier = GFF_FIELD_TO_2DA_MAPPING[label]
-                twoda_filename = f"{twoda_identifier.resname}.{twoda_identifier.restype.extension}"
-
-                # Extract the numeric value (row index)
-                row_index: int | None = None
-                if field_type in (
-                    GFFFieldType.Int8,
-                    GFFFieldType.Int16,
-                    GFFFieldType.Int32,
-                    GFFFieldType.Int64,
-                ):
-                    if isinstance(value, int):
-                        row_index = value
-                elif field_type in (
-                    GFFFieldType.UInt8,
-                    GFFFieldType.UInt16,
-                    GFFFieldType.UInt32,
-                    GFFFieldType.UInt64,
-                ) and isinstance(value, int):
-                    row_index = value
-
-                if row_index is not None and row_index >= 0:
-                    self._add_reference(twoda_filename, row_index, identifier, str(field_path))
-
-            # Recurse into nested structures
-            if field_type == GFFFieldType.Struct and isinstance(value, GFFStruct):
-                self._scan_gff(identifier, value, field_path)
-            elif field_type == GFFFieldType.List and isinstance(value, GFFList):
-                for idx, item in enumerate(value):
-                    if isinstance(item, GFFStruct):
-                        item_path = field_path / str(idx)
-                        self._scan_gff(identifier, item, item_path)
-
-    def _add_reference(
-        self,
-        twoda_filename: str,
-        row_index: int,
-        identifier: ResourceIdentifier,
-        location: str,
-    ) -> None:
-        """Add a reference to the cache.
-
-        Args:
-            twoda_filename: Name of the 2DA file (e.g., "soundset.2da")
-            row_index: Row index in the 2DA
-            identifier: Resource identifier
-            location: Field path in the GFF structure
-        """
-        key = (twoda_filename.lower(), row_index)
-
-        if key not in self._cache:
-            self._cache[key] = []
-
-        # Check if this resource is already in the list
-        for existing_identifier, locations in self._cache[key]:
-            if existing_identifier == identifier:
-                # Add location if not already present
-                if location not in locations:
-                    locations.append(location)
-                    self._total_references_found += 1
-                return
-
-        # New resource for this 2DA row
-        self._cache[key].append((identifier, [location]))
-        self._files_with_2da_refs.add(identifier.resname)
-        self._total_references_found += 1
-
-    def get_references(
-        self,
-        twoda_filename: str,
-        row_index: int,
-    ) -> list[tuple[ResourceIdentifier, list[str]]]:
-        """Get all references to a specific 2DA row.
-
-        Args:
-            twoda_filename: Name of the 2DA file
-            row_index: Row index in the 2DA
-
-        Returns:
-            List of (resource_identifier, field_paths) tuples
-        """
-        key = (twoda_filename.lower(), row_index)
-        return self._cache.get(key, [])
-
-    def has_references(
-        self,
-        twoda_filename: str,
-        row_index: int,
-    ) -> bool:
-        """Check if any resources reference this 2DA row.
-
-        Args:
-            twoda_filename: Name of the 2DA file
-            row_index: Row index in the 2DA
-
-        Returns:
-            True if references exist
-        """
-        key = (twoda_filename.lower(), row_index)
-        return key in self._cache
-
-    def get_statistics(self) -> dict[str, int]:
-        """Get cache statistics.
-
-        Returns:
-            Dictionary with cache statistics
-        """
-        unique_2da_refs = len(self._cache)
-        return {
-            "unique_2da_refs": unique_2da_refs,
-            "total_references": self._total_references_found,
-            "files_with_2da_refs": len(self._files_with_2da_refs),
-        }
-
-    def log_summary(self) -> None:
-        """Log a summary of cache contents."""
-        stats = self.get_statistics()
-        _log_verbose(f"2DA Memory Reference Cache: {stats['unique_2da_refs']} unique 2DA rows referenced")
-        _log_verbose(f"  Total references: {stats['total_references']}")
-        _log_verbose(f"  Files with 2DA refs: {stats['files_with_2da_refs']}")
-
-    def to_dict(self) -> dict[str, list[dict[str, str | int | list[str]]]]:
-        """Serialize cache to dictionary for saving.
-
-        Returns:
-            Serialized cache data
-        """
-        result: dict[str, list[dict[str, str | int | list[str]]]] = {}
-
-        for (twoda_filename, row_index), references in self._cache.items():
-            key = f"{twoda_filename}:{row_index}"
-            result[key] = [
-                {
-                    "resname": ref_id.resname,
-                    "restype": ref_id.restype.extension,
-                    "locations": locations,
-                }
-                for ref_id, locations in references
-            ]
-
-        return result
-
-    @classmethod
-    def from_dict(
-        cls,
-        game: Game,
-        data: dict[str, list[dict[str, str | int | list[str]]]],
-    ) -> TwoDAMemoryReferenceCache:
-        """Restore cache from serialized dictionary.
-
-        Args:
-            game: Game instance
-            data: Serialized cache data
-
-        Returns:
-            Restored TwoDAMemoryReferenceCache
-        """
-        cache = cls(game)
-
-        for key_str, references in data.items():
-            # Parse key: "soundset.2da:123" -> ("soundset.2da", 123)
-            twoda_filename, row_index_str = key_str.rsplit(":", 1)
-            row_index = int(row_index_str)
-
-            cache_key = (twoda_filename, row_index)
-            cache._cache[cache_key] = []
-
-            for ref_data in references:
-                resname = ref_data["resname"]
-                assert isinstance(resname, str)
-                restype_ext = ref_data["restype"]
-                assert isinstance(restype_ext, str)
-                locations_data = ref_data["locations"]
-                assert isinstance(locations_data, list)
-                locations = [str(loc) for loc in locations_data]
-
-                restype = ResourceType.from_extension(restype_ext)
-                if restype is None or not restype.is_valid():
-                    continue
-
-                from pykotor.extract.file import ResourceIdentifier  # noqa: PLC0415
-
-                identifier = ResourceIdentifier(resname, restype)
-
-                cache._cache[cache_key].append((identifier, locations))
-                cache._files_with_2da_refs.add(resname)
-                cache._total_references_found += len(locations)
-
-        return cache

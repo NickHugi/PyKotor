@@ -53,13 +53,14 @@ if toolset_path.exists():
     os.chdir(toolset_path)
 
 
+from pathlib import Path  # noqa: E402
+
 from qtpy.QtGui import QIcon  # noqa: E402
 from qtpy.QtWidgets import QTreeView  # noqa: E402
 
 from pykotor.extract.file import FileResource  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.utils.window import openResourceEditor  # noqa: E402
-from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject, QPoint
@@ -691,7 +692,7 @@ class ResourceFileSystemModel(QAbstractItemModel):
             return get_sort_key(value)
 
         def sort_items(items: Sequence[TreeItem]):
-            cast(List[TreeItem], items).sort(key=sort_key, reverse=(order == Qt.SortOrder.DescendingOrder))
+            cast("List[TreeItem]", items).sort(key=sort_key, reverse=(order == Qt.SortOrder.DescendingOrder))
             for item in items:
                 if isinstance(item, DirItem):
                     sort_items(item.children)

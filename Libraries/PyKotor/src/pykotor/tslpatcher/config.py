@@ -95,6 +95,7 @@ class PatcherConfig:
             allow_no_value=True,
             strict=False,
             interpolation=None,
+            inline_comment_prefixes=(";", "#"),
         )
 
         ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]  # use case-sensitive keys

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from pykotor.common.stream import BinaryReader
@@ -8,7 +9,6 @@ from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.rim import RIM, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file, is_rim_file
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -51,11 +51,11 @@ class LazyCapsule(FileResource):
             - Reload resources from file.
         """
         ident = ResourceIdentifier.from_path(path)
-        c_filepath = Path.pathify(path)
+        c_filepath = Path(path)
         if not is_capsule_file(c_filepath):
             msg = f"Invalid file extension in capsule filepath '{c_filepath}'."
             raise ValueError(msg)
-        if create_nonexisting and not c_filepath.safe_isfile():
+        if create_nonexisting and not c_filepath.is_file():
             if is_rim_file(c_filepath):
                 write_rim(RIM(), c_filepath)
             elif is_any_erf_type_file(c_filepath):
@@ -667,7 +667,7 @@ class Capsule(LazyCapsule):
             Capsule: The initialized Capsule object.
         """
         with BinaryReader.from_bytes(data) as reader:
-            capsule = cast(cls, object())
+            capsule = cast("cls", object())
             capsule.__class__ = cls
             file_type = reader.read_string(4)
             reader.skip(4)

@@ -8,19 +8,19 @@ import os
 import struct
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # type: ignore[note]
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from types import TracebackType
 
-    from typing_extensions import Literal, Self
+    from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
@@ -75,6 +75,13 @@ class BinaryReader:
             raise ValueError(msg)
 
         self._size: int = total_size - self._offset if size is None else size
+        # PERFORMANCE: Cache position to avoid expensive tell() calls
+        # Initialize cached position from stream's actual position
+        # For mmap, we track position manually (mmap doesn't have tell())
+        if isinstance(stream, mmap.mmap):
+            self._position = 0  # mmap position is always 0-based from offset
+        else:
+            self._position = self._stream.tell() - offset
 
     @property
     def _true_stream_position(self) -> int:
@@ -100,7 +107,11 @@ class BinaryReader:
         self.close()
 
     def read(self, size: int) -> bytes | None:
-        return self._stream.read(size)
+        data = self._stream.read(size)
+        # Update cached position if read succeeded
+        if data:
+            self._position += len(data)
+        return data
 
     @classmethod
     def from_stream(
@@ -108,7 +119,7 @@ class BinaryReader:
         stream: io.RawIOBase | io.BufferedIOBase,
         offset: int = 0,
         size: int | None = None,
-    ):
+    ) -> Self:
         if not stream.seekable():
             msg = "Stream must be seekable"
             raise ValueError(msg)
@@ -140,9 +151,9 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream = Path.pathify(path).open("rb")
+        stream = Path(path).open("rb")
         instance = cls.from_stream(stream, offset, size)
-        if instance._stream is not stream:
+        if instance.get_stream() is not stream:
             stream.close()
         return instance
 
@@ -189,7 +200,9 @@ class BinaryReader:
                 raise TypeError(msg)
 
         elif isinstance(source, BinaryReader):  # is already a BinaryReader instance
-            reader = cls(source._stream, source.offset(), source.size())
+            reader = cls(source.get_stream(), source.offset(), source.size())
+            # Sync cached position from source BinaryReader
+            reader._position = source.get_position()
 
         else:
             msg = f"Must specify a path, bytes-like object, stream, io. or an existing BinaryReader instance, got type ({source.__class__})."
@@ -215,7 +228,7 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        with Path.pathify(path).open("rb") as reader:
+        with Path(path).open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
 
@@ -299,6 +312,8 @@ class BinaryReader:
         """
         self.exceed_check(length)
         self._stream.read(length)
+        # Update cached position after skip
+        self._position += length
 
     def position(
         self,
@@ -309,7 +324,27 @@ class BinaryReader:
         -------
             The byte offset.
         """
-        return self._stream.tell() - self._offset
+        # PERFORMANCE: Use cached position instead of calling tell() every time
+        # tell() is a system call that's expensive when called millions of times
+        return self._position
+
+    def get_stream(self) -> io.RawIOBase | io.BufferedIOBase | mmap.mmap:
+        """Returns the underlying stream for internal use.
+
+        Returns:
+        -------
+            The underlying stream object.
+        """
+        return self._stream
+
+    def get_position(self) -> int:
+        """Returns the cached position for internal use.
+
+        Returns:
+        -------
+            The cached position value.
+        """
+        return self._position
 
     def seek(
         self,
@@ -321,8 +356,10 @@ class BinaryReader:
         ----
             position: The byte index into stream.
         """
-        self.exceed_check(position - self.position())
+        self.exceed_check(position - self._position)
         self._stream.seek(position + self._offset)
+        # Update cached position after seek
+        self._position = position
 
     def read_all(
         self,
@@ -337,7 +374,11 @@ class BinaryReader:
         -------
             bytes: The bytes read from the stream
         """
-        return self._stream.read(self.remaining()) or b""
+        # Use cached position for remaining() calculation - no tell() call needed
+        remaining_bytes = self._size - self._position
+        data = self._stream.read(remaining_bytes) or b""
+        self._position += len(data)
+        return data
 
     def read_uint8(
         self,
@@ -355,6 +396,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(1)
+        self._position += 1
         return struct.unpack(f"{_endian_char(big)}B", self._stream.read(1) or b"")[0]
 
     def read_int8(
@@ -373,6 +415,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(1)
+        self._position += 1
         return struct.unpack(f"{_endian_char(big)}b", self._stream.read(1) or b"")[0]
 
     def read_uint16(
@@ -391,6 +434,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(2)
+        self._position += 2
         return struct.unpack(f"{_endian_char(big)}H", self._stream.read(2) or b"")[0]
 
     def read_int16(
@@ -409,6 +453,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(2)
+        self._position += 2
         return struct.unpack(f"{_endian_char(big)}h", self._stream.read(2) or b"")[0]
 
     def read_uint32(
@@ -432,6 +477,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(4)
+        self._position += 4
         unpacked = struct.unpack(f"{_endian_char(big)}I", self._stream.read(4) or b"")[0]
 
         if unpacked == 0xFFFFFFFF and max_neg1:  # noqa: PLR2004
@@ -455,6 +501,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(4)
+        self._position += 4
         return struct.unpack(f"{_endian_char(big)}i", self._stream.read(4) or b"")[0]
 
     def read_uint64(
@@ -473,6 +520,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(8)
+        self._position += 8
         return struct.unpack(f"{_endian_char(big)}Q", self._stream.read(8) or b"")[0]
 
     def read_int64(
@@ -491,6 +539,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(8)
+        self._position += 8
         return struct.unpack(f"{_endian_char(big)}q", self._stream.read(8) or b"")[0]
 
     def read_single(
@@ -509,6 +558,7 @@ class BinaryReader:
             An float from the stream.
         """
         self.exceed_check(4)
+        self._position += 4
         return struct.unpack(f"{_endian_char(big)}f", self._stream.read(4) or b"")[0]
 
     def read_double(
@@ -527,6 +577,7 @@ class BinaryReader:
             An float from the stream.
         """
         self.exceed_check(8)
+        self._position += 8
         return struct.unpack(f"{_endian_char(big)}d", self._stream.read(8) or b"")[0]
 
     def read_vector2(
@@ -610,7 +661,10 @@ class BinaryReader:
             A bytes object containing the read bytes.
         """
         self.exceed_check(length)
-        return self._stream.read(length) or b""
+        data = self._stream.read(length) or b""
+        # Update cached position based on actual bytes read
+        self._position += len(data)
+        return data
 
     def read_string(
         self,
@@ -634,6 +688,8 @@ class BinaryReader:
         """
         self.exceed_check(length)
         string_byte_data = self._stream.read(length) or b""
+        # Update cached position based on actual bytes read
+        self._position += len(string_byte_data)
         if encoding is None:
             string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
             RobustLogger().warning(f"decode_bytes_with_fallbacks called and returned '{string}'")
@@ -720,6 +776,8 @@ class BinaryReader:
         self,
         length: int = 1,
     ) -> bytes:
+        # PERFORMANCE: peek() reads and seeks back - don't update cached position
+        # since we're not actually advancing
         data = self._stream.read(length)
         self._stream.seek(-length, 1)
         return b"" if data is None else data
@@ -738,18 +796,19 @@ class BinaryReader:
         ------
             OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
-        attempted_seek = self.position() + num
+        # PERFORMANCE: Use cached position and size directly to avoid method call overhead
+        attempted_seek = self._position + num
         if attempted_seek < 0:
             msg = f"Cannot seek to a negative value {attempted_seek}, abstracted seek value: {num}"
             raise OSError(msg)
-        if attempted_seek > self.size():
+        if attempted_seek > self._size:
             msg = "This operation would exceed the streams boundaries."
             raise OSError(msg)
 
 
 class BinaryWriter(ABC):
     @abstractmethod
-    def __enter__(self): ...
+    def __enter__(self) -> Self: ...
 
     @abstractmethod
     def __exit__(self, exc_type, exc_val, exc_tb): ...
@@ -769,7 +828,7 @@ class BinaryWriter(ABC):
         -------
             A new BinaryWriter instance.
         """
-        return BinaryWriterFile(Path.pathify(path).open("wb"))
+        return BinaryWriterFile(Path(path).open("wb"))
 
     @classmethod
     def to_bytearray(
@@ -805,7 +864,7 @@ class BinaryWriter(ABC):
         if isinstance(source, (bytes, memoryview)):  # is immutable binary data
             return cls.to_bytearray(bytearray(source))
         if isinstance(source, BinaryWriterFile):
-            return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
+            return BinaryWriterFile(source._stream, source._offset)  # noqa: SLF001
         if isinstance(source, BinaryWriterBytearray):
             return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
         msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
@@ -823,7 +882,7 @@ class BinaryWriter(ABC):
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        with Path.pathify(path).open("wb") as file:
+        with Path(path).open("wb") as file:
             file.write(data)
 
     @abstractmethod
@@ -1092,7 +1151,7 @@ class BinaryWriter(ABC):
     @abstractmethod
     def write_bytes(
         self,
-        value: bytes,
+        value: bytes | bytearray,
     ):
         """Writes the specified bytes to the stream.
 
@@ -1166,14 +1225,14 @@ class BinaryWriterFile(BinaryWriter):
         offset: int = 0,
     ):
         self._stream: io.BufferedIOBase | io.RawIOBase = stream
-        self.offset: int = offset  # FIXME: rename to _offset like all the other classes in this file.
+        self._offset: int = offset
         self.auto_close: bool = True
 
         self._stream.seek(offset)
 
     def __enter__(
         self,
-    ):
+    ) -> Self:
         return self
 
     def __exit__(
@@ -1238,7 +1297,7 @@ class BinaryWriterFile(BinaryWriter):
         ----
             position: The byte index into stream.
         """
-        self._stream.seek(position + self.offset)
+        self._stream.seek(position + self._offset)
 
     def end(
         self,
@@ -1255,7 +1314,7 @@ class BinaryWriterFile(BinaryWriter):
         -------
             The byte offset.
         """
-        return self._stream.tell() - self.offset
+        return self._stream.tell() - self._offset
 
     def write_uint8(
         self,
@@ -1468,7 +1527,7 @@ class BinaryWriterFile(BinaryWriter):
 
     def write_bytes(
         self,
-        value: bytes,
+        value: bytes | bytearray,
     ):
         """Writes the specified bytes to the stream.
 
@@ -1594,7 +1653,7 @@ class BinaryWriterBytearray(BinaryWriter):
 
     def __enter__(
         self,
-    ):
+    ) -> Self:
         return self
 
     def __exit__(
@@ -1946,7 +2005,7 @@ class BinaryWriterBytearray(BinaryWriter):
 
     def write_bytes(
         self,
-        value: bytes,
+        value: bytes | bytearray,
     ):
         """Writes the specified bytes to the stream.
 
@@ -2067,12 +2126,12 @@ class BinaryWriterBytearray(BinaryWriter):
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
 
+
 if __name__ == "__main__":
-    import random
     import time
 
     if TYPE_CHECKING:
-        from typing_extensions import Self
+        from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
     # Constants
     TEST_FILE = "test_file.bin"
@@ -2082,11 +2141,12 @@ if __name__ == "__main__":
     FILE_DATA: bytes | None = None
 
     # Function to perform the I/O operations
-    def test_io_performance(stream_class: type, mode: str = "rb") -> tuple[int, int, int]:
+    def test_io_performance(stream_class: type, mode: str) -> tuple[int, int, int]:
         print(f"Testing {stream_class.__name__}, mode={mode}")
         assert FILE_DATA is not None
         instantiation_times = []
         operation_times = []
+        stream: BinaryReader | io.IOBase | None = None
 
         for i in range(NUM_INSTANTIATIONS):
             try:
@@ -2098,31 +2158,42 @@ if __name__ == "__main__":
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_bytes(FILE_DATA)
                     elif mode == "mmap":
-                        raw_raw_stream = open(TEST_FILE, "rb")
-                        raw_stream = mmap.mmap(raw_raw_stream.fileno(), os.stat(TEST_FILE).st_size, access=mmap.ACCESS_READ)
+                        test_path = Path(TEST_FILE)
+                        with test_path.open("rb") as raw_raw_stream:
+                            file_size = test_path.stat().st_size
+                            raw_stream = mmap.mmap(raw_raw_stream.fileno(), file_size, access=mmap.ACCESS_READ)
                         instantiation_start_time = time.time()
                         stream = BinaryReader(raw_stream)
                     elif mode == "stream(io.BufferedReader)":
-                        raw_raw_stream = open(TEST_FILE, "rb")
-                        raw_stream = io.BufferedReader(raw_raw_stream)
-                        instantiation_start_time = time.time()
-                        stream = BinaryReader.from_stream(raw_stream)
+                        raw_stream = Path(TEST_FILE).open("rb")
+                        if isinstance(raw_stream, io.BufferedIOBase):
+                            buffered_stream = io.BufferedReader(raw_stream)
+                            instantiation_start_time = time.time()
+                            stream = BinaryReader.from_stream(buffered_stream)
+                        else:
+                            msg = f"Unexpected stream type: {type(raw_stream)}"
+                            raise TypeError(msg)
                     elif mode == "stream(io.BufferedRandom)":
-                        raw_raw_stream = open(TEST_FILE, "r+b")
-                        raw_stream = io.BufferedRandom(raw_raw_stream)
-                        instantiation_start_time = time.time()
-                        stream = BinaryReader.from_stream(raw_stream)
+                        # BufferedRandom needs a RawIOBase, use FileIO directly
+                        raw_stream = io.FileIO(TEST_FILE, "r+b")
+                        if isinstance(raw_stream, io.RawIOBase):
+                            buffered_stream = io.BufferedRandom(raw_stream)
+                            instantiation_start_time = time.time()
+                            stream = BinaryReader.from_stream(buffered_stream)
+                        else:
+                            msg = f"FileIO should be RawIOBase but got: {type(raw_stream)}"
+                            raise TypeError(msg)
                     elif mode == "stream(io.BytesIO)":
                         # Special handling for BytesIO
-                        stream = io.BytesIO(FILE_DATA)
+                        bytes_stream = io.BytesIO(FILE_DATA)
                         instantiation_start_time = time.time()
-                        stream = BinaryReader.from_stream(stream)
+                        stream = BinaryReader.from_stream(bytes_stream)
                     elif mode == "stream(io.FileIO)":
                         raw_stream = io.FileIO(TEST_FILE, "rb")
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_stream(raw_stream)
                     elif mode == "stream(raw)":
-                        raw_stream = open(TEST_FILE, "rb")
+                        raw_stream = Path(TEST_FILE).open("rb")
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_stream(raw_stream)
                     else:
@@ -2130,30 +2201,48 @@ if __name__ == "__main__":
                 elif stream_class is io.BytesIO:
                     # Special handling for BytesIO
                     stream = io.BytesIO(FILE_DATA)
-                else:
-                    raw_stream = open(TEST_FILE, mode)
-                    if stream_class is io.BufferedReader:
+                elif stream_class is io.BufferedReader:
+                    raw_stream = Path(TEST_FILE).open(mode)
+                    if isinstance(raw_stream, io.BufferedIOBase):
                         stream = io.BufferedReader(raw_stream)
-                    elif stream_class is io.BufferedRandom:
+                    else:
+                        msg = f"Unexpected stream type: {type(raw_stream)}"
+                        raise TypeError(msg)
+                elif stream_class is io.BufferedRandom:
+                    # BufferedRandom needs a RawIOBase, use FileIO directly
+                    raw_stream = io.FileIO(TEST_FILE, mode)
+                    if isinstance(raw_stream, io.RawIOBase):
                         stream = io.BufferedRandom(raw_stream)
                     else:
-                        stream = stream_class(TEST_FILE, mode)
+                        msg = f"FileIO should be RawIOBase but got: {type(raw_stream)}"
+                        raise TypeError(msg)
+                elif stream_class is io.FileIO:
+                    stream = io.FileIO(TEST_FILE, mode)
+                else:
+                    msg = f"Unsupported stream class: {stream_class}"
+                    raise ValueError(msg)
                 instantiation_end_time = time.time()
                 instantiation_times.append(instantiation_end_time - instantiation_start_time)
             finally:
-                if i != NUM_INSTANTIATIONS-1:
+                if i != NUM_INSTANTIATIONS - 1 and stream is not None:
                     stream.close()
 
+        if stream is None:
+            msg = "Stream was not initialized"
+            raise ValueError(msg)
         try:
             operation_start_time = time.time()
             for _ in range(NUM_OPERATIONS):
-                seek_position = random.randint(0, os.path.getsize(TEST_FILE) - 1)
+                import secrets
+
+                seek_position = secrets.randbelow(os.path.getsize(TEST_FILE))  # noqa: PTH202
                 stream.seek(seek_position)
                 stream.read(1)
             operation_end_time = time.time()
             operation_times.append(operation_end_time - operation_start_time)
         finally:
-            stream.close()
+            if stream is not None:
+                stream.close()
 
         total_instantiation_time = sum(instantiation_times)
         total_operation_time = sum(operation_times)
@@ -2168,10 +2257,10 @@ if __name__ == "__main__":
         results = []
         # Test using different stream types
         stream_types = [
-            (io.FileIO, "rb"),            # Raw access
-            (io.BytesIO, "rb"),           # In-memory stream (needs special handling)
-            (io.BufferedReader, "rb"),    # Buffered reading
-            (io.BufferedRandom, "r+b"),   # Buffered random access
+            (io.FileIO, "rb"),  # Raw access
+            (io.BytesIO, "rb"),  # In-memory stream (needs special handling)
+            (io.BufferedReader, "rb"),  # Buffered reading
+            (io.BufferedRandom, "r+b"),  # Buffered random access
             (BinaryReader, "file"),
             (BinaryReader, "mmap"),
             (BinaryReader, "stream(io.BufferedReader)"),
@@ -2182,13 +2271,13 @@ if __name__ == "__main__":
         ]
 
         # Ensure the test file exists and is the correct size
-        if not os.path.exists(TEST_FILE) or os.path.getsize(TEST_FILE) != FILE_SIZE:
+        if not os.path.exists(TEST_FILE) or os.path.getsize(TEST_FILE) != FILE_SIZE:  # noqa: PTH110, PTH202
             FILE_DATA = os.urandom(FILE_SIZE)
             print("Creating test file...")
-            with open(TEST_FILE, "wb") as f:
+            with open(TEST_FILE, "wb") as f:  # noqa: PTH123
                 f.write(FILE_DATA)
         if FILE_DATA is None:
-            with open(TEST_FILE, "rb") as f:
+            with open(TEST_FILE, "rb") as f:  # noqa: PTH123
                 FILE_DATA = f.read()
 
         # Run the tests

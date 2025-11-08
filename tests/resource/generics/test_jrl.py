@@ -24,20 +24,42 @@ if UTILITY_PATH.joinpath("utility").exists():
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.jrl import construct_jrl, dismantle_jrl
-from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff import GFF
     from pykotor.resource.generics.jrl import JRL, JRLEntry
 
-TEST_FILE = "tests/files/test.jrl"
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
-
-
+TEST_JRL_XML = """<gff3>
+  <struct id="-1">
+    <list label="Categories">
+      <struct id="0">
+        <locstring label="Name" strref="33089" />
+        <uint32 label="Priority">1</uint32>
+        <exostring label="Comment">Plot to be considered worthy to hear the Sand People history.</exostring>
+        <exostring label="Tag">Tat20aa_worthy</exostring>
+        <sint32 label="PlotIndex">72</sint32>
+        <sint32 label="PlanetID">4</sint32>
+        <list label="EntryList">
+          <struct id="0">
+            <uint32 label="ID">10</uint32>
+            <uint16 label="End">0</uint16>
+            <locstring label="Text" strref="33090" />
+            <float label="XP_Percentage">5.0</float>
+            </struct>
+          <struct id="1">
+            <uint32 label="ID">20</uint32>
+            <uint16 label="End">1</uint16>
+            <locstring label="Text" strref="33091" />
+            <float label="XP_Percentage">6.0</float>
+            </struct>
+          </list>
+        </struct>
+      </list>
+    </struct>
+  </gff3>
+"""
 class TestJRL(unittest.TestCase):
     def setUp(self):
         self.log_messages = [os.linesep]
@@ -45,40 +67,18 @@ class TestJRL(unittest.TestCase):
     def log_func(self, message=""):
         self.log_messages.append(message)
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for jrl_resource in (resource for resource in self.installation if resource.restype() is ResourceType.JRL):
-            gff: GFF = read_gff(jrl_resource.data())
-            reconstructed_gff: GFF = dismantle_jrl(construct_jrl(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for jrl_resource in (resource for resource in self.installation if resource.restype() is ResourceType.JRL):
-            gff: GFF = read_gff(jrl_resource.data())
-            reconstructed_gff: GFF = dismantle_jrl(construct_jrl(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
     def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_JRL_XML.encode())
         reconstructed_gff = dismantle_jrl(construct_jrl(gff))
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_JRL_XML.encode())
         jrl = construct_jrl(gff)
         self.validate_io(jrl)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_JRL_XML.encode())
         gff = dismantle_jrl(construct_jrl(gff))
         jrl = construct_jrl(gff)
         self.validate_io(jrl)

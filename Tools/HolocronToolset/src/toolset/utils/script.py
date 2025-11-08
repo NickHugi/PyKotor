@@ -4,6 +4,8 @@ import os
 import re
 import uuid
 
+from pathlib import Path
+
 from loggerplus import RobustLogger
 from qtpy.QtWidgets import QFileDialog, QMessageBox
 
@@ -16,7 +18,6 @@ from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.resource.type import ResourceType
 from pykotor.tools.registry import SpoofKotorRegistry
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
-from utility.system.path import Path
 
 NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
     "PyKotor has detected you are using the {} version of nwnnsscomp.<br>"
@@ -75,11 +76,11 @@ def decompileScript(
     if (
         not ncs_decompiler_path.name
         or ncs_decompiler_path.suffix.lower() != ".exe"  # TODO: require something with Xoreos-tools on unix and make this nt-specific.
-        or not ncs_decompiler_path.safe_isfile()
+        or not ncs_decompiler_path.is_file()
     ):
         lookup_path, _filter = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
         ncs_decompiler_path = Path(lookup_path)
-        if not ncs_decompiler_path.safe_isfile():
+        if not ncs_decompiler_path.is_file():
             global_settings.ncsDecompilerPath = ""
             msg = "NCS Decompiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
@@ -123,10 +124,10 @@ def setupExtractPath() -> Path:
     global_settings = GlobalSettings()
     extract_path = Path(global_settings.extractPath)
 
-    if not extract_path.safe_isdir():
+    if not extract_path.is_dir():
         extract_path_str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
         extract_path = Path(extract_path_str) if extract_path_str else None
-        if not extract_path or not extract_path.safe_isdir():
+        if not extract_path or not extract_path.is_dir():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
     return extract_path
@@ -211,7 +212,7 @@ def _prompt_additional_include_dirs(
             if ResourceIdentifier.from_path(file).restype is not ResourceType.NSS:
                 log.debug("%s is not an NSS script, skipping...", file.name)
                 continue
-            if not file.safe_isfile():
+            if not file.is_file():
                 log.debug("%s is a directory, skipping...", file.name)
                 continue
             new_include_script_path = extract_path / file.name
@@ -233,10 +234,10 @@ def _execute_nwnnsscomp_compile(
     tsl: bool,
 ) -> bytes:
     nss_compiler_path = Path(global_settings.nssCompilerPath)
-    if not nss_compiler_path.safe_isfile():
+    if not nss_compiler_path.is_file():
         lookup_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
         nss_compiler_path = Path(lookup_path)
-        if not nss_compiler_path.safe_isfile():
+        if not nss_compiler_path.is_file():
             msg = "NCS Compiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
@@ -301,7 +302,7 @@ def _execute_nwnnsscomp_compile(
     # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
 
     # All the abstraction work is now complete... verify the file exists one last time then return the compiled script's data.
-    if not tempCompiledPath.safe_isfile():
+    if not tempCompiledPath.is_file():
         import errno
         raise FileNotFoundError(errno.ENOENT, "Could not find the temp compiled script!", str(tempCompiledPath))  # noqa: TRY003, EM102
     return BinaryReader.load_file(tempCompiledPath)

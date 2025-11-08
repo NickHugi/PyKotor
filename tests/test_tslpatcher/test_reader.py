@@ -58,7 +58,7 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from pykotor.tslpatcher.reader import ConfigReader
-from utility.system.path import Path
+from pathlib import Path
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.ssf import ModifySSF
@@ -79,6 +79,7 @@ class TestConfigReader(unittest.TestCase):
             allow_no_value=True,
             strict=False,
             interpolation=None,
+            inline_comment_prefixes=(";", "#"),
         )
         # use case-sensitive keys
         self.ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
@@ -1704,7 +1705,7 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual(5, mod_1.index_to_token)
 
     def _setupIniAndConfig(self, ini_text: str) -> PatcherConfig:
-        ini = ConfigParser(delimiters="=", allow_no_value=True, strict=False, interpolation=None)
+        ini = ConfigParser(delimiters="=", allow_no_value=True, strict=False, interpolation=None, inline_comment_prefixes=(";", "#"))
         ini.optionxform = lambda optionstr: optionstr
         ini.read_string(ini_text)
         result = PatcherConfig()

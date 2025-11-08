@@ -52,10 +52,11 @@ from pykotor.tslpatcher.mods.twoda import (
 )
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.tslpatcher.mods.template import PatcherModifications
-    from utility.system.path import Path
 
 
 class DiffAnalyzer(ABC):
@@ -122,13 +123,13 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
         # Detect added columns
         added_columns = right_headers - left_headers
 
-        for col_name in added_columns:
+        for col_idx, col_name in enumerate(sorted(added_columns)):
             # Determine default value
             column_data = right_2da.get_column(col_name)
             default_value = self._determine_default_value(column_data)
 
-            # Create AddColumn2DA modifier
-            add_column_id = f"add_col_{col_name}"
+            # Create AddColumn2DA modifier with index-based identifier
+            add_column_id = f"add_column_{col_idx}"
             add_column = AddColumn2DA(
                 identifier=add_column_id,
                 header=col_name,
@@ -164,6 +165,7 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
 
         # Check existing rows for modifications
         min_height = min(left_height, right_height)
+        change_row_counter = 0
         for row_idx in range(min_height):
             changed_cells = {}
 
@@ -176,14 +178,9 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
                     changed_cells[header] = RowValueConstant(right_value)
 
             if changed_cells:
-                # Generate meaningful identifier for changed rows
-                # Pattern: {table_basename}_changerow_{label_or_index}_0
-                table_basename = PurePath(identifier).stem.lower()
-                row_label = right_2da.get_label(row_idx)
-                row_identifier = row_label if row_label else str(row_idx)
-                # Sanitize row_identifier for use in section name
-                row_identifier_clean = row_identifier.replace(" ", "_").replace("-", "_").replace(".", "_")
-                change_row_id = f"{table_basename}_changerow_{row_identifier_clean}_0"
+                # Use simple index-based identifier
+                change_row_id = f"change_row_{change_row_counter}"
+                change_row_counter += 1
 
                 change_row = ChangeRow2DA(
                     identifier=change_row_id,
@@ -195,7 +192,7 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
         # Check for added rows
         has_new_rows = right_height > left_height
         if has_new_rows:
-            for row_idx in range(left_height, right_height):
+            for add_row_counter, row_idx in enumerate(range(left_height, right_height)):
                 cells = {}
                 row_label = right_2da.get_label(row_idx)
 
@@ -205,13 +202,8 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
                     if has_value:  # Only include non-empty cells
                         cells[header] = RowValueConstant(cell_value)
 
-                # Generate meaningful identifier based on table name and row label
-                # Pattern: {table_basename}_row_{label_or_index}_0
-                table_basename = PurePath(identifier).stem.lower()
-                row_identifier = row_label if row_label else str(row_idx)
-                # Sanitize row_identifier for use in section name (replace spaces, special chars)
-                row_identifier_clean = row_identifier.replace(" ", "_").replace("-", "_").replace(".", "_")
-                add_row_id = f"{table_basename}_row_{row_identifier_clean}_0"
+                # Use simple index-based identifier
+                add_row_id = f"add_row_{add_row_counter}"
 
                 add_row = AddRow2DA(
                     identifier=add_row_id,
@@ -239,11 +231,24 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
         if is_common_star:
             return "****"
 
-        # Return most common value
+        # Find the most common value
         if value_counts:
             most_common = max(value_counts.items(), key=lambda x: x[1])
             most_common_value = most_common[0]
-            return most_common_value
+            most_common_count = most_common[1]
+
+            # Only use most common value as default if it appears in more than half the rows
+            # Otherwise use "****" to avoid excessive defaults
+            half_threshold = len(column_data) / 2
+            if most_common_count > half_threshold:
+                return most_common_value
+
+            # If empty string is most common, use it
+            if most_common_value == "" and most_common_count > quarter_threshold:
+                return ""
+
+            # Otherwise default to "****" to minimize default pollution
+            return "****"
 
         return "****"
 
@@ -614,7 +619,7 @@ class GFFDiffAnalyzer(DiffAnalyzer):
         getter = type_getters.get(field_type)
         has_getter = getter is not None
         if has_getter:
-            return getter(field_label)
+            return getter(field_label) if getter is not None else None
 
         return None
 
@@ -954,7 +959,7 @@ def _extract_ncs_consti_offsets(  # noqa: C901, PLR0912
 
 
 def analyze_tlk_strref_references(  # noqa: PLR0913
-    tlk_modifications: tuple[ModificationsTLK, dict[int, int]],
+    tlk_modifications: tuple[ModificationsTLK, dict[int, int]],  # noqa: ARG001
     strref_mappings: dict[int, int],
     installation_or_folder_path: Path,
     gff_modifications: list[ModificationsGFF],
@@ -998,10 +1003,12 @@ def analyze_tlk_strref_references(  # noqa: PLR0913
             swkotor_exe = installation_or_folder_path / "swkotor.exe"
             swkotor2_exe = installation_or_folder_path / "swkotor2.exe"
 
-            chitin_exists = chitin_key.safe_isfile()
-            swkotor_exists = swkotor_exe.safe_isfile()
-            swkotor2_exists = swkotor2_exe.safe_isfile()
-            print(f"Game detection files: chitin_exists={chitin_exists}, swkotor_exists={swkotor_exists}, swkotor2_exists={swkotor2_exists}, path={installation_or_folder_path}")  # noqa: E501
+            chitin_exists = chitin_key.is_file()
+            swkotor_exists = swkotor_exe.is_file()
+            swkotor2_exists = swkotor2_exe.is_file()
+            print(
+                f"Game detection files: chitin_exists={chitin_exists}, swkotor_exists={swkotor_exists}, swkotor2_exists={swkotor2_exists}, path={installation_or_folder_path}"
+            )  # noqa: E501
 
             if swkotor2_exists:
                 game = Game.K2
@@ -1010,7 +1017,9 @@ def analyze_tlk_strref_references(  # noqa: PLR0913
                 game = Game.K1
                 print(f"Detected K1 from files: game={game}, swkotor_exists={swkotor_exists}, chitin_exists={chitin_exists}, path={installation_or_folder_path}")
             else:
-                print(f"Could not detect game type: path={installation_or_folder_path}, chitin_exists={chitin_exists}, swkotor_exists={swkotor_exists}, swkotor2_exists={swkotor2_exists}")  # noqa: E501
+                print(
+                    f"Could not detect game type: path={installation_or_folder_path}, chitin_exists={chitin_exists}, swkotor_exists={swkotor_exists}, swkotor2_exists={swkotor2_exists}"  # noqa: E501
+                )  # noqa: E501
                 print(f"Assuming K2 by default: path={installation_or_folder_path}")
                 game = Game.K2
 
@@ -1047,8 +1056,10 @@ def analyze_tlk_strref_references(  # noqa: PLR0913
             found_resources: set[FileResource] = set()
 
             if is_installation and installation:
-                # Use the installation's comprehensive search method, excluding RIMS
-                found_resources = installation.find_tlk_entry_references(old_strref, logger=None)
+                # Use the comprehensive search method
+                from pykotor.tools.reference_cache import find_tlk_entry_references  # noqa: PLC0415
+
+                found_resources = find_tlk_entry_references(installation, old_strref, logger=None)
             else:
                 # Search all relevant files in folder
                 all_files = list(installation_or_folder_path.rglob("*"))
@@ -1295,12 +1306,12 @@ def analyze_2da_memory_references(  # noqa: PLR0913, C901
     print(f"Analyzing 2DA memory references: {len(twoda_modifications)} 2DA files modified")
 
     # Import the mapping here to avoid circular imports
-    from pykotor.extract.twoda import GFF_FIELD_TO_2DA_MAPPING  # noqa: PLC0415
+    from pykotor.tools.reference_cache import GFF_FIELD_TO_2DA_MAPPING  # noqa: PLC0415
 
     # Build reverse mapping: 2da_filename -> list of field names that reference it
     twoda_to_fields: dict[str, list[str]] = {}
     for field_name, twoda_filename in GFF_FIELD_TO_2DA_MAPPING.items():
-        twoda_filename_lower = twoda_filename.lower()
+        twoda_filename_lower = str(twoda_filename.resname).lower()
         if twoda_filename_lower not in twoda_to_fields:
             twoda_to_fields[twoda_filename_lower] = []
         twoda_to_fields[twoda_filename_lower].append(field_name)
@@ -1309,7 +1320,7 @@ def analyze_2da_memory_references(  # noqa: PLR0913, C901
     row_to_token: dict[tuple[str, int], int] = {}
 
     for mod_2da in twoda_modifications:
-        twoda_filename = mod_2da.sourcefile.lower()
+        twoda_filename = str(mod_2da.sourcefile).lower()
 
         # Process each modifier to extract row indices and token IDs
         for modifier in mod_2da.modifiers:
@@ -1317,26 +1328,21 @@ def analyze_2da_memory_references(  # noqa: PLR0913, C901
                 # AddRow rows have unknown indices until patch-time; we cannot create static mappings for RowIndex storage.
                 for token_id, _row_value in modifier.store_2da.items():
                     if isinstance(_row_value, RowValueRowIndex):
-                        print(
-                            "Skipping AddRow2DA mapping for 2DAMEMORY token "
-                            f"{token_id}: row index is determined at install time"
-                        )
+                        print(f"Skipping AddRow2DA mapping for 2DAMEMORY token {token_id}: row index is determined at install time")
                         continue
                     if isinstance(_row_value, RowValueConstant):
                         try:
                             row_idx = int(_row_value.string)
                         except (ValueError, AttributeError) as e:  # noqa: PERF203
-                            print(
-                                f"Failed to map {twoda_filename} row {_row_value.string} -> "
-                                f"2DAMEMORY{token_id}: {e.__class__.__name__}: {e}"
-                            )
+                            print(f"Failed to map {twoda_filename} row {_row_value.string} -> 2DAMEMORY{token_id}: {e.__class__.__name__}: {e}")
                             traceback.print_exc()
                             continue
                         row_to_token[(twoda_filename, row_idx)] = token_id
                         print(f"Mapped {twoda_filename} row {row_idx} -> 2DAMEMORY{token_id}")
 
-            elif isinstance(modifier, ChangeRow2DA) and modifier.target.target_type == TargetType.ROW_INDEX:
+            elif isinstance(modifier, ChangeRow2DA) and modifier.target.target_type is TargetType.ROW_INDEX:
                 # For ChangeRow, extract the target row index
+                assert isinstance(modifier.target.value, int), "Target value was expected to be int if type is row index."
                 row_idx = modifier.target.value
                 if not isinstance(row_idx, int) or not modifier.store_2da:
                     continue
@@ -1370,15 +1376,11 @@ def analyze_2da_memory_references(  # noqa: PLR0913, C901
         # Collect all GFF files to search
         if is_installation and installation:
             # Search all resources in the installation (Installation implements __iter__)
-            all_resources = [
-                res
-                for res in installation
-                if res.restype() in GFFContent.get_restypes()
-            ]
+            all_resources: list[FileResource] = [res for res in installation if res.restype() in GFFContent.get_restypes()]
         else:
             # Search all files in folder
             all_files: list[Path] = list(installation_or_folder_path.rglob("*"))
-            all_resources: list[FileResource] = []
+            all_resources = []
 
             for file_path in all_files:
                 if not file_path.is_file():

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Generic, Sequence, TypeVar, Union
 
 from loggerplus import RobustLogger
@@ -12,7 +13,6 @@ from pykotor.extract.file import FileResource, ResourceResult
 from pykotor.resource.formats.erf.erf_data import ERFResource
 from pykotor.resource.formats.rim.rim_data import RIMResource
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
@@ -156,12 +156,12 @@ class FileSaveHandler(Generic[T]):
                 next(iter(paths_to_write.values())).parent,
             )
             for resource, path in paths_to_write.items():
-                is_overwrite = "overwriting existing file" if path.safe_isfile() else "saving as"
+                is_overwrite = "overwriting existing file" if path.is_file() else "saving as"
                 RobustLogger().info("Extracting '%s' to '%s' and %s '%s'", path.name, path.parent, is_overwrite, path.name)
                 try:
-                    if path.safe_isdir():
+                    if path.is_dir():
                         shutil.rmtree(path)
-                    elif path.safe_isfile():
+                    elif path.is_file():
                         path.unlink(missing_ok=True)
                 except Exception as e:  # noqa: BLE001
                     if failed_extractions is not None:
@@ -178,14 +178,14 @@ class FileSaveHandler(Generic[T]):
                 new_path = path
                 try:
                     i = 1
-                    while new_path.safe_exists():
+                    while new_path.exists():
                         i += 1
                         new_path = new_path.with_stem(f"{path.stem} ({i})")
                 except Exception as e:  # noqa: BLE001
                     if failed_extractions is not None:
                         failed_extractions[new_path] = e
                 else:
-                    if path.safe_isfile():
+                    if path.is_file():
                         RobustLogger().info("Will save '%s' as '%s'", path.name, new_path)
                     new_paths_to_write[resource] = new_path
         else:

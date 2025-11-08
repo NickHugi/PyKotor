@@ -45,6 +45,8 @@ if getattr(sys, "frozen", False) is False:
     if utility_path.is_dir():
         add_sys_path(utility_path.parent)
 
+from pathlib import Path
+
 from loggerplus import RobustLogger
 
 from pykotor.extract.capsule import LazyCapsule
@@ -64,7 +66,6 @@ from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc, read_tpc
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
 from pykotor.resource.formats.vis.vis_auto import bytes_vis, read_vis
 from pykotor.resource.type import BASE_SOURCE_TYPES, ResourceType
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
@@ -252,7 +253,7 @@ def _load_as_erf_rim(
 
     if isinstance(capsule_obj, (os.PathLike, str)):
         try:
-            path = Path.pathify(capsule_obj)
+            path = Path(capsule_obj)
             return LazyCapsule(path, create_nonexisting=True).as_cached()
         except Exception:
             RobustLogger().warning(f"Invalid path passed to `validate_capsule`: '{capsule_obj}'", exc_info=True)

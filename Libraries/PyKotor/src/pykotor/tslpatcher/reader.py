@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 
 from configparser import ConfigParser, ParsingError
+from pathlib import Path, PurePath, PureWindowsPath
 from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
@@ -52,7 +53,6 @@ from pykotor.tslpatcher.mods.twoda import (
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 from utility.common.more_collections import CaseInsensitiveDict
 from utility.misc import is_float, is_int
-from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     import os
@@ -88,6 +88,7 @@ class NamespaceReader:
             allow_no_value=True,
             strict=False,
             interpolation=None,
+            inline_comment_prefixes=(";", "#"),
         )
         # use case insensitive keys
         ini.optionxform = lambda optionstr: optionstr.lower()  # type: ignore[method-assign]
@@ -138,10 +139,12 @@ class ConfigReader:
     ):
         self.previously_parsed_sections: set[str] = set()
         self.ini: ConfigParser = ini
-        self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
-        self.tslpatchdata_path: CaseAwarePath | None = CaseAwarePath.pathify(
-            tslpatchdata_path
-        )  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
+        self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
+        self.tslpatchdata_path: CaseAwarePath | None = (  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
+            CaseAwarePath(tslpatchdata_path)
+            if tslpatchdata_path is not None
+            else None
+        )
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
 
@@ -150,6 +153,7 @@ class ConfigReader:
         cls,
         file_path: os.PathLike | str,
         logger: PatchLogger | None = None,
+        tslpatchdata_path: os.PathLike | str | None = None,
     ) -> Self:
         """Load PatcherConfig from an INI file path.
 
@@ -157,6 +161,7 @@ class ConfigReader:
         ----
             file_path: The path to the INI file.
             logger: Optional logger instance.
+            tslpatchdata_path: Optional path to the tslpatchdata directory.
 
         Returns:
         -------
@@ -172,13 +177,14 @@ class ConfigReader:
         """
         from pykotor.tslpatcher.config import PatcherConfig  # noqa: PLC0415 Prevent circular imports
 
-        resolved_file_path: Path = Path.pathify(file_path).resolve()
+        resolved_file_path: Path = Path(file_path).resolve()
 
         ini = ConfigParser(
             delimiters=("="),
             allow_no_value=True,
             strict=False,
             interpolation=None,
+            inline_comment_prefixes=(";", "#"),
         )
 
         # Use case-sensitive keys
@@ -189,7 +195,7 @@ class ConfigReader:
             e.source = str(resolved_file_path)
             raise e  # noqa: TRY201  # don't `raise from e` here!
 
-        instance = cls(ini, resolved_file_path.parent, logger)
+        instance = cls(ini, resolved_file_path.parent, logger, tslpatchdata_path)
         instance.config = PatcherConfig()
         return instance
 
@@ -645,7 +651,7 @@ class ConfigReader:
         # mod_path is typically the tslpatchdata folder (parent of changes.ini).
         # If default_source_folder = ".", this resolves to mod_path itself (tslpatchdata folder).
         nwnnsscomp_exepath = self.mod_path / default_source_folder / "nwnnsscomp.exe"
-        if not nwnnsscomp_exepath.safe_isfile():
+        if not nwnnsscomp_exepath.is_file():
             nwnnsscomp_exepath = None if self.tslpatchdata_path is None else self.tslpatchdata_path / "nwnnsscomp.exe"  # TSLPatcher default
 
         for identifier, file in compilelist_section_dict.items():
