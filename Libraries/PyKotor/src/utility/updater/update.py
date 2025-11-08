@@ -149,7 +149,11 @@ class LibUpdate:
 
             qt_name = qtpy.API_NAME
         if lookup_os_name == "Windows":
-            return [f"{self.filestem}_Win_{str_arch}.zip", f"{self.filestem}_Windows_{str_arch}.zip" f"{self.filestem}_Windows_{qt_name}_{str_arch}.zip"]
+            return [
+                f"{self.filestem}_Win_{str_arch}.zip",
+                f"{self.filestem}_Windows_{str_arch}.zip",
+                f"{self.filestem}_Windows_{qt_name}_{str_arch}.zip",
+            ]
         if lookup_os_name == "Linux":
             return [
                 f"{self.filestem}_Linux_{str_arch}.zip",
@@ -244,6 +248,7 @@ class LibUpdate:
     def _extract_update(self):
         self.log.info("Main extraction, starting in working dir '%s'", self.update_folder)
         with ChDir(self.update_folder):
+            archive_path: Path | None = None
             for archive_name in self.get_archive_names():
                 archive_path = Path.cwd().joinpath(archive_name).absolute()
                 if archive_path.is_file():
@@ -256,7 +261,8 @@ class LibUpdate:
                         self.log.info("Found archive %s", test_path.name)
                         self._recursive_extract(test_path)
                         return
-            self._recursive_extract(archive_path)
+            if archive_path is not None:
+                self._recursive_extract(archive_path)
 
     @classmethod
     def _recursive_extract(
@@ -502,18 +508,18 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
     def _unix_restart(self):
         self.log.debug("Restarting %s", self.filename)
-        current_app_path: Path = Path(self._current_app_dir, self.filename)
-        if platform.system() == "Darwin" and current_app_path.suffix.lower() == ".app":
-            self.log.debug(f"Must be a .app bundle: '{current_app_path}'")  # noqa: G004
-            mac_app_binary_dir: Path = current_app_path.joinpath("Contents", "MacOS")
+        app_path: Path = Path(self._current_app_dir, self.filename)
+        if platform.system() == "Darwin" and app_path.suffix.lower() == ".app":
+            self.log.debug(f"Must be a .app bundle: '{app_path}'")  # noqa: G004
+            mac_app_binary_dir: Path = app_path.joinpath("Contents", "MacOS")
 
             # We are making an assumption here that only 1
             # executable will be in the MacOS folder.
-            current_app_path: Path = mac_app_binary_dir / self.filestem
+            app_path = mac_app_binary_dir / self.filestem
 
         r = Restarter(
-            current_app_path,
-            current_app_path,
+            app_path,
+            app_path,
             restart_strategy=self.r_strategy,
             filename=self.filestem,
             update_strategy=self.u_strategy,

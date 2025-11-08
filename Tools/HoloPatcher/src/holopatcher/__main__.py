@@ -67,7 +67,7 @@ from loggerplus import RobustLogger  # noqa: E402, F401
 
 from holopatcher import core  # noqa: E402, F401
 from utility.error_handling import universal_simplify_exception  # noqa: E402, F401
-from utility.system.process import terminate_main_process  # noqa: E402, F401  # noqa: E402, F401
+from utility.system.app_process.shutdown import terminate_main_process  # noqa: E402, F401  # noqa: E402, F401
 
 if TYPE_CHECKING:
     from argparse import Namespace

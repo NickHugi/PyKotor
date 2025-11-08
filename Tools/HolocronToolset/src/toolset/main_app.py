@@ -22,7 +22,7 @@ from utility.system.app_process.shutdown import terminate_child_processes
 
 def qt_cleanup():
     """Cleanup so we can exit."""
-    RobustLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(TOOLSET_WINDOWS))
+    RobustLogger().debug("Closing/destroy all windows from TOOLSET_WINDOWS list, (%s to handle)...", len(TOOLSET_WINDOWS))
     for window in TOOLSET_WINDOWS:
         window.close()
         window.destroy()

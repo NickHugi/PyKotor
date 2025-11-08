@@ -3600,7 +3600,14 @@ Should return 1 or 0, representing a boolean.
         param_type: type = bool,
     ):
         action = QAction(title, self)
-        if param_type is bool:
+        if options:
+            initial_value_raw = self.dlg_settings.get(settings_key, current_state_func())
+            initial_value = self._coerce_option_value(initial_value_raw, options)
+            set_func(initial_value)
+            action.triggered.connect(
+                lambda: self._handleOptionAction(set_func, title, options, settings_key)
+            )
+        elif param_type is bool:
             action.setCheckable(True)
             initial_value = self.dlg_settings.get(settings_key, current_state_func())
             action.setChecked(initial_value)
@@ -3609,7 +3616,7 @@ Should return 1 or 0, representing a boolean.
         elif param_type is int:
             action.triggered.connect(lambda: self._handleIntAction(set_func, title, settings_key))
         else:
-            action.triggered.connect(lambda: self._handleNonBoolAction(set_func, title, {} if options is None else options, settings_key))
+            action.triggered.connect(lambda: self._handleOptionAction(set_func, title, {} if options is None else options, settings_key))
         menu.addAction(action)
 
     def _addExclusiveMenuAction(  # noqa: PLR0913
@@ -3640,13 +3647,60 @@ Should return 1 or 0, representing a boolean.
             func(value)
             self.dlg_settings.set(settings_key, value)
 
-    def _handleNonBoolAction(self, func: Callable[[Any], Any], title: str, options: dict, settings_key: str):
+    def _handleOptionAction(self, func: Callable[[Any], Any], title: str, options: dict, settings_key: str):
+        if not options:
+            return
+
         items = list(options.keys())
-        item, ok = QInputDialog.getItem(self, f"Select {title}", f"Select {title}:", items, 0, False)
+        current_value_raw = self.dlg_settings.get(settings_key, None)
+        current_value = self._coerce_option_value(current_value_raw, options)
+
+        try:
+            current_index = next(
+                index for index, option_name in enumerate(items) if options[option_name] == current_value
+            )
+        except StopIteration:
+            current_index = 0
+
+        item, ok = QInputDialog.getItem(self, f"Select {title}", f"Select {title}:", items, current_index, False)
         if ok and item:
             value = options[item]
-            func(value)
-            self.dlg_settings.set(settings_key, value)
+            coerced_value = self._coerce_option_value(value, options)
+            func(coerced_value)
+            self.dlg_settings.set(settings_key, self._serialize_option_value(coerced_value))
+
+    @staticmethod
+    def _serialize_option_value(value: Any) -> Any:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return value
+
+    @staticmethod
+    def _coerce_option_value(raw_value: Any, options: dict) -> Any:
+        if raw_value is None or not options:
+            return raw_value
+
+        # Return immediately if the value already matches one of the options
+        for option_value in options.values():
+            if raw_value == option_value:
+                return option_value
+
+        sample_value = next(iter(options.values()))
+        target_type = type(sample_value)
+
+        candidate = raw_value
+        if isinstance(candidate, str):
+            with suppress(ValueError):
+                candidate = int(candidate)
+
+        try:
+            return target_type(candidate)
+        except (TypeError, ValueError):
+            try:
+                return target_type(int(candidate))
+            except (TypeError, ValueError):
+                return raw_value
 
     def load(
         self,

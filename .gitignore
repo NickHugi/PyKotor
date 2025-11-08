@@ -107,3 +107,4 @@ CASE_INSENSITIVE_PATH_OPTIONS.md
 analyze_profile_comprehensive.py
 analyze_profile.py
 analyze_tokens.py
+Libraries/Utility/src/utility/updater/update.py

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+import logging
 import math
 import struct
 
@@ -9,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from OpenGL import error as gl_error
 from OpenGL.GL import glGenBuffers, glGenVertexArrays, glVertexAttribPointer
 from OpenGL.GL.shaders import GL_FALSE
 from OpenGL.raw.GL.ARB.tessellation_shader import GL_TRIANGLES
@@ -26,6 +28,9 @@ from pykotor.gl import glm, mat4, quat, vec3, vec4
 if TYPE_CHECKING:
     from pykotor.gl.scene import Scene
     from pykotor.gl.shader import Shader
+
+
+logger = logging.getLogger(__name__)
 
 
 class Model:
@@ -349,25 +354,44 @@ class Cube:
         self.min_point: vec3 = min_point
         self.max_point: vec3 = max_point
 
-        self._vao: int = glGenVertexArrays(1)
-        self._vbo: int = glGenBuffers(1)
-        self._ebo: int = glGenBuffers(1)
-        glBindVertexArray(self._vao)
-
-        glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
-        glBufferData(GL_ARRAY_BUFFER, len(vertices) * 4, vertices, GL_STATIC_DRAW)
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements) * 4, elements, GL_STATIC_DRAW)
+        self._vao = 0
+        self._vbo = 0
+        self._ebo = 0
         self._face_count: int = len(elements)
+        self._buffers_supported = False
 
-        glEnableVertexAttribArray(1)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
+        try:
+            self._vao = glGenVertexArrays(1)
+            self._vbo = glGenBuffers(1)
+            self._ebo = glGenBuffers(1)
+            glBindVertexArray(self._vao)
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        glBindVertexArray(0)
+            glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
+            glBufferData(GL_ARRAY_BUFFER, len(vertices) * 4, vertices, GL_STATIC_DRAW)
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements) * 4, elements, GL_STATIC_DRAW)
+
+            glEnableVertexAttribArray(1)
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            glBindVertexArray(0)
+            self._buffers_supported = True
+        except gl_error.NullFunctionError:
+            logger.warning(
+                "OpenGL buffer objects are unavailable; falling back to CPU-only cube bounds."
+            )
+            self._face_count = 0
+            self._vao = 0
+            self._vbo = 0
+            self._ebo = 0
+
 
     def draw(self, shader: Shader, transform: mat4):
+        if not self._buffers_supported:
+            return
+
         shader.set_matrix4("model", transform)
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
@@ -383,23 +407,38 @@ class Boundary:
 
         vertices, elements = self._build_nd(vertices)
 
-        self._vao = glGenVertexArrays(1)
-        self._vbo = glGenBuffers(1)
-        self._ebo = glGenBuffers(1)
-        glBindVertexArray(self._vao)
-
-        glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
-        glBufferData(GL_ARRAY_BUFFER, len(vertices) * 4, vertices, GL_STATIC_DRAW)
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements) * 4, elements, GL_STATIC_DRAW)
+        self._vao = 0
+        self._vbo = 0
+        self._ebo = 0
         self._face_count: int = len(elements)
+        self._buffers_supported = False
 
-        glEnableVertexAttribArray(1)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
+        try:
+            self._vao = glGenVertexArrays(1)
+            self._vbo = glGenBuffers(1)
+            self._ebo = glGenBuffers(1)
+            glBindVertexArray(self._vao)
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        glBindVertexArray(0)
+            glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
+            glBufferData(GL_ARRAY_BUFFER, len(vertices) * 4, vertices, GL_STATIC_DRAW)
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements) * 4, elements, GL_STATIC_DRAW)
+
+            glEnableVertexAttribArray(1)
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            glBindVertexArray(0)
+            self._buffers_supported = True
+        except gl_error.NullFunctionError:
+            logger.warning(
+                "OpenGL buffer objects are unavailable; boundary rendering disabled."
+            )
+            self._face_count = 0
+            self._vao = 0
+            self._vbo = 0
+            self._ebo = 0
 
     @classmethod
     def from_circle(
@@ -428,6 +467,9 @@ class Boundary:
         return Boundary(scene, vertices)
 
     def draw(self, shader: Shader, transform: mat4):
+        if not self._buffers_supported:
+            return
+
         shader.set_matrix4("model", transform)
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)

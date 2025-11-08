@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qtpy import QtCore
-from qtpy.QtCore import QThread
+from qtpy.QtCore import QSettings, QThread
 from qtpy.QtGui import QTextCursor
 from qtpy.QtWidgets import (
     QButtonGroup,
@@ -30,11 +30,10 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from kotordiff.app import run_application  # type: ignore[import-not-found]
+from kotordiff.app import KotorDiffConfig, run_application  # type: ignore[import-not-found]
+from pykotor.extract.installation import Installation
 
 if TYPE_CHECKING:
-    from argparse import ArgumentParser, Namespace
-
     from toolset.data.installation import HTInstallation
 
 
@@ -44,11 +43,9 @@ class KotorDiffThread(QThread):
     output_signal = QtCore.Signal(str)  # pyright: ignore[reportPrivateImportUsage]
     finished_signal = QtCore.Signal(int)  # pyright: ignore[reportPrivateImportUsage]
 
-    def __init__(self, args: Namespace, parser: ArgumentParser, unknown_args: list[str]):
+    def __init__(self, config: KotorDiffConfig):
         super().__init__()
-        self.args = args
-        self.parser = parser
-        self.unknown_args = unknown_args
+        self.config = config
 
     def run(self):
         """Execute KotorDiff in a separate thread."""
@@ -71,8 +68,8 @@ class KotorDiffThread(QThread):
             sys.stdout = OutputRedirector(self.output_signal)
             sys.stderr = OutputRedirector(self.output_signal)
 
-            # Run KotorDiff
-            exit_code = run_application(self.args, self.parser, self.unknown_args)
+            # Run KotorDiff with the config object
+            exit_code = run_application(self.config)
 
             # Restore stdout/stderr
             sys.stdout = original_stdout
@@ -100,7 +97,9 @@ class KotorDiffWindow(QMainWindow):
         self._diff_thread: KotorDiffThread | None = None
         self._installations: dict[str, HTInstallation] = installations or {}
         self._active_installation: HTInstallation | None = active_installation
+        self._settings = QSettings("HolocronToolset", "KotorDiff")
         self._setup_ui()
+        self._load_settings()
 
     def _setup_ui(self):
         """Set up the user interface."""
@@ -126,15 +125,6 @@ class KotorDiffWindow(QMainWindow):
             "Path 2 (Older/Vanilla):",
             is_first=False,
             path_num=2,
-        )
-
-        # Path 3 (Yours - Optional for 3-way diff)
-        self._setup_path_selector(
-            path_layout,
-            "Path 3 (Yours/Optional - for 3-way diff):",
-            is_first=False,
-            path_num=3,
-            optional=True,
         )
 
         path_group.setLayout(path_layout)
@@ -175,35 +165,6 @@ class KotorDiffWindow(QMainWindow):
         self.tslpatchdata_check.toggled.connect(self.tslpatchdata_browse_btn.setEnabled)
         self.tslpatchdata_check.toggled.connect(self.ini_name_edit.setEnabled)
 
-        # Cache options
-        cache_layout = QHBoxLayout()
-        self.save_results_check = QCheckBox("Save results to cache")
-        cache_layout.addWidget(self.save_results_check)
-        self.save_results_edit = QLineEdit()
-        self.save_results_edit.setPlaceholderText("results.yaml")
-        self.save_results_edit.setEnabled(False)
-        cache_layout.addWidget(self.save_results_edit)
-        options_layout.addLayout(cache_layout)
-
-        self.save_results_check.toggled.connect(self.save_results_edit.setEnabled)
-
-        # Load from cache
-        load_cache_layout = QHBoxLayout()
-        self.from_results_check = QCheckBox("Load from cache")
-        load_cache_layout.addWidget(self.from_results_check)
-        self.from_results_edit = QLineEdit()
-        self.from_results_edit.setPlaceholderText("results.yaml")
-        self.from_results_edit.setEnabled(False)
-        load_cache_layout.addWidget(self.from_results_edit)
-        self.from_results_browse_btn = QPushButton("Browse...")
-        self.from_results_browse_btn.setEnabled(False)
-        self.from_results_browse_btn.clicked.connect(lambda: self._browse_file(self.from_results_edit, "YAML Files (*.yaml *.yml)"))
-        load_cache_layout.addWidget(self.from_results_browse_btn)
-        options_layout.addLayout(load_cache_layout)
-
-        self.from_results_check.toggled.connect(self.from_results_edit.setEnabled)
-        self.from_results_check.toggled.connect(self.from_results_browse_btn.setEnabled)
-
         # Log level
         log_layout = QHBoxLayout()
         log_layout.addWidget(QLabel("Log Level:"))
@@ -236,7 +197,7 @@ class KotorDiffWindow(QMainWindow):
         button_layout.addWidget(self.clear_btn)
 
         self.close_btn = QPushButton("Close")
-        self.close_btn.clicked.connect(self._close_window)
+        self.close_btn.clicked.connect(self.close)
         button_layout.addWidget(self.close_btn)
 
         main_layout.addLayout(button_layout)
@@ -247,8 +208,6 @@ class KotorDiffWindow(QMainWindow):
         label_text: str,
         is_first: bool,  # noqa: FBT001
         path_num: int,
-        *,
-        optional: bool = False,
     ):
         """Set up a path selector with installation combobox and custom path options."""
         group_layout = QVBoxLayout()
@@ -268,6 +227,7 @@ class KotorDiffWindow(QMainWindow):
 
         # Create the combobox and line edit
         installation_combo = QComboBox()
+        installation_combo.setEditable(True)
         path_edit = QLineEdit()
         browse_btn = QPushButton("Browse...")
 
@@ -280,8 +240,6 @@ class KotorDiffWindow(QMainWindow):
         setattr(self, f"_path{path_num}_browse", browse_btn)
 
         # Populate installation combobox
-        if optional:
-            installation_combo.addItem("[None]", None)
         for name, installation in self._installations.items():
             installation_combo.addItem(name, installation)
 
@@ -329,16 +287,17 @@ class KotorDiffWindow(QMainWindow):
         edit = getattr(self, f"_path{path_num}_edit")
 
         if installation_radio.isChecked():
-            installation = combo.currentData()
-            if installation is None:  # [None] selected
+            # Check if it's a custom text entry or a real installation
+            text = combo.currentText().strip()
+            if not text:
                 return None
+            installation = combo.currentData()
+            if installation is None:
+                # User typed in a custom path
+                return text
             return str(installation.path())
         text = edit.text().strip()
         return text if text else None
-
-    def _close_window(self):
-        """Close the window."""
-        self.close()
 
     def _browse_path(self, line_edit: QLineEdit):
         """Browse for a file or directory."""
@@ -354,24 +313,75 @@ class KotorDiffWindow(QMainWindow):
         if path:
             line_edit.setText(path)
 
-    def _browse_file(
-        self,
-        line_edit: QLineEdit,
-        file_filter: str = "All Files (*)",
-    ):
-        """Browse for a file."""
-        path = QFileDialog.getOpenFileName(self, "Select File", "", file_filter)[0]
-        if path:
-            line_edit.setText(path)
+    def _load_settings(self):
+        """Load saved settings from QSettings."""
+        # Load path selections
+        for path_num in [1, 2]:
+            use_installation = self._settings.value(f"path{path_num}_use_installation", True, type=bool)
+            installation_name = self._settings.value(f"path{path_num}_installation", "")
+            custom_path = self._settings.value(f"path{path_num}_custom", "")
+
+            installation_radio = getattr(self, f"_path{path_num}_installation_radio")
+            custom_radio = getattr(self, f"_path{path_num}_custom_radio")
+            combo = getattr(self, f"_path{path_num}_combo")
+            edit = getattr(self, f"_path{path_num}_edit")
+
+            if use_installation:
+                installation_radio.setChecked(True)
+                # Find and set the installation
+                for i in range(combo.count()):
+                    if combo.itemText(i) == installation_name:
+                        combo.setCurrentIndex(i)
+                        break
+                else:
+                    # If not found, set as text
+                    if installation_name:
+                        combo.setCurrentText(installation_name)
+            else:
+                custom_radio.setChecked(True)
+                edit.setText(custom_path)
+
+        # Load options
+        self.compare_hashes_check.setChecked(self._settings.value("compare_hashes", True, type=bool))
+        self.tslpatchdata_check.setChecked(self._settings.value("tslpatchdata_enabled", False, type=bool))
+        self.tslpatchdata_edit.setText(self._settings.value("tslpatchdata_path", ""))
+        self.ini_name_edit.setText(self._settings.value("ini_filename", "changes.ini"))
+        self.log_level_combo.setCurrentText(self._settings.value("log_level", "info"))
+
+    def _save_settings(self):
+        """Save current settings to QSettings."""
+        # Save path selections
+        for path_num in [1, 2]:
+            installation_radio = getattr(self, f"_path{path_num}_installation_radio")
+            combo = getattr(self, f"_path{path_num}_combo")
+            edit = getattr(self, f"_path{path_num}_edit")
+
+            self._settings.setValue(f"path{path_num}_use_installation", installation_radio.isChecked())
+            self._settings.setValue(f"path{path_num}_installation", combo.currentText())
+            self._settings.setValue(f"path{path_num}_custom", edit.text())
+
+        # Save options
+        self._settings.setValue("compare_hashes", self.compare_hashes_check.isChecked())
+        self._settings.setValue("tslpatchdata_enabled", self.tslpatchdata_check.isChecked())
+        self._settings.setValue("tslpatchdata_path", self.tslpatchdata_edit.text())
+        self._settings.setValue("ini_filename", self.ini_name_edit.text())
+        self._settings.setValue("log_level", self.log_level_combo.currentText())
+
+    def closeEvent(self, event):  # noqa: N802
+        """Handle window close event."""
+        self._save_settings()
+        super().closeEvent(event)
 
     def _run_diff(self):
         """Run the KotorDiff operation."""
-        # Validate inputs
-        mine_path = self._get_path_value(1)
-        older_path = self._get_path_value(2)
-        yours_path = self._get_path_value(3)
+        # Save settings before running
+        self._save_settings()
 
-        if not mine_path or not older_path:
+        # Validate inputs
+        path1_str = self._get_path_value(1)
+        path2_str = self._get_path_value(2)
+
+        if not path1_str or not path2_str:
             QMessageBox.warning(self, "Invalid Input", "Please provide both Path 1 and Path 2.")
             return
 
@@ -380,46 +390,35 @@ class KotorDiffWindow(QMainWindow):
         self.output_text.clear()
         self.output_text.append("Starting KotorDiff...\n")
 
-        # Build arguments
-        from argparse import ArgumentParser, Namespace
+        # Convert string paths to Path/Installation objects
+        paths: list[Path | Installation] = []
+        for path_str in [path1_str, path2_str]:
+            path_obj = Path(path_str)
+            try:
+                # Try to create an Installation object
+                installation = Installation(path_obj)
+                paths.append(installation)
+            except Exception:  # noqa: BLE001
+                # Fall back to Path object
+                paths.append(path_obj)
 
-        parser = ArgumentParser()
-        args = Namespace()
-
-        args.mine = mine_path
-        args.older = older_path
-        args.yours = yours_path
-        args.compare_hashes = self.compare_hashes_check.isChecked()
-        args.logging_enabled = True
-        args.use_profiler = False
-        args.log_level = self.log_level_combo.currentText()
-        args.output_mode = "full"
-        args.no_color = True
-        args.output_log = None
-        args.filter = None
-
-        # TSLPatchData options
-        if self.tslpatchdata_check.isChecked() and self.tslpatchdata_edit.text().strip():
-            args.tslpatchdata = self.tslpatchdata_edit.text().strip()
-            args.tslpatchdata_path = Path(args.tslpatchdata)
-            args.ini = self.ini_name_edit.text().strip() or "changes.ini"
-        else:
-            args.tslpatchdata = None
-            args.ini = "changes.ini"
-
-        # Cache options
-        if self.save_results_check.isChecked() and self.save_results_edit.text().strip():
-            args.save_results = self.save_results_edit.text().strip()
-        else:
-            args.save_results = None
-
-        if self.from_results_check.isChecked() and self.from_results_edit.text().strip():
-            args.from_results = self.from_results_edit.text().strip()
-        else:
-            args.from_results = None
+        # Build configuration
+        config = KotorDiffConfig(
+            paths=paths,
+            tslpatchdata_path=Path(self.tslpatchdata_edit.text().strip()) if self.tslpatchdata_check.isChecked() and self.tslpatchdata_edit.text().strip() else None,
+            ini_filename=self.ini_name_edit.text().strip() or "changes.ini",
+            output_log_path=None,
+            log_level=self.log_level_combo.currentText(),
+            output_mode="full",
+            use_colors=False,
+            compare_hashes=self.compare_hashes_check.isChecked(),
+            use_profiler=False,
+            filters=None,
+            logging_enabled=True,
+        )
 
         # Run in thread
-        self._diff_thread = KotorDiffThread(args, parser, [])
+        self._diff_thread = KotorDiffThread(config)
         self._diff_thread.output_signal.connect(self._append_output)
         self._diff_thread.finished_signal.connect(self._diff_finished)
         self._diff_thread.start()
