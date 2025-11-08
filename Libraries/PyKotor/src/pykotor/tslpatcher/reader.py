@@ -6,7 +6,6 @@ from configparser import ConfigParser, ParsingError
 from pathlib import Path, PurePath, PureWindowsPath
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
@@ -51,24 +50,19 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from pykotor.tslpatcher.namespaces import PatcherNamespace
+from utility.common.geometry import Vector3, Vector4
 from utility.common.more_collections import CaseInsensitiveDict
 from utility.misc import is_float, is_int
 
 if TYPE_CHECKING:
     import os
 
-    from typing_extensions import Literal, Self
+    from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.memory import TokenUsage
-    from pykotor.tslpatcher.mods.gff import (
-        FieldValue,
-        ModifyGFF,
-    )
-    from pykotor.tslpatcher.mods.twoda import (
-        Modify2DA,
-        RowValue,
-    )
+    from pykotor.tslpatcher.mods.gff import FieldValue, ModifyGFF
+    from pykotor.tslpatcher.mods.twoda import Modify2DA, RowValue
 
 SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
@@ -82,7 +76,10 @@ class NamespaceReader:
         self.namespaces: list[PatcherNamespace] = []
 
     @classmethod
-    def from_filepath(cls, path: os.PathLike | str) -> list[PatcherNamespace]:
+    def from_filepath(
+        cls,
+        path: os.PathLike | str,
+    ) -> list[PatcherNamespace]:
         ini = ConfigParser(
             delimiters=("="),
             allow_no_value=True,
@@ -140,10 +137,11 @@ class ConfigReader:
         self.previously_parsed_sections: set[str] = set()
         self.ini: ConfigParser = ini
         self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
-        self.tslpatchdata_path: CaseAwarePath | None = (  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
-            CaseAwarePath(tslpatchdata_path)
-            if tslpatchdata_path is not None
-            else None
+        # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
+        self.tslpatchdata_path: CaseAwarePath | None = (
+            None
+            if tslpatchdata_path is None
+            else CaseAwarePath(tslpatchdata_path)
         )
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
@@ -195,13 +193,16 @@ class ConfigReader:
             e.source = str(resolved_file_path)
             raise e  # noqa: TRY201  # don't `raise from e` here!
 
-        instance = cls(ini, resolved_file_path.parent, logger, tslpatchdata_path)
+        instance: Self = cls(ini, resolved_file_path.parent, logger, tslpatchdata_path)
         instance.config = PatcherConfig()
         return instance
 
-    def load(self, config: PatcherConfig) -> PatcherConfig:
-        self.config = config
-        self.previously_parsed_sections = set()
+    def load(
+        self,
+        config: PatcherConfig,
+    ) -> PatcherConfig:
+        self.config: PatcherConfig = config
+        self.previously_parsed_sections: set[str] = set()
 
         self.load_settings()
         self.load_tlk_list()
@@ -220,7 +221,10 @@ class ConfigReader:
 
         return self.config
 
-    def get_section_name(self, section_name: str) -> str | None:
+    def get_section_name(
+        self,
+        section_name: str,
+    ) -> str | None:
         """Resolves the case-insensitive section name string if found and returns the case-sensitive correct section name."""
         s: str | None = next(
             (
@@ -321,7 +325,7 @@ class ConfigReader:
                     file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
                     file_install.pop_tslpatcher_vars(file_section_dict, foldername, sourcefolder)
 
-    def load_tlk_list(self):
+    def load_tlk_list(self):  # noqa: PLR0915
         """Loads TLK patches from the ini file into memory.
 
         Processing Logic:
@@ -669,7 +673,7 @@ class ConfigReader:
             modifications.nwnnsscomp_path = nwnnsscomp_exepath
             self.config.patches_nss.append(modifications)
 
-    def load_hack_list(self):
+    def load_hack_list(self):  # noqa: C901, PLR0912
         """Loads [HACKList] patches from ini file into memory.
 
         Processing Logic:
@@ -859,7 +863,7 @@ class ConfigReader:
 
         return ModifyFieldGFF(PureWindowsPath(key), value, identifier)
 
-    def add_field_gff(
+    def add_field_gff(  # noqa: C901
         self,
         identifier: str,
         ini_data: CaseInsensitiveDict[str],
@@ -1077,7 +1081,9 @@ class ConfigReader:
         return None
 
     @staticmethod
-    def field_value_from_unknown(raw_value: str) -> FieldValue:
+    def field_value_from_unknown(  # noqa: PLR0911
+        raw_value: str,
+    ) -> FieldValue:
         """Extracts a field value from an unknown string representation.
 
             This section determines how to parse ini key/value pairs in gfflist such as:
@@ -1146,7 +1152,10 @@ class ConfigReader:
         raise ValueError(msg)
 
     @staticmethod
-    def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
+    def field_value_from_type(  # noqa: C901, PLR0912
+        raw_value: str,
+        field_type: GFFFieldType,
+    ) -> FieldValue | None:
         # sourcery skip: assign-if-exp, reintroduce-else
         """Extracts field value from raw string based on field type.
 
@@ -1172,7 +1181,7 @@ class ConfigReader:
         components: list[float]
         value: ResRef | str | int | float | Vector3 | Vector4 | bytes | None = None
 
-        if field_type.return_type() == ResRef:
+        if field_type.return_type() is ResRef:
             value = ResRef(raw_value)
 
         elif field_type.return_type() is str:
@@ -1184,11 +1193,11 @@ class ConfigReader:
         elif issubclass(field_type.return_type(), float):
             value = float(ConfigReader.normalize_tslpatcher_float(raw_value))
 
-        elif field_type.return_type() == Vector3:
+        elif field_type.return_type() is Vector3:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
             value = Vector3(*components)
 
-        elif field_type.return_type() == Vector4:
+        elif field_type.return_type() is Vector4:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
             value = Vector4(*components)
 
@@ -1196,7 +1205,7 @@ class ConfigReader:
             if not raw_value.strip().replace("1", "").replace("0", ""):
                 value = bytes(int(raw_value[i : i + 8], 2) for i in range(0, len(raw_value), 8))
             elif raw_value.strip().lower().startswith("0x"):
-                hex_string = raw_value[2:]
+                hex_string: str = raw_value[2:]
                 if len(hex_string) % 2:
                     hex_string = f"0{hex_string}"
                 value = bytes.fromhex(hex_string.strip())
@@ -1381,7 +1390,7 @@ class ConfigReader:
         self.log.add_warning(f"No line set to be modified in [{identifier}].")
         return None
 
-    def cells_2da(
+    def cells_2da(  # noqa: C901
         self,
         identifier: str,
         modifiers: CaseInsensitiveDict[str],
@@ -1533,7 +1542,9 @@ class ConfigReader:
     #################
 
     @staticmethod
-    def normalize_tslpatcher_float(value_str: str) -> str:
+    def normalize_tslpatcher_float(
+        value_str: str,
+    ) -> str:
         """Normalize a float value string by replacing commas with periods.
 
         Args:
@@ -1547,7 +1558,9 @@ class ConfigReader:
         return value_str.replace(",", ".")
 
     @staticmethod
-    def normalize_tslpatcher_crlf(value_str: str) -> str:
+    def normalize_tslpatcher_crlf(
+        value_str: str,
+    ) -> str:
         r"""Normalize line endings in a string value.
 
         Args:
@@ -1566,7 +1579,9 @@ class ConfigReader:
         return value_str.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
 
     @staticmethod
-    def resolve_tslpatcher_ssf_sound(name: str) -> SSFSound:
+    def resolve_tslpatcher_ssf_sound(
+        name: str,
+    ) -> SSFSound:
         """Resolves a config string to an SSFSound enum value.
 
         Args:
@@ -1617,7 +1632,9 @@ class ConfigReader:
         return configstr_to_ssfsound[name]
 
     @staticmethod
-    def resolve_tslpatcher_gff_field_type(field_type_num_str: str) -> GFFFieldType:
+    def resolve_tslpatcher_gff_field_type(
+        field_type_num_str: str,
+    ) -> GFFFieldType:
         """Resolves a TSLPatcher GFF field type to a PyKotor GFFFieldType enum.
 
         Use this function to work with the ini's FieldType= values in PyKotor.

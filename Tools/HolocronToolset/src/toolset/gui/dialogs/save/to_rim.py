@@ -3,9 +3,7 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-import qtpy
-
-from qtpy import QtCore
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QDialog
 
 if TYPE_CHECKING:
@@ -19,34 +17,33 @@ class RimSaveOption(IntEnum):
 
 
 class RimSaveDialog(QDialog):
-    def __init__(self, parent: QWidget):
+    def __init__(
+        self,
+        parent: QWidget,
+    ):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowMinMaxButtonsHint
+        )
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs import save_in_rim  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs import save_in_rim  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs import save_in_rim  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs import save_in_rim  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
-        self.ui = save_in_rim.Ui_Dialog()
+        from toolset.uic.qtpy.dialogs.save_in_rim import Ui_Dialog
+        self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.cancelButton.clicked.connect(self.reject)
-        self.ui.modSaveButton.clicked.connect(self.saveAsMod)
-        self.ui.overrideSaveButton.clicked.connect(self.saveAsOverride)
+        self.ui.modSaveButton.clicked.connect(self.save_as_mod)
+        self.ui.overrideSaveButton.clicked.connect(self.save_as_override)
 
         self.option: RimSaveOption = RimSaveOption.Nothing
 
-    def saveAsMod(self):
+    def save_as_mod(self):
         self.option = RimSaveOption.MOD
         self.accept()
 
-    def saveAsOverride(self):
+    def save_as_override(self):
         self.option = RimSaveOption.Override
         self.accept()

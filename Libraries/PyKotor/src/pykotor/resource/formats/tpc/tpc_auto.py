@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import os
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc.io_bmp import TPCBMPWriter
 from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.io_tpc import TPCBinaryReader, TPCBinaryWriter
+from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
 
@@ -44,7 +46,7 @@ def detect_tpc(
         first100: bytes,
     ) -> ResourceType:
         file_format = ResourceType.TPC
-        if len(first100) < 100:
+        if len(first100) < 100:  # noqa: PLR2004
             file_format = ResourceType.TGA
         else:
             for i in range(15, 100):
@@ -52,8 +54,9 @@ def detect_tpc(
                     file_format = ResourceType.TGA
         return file_format
 
+    file_format: ResourceType = ResourceType.INVALID
     try:
-        if isinstance(source, (str, CaseAwarePath)):
+        if isinstance(source, (str, os.PathLike)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = do_check(reader.read_bytes(100))
         elif isinstance(source, (bytes, bytearray)):
@@ -61,8 +64,6 @@ def detect_tpc(
         elif isinstance(source, BinaryReader):
             file_format = do_check(source.read_bytes(100))
             source.skip(-100)
-        else:
-            file_format = ResourceType.INVALID
     except (FileNotFoundError, PermissionError, IsADirectoryError):
         raise
     except OSError:
@@ -101,6 +102,7 @@ def read_tpc(
     """
     file_format: ResourceType = detect_tpc(source, offset)
 
+    loaded_tpc: TPC
     if file_format is ResourceType.TPC:
         loaded_tpc = TPCBinaryReader(source, offset, size or 0).load()
     elif file_format is ResourceType.TGA:
@@ -177,4 +179,4 @@ def bytes_tpc(
     """
     data = bytearray()
     write_tpc(tpc, data, file_format)
-    return data
+    return bytes(data)

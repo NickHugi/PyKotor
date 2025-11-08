@@ -4,9 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Iterator
 
-from loggerplus import RobustLogger  # pyright: ignore[reportMissingModuleSource]
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs, reportMissingModuleSource]
 
-from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 
@@ -67,6 +66,13 @@ class FileResource:
         self.inside_capsule: bool = is_capsule_file(self._filepath)
         self.inside_bif: bool = is_bif_file(self._filepath)
 
+        self._path_ident_obj: Path = (
+            self._filepath / str(self._identifier)
+            if self.inside_capsule or self.inside_bif
+            else self._filepath
+        )
+
+        self._internal: bool = False
         self._path_ident_obj: Path = self._filepath / str(self._identifier) if self.inside_capsule or self.inside_bif else self._filepath
 
     def __repr__(self):
@@ -219,87 +225,43 @@ class FileResource:
         """
         if reload:
             self._index_resource()
-
-        # Use cache for performance (don't cache BIF files - they're huge and already fast)
-        cache_key = (self._filepath, self._offset, self._size)
-        if not reload and not self.inside_bif and cache_key in _FILE_DATA_CACHE:
-            cached_data, cached_mtime = _FILE_DATA_CACHE[cache_key]
-            # Verify file hasn't been modified
-            try:
-                current_mtime = self._filepath.stat().st_mtime
-                if current_mtime == cached_mtime:
-                    return cached_data
-            except Exception:  # noqa: BLE001, S110
-                # If stat fails, invalidate cache entry and continue to read
-                pass
-
-        # Read from disk
-        with BinaryReader.from_file(self._filepath) as file:
+        with self._filepath.open("rb") as file:
             file.seek(self._offset)
-            data: bytes = file.read_bytes(self._size)
-
-        # Cache the data (only if not a BIF file and size is reasonable)
-        # Don't cache files larger than 10MB to avoid memory bloat
-        if not self.inside_bif and self._size < 10 * 1024 * 1024:
-            try:
-                mtime = self._filepath.stat().st_mtime
-                _FILE_DATA_CACHE[cache_key] = (data, mtime)
-            except Exception:  # noqa: BLE001, S110
-                # If we can't get mtime, don't cache
-                pass
-
+            data: bytes = file.read(self._size)
         return data
 
     def as_file_resource(self) -> Self:
         """For unifying use with LocationResult and ResourceResult."""
         return self
 
-
-@dataclass
-class ResourceStatResult:
-    st_size: int | None = None
-    st_mode: int | None = None
-    st_atime: float | None = None
-    st_mtime: float | None = None
-    st_ctime: float | None = None
-    st_nlink: int | None = None
-    st_atime_ns: int | None = None
-    st_mtime_ns: int | None = None
-    st_ctime_ns: int | None = None
-    st_ino: int | None = None
-    st_dev: int | None = None
-    st_uid: int | None = None
-    st_gid: int | None = None
-    st_file_attributes: int | None = None
-    st_reparse_tag: int | None = None
-    st_blocks: int | None = None
-    st_blksize: int | None = None
-    st_rdev: int | None = None
-    st_flags: int | None = None
-
-    @classmethod
-    def from_stat_result(cls, stat_result: os.stat_result) -> ResourceStatResult:
-        return cls(
-            st_size=stat_result.st_size,
-            st_mode=stat_result.st_mode,
-            st_atime=stat_result.st_atime,
-            st_mtime=stat_result.st_mtime,
-            st_ctime=stat_result.st_ctime,
-            st_nlink=stat_result.st_nlink,
-            st_atime_ns=stat_result.st_atime_ns,
-            st_mtime_ns=stat_result.st_mtime_ns,
-            st_ctime_ns=stat_result.st_ctime_ns,
-            st_ino=stat_result.st_ino,
-            st_dev=stat_result.st_dev,
-            st_uid=stat_result.st_uid,
-            st_gid=stat_result.st_gid,
-            st_file_attributes=getattr(stat_result, "st_file_attributes", None),
-            st_reparse_tag=getattr(stat_result, "st_reparse_tag", None),
-            st_blocks=getattr(stat_result, "st_blocks", None),
-            st_blksize=getattr(stat_result, "st_blksize", None),
-            st_rdev=getattr(stat_result, "st_rdev", None),
-            st_flags=getattr(stat_result, "st_flags", None),
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"resname='{self._resname}', "
+            f"restype={self._restype!r}, "
+            f"size={self._size}, "
+            f"offset={self._offset}, "
+            f"filepath={self._filepath!r}"
+            ")"
         )
+
+    def __hash__(self):
+        return hash(self._path_ident_obj)
+
+    def __str__(self):
+        return str(self._identifier)
+
+    def __eq__(
+        self,
+        other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
+    ):
+        if self is other:
+            return True
+        if isinstance(other, ResourceIdentifier):
+            return self.identifier() == other
+        if isinstance(other, FileResource):
+            return True if self is other else self._path_ident_obj == other._path_ident_obj
+        return NotImplemented
 
 
 @dataclass(frozen=True)
@@ -341,9 +303,9 @@ class ResourceResult:
             return self.resname
         if key == 1:
             return self.restype
-        if key == 2:
+        if key == 2:  # noqa: PLR2004
             return self.filepath
-        if key == 3:
+        if key == 3:  # noqa: PLR2004
             return self.data
         msg = f"Index out of range for ResourceResult. key: {key}"
         raise IndexError(msg)
@@ -401,7 +363,7 @@ class LocationResult:
             return self.filepath
         if key == 1:
             return self.offset
-        if key == 2:
+        if key == 2:  # noqa: PLR2004
             return self.size
         msg = f"Index out of range for LocationResult. key: {key}"
         raise IndexError(msg)
@@ -428,8 +390,8 @@ class LocationResult:
 class ResourceIdentifier:
     """Class for storing resource name and type, facilitating case-insensitive object comparisons and hashing equal to their string representations."""
 
-    resname: str
-    restype: ResourceType
+    resname: str = field(default_factory=str)
+    restype: ResourceType = field(default=ResourceType.INVALID)
     _cached_filename_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportArgumentType]  # type: ignore[assignment]
     _lower_resname_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportArgumentType]  # type: ignore[assignment]
     _cached_hash: int = field(default=None, init=False, repr=False)  # pyright: ignore[reportArgumentType]  # type: ignore[assignment]
@@ -438,20 +400,17 @@ class ResourceIdentifier:
         # Workaround to initialize a field in a frozen dataclass
         ext: str = self.restype.extension
         suffix: str = f".{ext}" if ext else ""
-        lower_filename_str = f"{self.resname}{suffix}".lower()
+        lower_filename_str: str = f"{self.resname}{suffix}".lower()
+        object.__setattr__(self, "resname", str(self.resname))
         object.__setattr__(self, "_cached_filename_str", lower_filename_str)
         object.__setattr__(self, "_lower_resname_str", self.resname.lower())
         # Pre-compute and cache hash for performance
         object.__setattr__(self, "_cached_hash", hash(lower_filename_str))
 
-    def __hash__(
-        self,
-    ):
+    def __hash__(self):
         return self._cached_hash
 
-    def __repr__(
-        self,
-    ):
+    def __repr__(self):
         return f"{self.__class__.__name__}(resname='{self.resname}', restype={self.restype!r})"
 
     def __str__(self) -> str:
@@ -508,15 +467,12 @@ class ResourceIdentifier:
 
         Processing Logic:
         ----------------
-            - Splits the file path into resource name and type by filename dots, starting from maximum dots
-            - Validates the extracted resource type
-            - If splitting fails, uses stem as name and extension (from the last dot) as type
-            - Handles exceptions during processing
+            - Splits the file path into resource name and type
+            - Attempts to validate the extracted resource type, starting from the full extension
+            - If validation fails, progressively shortens the extension and tries again
+            - If all attempts fail, uses stem as name and sets type to INVALID
         """
-        try:
-            path_obj = PurePath(file_path)
-        except Exception:
-            return cls("", ResourceType.from_extension(""))
+        path_obj = PurePath(file_path)
 
         def _split_resource_filename(p: PurePath) -> tuple[str, ResourceType]:
             filename = p.name

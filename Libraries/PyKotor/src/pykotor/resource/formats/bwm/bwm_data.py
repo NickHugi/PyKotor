@@ -7,7 +7,7 @@ from copy import copy
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Face, Vector3
+from utility.common.geometry import Face, Vector3
 from pykotor.resource.formats._base import ComparableMixin
 
 if TYPE_CHECKING:
@@ -76,12 +76,6 @@ class BWM(ComparableMixin):
         Returns:
         -------
             list[BWMFace]: List of faces that are walkable
-
-        Processing Logic:
-        ----------------
-            - Iterate through all faces in self.faces
-            - Check if each face's material is walkable using face.material.walkable()
-            - Add face to return list if walkable.
         """
         return [face for face in self.faces if face.material.walkable()]
 
@@ -93,13 +87,6 @@ class BWM(ComparableMixin):
         Returns:
         -------
             list[BWMFace]: List of unwalkable faces in the mesh
-
-        Processing Logic:
-        ----------------
-            - Iterate through all faces in the mesh
-            - Check if the material of the face is not walkable
-            - Add the face to the return list if material is not walkable
-            - Return the list of unwalkable faces.
         """
         return [face for face in self.faces if not face.material.walkable()]
 
@@ -134,13 +121,6 @@ class BWM(ComparableMixin):
         Returns:
         -------
             list[BWMNodeAABB]: List of AABB objects for each face
-
-        Processing Logic:
-        ----------------
-            - Recursively traverse the faces tree to collect all leaf faces
-            - Calculate AABB for each leaf face
-            - Add AABB to return list
-            - Return list of all AABBs.
         """
         aabbs: list[BWMNodeAABB] = []
         self._aabbs_rec(aabbs, copy(self.faces))
@@ -163,13 +143,6 @@ class BWM(ComparableMixin):
         Returns:
         -------
             None: Tree is built by side effect of modifying aabbs
-
-        Processing Logic:
-        ----------------
-            - Calculate bounding box of all faces
-            - Split faces into left and right based on longest axis
-            - Recursively build left and right trees
-            - Stop when single face remains or axes exhausted
         """
         max_level = 128
         if rlevel > max_level:
@@ -257,13 +230,6 @@ class BWM(ComparableMixin):
         Returns:
         -------
             list[BWMEdge]: A list of edges in the BWM.
-
-        Processing Logic:
-        ----------------
-            - Finds walkable faces and their adjacencies
-            - Iterates through faces and edges to find unconnected edges
-            - Traces edge paths and adds them to the edges list until it loops back
-            - Marks final edges and records perimeter lengths
         """
         walkable: list[BWMFace] = [face for face in self.faces if face.material.walkable()]
         adjacencies: list[tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]] = [self.adjacencies(face) for face in walkable]
@@ -320,13 +286,6 @@ class BWM(ComparableMixin):
         Returns:
         -------
             tuple: {Tuple of adjacencies or None}
-
-        Processing Logic:
-        ----------------
-            1. Get list of walkable faces
-            2. Define edge lists for each potential adjacency
-            3. Iterate through walkable faces and check if edges match using a bit flag
-            4. Return adjacencies or None.
         """
         walkable: list[BWMFace] = self.walkable_faces()
         adj1: list[Vector3] = [face.v1, face.v2]
@@ -392,14 +351,6 @@ class BWM(ComparableMixin):
         Returns:
         -------
             tuple[Vector3, Vector3]: Bounding box minimum and maximum points
-
-        Processing Logic:
-        ----------------
-            - Initialize bounding box minimum and maximum points to extreme values
-            - Iterate through all vertices of the mesh
-            - Update minimum x, y, z values of bbmin
-            - Update maximum x, y, z values of bbmax
-            - Return bounding box minimum and maximum points.
         """
         bbmin = Vector3(1000000, 1000000, 1000000)
         bbmax = Vector3(-1000000, -1000000, -1000000)
@@ -419,11 +370,6 @@ class BWM(ComparableMixin):
         Returns:
         -------
             None - Updates bbmin and bbmax in place
-
-        Processing Logic:
-        ----------------
-            - Compare vertex x, y, z to bbmin x, y, z and update bbmin with minimum
-            - Compare vertex x, y, z to bbmax x, y, z and update bbmax with maximum.
         """
         bbmin.x = min(bbmin.x, vertex.x)
         bbmin.y = min(bbmin.y, vertex.y)
@@ -511,14 +457,6 @@ class BWM(ComparableMixin):
         ----
             old: Index to replace
             new: New index to set or None
-
-        Processing Logic:
-        ----------------
-            - Loops through all faces in the object
-            - Checks if face's trans1 attribute equals old index
-            - If equal, sets trans1 to new index
-            - Checks if face's trans2 attribute equals old index
-            - If equal, sets trans2 to new index.
         """
         for face in self.faces:
             if face.trans1 == old:
@@ -622,12 +560,6 @@ class BWMNodeAABB(ComparableMixin):
         Returns:
         -------
             self - The initialized BWMNodeAABB object
-
-        Processing Logic:
-        ----------------
-            - Sets the bounding box minimum and maximum bounds
-            - Sets the splitting face and most significant plane
-            - Sets the left and right child nodes.
         """
         self.bb_min: Vector3 = bb_min
         self.bb_max: Vector3 = bb_max

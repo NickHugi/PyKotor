@@ -6,125 +6,184 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
-    <height>747</height>
+    <width>800</width>
+    <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Insert Instance</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout">
+  <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,2">
    <item>
-    <layout class="QVBoxLayout" name="sidebarLayout">
+    <layout class="QVBoxLayout" name="leftPanelLayout">
      <item>
-      <widget class="QLabel" name="dynamicTextLabel">
-       <property name="text">
-        <string>Dynamic Text</string>
+      <widget class="QGroupBox" name="previewGroup">
+       <property name="title">
+        <string>Preview</string>
        </property>
+       <layout class="QVBoxLayout" name="previewLayout">
+        <item>
+         <widget class="ModelRenderer" name="previewRenderer">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>250</width>
+            <height>250</height>
+           </size>
+          </property>
+          <property name="mouseTracking">
+           <bool>true</bool>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::StrongFocus</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="staticTextLabel">
-       <property name="text">
-        <string>Selected Resource</string>
+      <widget class="QGroupBox" name="infoGroup">
+       <property name="title">
+        <string>Information</string>
        </property>
+       <layout class="QVBoxLayout" name="infoLayout">
+        <item>
+         <widget class="QLabel" name="dynamicTextLabel">
+          <property name="text">
+           <string>Dynamic Text</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="staticTextLabel">
+          <property name="text">
+           <string>Selected Resource</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
-   <item>
-    <widget class="ModelRenderer" name="previewRenderer">
-      <property name="minimumSize">
-       <size>
-        <width>350</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="mouseTracking">
-       <bool>true</bool>
-      </property>
-      <property name="focusPolicy">
-       <enum>Qt::StrongFocus</enum>
-      </property>
-    </widget>
-   </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </item>
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout">
+    <layout class="QVBoxLayout" name="rightPanelLayout">
      <item>
-      <layout class="QFormLayout" name="formLayout">
-       <item row="0" column="0">
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>ResRef:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="resrefEdit">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="maxLength">
-          <number>16</number>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Location:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QComboBox" name="locationSelect"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <widget class="QRadioButton" name="reuseResourceRadio">
-         <property name="text">
-          <string>Reuse Resource</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="copyResourceRadio">
-         <property name="text">
-          <string>Copy Resource</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="createResourceRadio">
-         <property name="text">
-          <string>Create Resource</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="groupBox">
+      <widget class="QGroupBox" name="settingsGroup">
        <property name="title">
-        <string/>
+        <string>Settings</string>
+       </property>
+       <layout class="QFormLayout" name="formLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>ResRef:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="resrefEdit">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="maxLength">
+           <number>16</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Location:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="locationSelect"/>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="resourceTypeGroup">
+       <property name="title">
+        <string>Resource Type</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QRadioButton" name="reuseResourceRadio">
+          <property name="text">
+           <string>Reuse Resource</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="copyResourceRadio">
+          <property name="text">
+           <string>Copy Resource</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="createResourceRadio">
+          <property name="text">
+           <string>Create Resource</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="resourceListGroup">
+       <property name="title">
+        <string>Resource List</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <widget class="QLineEdit" name="resourceFilter">
           <property name="placeholderText">
-           <string>search...</string>
+           <string>Search resources...</string>
+          </property>
+          <property name="clearButtonEnabled">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QListWidget" name="resourceList">
           <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="alternatingRowColors">
            <bool>true</bool>
           </property>
          </widget>

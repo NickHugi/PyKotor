@@ -41,10 +41,7 @@ class GFFBinaryReader(ResourceReader):
         self._field_offset: int = 0
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> GFF:
+    def load(self) -> GFF:
         self._gff = GFF()
 
         file_type = self._reader.read_string(4)
@@ -195,10 +192,7 @@ class GFFBinaryWriter(ResourceWriter):
         self._field_count: int = 0
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         self._build_struct(self._gff.root)
 
         struct_offset = 56

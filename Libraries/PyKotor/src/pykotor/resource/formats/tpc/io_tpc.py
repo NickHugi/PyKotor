@@ -1,205 +1,361 @@
+"""TPC binary reader/writer implementation."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
+from pykotor.resource.formats.tpc.manipulate.rotate import rotate_rgb_rgba  # noqa: F401
+from pykotor.resource.formats.tpc.manipulate.swizzle import deswizzle, swizzle  # noqa: F401
+from pykotor.resource.formats.tpc.tpc_data import TPC, TPCLayer, TPCMipmap, TPCTextureFormat
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
+
+    from pykotor.resource.formats.txi.txi_data import TXI
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
-
-def _get_size(
-    width: int,
-    height: int,
-    tpc_format: TPCTextureFormat,
-) -> int | None:
-    """Calculates the size of a texture in bytes based on its format.
-
-    Args:
-    ----
-        width: int - Width of the texture in pixels
-        height: int - Height of the texture in pixels
-        tpc_format: TPCTextureFormat - Format of the texture
-
-    Returns:
-    -------
-        int - Size of the texture in bytes, or None if unknown format
-
-    Processing Logic:
-    ----------------
-        - Calculate size based on format:
-            - Greyscale: width * height * 1 byte per pixel
-            - RGB: width * height * 3 bytes per pixel
-            - RGBA: width * height * 4 bytes per pixel
-            - DXT1/DXT5: Compressed formats, size calculated differently
-        - Return None if invalid format.
-    """
-    if tpc_format is TPCTextureFormat.Greyscale:
-        return width * height * 1
-    if tpc_format is TPCTextureFormat.RGB:
-        return width * height * 3
-    if tpc_format is TPCTextureFormat.RGBA:
-        return width * height * 4
-    if tpc_format is TPCTextureFormat.DXT1:
-        return max(8, ((width + 3) // 4) * ((height + 3) // 4) * 8)
-    if tpc_format is TPCTextureFormat.DXT5:
-        return max(16, ((width + 3) // 4) * ((height + 3) // 4) * 16)
-    return None
 
 
 class TPCBinaryReader(ResourceReader):
     """Used to read TPC binary data."""
+
+    MAX_DIMENSIONS: Literal[0x8000] = 0x8000
+    IMG_DATA_START_OFFSET: Literal[0x80] = 0x80
+
     def __init__(
         self,
         source: SOURCE_TYPES,
         offset: int = 0,
-        size: int = 0,
+        size: int | None = None,
     ):
         super().__init__(source, offset, size)
-        self._tpc: TPC | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> TPC:
-        """Loads a texture from the reader and returns a TPC object.
+    def load(self) -> TPC:  # noqa: PLR0912, C901, PLR0915
+        self._tpc: TPC = TPC()
+        self._layer_count: int = 1
+        self._mipmap_count: int = 0
 
-        Args:
-        ----
-            auto_close: Whether to close the reader after loading (default True)
+        data_size: int = self._reader.read_uint32()  # 0x0
+        compressed: bool = data_size != 0
+        self._reader.skip(4)  # 0x4
+        width: int = self._reader.read_uint16()  # 0x8
+        height: int = self._reader.read_uint16()  # 0xA
 
-        Returns:
-        -------
-            TPC: The loaded TPC texture object
+        if max(width, height) >= self.MAX_DIMENSIONS:
+            raise ValueError(f"Unsupported image dimensions ({width}x{height})")
 
-        Processing Logic:
-        ----------------
-            - Reads header values like size, dimensions, format
-            - Skips unnecessary data
-            - Loops to read each mipmap level
-            - Sets TPC data and returns the object
-        """
-        self._tpc = TPC()
+        pixel_type, self._mipmap_count = (
+            self._reader.read_uint8(),
+            self._reader.read_uint8(),
+        )
+        tpc_format: TPCTextureFormat = {
+            (True, 2): TPCTextureFormat.DXT1,
+            (True, 4): TPCTextureFormat.DXT5,
+            (False, 1): TPCTextureFormat.Greyscale,
+            (False, 2): TPCTextureFormat.RGB,
+            (False, 4): TPCTextureFormat.RGBA,
+            (False, 12): TPCTextureFormat.BGRA,
+        }.get((compressed, pixel_type), TPCTextureFormat.Invalid)
+        if tpc_format == TPCTextureFormat.Invalid:
+            raise ValueError(f"Unsupported texture format (pixel_type: {pixel_type}, compressed: {compressed})")
+        self._tpc._format = tpc_format  # noqa: SLF001
 
-        size: int = self._reader.read_uint32()
-        min_size = -1
-        compressed: bool = size != 0
+        total_cube_sides: Literal[6] = 6
+        if not compressed:
+            data_size = tpc_format.get_size(width, height)
 
-        self._reader.skip(4)
+        elif (
+            height != 0  # noqa: PLR2004
+            and width != 0
+            and int(height / width) == total_cube_sides
+        ):
+            self._tpc.is_cube_map = True
+            height = int(height / total_cube_sides)
+            self._layer_count = total_cube_sides
 
-        width, height = self._reader.read_uint16(), self._reader.read_uint16()
-        color_depth = self._reader.read_uint8()
-        mipmap_count = self._reader.read_uint8()
-        self._reader.skip(114)
+        complete_data_size: int = data_size
+        w, h = width, height
+        for _ in range(self._mipmap_count - 1):
+            w: int = max(w >> 1, 1)
+            h: int = max(h >> 1, 1)
+            complete_data_size += tpc_format.get_size(w, h)
 
-        tpc_format = TPCTextureFormat.Invalid
-        if compressed:
-            if color_depth == 2:
-                tpc_format = TPCTextureFormat.DXT1
-                min_size = 8
-            elif color_depth == 4:
-                tpc_format = TPCTextureFormat.DXT5
-                min_size = 16
-        elif color_depth == 1:
-            tpc_format = TPCTextureFormat.Greyscale
-            size = width * height
-            min_size = 1
-        elif color_depth == 2:
-            tpc_format = TPCTextureFormat.RGB
-            size = width * height * 3
-            min_size = 3
-        elif color_depth == 4:
-            tpc_format = TPCTextureFormat.RGBA
-            size = width * height * 4
-            min_size = 4
+        complete_data_size *= self._layer_count
 
-        mipmaps: list[bytes] = []
-        mm_width, mm_height = width, height
-        for _ in range(mipmap_count):
-            mm_size = _get_size(mm_width, mm_height, tpc_format) or min_size
-            mm_data = self._reader.read_bytes(mm_size)
-            mipmaps.append(mm_data)
+        self._reader.skip(0x72 + complete_data_size)
+        txi_data_size: int = self._reader.size() - self._reader.position()
+        if txi_data_size > 0:
+            self._tpc.txi = self._reader.read_string(
+                txi_data_size,
+                encoding="ascii",
+                errors="ignore",
+            )
 
-            mm_width >>= 1
-            mm_height >>= 1
-            mm_width = max(mm_width, 1)
-            mm_height = max(mm_height, 1)
+        txi: TXI = self._tpc._txi  # noqa: SLF001
+        self._tpc.is_animated = bool(
+            self._tpc.txi
+            and self._tpc.txi.strip()
+            and txi.features.proceduretype
+            and txi.features.proceduretype.lower() == "cycle"  # noqa: SLF001
+            and txi.features.numx
+            and txi.features.numy
+            and txi.features.fps,
+        )
 
-        file_size = self._reader.size()
-        txi = self._reader.read_string(file_size - self._reader.position(), encoding="ascii")
+        if self._tpc.is_animated:
+            txi: TXI = self._tpc._txi  # noqa: SLF001
+            self._layer_count = (txi.features.numx or 1) * (txi.features.numy or 1)
+            width //= txi.features.numx or 1
+            height //= txi.features.numy or 1
+            data_size //= self._layer_count
+            w, h = width, height
+            self._mipmap_count = 0
+            while w > 0 and h > 0:
+                w //= 2
+                h //= 2
+                self._mipmap_count += 1
 
-        self._tpc.txi = txi
-        self._tpc.set_data(width, height, mipmaps, tpc_format)
+        if compressed and not self._tpc.is_animated:
+            expected_size: int = (width * height) // 2 if tpc_format == TPCTextureFormat.DXT1 else width * height
+            if data_size != expected_size:
+                raise ValueError(f"Invalid data size for a texture of {width}x{height} pixels and format {tpc_format!r}")
 
+        self._reader.seek(self.IMG_DATA_START_OFFSET)
+        if width <= 0 or height <= 0 or width >= self.MAX_DIMENSIONS or height >= self.MAX_DIMENSIONS:
+            raise ValueError(f"Invalid dimensions ({width}x{height}) for format {tpc_format!r}")
+
+        full_image_data_size: int = tpc_format.get_size(
+            width,
+            height,
+        )
+        full_data_size: int = self._reader.size() - self.IMG_DATA_START_OFFSET
+        if full_data_size < (self._layer_count * full_image_data_size):
+            msg: str = (
+                f"Insufficient data for image. Expected at least {hex(self._layer_count * full_image_data_size)} bytes,"
+                f" but only {hex(full_data_size)} bytes are available."
+            )
+            raise ValueError(
+                msg,
+            )
+
+        for _ in range(self._layer_count):
+            layer = TPCLayer()
+            self._tpc.layers.append(layer)
+            layer_width, layer_height = width, height
+            layer_size: int = tpc_format.get_size(layer_width, layer_height) if self._tpc.is_animated else data_size
+
+            for _ in range(self._mipmap_count):
+                mm_width, mm_height = (
+                    max(1, layer_width),
+                    max(1, layer_height),
+                )
+                mm_size: int = max(
+                    layer_size,
+                    tpc_format.min_size(),
+                )
+                mm = TPCMipmap(
+                    width=mm_width,
+                    height=mm_height,
+                    tpc_format=tpc_format,
+                    data=bytearray(self._reader.read_bytes(mm_size)),
+                )
+                layer.mipmaps.append(mm)
+
+                if full_data_size <= mm_size or mm_size < tpc_format.get_size(mm_width, mm_height):
+                    break
+
+                full_data_size -= mm_size
+                layer_width, layer_height = (
+                    layer_width >> 1,
+                    layer_height >> 1,
+                )
+                layer_size = tpc_format.get_size(
+                    layer_width,
+                    layer_height,
+                )
+
+                if layer_width < 1 and layer_height < 1:
+                    break
+
+        if self._tpc.format() != TPCTextureFormat.BGRA:
+            return self._tpc
+
+        for layer in self._tpc.layers:
+            for mipmap in layer.mipmaps:
+                mipmap.data = deswizzle(
+                    mipmap.data,
+                    mipmap.width,
+                    mipmap.height,
+                    self._tpc.format().bytes_per_pixel(),
+                )
         return self._tpc
+
+    def _normalize_cubemaps(self):
+        self._tpc.convert(TPCTextureFormat.RGB if self._tpc.format() == TPCTextureFormat.DXT1 else TPCTextureFormat.RGBA)
+        rotation: tuple[int, int, int, int, int, int] = (3, 1, 0, 2, 2, 0)
+        for i, layer in enumerate(self._tpc.layers):
+            for mipmap in layer.mipmaps:
+                rotate_rgb_rgba(
+                    mipmap.data,
+                    mipmap.width,
+                    mipmap.height,
+                    self._tpc.format().bytes_per_pixel(),
+                    rotation[i],
+                )
+        self._tpc.layers[0].mipmaps, self._tpc.layers[1].mipmaps = (
+            self._tpc.layers[1].mipmaps,
+            self._tpc.layers[0].mipmaps,
+        )
 
 
 class TPCBinaryWriter(ResourceWriter):
-    """Used to write TPC instances as TPC binary data."""
-    def __init__(
-        self,
-        tpc: TPC,
-        target: TARGET_TYPES,
-    ):
+    """Used to write TPC instances as TPC binary data.
+
+    File Structure:
+    Header (128 bytes):
+    - 0x00-0x03: Data size (uint32 LE) - 0 if uncompressed
+    - 0x04-0x07: Alpha blend float (4 bytes)
+    - 0x08-0x09: Width (uint16 LE)
+    - 0x0A-0x0B: Height (uint16 LE)
+    - 0x0C: Encoding (uint8)
+    - 0x0D: Mipmap count (uint8)
+    - 0x0E-0x7F: Reserved (114 bytes)
+
+    Followed by:
+    - Texture data
+    - TXI data (optional)
+    """
+
+    MAX_DIMENSIONS: Literal[0x8000] = TPCBinaryReader.MAX_DIMENSIONS
+    IMG_DATA_START_OFFSET: Literal[0x80] = TPCBinaryReader.IMG_DATA_START_OFFSET
+
+    # Encoding values from TPCObject.cs
+    ENCODING_GRAY: Literal[0x01] = 0x01
+    ENCODING_RGB: Literal[0x02] = 0x02
+    ENCODING_RGBA: Literal[0x04] = 0x04
+    ENCODING_BGRA: Literal[0x0C] = 0x0C
+
+    def __init__(self, tpc: TPC, target: TARGET_TYPES):
         super().__init__(target)
         self._tpc: TPC = tpc
+        self._layer_count: int = len(tpc.layers) if tpc.layers else 0
+        self._mipmap_count: int = len(tpc.layers[0].mipmaps) if tpc.layers and tpc.layers[0].mipmaps else 0
+
+    def _get_pixel_encoding(self, tpc_format: TPCTextureFormat) -> int:
+        """Get the pixel encoding value for the given format."""
+        if tpc_format == TPCTextureFormat.Greyscale:
+            return self.ENCODING_GRAY
+        if tpc_format in (TPCTextureFormat.RGB, TPCTextureFormat.DXT1):
+            return self.ENCODING_RGB
+        if tpc_format in (TPCTextureFormat.RGBA, TPCTextureFormat.DXT5):
+            return self.ENCODING_RGBA
+        if tpc_format == TPCTextureFormat.BGRA:
+            return self.ENCODING_BGRA
+        raise ValueError(f"Invalid TPC texture format: {tpc_format}")
+
+    def _validate_dimensions(
+        self,
+        width: int,
+        height: int,
+    ) -> None:
+        """Validate the texture dimensions."""
+        if width <= 0 or height <= 0:
+            raise ValueError(f"Invalid dimensions: {width}x{height}")
+        if width >= self.MAX_DIMENSIONS or height >= self.MAX_DIMENSIONS:
+            raise ValueError(f"Dimensions exceed maximum allowed: {width}x{height}")
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
-        """Writes the TPC texture data to the file stream.
-
-        Args:
-        ----
-            auto_close: Whether to close the file stream after writing (default: True)
-
-        Writes TPC texture data to file stream:
-            - Gets texture data from TPC object
-            - Writes header information like size, dimensions, encoding
-            - Writes raw texture data
-            - Writes TXI data
-            - Optionally closes file stream..
-        """
-        data = bytearray()
-        size: int = 0
-
-        for i in range(self._tpc.mipmap_count()):
-            width, height, texture_format, mm_data = self._tpc.get(i)
-            assert mm_data is not None
-            data += mm_data
-            detsize = _get_size(width, height, texture_format)
-            assert detsize is not None
-            size += detsize
-
-        if self._tpc.format() == TPCTextureFormat.RGBA:
-            encoding = 4
-            size = 0
-        elif self._tpc.format() == TPCTextureFormat.RGB:
-            encoding = 2
-            size = 0
-        elif self._tpc.format() == TPCTextureFormat.Greyscale:
-            encoding = 1
-            size = 0
-        elif self._tpc.format() == TPCTextureFormat.DXT1:
-            encoding = 2
-        elif self._tpc.format() == TPCTextureFormat.DXT5:
-            encoding = 4
-        else:
-            msg = "Invalid TPC texture format."
-            raise ValueError(msg)
+    def write(self):
+        """Write the TPC data to the target."""
+        if not self._tpc.layers:
+            raise ValueError("TPC contains no layers")
 
         width, height = self._tpc.dimensions()
+        tpc_format: TPCTextureFormat = self._tpc.format()
 
-        self._writer.write_uint32(size)
-        self._writer.write_single(0.0)
-        self._writer.write_uint16(width)
-        self._writer.write_uint16(height)
-        self._writer.write_uint8(encoding)
-        self._writer.write_uint8(self._tpc.mipmap_count())
-        self._writer.write_bytes(b"\x00" * 114)
-        self._writer.write_bytes(data)
-        self._writer.write_bytes(self._tpc.txi.encode("ascii"))
+        # Validate dimensions
+        self._validate_dimensions(width, height)
+
+        # Handle animated textures and cubemaps
+        layer_width: int = width
+        original_height = layer_height = height
+
+        if self._tpc.is_animated:
+            # From TPCObject.cs checkAnimated()
+            txi: TXI = self._tpc._txi  # noqa: SLF001
+            numx: int = txi.features.numx or 1
+            numy: int = txi.features.numy or 1
+            layer_width: int = width // numx
+            layer_height: int = height // numy
+            self._layer_count = numx * numy
+            if layer_width <= 0 or layer_height <= 0:
+                raise ValueError(f"Invalid layer dimensions ({layer_width}x{layer_height}) for animated texture")
+
+        elif self._tpc.is_cube_map:
+            # From TPCObject.cs checkCubeMap()
+            if self._layer_count != 6:  # noqa: PLR2004
+                raise ValueError(f"Cubemap must have exactly 6 layers, found {self._layer_count}")
+            height: int = layer_height * 6
+
+        # Calculate data size
+        data_size: int = tpc_format.get_size(layer_width, layer_height)
+        if self._tpc.is_animated:
+            data_size *= self._layer_count
+
+        # Write header (128 bytes)
+        pixel_encoding: int = self._get_pixel_encoding(tpc_format)
+        self._writer.write_uint32(0 if not tpc_format.is_dxt() else data_size)  # 0x00-0x03: Data size
+        self._writer.write_single(1.0)  # 0x04-0x07: Alpha blending (default 1.0)
+        self._writer.write_uint16(width)  # 0x08-0x09: Width
+        self._writer.write_uint16(height if not self._tpc.is_cube_map else original_height)  # 0x0A-0x0B: Height
+        self._writer.write_uint8(pixel_encoding)  # 0x0C: Pixel encoding
+        self._writer.write_uint8(self._mipmap_count)  # 0x0D: Mipmap count
+        self._writer.write_bytes(bytes(0x72))  # 0x0E-0x7F: Reserved padding
+
+        # Write texture data for each layer
+        for layer in self._tpc.layers:
+            curr_width, curr_height = layer_width, layer_height
+
+            for mipmap_idx in range(self._mipmap_count):
+                if mipmap_idx >= len(layer.mipmaps):
+                    break
+
+                mipmap: TPCMipmap = layer.mipmaps[mipmap_idx]
+                expected_width: int = max(1, curr_width)
+                expected_height: int = max(1, curr_height)
+
+                if (
+                    mipmap.width != expected_width
+                    or mipmap.height != expected_height
+                ):
+                    raise ValueError(
+                        f"Invalid mipmap dimensions at level {mipmap_idx}."  # noqa: E501
+                        f" Expected {expected_width}x{expected_height},"
+                        f" got {mipmap.width}x{mipmap.height}",
+                    )
+
+                mipmap_data: bytearray = mipmap.data
+                if (  # From TPCObject.cs
+                    tpc_format == TPCTextureFormat.BGRA  # swizzle only BGRA formats.
+                    and (curr_width & (curr_width - 1)) == 0  # Is power of 2
+                ):
+                    mipmap_data = swizzle(mipmap_data, curr_width, curr_height, tpc_format.bytes_per_pixel())
+
+                self._writer.write_bytes(bytes(mipmap_data))
+
+                curr_width: int = max(curr_width >> 1, 1)
+                curr_height: int = max(curr_height >> 1, 1)
+
+                if curr_width < 1 and curr_height < 1:
+                    break
+
+        # Rest of the file format is ascii TXI data.
+        if not str(self._tpc.txi).strip():
+            return
+
+        txi_data: str = self._tpc.txi.strip().replace("\r\n", "\n").replace("\n", "\r\n")
+        if not txi_data.endswith("\r\n"):
+            txi_data += "\r\n"
+        self._writer.write_bytes(txi_data.encode("ascii"))

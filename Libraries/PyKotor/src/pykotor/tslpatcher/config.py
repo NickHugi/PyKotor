@@ -104,7 +104,10 @@ class PatcherConfig:
         ConfigReader(ini, mod_path, logger, tslpatchdata_path).load(self)
 
     @classmethod
-    def as_namespace(cls, filepath: CaseAwarePath) -> PatcherNamespace:
+    def as_namespace(
+        cls,
+        filepath: CaseAwarePath,
+    ) -> PatcherNamespace:
         """Builds a changes.ini file as PatcherNamespace object.
 
         When a changes.ini is loaded when no namespaces.ini is created, we create a namespace internally with this single entry.

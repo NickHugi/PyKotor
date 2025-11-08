@@ -4,8 +4,6 @@ import os
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy.QtWidgets import QPlainTextEdit
 
 from pykotor.resource.type import ResourceType
@@ -44,28 +42,18 @@ class TXTEditor(Editor):
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        self._wordWrap: bool = False
+        self._word_wrap: bool = False
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.txt import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
 
         self.new()
 
-    def _setupSignals(self):
-        self.ui.actionWord_Wrap.triggered.connect(self.toggleWordWrap)
+    def _setup_signals(self):
+        self.ui.actionWord_Wrap.triggered.connect(self.toggle_word_wrap)
 
     def load(
         self,
@@ -84,7 +72,11 @@ class TXTEditor(Editor):
         super().new()
         self.ui.textEdit.setPlainText("")
 
-    def toggleWordWrap(self):
-        self._wordWrap = not self._wordWrap
-        self.ui.actionWord_Wrap.setChecked(self._wordWrap)
-        self.ui.textEdit.setLineWrapMode(QPlainTextEdit.WidgetWidth if self._wordWrap else QPlainTextEdit.NoWrap)
+    def toggle_word_wrap(self):
+        self._word_wrap = not self._word_wrap
+        self.ui.actionWord_Wrap.setChecked(self._word_wrap)
+        self.ui.textEdit.setLineWrapMode(
+            QPlainTextEdit.LineWrapMode.WidgetWidth
+            if self._word_wrap
+            else QPlainTextEdit.LineWrapMode.NoWrap
+        )

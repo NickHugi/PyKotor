@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>LYTEditor</class>
+ <widget class="QWidget" name="LYTEditor">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>LYT Editor</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <widget class="QSplitter" name="mainSplitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <!-- Left Panel - Element Lists -->
+     <widget class="QWidget" name="leftPanel">
+      <layout class="QVBoxLayout" name="leftPanelLayout">
+       <item>
+        <widget class="QTabWidget" name="elementTabs">
+         <!-- Rooms Tab -->
+         <widget class="QWidget" name="roomsTab">
+          <attribute name="title">
+           <string>Rooms</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="roomsLayout">
+           <item>
+            <widget class="QListWidget" name="roomsList"/>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="roomButtonsLayout">
+             <item>
+              <widget class="QPushButton" name="addRoomButton">
+               <property name="text">
+                <string>Add Room</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="duplicateRoomButton">
+               <property name="text">
+                <string>Duplicate</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="deleteRoomButton">
+               <property name="text">
+                <string>Delete</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+         <!-- Tracks Tab -->
+         <widget class="QWidget" name="tracksTab">
+          <attribute name="title">
+           <string>Tracks</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="tracksLayout">
+           <item>
+            <widget class="QListWidget" name="tracksList"/>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="trackButtonsLayout">
+             <item>
+              <widget class="QPushButton" name="addTrackButton">
+               <property name="text">
+                <string>Add Track</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="deleteTrackButton">
+               <property name="text">
+                <string>Delete</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+         <!-- Obstacles Tab -->
+         <widget class="QWidget" name="obstaclesTab">
+          <attribute name="title">
+           <string>Obstacles</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="obstaclesLayout">
+           <item>
+            <widget class="QListWidget" name="obstaclesList"/>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="obstacleButtonsLayout">
+             <item>
+              <widget class="QPushButton" name="addObstacleButton">
+               <property name="text">
+                <string>Add Obstacle</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="deleteObstacleButton">
+               <property name="text">
+                <string>Delete</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+         <!-- Doorhooks Tab -->
+         <widget class="QWidget" name="doorhooksTab">
+          <attribute name="title">
+           <string>Doorhooks</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="doorhooksLayout">
+           <item>
+            <widget class="QListWidget" name="doorhooksList"/>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="doorhookButtonsLayout">
+             <item>
+              <widget class="QPushButton" name="addDoorhookButton">
+               <property name="text">
+                <string>Add Doorhook</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="deleteDoorhookButton">
+               <property name="text">
+                <string>Delete</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <!-- Center Panel - 3D View -->
+     <widget class="QWidget" name="centerPanel">
+      <layout class="QVBoxLayout" name="centerPanelLayout">
+       <!-- Toolbar -->
+       <item>
+        <widget class="QToolBar" name="toolBar">
+         <addaction name="actionSelect"/>
+         <addaction name="actionMove"/>
+         <addaction name="actionRotate"/>
+         <addaction name="actionScale"/>
+         <addaction name="separator"/>
+         <addaction name="actionConnectRooms"/>
+         <addaction name="actionAutoLayout"/>
+         <addaction name="separator"/>
+         <addaction name="actionGrid"/>
+         <addaction name="actionSnap"/>
+         <addaction name="separator"/>
+         <addaction name="actionTop"/>
+         <addaction name="actionFront"/>
+         <addaction name="actionSide"/>
+         <addaction name="separator"/>
+         <addaction name="actionWalkmesh"/>
+        </widget>
+       </item>
+       <!-- 3D View -->
+       <item>
+        <widget class="QWidget" name="viewportContainer">
+         <layout class="QVBoxLayout" name="viewportLayout"/>
+        </widget>
+       </item>
+       <!-- Transform Controls -->
+       <item>
+        <widget class="QGroupBox" name="transformGroup">
+         <property name="title">
+          <string>Transform</string>
+         </property>
+         <layout class="QGridLayout" name="transformLayout">
+           <item row="0" column="0">
+             <widget class="QLabel" name="posXLabel">
+               <property name="text">
+                <string>X:</string>
+               </property>
+             </widget>
+           </item>
+           <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="posXSpin">
+               <property name="decimals">
+                <number>2</number>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+             </widget>
+           </item>
+           <item row="0" column="2">
+             <widget class="QLabel" name="posYLabel">
+               <property name="text">
+                <string>Y:</string>
+               </property>
+             </widget>
+           </item>
+           <item row="0" column="3">
+             <widget class="QDoubleSpinBox" name="posYSpin">
+               <property name="decimals">
+                <number>2</number>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+             </widget>
+           </item>
+           <item row="0" column="4">
+             <widget class="QLabel" name="posZLabel">
+               <property name="text">
+                <string>Z:</string>
+               </property>
+             </widget>
+           </item>
+           <item row="0" column="5">
+             <widget class="QDoubleSpinBox" name="posZSpin">
+               <property name="decimals">
+                <number>2</number>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+             </widget>
+           </item>
+           <item row="1" column="0">
+             <widget class="QLabel" name="rotLabel">
+               <property name="text">
+                <string>Rot:</string>
+               </property>
+             </widget>
+           </item>
+           <item row="1" column="1">
+             <widget class="QDoubleSpinBox" name="rotSpin">
+               <property name="decimals">
+                <number>1</number>
+               </property>
+               <property name="minimum">
+                <double>-360.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>360.000000000000000</double>
+               </property>
+             </widget>
+           </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <!-- Right Panel - Asset Browser -->
+     <widget class="QWidget" name="rightPanel">
+      <layout class="QVBoxLayout" name="rightPanelLayout">
+       <item>
+        <widget class="QTabWidget" name="assetTabs">
+         <!-- Models Tab -->
+         <widget class="QWidget" name="modelsTab">
+          <attribute name="title">
+           <string>Models</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="modelsLayout">
+           <item>
+            <widget class="QLineEdit" name="modelSearchEdit">
+             <property name="placeholderText">
+              <string>Search models...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="modelsList"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="importModelButton">
+             <property name="text">
+              <string>Import Model</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="modelCategoryCombo">
+             <property name="toolTip">
+              <string>Filter models by category</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <!-- Textures Tab -->
+         <widget class="QWidget" name="texturesTab">
+          <attribute name="title">
+           <string>Textures</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="texturesLayout">
+           <item>
+            <widget class="QLineEdit" name="textureSearchEdit">
+             <property name="placeholderText">
+              <string>Search textures...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="texturesList"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="importTextureButton">
+             <property name="text">
+              <string>Import Texture</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="textureCategoryCombo">
+             <property name="toolTip">
+              <string>Filter textures by category</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="templatesTab">
+          <attribute name="title">
+           <string>Room Templates</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="templatesLayout">
+           <item>
+            <widget class="QLineEdit" name="templateSearchEdit">
+             <property name="placeholderText">
+              <string>Search templates...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="templatesList"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="saveTemplateButton">
+             <property name="text">
+              <string>Save as Template</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="templateCategoryCombo">
+             <property name="toolTip">
+              <string>Filter templates by category</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+  <action name="actionSelect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Select</string>
+   </property>
+   <property name="toolTip">
+    <string>Select Tool (S)</string>
+   </property>
+  </action>
+  <action name="actionMove">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Move</string>
+   </property>
+   <property name="toolTip">
+    <string>Move Tool (M)</string>
+   </property>
+  </action>
+  <action name="actionRotate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Rotate</string>
+   </property>
+   <property name="toolTip">
+    <string>Rotate Tool (R)</string>
+   </property>
+  </action>
+  <action name="actionGrid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Grid</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle Grid (G)</string>
+   </property>
+  </action>
+  <action name="actionSnap">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Snap</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle Snap to Grid</string>
+   </property>
+  </action>
+  <action name="actionTop">
+   <property name="text">
+    <string>Top</string>
+   </property>
+   <property name="toolTip">
+    <string>Top View</string>
+   </property>
+  </action>
+  <action name="actionFront">
+   <property name="text">
+    <string>Front</string>
+   </property>
+   <property name="toolTip">
+    <string>Front View</string>
+   </property>
+  </action>
+  <action name="actionSide">
+   <property name="text">
+    <string>Side</string>
+   </property>
+   <property name="toolTip">
+    <string>Side View</string>
+   </property>
+  </action>
+  <action name="actionWalkmesh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Walkmesh</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle Walkmesh</string>
+   </property>
+  </action>
+  <action name="actionScale">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Scale</string>
+   </property>
+   <property name="toolTip">
+    <string>Scale Tool (T)</string>
+   </property>
+  </action>
+  <action name="actionConnectRooms">
+   <property name="text">
+    <string>Connect Rooms</string>
+   </property>
+   <property name="toolTip">
+    <string>Auto-connect selected rooms (C)</string>
+   </property>
+  </action>
+  <action name="actionAutoLayout">
+   <property name="text">
+    <string>Auto Layout</string>
+   </property>
+   <property name="toolTip">
+    <string>Automatically arrange rooms (L)</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

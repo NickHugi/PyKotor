@@ -33,10 +33,6 @@ class NCSBinaryReader(ResourceReader):
     ) -> NCS:
         """Loads an NCS file from the reader.
 
-        Args:
-        ----
-            auto_close: {Whether to automatically close the reader after loading}.
-
         Returns:
         -------
             NCS: The loaded NCS object
@@ -502,7 +498,7 @@ class NCSBinaryWriter(ResourceWriter):
         for instruction in self._ncs.instructions:
             self._write_instruction(instruction)
 
-    def determine_size(self, instruction: NCSInstruction) -> int:
+    def determine_size(self, instruction: NCSInstruction) -> int:  # TODO(th3w1zard1): This function is unfinished and is missing defs.
         """Determines the size of an NCS instruction in bytes.
 
         Based on DeNCS Decoder.java readCommand method which shows complete instruction formats.
@@ -585,7 +581,7 @@ class NCSBinaryWriter(ResourceWriter):
 
         return size
 
-    def _write_instruction(self, instruction: NCSInstruction):
+    def _write_instruction(self, instruction: NCSInstruction):  # TODO(th3w1zard1): This function is unfinished and is missing defs.
         """Writes an instruction to the NCS binary stream.
 
         Args:
@@ -601,7 +597,7 @@ class NCSBinaryWriter(ResourceWriter):
             - Raises error for unsupported instructions
         """
 
-        def to_signed_32bit(n: int) -> int:
+        def to_signed_32bit(n: int) -> int:  # FIXME(th3w1zard1): Presumably this issue happens further up the call stack, fix later.
             """Convert unsigned 32-bit integer representation to signed.
 
             Handles edge cases where values may be stored as unsigned but need
@@ -622,7 +618,7 @@ class NCSBinaryWriter(ResourceWriter):
                 n -= 2**32
             return n
 
-        def to_signed_16bit(n: int) -> int:
+        def to_signed_16bit(n: int) -> int:  # FIXME(th3w1zard1): Only seen this issue happen with 32bit but better safe than sorry, remove this once above issue is fixed.
             """Convert unsigned 16-bit integer representation to signed.
 
             Similar to to_signed_32bit but for 16-bit values.

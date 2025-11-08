@@ -1,101 +1,133 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from qtpy.QtCore import Qt
-from qtpy.QtWidgets import QDialog, QMainWindow, QMessageBox, QWidget
+from functools import singledispatch
+from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
+from loggerplus import RobustLogger
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox, QWidget
+
+from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
-from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
-    import os
-
     from qtpy.QtGui import QCloseEvent
-    from qtpy.QtWidgets import QMainWindow
+    from qtpy.QtWidgets import QDialog, QMainWindow
 
     from toolset.data.installation import HTInstallation
     from toolset.gui.editor import Editor
 
-WINDOWS: list[QWidget] = []
+TOOLSET_WINDOWS: list[QDialog | QMainWindow] = []
+"""TODO: Remove this implementation, there's better ways to keep windows from being garbage collected."""
 
-unique_sentinel = object()
-def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool = True):
+_UNIQUE_SENTINEL = object()
+
+
+def add_window(window: QDialog | QMainWindow):
     """Prevents Qt's garbage collection by keeping a reference to the window."""
-    # Save the original closeEvent method
     original_closeEvent = window.closeEvent
 
-    # Define a new closeEvent method that also calls the original
-    def newCloseEvent(
-        event: QCloseEvent | None = unique_sentinel,  # pyright: ignore[reportArgumentType]
+    def new_close_event(
+        event: QCloseEvent | None = _UNIQUE_SENTINEL,  # pyright: ignore[reportArgumentType]
         *args,
         **kwargs,
     ):
         from toolset.gui.editor import Editor
+
         if isinstance(window, Editor) and window._filepath is not None:  # noqa: SLF001
-            addRecentFile(window._filepath)  # noqa: SLF001
-        if window in WINDOWS:
-            WINDOWS.remove(window)
-        # Call the original closeEvent
-        if event is unique_sentinel:  # Make event arg optional just in case the class has the wrong definition.
+            add_recent_file(window._filepath)  # noqa: SLF001
+        if window in TOOLSET_WINDOWS:
+            print(f"Removing window: {window}")
+            TOOLSET_WINDOWS.remove(window)
+        if event is _UNIQUE_SENTINEL:  # Make event arg optional just in case the class has the wrong definition.
             original_closeEvent(*args, **kwargs)
         else:
             original_closeEvent(event, *args, **kwargs)  # pyright: ignore[reportArgumentType]
 
-    # Override the widget's closeEvent with the new one
-    window.closeEvent = newCloseEvent  # pyright: ignore[reportAttributeAccessIssue]
+    window.closeEvent = new_close_event  # pyright: ignore[reportAttributeAccessIssue]
+    print(f"Adding window: {window}")
+    TOOLSET_WINDOWS.append(window)
 
-    # Add the window to the global list and show it
-    WINDOWS.append(window)
-    if show:
-        if isinstance(window, QDialog):
-            window.exec_()
-        else:
-            window.show()
 
-def addRecentFile(file: Path):
+def add_recent_file(file: Path):
     """Update the list of recent files."""
     settings = GlobalSettings()
-    recentFiles: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.is_file()]
-    recentFiles.insert(0, str(file))
-    if len(recentFiles) > 15:  # noqa: PLR2004
-        recentFiles.pop()
-    settings.recentFiles = recentFiles
+    recent_files: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.is_file()]
+    recent_files.insert(0, str(file))
+    if len(recent_files) > 15:  # noqa: PLR2004
+        recent_files.pop()
+    settings.recentFiles = recent_files
 
 
-def openResourceEditor(
-    filepath: os.PathLike | str,
-    resref: str,
+@singledispatch
+def open_resource_editor(  # noqa: PLR0913
+    resource_or_path: FileResource | os.PathLike | str,
+    installation: HTInstallation | None = None,
+    parent_window: QWidget | None = None,
+    *,
+    gff_specialized: bool | None = None,
+    resname: str | None = None,
+    restype: ResourceType | None = None,
+    data: bytes | None = None,
+) -> tuple[os.PathLike | str | None, Editor | QMainWindow | None]:
+    raise NotImplementedError("Unsupported input type")
+
+@open_resource_editor.register(FileResource)
+def _(
+    resource: FileResource,
+    installation: HTInstallation | None = None,
+    parent_window: QWidget | None = None,
+    *,
+    gff_specialized: bool | None = None,
+    **kwargs
+) -> tuple[os.PathLike | str | None, Editor | QMainWindow | None]:
+    # Implementation for FileResource
+    return _open_resource_editor_impl(
+        resource=resource,
+        installation=installation,
+        parent_window=parent_window,
+        gff_specialized=gff_specialized
+    )
+
+@open_resource_editor.register(str)
+@open_resource_editor.register(os.PathLike)
+def _(  # noqa: PLR0913
+    path: os.PathLike | str,
+    resname: str,
     restype: ResourceType,
     data: bytes,
     installation: HTInstallation | None = None,
-    parentWindow: QWidget | None = None,
+    parent_window: QWidget | None = None,
     *,
     gff_specialized: bool | None = None,
-) -> tuple[os.PathLike | str, Editor | QMainWindow] | tuple[None, None]:
-    """Opens an editor for the specified resource.
+) -> tuple[os.PathLike | str | None, Editor | QMainWindow | None]:
+    return _open_resource_editor_impl(
+        filepath=path,
+        resname=resname,
+        restype=restype,
+        data=data,
+        installation=installation,
+        parent_window=parent_window,
+        gff_specialized=gff_specialized
+    )
 
-    If the user settings have the editor set to inbuilt it will return
-    the editor, otherwise it returns None.
-
-    Args:
-    ----
-        filepath: Path to the resource.
-        resref: The ResRef.
-        restype: The resource type.
-        data: The resource data.
-        parentwindow:
-        installation:
-        gff_specialized: Use the editor specific to the GFF-type file. If None, uses is configured in the settings.
-
-    Returns:
-    -------
-        Either the Editor object if using an internal editor, the filepath if using a external editor or None if
-        no editor was successfully opened.
-    """
+def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
+    resource: FileResource | None = None,
+    filepath: os.PathLike | str | None = None,
+    resname: str | None = None,
+    restype: ResourceType | None = None,
+    data: bytes | None = None,
+    installation: HTInstallation | None = None,
+    parent_window: QWidget | None = None,
+    gff_specialized: bool | None = None,
+) -> tuple[os.PathLike | str | None, Editor | QMainWindow | None]:
     # To avoid circular imports, these need to be placed within the function
     from toolset.gui.editors.are import AREEditor  # noqa: PLC0415
     from toolset.gui.editors.bwm import BWMEditor  # noqa: PLC0415
@@ -103,8 +135,11 @@ def openResourceEditor(
     from toolset.gui.editors.erf import ERFEditor  # noqa: PLC0415
     from toolset.gui.editors.gff import GFFEditor  # noqa: PLC0415
     from toolset.gui.editors.git import GITEditor  # noqa: PLC0415
+    from toolset.gui.editors.ifo import IFOEditor  # noqa: PLC0415
     from toolset.gui.editors.jrl import JRLEditor  # noqa: PLC0415
+    from toolset.gui.editors.lip import LIPEditor  # noqa: PLC0415
     from toolset.gui.editors.ltr import LTREditor  # noqa: PLC0415
+    from toolset.gui.editors.mdl import MDLEditor  # noqa: PLC0415
     from toolset.gui.editors.nss import NSSEditor  # noqa: PLC0415
     from toolset.gui.editors.pth import PTHEditor  # noqa: PLC0415
     from toolset.gui.editors.ssf import SSFEditor  # noqa: PLC0415
@@ -124,177 +159,190 @@ def openResourceEditor(
     from toolset.gui.windows.audio_player import AudioPlayer  # noqa: PLC0415
 
     if gff_specialized is None:
-        gff_specialized = GlobalSettings().gff_specializedEditors
+        gff_specialized = GlobalSettings().gffSpecializedEditors
 
-    editor = None
-    parentWindowWidget = parentWindow if isinstance(parentWindow, QWidget) else None
-    # don't send parentWindowWidget to the editors. This allows each editor to be treated as their own window.
+    editor: Editor | QMainWindow | None = None
+    parent_window_widget: QWidget | None = parent_window if isinstance(parent_window, QWidget) else None
+
+    if resource:
+        try:
+            data = resource.data()
+        except Exception:  # noqa: BLE001
+            RobustLogger().exception("Exception occurred in open_selected_resource")
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "An error occurred while attempting to read the data of the file.").exec()
+            return None, None
+        restype = resource.restype()
+        resname = resource.resname()
+        filepath = resource.filepath()
+    elif (
+        resname
+        and resname.strip()
+        and restype
+        and data is not None
+        and filepath
+    ):
+        ...
+    else:
+        raise ValueError("Invalid input combination")
 
     if restype.target_type() is ResourceType.TwoDA:
         editor = TwoDAEditor(None, installation)
-
-    if restype.target_type() is ResourceType.SSF:
+    elif restype.target_type() is ResourceType.SSF:
         editor = SSFEditor(None, installation)
-
-    if restype.target_type() is ResourceType.TLK:
+    elif restype.target_type() is ResourceType.TLK:
         editor = TLKEditor(None, installation)
-
-    if restype.target_type() is ResourceType.LTR:
+    elif restype.target_type() is ResourceType.LTR:
         editor = LTREditor(None, installation)
-
-    if restype.category == "Walkmeshes":
+    elif restype.target_type() is ResourceType.LIP:  # Add LIP editor support
+        editor = LIPEditor(None, installation)
+    elif restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
-
-    if restype.category in {"Images", "Textures"} and restype is not ResourceType.TXI:
+    elif (
+        restype.category in {"Images", "Textures"}
+        and restype is not ResourceType.TXI
+    ):
         editor = TPCEditor(None, installation)
+    elif restype is ResourceType.NSS:
+        editor = NSSEditor(None, installation)
+    elif restype is ResourceType.NCS:
+        QMessageBox.warning(
+            parent_window_widget,
+            "Cannot decompile NCS without an installation active",
+            "Please select an installation from the dropdown before loading an NCS.",
+        )
+        return None, None
 
-    if restype in {ResourceType.NSS, ResourceType.NCS}:
-        if installation:
-            editor = NSSEditor(None, installation)
-        elif restype is ResourceType.NSS:
-            QMessageBox.warning(
-                parentWindowWidget,
-                "No installation loaded",
-                "The toolset cannot use its full nss editor features until you select an installation.",
-            )
-            editor = TXTEditor(None, installation)
-        else:
-            QMessageBox.warning(
-                parentWindowWidget,
-                "Cannot decompile NCS without an installation active",
-                "Please select an installation from the dropdown before loading an NCS.",
-            )
-            return None, None
-
-    if restype.target_type() is ResourceType.DLG:
+    elif restype.target_type() is ResourceType.DLG:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = DLGEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTC, ResourceType.BTC, ResourceType.BIC}:
+    elif restype.target_type() in {ResourceType.UTC, ResourceType.BTC, ResourceType.BIC}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
             editor = UTCEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTP, ResourceType.BTP}:
+    elif restype.target_type() in {ResourceType.UTP, ResourceType.BTP}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
             editor = UTPEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTD, ResourceType.BTD}:
+    elif restype.target_type() in {ResourceType.UTD, ResourceType.BTD}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
             editor = UTDEditor(None, installation)
 
-    if restype.target_type() is ResourceType.UTS:
+    elif restype.target_type() is ResourceType.IFO:
+        editor = IFOEditor(None, installation)
+
+    elif restype.target_type() is ResourceType.UTS:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTSEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTT, ResourceType.BTT}:
+    elif restype.target_type() in {ResourceType.UTT, ResourceType.BTT}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTTEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTM, ResourceType.BTM}:
+    elif restype.target_type() in {ResourceType.UTM, ResourceType.BTM}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTMEditor(None, installation)
 
-    if restype.target_type() is ResourceType.UTW:
+    elif restype.target_type() is ResourceType.UTW:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTWEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTE, ResourceType.BTE}:
+    elif restype.target_type() in {ResourceType.UTE, ResourceType.BTE}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTEEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTI, ResourceType.BTI}:
+    elif restype.target_type() in {ResourceType.UTI, ResourceType.BTI}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTIEditor(None, installation)
 
-    if restype.target_type() is ResourceType.JRL:
+    elif restype.target_type() is ResourceType.JRL:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = JRLEditor(None, installation)
 
-    if restype.target_type() is ResourceType.ARE:
+    elif restype.target_type() is ResourceType.ARE:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = AREEditor(None, installation)
 
-    if restype.target_type() is ResourceType.PTH:
+    elif restype.target_type() is ResourceType.PTH:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = PTHEditor(None, installation)
 
-    if restype.target_type() is ResourceType.GIT:
+    elif restype.target_type() is ResourceType.GIT:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = GITEditor(None, installation)
 
-    if restype.category == "Audio":
+    elif restype.category == "Audio":
         editor = AudioPlayer(None)
-        if parentWindowWidget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
-            editor.setWindowIcon(parentWindowWidget.windowIcon())
+        editor.setWindowIcon(cast(QApplication, QApplication.instance()).windowIcon())
 
-    if restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM):
+    elif restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM, ResourceType.BIF):
         editor = ERFEditor(None, installation)
 
-    if restype in {ResourceType.MDL, ResourceType.MDX}:
+    elif restype in {ResourceType.MDL, ResourceType.MDX}:
         editor = MDLEditor(None, installation)
 
-    if editor is None and restype.target_type().contents == "gff":
+    elif restype.target_type().contents == "gff":
         editor = GFFEditor(None, installation)
 
-    if editor is None and restype.contents == "plaintext":
+    elif restype.contents == "plaintext":
         editor = TXTEditor(None)
 
-    if editor is not None:
-        try:
-            editor.load(filepath, resref, restype, data)
-            editor.show()
-            editor.activateWindow()
-
-            addWindow(editor)
-
-        except Exception as e:
-            QMessageBox(
-                QMessageBox.Icon.Critical,
-                "An unexpected error has occurred",
-                str(universal_simplify_exception(e)),
-                QMessageBox.StandardButton.Ok,
-                parentWindowWidget,
-                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
-            ).show()
-            raise
-        else:
-            return filepath, editor
-    else:
+    if editor is None:
         QMessageBox(
             QMessageBox.Icon.Critical,
             "Failed to open file",
             f"The selected file format '{restype}' is not yet supported.",
             QMessageBox.StandardButton.Ok,
-            parentWindowWidget,
+            parent_window_widget,
+            flags=Qt.WindowType.Window
+            | Qt.WindowType.Dialog
+            | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
+        ).show()
+        return None, None
+
+    try:
+        editor.load(filepath, resname, restype, data)
+        editor.show()
+        editor.activateWindow()
+        add_window(editor)
+
+    except Exception as e:
+        QMessageBox(
+            QMessageBox.Icon.Critical,
+            "An unexpected error has occurred",
+            str(universal_simplify_exception(e)),
+            QMessageBox.StandardButton.Ok,
+            parent_window_widget,
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
         ).show()
-
-    return None, None
+        raise
+    else:
+        return filepath, editor

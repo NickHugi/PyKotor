@@ -6,6 +6,9 @@ import pathlib
 import sys
 
 from copy import deepcopy
+from pathlib import Path
+
+from pykotor.tools.path import CaseAwarePath
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -18,8 +21,15 @@ if getattr(sys, "frozen", False) is False:
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
-from pykotor.tools.path import CaseAwarePath
-from utility.system.agnostics import askdirectory
+from utility.system.agnostics import (
+    askdirectory,
+    askopenfilenames,
+    askretrycancel,
+    showinfo,
+)
+
+if os.name == "nt":
+    from utility.system.win32.com.windialogs import open_file_and_folder_dialog
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFList, GFFStruct
@@ -235,18 +245,25 @@ def main():
     if input_path.is_file():
         process_file(input_path, PARSER_ARGS.output, resolutions_to_process)
 
-    elif input_path.is_dir():
-        files_to_process = list(input_path.rglob("*.gui"))
-        if not files_to_process:
-            print(f"Error: no .gui files to process in input path '{input_path}'", file=sys.stderr)
-        for gui_file in files_to_process:
-            new_output_dir: CaseAwarePath = PARSER_ARGS.output / gui_file.relative_to(input_path).parent
-            new_output_dir.mkdir(parents=True, exist_ok=True)
-            process_file(gui_file, new_output_dir, resolutions_to_process)
+    processed_files_count = 0
+    for input_path in input_paths:
+        if input_path.is_file():
+            process_file(input_path, PARSER_ARGS.output, resolutions_to_process)
+            processed_files_count += 1
 
-    else:
-        print(f"Invalid input: '{input_path}'. It's neither a file nor a directory.")
-        return
+        elif input_path.is_dir():
+            files_to_process = list(input_path.safe_rglob("*.gui"))
+            if not files_to_process:
+                print(f"Error: no .gui files to process in input path '{input_path}'", file=sys.stderr)
+            for gui_file in files_to_process:
+                new_output_dir: Path = PARSER_ARGS.output / gui_file.relative_to(input_path).parent
+                new_output_dir.mkdir(parents=True, exist_ok=True)
+                process_file(gui_file, new_output_dir, resolutions_to_process)
+                processed_files_count += 1
+
+        else:
+            print(f"Invalid input: '{input_path}'. It's neither a file nor a directory.")
+            return
 
     if TEST_MODE:
         comparison_dir = CaseAwarePath(os.path.expandvars(r"%USERPROFILE%\Documents\k1 mods\k1hrm-1.5\16-by-9\gui.1280x720"))

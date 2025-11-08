@@ -33,6 +33,18 @@ class UTM:
 
     def __init__(
         self,
+        *,
+        resref: ResRef = ResRef.from_blank(),
+        name: LocalizedString = LocalizedString.from_invalid(),
+        tag: str = "",
+        mark_up: int = 0,
+        mark_down: int = 0,
+        on_open: ResRef = ResRef.from_blank(),
+        comment: str = "",
+        id: int = 5,
+        can_buy: bool = False,
+        can_sell: bool = False,
+        inventory: list[InventoryItem] = [],
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
@@ -59,7 +71,7 @@ def construct_utm(
 ) -> UTM:
     utm = UTM()
 
-    root = gff.root
+    root: GFFStruct = gff.root
     utm.resref = root.acquire("ResRef", ResRef.from_blank())
     utm.name = root.acquire("LocName", LocalizedString.from_invalid())
     utm.tag = root.acquire("Tag", "")
@@ -84,7 +96,7 @@ def construct_utm(
 
 def dismantle_utm(
     utm: UTM,
-    game: Game = Game.K2,
+    game: Game = Game.K2,  # noqa: ARG001
     *,
     use_deprecated: bool = True,
 ) -> GFF:
@@ -102,7 +114,7 @@ def dismantle_utm(
 
     item_list: GFFList = root.set_list("ItemList", GFFList())
     for i, item in enumerate(utm.inventory):
-        item_struct = item_list.add(i)
+        item_struct: GFFStruct = item_list.add(i)
         item_struct.set_resref("InventoryRes", item.resref)
         item_struct.set_uint16("Repos_PosX", i)
         item_struct.set_uint16("Repos_PosY", 0)

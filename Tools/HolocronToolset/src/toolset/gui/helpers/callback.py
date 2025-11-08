@@ -4,7 +4,7 @@ from enum import IntEnum
 from typing import TYPE_CHECKING, Any, Union
 
 from loggerplus import RobustLogger
-from qtpy import QtCore, QtGui, QtWidgets
+from qtpy import QtGui, QtWidgets
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QLabel, QMessageBox
@@ -14,11 +14,16 @@ from utility.gui.base import UserCommunication
 if TYPE_CHECKING:
     from qtpy.QtGui import QIcon
     from qtpy.QtWidgets import QStatusBar
-    from typing_extensions import Self
+    from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
 
 class CustomQPushButton(QtWidgets.QPushButton):
-    def __init__(self, enum_member: MessageBoxButton, *args, **kwargs):
+    def __init__(
+        self,
+        enum_member: MessageBoxButton,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.enum_member: MessageBoxButton = enum_member
         self.setProperty("standardButtonRole", enum_member.value)
@@ -143,28 +148,28 @@ class MessageBoxButton(IntEnum):
     def get(self) -> QMessageBox.StandardButton:
         """Returns the QMessageBox.StandardButton corresponding to the enum member."""
         standard_button_map = {
-            0: QMessageBox.NoButton,
-            256: QMessageBox.Default,
-            512: QMessageBox.Escape,
-            1024: QMessageBox.Ok,
-            2048: QMessageBox.Save,
-            4096: QMessageBox.SaveAll,
-            8192: QMessageBox.Open,
-            16384: QMessageBox.Yes,
-            32768: QMessageBox.YesToAll,
-            65536: QMessageBox.No,
-            131072: QMessageBox.NoToAll,
-            262144: QMessageBox.Abort,
-            524288: QMessageBox.Retry,
-            1048576: QMessageBox.Ignore,
-            2097152: QMessageBox.Close,
-            4194304: QMessageBox.Cancel,
-            8388608: QMessageBox.Discard,
-            16777216: QMessageBox.Help,
-            33554432: QMessageBox.Apply,
-            67108864: QMessageBox.Reset,
-            134217728: QMessageBox.RestoreDefaults,
-            -769: QMessageBox.ButtonMask  # A bitmask covering all values
+            0: QMessageBox.StandardButton.NoButton,
+            256: QMessageBox.StandardButton.Default,
+            512: QMessageBox.StandardButton.Escape,
+            1024: QMessageBox.StandardButton.Ok,
+            2048: QMessageBox.StandardButton.Save,
+            4096: QMessageBox.StandardButton.SaveAll,
+            8192: QMessageBox.StandardButton.Open,
+            16384: QMessageBox.StandardButton.Yes,
+            32768: QMessageBox.StandardButton.YesToAll,
+            65536: QMessageBox.StandardButton.No,
+            131072: QMessageBox.StandardButton.NoToAll,
+            262144: QMessageBox.StandardButton.Abort,
+            524288: QMessageBox.StandardButton.Retry,
+            1048576: QMessageBox.StandardButton.Ignore,
+            2097152: QMessageBox.StandardButton.Close,
+            4194304: QMessageBox.StandardButton.Cancel,
+            8388608: QMessageBox.StandardButton.Discard,
+            16777216: QMessageBox.StandardButton.Help,
+            33554432: QMessageBox.StandardButton.Apply,
+            67108864: QMessageBox.StandardButton.Reset,
+            134217728: QMessageBox.StandardButton.RestoreDefaults,
+            -769: QMessageBox.StandardButton.ButtonMask  # A bitmask covering all values
         }
         return standard_button_map[self.value]
 
@@ -255,10 +260,10 @@ class MultipleButtonsError(Exception):
 
 
 ICON_MAP: dict[Any, QtWidgets.QStyle.StandardPixmap] = {
-    QMessageBox.Information: QtWidgets.QStyle.SP_MessageBoxInformation,
-    QMessageBox.Warning: QtWidgets.QStyle.SP_MessageBoxWarning,
-    QMessageBox.Critical: QtWidgets.QStyle.SP_MessageBoxCritical,
-    QMessageBox.Question: QtWidgets.QStyle.SP_MessageBoxQuestion,
+    QMessageBox.Icon.Information: QtWidgets.QStyle.StandardPixmap.SP_MessageBoxInformation,
+    QMessageBox.Icon.Warning: QtWidgets.QStyle.StandardPixmap.SP_MessageBoxWarning,
+    QMessageBox.Icon.Critical: QtWidgets.QStyle.StandardPixmap.SP_MessageBoxCritical,
+    QMessageBox.Icon.Question: QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion,
 }
 
 
@@ -267,22 +272,31 @@ class BetterMessageBox(QtWidgets.QDialog):
         self,
         title: str,
         message: str,
-        flags=Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint,  # Adjusted default flags
+        flags=Qt.WindowType.Dialog
+        | Qt.WindowType.WindowTitleHint
+        | Qt.WindowType.WindowCloseButtonHint
+        | Qt.WindowType.WindowStaysOnTopHint,  # Adjusted default flags
         *args,
-        icon: QtWidgets.QStyle.StandardPixmap = QtWidgets.QStyle.SP_MessageBoxInformation,
-        buttons: QMessageBox.StandardButton | QMessageBox.StandardButtons = QMessageBox.Ok,
-        defaultButton: QMessageBox.StandardButton = QMessageBox.Ok,  # noqa: N803
+        icon: QtWidgets.QStyle.StandardPixmap = QtWidgets.QStyle.StandardPixmap.SP_MessageBoxInformation,
+        buttons: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok,
+        defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.Ok,  # noqa: N803
         parent: QtWidgets.QWidget | QtWidgets.QMainWindow | None = None,
         **kwargs,
     ):
         super().__init__(parent, *args, **kwargs)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            & ~Qt.WindowType.WindowContextHelpButtonHint
+            & ~Qt.WindowType.WindowMinMaxButtonsHint
+        )
         self.detailed_text: str | None = None
         self.icon_type: QtWidgets.QStyle.StandardPixmap = ICON_MAP.get(icon, icon)
         self.buttons: list[QtWidgets.QPushButton] = MessageBoxButton.standardbuttons_to_qpushbuttons(buttons)
         self.result_button: QMessageBox.StandardButton = MessageBoxButton(defaultButton).as_standardbutton()
         if self.icon_type is None:
-            self.icon_type = QtWidgets.QStyle.SP_MessageBoxInformation
+            self.icon_type = QtWidgets.QStyle.StandardPixmap.SP_MessageBoxInformation
         smb_default_button: QtWidgets.QPushButton = MessageBoxButton(defaultButton).as_qpushbutton()
         if smb_default_button not in self.buttons:
             self.buttons.append(smb_default_button)
@@ -297,7 +311,7 @@ class BetterMessageBox(QtWidgets.QDialog):
         # Add text label
         label = QtWidgets.QLabel(message, self)
         label.setWordWrap(True)  # Enable word wrap
-        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
 
         # Add detailed text section with expander
@@ -341,12 +355,12 @@ class BetterMessageBox(QtWidgets.QDialog):
             icon_label = QLabel(self)
             icon_pixmap = icon.pixmap(32, 32)  # Get pixmap from QIcon
             icon_label.setPixmap(icon_pixmap)
-            icon_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            icon_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             layout.addWidget(icon_label)
             self.setWindowIcon(icon)
 
     def exec_(self):
-        result = super().exec_()
+        result = super().exec()
         for button in self.buttons:
             if button.isChecked():
                 self.result_button = MessageBoxButton.from_qpushbutton(button).as_standardbutton()
@@ -361,12 +375,12 @@ class BetterMessageBox(QtWidgets.QDialog):
             layout.addWidget(button)
             button.clicked.connect(lambda *args, e_button=e_button: self.button_clicked(e_button))
 
-    def setButtonText(self, button: Union[int, QMessageBox.StandardButtons, QMessageBox.StandardButton, MessageBoxButton, CustomQPushButton], text: str):
+    def setButtonText(self, button: Union[int, QMessageBox.StandardButton, MessageBoxButton, CustomQPushButton], text: str):
         for btn in self.buttons:
             if isinstance(button, int) and btn.property("standardButtonRole") == button:
                 btn.setText(text)
                 return
-            if isinstance(button, QMessageBox.StandardButtons) and btn.property("standardButtonRole") & button:
+            if isinstance(button, QMessageBox.StandardButton) and btn.property("standardButtonRole") & button:
                 btn.setText(text)
                 return
             if isinstance(button, QMessageBox.StandardButton) and btn.property("standardButtonRole") == button:
@@ -388,12 +402,12 @@ class BetterMessageBox(QtWidgets.QDialog):
     def adjustSizeToFitContent(self, label: QLabel):
         # Adjust width based on the longest line of text or the title
         font_metrics = QtGui.QFontMetrics(label.font())
-        text_width = font_metrics.boundingRect(0, 0, 2000, 2000, Qt.TextWordWrap, label.text()).width()
+        text_width = font_metrics.boundingRect(0, 0, 2000, 2000, Qt.TextFlag.TextWordWrap, label.text()).width()
         title_width = QtGui.QFontMetrics(self.font()).width(self.windowTitle()) + 100
         width = max(text_width, title_width) + 60  # Additional space for padding
 
         # Adjust height based on content
-        height = font_metrics.boundingRect(0, 0, width, 2000, Qt.TextWordWrap, label.text()).height()
+        height = font_metrics.boundingRect(0, 0, width, 2000, Qt.TextFlag.TextWordWrap, label.text()).height()
         self.setFixedSize(width, height + 150)  # 100 pixels extra for icon and buttons
         self.adjustSize()  # Let Qt adjust the size optimally
 
@@ -424,22 +438,22 @@ class QtUserCommunication(UserCommunication):
         return text if ok and text else ""
 
     def print(self, *args: str):
-        BetterMessageBox("Print Message", "    ".join(args), parent=self.widget).exec_()
+        BetterMessageBox("Print Message", "    ".join(args), parent=self.widget).exec()
 
     def messagebox(self, title: str, message: str):
-        BetterMessageBox(title, message, parent=self.widget).exec_()
+        BetterMessageBox(title, message, parent=self.widget).exec()
 
     def askquestion(self, title: str, message: str) -> bool:
         response: QMessageBox.StandardButton = QMessageBox.question(
             self.widget,
             title,
             message,
-            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
-        return response == QMessageBox.Yes
+        return response == QMessageBox.StandardButton.Yes
 
     def error(self, title: str, message: str):
-        BetterMessageBox(title, message, icon=QMessageBox.Icon.Critical, parent=self.widget).exec_()
+        BetterMessageBox(title, message, icon=QMessageBox.Icon.Critical, parent=self.widget).exec()
 
     def update_response(
         self,
@@ -464,14 +478,14 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
 
-    buttons = QMessageBox.NoButton
+    buttons = QMessageBox.StandardButton.NoButton
     for button in MessageBoxButton:
         if not button.is_real_button():
             print(f"first test: Skipping nonreal button {button.text()}")
             continue
         print(f"first test: adding button {button.text()}")
         buttons |= button.get()
-    result = QMessageBox(QMessageBox.Information, "Test title", "Test message", buttons).exec_()
+    result = QMessageBox(QMessageBox.Icon.Information, "Test title", "Test message", buttons).exec()
     print(f"first test: You pressed button '{MessageBoxButton(result).text()}'")
 
 
@@ -488,18 +502,18 @@ if __name__ == "__main__":
             "Your result helps improve the overall utility of messagebox alternatives. This is a test of two newlines:\n\nthis text should be two lines lower.\n"
             "This is on a new line and a test of br newlines<br><br>this text should be two lines lower!"
         ),
-        icon=QtWidgets.QStyle.SP_TrashIcon,
-        buttons=QMessageBox.Ok | QMessageBox.Yes | QMessageBox.Cancel,
+        icon=QtWidgets.QStyle.StandardPixmap.SP_TrashIcon,
+        buttons=QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
     )
-    result = bmb.exec_()
+    result = bmb.exec()
 
     # Retrieve the result button
     result_button = bmb.result_button
-    if result_button == QMessageBox.Ok:
+    if result_button == QMessageBox.StandardButton.Ok:
         comm.print("OK button pressed")
-    elif result_button == QMessageBox.Yes:
+    elif result_button == QMessageBox.StandardButton.Yes:
         comm.print("Yes button pressed")
-    elif result_button == QMessageBox.Cancel:
+    elif result_button == QMessageBox.StandardButton.Cancel:
         comm.print("Cancel button pressed")
     else:
         comm.print(f"Unknown button pressed: '{result_button}'")

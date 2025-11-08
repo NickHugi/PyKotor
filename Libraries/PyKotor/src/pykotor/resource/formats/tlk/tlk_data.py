@@ -8,6 +8,7 @@ from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
+from utility.common.misc_string.util import compare_and_format, format_text
 
 if TYPE_CHECKING:
     from typing import Any

@@ -1,19 +1,17 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
-
-import qtpy
 
 from qtpy.QtWidgets import QMessageBox
 
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf import read_erf
-from pykotor.resource.formats.mdl import MDL, read_mdl, write_mdl
+from pykotor.resource.formats.mdl.mdl_auto import read_mdl, write_mdl
+from pykotor.resource.formats.mdl.mdl_data import MDL
 from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
-from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -26,49 +24,24 @@ if TYPE_CHECKING:
 
 class MDLEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize the Model Viewer window.
-
-        Args:
-        ----
-            parent: {QWidget}: The parent widget of this window
-            installation: {HTInstallation}: The installation context
-
-        Processing Logic:
-        ----------------
-            - Initialize the base class with the given parameters
-            - Create an MDL model object
-            - Load the UI from the designer file
-            - Set up menus and connect signals
-            - Set the installation on the model renderer
-            - Call new() to start with a blank state.
-        """
         supported: list[ResourceType] = [ResourceType.MDL]
         super().__init__(parent, "Model Viewer", "none", supported, supported, installation)
 
         self._mdl: MDL = MDL()
         self._installation = installation
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.mdl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.mdl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.mdl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.mdl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.mdl import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
 
         self.ui.modelRenderer.installation = installation
 
         self.new()
 
-    def _setupSignals(self): ...
+    def _setup_signals(self):
+        ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a model resource and its associated data.
@@ -95,7 +68,7 @@ class MDLEditor(Editor):
         if restype is ResourceType.MDL:
             mdl_data = data
             if c_filepath.suffix.lower() == ".mdl":
-                mdx_data = BinaryReader.load_file(c_filepath.with_suffix(".mdx"))
+                mdx_data = c_filepath.with_suffix(".mdx").read_bytes()
             elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)
                 mdx_data = erf.get(resref, ResourceType.MDX)
@@ -107,7 +80,7 @@ class MDLEditor(Editor):
         elif restype is ResourceType.MDX:
             mdx_data = data
             if c_filepath.suffix.lower() == ".mdx":
-                mdl_data = BinaryReader.load_file(c_filepath.with_suffix(".mdl"))
+                mdl_data = c_filepath.with_suffix(".mdl").read_bytes()
             elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)
                 mdl_data = erf.get(resref, ResourceType.MDL)
@@ -118,13 +91,19 @@ class MDLEditor(Editor):
                 mdl_data = self._installation.resource(resref, ResourceType.MDL, [SearchLocation.CHITIN]).data
 
         if mdl_data is None or mdx_data is None:
-            QMessageBox(QMessageBox.Icon.Critical, f"Could not find the '{c_filepath.stem}' MDL/MDX", "").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, f"Could not find the '{c_filepath.stem}' MDL/MDX", "").exec()
             return
 
-        self.ui.modelRenderer.setModel(mdl_data, mdx_data)
+        self.ui.modelRenderer.set_model(mdl_data, mdx_data)
         self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0)
 
     def _loadMDL(self, mdl: MDL):
+        """Load an MDL model into the editor.
+
+        Args:
+        ----
+            mdl: {MDL}: The MDL model to load
+        """
         self._mdl = mdl
 
     def build(self) -> tuple[bytes, bytes]:
@@ -136,4 +115,4 @@ class MDLEditor(Editor):
     def new(self):
         super().new()
         self._mdl = MDL()
-        self.ui.modelRenderer.clearModel()
+        self.ui.modelRenderer.clear_model()

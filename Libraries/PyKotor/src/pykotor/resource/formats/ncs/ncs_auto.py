@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import logging
+import os
 import re
 
 from io import BytesIO
@@ -17,6 +18,10 @@ from pykotor.resource.formats.ncs.ncs_data import NCS
 from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
 from pykotor.resource.type import ResourceType
 
+logger = logging.getLogger(__name__)
+
+LibraryLookupType = Sequence[str | Path | os.PathLike[str]] | str | Path | os.PathLike[str] | None
+
 if TYPE_CHECKING:
     from ply import yacc  # type: ignore[import]  # pyright: ignore[reportMissingTypeStubs]
 
@@ -24,13 +29,18 @@ if TYPE_CHECKING:
     from pykotor.common.script import ScriptConstant, ScriptFunction
     from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
+
     KOTOR_CONSTANTS: list[ScriptConstant] = []
     KOTOR_FUNCTIONS: list[ScriptFunction] = []
     TSL_CONSTANTS: list[ScriptConstant] = []
     TSL_FUNCTIONS: list[ScriptFunction] = []
 else:
-    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
-logger = logging.getLogger(__name__)
+    from pykotor.common.scriptdefs import (
+        KOTOR_CONSTANTS,
+        KOTOR_FUNCTIONS,
+        TSL_CONSTANTS,
+        TSL_FUNCTIONS,
+    )
 
 
 def read_ncs(
@@ -117,7 +127,7 @@ def compile_nss(
     source: str,
     game: Game,
     optimizers: list[NCSOptimizer] | None = None,
-    library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None = None,
+    library_lookup: LibraryLookupType = None,
     *,
     errorlog: yacc.NullLogger | None = None,
     debug: bool = False,
@@ -160,16 +170,13 @@ def compile_nss(
     NssLexer()
 
     # Create parser with game-appropriate function and constant definitions
-    if isinstance(library_lookup, Sequence) and not isinstance(library_lookup, (str, Path)):
+    if isinstance(library_lookup, Sequence) and not isinstance(library_lookup, (str, Path, os.PathLike)):
         lookup_arg = cast(
-            "list[str | Path] | list[str] | list[Path] | str | Path | None",
+            LibraryLookupType,
             list(library_lookup),
         )
     else:
-        lookup_arg = cast(
-            "list[str | Path] | list[str] | list[Path] | str | Path | None",
-            library_lookup,
-        )
+        lookup_arg = cast(LibraryLookupType, library_lookup)
 
     nss_parser = NssParser(
         functions=KOTOR_FUNCTIONS if game.is_k1() else TSL_FUNCTIONS,

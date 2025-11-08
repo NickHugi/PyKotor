@@ -20,3 +20,4 @@ pillow>10,<11.1.0; python_implementation == 'PyPy' and python_version>='3.9'    
 pycryptodome
 jsonpickle
 send2trash
+loggerplus

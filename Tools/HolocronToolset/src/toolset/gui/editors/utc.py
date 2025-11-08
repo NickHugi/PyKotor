@@ -4,8 +4,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING, Sequence
 
-import qtpy
-
 from loggerplus import RobustLogger
 from qtpy.QtCore import QSettings, Qt
 from qtpy.QtGui import QImage, QPixmap, QTransform
@@ -17,8 +15,8 @@ from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.ltr import read_ltr
-from pykotor.resource.formats.tpc import TPCTextureFormat
-from pykotor.resource.generics.dlg import DLG, write_dlg
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
+from pykotor.resource.generics.dlg import DLG, bytes_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_sav_file
@@ -27,21 +25,23 @@ from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.window import addWindow, openResourceEditor
+from toolset.utils.window import add_window, open_resource_editor
 
 if TYPE_CHECKING:
     import os
 
     from pathlib import Path
 
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QClipboard
     from qtpy.QtWidgets import QWidget
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.language import LocalizedString
     from pykotor.extract.capsule import LazyCapsule
     from pykotor.extract.file import LocationResult, ResourceResult
     from pykotor.resource.formats.ltr.ltr_data import LTR
-    from pykotor.resource.formats.tpc.tpc_data import TPC
+    from pykotor.resource.formats.tpc.tpc_data import TPC, TPCMipmap
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.tools.path import CaseAwarePath
 
@@ -76,27 +76,18 @@ class UTCEditor(Editor):
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation)
 
         self.settings: UTCSettings = UTCSettings()
-        self.globalSettings: GlobalSettings = GlobalSettings()
+        self.global_settings: GlobalSettings = GlobalSettings()
         self._utc: UTC = UTC()
         self.setMinimumSize(0, 0)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.utc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.utc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.utc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.utc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.editors.utc import Ui_MainWindow
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.resize(798, 553)
-        self._setupMenus()
-        self._setupInstallation(installation)
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_installation(installation)
+        self._setup_signals()
         self._installation: HTInstallation
 
         self.ui.actionSaveUnusedFields.setChecked(self.settings.saveUnusedFields)
@@ -108,46 +99,49 @@ class UTCEditor(Editor):
 
         # Connect the new context menu and tooltip actions
         self.ui.portraitPicture.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # type: ignore[arg-type]
-        self.ui.portraitPicture.customContextMenuRequested.connect(self._portraitContextMenu)
-        self.ui.portraitPicture.setToolTip(self._generatePortraitTooltip(asHtml=True))
+        self.ui.portraitPicture.customContextMenuRequested.connect(self._portrait_context_menu)
+        self.ui.portraitPicture.setToolTip(self._generate_portrait_tooltip(as_html=True))
 
-    def _generatePortraitTooltip(self, *, asHtml: bool = False) -> str:
+    def _generate_portrait_tooltip(self, *, as_html: bool = False) -> str:
         # sourcery skip: lift-return-into-if
         """Generates a detailed tooltip for the portrait picture."""
-        portrait = self._getPortraitResRef()
-        if asHtml:
+        portrait = self._get_portrait_resref()
+        if as_html:
             tooltip = f"<b>Portrait:</b> {portrait}<br>" "<br><i>Right-click for more options.</i>"
         else:
             tooltip = f"Portrait: {portrait}\n" "\nRight-click for more options."
         return tooltip
 
-    def _portraitContextMenu(self, position):
-        contextMenu = QMenu(self)
+    def _portrait_context_menu(self, position: QPoint):
+        context_menu = QMenu(self)
 
-        portrait = self._getPortraitResRef()
-        fileMenu = contextMenu.addMenu("File...")
-        locations = self._installation.locations(
+        portrait = self._get_portrait_resref()
+        file_menu = context_menu.addMenu("File...")
+        assert file_menu is not None, f"`file_menu = context_menu.addMenu('File...')` {file_menu.__class__.__name__}: {file_menu}"
+        locations: dict[str, list[LocationResult]] = self._installation.locations(
             ([portrait], [ResourceType.TGA, ResourceType.TPC]),
             order=[SearchLocation.OVERRIDE, SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_TPB, SearchLocation.TEXTURES_TPC],
         )
-        flatLocations = [item for sublist in locations.values() for item in sublist]
-        if flatLocations:
-            for location in flatLocations:
-                displayPathStr = str(location.filepath.relative_to(self._installation.path()))
-                locMenu = fileMenu.addMenu(displayPathStr)
-                resourceMenuBuilder = ResourceItems(resources=[location])
-                resourceMenuBuilder.build_menu(locMenu)
+        flat_locations: list[LocationResult] = [item for sublist in locations.values() for item in sublist]
+        if flat_locations:
+            for location in flat_locations:
+                display_path_str: str = str(location.filepath.relative_to(self._installation.path()))
+                loc_menu = file_menu.addMenu(display_path_str)
+                resource_menu_builder = ResourceItems(resources=[location])
+                resource_menu_builder.build_menu(loc_menu)
 
-            fileMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
+            action = file_menu.addAction("Details...")
+            assert action is not None, f"`action = file_menu.addAction('Details...')` {action.__class__.__name__}: {action}"
+            action.triggered.connect(lambda: self._open_details(flat_locations))
 
-        contextMenu.exec_(self.ui.portraitPicture.mapToGlobal(position))  # pyright: ignore[reportCallIssue, reportArgumentType]  # type: ignore[call-overload]
+        context_menu.exec(self.ui.portraitPicture.mapToGlobal(position))  # pyright: ignore[reportCallIssue, reportArgumentType]  # type: ignore[call-overload]
 
-    def _getPortraitResRef(self) -> str:
-        index = self.ui.portraitSelect.currentIndex()
-        alignment = self.ui.alignmentSlider.value()
-        portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
-        assert portraits is not None, f"portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS) {portraits}: {portraits}"
-        result = portraits.get_cell(index, "baseresref")
+    def _get_portrait_resref(self) -> str:
+        index: int = self.ui.portraitSelect.currentIndex()
+        alignment: int = self.ui.alignmentSlider.value()
+        portraits: TwoDA | None = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS)
+        assert portraits is not None, f"portraits = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS) {portraits}: {portraits}"
+        result: str = portraits.get_cell(index, "baseresref")
         if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):
             result = portraits.get_cell(index, "baseresrefe")
         elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve"):
@@ -158,25 +152,31 @@ class UTCEditor(Editor):
             result = portraits.get_cell(index, "baseresrefvvve")
         return result
 
-    def _openDetails(self, locations: list[LocationResult]):
+    def _open_details(
+        self,
+        locations: list[LocationResult],
+    ):
         """Opens a details window for the given resource locations."""
-        selectionWindow = FileSelectionWindow(locations, self._installation)
-        selectionWindow.show()
-        selectionWindow.activateWindow()
-        addWindow(selectionWindow)
+        selection_window: FileSelectionWindow = FileSelectionWindow(locations, self._installation)
+        selection_window.show()
+        selection_window.activateWindow()
+        add_window(selection_window)
 
-    def _copyPortraitTooltip(self):
-        tooltipText = self._generatePortraitTooltip(asHtml=False)
-        clipboard = QApplication.clipboard()
+    def _copy_portrait_tooltip(self):
+        tooltip_text: str = self._generate_portrait_tooltip(as_html=False)
+        clipboard: QClipboard | None = QApplication.clipboard()
         assert clipboard is not None, f"`clipboard = QApplication.clipboard()` {clipboard.__class__.__name__}: {clipboard}"
-        clipboard.setText(tooltipText)
+        clipboard.setText(tooltip_text)
 
-    def _copyToClipboard(self, text: str):
-        clipboard = QApplication.clipboard()
+    def _copy_to_clipboard(
+        self,
+        text: str,
+    ):
+        clipboard: QClipboard | None = QApplication.clipboard()
         assert clipboard is not None, f"`clipboard = QApplication.clipboard()` {clipboard.__class__.__name__}: {clipboard}"
         clipboard.setText(text)
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Connect signals to slots.
 
         Processing Logic:
@@ -185,17 +185,17 @@ class UTCEditor(Editor):
             - Connects value changed signals from slider and dropdowns
             - Connects menu action triggers to toggle settings.
         """
-        self.ui.firstnameRandomButton.clicked.connect(self.randomizeFirstname)
+        self.ui.firstnameRandomButton.clicked.connect(self.randomize_first_name)
         self.ui.firstnameRandomButton.setToolTip("Utilize the game's LTR randomizers to generate a unique name.")
-        self.ui.lastnameRandomButton.clicked.connect(self.randomizeLastname)
+        self.ui.lastnameRandomButton.clicked.connect(self.randomize_last_name)
         self.ui.lastnameRandomButton.setToolTip("Utilize the game's LTR randomizers to generate a unique name.")
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
-        self.ui.alignmentSlider.valueChanged.connect(lambda: self.portraitChanged(self.ui.portraitSelect.currentIndex()))
-        self.ui.portraitSelect.currentIndexChanged.connect(self.portraitChanged)
-        self.ui.conversationModifyButton.clicked.connect(self.editConversation)
-        self.ui.inventoryButton.clicked.connect(self.openInventory)
-        self.ui.featList.itemChanged.connect(self.updateFeatSummary)
-        self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
+        self.ui.alignmentSlider.valueChanged.connect(lambda: self.portrait_changed(self.ui.portraitSelect.currentIndex()))
+        self.ui.portraitSelect.currentIndexChanged.connect(self.portrait_changed)
+        self.ui.conversationModifyButton.clicked.connect(self.edit_conversation)
+        self.ui.inventoryButton.clicked.connect(self.open_inventory)
+        self.ui.featList.itemChanged.connect(self.update_feat_summary)
+        self.ui.powerList.itemChanged.connect(self.update_power_summary)
         self.ui.class1LevelSpin.setToolTip("Class Level")
         self.ui.class2LevelSpin.setToolTip("Class Level")
 
@@ -204,9 +204,12 @@ class UTCEditor(Editor):
 
         self.ui.actionSaveUnusedFields.triggered.connect(lambda: setattr(self.settings, "saveUnusedFields", self.ui.actionSaveUnusedFields.isChecked()))
         self.ui.actionAlwaysSaveK2Fields.triggered.connect(lambda: setattr(self.settings, "alwaysSaveK2Fields", self.ui.actionAlwaysSaveK2Fields.isChecked()))
-        self.ui.actionShowPreview.triggered.connect(self.togglePreview)
+        self.ui.actionShowPreview.triggered.connect(self.toggle_preview)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(  # noqa: C901, PLR0912, PLR0915
+        self,
+        installation: HTInstallation,
+    ):
         """Sets up the installation for character creation.
 
         Args:
@@ -223,8 +226,8 @@ class UTCEditor(Editor):
         self._installation = installation
 
         self.ui.previewRenderer.installation = installation
-        self.ui.firstnameEdit.setInstallation(installation)
-        self.ui.lastnameEdit.setInstallation(installation)
+        self.ui.firstnameEdit.set_installation(installation)
+        self.ui.lastnameEdit.set_installation(installation)
 
         # Load required 2da files if they have not been loaded already
         required: list[str] = [
@@ -240,67 +243,67 @@ class UTCEditor(Editor):
             HTInstallation.TwoDA_FEATS,
             HTInstallation.TwoDA_POWERS,
         ]
-        installation.htBatchCache2DA(required)
+        installation.ht_batch_cache_2da(required)
 
-        appearances = installation.htGetCache2DA(HTInstallation.TwoDA_APPEARANCES)
-        soundsets = installation.htGetCache2DA(HTInstallation.TwoDA_SOUNDSETS)
-        portraits = installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
-        subraces = installation.htGetCache2DA(HTInstallation.TwoDA_SUBRACES)
-        speeds = installation.htGetCache2DA(HTInstallation.TwoDA_SPEEDS)
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        genders = installation.htGetCache2DA(HTInstallation.TwoDA_GENDERS)
-        perceptions = installation.htGetCache2DA(HTInstallation.TwoDA_PERCEPTIONS)
-        classes = installation.htGetCache2DA(HTInstallation.TwoDA_CLASSES)
-        races = installation.htGetCache2DA(HTInstallation.TwoDA_RACES)
+        appearances: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_APPEARANCES)
+        soundsets: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_SOUNDSETS)
+        portraits: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS)
+        subraces: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_SUBRACES)
+        speeds: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_SPEEDS)
+        factions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
+        genders: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_GENDERS)
+        perceptions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PERCEPTIONS)
+        classes: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_CLASSES)
+        races: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_RACES)
 
         if appearances is not None:
-            self.ui.appearanceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_APPEARANCES)
-            self.ui.appearanceSelect.setItems(appearances.get_column("label"))
+            self.ui.appearanceSelect.set_context(appearances, self._installation, HTInstallation.TwoDA_APPEARANCES)
+            self.ui.appearanceSelect.set_items(appearances.get_column("label"))
 
         if soundsets is not None:
-            self.ui.soundsetSelect.setContext(soundsets, self._installation, HTInstallation.TwoDA_SOUNDSETS)
-            self.ui.soundsetSelect.setItems(soundsets.get_column("label"))
+            self.ui.soundsetSelect.set_context(soundsets, self._installation, HTInstallation.TwoDA_SOUNDSETS)
+            self.ui.soundsetSelect.set_items(soundsets.get_column("label"))
 
         if portraits is not None:
-            self.ui.portraitSelect.setContext(portraits, self._installation, HTInstallation.TwoDA_PORTRAITS)
-            self.ui.portraitSelect.setItems(portraits.get_column("baseresref"))
+            self.ui.portraitSelect.set_context(portraits, self._installation, HTInstallation.TwoDA_PORTRAITS)
+            self.ui.portraitSelect.set_items(portraits.get_column("baseresref"))
 
         if subraces is not None:
-            self.ui.subraceSelect.setContext(subraces, self._installation, HTInstallation.TwoDA_SUBRACES)
-            self.ui.subraceSelect.setItems(subraces.get_column("label"))
+            self.ui.subraceSelect.set_context(subraces, self._installation, HTInstallation.TwoDA_SUBRACES)
+            self.ui.subraceSelect.set_items(subraces.get_column("label"))
 
         if speeds is not None:
-            self.ui.speedSelect.setContext(speeds, self._installation, HTInstallation.TwoDA_SPEEDS)
-            self.ui.speedSelect.setItems(speeds.get_column("label"))
+            self.ui.speedSelect.set_context(speeds, self._installation, HTInstallation.TwoDA_SPEEDS)
+            self.ui.speedSelect.set_items(speeds.get_column("label"))
 
         if factions is not None:
-            self.ui.factionSelect.setContext(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
-            self.ui.factionSelect.setItems(factions.get_column("label"))
+            self.ui.factionSelect.set_context(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
+            self.ui.factionSelect.set_items(factions.get_column("label"))
 
         if genders is not None:
-            self.ui.genderSelect.setContext(genders, self._installation, HTInstallation.TwoDA_GENDERS)
-            self.ui.genderSelect.setItems([label.replace("_", " ").title().replace("Gender ", "") for label in genders.get_column("constant")])
+            self.ui.genderSelect.set_context(genders, self._installation, HTInstallation.TwoDA_GENDERS)
+            self.ui.genderSelect.set_items([label.replace("_", " ").title().replace("Gender ", "") for label in genders.get_column("constant")])
 
         if perceptions is not None:
-            self.ui.perceptionSelect.setContext(perceptions, self._installation, HTInstallation.TwoDA_PERCEPTIONS)
-            self.ui.perceptionSelect.setItems(perceptions.get_column("label"))
+            self.ui.perceptionSelect.set_context(perceptions, self._installation, HTInstallation.TwoDA_PERCEPTIONS)
+            self.ui.perceptionSelect.set_items(perceptions.get_column("label"))
 
         if classes is not None:  # sourcery skip: extract-method
-            self.ui.class1Select.setContext(classes, self._installation, HTInstallation.TwoDA_CLASSES)
-            self.ui.class1Select.setItems(classes.get_column("label"))
+            self.ui.class1Select.set_context(classes, self._installation, HTInstallation.TwoDA_CLASSES)
+            self.ui.class1Select.set_items(classes.get_column("label"))
 
-            self.ui.class2Select.setContext(classes, self._installation, HTInstallation.TwoDA_CLASSES)
+            self.ui.class2Select.set_context(classes, self._installation, HTInstallation.TwoDA_CLASSES)
             self.ui.class2Select.clear()
             self.ui.class2Select.setPlaceholderText("[Unset]")
             for label in classes.get_column("label"):  # pyright: ignore[reportArgumentType]
                 self.ui.class2Select.addItem(label)
-        self.ui.raceSelect.setContext(races, self._installation, HTInstallation.TwoDA_RACES)
+        self.ui.raceSelect.set_context(races, self._installation, HTInstallation.TwoDA_RACES)
 
         self.ui.raceSelect.clear()
         self.ui.raceSelect.addItem("Droid", 5)
         self.ui.raceSelect.addItem("Creature", 6)
 
-        feats = installation.htGetCache2DA(HTInstallation.TwoDA_FEATS)
+        feats: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_FEATS)
         if feats is not None:
             self.ui.featList.clear()
             for feat in feats:
@@ -315,7 +318,7 @@ class UTCEditor(Editor):
             self.ui.featList.setSortingEnabled(True)
             self.ui.featList.sortItems(Qt.SortOrder.AscendingOrder)  # pyright: ignore[reportArgumentType]
 
-        powers = installation.htGetCache2DA(HTInstallation.TwoDA_POWERS)
+        powers: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_POWERS)
         if powers is not None:
             self.ui.powerList.clear()
             for power in powers:
@@ -335,19 +338,19 @@ class UTCEditor(Editor):
         self.ui.hologramCheckbox.setVisible(installation.tsl)
         self.ui.k2onlyBox.setVisible(installation.tsl)
 
-        self._installation.setupFileContextMenu(self.ui.onBlockedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onAttackedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onNoticeEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onConversationEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onEndRoundEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onDisturbedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onSpawnEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onSpellCastEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onBlockedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onAttackedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onNoticeEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onConversationEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onEndRoundEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onDisturbedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onSpawnEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onSpellCastEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
 
     def load(
         self,
@@ -357,10 +360,10 @@ class UTCEditor(Editor):
         data: bytes,
     ):
         super().load(filepath, resref, restype, data)
-        self._loadUTC(read_utc(data))
-        self.updateItemCount()
+        self._load_utc(read_utc(data))
+        self.update_item_count()
 
-    def _loadUTC(
+    def _load_utc(
         self,
         utc: UTC,
     ):
@@ -381,16 +384,16 @@ class UTCEditor(Editor):
             - Loads comments
         """
         self._utc = utc
-        self.ui.previewRenderer.setCreature(utc)
+        self.ui.previewRenderer.set_creature(utc)
 
         # Basic
-        self.ui.firstnameEdit.setLocstring(utc.first_name)
-        self.ui.lastnameEdit.setLocstring(utc.last_name)
+        self.ui.firstnameEdit.set_locstring(utc.first_name)
+        self.ui.lastnameEdit.set_locstring(utc.last_name)
         self.ui.tagEdit.setText(utc.tag)
         self.ui.resrefEdit.setText(str(utc.resref))
         self.ui.appearanceSelect.setCurrentIndex(utc.appearance_id)
         self.ui.soundsetSelect.setCurrentIndex(utc.soundset_id)
-        self.ui.conversationEdit.setComboBoxText(str(utc.conversation))
+        self.ui.conversationEdit.set_combo_box_text(str(utc.conversation))
         self.ui.portraitSelect.setCurrentIndex(utc.portrait_id)
 
         # Advanced
@@ -448,18 +451,18 @@ class UTCEditor(Editor):
         if len(utc.classes) >= 1:
             self.ui.class1Select.setCurrentIndex(utc.classes[0].class_id)
             self.ui.class1LevelSpin.setValue(utc.classes[0].class_level)
-        if len(utc.classes) >= 2:
+        if len(utc.classes) >= 2:  # noqa: PLR2004
             self.ui.class2Select.setCurrentIndex(utc.classes[1].class_id + 1)
             self.ui.class2LevelSpin.setValue(utc.classes[1].class_level)
         self.ui.alignmentSlider.setValue(utc.alignment)
 
         # Feats
         for i in range(self.ui.featList.count()):
-            item = self.ui.featList.item(i)
+            item: QListWidgetItem | None = self.ui.featList.item(i)
             assert item is not None, f"{self.__class__.__name__}.ui.featList.item({i}) {item.__class__.__name__}: {item}"
             item.setCheckState(Qt.CheckState.Unchecked)  # pyright: ignore[reportArgumentType]
         for feat in utc.feats:
-            item = self.getFeatItem(feat)
+            item = self.get_feat_item(feat)
             if item is None:
                 item = QListWidgetItem(f"[Modded Feat ID: {feat}]")
                 item.setData(Qt.ItemDataRole.UserRole, feat)
@@ -474,52 +477,52 @@ class UTCEditor(Editor):
             item.setCheckState(Qt.CheckState.Unchecked)  # pyright: ignore[reportArgumentType]
         for utc_class in utc.classes:
             for power in utc_class.powers:
-                item = self.getPowerItem(power)
+                item = self.get_power_item(power)
                 if item is None:
                     item = QListWidgetItem(f"[Modded Power ID: {power}]")
                     item.setData(Qt.ItemDataRole.UserRole, power)
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                     self.ui.powerList.addItem(item)  # pyright: ignore[reportCallIssue, reportArgumentType]
                 item.setCheckState(Qt.CheckState.Checked)
-        self.relevant_script_resnames = sorted(iter({res.resname().lower() for res in self._installation.getRelevantResources(ResourceType.NCS, self._filepath)}))
+        self.relevant_script_resnames: list[str] = sorted(iter({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.NCS, self._filepath)}))
 
-        self.ui.conversationEdit.populateComboBox(sorted(iter({res.resname().lower() for res in self._installation.getRelevantResources(ResourceType.DLG, self._filepath)})))
-        self._installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
+        self.ui.conversationEdit.populate_combo_box(sorted(iter({res.resname().lower() for res in self._installation.get_relevant_resources(ResourceType.DLG, self._filepath)})))
+        self._installation.setup_file_context_menu(self.ui.conversationEdit, [ResourceType.DLG])
 
-        self.ui.onBlockedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onAttackedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onNoticeEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onConversationEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDamagedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onEndRoundEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onEndConversationEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDisturbedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onSpawnEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onSpellCastEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onBlockedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onAttackedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onNoticeEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onConversationEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDamagedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDeathEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onEndRoundEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onEndConversationEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDisturbedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onSpawnEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onSpellCastEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populate_combo_box(self.relevant_script_resnames)
 
         # Scripts
-        self.ui.onBlockedEdit.setComboBoxText(str(utc.on_blocked))
-        self.ui.onAttackedEdit.setComboBoxText(str(utc.on_attacked))
-        self.ui.onNoticeEdit.setComboBoxText(str(utc.on_notice))
-        self.ui.onConversationEdit.setComboBoxText(str(utc.on_dialog))
-        self.ui.onDamagedEdit.setComboBoxText(str(utc.on_damaged))
-        self.ui.onDeathEdit.setComboBoxText(str(utc.on_death))
-        self.ui.onEndRoundEdit.setComboBoxText(str(utc.on_end_round))
-        self.ui.onEndConversationEdit.setComboBoxText(str(utc.on_end_dialog))
-        self.ui.onDisturbedEdit.setComboBoxText(str(utc.on_disturbed))
-        self.ui.onHeartbeatSelect.setComboBoxText(str(utc.on_heartbeat))
-        self.ui.onSpawnEdit.setComboBoxText(str(utc.on_spawn))
-        self.ui.onSpellCastEdit.setComboBoxText(str(utc.on_spell))
-        self.ui.onUserDefinedSelect.setComboBoxText(str(utc.on_user_defined))
+        self.ui.onBlockedEdit.set_combo_box_text(str(utc.on_blocked))
+        self.ui.onAttackedEdit.set_combo_box_text(str(utc.on_attacked))
+        self.ui.onNoticeEdit.set_combo_box_text(str(utc.on_notice))
+        self.ui.onConversationEdit.set_combo_box_text(str(utc.on_dialog))
+        self.ui.onDamagedEdit.set_combo_box_text(str(utc.on_damaged))
+        self.ui.onDeathEdit.set_combo_box_text(str(utc.on_death))
+        self.ui.onEndRoundEdit.set_combo_box_text(str(utc.on_end_round))
+        self.ui.onEndConversationEdit.set_combo_box_text(str(utc.on_end_dialog))
+        self.ui.onDisturbedEdit.set_combo_box_text(str(utc.on_disturbed))
+        self.ui.onHeartbeatSelect.set_combo_box_text(str(utc.on_heartbeat))
+        self.ui.onSpawnEdit.set_combo_box_text(str(utc.on_spawn))
+        self.ui.onSpellCastEdit.set_combo_box_text(str(utc.on_spell))
+        self.ui.onUserDefinedSelect.set_combo_box_text(str(utc.on_user_defined))
 
         # Comments
         self.ui.comments.setPlainText(utc.comment)
-        self._updateCommentsTabTitle()
+        self._update_comments_tab_title()
 
-    def _updateCommentsTabTitle(self):
+    def _update_comments_tab_title(self):
         """Updates the Comments tab title with a notification badge if comments are not blank."""
         comments = self.ui.comments.toPlainText()
         if comments:
@@ -607,13 +610,13 @@ class UTCEditor(Editor):
 
         utc.classes = []
         if self.ui.class1Select.currentIndex() != -1:
-            classId = self.ui.class1Select.currentIndex()
-            classLevel = self.ui.class1LevelSpin.value()
-            utc.classes.append(UTCClass(classId, classLevel))
+            class_id: int = self.ui.class1Select.currentIndex()
+            class_level: int = self.ui.class1LevelSpin.value()
+            utc.classes.append(UTCClass(class_id, class_level))
         if self.ui.class2Select.currentIndex() != 0:
-            classId = self.ui.class2Select.currentIndex()
-            classLevel = self.ui.class2LevelSpin.value()
-            utc.classes.append(UTCClass(classId, classLevel))
+            class_id = self.ui.class2Select.currentIndex()
+            class_level = self.ui.class2LevelSpin.value()
+            utc.classes.append(UTCClass(class_id, class_level))
 
         item: QListWidgetItem | None
         utc.feats = []
@@ -643,28 +646,31 @@ class UTCEditor(Editor):
 
     def new(self):
         super().new()
-        self._loadUTC(UTC())
-        self.updateItemCount()
+        self._load_utc(UTC())
+        self.update_item_count()
 
-    def randomizeFirstname(self):
+    def randomize_first_name(self):
         ltr_resname: Literal["humanf", "humanm"] = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"
         locstring: LocalizedString = self.ui.firstnameEdit.locstring()
         ltr: LTR = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
-        self.ui.firstnameEdit.setLocstring(locstring)
+        self.ui.firstnameEdit.set_locstring(locstring)
 
-    def randomizeLastname(self):
+    def randomize_last_name(self):
         locstring: LocalizedString = self.ui.lastnameEdit.locstring()
         ltr: LTR = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
-        self.ui.lastnameEdit.setLocstring(locstring)
+        self.ui.lastnameEdit.set_locstring(locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def portraitChanged(self, _actual_combo_index: int):
+    def portrait_changed(
+        self,
+        _actual_combo_index: int,
+    ):
         """Updates the portrait picture based on the selected index.
 
         Args:
@@ -676,16 +682,19 @@ class UTCEditor(Editor):
             - Else builds pixmap from index
             - Sets pixmap to portrait picture widget.
         """
-        index = self.ui.portraitSelect.currentIndex()
+        index: int = self.ui.portraitSelect.currentIndex()
         if index == 0:
             image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format.Format_RGB888)
-            pixmap = QPixmap.fromImage(image)
+            pixmap: QPixmap = QPixmap.fromImage(image)
         else:
             pixmap = self._build_pixmap(index)
         self.ui.portraitPicture.setPixmap(pixmap)
-        self.ui.portraitPicture.setToolTip(self._generatePortraitTooltip(asHtml=True))
+        self.ui.portraitPicture.setToolTip(self._generate_portrait_tooltip(as_html=True))
 
-    def _build_pixmap(self, index: int) -> QPixmap:
+    def _build_pixmap(
+        self,
+        index: int,
+    ) -> QPixmap:
         """Builds a portrait pixmap based on character alignment.
 
         Args:
@@ -703,30 +712,32 @@ class UTCEditor(Editor):
             4. Converting the texture to a QPixmap.
         """
         alignment: int = self.ui.alignmentSlider.value()
-        portraits: TwoDA | None = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
-        assert portraits is not None, f"portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS) {portraits.__class__.__name__}: {portraits}"
+        portraits: TwoDA | None = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS)
+        assert portraits is not None, f"portraits = self._installation.ht_get_cache_2da(HTInstallation.TwoDA_PORTRAITS) {portraits.__class__.__name__}: {portraits}"
         portrait: str = portraits.get_cell(index, "baseresref")
 
-        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):  # TODO(th3w1zard1): document these magic numbers
+        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):  # TODO(th3w1zard1): document these magic numbers  # noqa: PLR2004
             portrait = portraits.get_cell(index, "baseresrefe")
-        elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve"):
+        elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve"):  # noqa: PLR2004
             portrait = portraits.get_cell(index, "baseresrefve")
-        elif 20 >= alignment > 10 and portraits.get_cell(index, "baseresrefvve"):
+        elif 20 >= alignment > 10 and portraits.get_cell(index, "baseresrefvve"):  # noqa: PLR2004
             portrait = portraits.get_cell(index, "baseresrefvve")
-        elif alignment <= 10 and portraits.get_cell(index, "baseresrefvvve"):
+        elif alignment <= 10 and portraits.get_cell(index, "baseresrefvvve"):  # noqa: PLR2004
             portrait = portraits.get_cell(index, "baseresrefvvve")
 
         texture: TPC | None = self._installation.texture(portrait, [SearchLocation.TEXTURES_GUI])
 
         if texture is not None:
-            width, height, rgba = texture.convert(TPCTextureFormat.RGB, 0)
-            image = QImage(rgba, width, height, QImage.Format.Format_RGB888)
+            if texture.format().is_dxt():
+                texture.decode()
+            mipmap: TPCMipmap = texture.get(0, 0)
+            image = QImage(bytes(mipmap.data), mipmap.width, mipmap.height, texture.format().to_qimage_format())
             return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
         image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format.Format_RGB888)
         return QPixmap.fromImage(image)
 
-    def editConversation(self):
+    def edit_conversation(self):
         """Edits a conversation.
 
         Processing Logic:
@@ -743,7 +754,7 @@ class UTCEditor(Editor):
         data: bytes | None = None
 
         if not resname:
-            QMessageBox(QMessageBox.Icon.Critical, "Invalid Dialog Reference", "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Invalid Dialog Reference", "Conversation field cannot be blank.").exec()
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
@@ -754,26 +765,22 @@ class UTCEditor(Editor):
                     "DLG file not found",
                     "Do you wish to create a new dialog in the 'Override' folder?",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                ).exec_()
+                ).exec()
                 == QMessageBox.StandardButton.Yes
             ):
-                data = bytearray()
                 filepath = self._installation.override_path() / f"{resname}.dlg"
-
-                dlg = DLG()
-                write_dlg(dlg, data, Game.K2 if self._installation.tsl else Game.K1)
-                with filepath.open("wb") as f:
-                    f.write(data)
+                blank_dlg: bytes = bytes_dlg(DLG(), self._installation.game())
+                filepath.write_bytes(blank_dlg)
         else:
             resname, restype, filepath, data = search  # pyright: ignore[reportAssignmentType]
 
         if data is None or filepath is None:
-            print(f"Data/filepath cannot be None in self.editConversation() relevance: (resname={resname}, restype={restype!r}, filepath={filepath!r})")
+            print(f"Data/filepath cannot be None in self.edit_conversation() relevance: (resname={resname}, restype={restype!r}, filepath={filepath!r})")
             return
 
-        openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
+        open_resource_editor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
-    def openInventory(self):
+    def open_inventory(self):
         """Opens the inventory editor.
 
         Processing Logic:
@@ -784,120 +791,99 @@ class UTCEditor(Editor):
             - Refreshes item count and 3D preview.
         """
         droid: bool = self.ui.raceSelect.currentIndex() == 0
-        capsulesToSearch: Sequence[LazyCapsule] = []
+        capsules_to_search: Sequence[LazyCapsule] = []
         if self._filepath is None:
             ...
         elif is_sav_file(self._filepath):
             # search the capsules inside the .sav outer capsule.
             # self._filepath represents the outer capsule
             # res.filepath() is potentially a nested capsule.
-            capsulesToSearch = [Capsule(res.filepath()) for res in Capsule(self._filepath) if is_capsule_file(res.filename()) and res.inside_capsule]
+            capsules_to_search = [Capsule(res.filepath()) for res in Capsule(self._filepath) if is_capsule_file(res.filename()) and res.inside_capsule]
         elif is_capsule_file(self._filepath):
-            capsulesToSearch = Module.find_capsules(self._installation, self._filepath.name)
-        inventoryEditor = InventoryEditor(
+            capsules_to_search = Module.get_capsules_tuple_matching(self._installation, self._filepath.name)
+        inventory_editor = InventoryEditor(
             self,
             self._installation,
-            capsulesToSearch,
+            capsules_to_search,
             [],
             self._utc.inventory,
             self._utc.equipment,
             droid=droid,
         )
-        if inventoryEditor.exec_():
-            self._utc.inventory = inventoryEditor.inventory
-            self._utc.equipment = inventoryEditor.equipment
-            self.updateItemCount()
+        if inventory_editor.exec():
+            self._utc.inventory = inventory_editor.inventory
+            self._utc.equipment = inventory_editor.equipment
+            self.update_item_count()
             self.update3dPreview()
 
-    def updateItemCount(self):
+    def update_item_count(self):
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utc.inventory)}")
 
-    def getFeatItem(self, featId: int) -> QListWidgetItem | None:
+    def get_feat_item(
+        self,
+        feat_id: int,
+    ) -> QListWidgetItem | None:
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
+                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.get_feat_item(feat_id={feat_id!r})")
                 continue
-            if item.data(Qt.ItemDataRole.UserRole) == featId:
+            if item.data(Qt.ItemDataRole.UserRole) == feat_id:
                 return item
         return None
 
-    def getPowerItem(self, powerId: int) -> QListWidgetItem | None:
+    def get_power_item(
+        self,
+        power_id: int,
+    ) -> QListWidgetItem | None:
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
+                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.get_power_item(power_id={power_id!r})")
                 continue
-            if item.data(Qt.ItemDataRole.UserRole) == powerId:
+            if item.data(Qt.ItemDataRole.UserRole) == power_id:
                 return item
         return None
 
-    def togglePreview(self):
-        self.globalSettings.showPreviewUTC = not self.globalSettings.showPreviewUTC
+    def toggle_preview(self):
+        self.global_settings.showPreviewUTC = not self.global_settings.showPreviewUTC
         self.update3dPreview()
 
-    def updateFeatSummary(self):
-        """Updates the feats summary text.
-
-        Processing Logic:
-        ----------------
-            - Loops through each item in the feature list
-            - Checks if the item is checked
-            - Adds the text of checked items to a summary string
-            - Sets the summary text to the feature summary edit text area.
-        """
+    def update_feat_summary(self):
         summary: str = ""
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
+                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.update_feat_summary()")
                 continue
 
-            if item.checkState() == Qt.Checked:
+            if item.checkState() == Qt.CheckState.Checked:
                 summary += f"{item.text()}\n"
         self.ui.featSummaryEdit.setPlainText(summary)
 
-    def updatePowerSummary(self):
-        """Updates the power summary text with checked items from the power list.
-
-        Processing Logic:
-        ----------------
-            - Loops through each item in the power list
-            - Checks if the item is checked
-            - Adds the item text to the summary string with a newline
-            - Sets the power summary edit text to the generated summary.
-        """
+    def update_power_summary(self):
         summary: str = ""
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
+                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.update_power_summary()")
                 continue
 
-            if item.checkState() == Qt.Checked:
+            if item.checkState() == Qt.CheckState.Checked:
                 summary += f"{item.text()}\n"
         self.ui.powerSummaryEdit.setPlainText(summary)
 
     def update3dPreview(self):
-        """Updates the 3D preview based on global settings.
+        self.ui.actionShowPreview.setChecked(self.global_settings.showPreviewUTC)
 
-        Processing Logic:
-        ----------------
-            - Check if the global setting for showing preview is checked
-            - If checked, show the preview renderer and set the window size
-            - If an installation is present, build the data and pass it to the renderer
-            - If not checked, hide the preview renderer and adjust the window size.
-        """
-        self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTC)
-
-        if self.globalSettings.showPreviewUTC:
+        if self.global_settings.showPreviewUTC:
             self.ui.previewRenderer.setVisible(True)
             self.resize(max(798, self.sizeHint().width()), max(553, self.sizeHint().height()))
 
             if self._installation is not None:
                 data, _ = self.build()
                 utc: UTC = read_utc(data)
-                self.ui.previewRenderer.setCreature(utc)
+                self.ui.previewRenderer.set_creature(utc)
         else:
             self.ui.previewRenderer.setVisible(False)
             self.resize(max(798 - 350, self.sizeHint().width()), max(553, self.sizeHint().height()))

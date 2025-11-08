@@ -37,11 +37,11 @@ class MutableString:
 
 
 class ModificationsNSS(PatcherModifications):
-    def __init__(self, filename, replace=None, modifiers=None):
+    def __init__(self, filename: str, *, replace: bool | None = None, modifiers: list | None = None):
         super().__init__(filename, replace, modifiers)
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
-        self.nwnnsscomp_path: Path  # TODO(th3w1zard1): fix type. Default None or Path?
+        self.nwnnsscomp_path: Path | None = None  # TODO(th3w1zard1): fix type. Default None or Path?
         self.backup_nwnnsscomp_path: Path
         self.temp_script_folder: Path
         self.skip_if_not_replace = True
@@ -89,7 +89,7 @@ class ModificationsNSS(PatcherModifications):
 
         # Compile with external on windows, fall back to built-in if mac/linux or if external fails.
         is_windows = os.name == "nt"
-        nwnnsscomp_exists: bool | None = self.nwnnsscomp_path.is_file()
+        nwnnsscomp_exists = bool(self.nwnnsscomp_path and self.nwnnsscomp_path.is_file())
         if is_windows and self.nwnnsscomp_path and nwnnsscomp_exists:
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
             try:
@@ -191,7 +191,7 @@ class ModificationsNSS(PatcherModifications):
             result: bool | bytes = "File is an include file, ignored" in stdout
             if not result:
                 # Return the compiled bytes
-                result = BinaryReader.load_file(tempcompiled_filepath)
+                result = tempcompiled_filepath.read_bytes()
 
         # Parse the output.
         if stdout.strip():

@@ -10,7 +10,7 @@ try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tup
 
     ElementTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
-    print("warning: defusedxml is not available but recommended due to security concerns.")
+    print("warning: defusedxml is not available but recommended for security")
 
 from typing import TYPE_CHECKING
 
@@ -34,10 +34,7 @@ class SSFXMLReader(ResourceReader):
         self._ssf: SSF | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> SSF:
+    def load(self) -> SSF:
         self._ssf = SSF()
 
         data = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
@@ -63,10 +60,7 @@ class SSFXMLWriter(ResourceWriter):
         self.ssf: SSF = ssf
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         for sound_name, sound in SSFSound.__members__.items():
             ElementTree.SubElement(
                 self.xml_root,

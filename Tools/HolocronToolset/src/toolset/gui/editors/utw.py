@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -18,11 +16,16 @@ if TYPE_CHECKING:
 
     from qtpy.QtWidgets import QWidget
 
+    from pykotor.common.module import GFF
     from toolset.data.installation import HTInstallation
 
 
 class UTWEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initialize Waypoint Editor window.
 
         Args:
@@ -41,41 +44,37 @@ class UTWEditor(Editor):
         supported: list[ResourceType] = [ResourceType.UTW]
         super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.utw import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self._utw = UTW()
 
         self.new()
 
-    def _setupSignals(self):
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
-        self.ui.noteChangeButton.clicked.connect(self.changeNote)
+    def _setup_signals(self):
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
+        self.ui.noteChangeButton.clicked.connect(self.change_note)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(self, installation: HTInstallation):
         self._installation = installation
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
-        utw = read_utw(data)
+        utw: UTW = read_utw(data)
         self._loadUTW(utw)
 
     def _loadUTW(self, utw: UTW):
@@ -92,17 +91,17 @@ class UTWEditor(Editor):
             - Load comment text into plain text edit
             - No return, simply loads UI elements from UTW object.
         """
-        self._utw = utw
+        self._utw: UTW = utw
 
         # Basic
-        self.ui.nameEdit.setLocstring(utw.name)
+        self.ui.nameEdit.set_locstring(utw.name)
         self.ui.tagEdit.setText(utw.tag)
         self.ui.resrefEdit.setText(str(utw.resref))
 
         # Advanced
         self.ui.isNoteCheckbox.setChecked(utw.has_map_note)
         self.ui.noteEnabledCheckbox.setChecked(utw.map_note_enabled)
-        self._loadLocstring(self.ui.noteEdit, utw.map_note)  # pyright: ignore[reportArgumentType]
+        self._load_locstring(self.ui.noteEdit, utw.map_note)  # pyright: ignore[reportArgumentType]
 
         # Comments
         self.ui.commentsEdit.setPlainText(utw.comment)
@@ -139,7 +138,7 @@ class UTWEditor(Editor):
         utw.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
-        gff = dismantle_utw(utw)
+        gff: GFF = dismantle_utw(utw)
         write_gff(gff, data)
 
         return data, b""
@@ -148,27 +147,27 @@ class UTWEditor(Editor):
         super().new()
         self._loadUTW(UTW())
 
-    def changeName(self):
+    def change_name(self):
         assert self._installation is not None
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
+        if dialog.exec():
+            self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
-    def changeNote(self):
+    def change_note(self):
         assert self._installation is not None
         try:
             dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)  # pyright: ignore[reportArgumentType]
         except AttributeError:
             dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.text())  # pyright: ignore[reportArgumentType]
-        if dialog.exec_():
-            self._loadLocstring(self.ui.noteEdit, dialog.locstring)  # pyright: ignore[reportArgumentType]
+        if dialog.exec():
+            self._load_locstring(self.ui.noteEdit, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
-    def generateTag(self):
+    def generate_tag(self):
         if not self.ui.resrefEdit.text():
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname:
             self.ui.resrefEdit.setText(self._resname)
         else:

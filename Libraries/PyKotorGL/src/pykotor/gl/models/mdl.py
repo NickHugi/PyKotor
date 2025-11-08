@@ -24,8 +24,6 @@ from pykotor.common.geometry import Vector3
 from pykotor.gl import glm, mat4, quat, vec3, vec4
 
 if TYPE_CHECKING:
-    from _testbuffer import ndarray
-
     from pykotor.gl.scene import Scene
     from pykotor.gl.shader import Shader
 
@@ -63,23 +61,6 @@ class Model:
         return all_nodes
 
     def box(self) -> tuple[vec3, vec3]:
-        """Calculates bounding box of the scene.
-
-        Args:
-        ----
-            self: {Node to calculate bounding box for}.
-
-        Returns:
-        -------
-            tuple[vec3, vec3]: {Minimum and maximum points of bounding box}
-
-        Processing Logic:
-        ----------------
-            - Initialize minimum and maximum points to extreme values
-            - Recursively calculate bounding box of each child node
-            - Expand bounding box by 0.1 units in each direction
-            - Return minimum and maximum points of final bounding box.
-        """
         min_point = vec3(100000, 100000, 100000)
         max_point = vec3(-100000, -100000, -100000)
         self._box_rec(self.root, mat4(), min_point, max_point)
@@ -179,7 +160,7 @@ class Node:
             transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
             transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         position = vec3()
-        glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())
+        glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())  # pyright: ignore[reportCallIssue, reportArgumentType]
         return position
 
     def global_rotation(self) -> quat:
@@ -189,15 +170,15 @@ class Node:
             transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
             transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         rotation = quat()
-        glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())
+        glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())  # pyright: ignore[reportCallIssue, reportArgumentType]
         return rotation
 
     def global_transform(self) -> mat4:
         ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = transform * glm.translate(ancestor._position)
-            transform = transform * glm.mat4_cast(ancestor._rotation)
+            transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
+            transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         return transform
 
     def transform(self) -> mat4:
@@ -256,44 +237,19 @@ class Mesh:
         texture_offset: int,
         lightmap_offset: int,
     ):
-        """Initializes a Mesh object.
-
-        Args:
-        ----
-            scene: Scene - The scene object
-            node: Node - The node object
-            texture: str - The texture path
-            lightmap: str - The lightmap path
-            vertex_data: bytearray - The vertex data
-            element_data: bytearray - The element data
-            block_size: int - The block size
-            data_bitflags: int - The data bitflags
-            vertex_offset: int - The vertex offset
-            normal_offset: int - The normal offset
-            texture_offset: int - The texture offset
-            lightmap_offset: int - The lightmap offset
-
-        Processing Logic:
-        ----------------
-            - Generates VAO and VBO
-            - Binds vertex and element data to VBO and EBO
-            - Enables vertex attributes based on bitflags
-            - Sets texture and lightmap if present
-            - Unbinds buffers.
-        """
         self._scene: Scene = scene
         self._node: Node = node
 
         self.texture: str = "NULL"
         self.lightmap: str = "NULL"
 
-        self.vertex_data = vertex_data
-        self.mdx_size = block_size
-        self.mdx_vertex = vertex_offset
+        self.vertex_data: bytearray = vertex_data
+        self.mdx_size: int = block_size
+        self.mdx_vertex: int = vertex_offset
 
-        self._vao = glGenVertexArrays(1)
-        self._vbo = glGenBuffers(1)
-        self._ebo = glGenBuffers(1)
+        self._vao: int = glGenVertexArrays(1)
+        self._vbo: int = glGenBuffers(1)
+        self._ebo: int = glGenBuffers(1)
         glBindVertexArray(self._vao)
 
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
@@ -306,7 +262,7 @@ class Mesh:
         element_data_mv = memoryview(element_data)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data_mv, GL_STATIC_DRAW)
 
-        self._face_count = len(element_data) // 2
+        self._face_count: int = len(element_data) // 2
 
         if data_bitflags & 0x0001:
             glEnableVertexAttribArray(1)
@@ -334,10 +290,10 @@ class Mesh:
         shader.set_matrix4("model", transform)
 
         glActiveTexture(GL_TEXTURE0)
-        self._scene.loadTexture(override_texture or self.texture).use()
+        self._scene.texture(override_texture or self.texture).use()
 
         glActiveTexture(GL_TEXTURE1)
-        self._scene.loadTexture(self.lightmap, lightmap=True).use()
+        self._scene.texture(self.lightmap, lightmap=True).use()
 
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
@@ -350,21 +306,6 @@ class Cube:
         min_point: vec3 | None = None,
         max_point: vec3 | None = None,
     ):
-        """Initializes a cube mesh.
-
-        Args:
-        ----
-            scene: Scene: The scene object
-            min_point: vec3 | None: The minimum point of the cube (default is (-1, -1, -1))
-            max_point: vec3 | None: The maximum point of the cube (default is (1, 1, 1)).
-
-        Processing Logic:
-        ----------------
-            - Sets default values for min_point and max_point if not provided
-            - Generates vertex and element arrays for the cube mesh
-            - Binds VAO, VBO and EBO buffers and uploads data
-            - Enables vertex attribute arrays.
-        """
         self._scene = scene
 
         min_point = vec3(-1.0, -1.0, -1.0) if min_point is None else min_point
@@ -372,14 +313,30 @@ class Cube:
 
         vertices = np.array(
             [
-                min_point.x, min_point.y, max_point.z,
-                max_point.x, min_point.y, max_point.z,
-                max_point.x, max_point.y, max_point.z,
-                min_point.x, max_point.y, max_point.z,
-                min_point.x, min_point.y, min_point.z,
-                max_point.x, min_point.y, min_point.z,
-                max_point.x, max_point.y, min_point.z,
-                min_point.x, max_point.y, min_point.z
+                min_point.x,
+                min_point.y,
+                max_point.z,
+                max_point.x,
+                min_point.y,
+                max_point.z,
+                max_point.x,
+                max_point.y,
+                max_point.z,
+                min_point.x,
+                max_point.y,
+                max_point.z,
+                min_point.x,
+                min_point.y,
+                min_point.z,
+                max_point.x,
+                min_point.y,
+                min_point.z,
+                max_point.x,
+                max_point.y,
+                min_point.z,
+                min_point.x,
+                max_point.y,
+                min_point.z,
             ],
             dtype="float32",
         )
@@ -392,9 +349,9 @@ class Cube:
         self.min_point: vec3 = min_point
         self.max_point: vec3 = max_point
 
-        self._vao = glGenVertexArrays(1)
-        self._vbo = glGenBuffers(1)
-        self._ebo = glGenBuffers(1)
+        self._vao: int = glGenVertexArrays(1)
+        self._vbo: int = glGenBuffers(1)
+        self._ebo: int = glGenBuffers(1)
         glBindVertexArray(self._vao)
 
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
@@ -422,21 +379,6 @@ class Boundary:
         scene: Scene,
         vertices: list[Vector3],
     ):
-        """Initializes a mesh from vertices.
-
-        Args:
-        ----
-            scene: Scene - The scene to add this mesh to
-            vertices: list[Vector3] - The vertices of the mesh
-
-        Processing Logic:
-        ----------------
-            - Build normalized data from vertices
-            - Generate VAO, VBO, EBO OpenGL buffers
-            - Populate VBO with vertex data
-            - Populate EBO with element indices
-            - Configure vertex attributes.
-        """
         self._scene: Scene = scene
 
         vertices, elements = self._build_nd(vertices)
@@ -466,24 +408,6 @@ class Boundary:
         radius: float,
         smoothness: int = 10,
     ) -> Boundary:
-        """Generates a circular boundary from a circle.
-
-        Args:
-        ----
-            scene: Scene - The scene to add the boundary to
-            radius: float - The radius of the circle
-            smoothness: int = 10 - The number of vertices used to approximate the circle
-
-        Returns:
-        -------
-            Boundary - The generated circular boundary
-
-        Processing Logic:
-        ----------------
-            - Calculate vertex positions around the circle at intervals of smoothness
-            - Add vertices rotating around the circle four times
-            - Return a new Boundary instance with the calculated vertices.
-        """
         vertices: list[Vector3] = []
         for i in range(smoothness):
             x = math.cos(i / smoothness * math.pi / 2)
@@ -508,7 +432,7 @@ class Boundary:
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
 
-    def _build_nd(self, vertices: list[Vector3]) -> tuple[ndarray, ndarray]:
+    def _build_nd(self, vertices: list[Vector3]) -> tuple[np.ndarray, np.ndarray]:
         npvertices = []
         for vertex in vertices:
             npvertices.extend([*vertex, *Vector3(vertex.x, vertex.y, vertex.z + 2)])
@@ -528,4 +452,5 @@ class Empty:
     def __init__(self, scene: Scene):
         self._scene: Scene = scene
 
-    def draw(self, shader: Shader, transform: mat4): ...
+    def draw(self, shader: Shader, transform: mat4):
+        ...

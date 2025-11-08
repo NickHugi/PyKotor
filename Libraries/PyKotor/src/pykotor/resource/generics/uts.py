@@ -163,7 +163,7 @@ def dismantle_uts(
     if use_deprecated:
         root.set_locstring("LocName", uts.name)
         root.set_uint32("Hours", uts.hours)
-        root.set_uint8("Times", uts.times)  # TODO: double check this. Some files have this field as uint8 others as uint32?
+        root.set_uint8("Times", uts.times)  # TODO(th3w1zard1): double check this. Some files have this field as uint8 others as uint32?
 
     return gff
 
@@ -173,7 +173,7 @@ def read_uts(
     offset: int = 0,
     size: int | None = None,
 ) -> UTS:
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_uts(gff)
 
 
@@ -185,7 +185,7 @@ def write_uts(
     *,
     use_deprecated: bool = True,
 ):
-    gff = dismantle_uts(uts, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_uts(uts, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
@@ -196,5 +196,5 @@ def bytes_uts(
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    gff = dismantle_uts(uts, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_uts(uts, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

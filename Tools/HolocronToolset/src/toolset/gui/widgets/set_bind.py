@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QWidget
 
-from toolset.utils.misc import MODIFIER_KEY_NAMES, QtMouse, getQtKeyStringLocalized, getQtMouseButton
+from toolset.utils.misc import MODIFIER_KEY_NAMES, get_qt_key_string_localized
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QKeyEvent
@@ -17,119 +16,81 @@ if TYPE_CHECKING:
 
 class SetBindWidget(QWidget):
     def __init__(self, parent: QWidget):
-        """Initializes the widget for setting keybinds.
-
-        Args:
-        ----
-            parent (QWidget): Parent widget
-
-        Processing Logic:
-        ----------------
-            - Sets up initial keybind set as empty
-            - Loads UI from designer file
-            - Connects button click signals to methods
-            - Populates mouse combo box with mouse button options.
-        """
         super().__init__(parent)
 
-        self.keybind: set[int] = set()
-        self.recordBind: bool = False
+        self.keybind: set[Qt.Key] = set()
+        self.record_bind: bool = False
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.widgets.set_bind import Ui_Form
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
-        self.ui.setButton.keyPressEvent = self.keyPressed
-        self.ui.setButton.keyReleaseEvent = self.keyReleased
-        self.ui.setButton.clicked.connect(self.startRecording)
-        self.ui.clearButton.clicked.connect(self.clearKeybind)
+        self.ui.setButton.keyPressEvent = self.keyPressEvent  # type: ignore[method-assign]
+        self.ui.setButton.keyReleaseEvent = self.keyReleaseEvent  # type: ignore[method-assign]
+        self.ui.setButton.clicked.connect(self.start_recording)
+        self.ui.clearButton.clicked.connect(self.clear_keybind)
 
-        self.ui.mouseCombo.setItemData(0, {QtMouse.LeftButton})
-        self.ui.mouseCombo.setItemData(1, {QtMouse.MiddleButton})
-        self.ui.mouseCombo.setItemData(2, {QtMouse.RightButton})
+        self.ui.mouseCombo.setItemData(0, {Qt.MouseButton.LeftButton})
+        self.ui.mouseCombo.setItemData(1, {Qt.MouseButton.MiddleButton})
+        self.ui.mouseCombo.setItemData(2, {Qt.MouseButton.RightButton})
         self.ui.mouseCombo.setItemData(3, set())  # Any
         self.ui.mouseCombo.setItemData(4, None)   # None
 
-    def startRecording(self):
-        self.recordBind = True
+    def start_recording(self):
+        self.record_bind = True
         self.keybind.clear()
-        self.updateKeybindText()
+        self.update_keybind_text()
         self.ui.setKeysEdit.setPlaceholderText("Enter a key...")
 
-    def clearKeybind(self):
+    def clear_keybind(self):
         self.keybind.clear()
         self.ui.setKeysEdit.setPlaceholderText("none")
-        self.updateKeybindText()
+        self.update_keybind_text()
 
-    def keyPressed(self, a0: QKeyEvent):
-        if self.recordBind:
-            self.keybind.add(a0.key())
+    def keyPressEvent(self, a0: QKeyEvent):
+        if self.record_bind:
+            self.keybind.add(Qt.Key(a0.key()))
             assert isinstance(self.keybind, set), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a set"
-            self.updateKeybindText()
-
-    def keyReleased(self, e: QKeyEvent):
-        self.recordBind = False
+            self.update_keybind_text()
+        super().keyPressEvent(a0)
+    def keyReleaseEvent(self, e: QKeyEvent):
+        self.record_bind = False
         RobustLogger().info(f"Set keybind to {self.keybind}")
+        super().keyReleaseEvent(e)
 
-    def setMouseAndKeyBinds(self, bind: Bind):
+    def set_mouse_and_key_binds(self, bind: Bind):
         # these asserts will be removed automatically with -O PYTHONOPTIMIZE flag, performance isn't affected there.
         assert isinstance(bind, tuple), f"{bind} ({bind.__class__.__name__}) is not a tuple"
-        assert len(bind) == 2, f"{len(bind)} != 2"
+        assert len(bind) == 2, f"{len(bind)} != 2"  # noqa: PLR2004
         assert isinstance(bind[0], set), f"{bind[0]!r} <{bind[0]}> ({bind[0].__class__.__name__}) is not a set"
         assert isinstance(bind[1], (set, type(None))), f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a set"
 
-        # Handle Qt6
-        mouseBind = next(iter(bind[1])) if bind[1] else (None if bind[1] is None else set())
-        if mouseBind is not None:
-            try:
-                mouseBind = getQtMouseButton(mouseBind)
-            except Exception:
-                mouseBind = None
-
-        if mouseBind is None:  # none
+        mouse_bind: Qt.MouseButton | set | None = next(iter(bind[1])) if bind[1] else (None if bind[1] is None else set())
+        if mouse_bind is None:  # None
             self.ui.mouseCombo.setCurrentIndex(4)
-        elif not mouseBind:  # any
+        elif not mouse_bind:  # Any (empty set)
             self.ui.mouseCombo.setCurrentIndex(3)
-        elif mouseBind == QtMouse.LeftButton:
+        elif mouse_bind == Qt.MouseButton.LeftButton:
             self.ui.mouseCombo.setCurrentIndex(0)
-        elif mouseBind == QtMouse.MiddleButton:
+        elif mouse_bind == Qt.MouseButton.MiddleButton:
             self.ui.mouseCombo.setCurrentIndex(1)
-        elif mouseBind == QtMouse.RightButton:
+        elif mouse_bind == Qt.MouseButton.RightButton:
             self.ui.mouseCombo.setCurrentIndex(2)
         else:
-            raise ValueError(f"{mouseBind!r} <{mouseBind}> ({mouseBind.__class__.__name__}) is not a valid mousebind")
+            raise ValueError(f"{mouse_bind!r} <{mouse_bind}> ({mouse_bind.__class__.__name__}) is not a valid mousebind")
 
         self.keybind = bind[0]
-        self.updateKeybindText()
+        self.update_keybind_text()
 
-    def getMouseAndKeyBinds(self) -> Bind:
-        mousebind: set[int] = self.ui.mouseCombo.currentData()
+    def get_mouse_and_key_binds(self) -> Bind:
+        mousebind: set[Qt.MouseButton] = self.ui.mouseCombo.currentData()
         assert isinstance(mousebind, (set, type(None))), f"{mousebind!r} <{mousebind}> ({mousebind.__class__.__name__}) is not a mousebind set"
         assert isinstance(self.keybind, set), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a keybind set"
         return self.keybind, mousebind
 
-    def updateKeybindText(self):
-        # Separate modifier keys and other keys
-        modifiers = [key for key in self.keybind if key in MODIFIER_KEY_NAMES]
-        other_keys = [key for key in self.keybind if key not in MODIFIER_KEY_NAMES]
-
-        # Sort keys: modifiers first, then other keys
-        sorted_keys = modifiers + other_keys
-
-        # Create the keybind text
-        text = "+".join(getQtKeyStringLocalized(key) for key in sorted_keys)
-
-        # Update the UI element with the keybind text
-        self.ui.setKeysEdit.setText(text.upper())
-
+    def update_keybind_text(self):
+        modifiers: list[Qt.Key] = [key for key in self.keybind if key in MODIFIER_KEY_NAMES]
+        other_keys: list[Qt.Key] = [key for key in self.keybind if key not in MODIFIER_KEY_NAMES]
+        sorted_keys: list[Qt.Key] = modifiers + other_keys
+        text: str = "+".join(get_qt_key_string_localized(key) for key in sorted_keys)
         self.ui.setKeysEdit.setText(text.upper())

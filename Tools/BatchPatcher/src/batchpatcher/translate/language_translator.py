@@ -25,7 +25,9 @@ try:
 except ImportError:
     deepl_tr = None
 try:
-    from translate import Translator as TranslateTranslator  # type: ignore[import-not-found]
+    from translate import (
+        Translator as TranslateTranslator,  # type: ignore[import-not-found]
+    )
 except ImportError:
     TranslateTranslator = None
 argos_import_success = True
@@ -43,7 +45,9 @@ try:
 except ImportError:
     ChatGptTranslator = None
 try:
-    from googletrans import Translator as GoogleTranslator  # type: ignore[import-not-found]
+    from googletrans import (
+        Translator as GoogleTranslator,  # type: ignore[import-not-found]
+    )
 except ImportError:
     GoogleTranslator = None
 try:
@@ -55,7 +59,10 @@ try:
 except ImportError:
     ApertiumLite = None
 try:
-    from transformers import T5ForConditionalGeneration, T5Tokenizer  # type: ignore[import-not-found]
+    from transformers import (  # type: ignore[import-not-found]
+        T5ForConditionalGeneration,
+        T5Tokenizer,
+    )
 except ImportError:
     T5ForConditionalGeneration = None
     T5Tokenizer = None

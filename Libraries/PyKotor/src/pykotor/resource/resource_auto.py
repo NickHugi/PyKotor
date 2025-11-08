@@ -19,8 +19,7 @@ from pykotor.resource.formats.ltr import bytes_ltr, read_ltr
 from pykotor.resource.formats.ltr.ltr_data import LTR
 from pykotor.resource.formats.lyt import bytes_lyt, read_lyt
 from pykotor.resource.formats.lyt.lyt_data import LYT
-from pykotor.resource.formats.mdl import bytes_mdl, read_mdl
-from pykotor.resource.formats.mdl.mdl_data import MDL
+from pykotor.resource.formats.mdl import MDL, bytes_mdl, read_mdl
 from pykotor.resource.formats.ncs import bytes_ncs, read_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCS
 from pykotor.resource.formats.rim import bytes_rim, read_rim
@@ -56,10 +55,10 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
 
 
-def read_resource(
+def read_resource(  # noqa: C901, PLR0911, PLR0912
     source: SOURCE_TYPES,
     resource_type: ResourceType | None = None,
-) -> bytes:  # noqa: C901, PLR0911, PLR0912
+) -> bytes:
     """Reads a resource from a source and returns it as bytes.
 
     This is a convenience method to make getting the resource's data easier.
@@ -79,7 +78,7 @@ def read_resource(
         if isinstance(source, (os.PathLike, str)):
             source_path = source
             if not resource_type:
-                _resname, resource_type = ResourceIdentifier.from_path(source)
+                _resname, resource_type = ResourceIdentifier.from_path(source).unpack()
 
     if not resource_type:
         return read_unknown_resource(source)
@@ -124,7 +123,9 @@ def read_resource(
     raise ValueError(msg)
 
 
-def read_unknown_resource(source: SOURCE_TYPES) -> bytes:  # noqa: PLR0911
+def read_unknown_resource(  # noqa: PLR0911
+    source: SOURCE_TYPES,
+) -> bytes:
     with suppress(OSError, ValueError):
         return bytes_tlk(read_tlk(source))
     with suppress(OSError, ValueError):
@@ -156,11 +157,13 @@ def read_unknown_resource(source: SOURCE_TYPES) -> bytes:  # noqa: PLR0911
     msg = "Source resource data not recognized as any kotor file formats."
     raise ValueError(msg)
 
+
 GFF_GENERICS = Union[ARE, DLG, GIT, IFO, JRL, PTH, UTC, UTD, UTE, UTM, UTP, UTS, UTW]
 
+
 def dismantle_generic(  # noqa: PLR0911, C901, PLR0912, ANN201
-    generic: GFF_GENERICS
-):
+    generic: GFF_GENERICS,
+) -> GFF:
     """Returns a GFF object from a constructed obj.
 
     Args:
@@ -203,9 +206,10 @@ def dismantle_generic(  # noqa: PLR0911, C901, PLR0912, ANN201
         return generic  # Guess whoever called this didn't get the memo.
     raise TypeError(f"Could not dismantle generic, invalid object passed ({generic}) of type '{type(generic).__name__}' was unexpected.")
 
-def resource_to_bytes(
+
+def resource_to_bytes(  # noqa: PLR0912, C901, PLR0911
     resource: BWM | ERF | GFF | LIP | LTR | LYT | MDL | NCS | RIM | SSF | TLK | TPC | TwoDA | VIS | GFF_GENERICS,
-):
+) -> bytes:
     if isinstance(resource, GFF_GENERICS):
         return bytes_gff(dismantle_generic(resource))
     if isinstance(resource, BWM):

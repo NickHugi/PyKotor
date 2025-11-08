@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-# Import reference cache classes and location types from tools module
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 

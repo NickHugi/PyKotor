@@ -1,21 +1,19 @@
 from __future__ import annotations
 
-import tempfile
 import time
 
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import qtpy
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QTimer
-from qtpy.QtMultimedia import QAudioOutput, QMediaPlayer
+from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QFileDialog, QMainWindow
 
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
 from utility.system.os_helper import remove_any
@@ -24,6 +22,8 @@ if TYPE_CHECKING:
 
     import os
 
+    from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
+    from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QWidget
 
@@ -34,16 +34,7 @@ class AudioPlayer(QMainWindow):
     def __init__(self, parent: QWidget | None):
         super().__init__(parent)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.windows.audio_player import Ui_MainWindow
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -56,17 +47,17 @@ class AudioPlayer(QMainWindow):
         self.ui.playButton.clicked.connect(self.player.play)
         self.ui.pauseButton.clicked.connect(self.player.pause)
         self.ui.timeSlider.sliderReleased.connect(self.changePosition)
-        self.player.durationChanged.connect(self.durationChanged)
+        self.player.durationChanged.connect(self.duration_changed)
         self.player.positionChanged.connect(self.positionChanged)
         self.destroyed.connect(self.closeEvent)
-        if qtpy.API_NAME in {"PySide2", "PyQt5"}:
-            self.player.error.connect(lambda _=None: self.handleError())
+        if qtpy.QT5:
+            self.player.error.connect(lambda _=None: self.handle_error())
         else:
-            self.player.errorOccurred.connect(lambda *args, **kwargs: self.handleError(*args, **kwargs))
+            self.player.errorOccurred.connect(lambda *args, **kwargs: self.handle_error(*args, **kwargs))  # noqa: FBT001  # pyright: ignore[reportAttributeAccessIssue]
 
-        self.tempFile = None  # Reference to the temporary file for PyQt6/Pyside6
+        self.temp_file = None  # Reference to the temporary file for PyQt6/Pyside6
 
-    def handleError(self, *args, **kwargs):
+    def handle_error(self, *args, **kwargs):
         print("Error:", *args, **kwargs)
         self.closeEvent(None)
 
@@ -75,37 +66,42 @@ class AudioPlayer(QMainWindow):
         self.player.stop()
         data = sound.deobfuscate_audio(data)
         # Clear any existing temporary file
-        if self.tempFile and Path(self.tempFile.name).is_file():
-            self.tempFile.delete = True
-            remove_any(self.tempFile.name)
-        self.tempFile = None
+        if self.temp_file and Path(self.temp_file.name).is_file():
+            self.temp_file.delete = True
+            remove_any(self.temp_file.name)
+        self.temp_file = None
 
         if not data:
             return
 
-        if qtpy.API_NAME in {"PyQt5", "PySide2"}:
+        if qtpy.QT5:
             self.buffer = QBuffer(self)
             self.buffer.setData(data)
             if not self.buffer.open(QIODevice.OpenModeFlag.ReadOnly):
                 print("Audio player Buffer not ready?")
                 return
-            from qtpy.QtMultimedia import QMediaContent
-            self.player.setMedia(QMediaContent(), self.buffer)
-        else:
-            self.tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-            self.tempFile.write(data)
-            self.tempFile.flush()
-            self.tempFile.seek(0)
-            self.tempFile.close()
+            from qtpy.QtMultimedia import QMediaContent  # pyright: ignore[reportAttributeAccessIssue]
+            self.player.setMedia(QMediaContent(), self.buffer)  # pyright: ignore[reportAttributeAccessIssue]
+        elif qtpy.QT6:
+            from qtpy.QtMultimedia import QAudioOutput
 
-            audioOutput = QAudioOutput(self)
-            self.player.setAudioOutput(audioOutput)
-            self.player.setSource(QtCore.QUrl.fromLocalFile(self.tempFile.name))
-            audioOutput.setVolume(1)
-            self.player.mediaStatusChanged.connect(lambda status, file_name=self.tempFile.name: self.removeTempAudioFile(status, file_name))
+            # Create buffer and load data
+            buffer = QBuffer(self)
+            buffer.setData(data)
+            buffer.open(QIODevice.OpenModeFlag.ReadOnly)
+
+            # Set up player
+            player: PyQt6MediaPlayer | PySide6MediaPlayer = cast(Any, self.player)
+            audio_output = QAudioOutput(self)
+            audio_output.setVolume(1)
+            player.setAudioOutput(audio_output)
+
+            # Use the buffer directly instead of a file
+            player.setSourceDevice(buffer)
+            player.play()
         QtCore.QTimer.singleShot(0, self.player.play)
 
-    def removeTempAudioFile(
+    def remove_temp_audio_file(
         self,
         status: QMediaPlayer.MediaStatus,
         filePathStr: str,
@@ -117,30 +113,36 @@ class AudioPlayer(QMainWindow):
             except OSError:
                 RobustLogger().exception(f"Error removing temporary file {filePathStr}")
 
-    def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resname: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         self.setWindowTitle(f"{resname}.{restype.extension} - Audio Player")
         self.set_media(data, restype)  # Use the refined set_media method
 
     def open(self):
         filepath: str = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
-        if filepath:
+        if filepath and str(filepath).strip():
             with suppress(ValueError, TypeError):
                 resname, restype = ResourceIdentifier.from_path(filepath).validate().unpack()
-                data: bytes = BinaryReader.load_file(filepath)
+                data: bytes = Path(filepath).read_bytes()
                 self.load(filepath, resname, restype, data)
 
-    def durationChanged(self, duration: int):
-        totalTime: str = time.strftime("%H:%M:%S", time.gmtime(duration // 1000))
-        self.ui.totalTimeLabel.setText(totalTime)
+    def duration_changed(self, duration: int):
+        total_time: str = time.strftime("%H:%M:%S", time.gmtime(duration // 1000))
+        self.ui.totalTimeLabel.setText(total_time)
         self.ui.timeSlider.setMaximum(duration)
 
     def positionChanged(self, position: int):
-        currentTime: str = time.strftime("%H:%M:%S", time.gmtime(position // 1000))
-        self.ui.currentTimeLabel.setText(currentTime)
+        current_time: str = time.strftime("%H:%M:%S", time.gmtime(position // 1000))
+        self.ui.currentTimeLabel.setText(current_time)
 
         # sometimes QMediaPlayer does not accurately calculate the duration of the audio
         if position > self.ui.timeSlider.maximum():
-            self.durationChanged(position)
+            self.duration_changed(position)
 
         self.ui.timeSlider.setValue(position)
 

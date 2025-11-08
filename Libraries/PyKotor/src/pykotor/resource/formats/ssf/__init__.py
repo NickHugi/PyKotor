@@ -13,3 +13,15 @@ from pykotor.resource.formats.ssf.ssf_auto import (
     read_ssf,
     write_ssf,
 )
+
+__all__ = [
+    "SSF",
+    "SSFBinaryReader",
+    "SSFBinaryWriter",
+    "SSFSound",
+    "SSFXMLReader",
+    "SSFXMLWriter",
+    "bytes_ssf",
+    "read_ssf",
+    "write_ssf",
+]

@@ -2,15 +2,24 @@ from __future__ import annotations
 
 import json
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pykotor.resource.formats.lip.lip_data import LIP, LIPShape
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 
 if TYPE_CHECKING:
-    from pykotor.resource.formats.lip.lip_data import LIPKeyFrame
+    from typing_extensions import TypedDict  # pyright: ignore[reportMissingModuleSource]
+
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
+
+    class LIPKeyframeDict(TypedDict):
+        time: str
+        shape: str
+
+    class LIPJSONDict(TypedDict):
+        duration: str
+        keyframes: list[LIPKeyframeDict]
 
 
 class LIPJSONReader(ResourceReader):
@@ -21,14 +30,11 @@ class LIPJSONReader(ResourceReader):
         size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._json: dict = {}
+        self._json: dict[str, Any] = {}
         self._lip: LIP | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> LIP:
+    def load(self) -> LIP:
         self._lip = LIP()
         self._json = json.loads(decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size())))
 
@@ -46,6 +52,7 @@ class LIPJSONReader(ResourceReader):
         return self._lip
 
 
+
 class LIPJSONWriter(ResourceWriter):
     def __init__(
         self,
@@ -54,23 +61,20 @@ class LIPJSONWriter(ResourceWriter):
     ):
         super().__init__(target)
         self._lip: LIP = lip
-        self._json: dict[str, str | list[LIPKeyFrame]] = {
+        self._json: LIPJSONDict = {
             "duration": str(self._lip.length),
             "keyframes": [],
         }
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         # Populate the dictionary with keyframe data
         for keyframe in self._lip:
             self._json["keyframes"].append(
-                {
-                    "time": str(keyframe.time),
-                    "shape": str(keyframe.shape.value),
-                },  # pyright: ignore[reportGeneralTypeIssues]
+                LIPKeyframeDict(
+                    time=str(keyframe.time),
+                    shape=str(keyframe.shape.value),
+                )
             )
 
         json_string: str = json.dumps(self._json, indent=4)

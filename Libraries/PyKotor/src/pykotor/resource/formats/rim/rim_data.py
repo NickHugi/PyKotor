@@ -2,195 +2,73 @@
 
 from __future__ import annotations
 
-from copy import copy
-from typing import Any, Generator
+from typing import TYPE_CHECKING
 
-from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats._base import ComparableMixin
+from pykotor.resource.bioware_archive import ArchiveResource, BiowareArchive
 from pykotor.resource.type import ResourceType
-from utility.common.more_collections import OrderedSet
+
+if TYPE_CHECKING:
+    from pykotor.common.misc import ResRef
 
 
-class RIM(ComparableMixin):
+class RIMResource(ArchiveResource):
+    """A resource stored inside a RIM archive."""
+
+    def __init__(self, resref: ResRef, restype: ResourceType, data: bytes):
+        super().__init__(resref=resref, restype=restype, data=data)
+
+
+class RIM(BiowareArchive):
     """Represents the data of a RIM file."""
 
     BINARY_TYPE = ResourceType.RIM
+    ARCHIVE_TYPE: type[ArchiveResource] = RIMResource
     COMPARABLE_SET_FIELDS = ("_resources",)
 
-    def __init__(
-        self,
-    ):
-        self._resources: OrderedSet[RIMResource] = OrderedSet()
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(resources={len(self._resources)})"
 
-    def __iter__(
-        self,
-    ) -> Generator[RIMResource, Any, None]:
-        """Iterates through the stored resources yielding a copied resource each iteration."""
-        for resource in self._resources:
-            yield copy(resource)
-
-    def __len__(
-        self,
-    ):
-        """Returns the number of stored resources."""
-        return len(self._resources)
-
-    def __getitem__(
-        self,
-        item,
-    ):
-        """Returns a resource at the specified index or with the specified resref."""
-        if isinstance(item, int):
-            return self._resources[item]
-        if isinstance(item, str):
-            try:
-                return next(resource for resource in self._resources if resource.resref == item)
-            except StopIteration as e:
-                msg = f"{item} not found."
-                raise KeyError(msg) from e
-        return NotImplemented
-
-    def __add__(self, other: RIM) -> RIM:
-        """Combines the resources of two RIM instances into a new RIM instance.
-
-        Args:
-        ----
-            other: Another RIM instance.
-
-        Returns:
-        -------
-            A new RIM instance containing the combined resources.
-        """
-        if not isinstance(other, RIM):
-            return NotImplemented
-
-        combined_rim = RIM()
-        for resource in self:
-            combined_rim.set_data(str(resource.resref), resource.restype, resource.data)
-        for resource in other:
-            combined_rim.set_data(str(resource.resref), resource.restype, resource.data)
-
-        return combined_rim
-
-    def set_data(
-        self,
-        resname: str,
-        restype: ResourceType,
-        data: bytes,
-    ):
-        """Sets the data of the resource with the specified resref/restype pair.
-
-        If it does not exists, a resource is appended to the resource list.
-
-        Args:
-        ----
-            resname: The resource reference filename.
-            restype: The resource type.
-            data: The new resource data.
-        """
-        resource: RIMResource | None = next(
-            (resource for resource in self._resources if resource.resref == resname and resource.restype == restype),
-            None,
-        )
-        if resource is None:
-            self._resources.append(RIMResource(ResRef(resname), restype, data))
-        else:
-            resource.resref = ResRef(resname)
-            resource.restype = restype
-            resource.data = data
-
-    def get(
-        self,
-        resname: str,
-        restype: ResourceType,
-    ) -> bytes | None:
-        """Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
-
-        Args:
-        ----
-            resname: The resource reference filename.
-            restype: The resource type.
-
-        Returns:
-        -------
-            The bytes data of the resource or None.
-        """
-        resource: RIMResource | None = next(
-            (resource for resource in self._resources if resource.resref == resname and resource.restype == restype),
-            None,
-        )
+    def get(self, resname: str, restype: ResourceType) -> bytes | None:
+        """Return the raw bytes for a resource, or None when not present."""
+        resource = self._resource_dict.get(ResourceIdentifier(resname, restype))
         return None if resource is None else resource.data
 
-    def remove(
-        self,
-        resname: str,
-        restype: ResourceType,
-    ):
-        """Removes the resource with the given resref/restype pair if it exists.
+    def remove(self, resname: str, restype: ResourceType) -> None:
+        """Remove a resource from the archive if it exists."""
+        key = ResourceIdentifier(resname, restype)
+        resource = self._resource_dict.pop(key, None)
+        if resource is not None:
+            self._resources.remove(resource)
 
-        Args:
-        ----
-            resname: The resource reference filename.
-            restype: The resource type.
-        """
-        self._resources = [res for res in self._resources if res.resref != resname and res.restype != restype]
-
-    def to_erf(
-        self,
-    ):
-        """Returns a ERF with the same resources. Defaults to an ERF with ERFType.ERF set.
-
-        Returns:
-        -------
-            A new ERF object.
-        """
-        from pykotor.resource.formats.erf import ERF  # Prevent circular imports  # noqa: PLC0415,F811
+    def to_erf(self):
+        """Return an ERF archive with the same resource payload."""
+        from pykotor.resource.formats.erf.erf_data import ERF  # Prevent circular imports  # noqa: PLC0415
 
         erf = ERF()
         for resource in self._resources:
             erf.set_data(str(resource.resref), resource.restype, resource.data)
         return erf
 
-    def __eq__(self, other):
-        from pykotor.resource.formats.erf import ERF  # Prevent circular imports  # noqa: PLC0415,F811
-        if not isinstance(other, (ERF, RIM)):
+    def get_resource_offset(self, resource: ArchiveResource) -> int:
+        """Compute the binary offset for a given resource when serialised."""
+        if not isinstance(resource, RIMResource):
+            raise TypeError("Resource is not a RIMResource")
+        from pykotor.resource.formats.rim.io_rim import RIMBinaryWriter  # noqa: PLC0415
+
+        entry_count = len(self._resources)
+        offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
+        data_start = offset_to_keys + RIMBinaryWriter.KEY_ELEMENT_SIZE * entry_count
+
+        resource_index = self._resources.index(resource)
+        return data_start + sum(len(res.data) for res in self._resources[:resource_index])
+
+    def __eq__(self, other: object):
+        from pykotor.resource.formats.erf.erf_data import ERF  # Prevent circular imports  # noqa: PLC0415
+
+        if not isinstance(other, (RIM, ERF)):
             return NotImplemented
         return set(self._resources) == set(other._resources)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(tuple(self._resources))
-
-
-class RIMResource(ComparableMixin):
-    COMPARABLE_FIELDS = ("resref", "restype", "data")
-    def __init__(
-        self,
-        resref: ResRef,
-        restype: ResourceType,
-        data: bytes,
-    ):
-        self.resref: ResRef = resref
-        self.restype: ResourceType = restype
-        if isinstance(data, bytearray):  # FIXME(th3w1zard1): Something is passing bytearray here
-            data = bytes(data)
-        self.data: bytes = data
-
-    def __eq__(
-        self,
-        other,
-    ):
-        from pykotor.resource.formats.erf import ERFResource  # Prevent circular imports  # noqa: PLC0415
-        if not isinstance(other, (ERFResource, RIMResource)):
-            return NotImplemented
-        return (
-            self.resref == other.resref
-            and self.restype == other.restype
-            and self.data == other.data
-        )
-
-    def __hash__(self):
-        return hash((self.resref, self.restype, self.data))
-
-    def identifier(self) -> ResourceIdentifier:
-        return ResourceIdentifier(str(self.resref), self.restype)

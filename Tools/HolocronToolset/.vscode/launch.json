@@ -5,20 +5,29 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name":"Toolset: Compile UI",
+            "type":"debugpy",
+            "request":"launch",
+            "program":"${workspaceFolder}/src/ui/convertui.py",
+            "console":"integratedTerminal",
+            "justMyCode":false
+        },
+        {
             "name":"Python: Current File",
-            "type":"python",
+            "type":"debugpy",
             "request":"launch",
             "program":"${file}",
             "console":"integratedTerminal",
-            "justMyCode":true
+            "justMyCode":false
         },
         {
-            "name": "Python: Module",
-            "type": "python",
-            "request": "launch",
-            "module": "toolset",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}/src"
+            "name":"Run Toolset",
+            "type":"debugpy",
+            "request":"launch",
+            "module":"toolset",
+            "justMyCode":false,
+            "cwd":"${workspaceFolder}/src",
+            "args":["--debug"],
         }
     ]
 }

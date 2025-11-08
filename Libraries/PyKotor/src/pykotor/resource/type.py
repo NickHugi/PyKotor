@@ -6,26 +6,46 @@ import io
 import mmap
 import os
 import struct
-import uuid
 
 from enum import Enum
 from functools import lru_cache
+from io import BytesIO
 from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union, cast
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.string_util import WrappedStr
+from utility.common.misc_string.mutable_str import WrappedStr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.stream import BinaryWriterBytearray, BinaryWriterFile
 
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
 BASE_SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview]
-SOURCE_TYPES = Union[BASE_SOURCE_TYPES, STREAM_TYPES]
-TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
+SOURCE_TYPES = Union[BASE_SOURCE_TYPES, STREAM_TYPES, BytesIO, BinaryReader]
+TARGET_TYPES = Union[os.PathLike, str, bytearray, BytesIO, BinaryWriter]
+
+
+R = TypeVar("R")
+
+
+def autoclose(func: Callable[..., R]) -> Callable[..., R]:
+    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
+        try:
+            resource: R = func(self, auto_close=auto_close)
+        except (OSError, ParseError, ValueError, IndexError, StopIteration, struct.error) as e:
+            msg = "Tried to save or load an unsupported or corrupted file."
+            raise ValueError(msg) from e
+        finally:
+            if auto_close:
+                self.close()
+        return resource
+
+    return _autoclose
 
 
 class ResourceReader:
@@ -33,10 +53,35 @@ class ResourceReader:
         self,
         source: SOURCE_TYPES,
         offset: int = 0,
-        size: int = 0,
+        size: int | None = None,
+        *,
+        use_binary_reader: bool = True,
     ):
-        self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
-        self._size: int = self._reader.remaining() if size == 0 else size
+        if use_binary_reader:
+            self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
+            self._size: int = size or self._reader.remaining()
+        else:
+            if isinstance(source, memoryview):
+                loaded_src: bytearray = bytearray(source)
+            elif isinstance(source, (bytes, bytearray)):
+                loaded_src = source if isinstance(source, bytearray) else bytearray(source)
+            elif isinstance(source, (os.PathLike, str)):
+                with open(  # noqa: PTH123
+                    os.path.normpath(source) if isinstance(source, str) else os.fspath(source),
+                    "rb",
+                ) as f:
+                    loaded_src = bytearray(f.read())
+            elif isinstance(source, io.BufferedIOBase):
+                loaded_src = bytearray(source.read())
+            elif isinstance(source, mmap.mmap):
+                loaded_src = bytearray(source)
+            else:
+                assert isinstance(source, BinaryReader)
+                loaded_src = bytearray(source.read_all())
+
+            self._offset: int = offset
+            self._size: int = len(loaded_src)
+            self._source: bytearray = loaded_src[offset : self._size]
 
     def close(
         self,
@@ -159,7 +204,7 @@ class ResourceType(Enum):
     TTF = ResourceTuple(2072, "ttf", "Fonts", "binary")  # pyright: ignore[reportCallIssue]
     TTC = ResourceTuple(2073, "ttc", "Unused", "binary")  # pyright: ignore[reportCallIssue]
     CUT = ResourceTuple(2074, "cut", "Cutscenes", "gff")  # pyright: ignore[reportCallIssue]
-    KA  = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221  # pyright: ignore[reportCallIssue]
+    KA = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221  # pyright: ignore[reportCallIssue]
     JPG = ResourceTuple(2076, "jpg", "Images", "binary")  # pyright: ignore[reportCallIssue]
     ICO = ResourceTuple(2077, "ico", "Images", "binary")  # pyright: ignore[reportCallIssue]
     OGG = ResourceTuple(2078, "ogg", "Audio", "binary")  # pyright: ignore[reportCallIssue]
@@ -231,16 +276,7 @@ class ResourceType(Enum):
     LIP_JSON = ResourceTuple(50028, "lip.json", "Lips", "plaintext", target_member="LIP")  # pyright: ignore[reportCallIssue]
     RES_XML = ResourceTuple(50029, "res.xml", "Save Data", "plaintext", target_member="RES")  # pyright: ignore[reportCallIssue]
 
-    def __new__(cls, *args, **kwargs):
-        obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
-        name = args[1].upper() or "INVALID"
-        while name in cls.__members__:
-            name = f"{name}_{uuid.uuid4().hex}"
-        obj._name_ = name
-        obj.__init__(*args, **kwargs)  # type: ignore[misc]
-        return super().__new__(cls, obj)
-
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         type_id: int,
         extension: str,
@@ -260,62 +296,8 @@ class ResourceType(Enum):
         """Returns True if this resourcetype is a gff, excluding the xml/json abstractions, False otherwise."""
         return self.contents == "gff"
 
-    def target_type(self):
+    def target_type(self) -> Self:
         return self if self.target_member is None else self.__class__.__members__[self.target_member]
-
-    def __bool__(self) -> bool:
-        return not self.is_invalid
-
-    def __repr__(
-        self,
-    ) -> str:  # sourcery skip: simplify-fstring-formatting
-        if self.name == "INVALID" or not self.is_invalid:
-            return f"{self.__class__.__name__}.{self.name}"
-
-        return (  # For dynamically constructed invalid members
-            f"{self.__class__.__name__}.from_invalid("
-            f"{f'type_id={self.type_id}, '}"
-            f"{f'extension={self.extension}, ' if self.extension else ''}"
-            f"{f'category={self.category}, ' if self.category else ''}"
-            f"contents={self.contents})"
-        )
-
-    def __str__(
-        self,
-    ) -> str:
-        """Returns the extension in all caps."""
-        return str(self.extension.upper())
-
-    def __int__(
-        self,
-    ):
-        """Returns the type_id."""
-        return self.type_id
-
-    def __eq__(
-        self,
-        other: ResourceType | str | int | object,
-    ):
-        """Two ResourceTypes are equal if they are the same.
-
-        A ResourceType and a str are equal if the extension is case-sensitively equal to the string.
-        A ResourceType and a int are equal if the type_id is equal to the integer.
-        """
-        # sourcery skip: assign-if-exp, merge-duplicate-blocks, reintroduce-else, remove-redundant-if, split-or-ifs
-        if self is other:
-            return True
-        if isinstance(other, ResourceType):
-            if self.is_invalid or other.is_invalid:
-                return self.is_invalid and other.is_invalid
-            return self.name == other.name
-        if isinstance(other, (str, WrappedStr)):
-            return self.extension == other.lower()
-        if isinstance(other, int):
-            return self.type_id == other
-        return NotImplemented
-
-    def __hash__(self):
-        return hash(self.extension)
 
     @classmethod
     @lru_cache(maxsize=0xFFFF)
@@ -402,23 +384,55 @@ class ResourceType(Enum):
             raise ValueError(msg)
         return self
 
-    def is_valid(self) -> bool:
+    def __bool__(self) -> bool:
         return not self.is_invalid
 
+    def __repr__(
+        self,
+    ) -> str:  # sourcery skip: simplify-fstring-formatting
+        if self.name == "INVALID" or not self.is_invalid:
+            return f"{self.__class__.__name__}.{self.name}"
 
-R = TypeVar("R")
+        return (  # For dynamically constructed invalid members
+            f"{self.__class__.__name__}.from_invalid(" f"{f'type_id={self.type_id}, '}" f"{f'extension={self.extension}, ' if self.extension else ''}" f"{f'category={self.category}, ' if self.category else ''}" f"contents={self.contents})"
+        )
 
+    def __str__(
+        self,
+    ) -> str:
+        """Returns the extension in all caps."""
+        return str(self.extension.upper())
 
-def autoclose(func: Callable[..., R]) -> Callable[..., R]:
-    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
-        try:
-            resource: R = func(self, auto_close=auto_close)
-        except (OSError, ParseError, ValueError, IndexError, StopIteration, struct.error) as e:
-            msg = "Tried to save or load an unsupported or corrupted file."
-            raise ValueError(msg) from e
-        finally:
-            if auto_close:
-                self.close()
-        return resource
+    def __int__(
+        self,
+    ):
+        """Returns the type_id."""
+        return self.type_id
 
-    return _autoclose
+    def __eq__(
+        self,
+        other: ResourceType | str | int | object,
+    ):
+        """Two ResourceTypes are equal if they are the same.
+
+        A ResourceType and a str are equal if the extension is case-sensitively equal to the string.
+        A ResourceType and a int are equal if the type_id is equal to the integer.
+        """
+        # sourcery skip: assign-if-exp, merge-duplicate-blocks, reintroduce-else, remove-redundant-if, split-or-ifs
+        if self is other:
+            return True
+        if isinstance(other, ResourceType):
+            if self.is_invalid or other.is_invalid:
+                return self.is_invalid and other.is_invalid
+            return self.name == other.name
+        if isinstance(other, (str, WrappedStr)):
+            return self.extension == other.lower()
+        if isinstance(other, int):
+            return self.type_id == other
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.extension)
+
+    def is_valid(self) -> bool:
+        return not self.is_invalid

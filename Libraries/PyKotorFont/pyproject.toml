@@ -15,6 +15,8 @@ dependencies = [
     "numpy~=1.22",      # probably required by PyKotorGL
     "charset-normalizer>=2.0,<3.4",  # used for localized string decodings
     "defusedxml~=0.7",  # secure XML parsing
+    "pykotor>=1.7",
+    "Pillow>=9.5",
 ]
 authors = [
   {name = "NickHugi"},
@@ -31,8 +33,10 @@ font_writer = [
   "pillow>=9.5; python_implementation == 'CPython'",       # required for TXI/TGA fonts (CPython)
   "pillow>10,<11.1.0; python_implementation == 'PyPy'",    # required for TXI/TGA fonts (PyPy)
 ]
-xml         = ["defusedxml~=0.7"]         # secure XML parsing
-gl          = [
+xml = [
+  "defusedxml~=0.7"           # secure XML parsing
+]
+gl = [
   "PyGLM>=2.0,<2.8",
   "PyOpenGL>=3.1.10",
   "django>2.1; os_name != 'nt'",
@@ -40,6 +44,14 @@ gl          = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/NickHugi/PyKotor"
+Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
+Repository = "https://github.com/NickHugi/PyKotor.git"
+Issues = "https://github.com/NickHugi/PyKotor/issues"
+#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"
+
+
+[tool.poetry.urls]
 Homepage = "https://github.com/NickHugi/PyKotor"
 Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
 Repository = "https://github.com/NickHugi/PyKotor.git"

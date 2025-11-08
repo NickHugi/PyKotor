@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import atexit
-import faulthandler
 import os
 import pathlib
 import platform
@@ -13,8 +12,9 @@ import tempfile
 from collections import OrderedDict
 from contextlib import suppress
 from datetime import datetime
+from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Set, cast
+from typing import TYPE_CHECKING, Any, Callable, List, cast
 
 import qtpy
 import send2trash
@@ -40,11 +40,6 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
-if qtpy.API_NAME in ("PyQt6", "PySide6"):
-    ...
-else:
-    from qtpy.QtWidgets import QDesktopWidget
 
 if __name__ == "__main__":
     with suppress(Exception):
@@ -84,21 +79,23 @@ from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
 from pykotor.tools.path import find_kotor_paths_from_default
 from toolset.data.installation import HTInstallation
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import open_resource_editor
 from utility.misc import is_float, is_int
 from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Sequence
 
     from qtpy.QtCore import QAbstractItemModel, QPoint
+    from qtpy.QtWidgets import QTableWidgetSelectionRange, QWidget
 
+    from pykotor.common.module import ERF, RIM
     from pykotor.extract.file import LocationResult, ResourceResult
     from pykotor.tools.path import CaseAwarePath
     from toolset.gui.editor import Editor
 
 
-COLUMN_TO_STAT_MAP = {
+COLUMN_TO_STAT_MAP: dict[str, str] = {
     "Size": "st_size",
     "Mode": "st_mode",
     "Last Accessed": "st_atime",
@@ -120,7 +117,7 @@ COLUMN_TO_STAT_MAP = {
     "Flags": "st_flags"
 }
 
-STAT_TO_COLUMN_MAP = {
+STAT_TO_COLUMN_MAP: dict[str, str] = {
     "st_size": "Size",
     "st_mode": "Mode",
     "st_atime": "Last Accessed",
@@ -159,11 +156,18 @@ def get_sort_key(value: Any) -> int | float | str | Any:
 
 
 class SortableTableWidgetItem(QTableWidgetItem):
-    def __init__(self, value, sort_key=None):
+    def __init__(
+        self,
+        value: Any,
+        sort_key: float | str | None = None,
+    ):
         super().__init__(str(value))
-        self.sort_key = sort_key if sort_key is not None else value
+        self.sort_key: int | float | str | None = sort_key if sort_key is not None else value
 
-    def __lt__(self, other):
+    def __lt__(
+        self,
+        other,
+    ):
         if not isinstance(other, QTableWidgetItem):
             return super().__lt__(other)
         other_sort_key = getattr(other, "sort_key", None)
@@ -172,8 +176,8 @@ class SortableTableWidgetItem(QTableWidgetItem):
         if isinstance(self.sort_key, str) and isinstance(other_sort_key, str):
             return self.sort_key.lower() < other_sort_key.lower()
 
-        my_data = self.data(Qt.UserRole)
-        other_data = other.data(Qt.UserRole)
+        my_data: Any = self.data(Qt.ItemDataRole.UserRole)
+        other_data: Any = other.data(Qt.ItemDataRole.UserRole)
 
         # Extract and convert data based on your provided logic
         my_sort_key = (
@@ -194,11 +198,19 @@ class SortableTableWidgetItem(QTableWidgetItem):
 
 
 class FileTableWidgetItem(SortableTableWidgetItem):
-    def __init__(self, *args, filepath: Path, **kwargs):
+    def __init__(
+        self,
+        *args,
+        filepath: Path,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.filepath: Path = filepath
 
-    def __eq__(self, other):
+    def __eq__(
+        self,
+        other,
+    ):
         if self is other:
             return True
         return isinstance(other, FileTableWidgetItem) and self.filepath == other.filepath
@@ -217,7 +229,10 @@ class ResourceTableWidgetItem(FileTableWidgetItem):
         super().__init__(*args, filepath=resource.filepath(), **kwargs)
         self.resource: FileResource = resource
 
-    def __eq__(self, other):
+    def __eq__(
+        self,
+        other,
+    ):
         if self is other:
             return True
         return isinstance(other, ResourceTableWidgetItem) and self.resource == other.resource
@@ -264,12 +279,20 @@ class CustomItem:
 
         return menu_dict
 
-    def runContextMenu(self, position: QPoint) -> QAction:
-        return self.build_menu().exec_(self.viewport().mapToGlobal(position))  # noqa: RET504
+    def run_context_menu(
+        self,
+        position: QPoint,
+    ) -> QAction:
+        return self.build_menu().exec(self.viewport().mapToGlobal(position))  # noqa: RET504
 
 
 class FileItems(CustomItem):
-    def __init__(self, *args, filepaths: list[Path] | None = None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        filepaths: list[Path] | None = None,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.filepaths: list[Path] = [] if filepaths is None else filepaths
         self.temp_path: Path | None = None
@@ -282,83 +305,90 @@ class FileItems(CustomItem):
         icon: QMessageBox.Icon | int,
         title: str,
         text: str,
-        buttons: QMessageBox.StandardButton | QMessageBox.StandardButtons | int = QMessageBox.Yes | QMessageBox.No,
-        default_button: QMessageBox.StandardButton | int = QMessageBox.No,
-        detailedMsg: str | None = None,
+        buttons: QMessageBox.StandardButton | int = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        default_button: QMessageBox.StandardButton | int = QMessageBox.StandardButton.No,
+        detailed_msg: str | None = None,
     ) -> int | QMessageBox.StandardButton:
-        if not detailedMsg or not detailedMsg.strip():
-            selected = cast("Set[FileTableWidgetItem]", {*self.selectedItems()})
-            detailedMsg = ""
+        if not detailed_msg or not detailed_msg.strip():
+            selected: set[FileTableWidgetItem] = set(self.selectedItems())
+            detailed_msg = ""
             for selection in selected:
-                file_path = selection.filepath
-                detailedMsg += f"{file_path}\n" if detailedMsg else file_path
+                file_path: Path = selection.filepath
+                detailed_msg += f"{file_path}\n" if detailed_msg else str(file_path)
 
         reply = QMessageBox(
             QMessageBox.Icon.Question,
-            title + (" "*1000),
-            text + (" "*1000),
+            title + (" " * 1000),
+            text + (" " * 1000),
             buttons,  # pyright: ignore[reportArgumentType]
-            flags=Qt.WindowType.Dialog | Qt.WindowType.WindowDoesNotAcceptFocus | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint,
+            flags=Qt.WindowType.Dialog
+            | Qt.WindowType.WindowDoesNotAcceptFocus
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.WindowSystemMenuHint,
         )
         reply.setDefaultButton(default_button)  # pyright: ignore[reportArgumentType, reportCallIssue]
-        if detailedMsg:
-            reply.setDetailedText(detailedMsg.strip())
-        return reply.exec_()
+        if detailed_msg:
+            reply.setDetailedText(detailed_msg.strip())
+        return reply.exec()
 
     def selected_files_exist(
         self,
         selected: list[FileTableWidgetItem] | set[FileTableWidgetItem],
     ) -> bool:
-        return all(Path(tableItem.filepath).exists() for tableItem in {*selected})
+        return all(Path(table_item.filepath).exists() for table_item in set(selected))
 
-    def _rename_file(self, file_path: Path, tableItem: FileTableWidgetItem):
+    def _rename_file(
+        self,
+        file_path: Path,
+        table_item: FileTableWidgetItem,
+    ):
         new_filename, ok = QInputDialog.getText(
             None, "Rename File", "New name:", text=file_path.name
         )
         if ok and new_filename:
-            new_path = file_path.with_name(new_filename)
+            new_path: Path = file_path.with_name(new_filename)
             shutil.move(str(file_path), str(new_path))
             RobustLogger().info("Renamed '%s' to '%s'", file_path, new_path)
 
     def create_context_menu_dict(
         self,
     ) -> OrderedDict[str, tuple[QAction, Callable]]:
-        menu_dict = super().create_context_menu_dict()
-        selected = cast("Set[FileTableWidgetItem]", {*self.selectedItems()})
+        menu_dict: OrderedDict[str, tuple[QAction, Callable]] = super().create_context_menu_dict()
+        selected: set[FileTableWidgetItem] = set(self.selectedItems())
         if not selected:
             return menu_dict
-        openAction = self.create_action(menu_dict, f"Open ({platform.system()})", lambda: self.do_file_action(self._open_file, "Open file(s) with system"))
-        openFolderAction = self.create_action(menu_dict, "Open Containing Folder", lambda: self.do_file_action(self._open_containing_folder, "Open Containing Folder"))
-        saveSelectedAction = self.create_action(menu_dict, "Save selected files to...", lambda: self.do_file_action(self._save_files, "Save As..."))
-        renameAction = self.create_action(menu_dict, "Rename", lambda: self.do_file_action(self._rename_file, "Rename file.", confirmation=True))
-        sendToTrash = self.create_action(menu_dict, "Delete (to Recycle Bin)", lambda: self.do_file_action(self._sendToRecycleBin, "Send to Recycle Bin"))
-        deleteAction = self.create_action(menu_dict, "Delete (no way to undelete!)", lambda: self.do_file_action(self._delete_files_permanently, "Delete PERMANENTLY", confirmation=True))
+        open_action: QAction = self.create_action(menu_dict, f"Open ({platform.system()})", lambda: self.do_file_action(self._open_file, "Open file(s) with system"))
+        open_folder_action: QAction = self.create_action(menu_dict, "Open Containing Folder", lambda: self.do_file_action(self._open_containing_folder, "Open Containing Folder"))
+        save_selected_action: QAction = self.create_action(menu_dict, "Save selected files to...", lambda: self.do_file_action(self._save_files, "Save As..."))
+        rename_action: QAction = self.create_action(menu_dict, "Rename", lambda: self.do_file_action(self._rename_file, "Rename file.", confirmation=True))
+        send_to_trash: QAction = self.create_action(menu_dict, "Delete (to Recycle Bin)", lambda: self.do_file_action(self._send_to_recycle_bin, "Send to Recycle Bin"))
+        delete_action: QAction = self.create_action(menu_dict, "Delete (no way to undelete!)", lambda: self.do_file_action(self._delete_files_permanently, "Delete PERMANENTLY", confirmation=True))
 
-        file_paths_exist = all(Path(tableItem.filepath).exists() for tableItem in {*selected})
+        file_paths_exist = all(Path(table_item.filepath).exists() for table_item in selected)
         inside_bif = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_bif for item in selected)
         inside_capsule = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_capsule for item in selected)
 
         if os.name == "nt":
-            propertiesAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
-            openWindowsMenuAction = self.create_action(menu_dict, "Open Windows Explorer Context Menu", lambda: self.do_file_action(self._open_windows_explorer_context_menu, "Open Windows Explorer Context Menu"))
-            propertiesAction.setEnabled(file_paths_exist)
-            openWindowsMenuAction.setEnabled(file_paths_exist)
+            properties_action: QAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
+            open_windows_menu_action: QAction = self.create_action(menu_dict, "Open Windows Explorer Context Menu", lambda: self.do_file_action(self._open_windows_explorer_context_menu, "Open Windows Explorer Context Menu"))
+            properties_action.setEnabled(file_paths_exist)
+            open_windows_menu_action.setEnabled(file_paths_exist)
 
-        openAction.setEnabled(file_paths_exist)
-        openFolderAction.setEnabled(file_paths_exist)
-        saveSelectedAction.setEnabled(file_paths_exist)
-        renameAction.setEnabled(file_paths_exist and len(selected) == 1 and not inside_capsule and not inside_bif)
-        sendToTrash.setEnabled(file_paths_exist and not inside_bif)
-        deleteAction.setEnabled(file_paths_exist and not inside_bif)
+        open_action.setEnabled(file_paths_exist)
+        open_folder_action.setEnabled(file_paths_exist)
+        save_selected_action.setEnabled(file_paths_exist)
+        rename_action.setEnabled(file_paths_exist and len(selected) == 1 and not inside_capsule and not inside_bif)
+        send_to_trash.setEnabled(file_paths_exist and not inside_bif)
+        delete_action.setEnabled(file_paths_exist and not inside_bif)
 
         return menu_dict
 
     def _open_containing_folder(
         self,
         file_path: Path,
-        tableItem: FileTableWidgetItem,
+        table_item: FileTableWidgetItem,
     ):
-        file_path = tableItem.filepath  # Don't use arg file_path here, as it might be the tempfile if used with the ResourceWidgetTableItem.
+        file_path = table_item.filepath  # Don't use arg file_path here, as it might be the tempfile if used with the ResourceWidgetTableItem.
 
         def run_subprocess(command: list[str], *, check: bool = True):
             try:
@@ -371,12 +401,12 @@ class FileItems(CustomItem):
         system = platform.system()
 
         if system == "Windows":
-            explorer_path = win_get_system32_dir().parent / "explorer.exe"
-            cmd = [str(explorer_path), "/select,", str(file_path)]
+            explorer_path: Path = win_get_system32_dir().parent / "explorer.exe"
+            cmd: List[str] = [str(explorer_path), "/select,", str(file_path)]
             run_subprocess(cmd)
 
         elif system == "Darwin":  # macOS
-            script_reveal = f'tell application "Finder" to reveal POSIX file "{file_path}"'
+            script_reveal: str = f'tell application "Finder" to reveal POSIX file "{file_path}"'
             script_activate = 'tell application "Finder" to activate'
 
             try:
@@ -386,7 +416,7 @@ class FileItems(CustomItem):
                 print(f"Failed to reveal the file: {file_path}")
 
         else:
-            file_managers = [
+            file_managers: list[list[str]] = [
                 ["xdg-open", str(file_path.parent)],  # Generic fallback
                 ["nautilus", "--select", str(file_path)],  # GNOME
                 ["dolphin", "--select", str(file_path)],  # KDE
@@ -423,9 +453,9 @@ class FileItems(CustomItem):
     def _save_files(
         self,
         file_path: Path,
-        tableItem: FileTableWidgetItem,
+        table_item: FileTableWidgetItem,
     ):
-        selected = self.selectedItems()
+        selected: set[FileTableWidgetItem] = set(self.selectedItems())
         if len(selected) == 1:
             # Extract the original filename from the selected item or file path
             original_filename = file_path.name
@@ -437,9 +467,9 @@ class FileItems(CustomItem):
         else:
             # Multiple files, save to folder
             if self.temp_path is None:
-                savepath_str = QFileDialog.getExistingDirectory(None, f"Save {len(selected)} files to...")
+                savepath_str: str = QFileDialog.getExistingDirectory(None, f"Save {len(selected)} files to...")
                 if not savepath_str or not savepath_str.strip():
-                    self.temp_path = ""  # Don't ask again for this sesh
+                    self.temp_path = ""  # Don't ask again for this sesh  # pyright: ignore[reportAttributeAccessIssue]
                     return
                 self.temp_path = Path(savepath_str)
             if not self.temp_path:
@@ -451,26 +481,33 @@ class FileItems(CustomItem):
     def _open_windows_explorer_context_menu(
         self,
         file_path: Path,
-        tableItem: FileTableWidgetItem,
+        table_item: FileTableWidgetItem,
     ):
         from utility.system.win32.context_menu import windows_context_menu_file
-        windows_context_menu_file(file_path, int(cast("QApplication", QApplication.instance()).activeWindow().winId()))
+
+        app = QApplication.instance()
+        if app is None:
+            return
+        active_window = cast(QApplication, app).activeWindow()
+        if active_window is None:
+            return
+        windows_context_menu_file(file_path, int(active_window.winId()))
 
     def _open_file(
         self,
         file_path: Path,
-        tableItem: FileTableWidgetItem,
+        table_item: FileTableWidgetItem,
     ):
-        if platform.system() in ["Windows", "Darwin"]:  # Windows and macOS
+        if platform.system() in ("Windows", "Darwin"):  # Windows and macOS
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(file_path)))
-        else:  # Linux and other Unix-like
+        else:
             subprocess.call(["xdg-open", str(file_path)], shell=False)  # noqa: S607, S603
 
 
     def _show_properties(
         self,
         file_path: Path,
-        tableItem: FileTableWidgetItem,
+        table_item: FileTableWidgetItem,
     ):
         if platform.system() != "Windows":
             return
@@ -509,36 +546,36 @@ class FileItems(CustomItem):
         sei.nShow = 1
         ShellExecuteEx(ctypes.byref(sei))
 
-    def _sendToRecycleBin(
+    def _send_to_recycle_bin(
         self,
         file_path: Path,
-        tableItem: FileTableWidgetItem,
+        table_item: FileTableWidgetItem,
     ):
         RobustLogger().info(f"Moving '{file_path}' to Recycle Bin")
         send2trash.send2trash(file_path)
         if hasattr(self, "removeRow"):
-            self.removeRow(tableItem.row())
+            self.removeRow(table_item.row())
 
     def _delete_files_permanently(
         self,
         file_path: Path,
-        tableItem: FileTableWidgetItem,
+        table_item: FileTableWidgetItem,
     ):
         file_path.unlink(missing_ok=True)
         if hasattr(self, "removeRow"):
-            self.removeRow(tableItem.row())
+            self.removeRow(table_item.row())
 
     def _prepare_func(
         self,
         path: Path,
-        tableItem: FileTableWidgetItem,
+        table_item: FileTableWidgetItem,
         func: Callable[[Path, FileTableWidgetItem], Any],
         missing_files: list[Path],
     ):
         if not path.is_file():
             missing_files.append(path)
         else:
-            func(path, tableItem)
+            func(path, table_item)
 
     def do_file_action(
         self,
@@ -547,27 +584,27 @@ class FileItems(CustomItem):
         *,
         confirmation: bool = False,
     ):
-        selected = self.selectedItems()
+        selected: set[FileTableWidgetItem] = set(self.selectedItems())
         if not selected:
             return
         if (
             confirmation
             and self.show_confirmation_dialog(
-                QMessageBox.Question,
+                QMessageBox.Icon.Question,
                 "Action requires confirmation",
                 f"Really perform action '{action_name}'?",
             )
-            != QMessageBox.Yes
+            != QMessageBox.StandardButton.Yes
         ):
             return
 
         missing_files: list[Path] = []
         error_files: dict[Path, Exception] = {}
-        for tableItem in selected:
-            file_path = Path(tableItem.data(Qt.ItemDataRole.UserRole))
+        for table_item in selected:
+            file_path = Path(table_item.data(Qt.ItemDataRole.UserRole))
             try:
-                assert isinstance(tableItem, FileTableWidgetItem)
-                self._prepare_func(file_path, tableItem, func, missing_files)
+                assert isinstance(table_item, FileTableWidgetItem)
+                self._prepare_func(file_path, table_item, func, missing_files)
             except AssertionError:
                 raise
             except Exception as e:  # noqa: BLE001
@@ -583,21 +620,21 @@ class FileItems(CustomItem):
         self,
         missing_files: list[Path],
     ):
-        missingMsgBox = QMessageBox(
+        missing_msg_box: QMessageBox = QMessageBox(
             QMessageBox.Icon.Warning,
             "Nonexistent files found." + (" "*1000),
             f"The following {len(missing_files)} files no longer exist:" + (" "*1000) + ("<br>"*4),
             flags=Qt.WindowType.Dialog | Qt.WindowType.WindowDoesNotAcceptFocus | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint,
         )
-        separator="-"*80
-        missingMsgBox.setDetailedText(f"\n{separator}\n".join(str(path) for path in missing_files))
-        missingMsgBox.exec_()
+        separator = "-"*80
+        missing_msg_box.setDetailedText(f"\n{separator}\n".join(str(path) for path in missing_files))
+        missing_msg_box.exec()
 
     def _show_errored_results(
         self,
         error_files: dict[Path, Exception],
     ):
-        errMsgBox = QMessageBox(
+        error_msg_box: QMessageBox = QMessageBox(
             QMessageBox.Icon.Critical,
             "Errors occurred." + (" "*1000),
             f"The following {len(error_files)} files threw errors:" + (" "*1000) + ("<br>"*4),
@@ -608,8 +645,8 @@ class FileItems(CustomItem):
         )
         separator = "-"*80
         detailed_text = f"\n{separator}\n".join(f"{path}: {e}" for path, e in error_files.items())
-        errMsgBox.setDetailedText(detailed_text)
-        errMsgBox.exec_()
+        error_msg_box.setDetailedText(detailed_text)
+        error_msg_box.exec()
 
 
 class ResourceItems(FileItems):
@@ -619,11 +656,12 @@ class ResourceItems(FileItems):
         resources: Sequence[FileResource | ResourceResult | LocationResult] | None = None,
         **kwargs,
     ):
-        self.viewport: Callable = kwargs.pop("viewport", None)
+        if "viewport" in kwargs:
+            self.viewport = cast(Callable, kwargs.pop("viewport"))
         self.resources: list[FileResource] = []
         if resources is not None:
             self._unify_resources(resources)
-        filepaths = [res.filepath() for res in self.resources]
+        filepaths: list[Path] = [res.filepath() for res in self.resources]
         super().__init__(*args, filepaths=filepaths, **kwargs)
 
     def _unify_resources(
@@ -651,7 +689,7 @@ class ResourceItems(FileItems):
         self,
         selected: list[ResourceTableWidgetItem],
     ) -> bool:
-        return all(resourceTableItem.resource.exists() for resourceTableItem in {*selected})
+        return all(resourceTableItem.resource.exists() for resourceTableItem in set(selected))
 
     def _prepare_func(
         self,
@@ -671,7 +709,7 @@ class ResourceItems(FileItems):
                 return
 
             # Create a temporary directory that persists until application shutdown
-            tempdir = tempfile.mkdtemp(prefix="toolset_", suffix="_tmpext2")
+            tempdir: str = tempfile.mkdtemp(prefix="toolset_", suffix="_tmpext2")
 
             # Register a cleanup function to delete the temporary directory at exit
             def cleanup_tempdir():
@@ -680,7 +718,7 @@ class ResourceItems(FileItems):
             atexit.register(cleanup_tempdir)
             tempdir_path = Path(tempdir)
             assert tempdir_path.is_dir()
-            temp_file = tempdir_path / resource.filename()
+            temp_file: Path = tempdir_path / resource.filename()
             with BinaryWriterFile.to_file(temp_file) as writer:
                 writer.write_bytes(resource.data())
             func(temp_file, tableItem)
@@ -694,26 +732,26 @@ class ResourceItems(FileItems):
         *,
         confirmation: bool = False,
     ):
-        selected = self.selectedItems()
+        selected: set[ResourceTableWidgetItem] = set(self.selectedItems())
         if not selected:
             return
         if (
             confirmation
             and self.show_confirmation_dialog(
-                QMessageBox.Question,
+                QMessageBox.Icon.Question,
                 "Action requires confirmation",
                 f"Really perform action '{action_name}'?"
-            ) != QMessageBox.Yes
+            ) != QMessageBox.StandardButton.Yes
         ):
             return
 
         missing_files: list[Path] = []
         error_files: dict[Path, Exception] = {}
-        for tableItem in selected:
-            resource: FileResource = tableItem.resource
-            filepath = resource.filepath()
+        for table_item in selected:
+            resource: FileResource = table_item.resource
+            filepath: Path = resource.filepath()
             try:
-                self._prepare_func(filepath, tableItem, func, missing_files)
+                self._prepare_func(filepath, table_item, func, missing_files)
             except Exception as e:  # noqa: BLE001
                 RobustLogger().exception("Failed to perform action '%s' filepath: '%s'", action_name, filepath)
                 error_files[filepath] = e
@@ -735,22 +773,31 @@ class ResourceItems(FileItems):
         if resources is not None:
             if all(resource.restype().target_type().contents == "gff" for resource in resources):
                 open_with_menu = menu.addMenu("Open With")
+                if open_with_menu is None:
+                    return menu
                 open_with_menu.addAction("Open with GFF Editor").triggered.connect(
-                    lambda: self.open_selected_resource(resources, installation, gff_specialized=False))
+                    lambda: self.open_selected_resource(resources, installation, gff_specialized=False)
+                )
                 if installation is not None:
                     open_with_menu.addAction("Open with Specialized Editor").triggered.connect(
-                        lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
+                        lambda: self.open_selected_resource(resources, installation, gff_specialized=True)
+                    )
                     open_with_menu.addAction("Open with Default Editor").triggered.connect(
-                        lambda: self.open_selected_resource(resources, installation, gff_specialized=None))
+                        lambda: self.open_selected_resource(resources, installation, gff_specialized=None)
+                    )
             elif installation is not None:
-                menu.addAction("Open with Editor").triggered.connect(lambda: self.open_selected_resource(resources, installation))  # TODO(th3w1zard1): disable when file doesn't exist.
+                menu.addAction("Open with Editor").triggered.connect(
+                    lambda: self.open_selected_resource(resources, installation)
+                )
         return menu
 
-    def reorderMenuItems(self, menu: QMenu):
+    def reorder_menu_items(
+        self,
+        menu: QMenu,
+    ):
         actions: list[QAction] = menu.actions()
         action_sort_order: list[tuple[int, QAction]] = []
 
-        # Assign sort order based on the text of the actions
         for action in actions:
             text = action.text().lower()
             if text.startswith("open"):
@@ -767,50 +814,49 @@ class ResourceItems(FileItems):
                 action_sort_order.append((5, action))
 
         action_sort_order.sort(key=lambda x: x[0])
-        for _, action in action_sort_order:
-            menu.removeAction(action)
+        menu.clear()
         for _, action in action_sort_order:
             menu.addAction(action)
 
-    def runContextMenu(
+    def run_context_menu(
         self,
         position: QPoint,
         installation: HTInstallation | None = None,
         *,
         menu: QMenu | None = None,
-    ) -> QAction:
+    ) -> QAction | None:
         resources: set[FileResource] = {tableItem.resource for tableItem in self.selectedItems()}
-        menu: QMenu = self.build_menu(menu)
-        self.reorderMenuItems(menu)
-        executed_action = menu.exec_(self.viewport().mapToGlobal(position))
+        menu = self.build_menu(menu)
+        self.reorder_menu_items(menu)
+        executed_action: QAction | None = menu.exec(self.viewport().mapToGlobal(position))  # pyright: ignore[reportAssignmentType]
         if executed_action is None:
             return executed_action
         self.handle_post_run_actions(executed_action, resources)
         executed_action_text = executed_action.text()
         if executed_action_text in ("Delete PERMANENTLY", "Send to Recycle Bin"):
             RobustLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", executed_action_text)
-            total_inside_capsules = {resource for resource in resources if resource.inside_capsule}
+            total_inside_capsules: set[FileResource] = {resource for resource in resources if resource.inside_capsule}
             if total_inside_capsules:
                 separator="-"*80
                 self.show_confirmation_dialog(
-                    QMessageBox.Warning,
+                    QMessageBox.Icon.Warning,
                     "File(s) are in a capsule",
                     f"Really delete {len(total_inside_capsules)} inside of ERF/RIMs and {len(resources)-len(total_inside_capsules)} other physical files?",
-                    detailedMsg=f"\n{separator}\n".join(str(resource.filepath()) for resource in resources)
+                    detailed_msg=f"\n{separator}\n".join(str(resource.filepath()) for resource in resources)
                 )
             for resource in resources:
                 if resource.inside_capsule and not resource.inside_bif:
                     filepath = resource.filepath()
                     RobustLogger().info(f"Perform post action '{executed_action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
                     if is_any_erf_type_file(filepath):
-                        erf = read_erf(filepath)
+                        erf: ERF = read_erf(filepath)
                         erf.remove(resource.resname(), resource.restype())
                         write_erf(erf, filepath)
                     elif is_rim_file(filepath):
                         if GlobalSettings().disableRIMSaving:
                             RobustLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Saving into RIMs is disabled in Settings.")
                         else:
-                            rim = read_rim(filepath)
+                            rim: RIM = read_rim(filepath)
                             rim.remove(resource.resname(), resource.restype())
                             write_rim(rim, filepath)
         return executed_action  # noqa: RET504
@@ -830,36 +876,40 @@ class ResourceItems(FileItems):
         resources: set[FileResource],
         executed_action: QAction,
     ):
-        total_inside_capsules = {resource for resource in resources if resource.inside_capsule}
+        total_inside_capsules: set[FileResource] = {resource for resource in resources if resource.inside_capsule}
         if total_inside_capsules:
             separator = "-" * 80
             self.show_confirmation_dialog(
-                QMessageBox.Warning,
+                QMessageBox.Icon.Warning,
                 "File(s) are in a capsule",
                 f"Really delete {len(total_inside_capsules)} inside of ERF/RIMs and {len(resources) - len(total_inside_capsules)} other physical files?",
-                detailedMsg=f"\n{separator}\n".join(str(resource.filepath()) for resource in resources)
+                detailed_msg=f"\n{separator}\n".join(str(resource.filepath()) for resource in resources)
             )
-        action_text = executed_action.text()
+        action_text: str = executed_action.text()
         for resource in resources:
             if resource.inside_capsule and not resource.inside_bif:
-                filepath = resource.filepath()
+                filepath: Path = resource.filepath()
                 RobustLogger().info(f"Perform post action '{action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
                 if is_any_erf_type_file(filepath):
-                    erf = read_erf(filepath)
+                    erf: ERF = read_erf(filepath)
                     erf.remove(resource.resname(), resource.restype())
                     write_erf(erf, filepath)
                 elif is_rim_file(filepath):
                     if GlobalSettings().disableRIMSaving:
                         RobustLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Reason: saving into RIMs is disabled.")
                     else:
-                        rim = read_rim(filepath)
+                        rim: RIM = read_rim(filepath)
                         rim.remove(resource.resname(), resource.restype())
                         write_rim(rim, filepath)
 
-    def on_double_click(self, *args, installation: HTInstallation):
+    def on_double_click(
+        self,
+        *args,
+        installation: HTInstallation,
+    ):
         RobustLogger().debug(f"doubleclick args: {args} installation: {installation}")
         #first_item = next(iter(self.selectedItems()))
-        selected = {res.resource for res in self.selectedItems()}
+        selected: set[FileResource] = {res.resource for res in self.selectedItems()}
         self.open_selected_resource(
             selected,
             installation,
@@ -874,34 +924,23 @@ class ResourceItems(FileItems):
     ):
         RobustLogger().debug(f"open_selected_resource resources: {resources!r} installation: {installation!r} gff_specialized: {gff_specialized}")
         for resource in resources:
-            try:
-                data: bytes = resource.data()
-            except Exception:  # noqa: BLE001
-                RobustLogger().error("Exception occurred in open_selected_resource", exc_info=True)
-                QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "File no longer exists, might have been deleted.").exec_()
-                return
-            openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), data, installation, gff_specialized=gff_specialized)
+            open_resource_editor(resource, installation, gff_specialized=gff_specialized)
 
 
 class CustomTableWidget(CustomItem, QTableWidget):
     def copy_selection_to_clipboard(self):
-        selection = self.selectedIndexes()
+        selection: list[QModelIndex] = self.selectedIndexes()
         if not selection:
             return
-        rows = sorted(index.row() for index in selection)
-        columns = sorted(index.column() for index in selection)
-        row_count = rows[-1] - rows[0] + 1
-        column_count = columns[-1] - columns[0] + 1
-        table_text = [[""] * column_count for _ in range(row_count)]
+        rows, columns = sorted(index.row() for index in selection), sorted(index.column() for index in selection)
+        table_text: list[list[str]] = [[""] * (columns[-1] - columns[0] + 1) for _ in range(rows[-1] - rows[0] + 1)]
         for index in selection:
-            row = index.row() - rows[0]
-            column = index.column() - columns[0]
-            table_text[row][column] = index.data()
-        clipboard_text = "\n".join("\t".join(row) for row in table_text)
-        QApplication.clipboard().setText(clipboard_text)
+            table_text[index.row() - rows[0]][index.column() - columns[0]] = index.data()
+        clipboard_text: str = "\n".join("\t".join(row) for row in table_text)
+        QApplication.clipboard().setText(clipboard_text)  # pyright: ignore[reportOptionalMemberAccess]
 
     def remove_selected_result(self):
-        selected = self.selectedRanges()
+        selected: list[QTableWidgetSelectionRange] = self.selectedRanges()
         if not selected:
             return
         for selection in selected:
@@ -921,35 +960,38 @@ class CustomTableWidget(CustomItem, QTableWidget):
         """
         for row in range(self.rowCount()):
             for column in range(self.columnCount()):
-                item = self.item(row, column)
-                if not item:  # Check if the item exists
+                item: QTableWidgetItem | None = self.item(row, column)
+                if item is None:  # Check if the item exists
                     continue
                 if editable:
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
                 else:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-    def get_column_index(self, column_name: str) -> int:
+    def get_column_index(
+        self,
+        column_name: str,
+    ) -> int:
         if isinstance(self, QTableWidget):
             for i in range(self.columnCount()):
-                headerItem = self.horizontalHeaderItem(i)
-                if headerItem is None:
+                header_item: QTableWidgetItem | None = self.horizontalHeaderItem(i)
+                if header_item is None:
                     continue
-                if headerItem.text() == column_name:
+                if header_item.text() == column_name:
                     return i
         elif isinstance(self, (QTreeView, QTableView)):
             model = cast("QAbstractItemModel", self.model())
             for i in range(model.columnCount()):
-                if model.headerData(i, Qt.Horizontal) == column_name:
+                if model.headerData(i, Qt.Orientation.Horizontal) == column_name:
                     return i
         raise ValueError(f"Column name '{column_name}' does not exist in this view.")
 
 class FileTableWidget(FileItems, CustomTableWidget):
-    def selectedItems(self) -> list[FileTableWidgetItem]:
-        return QTableWidget.selectedItems(self)
+    def selectedItems(self) -> list[FileTableWidgetItem]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        return cast(List[FileTableWidgetItem], QTableWidget.selectedItems(self))
 
 class ResourceTableWidget(FileTableWidget, ResourceItems):
-    def selectedItems(self) -> list[ResourceTableWidgetItem]:
-        return QTableWidget.selectedItems(self)
+    def selectedItems(self) -> list[ResourceTableWidgetItem]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        return cast(List[ResourceTableWidgetItem], QTableWidget.selectedItems(self))
 
 
 class FileSelectionWindow(QMainWindow):
@@ -991,25 +1033,30 @@ class FileSelectionWindow(QMainWindow):
         self.resource_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.resource_table.setWordWrap(True)
         self.setMinimumSize(600, 400)
+        horiz_header: QHeaderView | None = self.resource_table.horizontalHeader()
+        if horiz_header is None:
+            raise ValueError("Horizontal header is not set for the resource table")
         for i in range(self.resource_table.columnCount()):
-            self.resource_table.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
-            self.resource_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+            horiz_header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+        horiz_header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
 
         self._init_table()
         self.resize(self.resource_table.sizeHint().width(), self.resource_table.sizeHint().height())
         self.resource_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.resource_table.customContextMenuRequested.connect(lambda x: self.resource_table.runContextMenu(x, self.installation))
+        self.resource_table.customContextMenuRequested.connect(lambda x: self.resource_table.run_context_menu(x, self.installation))
 
-    def centerAndAdjustWindow(self):
-        screen = QApplication.primaryScreen().geometry()
-        new_x = (screen.width() - self.width()) // 2
-        new_y = (screen.height() - self.height()) // 2
-        new_x = max(0, min(new_x, screen.width() - self.width()))
-        new_y = max(0, min(new_y, screen.height() - self.height()))
-        self.move(new_x, new_y)
+    def center_and_adjust_window(self):
+        primary_screen: QScreen | None = QApplication.primaryScreen()
+        if primary_screen is None:
+            raise ValueError("Primary screen is not set")
+        screen: QRect = primary_screen.geometry()
+        self.move(
+            max(0, min((screen.width() - self.width()) // 2, screen.width() - self.width())),
+            max(0, min((screen.height() - self.height()) // 2, screen.height() - self.height())),
+        )
 
     def update_table_headers(self):
-        headers = ["File Name", "File Path", "Offset", "Size"]
+        headers: list[str] = ["File Name", "File Path", "Offset", "Size"]
         if self.detailed_stat_attributes:
             for header in self.detailed_stat_attributes:
                 if header in headers:
@@ -1018,18 +1065,32 @@ class FileSelectionWindow(QMainWindow):
         self.resource_table.setColumnCount(len(headers))
         self.resource_table.setHorizontalHeaderLabels(list(headers))
 
-    def format_time(self, timestamp: float) -> str:
+    def format_time(
+        self,
+        timestamp: float,
+    ) -> str:
         return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")  # noqa: DTZ006
 
     def resize_to_content(self):
         self.resource_table.resizeColumnsToContents()
-        width = self.resource_table.verticalHeader().width() + 4  # 4 for the frame
+        vert_header: QHeaderView | None = self.resource_table.verticalHeader()
+        if vert_header is None:
+            raise ValueError("Vertical header is not set for the resource table")
+        width = vert_header.width() + 4  # 4 for the frame
         for i in range(self.resource_table.columnCount()):
             width += self.resource_table.columnWidth(i)
-        width = min(width, QDesktopWidget().availableGeometry().width())
+        if qtpy.QT5:
+            from qtpy.QtGui import QDesktopWidget
+            width = min(width, QDesktopWidget().availableGeometry().width())
+        elif qtpy.QT6:
+            from qtpy.QtGui import QGuiApplication
+            primary_screen: QScreen | None = QGuiApplication.primaryScreen()
+            if primary_screen is None:
+                raise ValueError("Primary screen is not set")
+            width = min(width, primary_screen.availableGeometry().width())
         height = self.height()  # keep the current height
         self.resize(width, height)
-        self.centerAndAdjustWindow()
+        self.center_and_adjust_window()
 
     def create_table_item(
         self,
@@ -1046,18 +1107,18 @@ class FileSelectionWindow(QMainWindow):
             print(f"Adding item: {resource.identifier()} ({resource.filepath()}) at index {i}")
             self.resource_table.setItem(i, self.resource_table.get_column_index("File Name"), self.create_table_item(str(resource.identifier()), resource))
             self.resource_table.setItem(i, self.resource_table.get_column_index("Offset"), self.create_table_item(f"0x{hex(resource.offset())[2:].upper()}", resource))
-            size_cell = self.create_table_item(self.human_readable_size(resource.size()), resource, sort_key=resource.size())
+            size_cell: ResourceTableWidgetItem = self.create_table_item(self.human_readable_size(resource.size()), resource, sort_key=resource.size())
             self.resource_table.setItem(i, self.resource_table.get_column_index("Size"), size_cell)
 
             if self.detailed_stat_attributes:
                 print(f"Detailed info for row {i}")
                 self.resource_table.setItem(i, self.resource_table.get_column_index("File Path"), self.create_table_item(str(resource.filepath()), resource))
                 try:
-                    res_stat_result = resource.filepath().stat()
+                    res_stat_result: os.stat_result = resource.filepath().stat()
                     self.add_file_item(i, resource.filepath(), res_stat_result, resource)
                     if resource.offset():
                         # Replace some of the above stat results with ones specific for this resource.
-                        data = resource.data() if resource.filepath().is_file() else None
+                        data: bytes | None = resource.data() if resource.filepath().is_file() else None
                         if data is None:
                             continue
                         with TemporaryDirectory("_tmpext", "toolset_") as tempdir:
@@ -1070,11 +1131,14 @@ class FileSelectionWindow(QMainWindow):
                 except Exception:  # noqa: BLE001
                     RobustLogger().exception("Error populating detailed info for '%s'", resource.filepath())
             else:
-                filepath_cell = self.create_table_item(str(resource.filepath().relative_to(self.installation.path().parent)), resource)
+                filepath_cell: ResourceTableWidgetItem = self.create_table_item(str(resource.filepath().relative_to(self.installation.path().parent)), resource)
                 self.resource_table.setItem(i, self.resource_table.get_column_index("File Path"), filepath_cell)
 
-        self.resource_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        self.resource_table.horizontalHeader().setStretchLastSection(True)
+        horiz_header: QHeaderView | None = self.resource_table.horizontalHeader()
+        if horiz_header is None:
+            raise ValueError("Horizontal header is not set for the resource table")
+        horiz_header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        horiz_header.setStretchLastSection(True)
         self.resource_table.set_all_items_editability(editable=False)
         self.resize_to_content()
 
@@ -1084,7 +1148,7 @@ class FileSelectionWindow(QMainWindow):
         decimal_places: int = 2,
     ) -> str:
         for unit in ["B", "KB", "MB", "GB", "TB", "PB"]:
-            if size < 1024.0 or unit == "PB":
+            if size < 1024.0 or unit == "PB":  # noqa: PLR2004
                 break
             size /= 1024.0
         return f"{size:.{decimal_places}f} {unit}"
@@ -1096,10 +1160,10 @@ class FileSelectionWindow(QMainWindow):
         stat_result: os.stat_result,
         resource: FileResource,
     ):
-        size_on_disk = get_size_on_disk(path, stat_result)
-        ratio = (size_on_disk / stat_result.st_size) * 100 if stat_result.st_size else 0  # Avoid division by zero
-        display_size_on_disk = self.human_readable_size(size_on_disk)
-        display_ratio = f"{ratio:.2f}%"
+        size_on_disk: float = get_size_on_disk(path, stat_result)
+        ratio: float = (size_on_disk / stat_result.st_size) * 100 if stat_result.st_size else 0  # Avoid division by zero
+        display_size_on_disk: str = self.human_readable_size(size_on_disk)
+        display_ratio: str = f"{ratio:.2f}%"
         self.resource_table.setItem(rowIndex, self.resource_table.get_column_index("Size on Disk"), self.create_table_item(display_size_on_disk, resource, sort_key=size_on_disk))
         self.resource_table.setItem(rowIndex, self.resource_table.get_column_index("Size Ratio"), self.create_table_item(display_ratio, resource, sort_key=ratio))
 
@@ -1115,20 +1179,20 @@ class FileSelectionWindow(QMainWindow):
         for stat_attr, column_name in STAT_TO_COLUMN_MAP.items():
             if column_name == "Size":
                 continue
-            value = getattr(stat_result, stat_attr, None)
+            value: Any | None = getattr(stat_result, stat_attr, None)
             if value is None:
                 continue
 
             try:
-                column_index = self.resource_table.get_column_index(column_name)
+                column_index: int = self.resource_table.get_column_index(column_name)
                 if "size" in stat_attr:
-                    size_cell = self.create_table_item(self.human_readable_size(value), resource, sort_key=value)
+                    size_cell: ResourceTableWidgetItem = self.create_table_item(self.human_readable_size(value), resource, sort_key=value)
                     self.resource_table.setItem(rowIndex, column_index, size_cell)
                     continue
                 if "time" in stat_attr:
                     if stat_attr.endswith("time_ns"):
                         value = value / 1e9
-                    time_cell = self.create_table_item(self.format_time(value), resource, sort_key=value)
+                    time_cell: ResourceTableWidgetItem = self.create_table_item(self.format_time(value), resource, sort_key=value)
                     self.resource_table.setItem(rowIndex, column_index, time_cell)
                     continue
                 if stat_attr == "st_mode":
@@ -1142,16 +1206,16 @@ class FileSelectionWindow(QMainWindow):
 
     def toggle_detailed_info(self):
         try:
-            show_detailed = self.detailed_checkbox.isChecked()
+            show_detailed: bool = self.detailed_checkbox.isChecked()
             if show_detailed and self.resource_table.resources:
-                result = self.resource_table.resources[0]
-                filepath = result.filepath()
+                result: FileResource = self.resource_table.resources[0]
+                filepath: Path = result.filepath()
                 self.detailed_stat_attributes = self.get_stat_attributes(filepath)
                 self.detailed_stat_attributes.extend(("Size on Disk", "Size Ratio"))
             else:
                 self.detailed_stat_attributes = []
             self._init_table()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Exception", f"An error occurred: {e}")
             self.detailed_checkbox.setChecked(False)
 
@@ -1161,9 +1225,15 @@ class FileSelectionWindow(QMainWindow):
         self.update_table_headers()
         self.populate_table()
         self.resource_table.setSortingEnabled(True)
-        self.resource_table.horizontalHeader().setSectionsClickable(True)
+        horiz_header: QHeaderView | None = self.resource_table.horizontalHeader()
+        if horiz_header is None:
+            raise ValueError("Horizontal header is not set for the resource table")
+        horiz_header.setSectionsClickable(True)
 
-    def get_stat_attributes(self, path: Path) -> list[str]:
+    def get_stat_attributes(
+        self,
+        path: Path,
+    ) -> list[str]:
         try:
             real_stat: os.stat_result = path.stat()
             return [
@@ -1175,9 +1245,8 @@ class FileSelectionWindow(QMainWindow):
             return []
 
 if __name__ == "__main__":
-    from toolset.__main__ import onAppCrash
-    faulthandler.enable(file=sys.stderr, all_threads=True)
-    sys.excepthook = onAppCrash
+    from toolset.main_init import on_app_crash
+    sys.excepthook = on_app_crash
     app = QApplication([])
     resname, restype = ResourceIdentifier.from_path("dan14_juhani.utc").unpack()
     found_kotors: dict[Game, list[CaseAwarePath]] = find_kotor_paths_from_default()
@@ -1195,4 +1264,4 @@ if __name__ == "__main__":
     HTInstallation.from_base_instance(installation)
     window.show()
     window.activateWindow()
-    app.exec_()
+    app.exec()

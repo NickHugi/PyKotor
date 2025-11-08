@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
@@ -53,25 +51,10 @@ def detect_tlk(
             return ResourceType.TLK_XML
         return ResourceType.INVALID
 
+    file_format: ResourceType
     try:
-        if isinstance(source, str):
-            inline_slice = source[offset : offset + 4]
-            file_format = check(inline_slice)
-            if file_format is not ResourceType.INVALID:
-                return file_format
-            with BinaryReader.from_file(source, offset) as reader:
-                file_format = check(reader.read_string(4))
-        elif isinstance(source, os.PathLike):
-            with BinaryReader.from_file(source, offset) as reader:
-                file_format = check(reader.read_string(4))
-        elif isinstance(source, (memoryview, bytes, bytearray)):
-            data_view = memoryview(source)[offset : offset + 4]
-            file_format = check(data_view.tobytes().decode("ascii", "ignore"))
-        elif isinstance(source, BinaryReader):
-            file_format = check(source.read_string(4))
-            source.skip(-4)
-        else:
-            file_format = ResourceType.INVALID
+        with BinaryReader.from_auto(source, offset) as reader:
+            file_format = check(reader.read_string(4))
     except (FileNotFoundError, PermissionError, IsADirectoryError):
         raise
     except OSError:

@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
@@ -52,34 +50,27 @@ class UTMEditor(Editor):
 
         self._utm: UTM = UTM()
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.editors.utm import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self.new()
         self.adjustSize()
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Sets up signal connections for UI buttons."""
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
-        self.ui.inventoryButton.clicked.connect(self.openInventory)
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
+        self.ui.inventoryButton.clicked.connect(self.open_inventory)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(
+        self,
+        installation: HTInstallation,
+    ):
         """Sets up the installation for editing.
 
         Args:
@@ -93,7 +84,7 @@ class UTMEditor(Editor):
             - Allows editing of the installation details in the UI.
         """
         self._installation = installation
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
 
     def load(
         self,
@@ -107,7 +98,10 @@ class UTMEditor(Editor):
         utm: UTM = read_utm(data)
         self._loadUTM(utm)
 
-    def _loadUTM(self, utm: UTM):
+    def _loadUTM(
+        self,
+        utm: UTM,
+    ):
         """Loads UTM data into UI elements.
 
         Args:
@@ -123,7 +117,7 @@ class UTMEditor(Editor):
         self._utm = utm
 
         # Basic
-        self.ui.nameEdit.setLocstring(utm.name)
+        self.ui.nameEdit.set_locstring(utm.name)
         self.ui.tagEdit.setText(utm.tag)
         self.ui.resrefEdit.setText(str(utm.resref))
         self.ui.idSpin.setValue(utm.id)
@@ -176,33 +170,34 @@ class UTMEditor(Editor):
         super().new()
         self._loadUTM(UTM())
 
-    def changeName(self):
+    def change_name(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        if dialog.exec():
+            self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         if not self.ui.resrefEdit.text():
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname:
             self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_mer_000")
 
-    def openInventory(self):
+    def open_inventory(self):
         capsules: list[Capsule] = []
 
         try:
-            root: str = Module.find_root(self._filepath)
+            root: str = Module.filepath_to_root(self._filepath)
             case_root = root.casefold()
+            assert self._installation is not None
             module_names: CaseInsensitiveDict[str] = self._installation.module_names()
             filepath_str = str(self._filepath)
             capsulesPaths: list[str] = [path for path in module_names if case_root in path and path != filepath_str]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(format_exception_with_variables(e, message="This exception has been suppressed."))
 
         inventoryEditor = InventoryEditor(
@@ -216,5 +211,5 @@ class UTMEditor(Editor):
             hide_equipment=True,
             is_store=True,
         )
-        if inventoryEditor.exec_():
+        if inventoryEditor.exec():
             self._utm.inventory = inventoryEditor.inventory

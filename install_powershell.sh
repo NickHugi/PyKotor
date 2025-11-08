@@ -1,4 +1,5 @@
 #!/bin/bash
+
 if command -v pwsh > /dev/null 2>&1; then
     echo "PowerShell already installed, nothing to do."
     pwsh --version
@@ -142,10 +143,10 @@ install_powershell_archlinux() {
             else
                 echo "Entry already exists."
             fi
-            
+
             # Change ownership to tempuser for the build directory
             sudo chown -R "$TEMP_USER:$TEMP_USER" "../powershell-bin"
-            
+
             echo If you are prompted to enter a password at this point, enter temppassword
             # Attempt to build the package as tempuser
             if ! echo "$TEMP_PASSWORD" | sudo -S -u "$TEMP_USER" makepkg -si --noconfirm; then
@@ -165,10 +166,10 @@ install_powershell_archlinux() {
                 echo "An error occurred. The sudoers file may be invalid. Restoring from backup."
                 sudo cp /etc/sudoers.bak /etc/sudoers
             fi
-            
+
             # Reset ownership after successful build
             sudo chown -R root:root "../powershell-bin"
-            
+
             # Remove the temporary user
             if command -v userdel > /dev/null; then
                 sudo userdel -r "$TEMP_USER" 2>/dev/null || true

@@ -6,6 +6,7 @@ from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from pykotor.extract.file import ResourceResult
     from pykotor.extract.installation import Installation
     from pykotor.resource.generics.utd import UTD
     from pykotor.resource.type import SOURCE_TYPES
@@ -36,7 +37,7 @@ def get_model(
         ValueError: genericdoors.2da not found in passed arguments OR the installation.
     """
     if genericdoors is None:
-        result = installation.resource("genericdoors", ResourceType.TwoDA)
+        result: ResourceResult | None = installation.resource("genericdoors", ResourceType.TwoDA)
         if not result:
             raise ValueError("Resource 'genericdoors.2da' not found in the installation, cannot get UTD model.")
         genericdoors = read_2da(result.data)

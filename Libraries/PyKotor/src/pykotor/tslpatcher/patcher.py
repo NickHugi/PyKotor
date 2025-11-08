@@ -31,7 +31,7 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     from threading import Event
 
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
@@ -78,6 +78,8 @@ class ModInstaller:
             if not self.changes_ini_path.is_file():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
             if not self.changes_ini_path.is_file():
+                import errno
+
                 msg = "Could not find the changes ini file on disk."
                 raise FileNotFoundError(errno.ENOENT, msg, str(self.changes_ini_path))
 
@@ -93,7 +95,7 @@ class ModInstaller:
         if self._config is not None:
             return self._config
 
-        ini_file_bytes: bytes = BinaryReader.load_file(self.changes_ini_path)
+        ini_file_bytes: bytes = self.changes_ini_path.read_bytes()
         ini_text: str
         try:
             ini_text = decode_bytes_with_fallbacks(ini_file_bytes)
@@ -180,16 +182,16 @@ class ModInstaller:
         capsule: Capsule | None = None
         exists: bool
         if is_capsule_file(patch.destination):
-            module_root = Installation.get_module_root(output_container_path)
-            tslrcm_omitted_rims = ("702KOR", "401DXN")
+            module_root: str = Installation.get_module_root(output_container_path)
+            tslrcm_omitted_rims: tuple[Literal["702KOR"], Literal["401DXN"]] = ("702KOR", "401DXN")
             if module_root.upper() not in tslrcm_omitted_rims and is_rim_file(output_container_path):
                 self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}!\nPatching RIMs is highly incompatible, not recommended, and widely considered bad practice. Please request the mod developer to fix this.")  # noqa: E501
             if not output_container_path.is_file():
                 if is_mod_file(output_container_path):
                     self.log.add_note(
                         f"IMPORTANT! The module at path '{output_container_path}' did not exist, building one in the 'Modules' folder immediately from the following files:"  # noqa: ISC003
-                        +  f"\n    Modules/{module_root}.rim"
-                        +  f"\n    Modules/{module_root}_s.rim"
+                        + f"\n    Modules/{module_root}.rim"
+                        + f"\n    Modules/{module_root}_s.rim"
                         + (f"\n    Modules/{module_root}_dlg.erf" if self.game is not None and self.game.is_k2() else "")
                     )
                     try:
@@ -199,6 +201,8 @@ class ModInstaller:
                         self.log.add_error(msg)
                         raise
                 else:
+                    import errno
+
                     msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."  # noqa: E501
                     raise FileNotFoundError(errno.ENOENT, msg, str(output_container_path))
             capsule = Capsule(output_container_path)
@@ -256,18 +260,24 @@ class ModInstaller:
             self.log.add_error(f"Could not load source file to {patch.action.lower().strip()}:{os.linesep}{universal_simplify_exception(e)}")
             return None
 
-    def handle_modrim_shadow(self, patch: PatcherModifications):
+    def handle_modrim_shadow(
+        self,
+        patch: PatcherModifications,
+    ):
         """Check if a patch is being installed into a rim and overshadowed by a .mod."""
         # uncomment and define the attrs if we decide this should be configurable.
         # modrim_type: str = patch.modrim_type.lower().strip()
         # if not modrim_type or modrim_type == ignore
         #    return
-        erfrim_path = self.game_path / patch.destination / patch.saveas
-        mod_path = erfrim_path.with_name(f"{Installation.get_module_root(erfrim_path.name)}.mod")
+        erfrim_path: CaseAwarePath = self.game_path / patch.destination / patch.saveas
+        mod_path: CaseAwarePath = erfrim_path.with_name(f"{Installation.get_module_root(erfrim_path.name)}.mod")
         if erfrim_path != mod_path and mod_path.is_file():
             self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}', but is overshadowed by the existing '{mod_path.name}'!")
 
-    def handle_override_type(self, patch: PatcherModifications):
+    def handle_override_type(
+        self,
+        patch: PatcherModifications,
+    ):
         """Handles the desired behavior set by the !OverrideType tslpatcher var for the specified patch.
 
         Args:
@@ -358,11 +368,11 @@ class ModInstaller:
             return False
 
         save_type: str = "adding" if capsule is not None and patch.saveas == patch.sourcefile else "saving"
-        saving_as_str = f"as '{patch.saveas}' in" if patch.saveas != patch.sourcefile else "to"
+        saving_as_str: str = f"as '{patch.saveas}' in" if patch.saveas != patch.sourcefile else "to"
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")
         return True
 
-    def install(
+    def install(  # noqa: PLR0915, PLR0912, C901
         self,
         should_cancel: Event | None = None,
         progress_update_func: Callable | None = None,
@@ -503,7 +513,10 @@ class ModInstaller:
             nss_patch.temp_script_folder = temp_script_folder
         return temp_script_folder
 
-    def get_tlk_patches(self, config: PatcherConfig) -> list[ModificationsTLK]:
+    def get_tlk_patches(
+        self,
+        config: PatcherConfig,
+    ) -> list[ModificationsTLK]:
         tlk_patches: list[ModificationsTLK] = []
         patches_tlk: ModificationsTLK = config.patches_tlk
 

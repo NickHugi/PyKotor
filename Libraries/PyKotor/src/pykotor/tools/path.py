@@ -48,20 +48,22 @@ if os.name == "posix":
         _fuse_available = False
 
 
-def is_filesystem_case_sensitive(path: os.PathLike | str) -> bool | None:
+def is_filesystem_case_sensitive(
+    path: os.PathLike | str,
+) -> bool | None:
     """Check if the filesystem at the given path is case-sensitive.
     This function creates a temporary file to test the filesystem behavior.
     """
     try:
         with tempfile.TemporaryDirectory(dir=path) as temp_dir:
-            temp_path = pathlib.Path(temp_dir)
-            test_file = temp_path / "case_test_file"
+            temp_path: pathlib.Path = pathlib.Path(temp_dir)
+            test_file: pathlib.Path = temp_path / "case_test_file"
             test_file.touch()
 
             # Attempt to access the same file with a different case to check case sensitivity
-            test_file_upper = temp_path / "CASE_TEST_FILE"
+            test_file_upper: pathlib.Path = temp_path / "CASE_TEST_FILE"
             return not test_file_upper.exists()
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
 
 
@@ -539,8 +541,9 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type[CaseAwarePath]) -> Cal
     return wrapped
 
 
-def create_case_insensitive_pathlib_class(cls: type[CaseAwarePath]):
-    # Create a dictionary that'll hold the original methods for this class
+def create_case_insensitive_pathlib_class(
+    cls: type[CaseAwarePath],
+) -> None:
     """Wraps methods of a pathlib class to be case insensitive.
 
     Args:
@@ -586,10 +589,15 @@ def create_case_insensitive_pathlib_class(cls: type[CaseAwarePath]):
     for parent in parent_classes:
         for attr_name, attr_value in parent.__dict__.items():
             # Check if it's a method and hasn't been wrapped before
-            if callable(attr_value) and attr_name not in wrapped_methods and attr_name not in ignored_methods:
-                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]  # pylint: disable=protected-access
-                setattr(cls, attr_name, simple_wrapper(attr_name, cls))
-                wrapped_methods.add(attr_name)
+            if not callable(attr_value):
+                continue
+            if attr_name in wrapped_methods:
+                continue
+            if attr_name in ignored_methods:
+                continue
+            cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]  # pylint: disable=protected-access
+            setattr(cls, attr_name, simple_wrapper(attr_name, cls))
+            wrapped_methods.add(attr_name)
 
 
 # TODO(th3w1zard1): Move to pykotor.common  # noqa: TD003
@@ -642,14 +650,17 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             return ""
 
     @staticmethod
-    def extract_absolute_prefix(relative_path: InternalPath, absolute_path: InternalPath) -> tuple[str, ...]:
+    def extract_absolute_prefix(
+        relative_path: InternalPath,
+        absolute_path: InternalPath,
+    ) -> tuple[str, ...]:
         # Ensure the absolute path is absolute and the relative path is resolved relative to it
         absolute_path = absolute_path.absolute()
-        relative_path_resolved = (absolute_path.parent / relative_path).absolute()
+        relative_path_resolved: InternalPath = (absolute_path.parent / relative_path).absolute()
 
         # Convert to lists of parts for comparison
-        abs_parts = absolute_path.parts
-        rel_parts = relative_path_resolved.parts
+        abs_parts: tuple[str, ...] = absolute_path.parts
+        rel_parts: tuple[str, ...] = relative_path_resolved.parts
 
         # Identify the index where the relative path starts in the absolute path
         start_index_of_rel_in_abs = len(abs_parts) - len(rel_parts)
@@ -657,18 +668,38 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         # Extract the differing prefix part as a new Path object
         return abs_parts[:start_index_of_rel_in_abs]
 
-    def safe_relative_to(self, other: str | os.PathLike) -> str:
+    def safe_relative_to(
+        self,
+        other: str | os.PathLike,
+    ) -> str:
+        """Calculate the relative path between two paths, ensuring the result is case-sensitive if needed.
+
+        Args:
+        ----
+            other: The target path to calculate the relative path to.
+
+        Returns:
+        -------
+            str: The relative path between the two paths.
+
+        Processing Logic:
+        ----------------
+            - Normalize the paths to handle different OS path conventions.
+            - Get the common prefix of the two paths.
+            - Calculate the relative path based on the common prefix.
+            - Return the relative path as a string.
+        """
         # Normalize paths to handle different OS path conventions
         from_path = os.path.normpath(self)
         to_path = os.path.normpath(other)
 
         # Get common prefix
-        common_prefix = os.path.commonpath([from_path, to_path])
+        common_prefix = os.path.commonpath([os.path.abspath(from_path), os.path.abspath(to_path)])  # noqa: PTH100
 
         # Calculate relative path
-        from_parts = from_path.split(os.sep)  # noqa: PTH206
-        to_parts = to_path.split(os.sep)  # noqa: PTH206
-        common_parts = common_prefix.split(os.sep)  # noqa: PTH206
+        from_parts: tuple[str, ...] = tuple(from_path.split(os.sep))  # noqa: PTH206
+        to_parts: tuple[str, ...] = tuple(to_path.split(os.sep))  # noqa: PTH206
+        common_parts: tuple[str, ...] = tuple(common_prefix.split(os.sep))  # noqa: PTH206
 
         # Number of "../" to prepend for going up from from_path to the common prefix
         up_dirs: int | str = len(from_parts) - len(common_parts)
@@ -678,7 +709,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         # Remaining parts after the common prefix
         down_dirs = os.sep.join(to_parts[len(common_parts) :])  # noqa: PTH118
 
-        result = f"{up_dirs}{os.sep}{down_dirs}" if down_dirs else up_dirs
+        result: str | int = f"{up_dirs}{os.sep}{down_dirs}" if down_dirs else up_dirs
         if isinstance(result, int):
             print(f"result somehow an int: {result}")
         return str(result)
@@ -786,7 +817,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             replacement = replacement.replace("\\", "/")
 
         if isinstance(self, CaseAwarePath) and not pathlib.Path(replacement).exists():
-            prefixes = self.extract_absolute_prefix(InternalPath(replacement), InternalPath(parsed_other))
+            prefixes: tuple[str, ...] = self.extract_absolute_prefix(InternalPath(replacement), InternalPath(parsed_other))
             return self.get_case_sensitive_path(replacement, prefixes)
         return self.__class__(replacement)
 
@@ -1012,7 +1043,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         return self
 
     @classmethod
-    def get_case_sensitive_path(
+    def get_case_sensitive_path(  # noqa: ANN206
         cls,
         path: os.PathLike | str,
         prefixes: list[str] | tuple[str, ...] | None = None,
@@ -1141,7 +1172,10 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
     @staticmethod
     @lru_cache(maxsize=10000)
-    def get_matching_characters_count(str1: str, str2: str) -> int:
+    def get_matching_characters_count(
+        str1: str,
+        str2: str,
+    ) -> int:
         """Returns the number of case sensitive characters that match in each position of the two strings.
 
         if str1 and str2 are NOT case-insensitive matches, this method will return -1.
@@ -1151,7 +1185,10 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
     def __hash__(self):
         return hash(self.as_windows())
 
-    def __eq__(self, other):
+    def __eq__(
+        self,
+        other,
+    ):
         """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
         if self is other:
             return True
@@ -1349,7 +1386,14 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
     # Build hardcoded default kotor locations
     raw_locations: dict[str, dict[Game, list[str]]] = get_default_paths()
     locations: dict[Game, set[CaseAwarePath]] = {
-        game: {case_path for case_path in (CaseAwarePath(path).expanduser().resolve() for path in paths) if case_path.is_dir()}
+        game: {
+            case_path
+            for case_path in (
+                CaseAwarePath(path).expanduser().resolve()
+                for path in paths
+            )
+            if case_path.exists()
+        }
         for game, paths in raw_locations.get(os_str, {}).items()
     }
 

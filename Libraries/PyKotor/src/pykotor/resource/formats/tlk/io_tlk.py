@@ -31,10 +31,7 @@ class TLKBinaryReader(ResourceReader):
         self._language: Language | None = language
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> TLK:
+    def load(self) -> TLK:
         self._tlk = TLK()
         self._texts_offset = 0
         self._text_headers = []
@@ -49,9 +46,7 @@ class TLKBinaryReader(ResourceReader):
 
         return self._tlk
 
-    def _load_file_header(
-        self,
-    ):
+    def _load_file_header(self):
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
         language_id = self._reader.read_uint32()
@@ -111,10 +106,7 @@ class TLKBinaryWriter(ResourceWriter):
         self._tlk: TLK = tlk
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         self._write_file_header()
 
         text_offset = WrappedInt(0)
@@ -125,14 +117,10 @@ class TLKBinaryWriter(ResourceWriter):
         for entry in self._tlk.entries:
             self._writer.write_string(entry.text, encoding or "cp1252", errors="replace")
 
-    def _calculate_entries_offset(
-        self,
-    ) -> int:
+    def _calculate_entries_offset(self) -> int:
         return _FILE_HEADER_SIZE + len(self._tlk) * _ENTRY_SIZE
 
-    def _write_file_header(
-        self,
-    ):
+    def _write_file_header(self):
         language_id: int = self._tlk.language.value
         string_count: int = len(self._tlk)
         entries_offset: int = self._calculate_entries_offset()

@@ -24,10 +24,7 @@ class TwoDAJSONReader(ResourceReader):
         self._twoda: TwoDA | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> TwoDA:
+    def load(self) -> TwoDA:
         self._twoda = TwoDA()
         self._json = json.loads(decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size())))
 
@@ -55,10 +52,7 @@ class TwoDAJSONWriter(ResourceWriter):
         self._json: dict[str, list] = {"rows": []}
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         for row in self._twoda:
             json_row: dict[str, str] = {"_id": row.label()}
             self._json["rows"].append(json_row)

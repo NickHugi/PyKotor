@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
 
 class HTPlainTextEdit(QPlainTextEdit):
-    keyReleased = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
-    doubleClicked = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    sig_key_released = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    sig_double_clicked = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -21,8 +21,8 @@ class HTPlainTextEdit(QPlainTextEdit):
 
     def keyReleaseEvent(self, e: QKeyEvent):
         super().keyReleaseEvent(e)
-        self.keyReleased.emit()
+        self.sig_key_released.emit()
 
     def mouseDoubleClickEvent(self, e: QMouseEvent):
         super().mouseDoubleClickEvent(e)
-        self.doubleClicked.emit()
+        self.sig_double_clicked.emit()

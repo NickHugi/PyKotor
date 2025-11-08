@@ -18,3 +18,18 @@ from pykotor.resource.formats.tlk.tlk_auto import (
     write_tlk,
     bytes_tlk,
 )
+
+__all__ = [
+    "TLK",
+    "TLKBinaryReader",
+    "TLKBinaryWriter",
+    "TLKEntry",
+    "TLKJSONReader",
+    "TLKJSONWriter",
+    "TLKXMLReader",
+    "TLKXMLWriter",
+    "bytes_tlk",
+    "detect_tlk",
+    "read_tlk",
+    "write_tlk",
+]

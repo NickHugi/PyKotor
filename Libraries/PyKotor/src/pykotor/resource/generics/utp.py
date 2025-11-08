@@ -6,6 +6,7 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff.gff_data import GFFStruct
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -84,7 +85,7 @@ class UTP:
 
     BINARY_TYPE = ResourceType.UTP
 
-    def __init__(
+    def __init__(  # noqa: PLR0915
         self,
     ):
         self.resref: ResRef = ResRef.from_blank()
@@ -159,12 +160,12 @@ class UTP:
         self.lock_dc: int = 0
 
 
-def construct_utp(
+def construct_utp(  # noqa: PLR0915
     gff: GFF,
 ) -> UTP:
     utp = UTP()
 
-    root = gff.root
+    root: GFFStruct = gff.root
     utp.tag = root.acquire("Tag", "")
     utp.name = root.acquire("LocName", LocalizedString.from_invalid())
     utp.resref = root.acquire("TemplateResRef", ResRef.from_blank())
@@ -235,7 +236,7 @@ def construct_utp(
     return utp
 
 
-def dismantle_utp(
+def dismantle_utp(  # noqa: PLR0915
     utp: UTP,
     game: Game = Game.K2,
     *,
@@ -243,7 +244,7 @@ def dismantle_utp(
 ) -> GFF:
     gff = GFF(GFFContent.UTP)
 
-    root = gff.root
+    root: GFFStruct = gff.root
     root.set_string("Tag", utp.tag)
     root.set_locstring("LocName", utp.name)
     root.set_resref("TemplateResRef", utp.resref)

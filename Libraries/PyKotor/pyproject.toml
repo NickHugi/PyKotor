@@ -16,16 +16,16 @@ license = {text = "LGPL-3.0-or-later License"}
 keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
 requires-python = ">= 3.7"
 dependencies = [
-    "ply>=3.11,<4",  # required for the nss compiler lexer
+    "ply>=3.11,<4",
 ]
 
 [project.optional-dependencies]
 font = [
-  "pillow>=9.5; python_implementation == 'CPython'",       # required for TXI/TGA fonts (CPython)
-  "pillow>10,<11.1.0; python_implementation == 'PyPy'",    # required for TXI/TGA fonts (PyPy)
+  "pillow>=9.5; python_implementation == 'CPython'",
+  "pillow>10,<11.1.0; python_implementation == 'PyPy'",
 ]
-secure_xml           = ["defusedxml~=0.7"]    # secure XML parsing
-encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodings
+secure_xml           = ["defusedxml~=0.7"]
+encodings = ["charset-normalizer>=2.0,<3.4"]
 
 [project.urls]
 Homepage = "https://github.com/NickHugi/PyKotor"

@@ -4,8 +4,6 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from loggerplus import RobustLogger
 from qtpy.QtWidgets import QMessageBox, QSizePolicy
 
@@ -23,7 +21,7 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import open_resource_editor
 
 if TYPE_CHECKING:
     import os
@@ -57,57 +55,51 @@ class UTPEditor(Editor):
             6. Set up menus, signals and installation
             7. Update 3D preview and call new() to initialize editor.
         """
-        supported = [ResourceType.UTP, ResourceType.BTP]
+        supported: list[ResourceType] = [ResourceType.UTP, ResourceType.BTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
-        self._placeables2DA = installation.htGetCache2DA("placeables")
+        self._placeables2DA: TwoDA | None = installation.ht_get_cache_2da("placeables")
         self._utp = UTP()
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+        from toolset.uic.qtpy.editors.utp import Ui_MainWindow
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setupMenus()
-        self._setupSignals()
+        self._setup_menus()
+        self._setup_signals()
         if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
+            self._setup_installation(installation)
 
         self.update3dPreview()
         self.new()
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
 
-    def _setupSignals(self):
+    def _setup_signals(self):
         """Connect UI buttons to their respective methods.
 
         Processing Logic:
         ----------------
-            - Connect tagGenerateButton clicked signal to generateTag method
-            - Connect resrefGenerateButton clicked signal to generateResref method
-            - Connect conversationModifyButton clicked signal to editConversation method
-            - Connect inventoryButton clicked signal to openInventory method
+            - Connect tagGenerateButton clicked signal to generate_tag method
+            - Connect resrefGenerateButton clicked signal to generate_resref method
+            - Connect conversationModifyButton clicked signal to edit_conversation method
+            - Connect inventoryButton clicked signal to open_inventory method
 
             - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
-            - Connect actionShowPreview triggered signal to togglePreview method
+            - Connect actionShowPreview triggered signal to toggle_preview method
         """
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
-        self.ui.conversationModifyButton.clicked.connect(self.editConversation)
-        self.ui.inventoryButton.clicked.connect(self.openInventory)
+        self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
+        self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
+        self.ui.conversationModifyButton.clicked.connect(self.edit_conversation)
+        self.ui.inventoryButton.clicked.connect(self.open_inventory)
 
         self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
-        self.ui.actionShowPreview.triggered.connect(self.togglePreview)
+        self.ui.actionShowPreview.triggered.connect(self.toggle_preview)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setup_installation(
+        self,
+        installation: HTInstallation,
+    ):
         """Sets up the installation for editing.
 
         Args:
@@ -122,21 +114,23 @@ class UTPEditor(Editor):
             - Hides/shows TSL specific UI elements based on installation type
         """
         self._installation = installation
-        self.ui.nameEdit.setInstallation(installation)
+        self.ui.nameEdit.set_installation(installation)
         self.ui.previewRenderer.installation = installation
 
         # Load required 2da files if they have not been loaded already
         required: list[str] = [HTInstallation.TwoDA_PLACEABLES, HTInstallation.TwoDA_FACTIONS]
-        installation.htBatchCache2DA(required)
+        installation.ht_batch_cache_2da(required)
 
-        appearances: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_PLACEABLES)
-        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        appearances: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLACEABLES)
+        factions: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_FACTIONS)
 
-        self.ui.appearanceSelect.setContext(appearances, installation, HTInstallation.TwoDA_PLACEABLES)
-        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+        self.ui.appearanceSelect.set_context(appearances, installation, HTInstallation.TwoDA_PLACEABLES)
+        self.ui.factionSelect.set_context(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
-        self.ui.appearanceSelect.setItems(appearances.get_column("label"))
-        self.ui.factionSelect.setItems(factions.get_column("label"))
+        if appearances is not None:
+            self.ui.appearanceSelect.set_items(appearances.get_column("label"))
+        if factions is not None:
+            self.ui.factionSelect.set_items(factions.get_column("label"))
 
         self.ui.notBlastableCheckbox.setVisible(installation.tsl)
         self.ui.difficultyModSpin.setVisible(installation.tsl)
@@ -144,21 +138,21 @@ class UTPEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-        installation.setupFileContextMenu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onInventoryEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onLockEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUsedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
+        installation.setup_file_context_menu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onInventoryEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onLockEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onUsedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setup_file_context_menu(self.ui.conversationEdit, [ResourceType.DLG])
 
     def load(
         self,
@@ -172,7 +166,7 @@ class UTPEditor(Editor):
         utp = read_utp(data)
         self._loadUTP(utp)
 
-        self.updateItemCount()
+        self.update_item_count()
 
     def _loadUTP(self, utp: UTP):
         """Loads UTP data into UI elements.
@@ -190,11 +184,11 @@ class UTPEditor(Editor):
         self._utp: UTP = utp
 
         # Basic
-        self.ui.nameEdit.setLocstring(utp.name)
+        self.ui.nameEdit.set_locstring(utp.name)
         self.ui.tagEdit.setText(utp.tag)
         self.ui.resrefEdit.setText(str(utp.resref))
         self.ui.appearanceSelect.setCurrentIndex(utp.appearance_id)
-        self.ui.conversationEdit.setComboBoxText(str(utp.conversation))
+        self.ui.conversationEdit.set_combo_box_text(str(utp.conversation))
 
         # Advanced
         self.ui.hasInventoryCheckbox.setChecked(utp.has_inventory)
@@ -227,49 +221,49 @@ class UTPEditor(Editor):
             iter(
                 {
                     res.resname().lower()
-                    for res in self._installation.getRelevantResources(
+                    for res in self._installation.get_relevant_resources(
                         ResourceType.NCS, self._filepath
                     )
                 }
             )
         )
 
-        self.ui.onClosedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDamagedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onEndConversationEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onOpenFailedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.onInventoryEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onMeleeAttackEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onSpellEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onOpenEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onLockEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUnlockEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUsedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
-        self.ui.conversationEdit.populateComboBox(sorted(res.resname() for res in self._installation.getRelevantResources(ResourceType.DLG)))
+        self.ui.onClosedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDamagedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onDeathEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onEndConversationEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onOpenFailedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onInventoryEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onMeleeAttackEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onSpellEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onOpenEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onLockEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUnlockEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUsedEdit.populate_combo_box(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populate_combo_box(self.relevant_script_resnames)
+        self.ui.conversationEdit.populate_combo_box(sorted(res.resname() for res in self._installation.get_relevant_resources(ResourceType.DLG)))
 
         # Scripts
-        self.ui.onClosedEdit.setComboBoxText(str(utp.on_closed))
-        self.ui.onDamagedEdit.setComboBoxText(str(utp.on_damaged))
-        self.ui.onDeathEdit.setComboBoxText(str(utp.on_death))
-        self.ui.onEndConversationEdit.setComboBoxText(str(utp.on_end_dialog))
-        self.ui.onOpenFailedEdit.setComboBoxText(str(utp.on_open_failed))
-        self.ui.onHeartbeatSelect.setComboBoxText(str(utp.on_heartbeat))
-        self.ui.onInventoryEdit.setComboBoxText(str(utp.on_inventory))
-        self.ui.onMeleeAttackEdit.setComboBoxText(str(utp.on_melee_attack))
-        self.ui.onSpellEdit.setComboBoxText(str(utp.on_force_power))
-        self.ui.onOpenEdit.setComboBoxText(str(utp.on_open))
-        self.ui.onLockEdit.setComboBoxText(str(utp.on_lock))
-        self.ui.onUnlockEdit.setComboBoxText(str(utp.on_unlock))
-        self.ui.onUsedEdit.setComboBoxText(str(utp.on_used))
-        self.ui.onUserDefinedSelect.setComboBoxText(str(utp.on_user_defined))
+        self.ui.onClosedEdit.set_combo_box_text(str(utp.on_closed))
+        self.ui.onDamagedEdit.set_combo_box_text(str(utp.on_damaged))
+        self.ui.onDeathEdit.set_combo_box_text(str(utp.on_death))
+        self.ui.onEndConversationEdit.set_combo_box_text(str(utp.on_end_dialog))
+        self.ui.onOpenFailedEdit.set_combo_box_text(str(utp.on_open_failed))
+        self.ui.onHeartbeatSelect.set_combo_box_text(str(utp.on_heartbeat))
+        self.ui.onInventoryEdit.set_combo_box_text(str(utp.on_inventory))
+        self.ui.onMeleeAttackEdit.set_combo_box_text(str(utp.on_melee_attack))
+        self.ui.onSpellEdit.set_combo_box_text(str(utp.on_force_power))
+        self.ui.onOpenEdit.set_combo_box_text(str(utp.on_open))
+        self.ui.onLockEdit.set_combo_box_text(str(utp.on_lock))
+        self.ui.onUnlockEdit.set_combo_box_text(str(utp.on_unlock))
+        self.ui.onUsedEdit.set_combo_box_text(str(utp.on_used))
+        self.ui.onUserDefinedSelect.set_combo_box_text(str(utp.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utp.comment)
 
-        self.updateItemCount()
+        self.update_item_count()
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTP from UI fields.
@@ -353,40 +347,41 @@ class UTPEditor(Editor):
         super().new()
         self._loadUTP(UTP())
 
-    def updateItemCount(self):
+    def update_item_count(self):
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utp.inventory)}")
 
-    def changeName(self):
+    def change_name(self):
         if self._installation is None:
-            self.blinkWindow()
+            self.blink_window()
             return
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        if dialog.exec():
+            self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
-    def generateTag(self):
+    def generate_tag(self):
         if not self.ui.resrefEdit.text():
-            self.generateResref()
+            self.generate_resref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self):
+    def generate_resref(self):
         if self._resname is not None and self._resname != "":
             self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_plc_000")
 
-    def editConversation(self):
+    def edit_conversation(self):
         """Edits a conversation. This function is duplicated in most UT-prefixed gffs."""
         resname = self.ui.conversationEdit.currentText()
         data, filepath = None, None
 
         if not resname or not resname.strip():
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec()
             return
 
+        assert self._installation is not None
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
         if search is None:
-            msgbox: int = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec_()
+            msgbox: int = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec()
             if QMessageBox.StandardButton.Yes == msgbox:
                 data = bytearray()
 
@@ -399,9 +394,9 @@ class UTPEditor(Editor):
             resname, restype, filepath, data = search
 
         if data is not None:
-            openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
+            open_resource_editor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
-    def openInventory(self):
+    def open_inventory(self):
         """Opens inventory editor for the module.
 
         Processing Logic:
@@ -412,11 +407,11 @@ class UTPEditor(Editor):
             - Runs editor and updates inventory if changes were made.
         """
         if self._installation is None:
-            self.blinkWindow()
+            self.blink_window()
             return
         capsules: list[Capsule] = []
         with suppress(Exception):
-            root = Module.find_root(self._filepath)
+            root: str = Module.filepath_to_root(self._filepath)
             moduleNames: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             newCapsules: list[Capsule] = [Capsule(self._installation.module_path() / mod_filename) for mod_filename in moduleNames]
             capsules.extend(newCapsules)
@@ -431,11 +426,11 @@ class UTPEditor(Editor):
             droid=False,
             hide_equipment=True,
         )
-        if inventoryEditor.exec_():
+        if inventoryEditor.exec():
             self._utp.inventory = inventoryEditor.inventory
-            self.updateItemCount()
+            self.update_item_count()
 
-    def togglePreview(self):
+    def toggle_preview(self):
         self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
         self.update3dPreview()
 
@@ -468,7 +463,7 @@ class UTPEditor(Editor):
             - If not, clear out any existing model from the preview
         """
         if self._installation is None:
-            self.blinkWindow()
+            self.blink_window()
             return
 
         self.setMinimumSize(674, 457)

@@ -281,6 +281,12 @@ Compared 15/15 resources
 Installation comparison complete
 ```
 
+## File Formats Handled
+
+- TalkTable files (TLK)
+- Any GFF file (DLG, UTC, GUI, UTP, UTD, etc.)
+- Any capsule (ERF, MOD, RIM, SAV, etc.)
+
 ## Exit Codes
 
 KotorDiff uses standard exit codes for integration with scripts and automation:
@@ -305,6 +311,22 @@ if %ERRORLEVEL% == 0 (
     echo Error occurred
 )
 ```
+
+### **Command Line Options:**
+
+```bash
+kotordiff [--path1 PATH1] [--path2 PATH2] [--output-log FILE] [--ignore-rims] [--ignore-tlk] [--ignore-lips] [--compare-hashes] [--logging] [--use-profiler]
+```
+
+- `--path1`: Path to the first K1/TSL install, file, or directory to diff
+- `--path2`: Path to the second K1/TSL install, file, or directory to diff  
+- `--output-log`: Filepath of the desired output logfile
+- `--ignore-rims`: Whether to compare RIMS (default is False)
+- `--ignore-tlk`: Whether to compare TLK files (default is False)
+- `--ignore-lips`: Whether to compare LIPS (default is False)
+- `--compare-hashes`: Compare hashes of any unsupported file/resource type (default is True)
+- `--logging`: Whether to log the results to a file or not (default is True)
+- `--use-profiler`: Use cProfile to find where most of the execution time is taking place in source code
 
 ### PowerShell Integration
 
@@ -340,6 +362,8 @@ A: Check the verbose logs to see which files were found and prioritized. The too
 **Q: Antivirus flagging the executable**
 A: This is a false positive common with PyInstaller-compiled executables. You can run from source using `uv run src/kotordiff/__main__.py` instead.
 
+**TLDR:** PyInstaller is an amazing tool, but antiviruses may flag it. This is not the fault of PyInstaller or my tool, but rather the fault of how some scummy users have chosen to use PyInstaller in the past. Please report any false positives you encounter to your antivirus's website, as reports not only improve the accuracy of everybody's AV experience overall but also indirectly support the [PyInstaller project](https://github.com/pyinstaller/pyinstaller).
+
 ### Debug Mode
 
 For troubleshooting, enable maximum verbosity:
@@ -347,6 +371,10 @@ For troubleshooting, enable maximum verbosity:
 ```bash
 kotordiff --path1 file1 --path2 file2 --log-level debug --output-mode full
 ```
+
+**Q: Is there a GUI version available?**
+
+A: No, KotorDiff is designed as a lightweight, command-line only tool. If you need a GUI for configuration generation, check out [HoloGenerator](https://github.com/th3w1zard1/PyKotor/tree/main/Tools/HoloGenerator) which provides a web-based interface for generating HoloPatcher configurations.
 
 ## Contributing
 

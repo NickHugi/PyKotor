@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Vector4
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
@@ -13,6 +12,7 @@ from pykotor.resource.generics.utc import read_utc
 from pykotor.resource.generics.uti import construct_uti_from_struct
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
+from utility.common.geometry import Vector4
 
 if TYPE_CHECKING:
     import os

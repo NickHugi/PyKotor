@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.script import DataType
-from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 from pykotor.tools.path import CaseAwarePath
 
@@ -332,7 +331,11 @@ class CodeRoot:
         if library_lookup:
             if not isinstance(library_lookup, list):
                 library_lookup = [library_lookup]
-            self.library_lookup = [Path(item) for item in library_lookup]
+            normalized: list[Path] = []
+            for item in library_lookup:
+                path_obj = CaseAwarePath(item)
+                normalized.append(path_obj)
+            self.library_lookup = normalized
 
         self.function_map: dict[str, FunctionReference] = {}
         self._global_scope: list[ScopedValue] = []
@@ -461,7 +464,7 @@ class CodeRoot:
 
         offset = 0
         for param, arg in zip(definition.parameters, args_list):
-            arg_datatype: DynamicDataType = arg.compile(ncs, self, block)
+            arg_datatype: DynamicDataType = arg.compile(ncs, root, block)
             offset += arg_datatype.size(self)
             block.temp_stack += arg_datatype.size(self)
             if param.data_type != arg_datatype:
@@ -659,11 +662,13 @@ class FunctionDefinition(TopLevelObject):
         identifier: Identifier,
         parameters: list[FunctionDefinitionParam],
         block: CodeBlock,
+        line_num: int,
     ):
         self.return_type: DynamicDataType = return_type
         self.identifier: Identifier = identifier
         self.parameters: list[FunctionDefinitionParam] = parameters
         self.block: CodeBlock = block
+        self.line_num: int = line_num
 
         for param in parameters:
             block.add_scoped(param.identifier, param.data_type)
@@ -750,10 +755,6 @@ class FunctionDefinition(TopLevelObject):
             these_parameters.data_type == prototype.parameters[i].data_type
             for i, these_parameters in enumerate(self.parameters)
         )
-        # TODO(NickHugi): nwnnsscomp compiles fine when default values do not match  # noqa: TD003
-        #       - how to handle? need some kind of warning system maybe.
-        # if self.parameters[i].default != prototype.parameters[i].default:
-        #     retrn False
 
 
 class FunctionDefinitionParam:
@@ -821,7 +822,7 @@ class IncludeScript(TopLevelObject):
             # Not found in filesystem, try library
             case_sensitive: bool = not root.library_lookup or all(
                 lookup_path for lookup_path in root.library_lookup
-                if isinstance(lookup_path, CaseAwarePath)
+                if isinstance(lookup_path, Path)
             )
             include_filename: str = self.file.value if case_sensitive else self.file.value.lower()
             if include_filename in self.library:

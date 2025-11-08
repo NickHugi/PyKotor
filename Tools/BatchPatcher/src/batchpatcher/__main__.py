@@ -52,14 +52,21 @@ from batchpatcher.translate.language_translator import TranslationOption, Transl
 from pykotor.common.alien_sounds import ALIEN_SOUNDS
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule, LazyCapsule
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation
 from pykotor.font.draw import write_bitmap_fonts
 from pykotor.resource.formats.erf.erf_auto import write_erf
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
+from pykotor.resource.formats.gff import (
+    GFF,
+    GFFContent,
+    GFFFieldType,
+    GFFList,
+    GFFStruct,
+    read_gff,
+)
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
@@ -599,7 +606,7 @@ def patch_and_save_noncapsule(
             txi_file = resource.filepath().with_suffix(".txi")
             if txi_file.is_file():
                 print("Embedding TXI information...")
-                data: bytes = BinaryReader.load_file(txi_file)
+                data: bytes = txi_file.read_bytes()
                 txi_text: str = decode_bytes_with_fallbacks(data)
                 patched_data.txi = txi_text
         else:
@@ -775,7 +782,7 @@ def patch_install(install_path: os.PathLike | str):
             elif res_ident.restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):
                 new_erf = ERF(ERFType.from_extension(filepath.suffix))
                 if res_ident.restype is ResourceType.SAV:
-                    new_erf.is_save_erf = True
+                    new_erf.is_save = True
                 new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
                 log_output(f"Saving '{new_erf_filename}'")
                 write_erf(new_erf, filepath.parent / new_erf_filename, res_ident.restype)
@@ -895,9 +902,9 @@ def create_font_pack(lang: Language):
         SCRIPT_GLOBALS.font_path,
         (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution),
         lang,
-        SCRIPT_GLOBALS.draw_bounds,
         SCRIPT_GLOBALS.custom_scaling,
         font_color=SCRIPT_GLOBALS.font_color,
+        draw_debug_box=True,
     )
 
 

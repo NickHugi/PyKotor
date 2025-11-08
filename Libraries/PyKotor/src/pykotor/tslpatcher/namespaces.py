@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from pathlib import PurePath
+from typing import ClassVar
 
 
 class PatcherNamespace:
-    DEFAULT_INI_FILENAME = "changes.ini"
-    DEFAULT_INFO_FILENAME = "info.rtf"
+    DEFAULT_INI_FILENAME: ClassVar[str] = "changes.ini"
+    DEFAULT_INFO_FILENAME: ClassVar[str] = "info.rtf"
 
-    def __init__(self, ini_filename: str, info_filename: str):
+    def __init__(
+        self,
+        ini_filename: str,
+        info_filename: str,
+    ):
         """Initialize configuration from ini and info files.
 
         Args:

@@ -7,34 +7,19 @@ if TYPE_CHECKING:
 
 
 def flatten_differences(compare_result: GFFCompareResult) -> dict[str, Any]:
-    """Flattens the differences from GFFCompareResult into a flat dictionary.
-
-    Args:
-    ----
-        compare_result (GFFCompareResult): The result of a GFF comparison.
-
-    Returns:
-    -------
-        dict: A flat dictionary representing the changes.
-    """
+    """Flattens the differences from GFFCompareResult into a flat dictionary."""
     flat_changes: dict[str, Any] = {}
-    for diff in compare_result.differences:
-        path_str = str(diff.path).replace("\\", "/")
-        flat_changes[path_str] = diff.new_value
+    differences = getattr(compare_result, "differences", None)
+    if differences is None:
+        differences = compare_result.get_differences()
+    for diff in differences:
+        path_str = str(diff.path).replace("\\", "/")  # Use forward slashes for INI compatibility
+        flat_changes[path_str] = diff.new_value if diff.new_value is not None else None
     return flat_changes
 
 
-def build_hierarchy(flat_changes):
-    """Builds a hierarchical structure suitable for INI serialization from flat changes.
-
-    Args:
-    ----
-        flat_changes (dict): The flat dictionary of changes.
-
-    Returns:
-    -------
-        dict: A hierarchical dictionary representing the nested structure.
-    """
+def build_hierarchy(flat_changes: dict[str, Any]) -> dict[str, Any]:
+    """Build a hierarchical structure suitable for INI serialization from flat changes."""
     hierarchy: dict[str, Any] = {}
     for path, value in flat_changes.items():
         parts = path.split("/")
@@ -48,28 +33,15 @@ def build_hierarchy(flat_changes):
 
 
 def serialize_to_ini(hierarchy: dict[str, Any]) -> str:
-    """Serializes a hierarchical dictionary into an INI-formatted string.
-
-    Args:
-        hierarchy (dict): The hierarchical dictionary representing nested changes.
-
-    Returns:
-        str: A string formatted in INI structure.
-    """
+    """Serializes a hierarchical dictionary into an INI-formatted string."""
     ini_lines: list[str] = []
 
     def serialize_section(
         name: str,
         content: dict[str, Any],
         indent_level: int = 0,
-    ):
-        """Serializes a section of the hierarchy into INI format, recursively for nested sections.
-
-        Args:
-            name (str): The name of the section.
-            content (dict): The content of the section.
-            indent_level (int): The current indentation level (for nested sections).
-        """
+    ) -> None:
+        """Serializes a section of the hierarchy into INI format, recursively for nested sections."""
         prefix: str = " " * indent_level * 4  # TODO(th3w1zard1): adjust indent later.
         if indent_level == 0:
             ini_lines.append(f"[{name}]")
@@ -78,19 +50,16 @@ def serialize_to_ini(hierarchy: dict[str, Any]) -> str:
 
         for key, value in content.items():
             if isinstance(value, dict):
-                # Nested section
                 serialize_section(key, value, indent_level + 1)
             else:
-                # Key-value pair
                 if value is None:
-                    value_str = "null"  # TODO(th3w1zard1): determine nonexistence and use a singular value.
+                    value_str = "null"
                 elif isinstance(value, str) and " " in value:
-                    value_str = f'"{value}"'  # Quote strings with spaces
+                    value_str = f'"{value}"'
                 else:
                     value_str = str(value)
                 ini_lines.append(f"{prefix}{key}={value_str}")
 
-    # Start serialization with the root level
     for section_name, section_content in hierarchy.items():
         serialize_section(section_name, section_content)
 

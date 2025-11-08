@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
 from qtpy.QtWidgets import QDialog
 
@@ -15,7 +13,10 @@ if TYPE_CHECKING:
 
 
 class About(QDialog):
-    def __init__(self, parent: QWidget):
+    def __init__(
+        self,
+        parent: QWidget,
+    ):
         """Initializes the About dialog box.
 
         Args:
@@ -29,21 +30,16 @@ class About(QDialog):
             - Replaces the version placeholder in the about text with the actual version.
         """
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.WindowStaysOnTopHint
+            & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
+            & ~QtCore.Qt.WindowType.WindowMinMaxButtonsHint
+        )
 
-
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
-        self.ui = about.Ui_Dialog()
+        from toolset.uic.qtpy.dialogs.about import Ui_Dialog
+        self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.closeButton.clicked.connect(self.close)

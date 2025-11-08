@@ -20,10 +20,7 @@ class LIPBinaryReader(ResourceReader):
         self._lip: LIP | None = None
 
     @autoclose
-    def load(
-        self,
-        auto_close: bool = True,
-    ) -> LIP:
+    def load(self) -> LIP:
         self._lip = LIP()
 
         file_type = self._reader.read_string(4)
@@ -61,10 +58,7 @@ class LIPBinaryWriter(ResourceWriter):
         self._lip: LIP = lip
 
     @autoclose
-    def write(
-        self,
-        auto_close: bool = True,
-    ):
+    def write(self):
         self._writer.write_string("LIP ")
         self._writer.write_string("V1.0")
         self._writer.write_single(self._lip.length)

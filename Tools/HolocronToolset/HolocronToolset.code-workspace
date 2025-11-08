@@ -18,6 +18,9 @@
 	  "debugStdLib": false,
 	},
     "settings": {
-        "debug.allowBreakpointsEverywhere": true
+		"debug.allowBreakpointsEverywhere": true,
+		"pylint.args": [
+			"--max-line-length=275"
+		]
     }
 }

@@ -160,8 +160,13 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ERFEditorTable</class>
+   <class>RobustTableView</class>
    <extends>QTableView</extends>
+   <header location="global">utility.ui_libraries.qt.widgets.itemviews.tableview</header>
+  </customwidget>
+  <customwidget>
+   <class>ERFEditorTable</class>
+   <extends>RobustTableView</extends>
    <header location="global">toolset.gui.editors.erf</header>
   </customwidget>
  </customwidgets>

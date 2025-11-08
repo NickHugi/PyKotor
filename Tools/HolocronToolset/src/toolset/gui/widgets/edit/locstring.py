@@ -2,21 +2,23 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
-from qtpy import QtCore
-from qtpy.QtWidgets import QAction, QApplication, QWidget
+from qtpy.QtCore import (
+    Signal,  # pyright: ignore[reportPrivateImportUsage]
+)
+from qtpy.QtWidgets import QApplication, QWidget
 
 from pykotor.common.language import LocalizedString
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
+    from qtpy.QtCore import QPoint
+    from qtpy.QtWidgets import QMenu
+
     from toolset.data.installation import HTInstallation
 
 
 class LocalizedStringLineEdit(QWidget):
-    editingFinished: QtCore.Signal = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    sig_editing_finished: Signal = Signal()
 
     def __init__(self, parent: QWidget):
         """Initialize a locstring edit widget.
@@ -29,54 +31,36 @@ class LocalizedStringLineEdit(QWidget):
         ----------------
             - Initialize UI from designer file
             - Set initial locstring to invalid
-            - Connect edit button to editLocstring method
-            - Connect double click on text to editLocstring.
+            - Connect edit button to edit_locstring method
+            - Connect double click on text to edit_locstring.
         """
         super().__init__(parent)
 
-        if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
-        elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
-        else:
-            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
-
+        from toolset.uic.qtpy.widgets.locstring_edit import Ui_Form
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
-        self._installation: HTInstallation | None = None
         self._locstring: LocalizedString = LocalizedString.from_invalid()
 
-        self.ui.editButton.clicked.connect(self.editLocstring)
-        self.ui.locstringText.mouseDoubleClickEvent = lambda a0: self.editLocstring()  # noqa: ARG005
+        self.ui.editButton.clicked.connect(self.edit_locstring)
+        self.ui.locstringText.mouseDoubleClickEvent = lambda a0: self.edit_locstring()  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
         self.setToolTip("Double-click to edit this Localized String.<br><br><i>Right-click for more options</i>")
 
-    def setInstallation(self, installation: HTInstallation):
-        self._installation = installation
+    def set_installation(self, installation: HTInstallation):
+        self._installation: HTInstallation = installation
 
-    def showContextMenu(self, pos: QtCore.QPoint):
-        menu = self.ui.locstringText.createStandardContextMenu()
+    def on_context_menu(self, pos: QPoint):
+        menu: QMenu = self.ui.locstringText.createStandardContextMenu()
+        menu.addAction("Edit with TLK").triggered.connect(self.edit_locstring)
+        menu.addAction("Copy").triggered.connect(self.copy_text)
+        menu.exec(self.ui.locstringText.mapToGlobal(pos))
 
-        edit_action = QAction("Edit with TLK", self)
-        edit_action.triggered.connect(self.editLocstring)
-        menu.addAction(edit_action)
-
-        copy_action = QAction("Copy", self)
-        copy_action.triggered.connect(self.copyText)
-        menu.addAction(copy_action)
-
-        menu.exec_(self.ui.locstringText.mapToGlobal(pos))
-
-    def copyText(self):
+    def copy_text(self):
         """Copies the current text to the clipboard."""
         clipboard = QApplication.clipboard()
         clipboard.setText(self.ui.locstringText.text())
 
-    def setLocstring(self, locstring: LocalizedString):
+    def set_locstring(self, locstring: LocalizedString):
         """Sets the localized string for a UI element.
 
         Args:
@@ -91,28 +75,51 @@ class LocalizedStringLineEdit(QWidget):
             - If not, looks up the string from the talktable and uses a yellow background
         """
         self._locstring = locstring
-        theme = GlobalSettings().selectedTheme
         if locstring.stringref == -1:
             text = str(locstring)
             self.ui.locstringText.setText(text if text != "-1" else "")
-            # Check theme condition for setting stylesheet
-            if theme in ("Native", "Fusion (Light)"):
-                self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: white;}}")
-            else:
-                self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: white; color: black;}}")
+            self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: white;}}")
         else:
             self.ui.locstringText.setText(self._installation.talktable().string(locstring.stringref))
-            # Check theme condition for setting stylesheet
-            if theme in ("Native", "Fusion (Light)"):
-                self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: #fffded;}}")
-            else:
-                self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: #fffded; color: black;}}")
+            self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: #fffded;}}")
 
-    def editLocstring(self):
+    def edit_locstring(self):
         dialog = LocalizedStringDialog(self, self._installation, self._locstring)
-        if dialog.exec_():
-            self.setLocstring(dialog.locstring)
-            self.editingFinished.emit()
+        if dialog.exec():
+            self.set_locstring(dialog.locstring)
+            self.sig_editing_finished.emit()
 
     def locstring(self) -> LocalizedString:
         return self._locstring
+
+if __name__ == "__main__":
+    import os
+    import sys
+
+    from pathlib import Path
+
+    from qtpy.QtWidgets import QApplication, QMainWindow
+
+    from toolset.data.installation import HTInstallation
+
+    app = QApplication(sys.argv)
+    main_window = QMainWindow()
+
+    # Create a mock installation for testing
+    k_path = os.environ.get("K1_PATH")
+    if k_path is None:
+        k_path = os.environ.get("K2_PATH")
+        if k_path is None:
+            raise RuntimeError("KOTOR installation not found")
+
+    locstring_edit = LocalizedStringLineEdit(main_window)
+    locstring_edit.set_installation(HTInstallation(Path(k_path), "KOTOR"))
+
+    # Set a test localized string
+    test_locstring = LocalizedString(0)
+    locstring_edit.set_locstring(test_locstring)
+
+    main_window.setCentralWidget(locstring_edit)
+    main_window.show()
+
+    sys.exit(app.exec())

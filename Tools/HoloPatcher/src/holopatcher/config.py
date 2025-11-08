@@ -38,9 +38,9 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
 
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
 
-def getRemoteHolopatcherUpdateInfo(*, use_beta_channel: bool = False, silent: bool = False) -> Exception | dict[str, Any]:
+def getRemoteHolopatcherUpdateInfo(*, useBetaChannel: bool = False, silent: bool = False) -> Exception | dict[str, Any]:
     import requests
-    if use_beta_channel:
+    if useBetaChannel:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateBetaInfoLink"]
     else:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateInfoLink"]
