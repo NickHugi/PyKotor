@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+import struct
+
+from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     import os
@@ -29,9 +33,9 @@ class Chitin:
         base_path: os.PathLike | str | None = None,
         game: Game | None = None,
     ):
-        self._key_path: Path = Path(key_path)
+        self._key_path: CaseAwarePath = CaseAwarePath(key_path)
         base_path = self._key_path.parent if base_path is None else base_path
-        self._base_path: Path = Path(base_path)
+        self._base_path: CaseAwarePath = CaseAwarePath(base_path)
 
         self._resources: list[FileResource] = []
         self._resource_dict: dict[str, list[FileResource]] = {}

@@ -84,7 +84,8 @@ def write_bitmap_font(
     custom_scaling: float = 1.0,
     font_color=None,  # noqa: ANN001
     *,
-    draw_debug_box: bool = False,
+    draw_debug_box: bool | None = None,
+    draw_box: bool | None = None,
 ):
     """Generates a bitmap font (TGA and TXI) from a TTF font file. Note the default 'draw_boxes', none of these boxes show up in the game (just outside the coords)."""
     if any(resolution) == 0:
@@ -96,8 +97,10 @@ def write_bitmap_font(
     num_chars: int = len([char for char in charset_list if char])
 
     # Calculate grid cell size
-    characters_per_column, characters_per_row = math.ceil(math.sqrt(num_chars)), math.ceil(math.sqrt(num_chars))
-    grid_cell_size: int = min(resolution[0] // characters_per_column, resolution[1] // characters_per_row)
+    grid = _BitmapGrid(resolution, num_chars)
+    characters_per_column = grid.chars_per_col
+    characters_per_row = grid.chars_per_row
+    grid_cell_size: int = grid.cell_size
 
     # Using a square grid cell, set the font size to fit within this cell
     pil_font: ImageFont.FreeTypeFont = ImageFont.truetype(str(font_path), grid_cell_size)
@@ -120,6 +123,9 @@ def write_bitmap_font(
     pil_font: ImageFont.FreeTypeFont = ImageFont.truetype(str(font_path), font_size)
     metrics: _FontMetrics = _FontMetrics(pil_font, charset_list)
 
+    # Determine debug behavior
+    debug_flag: bool = draw_debug_box if draw_debug_box is not None else bool(draw_box)
+
     # Create charset image
     charset_image: Image.Image = Image.new("RGBA", resolution, (0, 0, 0, 0))
     draw: ImageDraw.ImageDraw = ImageDraw.Draw(charset_image)
@@ -135,8 +141,7 @@ def write_bitmap_font(
             upper_left_coords.append((0.000001, 0.000001, 0))
             lower_right_coords.append((0.000002, 0.000002, 0))
             continue
-
-        cell_height: float = resolution[1] / characters_per_row
+        cell_height: float = grid.cell_height
 
         # Calculate normalized coordinates for upper left
         norm_x1: float = grid_x / characters_per_column
@@ -166,7 +171,7 @@ def write_bitmap_font(
         pixel_y1 = pixel_y2 - metrics.max_char_height
 
         # Draw a red rectangle around the character based on actual text dimensions
-        if draw_debug_box:
+        if debug_flag:
             draw.rectangle((pixel_x1, pixel_y1, pixel_x2, pixel_y2), outline="red")
 
         # Calculate normalized coordinates
@@ -213,10 +218,11 @@ def write_bitmap_fonts(
     font_path: os.PathLike | str,
     resolution: tuple[int, int],
     lang: Language,
+    draw_box: bool = False,
     custom_scaling: float = 1.0,
     font_color: Any | None = None,
     *,
-    draw_debug_box: bool = False,
+    draw_debug_box: bool | None = None,
 ) -> None:
     """Generate bitmap fonts for all KotOR font textures.
 
@@ -225,7 +231,7 @@ def write_bitmap_fonts(
         font_path: Path to the TTF font file
         resolution: Tuple of (width, height) for the bitmap
         lang: Language for character encoding
-        draw_box: Whether to draw debug boxes around characters
+        draw_box: Whether to draw debug boxes around characters (alias for draw_debug_box)
         custom_scaling: Custom scaling factor for the font
         font_color: RGBA color tuple for the font (default: white)
     """
@@ -244,4 +250,5 @@ def write_bitmap_fonts(
             custom_scaling,
             font_color,
             draw_debug_box=draw_debug_box,
+            draw_box=draw_box,
         )

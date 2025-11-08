@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, NamedTuple
 
+# Import for runtime usage
+from pykotor.extract.file import ResourceIdentifier  # pyright: ignore[reportMissingImports]
+from pykotor.resource.type import ResourceType
+
 if TYPE_CHECKING:
     from typing_extensions import Literal
 
@@ -28,9 +32,9 @@ class ABSColumns2DA:
 
     @classmethod
     def as_dict(cls) -> dict[str, set[str]]:
-        # HACK: Include only attributes that are defined in the current class and are not methods or private
-        parent_attrs = set(dir(cls.__base__))
-        current_attrs = set(dir(cls)) - parent_attrs
+        # HACK(th3w1zard1): Include only attributes that are defined in the current class and are not methods or private
+        parent_attrs: set[str] = set(dir(cls.__base__))
+        current_attrs: set[str] = set(dir(cls)) - parent_attrs
         this_dict: dict[str, set[str]] = {}
         for k in current_attrs:
             v = cls.__dict__[k]
@@ -44,10 +48,10 @@ class ABSColumns2DA:
 
     @classmethod
     def all_files(cls) -> set[str]:
-        # HACK: Include only attributes that are defined in the current class and are not methods or private
-        parent_attrs = set(dir(cls.__base__))
-        current_attrs = set(dir(cls)) - parent_attrs
-        filenames = set()
+        # HACK(th3w1zard): Include only attributes that are defined in the current class and are not methods or private
+        parent_attrs: set[str] = set(dir(cls.__base__))
+        current_attrs: set[str] = set(dir(cls)) - parent_attrs
+        filenames: set[str] = set()
         for k in current_attrs:
             v = cls.__dict__[k]
             if k.startswith("__") or callable(v):
@@ -169,11 +173,13 @@ class K1Columns2DA:
 
             @dataclass(frozen=True, init=False, repr=False)
             class Doors(ABSColumns2DA):
+                """All 2DA columns that reference door model resrefs."""
                 doortypes: ClassVar[set[str]] = {"model"}
                 genericdoors: ClassVar[set[str]] = {"modelname"}
 
         @dataclass(frozen=True, init=False, repr=False)
         class Sounds(ABSColumns2DA):
+            """All 2DA columns that reference sound resrefs."""
             aliensound: ClassVar[set[str]] = {"filename"}
             ambientsound: ClassVar[set[str]] = {"resource"}
             ammunitiontypes: ClassVar[set[str]] = {"shotsound0", "shotsound1", "impactsound0", "impactsound1"}
@@ -196,11 +202,13 @@ class K1Columns2DA:
 
         @dataclass(frozen=True, init=False, repr=False)
         class Music(ABSColumns2DA):
+            """All 2DA columns that reference music resrefs."""
             ambientmusic: ClassVar[set[str]] = {"resource", "stinger1", "stinger2", "stinger3"}
             loadscreens: ClassVar[set[str]] = {"musicresref"}
 
         @dataclass(frozen=True, init=False, repr=False)
         class Textures(ABSColumns2DA):
+            """All 2DA columns that reference texture resrefs."""
             actions: ClassVar[set[str]] = {"iconresref"}
             appearance: ClassVar[set[str]] = {"racetex", "texa", "texb", "texc", "texd", "texe", "texf", "texg", "texh", "texi", "texj",
                                               "headtexve", "headtexe", "headtexvg", "headtexg"}
@@ -213,16 +221,19 @@ class K1Columns2DA:
 
         @dataclass(frozen=True, init=False, repr=False)
         class Items(ABSColumns2DA):
+            """All 2DA columns that reference item resrefs."""
             baseitems: ClassVar[set[str]] = {"itemclass", "baseitemstatref"}
             chargenclothes: ClassVar[set[str]] = {"itemresref"}
             feat: ClassVar[set[str]] = {"icon"}
 
         @dataclass(frozen=True, init=False, repr=False)
         class GUIs(ABSColumns2DA):
+            """All 2DA columns that reference GUI resrefs."""
             cursors: ClassVar[set[str]] = {"resref"}
 
         @dataclass(frozen=True, init=False, repr=False)
         class Scripts(ABSColumns2DA):
+            """All 2DA columns that reference script resrefs."""
             areaeffects: ClassVar[set[str]] = {"onenter", "heartbeat", "onexit"}
             disease: ClassVar[set[str]] = {"end_incu_script", "24_hour_script"}
             spells: ClassVar[set[str]] = {"impactscript"}
@@ -341,6 +352,7 @@ class K2Columns2DA:
 
             @dataclass(frozen=True, init=False, repr=False)
             class Doors(ABSColumns2DA):
+                """All 2DA columns that reference door model resrefs."""
                 doortypes: ClassVar[set[str]] = {"model"}
                 genericdoors: ClassVar[set[str]] = {"modelname"}
 
@@ -388,6 +400,7 @@ class K2Columns2DA:
 
         @dataclass(frozen=True, init=False, repr=False)
         class Textures(ABSColumns2DA):
+            """All 2DA columns that reference texture resrefs."""
             actions: ClassVar[set[str]] = {"iconresref"}
             appearance: ClassVar[set[str]] = {"racetex", "texa", "texb", "texc", "texd", "texe", "texf", "texg", "texh", "texi", "texj",
                                               "headtexve", "headtexe", "headtexvg", "headtexg"}
@@ -401,40 +414,229 @@ class K2Columns2DA:
 
         @dataclass(frozen=True, init=False, repr=False)
         class Items(ABSColumns2DA):
+            """All 2DA columns that reference item resrefs."""
             baseitems: ClassVar[set[str]] = {"itemclass", "baseitemstatref"}
             chargenclothes: ClassVar[set[str]] = {"itemresref"}
             feat: ClassVar[set[str]] = {"icon"}
 
         @dataclass(frozen=True, init=False, repr=False)
         class GUIs(ABSColumns2DA):
+            """All 2DA columns that reference GUI resrefs."""
             cursors: ClassVar[set[str]] = {"resref"}
 
         @dataclass(frozen=True, init=False, repr=False)
         class Scripts(ABSColumns2DA):
+            """All 2DA columns that reference script resrefs."""
             areaeffects: ClassVar[set[str]] = {"onenter", "heartbeat", "onexit"}
             disease: ClassVar[set[str]] = {"end_incu_script", "24_hour_script"}
             spells: ClassVar[set[str]] = {"impactscript"}
 
 
 
+class TwoDARegistry:
+    """Central registry for 2DA metadata, GFF mappings, and helpers."""
+
+    # Canonical 2DA file names (single source of truth)
+    PORTRAITS: ClassVar[str] = "portraits"
+    APPEARANCES: ClassVar[str] = "appearance"
+    SUBRACES: ClassVar[str] = "subrace"
+    SPEEDS: ClassVar[str] = "creaturespeed"
+    SOUNDSETS: ClassVar[str] = "soundset"
+    FACTIONS: ClassVar[str] = "repute"
+    GENDERS: ClassVar[str] = "gender"
+    PERCEPTIONS: ClassVar[str] = "ranges"
+    CLASSES: ClassVar[str] = "classes"
+    FEATS: ClassVar[str] = "feat"
+    POWERS: ClassVar[str] = "spells"
+    BASEITEMS: ClassVar[str] = "baseitems"
+    PLACEABLES: ClassVar[str] = "placeables"
+    DOORS: ClassVar[str] = "genericdoors"
+    CURSORS: ClassVar[str] = "cursors"
+    TRAPS: ClassVar[str] = "traps"
+    RACES: ClassVar[str] = "racialtypes"
+    SKILLS: ClassVar[str] = "skills"
+    UPGRADES: ClassVar[str] = "upgrade"
+    ENC_DIFFICULTIES: ClassVar[str] = "encdifficulty"
+    ITEM_PROPERTIES: ClassVar[str] = "itempropdef"
+    IPRP_PARAMTABLE: ClassVar[str] = "iprp_paramtable"
+    IPRP_COSTTABLE: ClassVar[str] = "iprp_costtable"
+    IPRP_ABILITIES: ClassVar[str] = "iprp_abilities"
+    IPRP_ALIGNGRP: ClassVar[str] = "iprp_aligngrp"
+    IPRP_COMBATDAM: ClassVar[str] = "iprp_combatdam"
+    IPRP_DAMAGETYPE: ClassVar[str] = "iprp_damagetype"
+    IPRP_PROTECTION: ClassVar[str] = "iprp_protection"
+    IPRP_ACMODTYPE: ClassVar[str] = "iprp_acmodtype"
+    IPRP_IMMUNITY: ClassVar[str] = "iprp_immunity"
+    IPRP_SAVEELEMENT: ClassVar[str] = "iprp_saveelement"
+    IPRP_SAVINGTHROW: ClassVar[str] = "iprp_savingthrow"
+    IPRP_ONHIT: ClassVar[str] = "iprp_onhit"
+    IPRP_AMMOTYPE: ClassVar[str] = "iprp_ammotype"
+    IPRP_MONSTERHIT: ClassVar[str] = "iprp_mosterhit"
+    IPRP_WALK: ClassVar[str] = "iprp_walk"
+    EMOTIONS: ClassVar[str] = "emotion"
+    EXPRESSIONS: ClassVar[str] = "facialanim"
+    VIDEO_EFFECTS: ClassVar[str] = "videoeffects"
+    DIALOG_ANIMS: ClassVar[str] = "dialoganimations"
+    PLANETS: ClassVar[str] = "planetary"
+    PLOT: ClassVar[str] = "plot"
+    CAMERAS: ClassVar[str] = "camerastyle"
+
+    _STRREF_COLUMNS: ClassVar[dict[str, set[str]]] = {}
+    _RESREF_COLUMNS: ClassVar[dict[str, set[str]]] = {}
+    _GFF_FIELD_TO_2DA: ClassVar[dict[str, ResourceIdentifier]] = {}
+
+    @classmethod
+    def init_metadata(cls) -> None:
+        if cls._GFF_FIELD_TO_2DA:
+            return
+
+        # Merge K1/K2 strref and resref columns into unified maps keyed by filename
+        def merge_columns(root_cls: type[ABSColumns2DA]) -> dict[str, set[str]]:
+            return root_cls.as_dict()
+
+        cls._STRREF_COLUMNS = {}
+        cls._STRREF_COLUMNS.update(merge_columns(K1Columns2DA.StrRefs))
+        cls._STRREF_COLUMNS.update(merge_columns(K2Columns2DA.StrRefs))
+
+        cls._RESREF_COLUMNS = {}
+        cls._RESREF_COLUMNS.update(merge_columns(K1Columns2DA.ResRefs))
+        cls._RESREF_COLUMNS.update(merge_columns(K2Columns2DA.ResRefs))
+
+        # Centralize the GFF field mapping here
+        cls._GFF_FIELD_TO_2DA = {
+            "SoundSetFile": ResourceIdentifier(cls.SOUNDSETS, ResourceType.TwoDA),
+            "PortraitId": ResourceIdentifier(cls.PORTRAITS, ResourceType.TwoDA),
+            "Appearance_Type": ResourceIdentifier(cls.APPEARANCES, ResourceType.TwoDA),
+            "Phenotype": ResourceIdentifier("phenotype", ResourceType.TwoDA),
+            "FactionID": ResourceIdentifier(cls.FACTIONS, ResourceType.TwoDA),
+            "Faction": ResourceIdentifier(cls.FACTIONS, ResourceType.TwoDA),
+            "Subrace": ResourceIdentifier(cls.SUBRACES, ResourceType.TwoDA),
+            "SubraceIndex": ResourceIdentifier(cls.SUBRACES, ResourceType.TwoDA),
+            "Race": ResourceIdentifier(cls.RACES, ResourceType.TwoDA),
+            "Class": ResourceIdentifier(cls.CLASSES, ResourceType.TwoDA),
+            "Gender": ResourceIdentifier(cls.GENDERS, ResourceType.TwoDA),
+            "PerceptionRange": ResourceIdentifier(cls.PERCEPTIONS, ResourceType.TwoDA),
+            "WalkRate": ResourceIdentifier(cls.SPEEDS, ResourceType.TwoDA),
+            "PaletteID": ResourceIdentifier("palette", ResourceType.TwoDA),
+            "BodyBag": ResourceIdentifier("bodybag", ResourceType.TwoDA),
+            "BaseItem": ResourceIdentifier(cls.BASEITEMS, ResourceType.TwoDA),
+            "ModelVariation": ResourceIdentifier(cls.BASEITEMS, ResourceType.TwoDA),
+            "BodyVariation": ResourceIdentifier("bodyvariation", ResourceType.TwoDA),
+            "TextureVar": ResourceIdentifier("textures", ResourceType.TwoDA),
+            "UpgradeType": ResourceIdentifier(cls.UPGRADES, ResourceType.TwoDA),
+            "Appearance": ResourceIdentifier(cls.PLACEABLES, ResourceType.TwoDA),
+            "GenericType": ResourceIdentifier(cls.DOORS, ResourceType.TwoDA),
+            "Cursor": ResourceIdentifier(cls.CURSORS, ResourceType.TwoDA),
+            "MusicDay": ResourceIdentifier("ambientmusic", ResourceType.TwoDA),
+            "MusicNight": ResourceIdentifier("ambientmusic", ResourceType.TwoDA),
+            "MusicBattle": ResourceIdentifier("ambientmusic", ResourceType.TwoDA),
+            "MusicDelay": ResourceIdentifier("ambientmusic", ResourceType.TwoDA),
+            "LoadScreenID": ResourceIdentifier("loadscreens", ResourceType.TwoDA),
+            "CameraStyle": ResourceIdentifier(cls.CAMERAS, ResourceType.TwoDA),
+            "Animation": ResourceIdentifier(cls.DIALOG_ANIMS, ResourceType.TwoDA),
+            "Emotion": ResourceIdentifier(cls.EMOTIONS, ResourceType.TwoDA),
+            "FacialAnim": ResourceIdentifier(cls.EXPRESSIONS, ResourceType.TwoDA),
+            "AlienRaceOwner": ResourceIdentifier(cls.RACES, ResourceType.TwoDA),
+            "AlienRaceNode": ResourceIdentifier(cls.RACES, ResourceType.TwoDA),
+            "CamVidEffect": ResourceIdentifier(cls.VIDEO_EFFECTS, ResourceType.TwoDA),
+            "CameraID": ResourceIdentifier(cls.CAMERAS, ResourceType.TwoDA),
+            "Subtype": ResourceIdentifier(cls.POWERS, ResourceType.TwoDA),
+            "SpellId": ResourceIdentifier(cls.POWERS, ResourceType.TwoDA),
+            "Spell": ResourceIdentifier(cls.POWERS, ResourceType.TwoDA),
+            "FeatID": ResourceIdentifier(cls.FEATS, ResourceType.TwoDA),
+            "Feat": ResourceIdentifier(cls.FEATS, ResourceType.TwoDA),
+            "SkillID": ResourceIdentifier(cls.SKILLS, ResourceType.TwoDA),
+            "MarkUp": ResourceIdentifier("merchants", ResourceType.TwoDA),
+            "MarkDown": ResourceIdentifier("merchants", ResourceType.TwoDA),
+            "Difficulty": ResourceIdentifier(cls.ENC_DIFFICULTIES, ResourceType.TwoDA),
+            "DifficultyIndex": ResourceIdentifier(cls.ENC_DIFFICULTIES, ResourceType.TwoDA),
+            "TrapType": ResourceIdentifier(cls.TRAPS, ResourceType.TwoDA),
+            "PlanetID": ResourceIdentifier(cls.PLANETS, ResourceType.TwoDA),
+            "PlotIndex": ResourceIdentifier(cls.PLOT, ResourceType.TwoDA),
+            "VideoResRef": ResourceIdentifier(cls.VIDEO_EFFECTS, ResourceType.TwoDA),
+            "AIStyle": ResourceIdentifier("ai_styles", ResourceType.TwoDA),
+            "DamageType": ResourceIdentifier(cls.IPRP_DAMAGETYPE, ResourceType.TwoDA),
+            "DamageVsType": ResourceIdentifier("iprp_damagevs", ResourceType.TwoDA),
+            "AttackModifier": ResourceIdentifier("iprp_attackmod", ResourceType.TwoDA),
+            "ACModifierType": ResourceIdentifier(cls.IPRP_ACMODTYPE, ResourceType.TwoDA),
+            "BonusFeatID": ResourceIdentifier("iprp_bonusfeat", ResourceType.TwoDA),
+            "CastSpell": ResourceIdentifier("iprp_spells", ResourceType.TwoDA),
+            "LightColor": ResourceIdentifier("iprp_lightcol", ResourceType.TwoDA),
+            "MonsterDamage": ResourceIdentifier("iprp_monstdam", ResourceType.TwoDA),
+            "OnHit": ResourceIdentifier(cls.IPRP_ONHIT, ResourceType.TwoDA),
+            "Param1": ResourceIdentifier(cls.IPRP_PARAMTABLE, ResourceType.TwoDA),
+            "Param1Value": ResourceIdentifier(cls.IPRP_PARAMTABLE, ResourceType.TwoDA),
+            "SkillBonus": ResourceIdentifier("iprp_skillcost", ResourceType.TwoDA),
+            "SpecialWalk": ResourceIdentifier(cls.IPRP_WALK, ResourceType.TwoDA),
+            "WeightIncrease": ResourceIdentifier("iprp_weightinc", ResourceType.TwoDA),
+            "Trap": ResourceIdentifier("iprp_traptype", ResourceType.TwoDA),
+            "DamageReduction": ResourceIdentifier("iprp_damagered", ResourceType.TwoDA),
+            "ImmunityType": ResourceIdentifier(cls.IPRP_IMMUNITY, ResourceType.TwoDA),
+            "SavedGame": ResourceIdentifier("saves", ResourceType.TwoDA),
+            "SaveType": ResourceIdentifier(cls.IPRP_SAVEELEMENT, ResourceType.TwoDA),
+            "SpellResistance": ResourceIdentifier("iprp_spellres", ResourceType.TwoDA),
+            "VisualType": ResourceIdentifier("visualeffects", ResourceType.TwoDA),
+        }
+
+    @classmethod
+    def gff_field_mapping(cls) -> dict[str, ResourceIdentifier]:
+        cls.init_metadata()
+        return cls._GFF_FIELD_TO_2DA
+
+    @classmethod
+    def columns_for(cls, data_type: Literal["resref", "strref"]) -> dict[str, set[str]]:
+        cls.init_metadata()
+        return cls._STRREF_COLUMNS if data_type == "strref" else cls._RESREF_COLUMNS
+
+    @classmethod
+    def files(cls) -> set[str]:
+        cls.init_metadata()
+        files: set[str] = set(cls._STRREF_COLUMNS.keys()) | set(cls._RESREF_COLUMNS.keys())
+        return files
+
 class TwoDAManager:
     def __init__(self, installation: Installation):
+        TwoDARegistry.init_metadata()
         self._installation: Installation = installation
 
     @classmethod
-    def get_column_names(  # TODO:
+    def get_column_names(
         cls,
         data_type: Literal["resref", "strref"],
     ) -> list[str]:
-        """Retrieve all column names for a given data type (stringrefs, resrefs, models)."""
-        result = []
-        for columns in cls.metadata.get(data_type, {}).values():
+        """Retrieve all column names for a given data type across known 2DA files."""
+        result: list[str] = []
+        for columns in TwoDARegistry.columns_for(data_type).values():
             result.extend(columns)
-        return list(set(result))  # Remove duplicates
+        return list(set(result))
 
-    @classmethod
-    def lookup(cls, query: str, data_type: str) -> LookupResult2DA:  # TODO:
-        """Perform a lookup based on a query and return a read-only result object."""
-        # This method should implement retrieval logic, possibly involving reading from files or a database
-        # For simplicity, the example returns a simple dummy object
-        return LookupResult2DA()
+    def lookup_in_installation(self, query: str, data_type: Literal["resref", "strref"]) -> LookupResult2DA | None:
+        from pykotor.resource.formats.twoda.twoda_auto import read_2da  # lazy import
+        from pykotor.tools.path import CaseAwarePath
+
+        if not query:
+            return None
+
+        targets = TwoDARegistry.columns_for(data_type)
+        for filename, columns in targets.items():
+            ident = ResourceIdentifier.identify(filename)
+            result = self._installation.resource(ident.resname, ident.restype)
+            if result is None or result.data is None:
+                continue
+            table = read_2da(result.data)
+            for row_index in range(table.get_height()):
+                row = table.get_row(row_index)
+                for column in columns:
+                    try:
+                        cell = row.get_string(column)
+                    except Exception:  # noqa: S112
+                        continue
+                    if cell == query:
+                        return LookupResult2DA(
+                            filepath=CaseAwarePath(f"{filename}"),
+                            row_index=row_index,
+                            column_name=column,
+                            contents=cell or "",
+                            entire_row=row,
+                        )
+        return None

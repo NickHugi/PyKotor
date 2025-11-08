@@ -14,12 +14,12 @@ from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Callable, List, Set, cast
+from typing import TYPE_CHECKING, Any, Callable, List, cast
 
 import qtpy
 import send2trash
 
-from qtpy.QtCore import QAbstractItemModel, QUrl, Qt
+from qtpy.QtCore import QUrl, Qt
 from qtpy.QtGui import QDesktopServices, QKeySequence
 from qtpy.QtWidgets import (
     QAction,
@@ -64,6 +64,8 @@ if __name__ == "__main__":
             update_sys_path(toolset_path.parent)
             os.chdir(toolset_path)
 
+from pathlib import Path
+
 from loggerplus import RobustLogger
 
 from pykotor.common.misc import Game
@@ -84,9 +86,8 @@ from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from qtpy.QtCore import QModelIndex, QPoint, QRect
-    from qtpy.QtGui import QScreen, _QAction
-    from qtpy.QtWidgets import QTableWidgetSelectionRange, _QMenu
+    from qtpy.QtCore import QAbstractItemModel, QPoint
+    from qtpy.QtWidgets import QTableWidgetSelectionRange, QWidget
 
     from pykotor.common.module import ERF, RIM
     from pykotor.extract.file import LocationResult, ResourceResult
@@ -245,18 +246,18 @@ class CustomItem:
 
     def create_action(
         self,
-        menu_dict: OrderedDict[str, tuple[_QAction, Callable]],
+        menu_dict: OrderedDict[str, tuple[QAction, Callable]],
         display_name: str,
         func: Callable,
-    ) -> _QAction:
+    ) -> QAction:
         action = QAction(display_name)
         menu_dict[display_name] = (action, func)
         return action
 
     def build_menu(
         self,
-        menu: _QMenu | None = None,
-    ) -> _QMenu:
+        menu: QMenu | None = None,
+    ) -> QMenu:
         menu = QMenu() if menu is None else menu
         menu_dict = self.create_context_menu_dict()
         for action, func in menu_dict.values():
@@ -267,7 +268,7 @@ class CustomItem:
 
     def create_context_menu_dict(
         self,
-    ) -> OrderedDict[str, tuple[_QAction, Callable]]:
+    ) -> OrderedDict[str, tuple[QAction, Callable]]:
         menu_dict = OrderedDict()
         selected = self.selectedItems()
         if not selected:
@@ -281,7 +282,7 @@ class CustomItem:
     def run_context_menu(
         self,
         position: QPoint,
-    ) -> _QAction:
+    ) -> QAction:
         return self.build_menu().exec(self.viewport().mapToGlobal(position))  # noqa: RET504
 
 
@@ -309,7 +310,7 @@ class FileItems(CustomItem):
         detailed_msg: str | None = None,
     ) -> int | QMessageBox.StandardButton:
         if not detailed_msg or not detailed_msg.strip():
-            selected: set[FileTableWidgetItem] = cast(Set[FileTableWidgetItem], {*self.selectedItems()})
+            selected: set[FileTableWidgetItem] = set(self.selectedItems())
             detailed_msg = ""
             for selection in selected:
                 file_path: Path = selection.filepath
@@ -334,7 +335,7 @@ class FileItems(CustomItem):
         self,
         selected: list[FileTableWidgetItem] | set[FileTableWidgetItem],
     ) -> bool:
-        return all(Path(table_item.filepath).exists() for table_item in {*selected})
+        return all(Path(table_item.filepath).exists() for table_item in set(selected))
 
     def _rename_file(
         self,
@@ -351,25 +352,25 @@ class FileItems(CustomItem):
 
     def create_context_menu_dict(
         self,
-    ) -> OrderedDict[str, tuple[_QAction, Callable]]:
-        menu_dict: OrderedDict[str, tuple[_QAction, Callable]] = super().create_context_menu_dict()
-        selected: set[FileTableWidgetItem] = cast(Set[FileTableWidgetItem], {*self.selectedItems()})
+    ) -> OrderedDict[str, tuple[QAction, Callable]]:
+        menu_dict: OrderedDict[str, tuple[QAction, Callable]] = super().create_context_menu_dict()
+        selected: set[FileTableWidgetItem] = set(self.selectedItems())
         if not selected:
             return menu_dict
-        open_action: _QAction = self.create_action(menu_dict, f"Open ({platform.system()})", lambda: self.do_file_action(self._open_file, "Open file(s) with system"))
-        open_folder_action: _QAction = self.create_action(menu_dict, "Open Containing Folder", lambda: self.do_file_action(self._open_containing_folder, "Open Containing Folder"))  # noqa: E501
-        save_selected_action: _QAction = self.create_action(menu_dict, "Save selected files to...", lambda: self.do_file_action(self._save_files, "Save As..."))
-        rename_action: _QAction = self.create_action(menu_dict, "Rename", lambda: self.do_file_action(self._rename_file, "Rename file.", confirmation=True))
-        send_to_trash: _QAction = self.create_action(menu_dict, "Delete (to Recycle Bin)", lambda: self.do_file_action(self._send_to_recycle_bin, "Send to Recycle Bin"))
-        delete_action: _QAction = self.create_action(menu_dict, "Delete (no way to undelete!)", lambda: self.do_file_action(self._delete_files_permanently, "Delete PERMANENTLY", confirmation=True))  # noqa: E501
+        open_action: QAction = self.create_action(menu_dict, f"Open ({platform.system()})", lambda: self.do_file_action(self._open_file, "Open file(s) with system"))
+        open_folder_action: QAction = self.create_action(menu_dict, "Open Containing Folder", lambda: self.do_file_action(self._open_containing_folder, "Open Containing Folder"))
+        save_selected_action: QAction = self.create_action(menu_dict, "Save selected files to...", lambda: self.do_file_action(self._save_files, "Save As..."))
+        rename_action: QAction = self.create_action(menu_dict, "Rename", lambda: self.do_file_action(self._rename_file, "Rename file.", confirmation=True))
+        send_to_trash: QAction = self.create_action(menu_dict, "Delete (to Recycle Bin)", lambda: self.do_file_action(self._send_to_recycle_bin, "Send to Recycle Bin"))
+        delete_action: QAction = self.create_action(menu_dict, "Delete (no way to undelete!)", lambda: self.do_file_action(self._delete_files_permanently, "Delete PERMANENTLY", confirmation=True))
 
-        file_paths_exist = all(Path(table_item.filepath).exists() for table_item in {*selected})
+        file_paths_exist = all(Path(table_item.filepath).exists() for table_item in selected)
         inside_bif = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_bif for item in selected)
         inside_capsule = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_capsule for item in selected)
 
         if os.name == "nt":
-            properties_action: _QAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
-            open_windows_menu_action: _QAction = self.create_action(menu_dict, "Open Windows Explorer Context Menu", lambda: self.do_file_action(self._open_windows_explorer_context_menu, "Open Windows Explorer Context Menu"))  # noqa: E501
+            properties_action: QAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
+            open_windows_menu_action: QAction = self.create_action(menu_dict, "Open Windows Explorer Context Menu", lambda: self.do_file_action(self._open_windows_explorer_context_menu, "Open Windows Explorer Context Menu"))
             properties_action.setEnabled(file_paths_exist)
             open_windows_menu_action.setEnabled(file_paths_exist)
 
@@ -454,7 +455,7 @@ class FileItems(CustomItem):
         file_path: Path,
         table_item: FileTableWidgetItem,
     ):
-        selected: set[FileTableWidgetItem] = cast(Set[FileTableWidgetItem], {*self.selectedItems()})
+        selected: set[FileTableWidgetItem] = set(self.selectedItems())
         if len(selected) == 1:
             # Extract the original filename from the selected item or file path
             original_filename = file_path.name
@@ -483,7 +484,11 @@ class FileItems(CustomItem):
         table_item: FileTableWidgetItem,
     ):
         from utility.system.win32.context_menu import windows_context_menu_file
-        active_window: QWidget | None = cast(QApplication, QApplication.instance()).activeWindow()
+
+        app = QApplication.instance()
+        if app is None:
+            return
+        active_window = cast(QApplication, app).activeWindow()
         if active_window is None:
             return
         windows_context_menu_file(file_path, int(active_window.winId()))
@@ -579,7 +584,7 @@ class FileItems(CustomItem):
         *,
         confirmation: bool = False,
     ):
-        selected: set[FileTableWidgetItem] = cast(Set[FileTableWidgetItem], {*self.selectedItems()})
+        selected: set[FileTableWidgetItem] = set(self.selectedItems())
         if not selected:
             return
         if (
@@ -684,7 +689,7 @@ class ResourceItems(FileItems):
         self,
         selected: list[ResourceTableWidgetItem],
     ) -> bool:
-        return all(resourceTableItem.resource.exists() for resourceTableItem in {*selected})
+        return all(resourceTableItem.resource.exists() for resourceTableItem in set(selected))
 
     def _prepare_func(
         self,
@@ -727,7 +732,7 @@ class ResourceItems(FileItems):
         *,
         confirmation: bool = False,
     ):
-        selected: set[ResourceTableWidgetItem] = cast(Set[ResourceTableWidgetItem], {*self.selectedItems()})
+        selected: set[ResourceTableWidgetItem] = set(self.selectedItems())
         if not selected:
             return
         if (
@@ -757,38 +762,42 @@ class ResourceItems(FileItems):
 
     def build_menu(
         self,
-        menu: _QMenu | None = None,
+        menu: QMenu | None = None,
         installation: HTInstallation | None = None,
         resources: set[FileResource] | None = None,
-    ) -> _QMenu:
+    ) -> QMenu:
         menu = QMenu() if menu is None else menu
         super().build_menu(menu)
         if hasattr(self, "selectedItems") and resources is None:
             resources = {tableItem.resource for tableItem in self.selectedItems()}
         if resources is not None:
             if all(resource.restype().target_type().contents == "gff" for resource in resources):
-                open_with_menu: _QMenu | None = menu.addMenu("Open With")  # pyright: ignore[reportAssignmentType]
+                open_with_menu = menu.addMenu("Open With")
                 if open_with_menu is None:
                     return menu
                 open_with_menu.addAction("Open with GFF Editor").triggered.connect(
-                        lambda: self.open_selected_resource(resources, installation, gff_specialized=False))
+                    lambda: self.open_selected_resource(resources, installation, gff_specialized=False)
+                )
                 if installation is not None:
                     open_with_menu.addAction("Open with Specialized Editor").triggered.connect(
-                        lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
+                        lambda: self.open_selected_resource(resources, installation, gff_specialized=True)
+                    )
                     open_with_menu.addAction("Open with Default Editor").triggered.connect(
-                        lambda: self.open_selected_resource(resources, installation, gff_specialized=None))
+                        lambda: self.open_selected_resource(resources, installation, gff_specialized=None)
+                    )
             elif installation is not None:
-                menu.addAction("Open with Editor").triggered.connect(lambda: self.open_selected_resource(resources, installation))  # TODO(th3w1zard1): disable when file doesn't exist.  # noqa: E501
+                menu.addAction("Open with Editor").triggered.connect(
+                    lambda: self.open_selected_resource(resources, installation)
+                )
         return menu
 
     def reorder_menu_items(
         self,
-        menu: _QMenu,
+        menu: QMenu,
     ):
-        actions: list[_QAction] = menu.actions()
-        action_sort_order: list[tuple[int, _QAction]] = []
+        actions: list[QAction] = menu.actions()
+        action_sort_order: list[tuple[int, QAction]] = []
 
-        # Assign sort order based on the text of the actions
         for action in actions:
             text = action.text().lower()
             if text.startswith("open"):
@@ -805,8 +814,7 @@ class ResourceItems(FileItems):
                 action_sort_order.append((5, action))
 
         action_sort_order.sort(key=lambda x: x[0])
-        for _, action in action_sort_order:
-            menu.removeAction(action)
+        menu.clear()
         for _, action in action_sort_order:
             menu.addAction(action)
 
@@ -815,12 +823,12 @@ class ResourceItems(FileItems):
         position: QPoint,
         installation: HTInstallation | None = None,
         *,
-        menu: _QMenu | None = None,
-    ) -> _QAction | None:
+        menu: QMenu | None = None,
+    ) -> QAction | None:
         resources: set[FileResource] = {tableItem.resource for tableItem in self.selectedItems()}
         menu = self.build_menu(menu)
         self.reorder_menu_items(menu)
-        executed_action: _QAction | None = menu.exec(self.viewport().mapToGlobal(position))  # pyright: ignore[reportAssignmentType]
+        executed_action: QAction | None = menu.exec(self.viewport().mapToGlobal(position))  # pyright: ignore[reportAssignmentType]
         if executed_action is None:
             return executed_action
         self.handle_post_run_actions(executed_action, resources)
@@ -855,7 +863,7 @@ class ResourceItems(FileItems):
 
     def handle_post_run_actions(
         self,
-        executed_action: _QAction,
+        executed_action: QAction,
         resources: set[FileResource],
     ):
         action_text = executed_action.text()
@@ -866,7 +874,7 @@ class ResourceItems(FileItems):
     def handle_delete_action(
         self,
         resources: set[FileResource],
-        executed_action: _QAction,
+        executed_action: QAction,
     ):
         total_inside_capsules: set[FileResource] = {resource for resource in resources if resource.inside_capsule}
         if total_inside_capsules:
@@ -971,7 +979,7 @@ class CustomTableWidget(CustomItem, QTableWidget):
                 if header_item.text() == column_name:
                     return i
         elif isinstance(self, (QTreeView, QTableView)):
-            model: QAbstractItemModel = cast(QAbstractItemModel, self.model())
+            model = cast("QAbstractItemModel", self.model())
             for i in range(model.columnCount()):
                 if model.headerData(i, Qt.Orientation.Horizontal) == column_name:
                     return i

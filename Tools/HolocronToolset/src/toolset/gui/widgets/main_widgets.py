@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, cast
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
+from qtpy import QtCore
 from qtpy.QtCore import (
     QFileInfo,
     QModelIndex,
@@ -30,11 +31,14 @@ from pykotor.resource.formats.tpc.tpc_auto import read_tpc, write_tpc
 from pykotor.resource.formats.tpc.tpc_data import TPC, TPCMipmap, TPCTextureFormat
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.gff import GFFContent
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from pykotor.resource.type import ResourceType
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
-
     from PIL.Image import Image
     from qtpy.QtCore import QAbstractItemModel, QModelIndex, QObject, QRect
     from qtpy.QtGui import QMouseEvent, QResizeEvent, QShowEvent
@@ -52,7 +56,13 @@ class MainWindowList(QWidget):
     sig_request_open_resource: Signal = Signal(list, object)  # pyright: ignore[reportPrivateImportUsage]
     sig_request_extract_resource: Signal = Signal(list, object)  # pyright: ignore[reportPrivateImportUsage]
     sig_section_changed: Signal = Signal(str)  # pyright: ignore[reportPrivateImportUsage]
-
+    requestOpenResource: ClassVar[QtCore.Signal] = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
+    requestExtractResource: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestMakeUnskippable: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestConvertGFF: ClassVar[QtCore.Signal] = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]  # resources, target_game
+    requestConvertTPC: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestConvertTGA: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    sectionChanged: ClassVar[QtCore.Signal] = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
     @abstractmethod
     def selected_resources(self) -> list[FileResource]: ...
 
@@ -449,6 +459,28 @@ class TextureList(MainWindowList):
     def set_installation(self, installation: HTInstallation):
         """Set the installation for the resource list."""
         self._installation = installation
+        # Terminate old loader if exists
+        if self._loader is not None:
+            self._loader.terminate()
+            self._loader = None
+        # Start new loader process with installation path
+        if installation is not None:
+            try:
+                self._loader = TextureLoaderProcess(
+                    str(installation.path()),
+                    installation.tsl,
+                    self._loadRequestQueue,
+                    self._loadedTextureQueue
+                )
+                self._loader.start()
+                RobustLogger().info(f"Started TextureLoader process for installation: {installation.path()}")
+            except PermissionError as perm_exc:
+                RobustLogger().exception(f"Permission error starting TextureLoader process: {perm_exc}")
+                RobustLogger().error("This is a Windows multiprocessing issue. Try running the application as administrator.")
+                self._loader = None
+            except Exception as start_exc:
+                RobustLogger().exception(f"Failed to start TextureLoader process: {start_exc}")
+                self._loader = None
 
     def selected_resources(self) -> list[FileResource]:
         """Get the user selected resources from the texture list."""

@@ -69,9 +69,10 @@ class MDLNodeType(IntEnum):
     SABER = 12  # Lightsaber blade
 
 
+
+# region Controller Data
 class MDLControllerType(IntEnum):
     """Controller types for animations."""
-
     INVALID = -1
     POSITION = 8
     ORIENTATION = 20
@@ -80,6 +81,9 @@ class MDLControllerType(IntEnum):
     RADIUS = 88
     SHADOWRADIUS = 96
     VERTICALDISPLACEMENT = 100
+    ILLUM_COLOR = 100
+    ALPHA = 132
+    P2P_BEZIER_2 = 132
     MULTIPLIER = 140
     ALPHAEND = 80
     ALPHASTART = 84

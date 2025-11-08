@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any, Generator
+from typing import TYPE_CHECKING, Any, Generator
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 # BCP 47 language code
@@ -132,8 +135,8 @@ class Language(IntEnum):
     CHINESE_SIMPLIFIED = 130
     JAPANESE = 131
 
-    @staticmethod
-    def _missing_(value: Any) -> IntEnum:
+    @classmethod
+    def _missing_(cls, value: Any) -> Language:
         if not isinstance(value, int):
             return NotImplemented
 
@@ -499,18 +502,18 @@ class LocalizedString:
             "substrings": self._substrings
         }
 
-    @staticmethod
-    def from_dict(data: dict) -> LocalizedString:
-        localized_string = LocalizedString(data["stringref"])
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        localized_string = cls(data["stringref"])
         localized_string._substrings = data.get("substrings", {})
         return localized_string
 
     @classmethod
-    def from_invalid(cls):
+    def from_invalid(cls) -> Self:
         return cls(-1)
 
     @classmethod
-    def from_english(cls, text: str):
+    def from_english(cls, text: str) -> Self:
         """Returns a new localizedstring object with a english substring.
 
         Args:
@@ -521,7 +524,7 @@ class LocalizedString:
         -------
             a new localizedstring object.
         """
-        locstring = cls(-1)
+        locstring: Self = cls(-1)
         locstring.set_data(Language.ENGLISH, Gender.MALE, text)
         return locstring
 

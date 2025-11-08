@@ -5,18 +5,19 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  OS_RUNNERS_JSON: '["windows-2019", "ubuntu-20.04", "macos-12"]'
-  PYTHON_VERSIONS_JSON: '["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]'
+  OS_RUNNERS_JSON: '["windows-latest", "ubuntu-20.04", "macos-12"]'
+  PYTHON_VERSIONS_JSON: '["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]'
   ARCHITECTURES_JSON: '["x86", "x64"]'
   INTERPRETERS_JSON: '["python"]'
   
 on:
 #  push:
-  pull_request:
-    types: [opened, reopened]
-  workflow_dispatch:
-  schedule:
-    - cron: '0 5 * * 1'  # Runs every Monday at 05:00 UTC
+#  pull_request:
+#    types: [opened, reopened]
+  workflow_dispatch:  # Kept enabled so it can still be manually triggered if needed
+#  schedule:
+#    - cron: '0 5 * * 1'  # Runs every Monday at 05:00 UTC
+# WORKFLOW DISABLED - Uncomment the above triggers to re-enable
 
 permissions:
   contents: write
@@ -265,7 +266,7 @@ jobs:
             foreach ($INTERPRETER in $INTERPRETERS) {
               foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
                 foreach ($ARCH in $ARCHITECTURES) {
-                  if ($OS -ne "windows-2019" -and $OS -ne "windows-2022" -and $OS -ne "windows-latest" -and $ARCH -eq "x86") {
+                  if ($OS -ne "windows-latest" -and $OS -ne "windows-2022" -and $OS -ne "windows-latest" -and $ARCH -eq "x86") {
                     continue  # no x86 support for unix.
                   }
                   $key = "$OS-$INTERPRETER-$PYTHON_VERSION-$ARCH"
@@ -286,7 +287,7 @@ jobs:
                   }
 
                   switch ($OS) {
-                      "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
+                      "windows-latest" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
                       "windows-2022" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
                       "windows-latest" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
                       "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }

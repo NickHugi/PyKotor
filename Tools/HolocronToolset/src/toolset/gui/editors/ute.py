@@ -247,12 +247,12 @@ class UTEEditor(Editor):
         # Creatures
         ute.creatures = []
         for i in range(self.ui.creatureTable.rowCount()):
-            singleCheckbox: QCheckBox = cast(QCheckBox, self.ui.creatureTable.cellWidget(i, 0))
-            challengeSpin: QDoubleSpinBox = cast(QDoubleSpinBox, self.ui.creatureTable.cellWidget(i, 1))
-            appearanceSpin: QSpinBox = cast(QSpinBox, self.ui.creatureTable.cellWidget(i, 2))
+            singleCheckbox = cast("QCheckBox", self.ui.creatureTable.cellWidget(i, 0))
+            challengeSpin = cast("QDoubleSpinBox", self.ui.creatureTable.cellWidget(i, 1))
+            appearanceSpin = cast("QSpinBox", self.ui.creatureTable.cellWidget(i, 2))
 
             creature = UTECreature()
-            creature.resref = ResRef(cast(FilterComboBox, self.ui.creatureTable.cellWidget(i, 3)).currentText())
+            creature.resref = ResRef(cast("FilterComboBox", self.ui.creatureTable.item(i, 3)).currentText())
             creature.single_spawn = singleCheckbox.isChecked()
             creature.appearance_id = appearanceSpin.value()
             creature.challenge_rating = challengeSpin.value()

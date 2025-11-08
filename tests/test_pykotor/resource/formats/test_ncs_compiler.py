@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import sys
+from typing import TYPE_CHECKING
 import unittest
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -25,12 +26,22 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pathlib import Path
 
 from utility.common.geometry import Vector3
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 from pykotor.resource.formats.ncs import NCS, NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import CompileError
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
+from pathlib import Path
+
+if TYPE_CHECKING:
+    from pykotor.common.script import ScriptConstant, ScriptFunction
+    from pykotor.resource.formats.ncs import NCS
+    KOTOR_CONSTANTS: list[ScriptConstant] = []
+    KOTOR_FUNCTIONS: list[ScriptFunction] = []
+    TSL_CONSTANTS: list[ScriptConstant] = []
+    TSL_FUNCTIONS: list[ScriptFunction] = []
+else:
+    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 
 K1_PATH: str | None = os.environ.get("K1_PATH")
 K2_PATH: str | None = os.environ.get("K2_PATH")

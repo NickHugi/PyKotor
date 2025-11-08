@@ -68,6 +68,7 @@ def read_tlk(
     offset: int = 0,
     size: int | None = None,
     language: Language | None = None,
+    file_format: ResourceType | None = None,
 ) -> TLK:
     """Returns an TLK instance from the source.
 
@@ -78,6 +79,8 @@ def read_tlk(
         source: The source of the data.
         offset: The byte offset of the file inside the data.
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
+        language: The language of the TLK data.
+        file_format: The file format to use (ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON). If not specified, it will be detected automatically.
 
     Raises:
     ------
@@ -90,18 +93,23 @@ def read_tlk(
     -------
         An TLK instance.
     """
-    file_format: ResourceType = detect_tlk(source, offset)
+    if file_format is None:
+        file_format = detect_tlk(source, offset)
 
     if file_format is ResourceType.INVALID:
         msg = "Failed to determine the format of the TLK file."
         raise ValueError(msg)
 
+    normalized_source = source
+    if isinstance(source, str) and file_format in (ResourceType.TLK_XML, ResourceType.TLK_JSON) and not os.path.exists(source):  # noqa: PTH110
+        normalized_source = source.encode("utf-8")
+
     if file_format is ResourceType.TLK:
-        return TLKBinaryReader(source, offset, size or 0, language).load()
+        return TLKBinaryReader(normalized_source, offset, size or 0, language).load()
     if file_format is ResourceType.TLK_XML:
-        return TLKXMLReader(source, offset, size or 0).load()
+        return TLKXMLReader(normalized_source, offset, size or 0).load()
     if file_format is ResourceType.TLK_JSON:
-        return TLKJSONReader(source, offset, size or 0).load()
+        return TLKJSONReader(normalized_source, offset, size or 0).load()
     msg = "Unsupported TLK format specified."
     raise ValueError(msg)
 
@@ -159,4 +167,4 @@ def bytes_tlk(
     """
     data = bytearray()
     write_tlk(tlk, data, file_format)
-    return data
+    return bytes(data)

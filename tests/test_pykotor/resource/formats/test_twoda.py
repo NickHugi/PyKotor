@@ -21,30 +21,52 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.resource.formats.twoda import (
-    TwoDA,
-    TwoDABinaryReader,
-    TwoDACSVReader,
-    detect_2da,
-    read_2da,
-    write_2da,
-)
+from pykotor.resource.formats.twoda import TwoDA, TwoDABinaryReader, TwoDACSVReader, bytes_2da, detect_2da, read_2da, write_2da
 from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "tests/test_pykotor/test_files/test.2da"
-CSV_TEST_FILE = "tests/test_pykotor/test_files/test.2da.csv"
-JSON_TEST_FILE = "tests/test_pykotor/test_files/test.2da.json"
+CSV_TEST_DATA = ",col1,col2,col3\n10,abc,def,ghi\n1,def,ghi,123\n2,123,,abc"
+JSON_TEST_DATA = """{
+    "rows": [
+        {
+            "_id": "0",
+            "col3": "ghi",
+            "col2": "def",
+            "col1": "abc"
+        },
+        {
+            "_id": "1",
+            "col3": "123",
+            "col2": "ghi",
+            "col1": "def"
+        },
+        {
+            "_id": "2",
+            "col3": "abc",
+            "col2": "",
+            "col1": "123"
+        }
+    ]
+}
+"""
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.2da"
-CORRUPT_CSV_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.2da.csv"
-CORRUPT_JSON_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.2da.json"
+CORRUPT_BINARY_TEST_DATA = b"BAD"
+CORRUPT_CSV_TEST_DATA = b"col1,col2\n1"
+CORRUPT_JSON_TEST_DATA = b"{"
+
+BASE_TWODA = TwoDA(["col3", "col2", "col1"])
+BASE_TWODA.add_row("10", {"col1": "abc", "col2": "def", "col3": "ghi"})
+BASE_TWODA.add_row("1", {"col1": "def", "col2": "ghi", "col3": "123"})
+BASE_TWODA.add_row("2", {"col1": "123", "col2": "", "col3": "abc"})
+BINARY_TEST_DATA = bytes_2da(BASE_TWODA, ResourceType.TwoDA)
+CSV_ROUNDTRIP_DATA = CSV_TEST_DATA.encode("utf-8")
+JSON_ROUNDTRIP_DATA = JSON_TEST_DATA.encode("utf-8")
 
 
 class TestTwoDA(unittest.TestCase):
     def test_binary_io(self):
-        assert detect_2da(BINARY_TEST_FILE) == ResourceType.TwoDA
-        twoda = TwoDABinaryReader(BINARY_TEST_FILE).load()
+        self.assertEqual(detect_2da(BINARY_TEST_DATA), ResourceType.TwoDA)
+        twoda = TwoDABinaryReader(BINARY_TEST_DATA).load()
         self.validate_io(twoda)
 
         data = bytearray()
@@ -53,9 +75,9 @@ class TestTwoDA(unittest.TestCase):
         self.validate_io(twoda)
 
     def test_csv_io(self):
-        assert detect_2da(CSV_TEST_FILE) == ResourceType.TwoDA_CSV
+        self.assertEqual(detect_2da(CSV_ROUNDTRIP_DATA), ResourceType.TwoDA_CSV)
 
-        twoda = TwoDACSVReader(CSV_TEST_FILE).load()
+        twoda = TwoDACSVReader(CSV_TEST_DATA.encode("utf-8")).load()
         self.validate_io(twoda)
 
         data = bytearray()
@@ -64,9 +86,9 @@ class TestTwoDA(unittest.TestCase):
         self.validate_io(twoda)
 
     def test_json_io(self):
-        assert detect_2da(JSON_TEST_FILE) == ResourceType.TwoDA_JSON
+        self.assertEqual(detect_2da(JSON_ROUNDTRIP_DATA), ResourceType.TwoDA_JSON)
 
-        twoda = TwoDAJSONReader(JSON_TEST_FILE).load()
+        twoda = TwoDAJSONReader(JSON_TEST_DATA.encode("utf-8")).load()
         self.validate_io(twoda)
 
         data = bytearray()
@@ -93,9 +115,9 @@ class TestTwoDA(unittest.TestCase):
         else:
             self.assertRaises(IsADirectoryError, read_2da, ".")
         self.assertRaises(FileNotFoundError, read_2da, DOES_NOT_EXIST_FILE)
-        self.assertRaises(ValueError, read_2da, CORRUPT_BINARY_TEST_FILE)
-        self.assertRaises(ValueError, read_2da, CORRUPT_JSON_TEST_FILE)
-        self.assertRaises(ValueError, read_2da, CORRUPT_CSV_TEST_FILE)
+        self.assertRaises(ValueError, read_2da, CORRUPT_BINARY_TEST_DATA)
+        self.assertRaises(ValueError, read_2da, CORRUPT_JSON_TEST_DATA)
+        self.assertRaises(ValueError, read_2da, CORRUPT_CSV_TEST_DATA)
 
     def test_write_raises(self):
         if os.name == "nt":

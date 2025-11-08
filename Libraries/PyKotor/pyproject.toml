@@ -1,80 +1,35 @@
 [build-system]
-requires = ["setuptools>=67.8.0,<70", "wheel"]
+requires = [
+    "setuptools>=42",
+    "wheel",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pykotor"
-version = "1.7"
-description = "Read, modify and write files used by KotOR's game engine."
-authors = [
-    { name = "NickHugi" },
-    { name = "Benjamin Auquite", email = "halomastar@gmail.com" },
-]
-maintainers = [{ name = "Benjamin Auquite", email = "halomastar@gmail.com" }]
-requires-python = ">=3.8"
-readme = "README.md"
-license = { text = "LGPL-3.0-or-later" }
-keywords = [
-    "kotor",
-    "library",
-    "holocron",
-    "toolset",
-    "pykotor",
-    "editor",
-    "holopatcher",
-    "tslpatcher",
-]
+name="PyKotor"
+version="1.7"
+description="Read, modify and write files used by KotOR's game engine."
+authors = [{name = "NickHugi"}]
+maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "LGPL-3.0-or-later License"}
+keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
+requires-python = ">= 3.7"
 dependencies = [
     "ply>=3.11,<4",
-    "loggerplus>=0.1.3",
-    "utility>=0.0.1",
 ]
 
-
 [project.optional-dependencies]
-update = ["requests", "pycryptodome"]
-font = ["Pillow>=9.5", "pykotorfont>=1.0"]
-secure_xml = ["defusedxml>=0.7"]
+font = [
+  "pillow>=9.5; python_implementation == 'CPython'",
+  "pillow>10,<11.1.0; python_implementation == 'PyPy'",
+]
+secure_xml           = ["defusedxml~=0.7"]
 encodings = ["charset-normalizer>=2.0,<3.4"]
-
 
 [project.urls]
 Homepage = "https://github.com/NickHugi/PyKotor"
 Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
 Repository = "https://github.com/NickHugi/PyKotor.git"
 Issues = "https://github.com/NickHugi/PyKotor/issues"
-
-
-########################################################
-## define only linter configurations below this point ##
-########################################################
-
-[tool.ruff]
-extend = "../../pyproject.toml"
-
-[tool.ruff.lint]
-ignore = [
-    "N", # disable snake_case vs PascalCase/camelCase checks
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["ALL"]
-"__init__.py" = ["I001", "F401"]
-
-[tool.ruff.lint.isort]
-required-imports = ["from __future__ import annotations"]
-
-[tool.ruff.lint.pyupgrade]
-keep-runtime-typing = true
-
-[tool.mccabe]
-max-complexity = 25
-
-[tool.style]
-based_on_style = "pep8"
-split_before_named_assigns = true
-split_complex_comprehension = true
-split_arguments_when_comma_terminated = true
-
-[tool.pylintrc]
-max-line-length = 175
+#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"

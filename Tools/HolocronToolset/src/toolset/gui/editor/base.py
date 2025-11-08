@@ -38,7 +38,7 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bif import read_bif
 from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
-from pykotor.resource.formats.gff import bytes_gff, read_gff
+from pykotor.resource.formats.gff import GFFStruct, bytes_gff, read_gff
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
@@ -108,7 +108,7 @@ class Editor(QMainWindow):
         self.setup_editor_filters(read_supported, write_supported)
 
     @abstractmethod
-    def build(self) -> tuple[bytes, bytes]: ...
+    def build(self) -> tuple[bytes | bytearray, bytes]: ...
 
     def _setup_menus(self):
         menubar: QMenuBar | None = self.menuBar()
@@ -270,7 +270,7 @@ class Editor(QMainWindow):
             ):  # noqa: E501
                 old_gff: GFF = read_gff(self._revert)
                 new_gff: GFF = read_gff(data)
-                new_gff.root.add_missing(old_gff.root)
+                GFFStruct._add_missing(new_gff.root, old_gff.root)
                 data: bytes = bytes_gff(new_gff)
             self._revert = data
 
@@ -304,7 +304,7 @@ class Editor(QMainWindow):
         dialog.exec()
         if dialog.option == BifSaveOption.MOD:
             str_filepath, filter = QFileDialog.getSaveFileName(self, "Save As", "", ".MOD File (*.mod)", "")
-            if not str(str_filepath).strip():
+            if str_filepath is None or not str(str_filepath).strip():
                 return
             r_filepath = Path(str_filepath)
             dialog2 = SaveToModuleDialog(self._resname, self._restype, self._write_supported)
@@ -459,7 +459,7 @@ class Editor(QMainWindow):
 
     def open(self):
         filepath_str, _filter = QFileDialog.getOpenFileName(self, "Open file", "", self._open_filter, "")
-        if not str(filepath_str).strip():
+        if filepath_str is None or not str(filepath_str).strip():
             return
         r_filepath = Path(filepath_str)
 
@@ -591,7 +591,7 @@ class Editor(QMainWindow):
             QTimer.singleShot(0, self.media_player.player.play)
 
         elif qtpy.QT6:
-            from qtpy.QtMultimedia import QAudioOutput
+            from qtpy.QtMultimedia import QAudioOutput  # pyright: ignore[reportAttributeAccessIssue]
 
             # Create buffer and load data
             buffer = QBuffer(self)

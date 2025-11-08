@@ -29,6 +29,7 @@ from pathlib import Path
 
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
+from pathlib import Path
 
 BINARY_TEST_FILE = Path("tests/test_pykotor/test_files/test.erf").resolve()
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"

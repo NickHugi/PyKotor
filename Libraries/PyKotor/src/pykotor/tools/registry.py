@@ -74,36 +74,62 @@ def find_software_key(software_name: str) -> str | None:
 
 
 def resolve_reg_key_to_path(
-    reg_key: str,
-    keystr: str,
+    registry: str | HKEYType,
+    subkey: str,
+    value_name: str | None = None,
 ) -> str | None:
-    r"""Resolves a registry key to a file system path.
-
-    Args:
-    ----
-        reg_key: Registry key to resolve in format "HKEY_CURRENT_USER\\Software\\Company\\Product".
-        keystr: Name of value containing path under the key.
-
-    Returns:
-    -------
-        resolved_path: File system path resolved from registry key/value or None.
-
-    Processing Logic:
-    ----------------
-        - Opens the registry key using the root and subkey
-        - Queries the key for the value specified by keystr
-        - Returns the path if found, otherwise returns None.
-    """
+    r"""Resolve a registry key to a file system path."""
     import winreg
 
     try:
-        root, subkey = reg_key.split("\\", 1)
-        root_key = getattr(winreg, root)
-        with winreg.OpenKey(root_key, subkey) as key:
-            resolved_path, _ = winreg.QueryValueEx(key, keystr)
+        if isinstance(registry, str):
+            root_name, key_path = registry.split("\\", 1)
+            root_key = getattr(winreg, root_name)
+            value_to_lookup = subkey
+        else:
+            root_key = registry
+            if value_name is None:
+                msg = "value_name must be provided when a registry handle is supplied."
+                raise ValueError(msg)
+            key_path = subkey
+            value_to_lookup = value_name
+
+        with winreg.OpenKey(root_key, key_path) as key:
+            resolved_path, _ = winreg.QueryValueEx(key, value_to_lookup)
             return resolved_path
-    except (FileNotFoundError, PermissionError):
+    except (AttributeError, FileNotFoundError, PermissionError):
         return None
+
+
+def check_reg_keys_existence_and_validity() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Check registry keys for their existence and validity against default paths."""
+    import winreg
+
+    from pathlib import WindowsPath
+
+    from pykotor.tools.path import find_kotor_paths_from_default
+
+    non_existent_keys = []
+    invalid_path_keys = []
+
+    default_paths = find_kotor_paths_from_default()
+
+    # Determine the system's architecture
+    arch = ProcessorArchitecture.from_os()
+    for game, arch_paths in KOTOR_REG_PATHS.items():
+        game_defaults = default_paths[game]
+
+        for path, name in arch_paths[arch]:
+            reg_path = resolve_reg_key_to_path(winreg.HKEY_LOCAL_MACHINE, path, name)
+            if reg_path is None:
+                non_existent_keys.append((path, name))
+            else:
+                # Convert registry path to a proper WindowsPath and check existence and if it's a default path
+                reg_path_obj = WindowsPath(reg_path)
+                if not reg_path_obj.exists() or all(reg_path_obj != WindowsPath(default_path) for default_path in game_defaults):
+                    invalid_path_keys.append((path, name))
+
+    return non_existent_keys, invalid_path_keys
 
 
 def winreg_key(game: Game) -> list[tuple[str, str]]:

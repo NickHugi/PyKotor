@@ -4,6 +4,7 @@ import json
 import math
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn
 
 from jsmin import jsmin

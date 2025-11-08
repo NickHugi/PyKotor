@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 import sys
+from typing import TYPE_CHECKING
 import unittest
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -20,13 +21,21 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
 from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
 
+if TYPE_CHECKING:
+    from pykotor.common.script import ScriptConstant, ScriptFunction
+    from pykotor.resource.formats.ncs import NCS
+    KOTOR_CONSTANTS: list[ScriptConstant] = []
+    KOTOR_FUNCTIONS: list[ScriptFunction] = []
+    TSL_CONSTANTS: list[ScriptConstant] = []
+    TSL_FUNCTIONS: list[ScriptFunction] = []
+else:
+    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 
 class TestNCSOptimizers(unittest.TestCase):
     def compile(

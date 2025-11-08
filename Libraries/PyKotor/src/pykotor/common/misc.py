@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import warnings
+from enum import Enum, IntEnum
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Iterable, TypeVar
 
 from collections.abc import Iterable
 from enum import Enum, IntEnum
@@ -159,11 +161,7 @@ class ResRef(str):
             InvalidFormatError - text starts/ends with a space or contains windows invalid filename characters.
             All of the above exceptions inherit ValueError.
         """
-        # Ensure the value is a string
-        if not isinstance(text, str):
-            msg = f"Value must be a string, not a `{text.__class__.__name__}`"
-            raise TypeError(msg)
-
+        parsed_text: str = str(text).strip()
         # Check for leading or trailing whitespace. Ensure text doesn't start/end with whitespace.
         raw_text = str(text)
         text = raw_text.strip()
@@ -188,7 +186,19 @@ class ResRef(str):
         if not text.isascii():  # Ensure text only contains ASCII characters.
             raise self.InvalidEncodingError(text)
 
-        self._value: str = text.strip()
+        # Validate text length.
+        if len(parsed_text) > self.MAX_LENGTH:
+            if not truncate:
+                raise self.ExceedsMaxLengthError(parsed_text)
+            parsed_text = parsed_text[: self.MAX_LENGTH]
+
+        # Ensure text doesn't contain any invalid ASCII characters.
+        for i in range(len(parsed_text)):
+            if parsed_text[i] in self.INVALID_CHARACTERS:
+                msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
+                raise self.InvalidFormatError(msg)
+
+        self._value = parsed_text.strip()
 
     def get(self) -> str:
         """Returns a case-insensitive wrapped string."""
@@ -580,10 +590,7 @@ class CaseInsensitiveHashSet(set, Generic[T]):
             for item in iterable:
                 self.add(item)
 
-    def _normalize_key(
-        self,
-        item: T,
-    ) -> str | object:
+    def _normalize_key(self, item: T) -> str | object:
         return item.casefold() if isinstance(item, str) else item
 
     def add(
@@ -642,8 +649,21 @@ class CaseInsensitiveHashSet(set, Generic[T]):
             return True
         return super().__eq__({self._normalize_key(item) for item in other})
 
-    def __ne__(
-        self,
-        other,
-    ):
+    def __hash__(self) -> int:  # type: ignore[override]
+        # Use a normalized, immutable representation for the hash
+        def _sort_key(x: Any) -> str:
+            return x if isinstance(x, str) else str(x)
+
+        normalized_items = tuple(
+            sorted(
+                (
+                    self._normalize_key(item)
+                    for item in self
+                ),
+                key=_sort_key
+            )
+        )
+        return hash(normalized_items)
+
+    def __ne__(self, other):
         return super().__ne__({self._normalize_key(item) for item in other})

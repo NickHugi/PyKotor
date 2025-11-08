@@ -346,11 +346,15 @@ class PTHEditor(Editor):
 
     @status_bar_decorator
     def removeEdge(self, source: int, target: int):
+        # Remove bidirectional connections like other path editors
         self._pth.disconnect(source, target)
+        self._pth.disconnect(target, source)
 
     @status_bar_decorator
     def addEdge(self, source: int, target: int):
+        # Create bidirectional connections like other path editors
         self._pth.connect(source, target)
+        self._pth.connect(target, source)
 
     @status_bar_decorator
     def points_under_mouse(self) -> list[Vector2]:

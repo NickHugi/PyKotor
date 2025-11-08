@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -66,7 +67,7 @@ class PatcherModifications(ABC):
             !OverrideType=<warn or ignore or rename> - How to handle conflict resolution. See `class OverrideType` above.
             !SourceFolder=relative/path/to/tslpatchdata/subfolder - **NEW HOLOPATCHER** support for pathing within the mod's tslpatchdata itself. Currently only used in InstallList.
         NOTE: Some patch lists, albeit rare, have different exclamation-point variables. See tslpatcher/mods/ncs.py and tslpatcher/mods/tlk.py for outliers.
-    """
+    """  # noqa: E501, W505
 
     DEFAULT_DESTINATION = "Override"
 
@@ -74,14 +75,19 @@ class PatcherModifications(ABC):
     def __init__(
         self,
         sourcefile: str,
-        replace: bool | None = None,
+        replace: bool | None = None,  # noqa: FBT001
         modifiers: list | None = None,
+        *,
+        destination: str | None = None,
     ):
         self.sourcefile: str = sourcefile
         self.sourcefolder: str = "."
         self.saveas: str = sourcefile
         self.replace_file: bool = bool(replace)
-        self.destination: str = self.DEFAULT_DESTINATION
+        self.destination: str = self.DEFAULT_DESTINATION if destination is None else destination
+
+        # Full path to source file for copying to tslpatchdata (set by diff engine)
+        self._source_filepath: Path | None = None
 
         self.action: str = "Patch" + " "
         self.override_type: str = OverrideType.WARN
@@ -96,7 +102,6 @@ class PatcherModifications(ABC):
         game: Game,
     ) -> bytes | Literal[True]:
         """If bytes is returned, patch the resource. If True is returned, skip this resource."""
-        ...
 
     @abstractmethod
     def apply(
@@ -132,13 +137,16 @@ class PatcherModifications(ABC):
         # TSLPatcher defaults to "ignore". However realistically, Override file shadowing is
         # a major problem, so HoloPatcher defaults to "warn"
         self.override_type = file_section_dict.pop("!OverrideType", OverrideType.WARN).lower()
+        # !SourceFolder: Relative path from mod_path (which is typically the tslpatchdata folder) to source files.
+        # Default value "." refers to mod_path itself (the tslpatchdata folder), not its parent.
+        # Path resolution: mod_path / sourcefolder / sourcefile
+        # For example: if mod_path = "C:/Mod/tslpatchdata" and sourcefolder = ".", then:
+        #   - Final path = "C:/Mod/tslpatchdata" / "." / "file.ext" = "C:/Mod/tslpatchdata/file.ext"
+        #   - If sourcefolder = "subfolder", then: "C:/Mod/tslpatchdata" / "subfolder" / "file.ext" = "C:/Mod/tslpatchdata/subfolder/file.ext"
         self.sourcefolder = file_section_dict.pop("!SourceFolder", default_sourcefolder)
 
 
-def convert_to_bool(
-    value: bool | str,
-) -> bool:
-    # sourcery skip: assign-if-exp, reintroduce-else
+def convert_to_bool(value: bool | str) -> bool:  # noqa: FBT001
     """Convert a value to boolean.
 
     The value can be:
@@ -147,23 +155,5 @@ def convert_to_bool(
     - A string "0" (which should be converted to False)
 
     This function is redundant, but provided for users that may not understand Python.
-
-    Args:
-    ----
-        value (bool or str): The value to be converted to a boolean.
-
-    Returns:
-    -------
-        bool: The converted boolean value.
     """
-    # Check if the value is the string "1". If so, return True.
-    if value == "1":
-        return True
-
-    # Check if the value is the string "0". If so, return False.
-    if value == "0":
-        return False
-
-    # If the value is not a string "1" or "0", it must be a boolean.
-    # So, return it as it is.
-    return value  # type: ignore[type]
+    return value is True or value == "1"

@@ -248,12 +248,12 @@ class ModUninstaller:
             return False
         self.log.add_note(f"Using backup folder '{most_recent_backup_folder}'")
 
-        if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
+        if len(files_in_backup) < 6:
             for item in files_in_backup:
                 self.log.add_note(f"Would restore file '{item.relative_to(most_recent_backup_folder)}'")
         if not messagebox.askyesno(
             "Confirmation",
-            f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?\nNote: This uses the most recent mod-specific backup, the namespace option displayed does not affect this tool.",
+            f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?\nNote: This uses the most recent mod-specific backup, the namespace option displayed does not affect this tool.",  # noqa: E501
         ):
             return False
         try:

@@ -4,11 +4,8 @@ import struct
 
 from typing import TYPE_CHECKING
 
-import glm
-
-from glm import mat4, vec3, vec4
-
 from pykotor.common.stream import BinaryReader
+from pykotor.gl import glm, mat4, vec3, vec4
 from pykotor.gl.models.mdl import Mesh, Model, Node
 
 if TYPE_CHECKING:

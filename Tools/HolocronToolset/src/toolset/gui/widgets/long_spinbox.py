@@ -2,19 +2,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qtpy.QtCore import (
-    Signal,  # pyright: ignore[reportPrivateImportUsage]
-)
+import qtpy
+
+from qtpy.QtCore import Signal  # type: ignore[reportPrivateImportUsage]
 from qtpy.QtWidgets import QAbstractSpinBox
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QLineEdit, QWidget
 
 
-class LongSpinBox(QAbstractSpinBox):
+class LongSpinBox(QAbstractSpinBox):  # pyright: ignore[reportGeneralTypeIssues]
     """Implementation of QAbstractSpinBox that allows for values that exceed a signed 32-bit integer."""
 
-    sig_value_changed = Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    sig_value_changed = Signal(object)  # type: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -46,7 +46,7 @@ class LongSpinBox(QAbstractSpinBox):
         self._min = min_value
         self._max = max_value
 
-    def _within_range(self, value: int):
+    def _within_range(self, value: int) -> bool:
         return self._min <= value <= self._max
 
     def clamp_line_edit(self):
@@ -80,5 +80,12 @@ class LongSpinBox(QAbstractSpinBox):
         except ValueError:
             return 0
 
-    def stepEnabled(self) -> QAbstractSpinBox.StepEnabledFlag:
-        return self.StepEnabledFlag.StepUpEnabled | self.StepEnabledFlag.StepDownEnabled
+    def stepEnabled(self):
+        if hasattr(QAbstractSpinBox, "StepEnabledFlag"):
+            return (
+                QAbstractSpinBox.StepEnabledFlag.StepUpEnabled
+                | QAbstractSpinBox.StepEnabledFlag.StepDownEnabled
+            )
+        if qtpy.API_NAME == "PyQt5":
+            return self.StepUpEnabled | self.StepDownEnabled
+        return QAbstractSpinBox.StepUpEnabled | QAbstractSpinBox.StepDownEnabled

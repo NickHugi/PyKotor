@@ -212,11 +212,13 @@ class TLKEditor(Editor):
         # Implement the logic to find references based on the provided index
         stringref: int = index.row()
         print(f"Finding references to stringref: {stringref}")
+        from pykotor.tools.reference_cache import find_tlk_entry_references  # noqa: PLC0415
+
         assert self._installation is not None
 
         def search_fn() -> set[FileResource]:
             assert self._installation is not None
-            return self._installation.find_tlk_entry_references(stringref)
+            return find_tlk_entry_references(self._installation, stringref)
 
         loader = AsyncLoader(
             self,
@@ -256,7 +258,7 @@ class TLKEditor(Editor):
         selection: FileResource,
     ):
         # Open relevant tab then select resource in the tree
-        filepath, editor = open_resource_editor(
+        _filepath, _editor = open_resource_editor(
             selection.filepath(),
             selection.resname(),
             selection.restype(),
@@ -275,7 +277,7 @@ class TLKEditor(Editor):
         self.ui.textEdit.setEnabled(False)
         self.ui.soundEdit.setEnabled(False)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes | bytearray, bytes]:
         tlk = TLK()
         tlk.language = self.language
 

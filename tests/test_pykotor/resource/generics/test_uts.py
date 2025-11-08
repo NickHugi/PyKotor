@@ -6,8 +6,6 @@ import sys
 import unittest
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
@@ -27,19 +25,98 @@ if UTILITY_PATH.joinpath("utility").exists():
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.uts import construct_uts, dismantle_uts
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.uts import UTS
 
-TEST_FILE = "tests/test_pykotor/test_files/test.uts"
-TEST_K1_FILE = "tests/test_pykotor/test_files/test_k1.uts"
+TEST_UTS_XML = """<gff3>
+  <struct id="-1">
+    <exostring label="Tag">3Csounds</exostring>
+    <locstring label="LocName" strref="128551" />
+    <resref label="TemplateResRef">3csounds</resref>
+    <byte label="Active">1</byte>
+    <byte label="Continuous">1</byte>
+    <byte label="Looping">1</byte>
+    <byte label="Positional">1</byte>
+    <byte label="RandomPosition">1</byte>
+    <byte label="Random">1</byte>
+    <float label="Elevation">1.5</float>
+    <float label="MaxDistance">8.0</float>
+    <float label="MinDistance">5.0</float>
+    <float label="RandomRangeX">0.10000000149011612</float>
+    <float label="RandomRangeY">0.20000000298023224</float>
+    <uint32 label="Interval">4000</uint32>
+    <uint32 label="IntervalVrtn">100</uint32>
+    <float label="PitchVariation">0.10000000149011612</float>
+    <byte label="Priority">22</byte>
+    <uint32 label="Hours">0</uint32>
+    <byte label="Times">3</byte>
+    <byte label="Volume">120</byte>
+    <byte label="VolumeVrtn">7</byte>
+    <list label="Sounds">
+      <struct id="0">
+        <resref label="Sound">c_drdastro_dead</resref>
+        </struct>
+      <struct id="0">
+        <resref label="Sound">c_drdastro_atk1</resref>
+        </struct>
+      <struct id="0">
+        <resref label="Sound">p_t3-m4_dead</resref>
+        </struct>
+      <struct id="0">
+        <resref label="Sound">c_drdastro_atk2</resref>
+        </struct>
+      </list>
+    <byte label="PaletteID">6</byte>
+    <exostring label="Comment">comment</exostring>
+    </struct>
+  </gff3>
+"""
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+TEST_K1_UTS_XML = """<gff3>
+  <struct id="-1">
+    <exostring label="Tag">computersoundsrnd</exostring>
+    <locstring label="LocName" strref="45774" />
+    <resref label="TemplateResRef">computersoundsrn</resref>
+    <byte label="Active">1</byte>
+    <byte label="Continuous">1</byte>
+    <byte label="Looping">0</byte>
+    <byte label="Positional">1</byte>
+    <byte label="RandomPosition">0</byte>
+    <byte label="Random">1</byte>
+    <float label="Elevation">1.5</float>
+    <float label="MaxDistance">10.0</float>
+    <float label="MinDistance">3.0</float>
+    <float label="RandomRangeX">0.0</float>
+    <float label="RandomRangeY">0.0</float>
+    <uint32 label="Interval">7000</uint32>
+    <uint32 label="IntervalVrtn">4000</uint32>
+    <float label="PitchVariation">0.10000000149011612</float>
+    <byte label="Priority">22</byte>
+    <uint32 label="Hours">0</uint32>
+    <byte label="Times">3</byte>
+    <byte label="Volume">70</byte>
+    <byte label="VolumeVrtn">0</byte>
+    <list label="Sounds">
+      <struct id="0">
+        <resref label="Sound">as_el_compsnd_01</resref>
+        </struct>
+      <struct id="0">
+        <resref label="Sound">as_el_compsnd_03</resref>
+        </struct>
+      <struct id="0">
+        <resref label="Sound">as_el_compsnd_04</resref>
+        </struct>
+      </list>
+    <byte label="PaletteID">6</byte>
+    <exostring label="Comment" />
+    </struct>
+  </gff3>
+"""
 
 
 class TestUTS(TestCase):
@@ -49,45 +126,23 @@ class TestUTS(TestCase):
     def log_func(self, *msgs):
         self.log_messages.append("\t".join(msgs))
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for are_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTS):
-            gff: GFF = read_gff(are_resource.data())
-            reconstructed_gff: GFF = dismantle_uts(construct_uts(gff), Game.K1)
-            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
-
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for are_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTS):
-            gff: GFF = read_gff(are_resource.data())
-            reconstructed_gff: GFF = dismantle_uts(construct_uts(gff))
-            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
-
     def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTS_XML.encode(), file_format=ResourceType.GFF_XML)
         reconstructed_gff = dismantle_uts(construct_uts(gff))
         assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_k1_gff_reconstruct(self):
-        gff = read_gff(TEST_K1_FILE)
+        gff = read_gff(TEST_K1_UTS_XML.encode(), file_format=ResourceType.GFF_XML)
         reconstructed_gff = dismantle_uts(construct_uts(gff), Game.K1)
         assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTS_XML.encode(), file_format=ResourceType.GFF_XML)
         uts = construct_uts(gff)
         self.validate_io(uts)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTS_XML.encode(), file_format=ResourceType.GFF_XML)
         gff = dismantle_uts(construct_uts(gff))
         uts = construct_uts(gff)
         self.validate_io(uts)

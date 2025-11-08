@@ -7,7 +7,6 @@ import struct
 from copy import copy
 from typing import TYPE_CHECKING
 
-import glm
 import numpy as np
 
 from OpenGL.GL import glGenBuffers, glGenVertexArrays, glVertexAttribPointer
@@ -20,9 +19,9 @@ from OpenGL.raw.GL.VERSION.GL_1_3 import GL_TEXTURE0, GL_TEXTURE1, glActiveTextu
 from OpenGL.raw.GL.VERSION.GL_1_5 import GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, glBindBuffer, glBufferData
 from OpenGL.raw.GL.VERSION.GL_2_0 import glEnableVertexAttribArray
 from OpenGL.raw.GL.VERSION.GL_3_0 import glBindVertexArray
-from glm import mat4, quat, vec3, vec4
 
-from utility.common.geometry import Vector3
+from pykotor.common.geometry import Vector3
+from pykotor.gl import glm, mat4, quat, vec3, vec4
 
 if TYPE_CHECKING:
     from pykotor.gl.scene import Scene
@@ -82,6 +81,24 @@ class Model:
         min_point: vec3,
         max_point: vec3,
     ):
+        """Calculates bounding box of node and its children recursively.
+
+        Call the 'box' function to get started here, don't call this directly.
+
+        Args:
+        ----
+            node: {Node object whose bounding box is calculated}
+            transform: {Transformation matrix to apply on node}
+            min_point: {vec3 to store minimum point of bounding box}
+            max_point: {vec3 to store maximum point of bounding box}.
+
+        Processing Logic:
+        ----------------
+            - Apply transformation on node position and rotation
+            - Iterate through vertices of node mesh if present
+            - Transform vertices and update bounding box points
+            - Recursively call function for each child node.
+        """
         transform = transform * glm.translate(node._position)  # noqa: SLF001
         transform = transform * glm.mat4_cast(node._rotation)  # noqa: SLF001
 

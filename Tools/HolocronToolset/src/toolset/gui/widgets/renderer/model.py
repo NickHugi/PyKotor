@@ -12,6 +12,9 @@ from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QCursor
 from qtpy.QtWidgets import QOpenGLWidget
 
+from pykotor.common.geometry import Vector2
+from pykotor.common.stream import BinaryReader
+from pykotor.gl import vec3
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT
@@ -57,6 +60,9 @@ class ModelRenderer(QOpenGLWidget):
         self.installation = installation
 
     def initializeGL(self):
+        # Ensure OpenGL context is current
+        self.makeCurrent()
+
         self._scene = Scene(installation=self.installation)
         self.scene.camera.fov = self._controls.fieldOfView
         self.scene.camera.distance = 0  # Set distance to 0

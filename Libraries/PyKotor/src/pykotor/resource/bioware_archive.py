@@ -5,8 +5,9 @@ from copy import copy
 from enum import Enum
 from typing import TYPE_CHECKING, TypeVar, cast
 
-from pykotor.common.misc import ResRef
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.common.misc import ResRef  # type: ignore[import-untyped]
+from pykotor.extract.file import ResourceIdentifier  # type: ignore[import-untyped]
+from pykotor.resource.formats._base import ComparableMixin  # type: ignore[import-untyped]
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -14,10 +15,10 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
-    from pykotor.resource.formats.bif import BIF
-    from pykotor.resource.formats.erf import ERF
-    from pykotor.resource.formats.rim import RIM
-    from pykotor.resource.type import ResourceType
+    from pykotor.resource.formats.bif import BIF  # type: ignore[import-untyped]
+    from pykotor.resource.formats.erf import ERF  # type: ignore[import-untyped]
+    from pykotor.resource.formats.rim import RIM  # type: ignore[import-untyped]
+    from pykotor.resource.type import ResourceType  # type: ignore[import-untyped]
 
 B = TypeVar("B")
 
@@ -62,24 +63,25 @@ class ArchiveResource:
         return ResourceIdentifier(str(self.resref), self.restype)
 
 
-class BiowareArchive(ABC):
+class BiowareArchive(ComparableMixin, ABC):
     BINARY_TYPE: ClassVar[ResourceType]
     ARCHIVE_TYPE: type[ArchiveResource] = ArchiveResource
+    COMPARABLE_SET_FIELDS = ("_resources",)
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._resources: list[ArchiveResource] = []
         self._resource_dict: dict[ResourceIdentifier, ArchiveResource] = {}
 
     @abstractmethod
     def get_resource_offset(self, resource: ArchiveResource) -> int: ...
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}(resources=[{self._resources!r}])"
 
     def __iter__(self) -> Iterator[ArchiveResource]:  # noqa: B027
         yield from self._resources.copy()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._resources)
 
     def __getitem__(
@@ -137,22 +139,28 @@ class BiowareArchive(ABC):
 
     def __eq__(
         self,
-        other: BiowareArchive,
+        other: object,  # noqa: ANN001
     ) -> bool:
         if self is other:
             return True
         if not isinstance(other, BiowareArchive):
             return NotImplemented
-        return set(self._resources) == set(other._resources)
+        return (
+            set(self._resources) == set(other._resources)
+            and super().__eq__(other)  # ComparableMixin.__eq__
+        )
 
     def set_data(
         self,
         resname: str,
         restype: ResourceType,
         data: bytes,
-    ):
+    ) -> None:
         resource: ArchiveResource | None = next(
-            (resource for resource in cast(list[ArchiveResource], self._resources) if resource.resref == resname and resource.restype == restype),
+            (
+                resource for resource in cast(list[ArchiveResource], self._resources)
+                if resource.resref == resname and resource.restype == restype
+            ),
             None,
         )
         if resource is None:

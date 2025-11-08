@@ -23,6 +23,7 @@ from pykotor.resource.generics.uts import read_uts, write_uts
 from pykotor.resource.generics.utt import read_utt, write_utt
 from pykotor.resource.generics.utw import read_utw, write_utw
 from pykotor.resource.type import ResourceType
+from pathlib import Path
 
 if TYPE_CHECKING:
     import os

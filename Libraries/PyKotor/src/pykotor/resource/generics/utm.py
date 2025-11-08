@@ -33,6 +33,18 @@ class UTM:
 
     def __init__(
         self,
+        *,
+        resref: ResRef = ResRef.from_blank(),
+        name: LocalizedString = LocalizedString.from_invalid(),
+        tag: str = "",
+        mark_up: int = 0,
+        mark_down: int = 0,
+        on_open: ResRef = ResRef.from_blank(),
+        comment: str = "",
+        id: int = 5,
+        can_buy: bool = False,
+        can_sell: bool = False,
+        inventory: list[InventoryItem] = [],
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""

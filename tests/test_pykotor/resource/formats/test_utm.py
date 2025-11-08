@@ -28,12 +28,31 @@ from pykotor.resource.generics.utm import construct_utm, dismantle_utm
 if TYPE_CHECKING:
     from pykotor.resource.generics.utm import UTM
 
-TEST_FILE = "tests/test_pykotor/test_files/test.utm"
+from pykotor.common.language import LocalizedString
+from pykotor.common.misc import ResRef
+from pykotor.resource.generics.utm import UTM, InventoryItem
+
+TEST_UTM_OBJECT = UTM(
+    resref=ResRef("dan_droid"),
+    name=LocalizedString(stringref=33399),
+    tag="dan_droid",
+    mark_up=100,
+    mark_down=25,
+    on_open=ResRef("onopenstore"),
+    can_buy=True,
+    can_sell=True,
+    inventory=[
+        InventoryItem(resref=ResRef("g_i_drdltplat001"), infinite=False),
+        InventoryItem(resref=ResRef("g_i_drdltplat002"), infinite=True),
+    ],
+    id=5,
+    comment="comment"
+)
 
 
 class TestUTM(unittest.TestCase):
     def test_io(self):
-        gff = read_gff(TEST_FILE)
+        gff = dismantle_utm(TEST_UTM_OBJECT)
         utm = construct_utm(gff)
         self.validate_io(utm)
 

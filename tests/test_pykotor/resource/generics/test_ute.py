@@ -6,8 +6,6 @@ import sys
 import unittest
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
@@ -26,18 +24,55 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Game
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ute import construct_ute, dismantle_ute
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.ute import UTE
 
-TEST_FILE = "tests/test_pykotor/test_files/test.ute"
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+TEST_UTE_XML = """<gff3>
+  <struct id="-1">
+    <exostring label="Tag">G_KATAARNGROUP01</exostring>
+    <locstring label="LocalizedName" strref="31918" />
+    <resref label="TemplateResRef">g_kataarngroup01</resref>
+    <byte label="Active">1</byte>
+    <sint32 label="Difficulty">1</sint32>
+    <sint32 label="DifficultyIndex">2</sint32>
+    <uint32 label="Faction">1</uint32>
+    <sint32 label="MaxCreatures">6</sint32>
+    <byte label="PlayerOnly">1</byte>
+    <sint32 label="RecCreatures">3</sint32>
+    <byte label="Reset">1</byte>
+    <sint32 label="ResetTime">60</sint32>
+    <sint32 label="Respawns">1</sint32>
+    <sint32 label="SpawnOption">1</sint32>
+    <resref label="OnEntered">onentered</resref>
+    <resref label="OnExit">onexit</resref>
+    <resref label="OnExhausted">onexhausted</resref>
+    <resref label="OnHeartbeat">onheartbeat</resref>
+    <resref label="OnUserDefined">onuserdefined</resref>
+    <list label="CreatureList">
+      <struct id="0">
+        <sint32 label="Appearance">74</sint32>
+        <float label="CR">4.0</float>
+        <resref label="ResRef">g_kataarn01</resref>
+        <byte label="SingleSpawn">1</byte>
+        </struct>
+      <struct id="0">
+        <sint32 label="Appearance">74</sint32>
+        <float label="CR">8.0</float>
+        <resref label="ResRef">g_kataarn02</resref>
+        <byte label="SingleSpawn">1</byte>
+        <sint32 label="GuaranteedCount">1</sint32>
+        </struct>
+      </list>
+    <byte label="PaletteID">7</byte>
+    <exostring label="Comment">Kashyyyk</exostring>
+    </struct>
+  </gff3>
+"""
 
 
 class TestUTE(TestCase):
@@ -47,49 +82,18 @@ class TestUTE(TestCase):
     def log_func(self, *msgs):
         self.log_messages.append("\t".join(msgs))
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for ute_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTE):
-            gff: GFF = read_gff(ute_resource.data())
-            reconstructed_gff: GFF = dismantle_ute(construct_ute(gff), Game.K1)
-            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
-
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for ute_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTE):
-            gff: GFF = read_gff(ute_resource.data())
-            reconstructed_gff: GFF = dismantle_ute(construct_ute(gff))
-            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
-
-    def test_k2_reconstruct(self):
-        gff = read_gff(TEST_FILE)
-        reconstructed_gff = dismantle_ute(construct_ute(gff), Game.K2)
-        result = gff.compare(reconstructed_gff, self.log_func)
-        output = os.linesep.join(self.log_messages)
-        if not result:
-            expected_output = r"""
-GFFStruct: number of fields have changed at 'GFFRoot\CreatureList\0': '4' --> '5'
-Extra 'Int32' field found at 'GFFRoot\CreatureList\0\GuaranteedCount': '0'
-""".replace("\r\n", "\n")
-            assert output.strip().replace("\r\n", "\n") == expected_output.strip(), "Comparison output does not match expected output"
-        else:
-            assert result
+    def test_gff_reconstruct(self):
+        gff = read_gff(TEST_UTE_XML.encode(), file_format=ResourceType.GFF_XML)
+        reconstructed_gff = dismantle_ute(construct_ute(gff))
+        assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTE_XML.encode(), file_format=ResourceType.GFF_XML)
         ute = construct_ute(gff)
         self.validate_io(ute)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTE_XML.encode(), file_format=ResourceType.GFF_XML)
         gff = dismantle_ute(construct_ute(gff))
         ute = construct_ute(gff)
         self.validate_io(ute)

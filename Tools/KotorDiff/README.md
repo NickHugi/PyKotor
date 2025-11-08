@@ -1,13 +1,13 @@
-## KotorDiff
+# KotorDiff
 
 - ![Screenshot 1](https://deadlystream.com/downloads/screens/monthly_2023_09/Code_B7XMgAobTn.thumb.png.031c5f751b0fc2255f2de5300d42af7f.png)
 - ![Screenshot 2](https://deadlystream.com/downloads/screens/monthly_2023_09/Code_sUtiSdkEsB.thumb.png.bff397075b009ba2140696ed3c38deed.png)
 
-## About This File
+## About This Tool
 
-### **A simple CLI to easily compare KOTOR file formats.**
+### **A powerful CLI to easily compare KOTOR file formats, installations, and modules.**
 
-This is a very simple CLI to PyKotor. If you find TSLPatcher isn't patching the resulting files in the way you want, you can use this tool to compare your manual changes to the resulting TSLPatcher result. You can also use it to compare entire installations, directories, or single files.
+KotorDiff is a comprehensive command-line tool built on PyKotor that allows you to compare KOTOR files, directories, modules, and entire installations with detailed, structured output. Whether you're debugging TSLPatcher issues, validating mod installations, or analyzing differences between game versions, KotorDiff provides the precision you need.
 
 ### **Why KotorDiff?**
 
@@ -15,128 +15,302 @@ It is (or should be) common knowledge that Kotor Tool is not safe to use for any
 
 Let's take a look at a **.utc** file extracted directly from the BIFs (the OG vanilla **p_bastilla.utc**). Extract it with **KTool** and name it **p_bastilla_ktool.utc**. Now open the same file in ktool's UTC character editor, change a single field (literally anything, hp, strength, whatever you fancy), and save it as **p_bastilla_ktool_edited.utc**.
 
-KotorDiff's output:
+KotorDiff's output reveals the shocking truth - changing a single field results in dozens of unintended modifications, corrupted data, and broken references. This tool saved the day by showing exactly what KTool did wrong.
 
-```diff
-Using --path1='C:\Users\nodoxxxpls\Downloads\p_bastilla_ktool_edited.utc'
-Using --path2='C:\Users\nodoxxxpls\Downloads\p_bastilla_ktool.utc'
-Using --ignore-rims=False
-Using --ignore-tlk=False
-Using --ignore-lips=False
-Using --compare-hashes=True
-Using --use-profiler=False
+## Features
 
-GFFStruct: number of fields have changed at 'p_bastilla_ktool_edited.utc': '72' --> '69'
-Field 'Int16' is different at 'p_bastilla_ktool_edited.utc\HitPoints':
+- **Multiple Comparison Types**: Compare files, directories, modules, or entire installations
+- **Advanced Module Resolution**: Intelligent handling of composite modules (`.rim` + `_s.rim` + `_dlg.erf`)
+- **Flexible Filtering**: Target specific modules or resources during installation-wide comparisons
+- **Detailed Logging**: Comprehensive resource resolution tracking with verbose search information
+- **Format-Aware Diffing**: Structured comparison of GFF, TLK, and capsule files
+- **3-Way Merging**: Support for merge conflicts and TSLPatcher integration
+- **Multiple Output Formats**: Default, unified, context, and side-by-side diff formats
+
+## Installation
+
+```bash
+# Install dependencies
+uv install
+
+# Run directly
+uv run src/kotordiff/__main__.py [options]
+```
+
+## Usage
+
+### Basic Syntax
+
+```bash
+kotordiff --path1 <path1> --path2 <path2> [options]
+```
+
+### Comparison Types
+
+#### 1. File vs File
+
+Compare two individual files of any supported format:
+
+```bash
+kotordiff --path1 character1.utc --path2 character2.utc
+```
+
+#### 2. Directory vs Directory
+
+Compare all files within two directories:
+
+```bash
+kotordiff --path1 "mod_folder_1" --path2 "mod_folder_2"
+```
+
+#### 3. Installation vs Installation
+
+Compare two complete KOTOR installations:
+
+```bash
+kotordiff --path1 "C:\Games\KOTOR" --path2 "C:\Games\KOTOR_Modded"
+```
+
+#### 4. Module vs Module
+
+Compare modules using intelligent composite loading:
+
+```bash
+# Compare complete modules (automatically finds .rim, _s.rim, _dlg.erf)
+kotordiff --path1 "modules/tat_m17ac" --path2 "modules_backup/tat_m17ac"
+
+# Compare specific module files
+kotordiff --path1 "tat_m17ac.rim" --path2 "tat_m17ac_modified.rim"
+```
+
+#### 5. Module vs Installation
+
+Compare a module against its counterpart in an installation:
+
+```bash
+kotordiff --path1 "installation_path" --path2 "modules/tat_m17ac.rim"
+```
+
+#### 6. Resource vs Installation
+
+Compare a single resource against its installation version:
+
+```bash
+kotordiff --path1 "installation_path" --path2 "character.utc"
+```
+
+### Advanced Options
+
+#### Filtering (`--filter`)
+
+Target specific modules or resources during installation comparisons:
+
+```bash
+# Compare only the tat_m18ac module between installations
+kotordiff --path1 "install1" --path2 "install2" --filter "tat_m18ac"
+
+# Compare specific resources across installations
+kotordiff --path1 "install1" --path2 "install2" --filter "p_bastilla.utc" --filter "dialog.tlk"
+
+# Multiple filters for complex comparisons
+kotordiff --path1 "install1" --path2 "install2" --filter "tat_m17ac" --filter "danm13" --filter "kas_m22aa"
+```
+
+#### Output Formats (`--format`)
+
+Choose from multiple diff output formats:
+
+```bash
+# Default structured format (recommended)
+kotordiff --path1 file1 --path2 file2 --format default
+
+# Unified diff format (git-style)
+kotordiff --path1 file1 --path2 file2 --format unified
+
+# Context diff format
+kotordiff --path1 file1 --path2 file2 --format context
+
+# Side-by-side comparison
+kotordiff --path1 file1 --path2 file2 --format side_by_side
+```
+
+#### Logging and Output Control
+
+```bash
+# Set logging level
+kotordiff --path1 file1 --path2 file2 --log-level debug
+
+# Control output verbosity
+kotordiff --path1 file1 --path2 file2 --output-mode diff_only  # Only show differences
+kotordiff --path1 file1 --path2 file2 --output-mode quiet     # Minimal output
+
+# Save to specific log file
+kotordiff --path1 file1 --path2 file2 --output-log "my_diff.log"
+
+# Disable colored output
+kotordiff --path1 file1 --path2 file2 --no-color
+```
+
+#### Selective Comparison (`--ignore-*`)
+
+Skip specific file types during comparison:
+
+```bash
+# Ignore RIM files
+kotordiff --path1 install1 --path2 install2 --ignore-rims True
+
+# Ignore TLK files
+kotordiff --path1 install1 --path2 install2 --ignore-tlk True
+
+# Ignore LIP files
+kotordiff --path1 install1 --path2 install2 --ignore-lips True
+```
+
+### 3-Way Merging
+
+KotorDiff supports 3-way merging for advanced conflict resolution:
+
+```bash
+# 3-way merge with automatic TSLPatcher generation
+kotordiff --mine "my_version" --older "original" --yours "target_version"
+
+# Generate changes.ini for TSLPatcher
+kotordiff --mine "my_mod" --older "vanilla" --yours "final_state" --generate-ini
+```
+
+## Module Resolution System
+
+KotorDiff includes an advanced module resolution system that understands KOTOR's composite module structure:
+
+### Automatic Module Detection
+
+When you specify a module name without extension (e.g., `tat_m17ac`), KotorDiff automatically:
+
+1. **Searches for related files**: `.mod`, `.rim`, `_s.rim`, `_dlg.erf`
+2. **Applies priority order**: `.mod` > `.rim` + `_s.rim` + `_dlg.erf`
+3. **Uses composite loading**: Combines multiple files when appropriate
+4. **Provides detailed logging**: Shows which files were found and used
+
+### Module Priority System
+
+```bash
+1. .mod files (highest priority - community override)
+2. .rim files (main module data)
+3. _s.rim files (supplementary data)
+4. _dlg.erf files (K2 dialog data)
+```
+
+### Resource Resolution Logging
+
+With verbose logging enabled, you'll see detailed information about where each resource was found:
+
+```bash
+Constraining search to module root 'tat_m17ac'
+Installation-wide search for 'module.ifo':
+  Checking each location:
+    1. Custom folders -> not found
+    2. Override folders -> not found
+    3. Custom modules -> FOUND at Modules\tat_m17ac.rim -> SELECTED
+    4. Module capsules -> (filtered to tat_m17ac only)
+    5. Chitin BIFs -> not found
+```
+
+## Supported File Formats
+
+### Fully Supported (Structured Comparison)
+
+- **GFF Files**: UTC, UTD, UTP, UTI, UTM, UTS, UTT, UTW, UTE, ARE, IFO, GIT, DLG, GUI, etc.
+- **TalkTable Files**: TLK (with string reference resolution)
+- **Capsule Files**: ERF, MOD, RIM, SAV (with internal resource comparison)
+- **Layout Files**: LYT
+- **Path Files**: PTH
+- **Vision Files**: VIS
+- **2DA Files**: Tabular data comparison
+
+### Hash-Based Comparison
+
+- **Script Files**: NCS, NSS
+- **Texture Files**: TPC, TGA
+- **Model Files**: MDL, MDX
+- **Audio Files**: WAV, MP3
+- **Other**: Any unsupported format falls back to SHA256 hash comparison
+
+## Output Examples
+
+### GFF File Differences
+
+```bash
+Field 'Int16' is different at 'character.utc\HitPoints':
 --- (old)HitPoints
 +++ (new)HitPoints
 @@ -1 +1 @@
 -18
 +24
-Field 'LocalizedString' is different at 'p_bastilla_ktool_edited.utc\FirstName':
---- (old)FirstName
-+++ (new)FirstName
+
+Field 'String' is different at 'character.utc\Tag':
+--- (old)Tag
++++ (new)Tag
 @@ -1 +1 @@
--Bastila
-+31360
-Field 'Int16' is different at 'p_bastilla_ktool_edited.utc\CurrentHitPoints':
---- (old)CurrentHitPoints
-+++ (new)CurrentHitPoints
-@@ -1 +1 @@
--20
-+24
-Field 'UInt16' is different at 'p_bastilla_ktool_edited.utc\FeatList\0\Feat':
---- (old)Feat
-+++ (new)Feat
-@@ -1 +1 @@
--3
-+94
-Field 'UInt16' is different at 'p_bastilla_ktool_edited.utc\FeatList\2\Feat':
---- (old)Feat
-+++ (new)Feat
-@@ -1 +1 @@
--39
-+98
-Field 'UInt16' is different at 'p_bastilla_ktool_edited.utc\FeatList\3\Feat':
---- (old)Feat
-+++ (new)Feat
-@@ -1 +1 @@
--43
-+55
-Field 'UInt16' is different at 'p_bastilla_ktool_edited.utc\FeatList\4\Feat':
---- (old)Feat
-+++ (new)Feat
-@@ -1 +1 @@
--44
-+107
-Field 'UInt16' is different at 'p_bastilla_ktool_edited.utc\FeatList\5\Feat':
---- (old)Feat
-+++ (new)Feat
-@@ -1 +1 @@
--55
-+3
-Field 'UInt16' is different at 'p_bastilla_ktool_edited.utc\FeatList\6\Feat':
---- (old)Feat
-+++ (new)Feat
-@@ -1 +1 @@
--94
-+39
-Field 'UInt16' is different at 'p_bastilla_ktool_edited.utc\FeatList\7\Feat':
---- (old)Feat
-+++ (new)Feat
-@@ -1 +1 @@
--98
-+43
-Field 'UInt16' is different at 'p_bastilla_ktool_edited.utc\FeatList\8\Feat':
---- (old)Feat
-+++ (new)Feat
-@@ -1 +1 @@
--107
-+44
-Field 'LocalizedString' is different at 'p_bastilla_ktool_edited.utc\Description':
---- (old)Description
-+++ (new)Description
-@@ -0,0 +1 @@
-+-1
-Field 'String' is different at 'p_bastilla_ktool_edited.utc\Subrace':
---- (old)Subrace
-+++ (new)Subrace
-@@ -1 +0,0 @@
--0
-^ 'p_bastilla_ktool_edited.utc': GFF is different ^
----------------------------------------------------
-'p_bastilla_ktool_edited.utc'  DOES NOT MATCH  'p_bastilla_ktool.utc'
+-OldTag
++NewTag
 ```
 
-Sheesh! I bet you can't even guess which field I modified! Again, I changed a singular field! What is all this nonsense that KTool did to my character sheet?
+### Module Comparison
 
-Moral: Don't use KTool to modify files. It seems to have the incorrect field types defined internally and doesn't respect the original file when saving a new one.
+```bash
+Using composite module loading for tat_m17ac.rim
+Combined module capsules for tat_m17ac.rim: ['tat_m17ac.rim', 'tat_m17ac_s.rim']
 
-But KotorDiff saved the day here and outputted exactly what happened on save.
+Processing resource: module.ifo
+Constraining search to module root 'tat_m17ac'
+Found 'module.ifo' at: Modules\tat_m17ac.rim
 
-### **How to use:**
+Processing resource: m17ac.are
+Found 'm17ac.are' at: Modules\tat_m17ac.rim
+```
 
-Simply run the executable. It'll ask you for 3 paths:
+### Installation Comparison with Filtering
 
-- **PATH1**: *Path to the first K1/TSL install, file, or directory to diff.*
-- **PATH2**: *Path to the second K1/TSL install, file, or directory to diff.*
-- **OUTPUT_LOG**: *File name/path of the desired output logfile (defaults to `log_install_differ.log` in the current directory).*
+```bash
+Using filter: tat_m17ac
+Comparing installations with 1 filter(s) active
+Processing only resources matching: tat_m17ac
 
-If you point **PATH1** and **PATH2** to two KOTOR installs, it will ONLY compare the **Override** folder, the **Modules** folder, the **Lips** folder, the **rims** folder (if exists), the **StreamWaves/StreamVoices** folder, and the **dialog.tlk** file. This was a design choice to improve how long the differ takes to finish. This includes any subfolders within the aforementioned folder names.
+Found 15 resources in tat_m17ac module
+Compared 15/15 resources
+Installation comparison complete
+```
 
-### **Supported filetypes/formats:**
+## File Formats Handled
 
 - TalkTable files (TLK)
 - Any GFF file (DLG, UTC, GUI, UTP, UTD, etc.)
 - Any capsule (ERF, MOD, RIM, SAV, etc.)
 
-**Not supported:** NCS, NSS, ITP
+## Exit Codes
 
-*Any file format that's not supported will have its SHA256 hash compared instead.*
+KotorDiff uses standard exit codes for integration with scripts and automation:
 
-### **CLI Support:**
+- **0**: Files/installations match perfectly
+- **1**: System error (file not found, permission denied, etc.)
+- **2**: Files/installations differ
+- **3**: Known application error (invalid arguments, unsupported format, etc.)
 
-This is a very flexible tool. You can send it command line arguments if you would like to use it in a 3rd party tool. Run `kotordiff.exe --help` to get a full syntax. If there's an error, the exit code will be 3 (if the error is known by my code) or 1 (some system error loading the tool). If the two paths match, the exit code will be 0. If the two paths don't match, the exit code will be 2. You can utilize these error codes to use KotorDiff in a customized 3rd party script or as an add-on to WinMerge/WinDirStat; the possibilities are endless.
+## Integration Examples
+
+### Batch Script Integration
+
+```batch
+@echo off
+kotordiff --path1 "original" --path2 "modified" --output-mode quiet
+if %ERRORLEVEL% == 0 (
+    echo Files are identical
+) else if %ERRORLEVEL% == 2 (
+    echo Files differ - check log for details
+) else (
+    echo Error occurred
+)
+```
 
 ### **Command Line Options:**
 
@@ -154,28 +328,62 @@ kotordiff [--path1 PATH1] [--path2 PATH2] [--output-log FILE] [--ignore-rims] [-
 - `--logging`: Whether to log the results to a file or not (default is True)
 - `--use-profiler`: Use cProfile to find where most of the execution time is taking place in source code
 
-### **FAQ:**
+### PowerShell Integration
 
-**Q: I am struggling to read the diff output, why is it saying +/-/@38924 and what does it mean?**
+```powershell
+$result = & kotordiff --path1 "install1" --path2 "install2" --filter "tat_m17ac"
+switch ($LASTEXITCODE) {
+    0 { Write-Host "Modules are identical" -ForegroundColor Green }
+    2 { Write-Host "Modules differ" -ForegroundColor Yellow }
+    default { Write-Host "Error occurred" -ForegroundColor Red }
+}
+```
 
-A: GIT Diff is a standardized output format that has been widely adopted and used since probably the 80s/90s. [This StackOverflow answer](https://stackoverflow.com/a/2530012/4414190) is by far the best explanation I've seen, but honestly, ask ChatGPT to explain it further if needed, or send me a PM if something doesn't make sense!
+## Performance Tips
 
-**Q: Couldn't I just open my two files with Holocron Toolset/ERFEdit/K-GFF etc?**
+1. **Use filtering** for large installation comparisons to focus on specific areas
+2. **Enable quiet mode** (`--output-mode quiet`) for automated scripts
+3. **Ignore unnecessary file types** using `--ignore-*` flags
+4. **Use specific module names** instead of wildcards when possible
 
-A: You could, but for me, it became tedious to manually compare them side by side, expanding every node, etc. Leave alone completely multiple files. This tool allows you to simply input two paths and have the full differences outputted and logged.
+## Troubleshooting
 
-A main benefit is it'll show you the exact GFF paths that differ. Output such as `Missing struct: "EntryList\5\RepliesList\3" {contents of the struct}` has been very useful.
+### Common Issues
 
-**Q: Why is my antivirus flagging this?**
+**Q: "Invalid path" error when specifying module names**
+A: Ensure the module files exist in the specified directory. KotorDiff looks for `.mod`, `.rim`, `_s.rim`, and `_dlg.erf` files.
 
-A: This is a false positive and there's nothing I can do. Python source scripts are compiled to executables using [PyInstaller](https://github.com/pyinstaller/pyinstaller), but unfortunately, some antiviruses have been known to flag anything compiled with PyInstaller this way. The problem is similar to why your browser may warn you about downloading any files with the .EXE extension.
+**Q: Too much output when comparing installations**
+A: Use `--filter` to target specific modules or `--output-mode diff_only` to see only differences.
 
-This whole tool is open source, feel free to run directly from the source script: [https://github.com/th3w1zard1/PyKotor/blob/master/Tools/KotorDiff/src/\_\_main\_\_.py](https://github.com/th3w1zard1/PyKotor/blob/master/Tools/KotorDiff/src/__main__.py)
+**Q: Module resolution seems wrong**
+A: Check the verbose logs to see which files were found and prioritized. The tool follows KOTOR's standard module loading order.
 
-There's a well-written article explaining why the false positives happen on their issue template: [https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md](https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md)
+**Q: Antivirus flagging the executable**
+A: This is a false positive common with PyInstaller-compiled executables. You can run from source using `uv run src/kotordiff/__main__.py` instead.
 
 **TLDR:** PyInstaller is an amazing tool, but antiviruses may flag it. This is not the fault of PyInstaller or my tool, but rather the fault of how some scummy users have chosen to use PyInstaller in the past. Please report any false positives you encounter to your antivirus's website, as reports not only improve the accuracy of everybody's AV experience overall but also indirectly support the [PyInstaller project](https://github.com/pyinstaller/pyinstaller).
+
+### Debug Mode
+
+For troubleshooting, enable maximum verbosity:
+
+```bash
+kotordiff --path1 file1 --path2 file2 --log-level debug --output-mode full
+```
 
 **Q: Is there a GUI version available?**
 
 A: No, KotorDiff is designed as a lightweight, command-line only tool. If you need a GUI for configuration generation, check out [HoloGenerator](https://github.com/th3w1zard1/PyKotor/tree/main/Tools/HoloGenerator) which provides a web-based interface for generating HoloPatcher configurations.
+
+## Contributing
+
+KotorDiff is part of the PyKotor project. Contributions are welcome!
+
+- **Source**: [https://github.com/th3w1zard1/PyKotor](https://github.com/th3w1zard1/PyKotor)
+- **Issues**: Report bugs and feature requests on GitHub
+- **Documentation**: Help improve this README and inline documentation
+
+## License
+
+This tool is open source and part of the PyKotor project. See the main repository for license information.

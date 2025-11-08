@@ -4,20 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PyKotorGL"
-version = "1.0.0"
+version = "1.7"
 description = "A Python library that can render most modules from the game Knights of the Old Republic and its sequel."
 authors = [
     { name = "NickHugi" },
     { name = "Benjamin Auquite", email = "halomastar@gmail.com" },
 ]
-maintainers = [{ name = "Benjamin Auquite", email = "halomastar@gmail.com" }]
-requires-python = ">= 3.8"
-dependencies = [
-    "pykotor>=1.7",
-    "utility>=0.0.1",
-    "numpy>=1.24.3",
-    "PyOpenGL>=3.1.7",
-    "PyGLM>=2.0",
+maintainers = [
+    { name = "th3w1zard1", email = "halomastar@gmail.com" },
 ]
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "LGPL-3.0-or-later License" }
@@ -36,32 +30,45 @@ keywords = [
     "mdl",
     "mdx",
 ]
-
+requires-python = ">= 3.8"
+dependencies = [
+    "pykotor>=1.7",
+    "numpy>=1.21",
+    "PyOpenGL>=3.1.10",
+    "PyGLM>=2.0,<2.8; python_implementation == 'CPython'",
+    "ply>=3.11,<4",  # required for the NSS compiler lexer
+]
 
 # Optional Poetry configuration
 [tool.poetry]
 name = "pykotorgl"
-version = "1.0.0"
+version = "1.7"
 description = "OpenGL rendering extension for PyKotor"
 authors = ["NickHugi", "Benjamin Auquite <halomastar@gmail.com>"]
 maintainers = ["Benjamin Auquite <halomastar@gmail.com>"]
 readme = "README.md"
-packages = [{ include = "pykotorgl", from = "src" }]
+packages = [{ include = "pykotor", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
 pykotor = "^1.7"
 utility = "^0.0.1"
-numpy = "^1.21"
-PyOpenGL = "^3.1.7"
-PyGLM = "^2.0"
+numpy = ">=1.21"
+PyOpenGL = ">=3.1.10"
+PyGLM = ">=2.0,<2.8; python_implementation == 'CPython'"
+ply = ">=3.11,<4"
 
 [project.optional-dependencies]
-gl_accel = ["PyOpenGL-accelerate>=3.1.7"]
+gl_accel = ["PyOpenGL-accelerate>=3.1.10"]
+font = [
+    "pillow>=9.5; python_implementation == 'CPython'",       # required for TXI/TGA fonts (CPython)
+    "pillow>10,<11.1.0; python_implementation == 'PyPy'",    # required for TXI/TGA fonts (PyPy)
+]
+secure_xml = ["defusedxml~=0.7"]    # secure XML parsing
+encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodings
 
 [tool.poetry.optional-dependencies]
-PyOpenGL_accelerate = "^3.1.7"
-
+PyOpenGL_accelerate = ">=3.1.10"
 
 [project.urls]
 Homepage = "https://github.com/th3w1zard1/PyKotor"

@@ -4,18 +4,28 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 
 
-class SSF:
+class SSF(ComparableMixin):
     """Represents the data stored in a SSF file."""
 
     BINARY_TYPE = ResourceType.SSF
+    COMPARABLE_SEQUENCE_FIELDS = ("_sounds",)
 
     def __init__(
         self,
     ):
         self._sounds: list[int] = [-1] * 28
+
+    def __eq__(self, other):
+        if not isinstance(other, SSF):
+            return NotImplemented
+        return self._sounds == other._sounds
+
+    def __hash__(self):
+        return hash(tuple(self._sounds))
 
     def __getitem__(
         self,

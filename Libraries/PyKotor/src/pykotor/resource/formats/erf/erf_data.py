@@ -6,6 +6,8 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from pykotor.resource.bioware_archive import ArchiveResource, BiowareArchive
+from pykotor.common.misc import ResRef
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_file, is_mod_file, is_sav_file
 
@@ -13,7 +15,6 @@ if TYPE_CHECKING:
     import os
 
     from pykotor.common.misc import ResRef
-    from pykotor.extract.file import ResourceIdentifier
 
 
 class ERFResource(ArchiveResource):
@@ -50,6 +51,8 @@ class ERF(BiowareArchive):
 
     BINARY_TYPE = ResourceType.ERF
     ARCHIVE_TYPE: type[ArchiveResource] = ERFResource
+    COMPARABLE_FIELDS = ("erf_type", "is_save_erf")
+    COMPARABLE_SET_FIELDS = ("_resources",)
 
     def __init__(
         self,
@@ -57,19 +60,32 @@ class ERF(BiowareArchive):
         *,
         is_save: bool = False,
     ):
-        self._resources: list[ERFResource]
-        self._resource_dict: dict[ResourceIdentifier, ERFResource]
         super().__init__()
 
         self.erf_type: ERFType = erf_type
         self.is_save: bool = is_save
 
-    def __eq__(self, other):
-        from pykotor.resource.formats.rim import RIM
+    @property
+    def is_save_erf(self) -> bool:
+        """Alias for ComparableMixin compatibility."""
+        return self.is_save
+
+    @is_save_erf.setter
+    def is_save_erf(self, value: bool) -> None:
+        self.is_save = value
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.erf_type!r}, is_save={self.is_save})"
+
+    def __eq__(self, other: object):
+        from pykotor.resource.formats.rim import RIM  # Prevent circular imports  # noqa: PLC0415
 
         if not isinstance(other, (ERF, RIM)):
             return NotImplemented
         return set(self._resources) == set(other._resources)
+
+    def __hash__(self) -> int:
+        return hash((self.erf_type, tuple(self._resources), self.is_save))
 
     def get_resource_offset(self, resource: ArchiveResource) -> int:
         from pykotor.resource.formats.erf.io_erf import ERFBinaryWriter

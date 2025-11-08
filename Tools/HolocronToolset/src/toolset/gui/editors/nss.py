@@ -3,11 +3,14 @@ from __future__ import annotations
 import io
 import json
 import multiprocessing
+import sys
 import traceback
 
 from contextlib import contextmanager
 from operator import attrgetter
 from typing import TYPE_CHECKING, Any, Callable, Generator, NamedTuple
+from pathlib import Path, PurePath
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 from loggerplus import RobustLogger, get_log_directory
 from qtpy.QtCore import QSettings, QStringListModel, Qt
@@ -43,40 +46,45 @@ if __name__ == "__main__":
     update_path(Path(__file__).parent.parent.parent.parent)
 
 
-from pykotor.extract.file import FileResource
-from pykotor.resource.formats.ncs.compiler.classes import FunctionDefinition, GlobalVariableDeclaration, StructDefinition
-from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
-from pykotor.resource.formats.ncs.compiler.parser import NssParser
-from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
-from pykotor.tools.path import CaseAwarePath
-from toolset.gui.common.widgets.code_editor import CodeEditor
-from toolset.gui.common.widgets.syntax_highlighter import SyntaxHighlighter
-from toolset.gui.dialogs.github_selector import GitHubFileSelector
-from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
-from toolset.utils.script import ht_compile_script, ht_decompile_script
-from toolset.utils.window import open_resource_editor
-from utility.error_handling import universal_simplify_exception
-from utility.misc import is_debug_mode
-from utility.system.path import Path, PurePath
-from utility.updater.github import download_github_file
+from pykotor.extract.file import FileResource  # pyright: ignore[reportPrivateImportUsage]
+from pykotor.resource.formats.ncs.compiler.classes import FunctionDefinition, GlobalVariableDeclaration, StructDefinition  # pyright: ignore[reportPrivateImportUsage]
+from pykotor.resource.formats.ncs.compiler.lexer import NssLexer  # pyright: ignore[reportPrivateImportUsage]
+from pykotor.resource.formats.ncs.compiler.parser import NssParser  # pyright: ignore[reportPrivateImportUsage]
+from pykotor.resource.type import ResourceType  # pyright: ignore[reportPrivateImportUsage]
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file  # pyright: ignore[reportPrivateImportUsage]
+from pykotor.tools.path import CaseAwarePath  # pyright: ignore[reportPrivateImportUsage]
+from toolset.gui.common.widgets.code_editor import CodeEditor  # pyright: ignore[reportPrivateImportUsage]
+from toolset.gui.common.widgets.syntax_highlighter import SyntaxHighlighter  # pyright: ignore[reportPrivateImportUsage]
+from toolset.gui.dialogs.github_selector import GitHubFileSelector  # pyright: ignore[reportPrivateImportUsage]
+from toolset.gui.editor import Editor  # pyright: ignore[reportPrivateImportUsage]
+from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError  # pyright: ignore[reportPrivateImportUsage]
+from toolset.utils.script import ht_compile_script, ht_decompile_script  # pyright: ignore[reportPrivateImportUsage]
+from toolset.utils.window import open_resource_editor  # pyright: ignore[reportPrivateImportUsage]
+from utility.error_handling import universal_simplify_exception  # pyright: ignore[reportPrivateImportUsage]
+from utility.misc import is_debug_mode  # pyright: ignore[reportPrivateImportUsage]
+from utility.updater.github import download_github_file  # pyright: ignore[reportPrivateImportUsage]
 
 if TYPE_CHECKING:
     import os
 
     from types import TracebackType
 
-    from qtpy.QtCore import QPoint
+    from qtpy.QtCore import QPoint  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
     from qtpy.QtGui import (
         QAction,  # pyright: ignore[reportPrivateImportUsage]
         QMouseEvent,
         QWheelEvent,
     )
 
-    from pykotor.common.script import ScriptConstant, ScriptFunction
-    from pykotor.resource.formats.ncs.compiler.classes import CodeRoot
-    from toolset.data.installation import HTInstallation
+    from pykotor.common.script import ScriptConstant, ScriptFunction  # pyright: ignore[reportPrivateImportUsage]
+    from pykotor.resource.formats.ncs.compiler.classes import CodeRoot  # pyright: ignore[reportPrivateImportUsage]
+    from toolset.data.installation import HTInstallation  # pyright: ignore[reportPrivateImportUsage]
+    KOTOR_CONSTANTS: list[ScriptConstant] = []  # pyright: ignore[reportPrivateImportUsage]
+    KOTOR_FUNCTIONS: list[ScriptFunction] = []  # pyright: ignore[reportPrivateImportUsage]
+    TSL_CONSTANTS: list[ScriptConstant] = []  # pyright: ignore[reportPrivateImportUsage]
+    TSL_FUNCTIONS: list[ScriptFunction] = []  # pyright: ignore[reportPrivateImportUsage]
+else:
+    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS  # pyright: ignore[reportPrivateImportUsage]
 
 
 def download_script(
@@ -637,15 +645,15 @@ class NSSEditor(Editor):
 
     def determine_script_path(self, resref: str) -> str:
         script_filename = f"{resref.lower()}.nss"
-        dialog = GitHubFileSelector(self.owner, self.repo, selectedFiles=[script_filename], parent=self)
+        dialog = GitHubFileSelector(self.owner, self.repo, selected_files=[script_filename], parent=self)
         if dialog.exec_() != QDialog.DialogCode.Accepted:
             raise ValueError("No script selected.")
 
-        selected_path = dialog.getSelectedPath()
-        if not selected_path or not selected_path.strip():
+        selected_path: str | None = dialog.selected_path
+        if selected_path is None or not selected_path.strip():
             raise ValueError("No script selected.")
         print(f"User selected script path: {selected_path}")
-        return selected_path
+        return str(selected_path)
 
     def load(
         self,
@@ -714,16 +722,20 @@ class NSSEditor(Editor):
 
         return local_path.read_text(encoding="windows-1252")
 
-    def build(self) -> tuple[bytes | None, bytes]:
+    def build(self) -> tuple[bytes | bytearray, bytes]:
         if self._restype is not ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
-        self._logger.debug(f"Compiling script '{self._resname}.{self._restype.extension}' from the NSSEditor...")
+        RobustLogger().debug(f"Compiling script '{self._resname}.{self._restype.extension}' from the NSSEditor...")
         assert self._installation is not None, "Installation not set, cannot determine path"
-        compiled_bytes: bytes | None = ht_compile_script(self.ui.codeEdit.toPlainText(), self._installation.path(), tsl=self._installation.tsl)
+        compiled_bytes: bytes | None = ht_compile_script(
+            self.ui.codeEdit.toPlainText(),
+            self._installation.path(),
+            tsl=self._installation.game().is_k2()  # Determine whether this is a TSL installation (K2/TSL/2)
+        )
         if compiled_bytes is None:
             self._logger.debug(f"User cancelled the compilation of '{self._resname}.{self._restype.extension}'.")
-            return None, b""
+            return bytearray(), b""
         return compiled_bytes, b""
 
     def new(self):

@@ -18,7 +18,7 @@ class StringResult(NamedTuple):
 
 class TLKData(NamedTuple):
     flags: int
-    sound_resref: str
+    voiceover: str
     volume_variance: int
     pitch_variance: int
     text_offset: int
@@ -26,7 +26,7 @@ class TLKData(NamedTuple):
     sound_length: float
 
 
-class TalkTable:  # TODO: dialogf.tlk
+class TalkTable:  # TODO(th3w1zard1): dialogf.tlk  # noqa: FIX002, TD003
     """Talktables are for read-only loading of stringrefs stored in a dialog.tlk file.
 
     Files are only opened when accessing a stored string, this means that strings are always up to date at
@@ -95,7 +95,7 @@ class TalkTable:  # TODO: dialogf.tlk
                 return ResRef.from_blank()
 
             tlkdata = self._extract_common_tlk_data(reader, stringref)
-            return ResRef(tlkdata.sound_resref)
+            return ResRef(tlkdata.voiceover)
 
     def _extract_common_tlk_data(
         self,
@@ -106,7 +106,7 @@ class TalkTable:  # TODO: dialogf.tlk
 
         return TLKData(
             flags=reader.read_uint32(),
-            sound_resref=reader.read_string(16),
+            voiceover=reader.read_string(16),
             volume_variance=reader.read_uint32(),
             pitch_variance=reader.read_uint32(),
             text_offset=reader.read_uint32(),
@@ -149,7 +149,7 @@ class TalkTable:  # TODO: dialogf.tlk
 
                 reader.seek(texts_offset + tlkdata.text_offset)
                 string = reader.read_string(tlkdata.text_length, encoding=encoding)
-                sound = ResRef(tlkdata.sound_resref)
+                sound = ResRef(tlkdata.voiceover)
 
                 batch[stringref] = StringResult(string, sound)
 

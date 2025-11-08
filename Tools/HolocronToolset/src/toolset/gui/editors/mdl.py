@@ -43,14 +43,23 @@ class MDLEditor(Editor):
     def _setup_signals(self):
         ...
 
-    def load(
-        self,
-        filepath: os.PathLike | str,
-        resref: str,
-        restype: ResourceType,
-        data: bytes,
-    ):
-        c_filepath: Path = Path(filepath)
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+        """Loads a model resource and its associated data.
+
+        Args:
+        ----
+            filepath: {Path to the resource file}
+            resref: {Resource reference string}
+            restype: {Resource type (MDL or MDX)}
+            data: {Binary data of the resource}
+
+        Loads associated MDL/MDX data:
+            - Checks file extension and loads associated data from file
+            - Loads associated data from Erf, Rim or Bif files if present
+            - Sets model data on renderer if both MDL and MDX found
+            - Displays error if unable to find associated data.
+        """
+        c_filepath: CaseAwarePath = CaseAwarePath(filepath)
         super().load(c_filepath, resref, restype, data)
 
         mdl_data: bytes | None = None

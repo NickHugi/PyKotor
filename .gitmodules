@@ -1,0 +1,6 @@
+[submodule "wiki"]
+	path = wiki
+	url = https://github.com/NickHugi/PyKotor.wiki.git
+[submodule "tests/Vanilla_KOTOR_Script_Source"]
+	path = tests/Vanilla_KOTOR_Script_Source
+	url = https://github.com/KOTORCommunityPatches/Vanilla_KOTOR_Script_Source

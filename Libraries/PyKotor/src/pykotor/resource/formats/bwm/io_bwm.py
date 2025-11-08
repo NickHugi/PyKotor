@@ -76,11 +76,11 @@ class BWMBinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if file_type != "BWM ":
-            msg = "Not a valid binary BWM file."
+            msg = f"Not a valid binary BWM file. Expected 'BWM ', got '{file_type}' (hex: {file_type.encode('latin1').hex()})"
             raise ValueError(msg)
 
         if file_version != "V1.0":
-            msg = "The BWM version of the file is unsupported."
+            msg = f"Unsupported BWM version: got '{file_version}', expected 'V1.0'"
             raise ValueError(msg)
 
         self._wok.walkmesh_type = BWMType(self._reader.read_uint32())

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import os
 import shutil
 import sys
@@ -248,6 +249,9 @@ class ModInstaller:
         """
         try:
             if patch.replace_file or not exists_at_output_location:
+                # Path resolution: mod_path / sourcefolder / sourcefile
+                # mod_path is typically the tslpatchdata folder (parent of changes.ini).
+                # If sourcefolder = ".", this resolves to mod_path itself (tslpatchdata folder).
                 return self.load_resource_file(self.mod_path / patch.sourcefolder / patch.sourcefile)
             if capsule is None:
                 return self.load_resource_file(output_container_path / patch.saveas)
@@ -396,8 +400,9 @@ class ModInstaller:
             *self.get_tlk_patches(config),
             *config.patches_2da,
             *config.patches_gff,
+            # Note: TSLPatcher runs [CompileList] *after* [HACKList], which is objectively bad, so HoloPatcher here will do the inverse.
             *config.patches_nss,
-            *config.patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
+            *config.patches_ncs,
             *config.patches_ssf,
         ]
 
@@ -485,7 +490,7 @@ class ModInstaller:
         if temp_script_folder.is_dir():
             shutil.rmtree(temp_script_folder, ignore_errors=True)
         temp_script_folder.mkdir(exist_ok=True, parents=True)
-        for file in self.mod_path.safe_iterdir():
+        for file in self.mod_path.iterdir():
             if file.suffix.lower() != ".nss" or not file.is_file():
                 continue
             shutil.copy(file, temp_script_folder)
@@ -494,7 +499,7 @@ class ModInstaller:
         scripts_list: list[CaseAwarePath] = [*set(temp_script_folder.iterdir())]
         log.add_verbose(f"Preprocessing #StrRef# and #2DAMEMORY# tokens for all {len(scripts_list)} scripts, before running [CompileList]")
         for script in temp_script_folder.iterdir():
-            if script.suffix.lower() != ".nss" or not file.is_file():
+            if script.suffix.lower() != ".nss" or not script.is_file():
                 continue
             log.add_verbose(f"Parsing tokens in '{script.name}'...")
             with script.open(mode="rb") as f:
@@ -525,7 +530,11 @@ class ModInstaller:
 
         if female_dialog_file.is_file():
             female_tlk_patches: ModificationsTLK = deepcopy(patches_tlk)
-            female_tlk_patches.sourcefile = female_tlk_patches.sourcefile_f if (self.mod_path / female_tlk_patches.sourcefile_f).is_file() else patches_tlk.sourcefile
+            female_tlk_patches.sourcefile = (
+                female_tlk_patches.sourcefile_f
+                if (self.mod_path / female_tlk_patches.sourcefile_f).is_file()
+                else patches_tlk.sourcefile
+            )
             female_tlk_patches.saveas = female_dialog_filename
             tlk_patches.append(female_tlk_patches)
 

@@ -38,8 +38,6 @@ from utility.error_handling import (  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 from pykotor.common.misc import Game  # noqa: E402
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS  # noqa: E402
-from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY  # noqa: E402
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.ncs.compiler.classes import (  # noqa: E402
     CompileError,
@@ -55,12 +53,26 @@ from pykotor.resource.formats.ncs.io_ncs import NCSBinaryWriter
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs  # noqa: E402
 from pykotor.resource.formats.ncs.ncs_data import NCS  # noqa: E402
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 if TYPE_CHECKING:
-    from ply import yacc
+    from _pytest.reports import TestReport
+    from ply import yacc  # pyright: ignore[reportMissingTypeStubs]
 
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
+    
+    from pykotor.common.script import ScriptConstant, ScriptFunction
+    KOTOR_CONSTANTS: list[ScriptConstant] = []
+    KOTOR_FUNCTIONS: list[ScriptFunction] = []
+    TSL_CONSTANTS: list[ScriptConstant] = []
+    TSL_FUNCTIONS: list[ScriptFunction] = []
+    KOTOR_LIBRARY: dict[str, bytes] = {}
+    TSL_LIBRARY: dict[str, bytes] = {}
+else:
+    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+    from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 
 K1_PATH: str | None = os.environ.get("K1_PATH")
 K2_PATH: str | None = os.environ.get("K2_PATH")

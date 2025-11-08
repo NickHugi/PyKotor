@@ -355,6 +355,9 @@
         <addaction name="actionModuleDesigner" />
         <addaction name="actionIndoorMapBuilder" />
         <addaction name="separator" />
+        <addaction name="actionKotorDiff" />
+        <addaction name="actionTSLPatchDataEditor" />
+        <addaction name="separator" />
         <addaction name="actionFileSearch" />
         <addaction name="actionCloneModule" />
       </widget>
@@ -729,18 +732,28 @@
         <string>Module Designer</string>
       </property>
     </action>
+    <action name="actionKotorDiff">
+      <property name="enabled">
+        <bool>false</bool>
+      </property>
+      <property name="text">
+        <string>KotorDiff</string>
+      </property>
+    </action>
+    <action name="actionTSLPatchDataEditor">
+      <property name="enabled">
+        <bool>false</bool>
+      </property>
+      <property name="text">
+        <string>TSLPatchData Editor</string>
+      </property>
+    </action>
   </widget>
   <customwidgets>
     <customwidget>
       <class>ResourceList</class>
       <extends>QWidget</extends>
       <header location="global">toolset.gui.widgets.main_widgets</header>
-      <container>1</container>
-    </customwidget>
-    <customwidget>
-      <class>ResourceFileSystemWidget</class>
-      <extends>QWidget</extends>
-      <header location="global">toolset.gui.widgets.kotor_filesystem_model</header>
       <container>1</container>
     </customwidget>
     <customwidget>

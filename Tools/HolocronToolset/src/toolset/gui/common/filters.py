@@ -6,11 +6,13 @@ from typing import TYPE_CHECKING, Any, cast
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import QEvent, QObject, QSortFilterProxyModel, Qt
-from qtpy.QtGui import QKeyEvent, QStandardItemModel
+from qtpy.QtGui import QStandardItemModel
 from qtpy.QtWidgets import QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QAbstractItemModel, QModelIndex
+    from qtpy.QtCore import QModelIndex
+    from qtpy.QtGui import QKeyEvent
 
 
 class TemplateFilterProxyModel(QSortFilterProxyModel):

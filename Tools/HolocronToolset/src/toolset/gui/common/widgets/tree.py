@@ -532,9 +532,14 @@ class RobustTreeView(QTreeView):
         set_func: Callable[[Any], Any],
         settings_key: str,
         options: dict | None = None,
-        param_type: type = bool,
+        param_type: type | None = None,
     ):
         action = QAction(title, self)
+
+        # Infer param_type if not provided
+        if param_type is None:
+            param_type = bool if options is None else type(next(iter(options.values()))) if options else bool
+
         if param_type is bool:
             action.setCheckable(True)
 
@@ -594,17 +599,21 @@ class RobustTreeView(QTreeView):
         initial_value = self.settings.get(settings_key, current_state_func())
 
         def apply_filters():
-            combined_filter = zero_value
+            combined_filter = zero_value.value if hasattr(zero_value, "value") else zero_value
             for action in sub_menu.actions():  # pyright: ignore[reportOptionalMemberAccess]
                 if action.isChecked():
-                    combined_filter |= options[action.text()]
+                    option_val = options[action.text()]
+                    option_val = option_val.value if hasattr(option_val, "value") else option_val
+                    combined_filter |= option_val
             set_func(combined_filter)
             self.settings.set(settings_key, combined_filter)
 
         for option_name, option_value in options.items():
             action = QAction(option_name, self)
             action.setCheckable(True)
-            action.setChecked(bool(initial_value & option_value))
+            # Handle enum values for bitwise operations
+            check_value = option_value.value if hasattr(option_value, "value") else option_value
+            action.setChecked(bool(initial_value & check_value))
             action.triggered.connect(apply_filters)
             sub_menu.addAction(action)  # pyright: ignore[reportOptionalMemberAccess]
 

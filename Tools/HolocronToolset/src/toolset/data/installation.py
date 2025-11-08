@@ -4,7 +4,7 @@ import os
 
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import (
@@ -25,6 +25,7 @@ from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.tpc.tpc_data import TPC
+from pykotor.extract.twoda import TwoDARegistry
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.type import ResourceType
@@ -34,6 +35,10 @@ from toolset.utils.window import add_window
 if TYPE_CHECKING:
     from pathlib import Path
 
+    import os
+
+
+    from qtpy.QtGui import QStandardItemModel
     from qtpy.QtWidgets import QPlainTextEdit
     from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
 
@@ -42,64 +47,52 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tpc.tpc_data import TPCMipmap
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
-    from toolset.gui.dialogs.inventory import ItemModel
-
-
-T = TypeVar("T")
 
 
 class HTInstallation(Installation):
-    """A specialized Installation class that extends the base Installation class with toolset-related functionality.
-
-    While Installation is intending to load all resources from an installation immediately, HTInstallation
-    adds additional caching and loading methods for resources.
-
-    Ideally we want all IO to be non-blocking and asynchronous, and load resources as they are needed in the processpoolexecutor.
-    """
-
-    TwoDA_PORTRAITS: Literal["portraits"] = "portraits"
-    TwoDA_APPEARANCES: Literal["appearance"] = "appearance"
-    TwoDA_SUBRACES: Literal["subrace"] = "subrace"
-    TwoDA_SPEEDS: Literal["creaturespeed"] = "creaturespeed"
-    TwoDA_SOUNDSETS: Literal["soundset"] = "soundset"
-    TwoDA_FACTIONS: Literal["repute"] = "repute"
-    TwoDA_GENDERS: Literal["gender"] = "gender"
-    TwoDA_PERCEPTIONS: Literal["ranges"] = "ranges"
-    TwoDA_CLASSES: Literal["classes"] = "classes"
-    TwoDA_FEATS: Literal["feat"] = "feat"
-    TwoDA_POWERS: Literal["spells"] = "spells"
-    TwoDA_BASEITEMS: Literal["baseitems"] = "baseitems"
-    TwoDA_PLACEABLES: Literal["placeables"] = "placeables"
-    TwoDA_DOORS: Literal["genericdoors"] = "genericdoors"
-    TwoDA_CURSORS: Literal["cursors"] = "cursors"
-    TwoDA_TRAPS: Literal["traps"] = "traps"
-    TwoDA_RACES: Literal["racialtypes"] = "racialtypes"
-    TwoDA_SKILLS: Literal["skills"] = "skills"
-    TwoDA_UPGRADES: Literal["upgrade"] = "upgrade"
-    TwoDA_ENC_DIFFICULTIES: Literal["encdifficulty"] = "encdifficulty"
-    TwoDA_ITEM_PROPERTIES: Literal["itempropdef"] = "itempropdef"
-    TwoDA_IPRP_PARAMTABLE: Literal["iprp_paramtable"] = "iprp_paramtable"
-    TwoDA_IPRP_COSTTABLE: Literal["iprp_costtable"] = "iprp_costtable"
-    TwoDA_IPRP_ABILITIES: Literal["iprp_abilities"] = "iprp_abilities"
-    TwoDA_IPRP_ALIGNGRP: Literal["iprp_aligngrp"] = "iprp_aligngrp"
-    TwoDA_IPRP_COMBATDAM: Literal["iprp_combatdam"] = "iprp_combatdam"
-    TwoDA_IPRP_DAMAGETYPE: Literal["iprp_damagetype"] = "iprp_damagetype"
-    TwoDA_IPRP_PROTECTION: Literal["iprp_protection"] = "iprp_protection"
-    TwoDA_IPRP_ACMODTYPE: Literal["iprp_acmodtype"] = "iprp_acmodtype"
-    TwoDA_IPRP_IMMUNITY: Literal["iprp_immunity"] = "iprp_immunity"
-    TwoDA_IPRP_SAVEELEMENT: Literal["iprp_saveelement"] = "iprp_saveelement"
-    TwoDA_IPRP_SAVINGTHROW: Literal["iprp_savingthrow"] = "iprp_savingthrow"
-    TwoDA_IPRP_ONHIT: Literal["iprp_onhit"] = "iprp_onhit"
-    TwoDA_IPRP_AMMOTYPE: Literal["iprp_ammotype"] = "iprp_ammotype"
-    TwoDA_IPRP_MONSTERHIT: Literal["iprp_mosterhit"] = "iprp_mosterhit"
-    TwoDA_IPRP_WALK: Literal["iprp_walk"] = "iprp_walk"
-    TwoDA_EMOTIONS: Literal["emotion"] = "emotion"
-    TwoDA_EXPRESSIONS: Literal["facialanim"] = "facialanim"
-    TwoDA_VIDEO_EFFECTS: Literal["videoeffects"] = "videoeffects"
-    TwoDA_DIALOG_ANIMS: Literal["dialoganimations"] = "dialoganimations"
-    TwoDA_PLANETS: Literal["planetary"] = "planetary"
-    TwoDA_PLOT: Literal["plot"] = "plot"
-    TwoDA_CAMERAS: Literal["camerastyle"] = "camerastyle"
+    TwoDA_PORTRAITS: str = TwoDARegistry.PORTRAITS
+    TwoDA_APPEARANCES: str = TwoDARegistry.APPEARANCES
+    TwoDA_SUBRACES: str = TwoDARegistry.SUBRACES
+    TwoDA_SPEEDS: str = TwoDARegistry.SPEEDS
+    TwoDA_SOUNDSETS: str = TwoDARegistry.SOUNDSETS
+    TwoDA_FACTIONS: str = TwoDARegistry.FACTIONS
+    TwoDA_GENDERS: str = TwoDARegistry.GENDERS
+    TwoDA_PERCEPTIONS: str = TwoDARegistry.PERCEPTIONS
+    TwoDA_CLASSES: str = TwoDARegistry.CLASSES
+    TwoDA_FEATS: str = TwoDARegistry.FEATS
+    TwoDA_POWERS: str = TwoDARegistry.POWERS
+    TwoDA_BASEITEMS: str = TwoDARegistry.BASEITEMS
+    TwoDA_PLACEABLES: str = TwoDARegistry.PLACEABLES
+    TwoDA_DOORS: str = TwoDARegistry.DOORS
+    TwoDA_CURSORS: str = TwoDARegistry.CURSORS
+    TwoDA_TRAPS: str = TwoDARegistry.TRAPS
+    TwoDA_RACES: str = TwoDARegistry.RACES
+    TwoDA_SKILLS: str = TwoDARegistry.SKILLS
+    TwoDA_UPGRADES: str = TwoDARegistry.UPGRADES
+    TwoDA_ENC_DIFFICULTIES: str = TwoDARegistry.ENC_DIFFICULTIES
+    TwoDA_ITEM_PROPERTIES: str = TwoDARegistry.ITEM_PROPERTIES
+    TwoDA_IPRP_PARAMTABLE: str = TwoDARegistry.IPRP_PARAMTABLE
+    TwoDA_IPRP_COSTTABLE: str = TwoDARegistry.IPRP_COSTTABLE
+    TwoDA_IPRP_ABILITIES: str = TwoDARegistry.IPRP_ABILITIES
+    TwoDA_IPRP_ALIGNGRP: str = TwoDARegistry.IPRP_ALIGNGRP
+    TwoDA_IPRP_COMBATDAM: str = TwoDARegistry.IPRP_COMBATDAM
+    TwoDA_IPRP_DAMAGETYPE: str = TwoDARegistry.IPRP_DAMAGETYPE
+    TwoDA_IPRP_PROTECTION: str = TwoDARegistry.IPRP_PROTECTION
+    TwoDA_IPRP_ACMODTYPE: str = TwoDARegistry.IPRP_ACMODTYPE
+    TwoDA_IPRP_IMMUNITY: str = TwoDARegistry.IPRP_IMMUNITY
+    TwoDA_IPRP_SAVEELEMENT: str = TwoDARegistry.IPRP_SAVEELEMENT
+    TwoDA_IPRP_SAVINGTHROW: str = TwoDARegistry.IPRP_SAVINGTHROW
+    TwoDA_IPRP_ONHIT: str = TwoDARegistry.IPRP_ONHIT
+    TwoDA_IPRP_AMMOTYPE: str = TwoDARegistry.IPRP_AMMOTYPE
+    TwoDA_IPRP_MONSTERHIT: str = TwoDARegistry.IPRP_MONSTERHIT
+    TwoDA_IPRP_WALK: str = TwoDARegistry.IPRP_WALK
+    TwoDA_EMOTIONS: str = TwoDARegistry.EMOTIONS
+    TwoDA_EXPRESSIONS: str = TwoDARegistry.EXPRESSIONS
+    TwoDA_VIDEO_EFFECTS: str = TwoDARegistry.VIDEO_EFFECTS
+    TwoDA_DIALOG_ANIMS: str = TwoDARegistry.DIALOG_ANIMS
+    TwoDA_PLANETS: str = TwoDARegistry.PLANETS
+    TwoDA_PLOT: str = TwoDARegistry.PLOT
+    TwoDA_CAMERAS: str = TwoDARegistry.CAMERAS
 
     def __init__(
         self,
@@ -112,7 +105,7 @@ class HTInstallation(Installation):
         super().__init__(path, progress_callback=progress_callback)
 
         self.name: str = name
-        self.cache_core_items: ItemModel | None = None
+        self.cache_core_items: QStandardItemModel | None = None
 
         self._tsl: bool | None = tsl
         self._cache2da: dict[str, TwoDA] = {}

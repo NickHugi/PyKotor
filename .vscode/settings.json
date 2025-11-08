@@ -1,62 +1,24 @@
 {
-    "[python]": {
-        "editor.formatOnSave": false
-    },
-    "cmake.options.statusBarVisibility": "hidden",
-    "cmake.sourceDirectory": "C:/GitHub/PyKotor/vendor/reone/src/apps/engine",
-    "debugpy.debugJustMyCode": false,
-    "files.exclude": {
-        "**/.trunk/*actions/": true,
-        "**/.trunk/*logs/": true,
-        "**/.trunk/*notifications/": true,
-        "**/.trunk/*out/": true,
-        "**/.trunk/*plugins/": true
-    },
-    "files.watcherExclude": {
-        "**/.git/**": true,
-        "**/.trunk/*actions/": true,
-        "**/.trunk/*logs/": true,
-        "**/.trunk/*notifications/": true,
-        "**/.trunk/*out/": true,
-        "**/.trunk/*plugins/": true
-    },
-    "github-actions.workflows.pinned.workflows": [
-        ".github/workflows/publish_and_test_pykotor.yml"
+    "python.analysis.inlayHints.callArgumentNames": "off",
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "python.analysis.inlayHints.variableTypes": false,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.enablePytestSupport": true,
+    "python.analysis.extraPaths": [
+        "./Tools/BatchPatcher/src",
+        "./Tools/GuiConverter/src",
+        "./Tools/HolocronToolset/src",
+        "./Tools/HoloPatcher/src",
+        "./Tools/KotorDiff/src",
+        "./Tools/MDLDecompile/src",
+        "./Libraries/PyKotor/src",
+        "./Libraries/PyKotorGL/src",
+        "./Libraries/PyKotorFont/src",
+        "./Libraries/Utility/src"
     ],
-    "launch": {
-        "autoReload": {
-            "enable": true
-        },
-        "compounds": [],
-        "justMyCode": false
-    },
-    "mypy-type-checker.args": [
-        "--check-untyped-defs",
-        "--explicit-package-bases"
-    ],
-    "mypy-type-checker.importStrategy": "fromEnvironment",
-    "mypy-type-checker.preferDaemon": true,
-    "mypy-type-checker.reportingScope": "file",
-    "mypy.extraArguments": [
-        "--exclude=./.venv",
-        "--exclude=tests/results",
-        "--check-untyped-defs",
-        "-v",
-        "--explicit-package-bases"
-    ],
-    "mypy.runUsingActiveInterpreter": true,
-    "problems.decorations.enabled": false,
-    "python.analysis.autoImportCompletions": false,
-    "python.analysis.autoIndent": true,
-    "python.analysis.enablePytestSupport": false,
-    "python.analysis.indexing": true,
-    "python.analysis.packageIndexDepths": [
-        {
-            "depth": 7,
-            "includeAllSymbols": true,
-            "name": ""
-        },
-    ],
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.missingPackage.severity": "Information",
+
     "python.terminal.launchArgs": [
         "-i",
         "-m",
@@ -65,7 +27,7 @@
         "5678",
         "--wait-for-client"
     ],
-    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": true,
     "python.testing.unittestArgs": [
         "-v",
         "-s",
@@ -73,7 +35,46 @@
         "-p",
         "*test*.py"
     ],
-    "python.testing.unittestEnabled": true,
+
+    "launch": {
+        "compounds": [],
+        "justMyCode": false,
+        "debugStdLib": true
+    },
+
+    "github-actions.workflows.pinned.workflows": [
+        ".github/workflows/publish_and_test_pykotor.yml"
+    ],
+
+    "mypy.extraArguments": [
+        "--exclude=./.venv",
+        "--exclude=tests/results",
+        "--check-untyped-defs",
+        "-v",
+        "--explicit-package-bases"
+    ],
+    "mypy.runUsingActiveInterpreter": true,
+    "mypy-type-checker.args": [
+        "--check-untyped-defs",
+        "--explicit-package-bases"
+    ],
+    "mypy-type-checker.preferDaemon": true,
+    "mypy-type-checker.reportingScope": "file",
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+
+    "remote.WSL.fileWatcher.polling": true,
+
+    "files.watcherExclude": {
+        "**/.git/**": true
+    },
+    "editor.inlineSuggest.enabled": true,
+    "editor.quickSuggestions": {
+        "other": "inline",
+        "comments": true,
+        "strings": true
+    },
+    "editor.quickSuggestionsDelay": 100,
+    "debugpy.debugJustMyCode": true,
     "pythonTestExplorer.outputs.showOutputsOnRun": true,
-    "cursorpyright.analysis.autoImportCompletions": false
+    "pythonTestExplorer.testFramework": "unittest"
 }

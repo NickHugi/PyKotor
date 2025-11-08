@@ -63,6 +63,7 @@ def read_ssf(
     source: SOURCE_TYPES,
     offset: int = 0,
     size: int | None = None,
+    file_format: ResourceType | None = None,
 ) -> SSF:
     """Returns an SSF instance from the source.
 
@@ -73,6 +74,7 @@ def read_ssf(
         source: The source of the data.
         offset: The byte offset of the file inside the data.
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
+        file_format: The file format to use (ResourceType.SSF, ResourceType.SSF_XML). If not specified, it will be detected automatically.
 
     Raises:
     ------
@@ -85,7 +87,8 @@ def read_ssf(
     -------
         An SSF instance.
     """
-    file_format: ResourceType = detect_ssf(source, offset)
+    if file_format is None:
+        file_format = detect_ssf(source, offset)
 
     if file_format is ResourceType.INVALID:
         msg = "Failed to determine the format of the GFF file."
@@ -150,4 +153,4 @@ def bytes_ssf(
     """
     data = bytearray()
     write_ssf(ssf, data, file_format)
-    return data
+    return bytes(data)

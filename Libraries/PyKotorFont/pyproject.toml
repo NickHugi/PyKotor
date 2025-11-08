@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 name="PyKotorFont"
 description="Work with KOTOR's font textures and txi files."
 version="1.7"
-requires-python = ">= 3.7"
+requires-python = ">= 3.8"
 dependencies = [
     "ply>=3.11,<4",     # required for the nss compiler lexer
     "numpy~=1.22",      # probably required by PyKotorGL
@@ -28,23 +28,20 @@ readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "LGPL-3.0-or-later License"}
 keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
 
-[tool.poetry]
-name = "pykotorfont"
-version = "1.0.0"
-description = "Work with KOTOR's font textures and txi files."
-authors = ["NickHugi"]
-maintainers = ["Benjamin Auquite <halomastar@gmail.com>"]
-readme = "README.md"
-license = "LGPL-3.0-or-later License"
-keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher", "translation"]
-
-
-[tool.poetry.dependencies]
-python = "^3.8"
-pykotor = "^1.7"
-Pillow = "^9.5"
-
-
+[project.optional-dependencies]
+font_writer = [
+  "pillow>=9.5; python_implementation == 'CPython'",       # required for TXI/TGA fonts (CPython)
+  "pillow>10,<11.1.0; python_implementation == 'PyPy'",    # required for TXI/TGA fonts (PyPy)
+]
+xml = [
+  "defusedxml~=0.7"           # secure XML parsing
+]
+gl = [
+  "PyGLM>=2.0,<2.8",
+  "PyOpenGL>=3.1.10",
+  "django>2.1; os_name != 'nt'",
+  "django>2.0; os_name == 'nt'",
+]
 
 [project.urls]
 Homepage = "https://github.com/NickHugi/PyKotor"

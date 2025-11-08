@@ -236,7 +236,7 @@ class GlobalSettings(Settings):
         existing_paths: set[Path] = {Path(inst["path"]) for inst in installations.values()}
 
         for game, paths in find_kotor_paths_from_default().items():
-            for path in filter(Path.is_dir, paths):
+            for path in filter(CaseAwarePath.is_dir, paths):
                 RobustLogger().info(f"Autodetected game {game!r} path {path}")
                 if path in existing_paths:
                     continue

@@ -312,7 +312,7 @@ def _disabled_test_emit_detailed_signals(gatherer: PyFileInfoGatherer):
         gatherer.accessDenied.emit.assert_not_called()
 
 
-def _disabled_test_handle_previous_files(gatherer: PyFileInfoGatherer):  # sourcery skip: extract-duplicate-method, move-assign-in-block
+def _disabled_test_handle_previous_files(gatherer: PyFileInfoGatherer):, move-assign-in-block
     # Arrange
     fileInfo = MagicMock(spec=QFileInfo)
     fileInfo.filePath.return_value = "/some/path/file.txt"

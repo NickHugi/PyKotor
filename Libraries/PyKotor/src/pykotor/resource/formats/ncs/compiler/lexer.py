@@ -306,7 +306,7 @@ class NssLexer:
         r"\+\+"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             unary=[
-                UnaryOperatorMapping(NCSInstructionType.INCISP, DataType.INT),
+                UnaryOperatorMapping(NCSInstructionType.INCxSP, DataType.INT),
             ],
             binary=[],
         )
@@ -316,7 +316,7 @@ class NssLexer:
         r"\-\-"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             unary=[
-                UnaryOperatorMapping(NCSInstructionType.DECISP, DataType.INT),
+                UnaryOperatorMapping(NCSInstructionType.DECxSP, DataType.INT),
             ],
             binary=[],
         )

@@ -3,14 +3,53 @@ requires = ["setuptools>=67.8.0,<70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pykotor-workspace"
-version = "1.0.0"
-description = "PyKotor Workspace"
-authors = [{name = "Benjamin Auquite", email = "halomastar@gmail.com"}, {name = "NickHugi"}]
-readme = "README.md"
-requires-python = ">=3.8"
-dependencies = [
-    "charset-normalizer>=2.0,<3.4",  # optional but recommended, auto-detect encoding of INI files
+name="PyKotor"
+version="1.7"
+description="Read, modify and write files used by KotOR's game engine."
+authors = [{name = "NickHugi"}]
+maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "LGPL-3.0-or-later License"}
+keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
+requires-python = ">= 3.8"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "charset-normalizer>=2.0.0,<3.3.0; python_version<\"3.9\"",
+    "charset-normalizer>=2.0.0; python_version>=\"3.9\"",
+    "defusedxml>=0.7.1",
+    "pycryptodome>=3.23.0",
+    "astroid>=3.2.0,<3.5.0; python_version>=\"3.8\"",
+    "autoflake>=2.3.1; python_version>=\"3.8\"",
+    "iniconfig>=2.1.0; python_version>=\"3.8\"",
+    "mypy>=1.0.0,<1.10.0; python_version>=\"3.8\"",
+    "mypy-extensions>=1.1.0; python_version>=\"3.8\"",
+    "pyflakes>=2.0.0,<3.4.0; python_version>=\"3.8\"",
+    "pylint>=2.0.0,<3.3.9; python_version>=\"3.8\"",
+    "pytest>=7.0.0,<8.0.0; python_version>=\"3.8\"",
+    "pytest-html>=3.0.0,<4.0.0; python_version>=\"3.8\"",
+    "pytest-metadata>=2.0.0,<3.0.0; python_version>=\"3.8\"",
+    "pytest-xdist>=2.0.0,<3.8.0; python_version>=\"3.8\"",
+    "ruff>=0.1.0,<0.4.0; python_version>=\"3.8\"",
+    "snakeviz>=2.0.0,<2.2.2; python_version>=\"3.8\"",
+    "types-pillow>=10.2.0.20240822; python_version>=\"3.8\"",
+    "types-send2trash>=1.8.2.7; python_version>=\"3.8\"",
+    "typing-extensions>=4.5.0,<4.9.0; python_version<\"3.9\"",
+    "typing-extensions>=4.5.0; python_version>=\"3.9\"",
+]
+font = [
+  "pillow>=9.5; python_implementation == 'CPython'",       # required for TXI/TGA fonts (CPython)
+  "pillow>10,<11.1.0; python_implementation == 'PyPy'",    # required for TXI/TGA fonts (PyPy)
+]
+secure_xml = ["defusedxml~=0.7"]    # secure XML parsing
+encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodings
+gl = [
+  "django>2.1; os_name != 'nt'",
+  "django>2.0; os_name == 'nt'",
+  "numpy~=1.22",      # ( might need 1.22.2 )
+  "PyOpenGL~=3.1",    # ( might need 3.1.6 )
+  "PyGLM>=2.0,<2.8; python_implementation == 'CPython'",  # ( might need 2.5.7 )
 ]
 license = {text = "LGPL-3.0-or-later License"}
 keywords = ["kotor", "library", "holo", "patcher", "pykotor", "star", "wars", "knights", "holopatcher", "tslpatcher"]
@@ -123,6 +162,10 @@ exclude = '''
 [tool.pyright]
 include = ["*.py"]
 exclude = ["**/node_modules/**", "**/__pycache__/**", "**/build/**", "**/dist/**", "**/venv/**", "**/__pycache__/**"]
+extraPaths = [
+    "Libraries/PyKotor/src",
+    "Libraries/Utility/src"
+]
 reportMissingImports = true
 reportMissingTypeStubs = false
 pythonVersion = "3.8"
@@ -189,76 +232,83 @@ unfixable = [
     #"UP038",  # non-pep604-isinstance (python 3.10 syntax)
 ]
 ignore = [
-    # The following rules are too strict to be realistically used by ruff:
-    "ANN002", # Checks that function *args arguments have type annotations.
-    "ANN003", # Checks that function **kwargs arguments have type annotations.
-    "ANN101", # Checks that instance method self arguments have type annotations.
-    "ANN102", # Checks that class method cls arguments have type annotations.
-    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed in {name}
-    "ANN204", # Missing return type annotation for special method
-    "ARG002", # Unused method argument: `method`
-    "COM812", # missing-trailing-comma
-    "ERA001", # Found commented out code.
-    #    "FBT001",   # Boolean positional arg in function definition
-    #    "FBT002",   # Boolean default value in function definition
-    "D100", # Missing docstring in public module
-    "D101", # Missing docstring in public class
-    "D102", # Missing docstring in public method
-    "D103", # Missing docstring in public function
-    "D104", # Missing docstring in public package
-    "D105", # Missing docstring in magic method
-    "D107", # Missing docstring in __init__
-    "D205", # 1 blank line required between summary line and description
-    #    "D213",     # Multi-line docstring summary should start at the second line
-    #    "D400",     # First line should end with a period
-    "D401", # First line of docstring should be in imperative mood
-    "D413", # Missing blank line after last section 'xyz'
-    #    "D403",     # First word of the first line should be capitalized: {} -> {}
-    #    "D404",     # First word of the docstring should not be "This"
-    "D417",    # Missing argument description in the docstring for {definition}: {name}
-    "G004",    # Logging statement uses f'' string.
-    "N802",    # Function name `screenToWorld` should be lowercase
-    "N806",    # Variable `jumpToOffset` in function should be lowercase
-    "N815",    # Variable `var` in class scope should not be mixedCase
-    "PLR0904", # Too many public methods
-    "RET504",  # Unnecessary assignment to `varname` before `return` statement
-    "RUF100",  # Unused `noqa` directive (non-enabled: `PLC0415`)
-    "T201",    # 'print' detected
-    "TD001",   # Invalid TODO tag: `FIXME`
-    "TRY003",  # Avoid specifying long messages outside the exception class
-    "EM101",   # Exception must not use a string literal, assign to variable first
-    "EM102",   # Exception must not use an f-string literal, assign to variable first
-    "SIM108",  # Use ternary operator instead of 'if' 'else' block
-    "SIM114",  # Combine `if` branches using logical `or` operator
-    "S101",    # Use of `assert` detected.
+# The following rules are too strict to be realistically used by ruff:
+    "ANN002",   # Checks that function *args arguments have type annotations.
+    "ANN003",   # Checks that function **kwargs arguments have type annotations.
+    "ANN101",   # Checks that instance method self arguments have type annotations.
+    "ANN102",   # Checks that class method cls arguments have type annotations.
+    "ANN204",   # Missing return type annotation for special method
+    "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed in {name}
+    "ARG002",   # Unused method argument: `method`
+    "BLE001",   # Do not catch blind exception: `Exception`
+    "C901",     # Function is too complex
+    "COM812",   # missing-trailing-comma
+    "D100",     # Missing docstring in public module
+    "D101",     # Missing docstring in public class
+    "D102",     # Missing docstring in public method
+    "D103",     # Missing docstring in public function
+    "D104",     # Missing docstring in public package
+    "D105",     # Missing docstring in magic method
+    "D107",     # Missing docstring in __init__
+    "D205",     # 1 blank line required between summary line and description
+    "D401",     # First line of docstring should be in imperative mood
+    "D413",     # Missing blank line after last section 'xyz'
+    "D417",     # Missing argument description in the docstring for {definition}: {name}
+    "EM101",    # Exception must not use a string literal, assign to variable first
+    "EM102",    # Exception must not use an f-string literal, assign to variable first
+    "ERA001",   # Found commented out code.
+    "G004",     # Logging statement uses f'' string.
+    "N802",     # Function name `screenToWorld` should be lowercase
+    "N806",     # Variable `jumpToOffset` in function should be lowercase
+    "N815",     # Variable `var` in class scope should not be mixedCase
+    "PERF203",  # `try`-`except` within a loop incurs performance overhead
+    "PLC0415",  # `import` should be at the top-level of a file
+    "PLR0904",  # Too many public methods
+    "PLR0911",  # Too many return statements
+    "PLR0912",  # Too many branches
+    "PLR0913",  # Too many arguments to function call (N > 5)
+    "PLR0915",  # Too many statements
+    "PLR2004",  # Magic value used in comparison, consider replacing X with a constant variable
+    "RET504",   # Unnecessary assignment to `varname` before `return` statement
+    "RUF100",   # Unused `noqa` directive (non-enabled: `PLC0415`)
+    "S101",     # Use of `assert` detected.
+    "SIM108",   # Use ternary operator instead of 'if' 'else' block
+    "SIM114",   # Combine `if` branches using logical `or` operator
+    "T201",     # 'print' detected
+    "TD001",    # Invalid TODO tag: `FIXME`
+    "TRY003",   # Avoid specifying long messages outside the exception class
+#    "D213",     # Multi-line docstring summary should start at the second line
+#    "D400",     # First line should end with a period
+#    "D403",     # First word of the first line should be capitalized: {} -> {}
+#    "D404",     # First word of the docstring should not be "This"
+#    "FBT001",   # Boolean positional arg in function definition
+#    "FBT002",   # Boolean default value in function definition
 
-    # The following are currently violated by the codebase.
-    #    "D205",     # 1 blank line required between summary line and description
-    #    "E402",     # Module level import not at top of file
-    #    "FIX004",   # Line contains HACK, consider resolving the issue
-    #    "PD901",    # df is a bad variable name. Be kinder to your future self.
-    #    "PERF203",  # `try`-`except` within a loop incurs performance overhead
-    #    "PLR0913",  # Too many arguments to function call (N > 5)
-    #    "PLR2004",  # Magic value used in comparison, consider replacing X with a constant variable
-    #    "S101",     # Use of assert detected
-    #    "S314",     # Using `xml` to parse untrusted data is known to be vulnerable to XML attacks; use `defusedxml` equivalents
-    #    "S605",     # Starting a process with a shell, possible injection detected
-    #    "SLF001",   # Private member accessed
-    #
-    # According to ruff documentation, the following rules should be avoided when using its formatter:
-    #
-    #    "W191",     # tab-indentation
-    #    "E111",     # indentation-with-invalid-multiple
-    #    "E114",     # indentation-with-invalid-multiple-comment
-    #    "E117",     # over-indented
-    #    "D206",     # indent-with-spaces
-    #    "D300",     # triple-single-quotes
-    #    "Q000",     # bad-quotes-inline-string
-    #    "Q001",     # bad-quotes-multiline-string
-    #    "Q002",     # bad-quotes-docstring
-    #    "Q003",     # avoidable-escaped-quote
-    #    "COM812",   # missing-trailing-comma
-    #    "COM819",   # prohibited-trailing-comma
+# The following are currently violated by the codebase.
+#    "D205",     # 1 blank line required between summary line and description
+#    "E402",     # Module level import not at top of file
+#    "FIX004",   # Line contains HACK, consider resolving the issue
+#    "PD901",    # df is a bad variable name. Be kinder to your future self.
+#    "PLR2004",  # Magic value used in comparison, consider replacing X with a constant variable
+#    "S101",     # Use of assert detected
+#    "S314",     # Using `xml` to parse untrusted data is known to be vulnerable to XML attacks; use `defusedxml` equivalents
+#    "S605",     # Starting a process with a shell, possible injection detected
+#    "SLF001",   # Private member accessed
+#
+# According to ruff documentation, the following rules should be avoided when using its formatter:
+#
+#    "W191",     # tab-indentation
+#    "E111",     # indentation-with-invalid-multiple
+#    "E114",     # indentation-with-invalid-multiple-comment
+#    "E117",     # over-indented
+#    "D206",     # indent-with-spaces
+#    "D300",     # triple-single-quotes
+#    "Q000",     # bad-quotes-inline-string
+#    "Q001",     # bad-quotes-multiline-string
+#    "Q002",     # bad-quotes-docstring
+#    "Q003",     # avoidable-escaped-quote
+#    "COM812",   # missing-trailing-comma
+#    "COM819",   # prohibited-trailing-comma
     "ISC001",
 ]
 

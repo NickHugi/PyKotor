@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 from functools import singledispatch
 from pathlib import Path
@@ -57,11 +59,7 @@ def add_window(window: QDialog | QMainWindow):
 def add_recent_file(file: Path):
     """Update the list of recent files."""
     settings = GlobalSettings()
-    recent_files: list[str] = [
-        str(fp)
-        for fp in {Path(p) for p in settings.recentFiles}
-        if fp.is_file()
-    ]
+    recent_files: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.is_file()]
     recent_files.insert(0, str(file))
     if len(recent_files) > 15:  # noqa: PLR2004
         recent_files.pop()

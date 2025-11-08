@@ -11,7 +11,7 @@ from utility.error_handling import universal_simplify_exception
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "1.7.0b1",
+    "currentVersion": "1.80",
     "holopatcherLatestVersion": "1.5.2",
     "holopatcherLatestBetaVersion": "1.7.0b1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HoloPatcher/src/config.py",

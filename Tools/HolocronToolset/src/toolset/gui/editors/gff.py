@@ -309,7 +309,7 @@ class GFFEditor(Editor):
                 widget_of_child.deleteLater()
 
         self.ui.fieldBox.setEnabled(True)
-        item_type: GFFFieldType = cast(GFFFieldType, item.data(_TYPE_NODE_ROLE))
+        item_type: GFFFieldType = cast("GFFFieldType", item.data(_TYPE_NODE_ROLE))
         self.ui.typeCombo.setCurrentText(item_type.name)
         self.ui.labelEdit.setText(item.data(_LABEL_NODE_ROLE))
 
@@ -474,10 +474,10 @@ class GFFEditor(Editor):
                 self._logger.warning(f"Substring ID '{substring_id}' already exists, exit")
                 return
 
-        item = QListWidgetItem(f"{language.name.title()}, {gender.name.title()}")
-        item.setData(_ID_SUBSTRING_ROLE, substring_id)
-        item.setData(_TEXT_SUBSTRING_ROLE, "")
-        self.ui.substringList.addItem(item)
+        item2: QListWidgetItem = QListWidgetItem(f"{language.name.title()}, {gender.name.title()}")
+        item2.setData(_ID_SUBSTRING_ROLE, substring_id)
+        item2.setData(_TEXT_SUBSTRING_ROLE, "")
+        self.ui.substringList.addItem(item2)
 
         proxy_index: QModelIndex = self.ui.treeView.selectedIndexes()[0]
         tree_source_index: QModelIndex = self.proxy_model.mapToSource(proxy_index)

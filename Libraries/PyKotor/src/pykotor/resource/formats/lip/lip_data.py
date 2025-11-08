@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any, Callable
 
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -93,44 +94,9 @@ class LIPShape(IntEnum):
         return mapping.get(phoneme, cls.NEUTRAL)
 
 
-@dataclass
-class LIPKeyFrame:
-    """A keyframe for a lip animation.
-
-    Attributes:
-    ----------
-        time: The time the keyframe animation occurs (in seconds)
-        shape: The mouth shape for this keyframe
-    """
-    time: float
-    shape: LIPShape
-
-    def __lt__(self, other: LIPKeyFrame) -> bool:
-        """Enable sorting keyframes by time."""
-        return self.time < other.time
-
-    def interpolate(self, other: LIPKeyFrame, time: float) -> tuple[LIPShape, LIPShape, float]:
-        """Calculate interpolation between this keyframe and another.
-
-        Args:
-        ----
-            other: The next keyframe to interpolate towards
-            time: The current time to interpolate at
-
-        Returns:
-        -------
-            Tuple of (left shape, right shape, interpolation factor)
-        """
-        if self == other:
-            return self.shape, other.shape, 0.0
-
-        factor = (time - self.time) / (other.time - self.time)
-        factor = max(0.0, min(1.0, factor))  # Clamp between 0 and 1
-
-        return self.shape, other.shape, factor
 
 
-class LIP:
+class LIP(ComparableMixin):
     """Represents the data of a LIP file.
 
     A LIP file contains lip-sync animation data, consisting of a series of
@@ -147,6 +113,8 @@ class LIP:
 
     BINARY_TYPE = ResourceType.LIP
     FILE_HEADER = "LIP V1.0"
+    COMPARABLE_FIELDS = ("length",)
+    COMPARABLE_SEQUENCE_FIELDS = ("frames",)
 
     def __init__(self) -> None:
         self.length: float = 0.0
@@ -271,51 +239,6 @@ class LIP:
         """
         return self.frames[index] if 0 <= index < len(self.frames) else None
 
-    def compare(self, other: LIP, log_func: Callable[[str], Any] = print) -> bool:
-        """Compare this LIP with another LIP file.
-
-        Args:
-        ----
-            other: The other LIP file to compare against
-            log_func: Function to use for logging differences
-
-        Returns:
-        -------
-            True if the LIPs are identical, False if there are differences
-
-        This is useful for verifying that LIP files are identical after
-        conversion between formats or after editing.
-        """
-        ret = True
-
-        # Check for differences in the length attribute
-        if abs(self.length - other.length) > 0.0001:  # Use small epsilon for float comparison
-            log_func(f"Length mismatch: '{self.length}' --> '{other.length}'")
-            ret = False
-
-        # Check for keyframe mismatches
-        old_frames = len(self)
-        new_frames = len(other)
-
-        if old_frames != new_frames:
-            log_func(f"Keyframe count mismatch: {old_frames} --> {new_frames}")
-            ret = False
-
-        # Compare individual keyframes
-        for i in range(min(old_frames, new_frames)):
-            old_keyframe = self[i]
-            new_keyframe = other[i]
-
-            if abs(old_keyframe.time - new_keyframe.time) > 0.0001:
-                log_func(f"Time mismatch at keyframe {i}: '{old_keyframe.time}' --> '{new_keyframe.time}'")
-                ret = False
-
-            if old_keyframe.shape != new_keyframe.shape:
-                log_func(f"Shape mismatch at keyframe {i}: '{old_keyframe.shape.name}' --> '{new_keyframe.shape.name}'")
-                ret = False
-
-        return ret
-
     def get_shape_at_time(self, time: float) -> LIPShape | None:
         """Get the interpolated shape at a specific time.
 
@@ -325,7 +248,7 @@ class LIP:
         Args:
         ----
             time: The time to get the shape for
-
+        
         Returns:
         -------
             The appropriate LIPShape for the given time, or None if no animation exists
@@ -375,3 +298,40 @@ class LIP:
             errors.append(f"Length ({self.length}) doesn't match last keyframe time ({self.frames[-1].time})")
 
         return errors
+
+@dataclass
+class LIPKeyFrame(ComparableMixin):
+    """A keyframe for a lip animation.
+
+    Attributes:
+    ----------
+        time: The time the keyframe animation occurs (in seconds)
+        shape: The mouth shape for this keyframe
+    """
+    time: float
+    shape: LIPShape
+    COMPARABLE_FIELDS = ("time", "shape")
+
+    def interpolate(self, other: LIPKeyFrame, time: float) -> tuple[LIPShape, LIPShape, float]:
+        """Calculate interpolation between this keyframe and another.
+
+        Args:
+        ----
+            other: The next keyframe to interpolate towards
+            time: The current time to interpolate at
+
+        Returns:
+        -------
+            Tuple of (left shape, right shape, interpolation factor)
+        """
+        if self == other:
+            return self.shape, other.shape, 0.0
+
+        factor = (time - self.time) / (other.time - self.time)
+        factor = max(0.0, min(1.0, factor))  # Clamp between 0 and 1
+
+        return self.shape, other.shape, factor
+
+    def __lt__(self, other: LIPKeyFrame) -> bool:
+        """Enable sorting keyframes by time."""
+        return self.time < other.time

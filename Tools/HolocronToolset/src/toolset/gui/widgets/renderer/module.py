@@ -24,13 +24,15 @@ from utility.common.geometry import Vector2, Vector3
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from glm import vec3
-    from qtpy.QtCore import QPoint
+    from glm import vec3  # pyright: ignore[reportMissingImports]
+    from qtpy.QtCore import QPoint  # pyright: ignore[reportAttributeAccessIssue]
     from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QOpenGLContext, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module, ModuleResource
     from pykotor.gl.scene import RenderObject
+    from qtpy.QtGui import QResizeEvent
+
     from pykotor.resource.formats.bwm import BWMFace
     from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
     from toolset.data.installation import HTInstallation
@@ -96,7 +98,7 @@ class ModuleRenderer(QOpenGLWidget):
     @property
     def scene(self) -> Scene:
         if self._scene is None:
-            instance: QtCore.QCoreApplication | None = QApplication.instance()
+            instance: QtCore.QCoreApplication | None = QApplication.instance()  # pyright: ignore[reportAttributeAccessIssue]
             assert instance is not None
             if QThread.currentThread() == instance.thread():
                 self.show_scene_not_ready_message()
@@ -147,6 +149,18 @@ class ModuleRenderer(QOpenGLWidget):
         self.scene.camera.height = self.height()
         self.sig_scene_initialized.emit()
         self.resume_render_loop()
+
+    def initializeGL(self):
+        RobustLogger().debug("ModuleRenderer.initializeGL called.")
+        # Ensure OpenGL context is current
+        self.makeCurrent()
+
+        super().initializeGL()
+        RobustLogger().debug("ModuleRenderer.initializeGL - opengl context setup.")
+
+    def resizeEvent(self, e: QResizeEvent):
+        RobustLogger().debug("ModuleRenderer resizeEvent called.")
+        super().resizeEvent(e)
 
     def resizeGL(
         self,
@@ -285,6 +299,9 @@ class ModuleRenderer(QOpenGLWidget):
         if not self.isReady():
             RobustLogger().warning("ModuleDesigner.paintGL - not initialized.")
             return  # Do nothing if not initialized
+
+        # Ensure OpenGL context is current before any GL calls
+        self.makeCurrent()
         #get_root_logger().debug("ModuleDesigner.paintGL called.")
         super().paintGL()
         start: datetime = datetime.now(tz=timezone.utc).astimezone()

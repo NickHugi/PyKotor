@@ -11,6 +11,7 @@ from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.io_tpc import TPCBinaryReader, TPCBinaryWriter
 from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.tpc.tpc_data import TPC
@@ -110,11 +111,11 @@ def read_tpc(
         msg = "Failed to determine the format of the TPC/TGA file."
         raise ValueError(msg)
     if txi_source is None and isinstance(source, (os.PathLike, str)):
-        txi_source = Path(source).with_suffix(".txi")
+        txi_source = CaseAwarePath(source).with_suffix(".txi")
         if not txi_source.is_file():
             return loaded_tpc
     elif isinstance(txi_source, (os.PathLike, str)):
-        txi_source = Path(txi_source).with_suffix(".txi")
+        txi_source = CaseAwarePath(txi_source).with_suffix(".txi")
         if not txi_source.is_file():
             return loaded_tpc
 

@@ -9,7 +9,8 @@ from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from pathlib import Path, PurePath
-from typing import TYPE_CHECKING, Any, cast
+from multiprocessing import Process, Queue
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, cast
 
 import qtpy
 
@@ -35,7 +36,8 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
-from pykotor.extract.file import FileResource, ResourceIdentifier
+from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
@@ -76,12 +78,13 @@ from toolset.gui.widgets.main_widgets import ResourceList, ResourceStandardItem
 from toolset.gui.widgets.settings.widgets.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
+from toolset.gui.windows.kotordiff import KotorDiffWindow
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.gui.windows.update_manager import UpdateManager
 from toolset.utils.misc import open_link
 from toolset.utils.window import add_window, open_resource_editor
 from utility.error_handling import universal_simplify_exception
-from utility.misc import is_debug_mode
+from utility.misc import ProcessorArchitecture, is_debug_mode
 from utility.tricks import debug_reload_pymodules
 
 if TYPE_CHECKING:
@@ -96,6 +99,91 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import TextureList
+    from utility.common.more_collections import CaseInsensitiveDict
+    from pykotor.extract.file import LocationResult
+    from pykotor.resource.formats.mdl.mdl_data import MDL
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.type import SOURCE_TYPES
+    from toolset.gui.widgets.main_widgets import TextureList
+    from utility.common.more_collections import CaseInsensitiveDict
+
+def run_module_designer(
+    active_path: str,
+    active_name: str,
+    active_tsl: bool,  # noqa: FBT001
+    module_path: str | None = None,
+):
+    """An alternative way to start the ModuleDesigner: run this function in a new process so the main tool window doesn't wait on the module designer."""
+    from qtpy.QtGui import QSurfaceFormat
+
+    from toolset.__main__ import main_init
+    main_init()
+
+    # Set default OpenGL surface format before creating QApplication
+    # This is critical for PyPy and ensures proper OpenGL context initialization
+    fmt = QSurfaceFormat()
+    fmt.setDepthBufferSize(24)
+    fmt.setStencilBufferSize(8)
+    fmt.setVersion(3, 3)  # Request OpenGL 3.3
+    # Use CompatibilityProfile instead of CoreProfile - CoreProfile requires VAO to be bound
+    # before any buffer operations, which causes issues with PyOpenGL's lazy loading
+    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+    fmt.setSamples(4)  # Enable multisampling for antialiasing
+    QSurfaceFormat.setDefaultFormat(fmt)
+
+    app = QApplication([])
+    designerUi = ModuleDesigner(
+        None,
+        HTInstallation(active_path, active_name, tsl=active_tsl),
+        CaseAwarePath(module_path) if module_path is not None else None,
+    )
+    # Standardized resource path format
+    icon_path = ":/images/icons/sith.png"
+
+    # Debugging: Check if the resource path is accessible
+    if not QPixmap(icon_path).isNull():
+        designerUi.log.debug(f"HT main window Icon loaded successfully from {icon_path}")
+        designerUi.setWindowIcon(QIcon(QPixmap(icon_path)))
+        cast("QApplication", QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
+    else:
+        print(f"Failed to load HT main window icon from {icon_path}")
+    addWindow(designerUi, show=False)
+    sys.exit(app.exec_())
+
+
+class UpdateCheckThread(QThread):
+    update_info_fetched = QtCore.Signal(dict, dict, bool)  # pyright: ignore[reportPrivateImportUsage]
+    def __init__(self, toolWindow: ToolWindow, *, silent: bool = False):
+        super().__init__()
+        self.toolWindow: ToolWindow = toolWindow
+        self.silent: bool = silent
+
+    def get_latest_version_info(self) -> tuple[dict[str, Any], dict[str, Any]]:
+        edge_info = {}
+        if self.toolWindow.settings.useBetaChannel:
+            edge_info = self._get_remote_toolset_update_info(useBetaChannel=True)
+
+        master_info = self._get_remote_toolset_update_info(useBetaChannel=False)
+        return master_info, edge_info
+
+    def _get_remote_toolset_update_info(self, *, useBetaChannel: bool) -> dict[str, Any]:
+        result = getRemoteToolsetUpdateInfo(useBetaChannel=useBetaChannel, silent=self.silent)
+        print(f"<SDM> [get_latest_version_info scope] {'edge_info' if useBetaChannel else 'master_info'}: ", result)
+
+        if not isinstance(result, dict):
+            if self.silent:
+                result = {}
+            elif isinstance(result, BaseException):
+                raise result
+            else:
+                raise TypeError(f"Unexpected result type: {result}")
+
+        return result
+
+    def run(self):
+        # This method is executed in a separate thread
+        master_info, edge_info = self.get_latest_version_info()
+        self.update_info_fetched.emit(master_info, edge_info, self.silent)
 
 
 class ToolWindow(QMainWindow):
@@ -770,6 +858,12 @@ class ToolWindow(QMainWindow):
         self.ui.actionModuleDesigner.setEnabled(self.active is not None)
         self.ui.actionIndoorMapBuilder.setEnabled(self.active is not None)
 
+        # KotorDiff is always available
+        self.ui.actionKotorDiff.setEnabled(True)
+
+        # TSLPatchData editor is always available
+        self.ui.actionTSLPatchDataEditor.setEnabled(True)
+
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def debounce_module_designer_load(self):
@@ -1198,7 +1292,10 @@ class ToolWindow(QMainWindow):
             RobustLogger().exception("Error extracting capsule file '%s'", module_name)
             QMessageBox(QMessageBox.Icon.Critical, "Error saving capsule file", str(universal_simplify_exception(e))).exec()
 
-    def build_extract_save_paths(self, resources: list[FileResource]) -> tuple[Path, dict[FileResource, Path]] | tuple[None, None]:
+    def build_extract_save_paths(
+        self,
+        resources: list[FileResource],
+    ) -> tuple[Path, dict[FileResource, Path]] | tuple[None, None]:
         # TODO(th3w1zard1): currently doesn't handle same filenames existing for extra extracts e.g. tpcTxiCheckbox.isChecked() or mdlTexturesCheckbox.isChecked()
         paths_to_write: dict[FileResource, Path] = {}
 

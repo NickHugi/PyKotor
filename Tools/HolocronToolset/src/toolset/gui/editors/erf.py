@@ -638,7 +638,10 @@ class ERFEditorTable(RobustTableView):
             event.accept()
             filter_model: ERFSortFilterProxyModel = cast(ERFSortFilterProxyModel, self.model())
             source_model: QStandardItemModel = cast(QStandardItemModel, filter_model.sourceModel())
-            existing_items: set[str] = {f"{source_model.index(row, 0).data()}.{source_model.index(row, 1).data()}".strip().lower() for row in range(source_model.rowCount())}
+            existing_items: set[str] = {
+                f"{source_model.index(row, 0).data()}.{source_model.index(row, 1).data()}".strip().lower()
+                for row in range(source_model.rowCount())
+            }
             always = False
             never = False
             to_skip: list[str] = []
@@ -690,20 +693,20 @@ class ERFEditorTable(RobustTableView):
                         return
                     elif response == QMessageBox.StandardButton.YesToAll:
                         always = True
-                        model: QAbstractItemModel | None = self.model()
+                        model = self.model()
                         if model is None:
                             RobustLogger().warning("ERFEditorTable: model was None in dropEvent()")
                             return
                         for row in range(model.rowCount()):
-                            cell_col_0: QStandardItem | None = source_model.item(row, 0)
+                            cell_col_0 = source_model.item(row, 0)
                             if cell_col_0 is None:
                                 RobustLogger().warning("ERFEditorTable: cell_col_0 was None in dropEvent() at row %s", row)
                                 continue
-                            cell_col_1: QStandardItem | None = source_model.item(row, 1)
+                            cell_col_1 = source_model.item(row, 1)
                             if cell_col_1 is None:
                                 RobustLogger().warning("ERFEditorTable: cell_col_1 was None in dropEvent() at row %s", row)
                                 continue
-                            filename: str = f"{cell_col_0.text()}.{cell_col_1.text()}".strip().lower()
+                            filename = f"{cell_col_0.text()}.{cell_col_1.text()}".strip().lower()
                             if filename == link.lower().strip():
                                 print(f"Removing '{filename}' from the erf/rim.")
                                 model.removeRow(row)
@@ -728,6 +731,7 @@ class ERFEditorTable(RobustTableView):
     ):  # pyright: ignore[reportIncompatibleMethodOverride]
         temp_dir = Path(GlobalSettings().extractPath)
 
+        # Ensure the temp directory exists and is valid
         exists: bool = temp_dir.exists()
         if not exists or not temp_dir.is_dir():
             if exists or temp_dir.is_file():
@@ -742,7 +746,10 @@ class ERFEditorTable(RobustTableView):
         filter_model: ERFSortFilterProxyModel = cast(ERFSortFilterProxyModel, self.model())
         source_model: QStandardItemModel = cast(QStandardItemModel, filter_model.sourceModel())
         for index in (index for index in self.selectedIndexes() if not index.column()):
-            resource: ERFResource = source_model.data(filter_model.mapToSource(index), Qt.ItemDataRole.UserRole + 1)
+            resource: ERFResource = source_model.data(
+                filter_model.mapToSource(index),
+                Qt.ItemDataRole.UserRole + 1
+            )
             file_stem, file_ext = str(resource.resref), resource.restype.extension
             filepath: Path = Path(temp_dir, f"{file_stem}.{file_ext}")
             filepath.write_bytes(resource.data)

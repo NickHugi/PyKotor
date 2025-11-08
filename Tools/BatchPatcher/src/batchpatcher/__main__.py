@@ -190,7 +190,7 @@ def get_font_paths_windows() -> list[Path]:
             font_path: Path = fonts_dir / value[1]
             if font_path.suffix.lower() == ".ttf":  # Filtering for .ttf files
                 font_paths.add(font_path)
-    for file in fonts_dir.safe_rglob("*"):
+    for file in fonts_dir.rglob("*"):
         if file.suffix.lower() == ".ttf" and file.is_file():
             font_paths.add(file)
 
@@ -739,7 +739,7 @@ def patch_file(file: os.PathLike | str):
 def patch_folder(folder_path: os.PathLike | str):
     c_folderpath = Path(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
-    for file_path in c_folderpath.safe_rglob("*"):
+    for file_path in c_folderpath.rglob("*"):
         patch_file(file_path)
 
 
@@ -826,7 +826,7 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool:
 
 def determine_input_path(path: Path) -> None:
     # sourcery skip: assign-if-exp, reintroduce-else
-    if not path.safe_exists() or path.resolve() == Path.cwd().resolve():
+    if not path.exists() or path.resolve() == Path.cwd().resolve():
         import errno
 
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(path))
@@ -1318,7 +1318,7 @@ class KOTORPatchingToolUI:
             except OSError as e:
                 return messagebox.showerror("Error", f"Invalid path '{SCRIPT_GLOBALS.path}'\n{universal_simplify_exception(e)}")
             else:
-                if not path.safe_exists():
+                if not path.exists():
                     return messagebox.showerror("Error", "Invalid path")
             SCRIPT_GLOBALS.pytranslator = Translator(Language.ENGLISH)
             SCRIPT_GLOBALS.pytranslator.translation_option = TranslationOption[self.translation_option.get()]

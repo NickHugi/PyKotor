@@ -7,7 +7,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Collection, Generic, TypeVar, TypedDict, cast
 
 from loggerplus import RobustLogger
@@ -45,6 +45,7 @@ from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw, write_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
+from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -78,7 +79,7 @@ class KModuleType(Enum):
     MAIN = ".rim"  # Contains the IFO/ARE/GIT
     DATA = "_s.rim"  # Contains everything else
     K2_DLG = "_dlg.erf"  # In TSL, DLGs are here instead of _s.rim.
-    MOD = ".mod"  # Community-standard override, takes priority over the above.
+    MOD = ".mod"  # Community-standard override, takes priority over the above 3 files. This extension overrides all 3 of the above, while the other 3 are complementary to each other.
 
     def contains(  # noqa: PLR0911
         self,
@@ -168,7 +169,7 @@ class ModulePieceResource(Capsule):
     ):
         new_cls = cls
         if new_cls is ModulePieceResource:
-            path_obj = Path(path)
+            path_obj = CaseAwarePath(path)
             piece_info = ModulePieceInfo.from_filename(path_obj.name)
             if piece_info.modtype is KModuleType.DATA:
                 new_cls = ModuleDataPiece
@@ -177,7 +178,7 @@ class ModulePieceResource(Capsule):
             elif piece_info.modtype is KModuleType.K2_DLG:
                 new_cls = ModuleDLGPiece
             elif piece_info.modtype is KModuleType.MOD:
-                new_cls = ModuleOverrideFullPiece
+                new_cls = ModuleFullOverridePiece
         return object.__new__(new_cls)  # pyright: ignore[reportArgumentType]
 
     def __init__(
@@ -186,7 +187,7 @@ class ModulePieceResource(Capsule):
         *args,
         **kwargs,
     ):
-        path_obj = Path(path)
+        path_obj = CaseAwarePath(path)
         self.piece_info: ModulePieceInfo = ModulePieceInfo.from_filename(path_obj.name)
         self.missing_resources: list[FileResource] = []  # TODO(th3w1zard1):
         super().__init__(path_obj, *args, **kwargs)
@@ -265,14 +266,14 @@ class ModuleDataPiece(ModulePieceResource): ...
 class ModuleDLGPiece(ModulePieceResource): ...
 
 
-class ModuleOverrideFullPiece(ModuleDLGPiece, ModuleDataPiece, ModuleLinkPiece): ...
+class ModuleFullOverridePiece(ModuleDLGPiece, ModuleDataPiece, ModuleLinkPiece): ...
 
 
 class _CapsuleDictTypes(TypedDict, total=False):
     MAIN: ModuleLinkPiece | None
     DATA: ModuleDataPiece | None
     K2_DLG: ModuleDLGPiece | None
-    MOD: ModuleOverrideFullPiece | None
+    MOD: ModuleFullOverridePiece | None
 
 
 class Module:  # noqa: PLR0904
@@ -300,7 +301,7 @@ class Module:  # noqa: PLR0904
         if self.dot_mod:
             mod_filepath = installation.module_path().joinpath(self._root + KModuleType.MOD.value)
             if mod_filepath.is_file():
-                self._capsules[KModuleType.MOD.name] = ModuleOverrideFullPiece(mod_filepath)
+                self._capsules[KModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
             else:
                 self.dot_mod = False
                 self._capsules[KModuleType.MAIN.name] = ModuleLinkPiece(installation.module_path().joinpath(self._root + KModuleType.MAIN.value))
@@ -333,13 +334,14 @@ class Module:  # noqa: PLR0904
         }
         module_path: Path = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
         if filename.lower().endswith(".mod"):
-            mod_filepath: Path = module_path.joinpath(root + KModuleType.MOD.value)
+            mod_filepath = module_path.joinpath(root + KModuleType.MOD.value)
             if mod_filepath.is_file():
-                capsules[KModuleType.MOD.name] = ModuleOverrideFullPiece(mod_filepath)
-            capsules[KModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + KModuleType.MAIN.value))
-            capsules[KModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + KModuleType.DATA.value))
-            if not isinstance(install_or_path, Installation) or install_or_path.game().is_k2():
-                capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + KModuleType.K2_DLG.value))
+                capsules[KModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
+            elif not strict:
+                capsules[KModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + KModuleType.MAIN.value))
+                capsules[KModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + KModuleType.DATA.value))
+                if not isinstance(install_or_path, Installation) or install_or_path.game().is_k2():
+                    capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + KModuleType.K2_DLG.value))
         else:
             capsules[KModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + KModuleType.MAIN.value))
             capsules[KModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + KModuleType.DATA.value))
@@ -363,9 +365,9 @@ class Module:  # noqa: PLR0904
     def root(self) -> str:
         return self._root.strip()
 
-    def lookup_main_capsule(self) -> ModuleOverrideFullPiece | ModuleLinkPiece:
+    def lookup_main_capsule(self) -> ModuleFullOverridePiece | ModuleLinkPiece:
         """Returns main capsule either from the override or the module."""
-        relevant_capsule: ModuleOverrideFullPiece | ModuleLinkPiece | None
+        relevant_capsule: ModuleFullOverridePiece | ModuleLinkPiece | None
         if self.dot_mod:
             if KModuleType.MOD.name in self._capsules:
                 relevant_capsule = self._capsules[KModuleType.MOD.name]
@@ -376,9 +378,9 @@ class Module:  # noqa: PLR0904
         assert relevant_capsule is not None
         return relevant_capsule
 
-    def lookup_data_capsule(self) -> ModuleOverrideFullPiece | ModuleDataPiece:
+    def lookup_data_capsule(self) -> ModuleFullOverridePiece | ModuleDataPiece:
         """Returns data capsule either from the override or the module."""
-        relevant_capsule: ModuleOverrideFullPiece | ModuleDataPiece | None
+        relevant_capsule: ModuleFullOverridePiece | ModuleDataPiece | None
         if self.dot_mod:
             if KModuleType.MOD.name in self._capsules:
                 relevant_capsule = self._capsules[KModuleType.MOD.name]
@@ -389,9 +391,9 @@ class Module:  # noqa: PLR0904
         assert relevant_capsule is not None
         return relevant_capsule
 
-    def lookup_dlg_capsule(self) -> ModuleOverrideFullPiece | ModuleDLGPiece:
+    def lookup_dlg_capsule(self) -> ModuleFullOverridePiece | ModuleDLGPiece:
         """Returns dlg capsule either from the override or the module."""
-        relevant_capsule: ModuleOverrideFullPiece | ModuleDLGPiece | None
+        relevant_capsule: ModuleFullOverridePiece | ModuleDLGPiece | None
         if self.dot_mod:
             if KModuleType.MOD.name in self._capsules:
                 relevant_capsule = self._capsules[KModuleType.MOD.name]
@@ -406,7 +408,7 @@ class Module:  # noqa: PLR0904
         """Returns the module id from the main capsule."""
         if self._cached_mod_id is not None:
             return self._cached_mod_id
-        data_capsule: ModuleOverrideFullPiece | ModuleLinkPiece = self.lookup_main_capsule()
+        data_capsule: ModuleFullOverridePiece | ModuleLinkPiece = self.lookup_main_capsule()
         found_id: ResRef | None = data_capsule.module_id()
         print(f"Found module id '{found_id}' for module '{data_capsule.filename()}'")
         self._cached_mod_id = found_id
@@ -478,7 +480,7 @@ class Module:  # noqa: PLR0904
         -------
             A tuple of linked capsules.
         """
-        return [cast(ModulePieceResource, cap) for cap in self._capsules.values() if cap is not None]
+        return [cast("ModulePieceResource", cap) for cap in self._capsules.values() if cap is not None]
 
     def reload_resources(self):
         """Reloads and updates the module's resources.
@@ -519,7 +521,7 @@ class Module:  # noqa: PLR0904
         """
         display_name = f"{self._root}.mod" if self.dot_mod else f"{self._root}.rim"
         RobustLogger().info("Loading module resources needed for '%s'", display_name)
-        capsules_to_search: list[ModuleOverrideFullPiece | ModuleLinkPiece] = [self.lookup_main_capsule()]
+        capsules_to_search: list[ModuleFullOverridePiece | ModuleLinkPiece] = [self.lookup_main_capsule()]
         # Lookup the GIT and LYT first.
         order: tuple[SearchLocation, ...] = (
             SearchLocation.OVERRIDE,
@@ -684,6 +686,58 @@ class Module:  # noqa: PLR0904
             if ident.restype is ResourceType.TGA and f"{ident.lower_resname}.tpc" in self.resources:
                 continue  # Skip TGA resources if the TPC equivalent resource is already found and activated.
             module_resource.activate()
+
+    def _handle_git_lyt_reloads(
+        self,
+        main_search_results: dict[ResourceIdentifier, list[LocationResult]],
+        query: ResourceIdentifier,
+        useable_type: type[GIT | LYT | VIS],
+        errmsg: str,
+    ) -> set[ResourceIdentifier]:
+        if not main_search_results.get(query):
+            if useable_type == VIS:
+                return set()  # make vis optional I guess
+            raise FileNotFoundError(errno.ENOENT,
+                                    os.strerror(errno.ENOENT),
+                                    self.lookup_main_capsule().filepath() / str(query))
+        original_git_or_lyt = self.add_locations(
+            query.resname, query.restype,
+            (loc.filepath for loc in main_search_results[query]),
+        )
+        # Activate each GIT/LYT location for this module, and fill this module with all of their resources (all of the resources their instances point to).
+        original_path: Path = original_git_or_lyt.locations()[0]
+        result: set[ResourceIdentifier] = set()
+        for location in original_git_or_lyt.locations():
+            original_git_or_lyt.activate(location)
+            try:
+                loaded_git_or_lyt: type[GIT | LYT | VIS] | None = original_git_or_lyt.resource()
+                if loaded_git_or_lyt is None:
+                    RobustLogger().warning("Failed to load resource '%s' from location '%s'", original_git_or_lyt.identifier(), location)
+                    if useable_type != VIS:
+                        raise RuntimeError(errmsg)  # noqa: TRY004, TRY301
+                    continue  # VIS is optional, so we can skip if it fails to load
+                if isinstance(loaded_git_or_lyt, VIS):
+                    RobustLogger().debug("Loaded VIS resource '%s' from location '%s'", original_git_or_lyt.identifier(), location)
+                    # VIS files don't have resource identifiers to iterate, so just skip
+                    continue
+                if isinstance(loaded_git_or_lyt, (GIT, LYT)):
+                    result.update(loaded_git_or_lyt.iter_resource_identifiers())
+                else:
+                    RobustLogger().error(
+                        "Unexpected resource type '%s' for '%s' (expected GIT, LYT, or VIS)",
+                        type(loaded_git_or_lyt).__name__,
+                        original_git_or_lyt.identifier(),
+                    )
+                    if useable_type != VIS:
+                        raise RuntimeError(errmsg)  # noqa: TRY004, TRY301
+            except RuntimeError:
+                raise
+            except Exception:  # noqa: BLE001
+                RobustLogger().error("Unexpected exception when executing %s._handle_git_lyt_reloads() with resource '%s'",
+                                           repr(self), original_git_or_lyt.identifier())
+        original_git_or_lyt.activate(original_path)  # reactivate the main one.
+
+        return result
 
     def add_locations(
         self,

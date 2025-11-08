@@ -28,6 +28,16 @@ if TYPE_CHECKING:
 
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
+def _iterate_gff_list(struct: GFFStruct, label: str) -> list[GFFStruct]:
+    try:
+        return list(struct.get_list(label))
+    except KeyError:
+        RobustLogger().debug(f"Missing list label encountered: {label=} struct_id={struct.struct_id}")
+        return []
+    except TypeError as error:
+        RobustLogger().error(f"Invalid list type encountered while reading {label=}: struct_id={struct.struct_id} error={error}")
+        raise
+
 
 class GIT:
     BINARY_TYPE = ResourceType.GIT
@@ -100,7 +110,7 @@ class GIT:
             A list of all stored instances.
         """
         return cast(
-            list[GITInstance],
+            "List[GITInstance]",
             [
                 *self.cameras,
                 *self.creatures,
@@ -197,39 +207,39 @@ class GIT:
         """
         if isinstance(instance, GITCreature):
             if instance in self.creatures:
-                ValueError("Creature instance already exists inside the GIT object.")
+                raise ValueError("Creature instance already exists inside the GIT object.")
             return self.creatures.append(instance)
         if isinstance(instance, GITPlaceable):
             if instance in self.placeables:
-                ValueError("Placeable instance already exists inside the GIT object.")
+                raise ValueError("Placeable instance already exists inside the GIT object.")
             return self.placeables.append(instance)
         if isinstance(instance, GITDoor):
             if instance in self.doors:
-                ValueError("Door instance already exists inside the GIT object.")
+                raise ValueError("Door instance already exists inside the GIT object.")
             return self.doors.append(instance)
         if isinstance(instance, GITTrigger):
             if instance in self.triggers:
-                ValueError("Trigger instance already exists inside the GIT object.")
+                raise ValueError("Trigger instance already exists inside the GIT object.")
             return self.triggers.append(instance)
         if isinstance(instance, GITEncounter):
             if instance in self.encounters:
-                ValueError("Encounter instance already exists inside the GIT object.")
+                raise ValueError("Encounter instance already exists inside the GIT object.")
             return self.encounters.append(instance)
         if isinstance(instance, GITWaypoint):
             if instance in self.waypoints:
-                ValueError("Waypoint instance already exists inside the GIT object.")
+                raise ValueError("Waypoint instance already exists inside the GIT object.")
             return self.waypoints.append(instance)
         if isinstance(instance, GITCamera):
             if instance in self.cameras:
-                ValueError("Camera instance already exists inside the GIT object.")
+                raise ValueError("Camera instance already exists inside the GIT object.")
             return self.cameras.append(instance)
         if isinstance(instance, GITSound):
             if instance in self.sounds:
-                ValueError("Sound instance already exists inside the GIT object.")
+                raise ValueError("Sound instance already exists inside the GIT object.")
             return self.sounds.append(instance)
         if isinstance(instance, GITStore):
             if instance in self.stores:
-                ValueError("Store instance already exists inside the GIT object.")
+                raise ValueError("Store instance already exists inside the GIT object.")
             return self.stores.append(instance)
 
         msg = "Tried to add invalid instance."
@@ -258,8 +268,8 @@ class GITInstance(ABC):
         return hash(self.camera_id if isinstance(self, GITCamera) else self.identifier())
 
     @abstractmethod
-    def identifier(self) -> ResourceIdentifier:
-        """Returns the resource identifier of the instance, or None if it doesn't have one."""
+    def identifier(self) -> ResourceIdentifier | None:
+        """Returns the resource identifier of the instance, or None if it doesn't have one (GITCamera should be the only one returning None)."""
 
     @abstractmethod
     def blank(
@@ -824,7 +834,8 @@ class GITTrigger(GITInstance):
     def yaw(
         self,
     ) -> float:
-        return None
+        """Triggers do not have a bearing/yaw property. Returns 0.0 by default."""
+        return 0.0
 
 
 class GITTransitionTrigger(GITTrigger):
@@ -910,7 +921,7 @@ def construct_git(
     git.music_battle_id = properties_struct.acquire("MusicBattle", 0)
     git.music_delay = properties_struct.acquire("MusicDelay", 0)
 
-    for camera_struct in gff.root.get_list("CameraList"):
+    for camera_struct in _iterate_gff_list(gff.root, "CameraList"):
         camera = GITCamera()
         git.cameras.append(camera)
 
@@ -922,7 +933,7 @@ def construct_git(
         camera.position = camera_struct.acquire("Position", Vector3.from_null())
         camera.pitch = camera_struct.acquire("Pitch", 0.0)
 
-    for creature_struct in gff.root.get_list("Creature List"):
+    for creature_struct in _iterate_gff_list(gff.root, "Creature List"):
         creature = GITCreature()
         git.creatures.append(creature)
         creature.resref = creature_struct.acquire("TemplateResRef", ResRef.from_blank())
@@ -935,7 +946,7 @@ def construct_git(
         )
         creature.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
-    for door_struct in gff.root.get_list("Door List"):
+    for door_struct in _iterate_gff_list(gff.root, "Door List"):
         door = GITDoor()
         git.doors.append(door)
         door.bearing = door_struct.acquire("Bearing", 0.0)
@@ -951,7 +962,7 @@ def construct_git(
         tweak_enabled = door_struct.acquire("UseTweakColor", 0)
         door.tweak_color = Color.from_bgr_integer(door_struct.acquire("TweakColor", 0)) if tweak_enabled else None
 
-    for encounter_struct in gff.root.get_list("Encounter List"):
+    for encounter_struct in _iterate_gff_list(gff.root, "Encounter List"):
         x = encounter_struct.acquire("XPosition", 0.0)
         y = encounter_struct.acquire("YPosition", 0.0)
         z = encounter_struct.acquire("ZPosition", 0.0)
@@ -975,7 +986,7 @@ def construct_git(
             RobustLogger().warning("Encounter geometry list missing! Creating a default triangle at its position.")
             encounter.geometry.create_triangle(origin=encounter.position)
 
-        for spawn_struct in encounter_struct.get_list("SpawnPointList"):
+        for spawn_struct in _iterate_gff_list(encounter_struct, "SpawnPointList"):
             spawn = GITEncounterSpawnPoint()
             spawn.x = spawn_struct.acquire("X", 0.0)
             spawn.y = spawn_struct.acquire("Y", 0.0)
@@ -983,7 +994,7 @@ def construct_git(
             spawn.orientation = spawn_struct.acquire("Orientation", 0.0)
             encounter.spawn_points.append(spawn)
 
-    for placeable_struct in gff.root.get_list("Placeable List"):
+    for placeable_struct in _iterate_gff_list(gff.root, "Placeable List"):
         placeable = GITPlaceable()
         git.placeables.append(placeable)
 
@@ -997,7 +1008,7 @@ def construct_git(
         tweak_int = placeable_struct.acquire("TweakColor", 0)
         placeable.tweak_color = Color.from_bgr_integer(tweak_int) if tweak_enabled else None
 
-    for sound_struct in gff.root.get_list("SoundList"):
+    for sound_struct in _iterate_gff_list(gff.root, "SoundList"):
         sound = GITSound()
         git.sounds.append(sound)
 
@@ -1006,7 +1017,7 @@ def construct_git(
         sound.position.y = sound_struct.acquire("YPosition", 0.0)
         sound.position.z = sound_struct.acquire("ZPosition", 0.0)
 
-    for store_struct in gff.root.get_list("StoreList"):
+    for store_struct in _iterate_gff_list(gff.root, "StoreList"):
         store = GITStore()
         git.stores.append(store)
 
@@ -1021,7 +1032,7 @@ def construct_git(
         )
         store.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
-    for trigger_struct in gff.root.get_list("TriggerList"):
+    for trigger_struct in _iterate_gff_list(gff.root, "TriggerList"):
         trigger = GITTrigger()
         git.triggers.append(trigger)
 
@@ -1049,7 +1060,7 @@ def construct_git(
             RobustLogger().warning("Trigger geometry list missing! Creating a default triangle at its position.")
             trigger.geometry.create_triangle(origin=trigger.position)
 
-    for waypoint_struct in gff.root.get_list("WaypointList"):
+    for waypoint_struct in _iterate_gff_list(gff.root, "WaypointList"):
         waypoint = GITWaypoint()
         git.waypoints.append(waypoint)
 
@@ -1069,7 +1080,11 @@ def construct_git(
             waypoint_struct.acquire("XOrientation", 0.0),
             waypoint_struct.acquire("YOrientation", 0.0),
         )
-        waypoint.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
+        if math.isclose(rot_x, 0.0, abs_tol=1e-6) and math.isclose(rot_y, 0.0, abs_tol=1e-6):
+            RobustLogger().debug(f"Defaulting waypoint bearing to zero because orientation components are {rot_x=} {rot_y=}")
+            waypoint.bearing = 0.0
+        else:
+            waypoint.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
     return git
 

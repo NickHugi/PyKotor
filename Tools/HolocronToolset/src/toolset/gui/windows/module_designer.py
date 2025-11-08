@@ -60,6 +60,10 @@ if TYPE_CHECKING:
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.module import UTT, UTW
+    from pathlib import Path
+
+
+    from pykotor.gl import vec3
     from pykotor.gl.scene import Camera
     from pykotor.resource.formats.bwm import BWM
     from pykotor.resource.formats.lyt import LYT

@@ -85,7 +85,7 @@ def compile_ui(
 
         # Only recompile if source file is newer than the existing target file or ignore_timestamp is set to True
         if source_timestamp > target_timestamp or ignore_timestamp:
-            command = f"{ui_compiler} {ui_file} -o {ui_target}"
+            command = f'{ui_compiler} "{ui_file}" -o "{ui_target}"'
             if debug:
                 command += " -d"
             print(command)
@@ -119,7 +119,7 @@ def compile_qrc(
             "PySide2": "pyside2-rcc",
             "PySide6": "pyside6-rcc",
         }[qt_version]
-        command: str = f"{rc_compiler} {qrc_source} -o {qrc_target}"
+        command: str = f'{rc_compiler} "{qrc_source}" -o "{qrc_target}"'
         os.system(command)  # noqa: S605
         print(command)
         filedata: str = qrc_target.read_text(encoding="utf-8")
@@ -132,4 +132,4 @@ if __name__ == "__main__":
     qt_version = get_available_qt_version()
     compile_ui(qt_version, ignore_timestamp=False, debug=False)
     compile_qrc(qt_version, ignore_timestamp=False)
-    print("All ui compilations completed")
+    print("All ui compilations completed in", TOOLSET_DIR)

@@ -76,6 +76,13 @@ class RawBinaryReader:
 
         self._size: int = total_size - self._offset if size is None else size
 
+        self._position: int = 0
+        if hasattr(self._stream, "tell"):
+            try:
+                self._position = self._stream.tell() - self._offset
+            except (OSError, ValueError):
+                self._position = 0
+
     @property
     def _true_stream_position(self) -> int:
         """Private property to access the current position of the stream for debugging purposes.
@@ -100,7 +107,10 @@ class RawBinaryReader:
         self.close()
 
     def read(self, size: int) -> bytes | None:
-        return self._stream.read(size)
+        data = self._stream.read(size)
+        if data:
+            self._position += len(data)
+        return data
 
     @classmethod
     def from_stream(
@@ -189,7 +199,9 @@ class RawBinaryReader:
                 raise TypeError(msg)
 
         elif isinstance(source, RawBinaryReader):  # is already a BinaryReader instance
-            reader = cls(source._stream, source.offset(), source.size())  # noqa: SLF001
+            current_position = source.position()
+            reader = cls(source.get_stream(), source.offset(), source.size())  # noqa: SLF001
+            reader.seek(current_position)
 
         else:
             msg = f"Must specify a path, bytes-like object, stream, io. or an existing BinaryReader instance, got type ({source.__class__})."
@@ -238,8 +250,10 @@ class RawBinaryReader:
         self,
         offset: int,
     ):
+        absolute_position: int = self._offset + self._position
         self.seek(self.position() + offset)
         self._offset = offset
+        self._position = absolute_position
 
     def size(
         self,
@@ -303,7 +317,8 @@ class RawBinaryReader:
             length: How many bytes to skip.
         """
         self.exceed_check(length)
-        self._stream.read(length)
+        skipped = self._stream.read(length) or b""
+        self._position += len(skipped)
 
     def position(
         self,
@@ -314,7 +329,25 @@ class RawBinaryReader:
         -------
             The byte offset.
         """
-        return self._stream.tell() - self._offset
+        return self._position
+
+    def get_stream(self) -> io.RawIOBase | io.BufferedIOBase | mmap.mmap:
+        """Returns the underlying stream for internal use.
+
+        Returns:
+        -------
+            The underlying stream object.
+        """
+        return self._stream
+
+    def get_position(self) -> int:
+        """Returns the cached position for internal use.
+
+        Returns:
+        -------
+            The cached position value.
+        """
+        return self._position
 
     def seek(
         self,
@@ -326,8 +359,9 @@ class RawBinaryReader:
         ----
             position: The byte index into stream.
         """
-        self.exceed_check(position - self.position())
+        self.exceed_check(position - self._position)
         self._stream.seek(position + self._offset)
+        self._position = position
 
     def read_all(
         self,
@@ -342,7 +376,10 @@ class RawBinaryReader:
         -------
             bytes: The bytes read from the stream
         """
-        return self._stream.read(self.remaining()) or b""
+        remaining_bytes = self._size - self._position
+        data = self._stream.read(remaining_bytes) or b""
+        self._position += len(data)
+        return data
 
     def read_uint8(
         self,
@@ -360,7 +397,9 @@ class RawBinaryReader:
             An integer from the stream.
         """
         self.exceed_check(1)
-        return struct.unpack(f"{_endian_char(big)}B", self._stream.read(1) or b"")[0]
+        data = self._stream.read(1) or b""
+        self._position += len(data)
+        return struct.unpack(f"{_endian_char(big)}B", data)[0]
 
     def read_int8(
         self,
@@ -378,7 +417,9 @@ class RawBinaryReader:
             An integer from the stream.
         """
         self.exceed_check(1)
-        return struct.unpack(f"{_endian_char(big)}b", self._stream.read(1) or b"")[0]
+        data = self._stream.read(1) or b""
+        self._position += len(data)
+        return struct.unpack(f"{_endian_char(big)}b", data)[0]
 
     def read_uint16(
         self,
@@ -396,7 +437,9 @@ class RawBinaryReader:
             An integer from the stream.
         """
         self.exceed_check(2)
-        return struct.unpack(f"{_endian_char(big)}H", self._stream.read(2) or b"")[0]
+        data = self._stream.read(2) or b""
+        self._position += len(data)
+        return struct.unpack(f"{_endian_char(big)}H", data)[0]
 
     def read_int16(
         self,
@@ -414,7 +457,9 @@ class RawBinaryReader:
             An integer from the stream.
         """
         self.exceed_check(2)
-        return struct.unpack(f"{_endian_char(big)}h", self._stream.read(2) or b"")[0]
+        data = self._stream.read(2) or b""
+        self._position += len(data)
+        return struct.unpack(f"{_endian_char(big)}h", data)[0]
 
     def read_uint32(
         self,
@@ -437,7 +482,9 @@ class RawBinaryReader:
             An integer from the stream.
         """
         self.exceed_check(4)
-        unpacked = struct.unpack(f"{_endian_char(big)}I", self._stream.read(4) or b"")[0]
+        data = self._stream.read(4) or b""
+        self._position += len(data)
+        unpacked = struct.unpack(f"{_endian_char(big)}I", data)[0]
 
         if unpacked == 0xFFFFFFFF and max_neg1:  # noqa: PLR2004
             unpacked = -1
@@ -460,7 +507,9 @@ class RawBinaryReader:
             An integer from the stream.
         """
         self.exceed_check(4)
-        return struct.unpack(f"{_endian_char(big)}i", self._stream.read(4) or b"")[0]
+        data = self._stream.read(4) or b""
+        self._position += len(data)
+        return struct.unpack(f"{_endian_char(big)}i", data)[0]
 
     def read_uint64(
         self,
@@ -478,7 +527,9 @@ class RawBinaryReader:
             An integer from the stream.
         """
         self.exceed_check(8)
-        return struct.unpack(f"{_endian_char(big)}Q", self._stream.read(8) or b"")[0]
+        data = self._stream.read(8) or b""
+        self._position += len(data)
+        return struct.unpack(f"{_endian_char(big)}Q", data)[0]
 
     def read_int64(
         self,
@@ -496,7 +547,9 @@ class RawBinaryReader:
             An integer from the stream.
         """
         self.exceed_check(8)
-        return struct.unpack(f"{_endian_char(big)}q", self._stream.read(8) or b"")[0]
+        data = self._stream.read(8) or b""
+        self._position += len(data)
+        return struct.unpack(f"{_endian_char(big)}q", data)[0]
 
     def read_single(
         self,
@@ -514,7 +567,9 @@ class RawBinaryReader:
             An float from the stream.
         """
         self.exceed_check(4)
-        return struct.unpack(f"{_endian_char(big)}f", self._stream.read(4) or b"")[0]
+        data = self._stream.read(4) or b""
+        self._position += len(data)
+        return struct.unpack(f"{_endian_char(big)}f", data)[0]
 
     def read_double(
         self,
@@ -532,7 +587,9 @@ class RawBinaryReader:
             An float from the stream.
         """
         self.exceed_check(8)
-        return struct.unpack(f"{_endian_char(big)}d", self._stream.read(8) or b"")[0]
+        data = self._stream.read(8) or b""
+        self._position += len(data)
+        return struct.unpack(f"{_endian_char(big)}d", data)[0]
 
     def read_vector2(
         self,
@@ -619,6 +676,8 @@ class RawBinaryReader:
         line_bytes = bytearray()
         while True:
             char: bytes | None = self._stream.read(1)
+            if char:
+                self._position += len(char)
 
             if not char:  # End of stream
                 break
@@ -632,11 +691,14 @@ class RawBinaryReader:
             if char == b"\r":
                 # Check for \r\n
                 next_char: bytes | None = self._stream.read(1)
+                if next_char:
+                    self._position += len(next_char)
                 if not next_char or next_char == b"\n":
                     break
 
                 # If not \r\n, go back one character
-                self._stream.seek(-1, 1)
+                self._stream.seek(-1, os.SEEK_CUR)
+                self._position -= 1
                 break
 
         return bytes(line_bytes).decode(encoding=encoding, errors=errors).rstrip("\r\n")
@@ -656,7 +718,9 @@ class RawBinaryReader:
             A bytes object containing the read bytes.
         """
         self.exceed_check(length)
-        return self._stream.read(length) or b""
+        data = self._stream.read(length) or b""
+        self._position += len(data)
+        return data
 
     def read_string(
         self,
@@ -680,6 +744,7 @@ class RawBinaryReader:
         """
         self.exceed_check(length)
         string_byte_data: bytes = self._stream.read(length) or b""
+        self._position += len(string_byte_data)
         if encoding is None:
             string: str = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
             RobustLogger().warning(f"decode_bytes_with_fallbacks called and returned '{string}'")
@@ -767,7 +832,7 @@ class RawBinaryReader:
         length: int = 1,
     ) -> bytes:
         data: bytes | None = self._stream.read(length)
-        self._stream.seek(-length, 1)
+        self._stream.seek(-length, os.SEEK_CUR)
         return b"" if data is None else data
 
     def exceed_check(
@@ -784,21 +849,26 @@ class RawBinaryReader:
         ------
             OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
-        attempted_seek: int = self.position() + num
+        attempted_seek: int = self._position + num
         if attempted_seek < 0:
             msg = f"Cannot seek to a negative value {attempted_seek}, abstracted seek value: {num}"
             raise OSError(msg)
-        if attempted_seek > self.size():
+        if attempted_seek > self._size:
             msg = "This operation would exceed the streams boundaries."
             raise OSError(msg)
 
 
 class RawBinaryWriter(ABC):
     @abstractmethod
-    def __enter__(self): ...
+    def __enter__(self) -> Self: ...
 
     @abstractmethod
-    def __exit__(self, exc_type, exc_val, exc_tb): ...
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ): ...
 
     @classmethod
     def to_file(
@@ -1221,14 +1291,14 @@ class RawBinaryWriterFile(RawBinaryWriter):
 
     def __enter__(
         self,
-    ):
+    ) -> Self:
         return self
 
     def __exit__(
         self,
-        exc_type,
-        exc_val,
-        exc_tb,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ):
         if self.auto_close:
             self.close()
@@ -1642,14 +1712,14 @@ class RawBinaryWriterBytearray(RawBinaryWriter):
 
     def __enter__(
         self,
-    ):
+    ) -> Self:
         return self
 
     def __exit__(
         self,
-        exc_type,
-        exc_val,
-        exc_tb,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ): ...
 
     def close(

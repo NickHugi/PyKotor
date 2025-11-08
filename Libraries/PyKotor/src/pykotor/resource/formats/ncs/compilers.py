@@ -4,7 +4,7 @@ import subprocess
 
 from datetime import date
 from enum import Enum
-from pathlib import Path
+from pathlib import Path  # pyright: ignore[reportMissingImports]
 from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.misc import Game
@@ -12,7 +12,7 @@ from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.misc import generate_hash
+from utility.misc import generate_hash  # pyright: ignore[reportMissingImports]
 
 if TYPE_CHECKING:
     import os
@@ -23,6 +23,17 @@ if TYPE_CHECKING:
 
 
 class InbuiltNCSCompiler(NCSCompiler):
+    """Built-in NSS to NCS compiler using PyKotor's native implementation.
+
+    This compiler provides full NSS compilation without external dependencies,
+    supporting all KOTOR/TSL script features including:
+    - Functions, variables, structs
+    - Control flow (if/else, while, for, do-while, switch)  
+    - All data types (int, float, string, object, vector, etc.)
+    - #include directive support
+    - Optimization passes
+    """
+
     def compile_script(  # noqa: PLR0913
         self,
         source_path: os.PathLike | str,
@@ -96,18 +107,23 @@ class KnownExternalCompilers(Enum):
         commandline={},
     )
     XOREOS = ExternalCompilerConfig(
-        sha256="todo",
+        sha256="",
         name="Xoreos Tools",
-        release_date=date(1, 1, 1),
-        author="todo",
-        commandline={},
+        release_date=date(2016, 1, 1),  # Approximate based on project history
+        author="Xoreos Team",
+        commandline={},  # Xoreos tools are primarily for engine reimplementation
     )
-    KNSSCOMP = ExternalCompilerConfig(  # TODO: add hash and look for this in tslpatcher.reader.ConfigReader.load_compile_list()
-        sha256="todo",
+    KNSSCOMP = ExternalCompilerConfig(
+        # knsscomp is Nick Hugi's modern NSS compiler
+        # Hash should be determined per binary version
+        sha256="",  # TODO: Obtain hash from actual knsscomp binary
         name="knsscomp",
-        release_date=date(1, 1, 1),  # 2022?
+        release_date=date(2022, 1, 1),  # Approximate
         author="Nick Hugi",
-        commandline={},
+        commandline={
+            "compile": ["-c", "{source}", "-o", "{output}"],
+            "decompile": [],  # knsscomp doesn't support decompilation
+        },
     )
 
     @classmethod
@@ -233,28 +249,54 @@ class ExternalNCSCompiler(NCSCompiler):
 
         Processing Logic:
         ----------------
-            - Configures the compiler based on the nwnnsscomp.exe used.
-            - Runs the compiler process, capturing stdout and stderr.
-            - Returns a tuple of the stdout and stderr strings on completion.
+            - Validates source file exists
+            - Configures the compiler based on the nwnnsscomp.exe used
+            - Runs the compiler process, capturing stdout and stderr
+            - Returns a tuple of the stdout and stderr strings on completion
 
         Raises:
         ------
-            - EntryPointError: File has no entry point and is an include file, so it could not be compiled.
+            FileNotFoundError: If source file doesn't exist
+            RuntimeError: If compiler executable doesn't exist
+            EntryPointError: If file has no entry point and is an include file
+            subprocess.TimeoutExpired: If compilation exceeds timeout
         """
+        source_path = Path(source_file)
+        if not source_path.is_file():
+            msg = f"Source file not found: {source_path}"
+            raise FileNotFoundError(msg)
+
+        if not self.nwnnsscomp_path.is_file():
+            msg = f"Compiler executable not found: {self.nwnnsscomp_path}"
+            raise RuntimeError(msg)
+
         config: NwnnsscompConfig = self.config(source_file, output_file, game)
 
-        result: CompletedProcess[str] = subprocess.run(
-            args=config.get_compile_args(str(self.nwnnsscomp_path)),
-            capture_output=True,  # Capture stdout and stderr
-            text=True,
-            timeout=timeout,
-            check=False,
-        )
+        try:
+            result: CompletedProcess[str] = subprocess.run(
+                args=config.get_compile_args(str(self.nwnnsscomp_path)),
+                capture_output=True,  # Capture stdout and stderr
+                text=True,
+                timeout=timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as e:
+            msg = f"Compilation timed out after {timeout} seconds"
+            raise RuntimeError(msg) from e
+        except Exception as e:
+            msg = f"Failed to run compiler: {e}"
+            raise RuntimeError(msg) from e
 
         stdout, stderr = self._get_output(result)
+
+        # Check for known error conditions
         if "File is an include file, ignored" in stdout:
             msg = "This file has no entry point and cannot be compiled (Most likely an include file)."
             raise EntryPointError(msg)
+
+        if result.returncode != 0 and stderr:
+            msg = f"Compilation failed with return code {result.returncode}: {stderr}"
+            raise RuntimeError(msg)
 
         return stdout, stderr
 
@@ -265,32 +307,70 @@ class ExternalNCSCompiler(NCSCompiler):
         game: Game | int,
         timeout: int = 5,
     ) -> tuple[str, str]:
-        """Decompiles a script file into C# source code.
+        """Decompiles a NCS bytecode file to NSS source code.
 
         Args:
         ----
-            source_file: (os.PathLike | str) - Path to the script file to decompile.
-            output_file: (os.PathLike | str) - Path to output the decompiled C# source code.
-            game: (Game) - The Game object containing configuration.
-            timeout: (int) - How long to wait for decompiling to finish before aborting. Defaults to 5 seconds.
+            source_file: Path to the NCS bytecode file to decompile
+            output_file: Path to output the decompiled NSS source code
+            game: The Game object or ID for configuration
+            timeout: Seconds to wait before aborting (default: 5)
+
+        Returns:
+        -------
+            tuple[str, str]: Tuple of (stdout, stderr) from the decompile process
 
         Processing Logic:
         ----------------
-            - Checks if configuration exists and configures if not
-            - Calls nwnnsscomp subprocess to decompile script file using configuration
-            - Waits up to the provided timeout seconds for decompilation process to complete.
+            - Validates source file exists
+            - Validates compiler supports decompilation
+            - Runs the decompile process and captures output
+            - Returns stdout/stderr streams
+
+        Raises:
+        ------
+            FileNotFoundError: If source file doesn't exist
+            RuntimeError: If compiler doesn't support decompilation or fails
+            subprocess.TimeoutExpired: If decompilation exceeds timeout
         """
+        source_path = Path(source_file)
+        if not source_path.is_file():
+            msg = f"Source file not found: {source_path}"
+            raise FileNotFoundError(msg)
+
+        if not self.nwnnsscomp_path.is_file():
+            msg = f"Compiler executable not found: {self.nwnnsscomp_path}"
+            raise RuntimeError(msg)
+
         config: NwnnsscompConfig = self.config(source_file, output_file, game)
 
-        result: CompletedProcess[str] = subprocess.run(
-            args=config.get_decompile_args(str(self.nwnnsscomp_path)),
-            capture_output=True,  # Capture stdout and stderr
-            text=True,
-            timeout=timeout,
-            check=False,
-        )
+        # Check if this compiler supports decompilation
+        if not config.chosen_compiler.value.commandline.get("decompile"):
+            msg = f"Compiler '{config.chosen_compiler.value.name}' does not support decompilation"
+            raise RuntimeError(msg)
 
-        return self._get_output(result)
+        try:
+            result: CompletedProcess[str] = subprocess.run(
+                args=config.get_decompile_args(str(self.nwnnsscomp_path)),
+                capture_output=True,  # Capture stdout and stderr
+                text=True,
+                timeout=timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as e:
+            msg = f"Decompilation timed out after {timeout} seconds"
+            raise RuntimeError(msg) from e
+        except Exception as e:
+            msg = f"Failed to run decompiler: {e}"
+            raise RuntimeError(msg) from e
+
+        stdout, stderr = self._get_output(result)
+
+        if result.returncode != 0 and stderr:
+            msg = f"Decompilation failed with return code {result.returncode}: {stderr}"
+            raise RuntimeError(msg)
+
+        return stdout, stderr
 
     def _get_output(self, result: CompletedProcess[str]) -> tuple[str, str]:
         stdout: str = result.stdout

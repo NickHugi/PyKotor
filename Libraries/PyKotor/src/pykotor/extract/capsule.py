@@ -661,7 +661,7 @@ class Capsule(LazyCapsule):
             Capsule: The initialized Capsule object.
         """
         with BinaryReader.from_bytes(data) as reader:
-            capsule = cast(cls, object())
+            capsule = cast("cls", object())
             capsule.__class__ = cls
             file_type = reader.read_string(4)
             reader.skip(4)

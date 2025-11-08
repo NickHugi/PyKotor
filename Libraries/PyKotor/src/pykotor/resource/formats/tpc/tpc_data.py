@@ -7,7 +7,8 @@ from enum import IntEnum, auto
 from typing import TYPE_CHECKING
 
 from loggerplus import RobustLogger
-
+from pykotor.common.stream import BinaryReader
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.formats.tpc.convert.bgra import (
     bgr_to_bgra,
     bgr_to_grey,
@@ -53,41 +54,41 @@ class TPCTextureFormat(IntEnum):
         """Get the block size for this format."""
         return 4 if self.is_dxt() else 1
 
-    def bytes_per_block(self) -> Literal[1, 8, 16]:
-        """Get the number of bytes per block for this format."""
-        if not self.is_dxt():
-            return 1
-        return 8 if self is TPCTextureFormat.DXT1 else 16
-
-    def bytes_per_pixel(self) -> Literal[1, 4, 3, 0]:
+    def bytes_per_pixel(self) -> Literal[1, 3, 4]:
         """Get the number of bytes per pixel for this format."""
         bytes_per_pixel = 0
-        if self is self.__class__.Greyscale:
+        if self is self.Greyscale:
             bytes_per_pixel = 1
         elif self.is_dxt():
             bytes_per_pixel = 1  # technically incorrect.
-        elif self in (self.__class__.RGB, self.__class__.BGR):
+        elif self in (self.RGB, self.BGR):
             bytes_per_pixel = 3
-        elif self in (self.__class__.RGBA, self.__class__.BGRA):
+        elif self in (self.RGBA, self.BGRA):
             bytes_per_pixel = 4
         return bytes_per_pixel
 
     def is_dxt(self) -> bool:
         """Check if this format is a DXT compression format."""
         return self in (
-            self.__class__.DXT1,
-            self.__class__.DXT3,
-            self.__class__.DXT5,
+            self.DXT1,
+            self.DXT3,
+            self.DXT5,
         )
+
+    def bytes_per_block(self) -> Literal[1, 8, 16]:
+        """Get the number of bytes per block for this format."""
+        if not self.is_dxt():
+            return 1
+        return 8 if self is self.DXT1 else 16
 
     def min_size(self) -> Literal[0, 1, 3, 4, 8, 16]:
         """Get the minimum size in bytes for this format."""
         min_size: int = 0
-        if self is self.__class__.Greyscale:
+        if self is self.Greyscale:
             min_size = 1
-        elif self in (self.__class__.RGB, self.__class__.BGR):
+        elif self in (self.RGB, self.BGR):
             min_size = 3
-        elif self in (self.__class__.RGBA, self.__class__.BGRA):
+        elif self in (self.RGBA, self.BGRA):
             min_size = 4
         elif self.is_dxt():
             min_size = self.bytes_per_block()
@@ -108,15 +109,15 @@ class TPCTextureFormat(IntEnum):
         from qtpy.QtGui import QImage
 
         q_format = QImage.Format.Format_Invalid
-        if self is self.__class__.Greyscale:
+        if self is self.Greyscale:
             q_format = QImage.Format.Format_Grayscale8
-        elif self is self.__class__.RGB:
+        elif self is self.RGB:
             q_format = QImage.Format.Format_RGB888
-        elif self is self.__class__.BGR:
+        elif self is self.BGR:
             q_format = QImage.Format.Format_BGR888
-        elif self is self.__class__.RGBA:
+        elif self is self.RGBA:
             q_format = QImage.Format.Format_RGBA8888
-        elif self is self.__class__.BGRA:
+        elif self is self.BGRA:
             q_format = QImage.Format.Format_ARGB32
         else:
             raise ValueError(f"Unsupported format: {self!r}")
@@ -139,11 +140,11 @@ class TPCTextureFormat(IntEnum):
     def to_pil_mode(self) -> str:
         """Convert to PIL image mode."""
         mode: Literal["", "L", "RGB", "RGBA"] = ""
-        if self is self.__class__.Greyscale:
+        if self is self.Greyscale:
             mode = "L"
-        elif self is self.__class__.RGB:
+        elif self is self.RGB:
             mode = "RGB"
-        elif self is self.__class__.RGBA:
+        elif self is self.RGBA:
             mode = "RGBA"
         return mode
 
@@ -378,6 +379,32 @@ class TPCLayer:
             if mm_width < 1 or mm_height < 1:
                 break
 
+    def set_data(
+        self,
+        width: int,
+        height: int,
+        mipmaps: list[bytes],
+        texture_format: TPCTextureFormat,
+    ):
+        """Sets the new texture data.
+
+        Args:
+        ----
+            width: The new width.
+            height: The new height.
+            mipmaps: The new mipmaps data.
+            texture_format: The texture format.
+        """
+        # TODO(NickHugi): Some sort of simple sanity check on the data; make sure the mipmaps' data have the appropriate size
+
+        self.mipmaps.clear()
+        mm_width, mm_height = width, height
+        for mipmap_data in mipmaps:
+            w, h = max(1, mm_width), max(1, mm_height)
+            self.mipmaps.append(TPCMipmap(w, h, texture_format, bytearray(mipmap_data)))
+            mm_width >>= 1
+            mm_height >>= 1
+
     @classmethod
     def _downsample(
         cls,
@@ -396,7 +423,7 @@ class TPCLayer:
         return self.__class__([mipmap.copy() for mipmap in self.mipmaps])
 
 
-class TPC:
+class TPC(ComparableMixin):
     """BioWare's TPC texture format used in Knights of the Old Republic."""
 
     BINARY_TYPE = ResourceType.TPC
@@ -424,7 +451,7 @@ class TPC:
         """Create a blank TPC texture."""
         instance = cls()
         instance.layers = [cls.BLANK_LAYER]
-        instance._format = TPCTextureFormat.RGBA  # noqa: SLF001
+        instance._format = TPCTextureFormat.RGBA
         return instance
 
     @property
@@ -437,11 +464,15 @@ class TPC:
         """Set the TXI data from a string."""
         self._txi.load(value)
 
-    def format(self) -> TPCTextureFormat:
+    def format(
+        self,
+    ) -> TPCTextureFormat:
         """Get the texture format."""
         return self._format
 
-    def is_compressed(self) -> bool:
+    def is_compressed(
+        self,
+    ) -> bool:
         """Check if the texture is compressed."""
         return self._format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT3, TPCTextureFormat.DXT5}
 
@@ -450,13 +481,19 @@ class TPC:
         mm: TPCMipmap = self.layers[layer].mipmaps[mipmap]
         return mm.width, mm.height
 
-    def dimensions(self) -> tuple[int, int]:
+    def dimensions(
+        self,
+    ) -> tuple[int, int]:
         """Get the dimensions of the texture."""
         if not self.layers:
             return 0, 0
         return self.layers[0].mipmaps[0].width, self.layers[0].mipmaps[0].height
 
-    def get(self, layer: int, mipmap: int) -> TPCMipmap:
+    def get(
+        self,
+        layer: int = 0,
+        mipmap: int = 0,
+    ) -> TPCMipmap:
         """Get a specific mipmap."""
         return self.layers[layer].mipmaps[mipmap]
 
@@ -532,12 +569,25 @@ class TPC:
         elif self.format() in (TPCTextureFormat.RGBA, TPCTextureFormat.BGRA, TPCTextureFormat.DXT5):
             self.convert(TPCTextureFormat.DXT5)
 
+    @staticmethod
+    def _integer48(
+        bytes48: bytes,
+    ) -> int:
+        return (
+            bytes48[0]
+            + (bytes48[1] << 8)
+            + (bytes48[2] << 16)
+            + (bytes48[3] << 24)
+            + (bytes48[4] << 32)
+            + (bytes48[5] << 40)
+        )
+
     def copy(self) -> Self:
         """Create a deep copy of this TPC texture."""
         instance: Self = self.__class__.from_blank()
         instance.layers[:] = (layer.copy() for layer in self.layers)
-        instance._format = self._format  # noqa: SLF001
+        instance._format = self._format
         instance.is_animated = self.is_animated
         instance.is_cube_map = self.is_cube_map
-        instance._txi = self._txi  # noqa: SLF001
+        instance._txi = self._txi
         return instance

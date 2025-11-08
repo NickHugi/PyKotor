@@ -27,6 +27,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
 from utility.common.misc_string.util import ireplace
+from utility.system.path import CaseAwarePath
 
 if TYPE_CHECKING:
     import os
@@ -303,13 +304,13 @@ def rim_to_mod(
         rim_folderpath: Folderpath where the rims can be found for this module.
             The filestem of the filepath will be used to determine which rim to load.
     """
-    r_outpath: Path = Path(filepath)
+    r_outpath = CaseAwarePath(filepath)
     if not is_mod_file(r_outpath):
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
     module_root = Installation.get_module_root(module_root or filepath)
-    r_rim_folderpath: Path = Path(rim_folderpath) if rim_folderpath else r_outpath.parent
+    r_rim_folderpath = CaseAwarePath(rim_folderpath) if rim_folderpath else r_outpath.parent
 
     filepath_rim: Path = r_rim_folderpath / f"{module_root}.rim"
     filepath_rim_s: Path = r_rim_folderpath / f"{module_root}_s.rim"

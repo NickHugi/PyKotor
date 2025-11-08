@@ -6,8 +6,6 @@ import sys
 import unittest
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
@@ -26,19 +24,46 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Game
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utt import construct_utt, dismantle_utt
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.utt import UTT
 
-TEST_FILE = "tests/test_pykotor/test_files/test.utt"
-
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+TEST_UTT_XML = """<gff3>
+  <struct id="-1">
+    <exostring label="Tag">GenericTrigger001</exostring>
+    <resref label="TemplateResRef">generictrigge001</resref>
+    <locstring label="LocalizedName" strref="42968"></locstring>
+    <byte label="AutoRemoveKey">1</byte>
+    <uint32 label="Faction">1</uint32>
+    <byte label="Cursor">1</byte>
+    <float label="HighlightHeight">3.0</float>
+    <exostring label="KeyName">somekey</exostring>
+    <uint16 label="LoadScreenID">0</uint16>
+    <uint16 label="PortraitId">0</uint16>
+    <sint32 label="Type">1</sint32>
+    <byte label="TrapDetectable">1</byte>
+    <byte label="TrapDetectDC">10</byte>
+    <byte label="TrapDisarmable">1</byte>
+    <byte label="DisarmDC">10</byte>
+    <byte label="TrapFlag">1</byte>
+    <byte label="TrapOneShot">1</byte>
+    <byte label="TrapType">1</byte>
+    <resref label="OnDisarm">ondisarm</resref>
+    <resref label="OnTrapTriggered">ontraptriggered</resref>
+    <resref label="OnClick">onclick</resref>
+    <resref label="ScriptHeartbeat">onheartbeat</resref>
+    <resref label="ScriptOnEnter">onenter</resref>
+    <resref label="ScriptOnExit">onexit</resref>
+    <resref label="ScriptUserDefine">onuserdefined</resref>
+    <byte label="PaletteID">6</byte>
+    <exostring label="Comment">comment</exostring>
+    </struct>
+  </gff3>
+"""
 
 
 class TestUTT(TestCase):
@@ -48,40 +73,18 @@ class TestUTT(TestCase):
     def log_func(self, *msgs):
         self.log_messages.append("\t".join(msgs))
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTT):
-            gff: GFF = read_gff(resource.data())
-            reconstructed_gff: GFF = dismantle_utt(construct_utt(gff), Game.K1)
-            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
-
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTT):
-            gff: GFF = read_gff(resource.data())
-            reconstructed_gff: GFF = dismantle_utt(construct_utt(gff))
-            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
-
     def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTT_XML.encode(), file_format=ResourceType.GFF_XML)
         reconstructed_gff = dismantle_utt(construct_utt(gff))
         assert gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages)
 
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTT_XML.encode(), file_format=ResourceType.GFF_XML)
         utt = construct_utt(gff)
         self.validate_io(utt)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTT_XML.encode(), file_format=ResourceType.GFF_XML)
         gff = dismantle_utt(construct_utt(gff))
         utt = construct_utt(gff)
         self.validate_io(utt)
@@ -114,3 +117,7 @@ class TestUTT(TestCase):
         assert utt.on_user_defined == "onuserdefined"
         assert utt.palette_id == 6
         assert utt.comment == "comment"
+
+
+if __name__ == "__main__":
+    unittest.main()

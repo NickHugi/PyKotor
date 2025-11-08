@@ -4,6 +4,7 @@ from enum import IntFlag
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Color
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 from utility.common.geometry import SurfaceMaterial, Vector3, Vector4
 
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
     from utility.common.geometry import Vector2
 
 
-class MDL:
+class MDL(ComparableMixin):
     """Represents a MDL/MDX file.
 
     Attributes:
@@ -25,6 +26,8 @@ class MDL:
     """
 
     BINARY_TYPE = ResourceType.MDL
+    COMPARABLE_FIELDS = ("name", "fog", "supermodel")
+    COMPARABLE_SEQUENCE_FIELDS = ("anims",)
 
     def __init__(
         self,
@@ -34,6 +37,26 @@ class MDL:
         self.name: str = ""
         self.fog: bool = False
         self.supermodel: str = ""
+
+    def __eq__(self, other):
+        if not isinstance(other, MDL):
+            return NotImplemented
+        return (
+            self.root == other.root
+            and self.anims == other.anims
+            and self.name == other.name
+            and self.fog == other.fog
+            and self.supermodel == other.supermodel
+        )
+
+    def __hash__(self):
+        return hash((
+            self.root,
+            tuple(self.anims),
+            self.name,
+            self.fog,
+            self.supermodel
+        ))
 
     def get(
         self,
@@ -186,7 +209,8 @@ class MDL:
 
 
 # region Animation Data
-class MDLAnimation:
+class MDLAnimation(ComparableMixin):
+    COMPARABLE_FIELDS = ("name", "root_model", "anim_length", "transition_length")
     def __init__(
         self,
     ):
@@ -196,6 +220,28 @@ class MDLAnimation:
         self.transition_length: float = 0.0
         self.events: list[MDLEvent] = []
         self.root: MDLNode = MDLNode()
+
+    def __eq__(self, other):
+        if not isinstance(other, MDLAnimation):
+            return NotImplemented
+        return (
+            self.name == other.name
+            and self.root_model == other.root_model
+            and self.anim_length == other.anim_length
+            and self.transition_length == other.transition_length
+            and self.events == other.events
+            and self.root == other.root
+        )
+
+    def __hash__(self):
+        return hash((
+            self.name,
+            self.root_model,
+            self.anim_length,
+            self.transition_length,
+            tuple(self.events),
+            self.root
+        ))
 
     def all_nodes(
         self,
@@ -222,12 +268,25 @@ class MDLAnimation:
         return f"{self.__class__.__name__}(name={self.name!r}, root_model={self.root_model!r}, anim_length={self.anim_length!r}, transition_length={self.transition_length!r})"
 
 
-class MDLEvent:
+class MDLEvent(ComparableMixin):
+    COMPARABLE_FIELDS = ("activation_time", "name")
+
     def __init__(
         self,
     ):
         self.activation_time: float = 0.0
         self.name: str = ""
+
+    def __eq__(self, other):
+        if not isinstance(other, MDLEvent):
+            return NotImplemented
+        return (
+            self.activation_time == other.activation_time
+            and self.name == other.name
+        )
+
+    def __hash__(self):
+        return hash((self.activation_time, self.name))
 
 
 # endregion
@@ -247,7 +306,7 @@ class MDLNodeFlags(IntFlag):
     SABER = 0x00000800
 
 
-class MDLNode:
+class MDLNode(ComparableMixin):
     """A node in the MDL tree that can store additional nodes or some extra data related to the model such as geometry or lighting.
 
     Attributes:
@@ -265,6 +324,9 @@ class MDLNode:
         aabb: Walkmesh data associated with the node
         saber: Sabermesh data associated with the node.
     """
+
+    COMPARABLE_FIELDS = ("name", "position", "orientation", "light", "emitter", "mesh", "skin", "dangly", "aabb", "saber")
+    COMPARABLE_SEQUENCE_FIELDS = ("children", "controllers")
 
     def __init__(
         self,
@@ -290,6 +352,44 @@ class MDLNode:
         self.dangly: MDLDangly | None = None
         self.aabb: MDLWalkmesh | None = None
         self.saber: MDLSaber | None = None
+
+    def __eq__(self, other):
+        if not isinstance(other, MDLNode):
+            return NotImplemented
+        return (
+            self.children == other.children
+            and self.controllers == other.controllers
+            and self.name == other.name
+            and self.node_id == other.node_id
+            and self.position == other.position
+            and self.orientation == other.orientation
+            and self.light == other.light
+            and self.emitter == other.emitter
+            and self.reference == other.reference
+            and self.mesh == other.mesh
+            and self.skin == other.skin
+            and self.dangly == other.dangly
+            and self.aabb == other.aabb
+            and self.saber == other.saber
+        )
+
+    def __hash__(self):
+        return hash((
+            tuple(self.children),
+            tuple(self.controllers),
+            self.name,
+            self.node_id,
+            self.position,
+            self.orientation,
+            self.light,
+            self.emitter,
+            self.reference,
+            self.mesh,
+            self.skin,
+            self.dangly,
+            self.aabb,
+            self.saber
+        ))
 
     def descendants(
         self,
@@ -341,7 +441,7 @@ class MDLNode:
         return f"{self.__class__.__name__}(name={self.name!r}, node_id={self.node_id!r})"
 
 
-class MDLLight:
+class MDLLight(ComparableMixin):
     """Light data that can be attached to a node.
 
     Attributes:
@@ -354,6 +454,9 @@ class MDLLight:
         flare:
         fading_light:
     """
+
+    COMPARABLE_FIELDS = ("flare_radius", "light_priority", "ambient_only", "dynamic_type", "shadow", "flare", "fading_light")
+    COMPARABLE_SEQUENCE_FIELDS = ("flare_sizes", "flare_positions", "flare_color_shifts", "flare_textures")
 
     def __init__(
         self,
@@ -374,8 +477,40 @@ class MDLLight:
     def __repr__(self):
         return f"{self.__class__.__name__}(flare_radius={self.flare_radius!r}, light_priority={self.light_priority!r}, ambient_only={self.ambient_only!r}, dynamic_type={self.dynamic_type!r}, shadow={self.shadow!r}, flare={self.flare!r}, fading_light={self.fading_light!r})"
 
+    def __eq__(self, other):
+        if not isinstance(other, MDLLight):
+            return NotImplemented
+        return (
+            self.flare_radius == other.flare_radius
+            and self.light_priority == other.light_priority
+            and self.ambient_only == other.ambient_only
+            and self.dynamic_type == other.dynamic_type
+            and self.shadow == other.shadow
+            and self.flare == other.flare
+            and self.fading_light == other.fading_light
+            and self.flare_sizes == other.flare_sizes
+            and self.flare_positions == other.flare_positions
+            and self.flare_color_shifts == other.flare_color_shifts
+            and self.flare_textures == other.flare_textures
+        )
 
-class MDLEmitter:
+    def __hash__(self):
+        return hash((
+            self.flare_radius,
+            self.light_priority,
+            self.ambient_only,
+            self.dynamic_type,
+            self.shadow,
+            self.flare,
+            self.fading_light,
+            tuple(self.flare_sizes),
+            tuple(self.flare_positions),
+            tuple(self.flare_color_shifts),
+            tuple(self.flare_textures)
+        ))
+
+
+class MDLEmitter(ComparableMixin):
     """Emitter data that can be attached to a node.
 
     Attributes:
@@ -425,7 +560,7 @@ class MDLEmitter:
         self.flags: int = 0
 
 
-class MDLReference:
+class MDLReference(ComparableMixin):
     """Reference data that can be attached to a node.
 
     Attributes:
@@ -445,7 +580,7 @@ class MDLReference:
         return f"{self.__class__.__name__}(model={self.model!r}, reattachable={self.reattachable!r})"
 
 
-class MDLMesh:
+class MDLMesh(ComparableMixin):
     """Mesh data that can be attached to a node."""
 
     def __init__(
@@ -495,7 +630,7 @@ class MDLMesh:
         ...
 
 
-class MDLSkin:
+class MDLSkin(ComparableMixin):
     """Skin data that can be attached to a node."""
 
     def __init__(
@@ -520,7 +655,7 @@ class MDLConstraint:
         self.target_node: int = 0
 
 
-class MDLDangly:
+class MDLDangly(ComparableMixin):
     """Dangly data that can be attached to a node."""
 
     def __init__(
@@ -535,7 +670,7 @@ class MDLDangly:
 
 
 
-class MDLWalkmesh:
+class MDLWalkmesh(ComparableMixin):
     """AABB data that can be attached to a node."""
     def __init__(
         self,
@@ -543,7 +678,7 @@ class MDLWalkmesh:
         self.aabbs: list[MDLNode] = []
 
 
-class MDLSaber:
+class MDLSaber(ComparableMixin):
     """Saber data that can be attached to a node."""
     def __init__(
         self,
@@ -560,7 +695,9 @@ class MDLSaber:
 
 
 # region Geometry Data
-class MDLBoneVertex:
+class MDLBoneVertex(ComparableMixin):
+    COMPARABLE_FIELDS = ("vertex_weights", "vertex_indices")
+
     def __init__(
         self,
     ):
@@ -571,7 +708,9 @@ class MDLBoneVertex:
         return f"{self.__class__.__name__}(vertex_weights={self.vertex_weights!r}, vertex_indices={self.vertex_indices!r})"
 
 
-class MDLFace:
+class MDLFace(ComparableMixin):
+    COMPARABLE_FIELDS = ("v1", "v2", "v3", "material", "a1", "a2", "a3", "coefficient", "normal")
+
     def __init__(
         self,
     ):
@@ -588,9 +727,11 @@ class MDLFace:
 
 # endregion
 
-
-class MDLController:
+class MDLController(ComparableMixin):
     """A controller is an object that gets attached to the node and influences some sort of change that is either static or animated."""
+
+    COMPARABLE_FIELDS = ("controller_type",)
+    COMPARABLE_SEQUENCE_FIELDS = ("rows",)
 
     def __init__(
         self,
@@ -606,7 +747,9 @@ class MDLController:
         return f"{self.__class__.__name__}(controller_type={self.controller_type!r}, rows={self.rows!r})"
 
 
-class MDLControllerRow:
+class MDLControllerRow(ComparableMixin):
+    COMPARABLE_FIELDS = ("time", "data")
+
     def __init__(
         self,
         time: float,

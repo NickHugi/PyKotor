@@ -1,5 +1,5 @@
 #PyKotor==1.5.4
 setuptools>=57.4.0,<70  # 70.0.0 and higher breaks pyinstaller
 numpy>=1.21      # PyKotorGL ( TODO: Find out if we need exactly 1.22.2 )
-moderngl>=5.8.2  # Replacing PyOpenGL for modern OpenGL interface
-PyGLM>=2.0  # PyKotorGL ( might need 2.5.7 )
+PyOpenGL>=3.1.10    # Legacy OpenGL pipeline support
+PyGLM>=2.0,<2.8; python_implementation == 'CPython'  # PyKotorGL ( might need 2.5.7 )

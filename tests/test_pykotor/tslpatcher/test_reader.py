@@ -73,7 +73,13 @@ K1_PATH: str = os.environ.get("K1_PATH", r"C:\Program Files (x86)\Steam\steamapp
 class TestConfigReader(unittest.TestCase):
     def setUp(self):
         self.config = PatcherConfig()
-        self.ini = ConfigParser(delimiters=("="), allow_no_value=True, strict=False, interpolation=None)
+        self.ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+            inline_comment_prefixes=(";", "#"),
+        )
         # use case-sensitive keys
         self.ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
@@ -107,8 +113,8 @@ class TestConfigReader(unittest.TestCase):
                 10: {"text": "Modified 10", "voiceover": "vo_mod_10"},
             }
         )
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            self.mod_path = Path(tmpdirname) / "tslpatchdata"
+        self.temp_dir = tempfile.mkdtemp()
+        self.mod_path = Path(self.temp_dir) / "tslpatchdata"
         self.mod_path.mkdir(exist_ok=True, parents=True)
         shutil.copy(Path("tests/test_pykotor/test_files/complex.tlk").resolve(), self.mod_path / "complex.tlk")
         shutil.copy(Path("tests/test_pykotor/test_files/append.tlk").resolve(), self.mod_path / "append.tlk")
@@ -126,10 +132,11 @@ class TestConfigReader(unittest.TestCase):
         )
 
         # Load the INI file and the TLK file
-        self.config_reader = ConfigReader(self.ini, self.mod_path)  # type: ignore
+        self.config_reader = ConfigReader(self.ini, self.mod_path, tslpatchdata_path=self.mod_path)  # type: ignore
 
-    def cleanUp(self):
-        self.mod_path.unlink()
+    def tearDown(self):
+        if hasattr(self, "temp_dir"):
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def create_test_tlk(self, data: dict[int, dict[str, str]]) -> TLK:
         tlk = TLK()
@@ -195,7 +202,6 @@ class TestConfigReader(unittest.TestCase):
         )
 
     def test_tlk_complex_changes(self):
-        # sourcery skip: extract-duplicate-method, remove-dict-keys, use-dict-items
         ini_text2 = """
         [TLKList]
         ReplaceFile10=complex.tlk
@@ -1698,11 +1704,11 @@ class TestConfigReader(unittest.TestCase):
         assert mod_1.index_to_token == 5
 
     def _setupIniAndConfig(self, ini_text: str) -> PatcherConfig:
-        ini = ConfigParser(delimiters="=", allow_no_value=True, strict=False, interpolation=None)
+        ini = ConfigParser(delimiters="=", allow_no_value=True, strict=False, interpolation=None, inline_comment_prefixes=(";", "#"))
         ini.optionxform = lambda optionstr: optionstr
         ini.read_string(ini_text)
         result = PatcherConfig()
-        ConfigReader(ini, "").load(result)
+        ConfigReader(ini, self.temp_dir, tslpatchdata_path=self.mod_path).load(result)
         return result
 
     # endregion
