@@ -26,8 +26,6 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.common.misc import Game
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
-from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import CompileError, EntryPointError
@@ -38,13 +36,24 @@ from pykotor.resource.formats.ncs.ncs_auto import compile_nss
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.error_handling import format_exception_with_variables
-from utility.system.path import Path
+from pathlib import Path
 
 if TYPE_CHECKING:
-    from ply import yacc
+    from ply import yacc  # pyright: ignore[reportMissingTypeStubs]
 
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
+
+    from pykotor.common.script import ScriptConstant, ScriptFunction
+    KOTOR_CONSTANTS: list[ScriptConstant] = []
+    KOTOR_FUNCTIONS: list[ScriptFunction] = []
+    TSL_CONSTANTS: list[ScriptConstant] = []
+    TSL_FUNCTIONS: list[ScriptFunction] = []
+    KOTOR_LIBRARY: dict[str, bytes] = {}
+    TSL_LIBRARY: dict[str, bytes] = {}
+else:
+    from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
+    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 
 K1_PATH: str | None = os.environ.get("K1_PATH")
 K2_PATH: str | None = os.environ.get("K2_PATH")
@@ -57,7 +66,7 @@ ORIG_LOGSTEM = "test_ncs_compilers_install"
 CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
     Game.K1: {"nwscript.nss"},
     Game.K2: {
-        "nwscript.nss" "a_262imprison_ext3.ncs"  # tslpatcher's nwnnsscomp.exe fails
+        "nwscript.nssa_262imprison_ext3.ncs"  # tslpatcher's nwnnsscomp.exe fails
     },
 }
 CANNOT_COMPILE_BUILTIN: dict[Game, set[str]] = {
@@ -518,12 +527,12 @@ class TestCompileInstallation(unittest.TestCase):
             if resource.identifier() in CANNOT_COMPILE_EXT[game]:
                 cls.log_file(f"Skipping {resource.identifier()}, known incompatible...")
                 continue
-            if resource.restype() != ResourceType.NSS:
+            if resource.restype() is not ResourceType.NSS:
                 continue
 
             temp_nss_path: Path = cls.all_nss_paths[game].joinpath(str(resource.identifier()))
             temp_ncs_path: Path = temp_nss_path.with_suffix(".ncs")
-            with temp_nss_path.open("w") as f:
+            with temp_nss_path.open("w", encoding="utf-8") as f:
                 str_script: str = decode_bytes_with_fallbacks(resource.data())
                 f.write(str_script)
 
@@ -547,7 +556,7 @@ class TestCompileInstallation(unittest.TestCase):
         # Print the captured output to console
         print(*args, **kwargs)  # noqa: T201
 
-        filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path.pathify(filepath)
+        filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path(filepath)
         with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
             f.write(msg)
 
@@ -584,9 +593,9 @@ class TestCompileInstallation(unittest.TestCase):
                 return
 
             existence_status: list[bool] = [path.exists() for path in compiled_paths]
-            assert all(
-                status == existence_status[0] for status in existence_status
-            ), f"Mismatch in compilation results: {[path for path, exists in zip(compiled_paths, existence_status) if not exists]}"  # noqa: S101
+            assert all(status == existence_status[0] for status in existence_status), (
+                f"Mismatch in compilation results: {[path for path, exists in zip(compiled_paths, existence_status) if not exists]}"
+            )  # noqa: S101
             assert all(existence_status), f"Compilation failed: {[path for path, exists in zip(compiled_paths, existence_status) if not exists]}"
 
     def _test_inbuilt_compiler(self, game: Game):

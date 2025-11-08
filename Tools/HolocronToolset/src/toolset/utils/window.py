@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QWidget
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QDialog, QMainWindow, QMessageBox, QWidget
 
-from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
@@ -14,37 +14,56 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import QCloseEvent
-    from PyQt5.QtWidgets import QMainWindow
+    from qtpy.QtGui import QCloseEvent
+    from qtpy.QtWidgets import QMainWindow
 
-    from gui.editor import Editor
     from toolset.data.installation import HTInstallation
+    from toolset.gui.editor import Editor
 
 WINDOWS: list[QWidget] = []
 
-
-def addWindow(window: QWidget):
+unique_sentinel = object()
+def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool = True):
     """Prevents Qt's garbage collection by keeping a reference to the window."""
     # Save the original closeEvent method
     original_closeEvent = window.closeEvent
 
     # Define a new closeEvent method that also calls the original
     def newCloseEvent(
-        event: QCloseEvent | None = None,  # Make event arg optional just in case the class has the wrong definition.
+        event: QCloseEvent | None = unique_sentinel,  # pyright: ignore[reportArgumentType]
         *args,
         **kwargs,
     ):
+        from toolset.gui.editor import Editor
+        if isinstance(window, Editor) and window._filepath is not None:  # noqa: SLF001
+            addRecentFile(window._filepath)  # noqa: SLF001
         if window in WINDOWS:
             WINDOWS.remove(window)
         # Call the original closeEvent
-        original_closeEvent(event, *args, **kwargs)  # type: ignore[reportArgumentType]
+        if event is unique_sentinel:  # Make event arg optional just in case the class has the wrong definition.
+            original_closeEvent(*args, **kwargs)
+        else:
+            original_closeEvent(event, *args, **kwargs)  # pyright: ignore[reportArgumentType]
 
     # Override the widget's closeEvent with the new one
-    window.closeEvent = newCloseEvent  # type: ignore[reportAttributeAccessIssue]
+    window.closeEvent = newCloseEvent  # pyright: ignore[reportAttributeAccessIssue]
 
     # Add the window to the global list and show it
     WINDOWS.append(window)
-    window.show()
+    if show:
+        if isinstance(window, QDialog):
+            window.exec_()
+        else:
+            window.show()
+
+def addRecentFile(file: Path):
+    """Update the list of recent files."""
+    settings = GlobalSettings()
+    recentFiles: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.is_file()]
+    recentFiles.insert(0, str(file))
+    if len(recentFiles) > 15:  # noqa: PLR2004
+        recentFiles.pop()
+    settings.recentFiles = recentFiles
 
 
 def openResourceEditor(
@@ -85,6 +104,7 @@ def openResourceEditor(
     from toolset.gui.editors.gff import GFFEditor  # noqa: PLC0415
     from toolset.gui.editors.git import GITEditor  # noqa: PLC0415
     from toolset.gui.editors.jrl import JRLEditor  # noqa: PLC0415
+    from toolset.gui.editors.ltr import LTREditor  # noqa: PLC0415
     from toolset.gui.editors.nss import NSSEditor  # noqa: PLC0415
     from toolset.gui.editors.pth import PTHEditor  # noqa: PLC0415
     from toolset.gui.editors.ssf import SSFEditor  # noqa: PLC0415
@@ -119,21 +139,30 @@ def openResourceEditor(
     if restype.target_type() is ResourceType.TLK:
         editor = TLKEditor(None, installation)
 
+    if restype.target_type() is ResourceType.LTR:
+        editor = LTREditor(None, installation)
+
     if restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
 
-    if restype.category in {"Images", "Textures"} and restype != ResourceType.TXI:
+    if restype.category in {"Images", "Textures"} and restype is not ResourceType.TXI:
         editor = TPCEditor(None, installation)
 
     if restype in {ResourceType.NSS, ResourceType.NCS}:
         if installation:
             editor = NSSEditor(None, installation)
-        elif restype == ResourceType.NSS:
-            QMessageBox.warning(parentWindowWidget, "No installation loaded", "The toolset cannot use its full nss editor features until you select an installation.")
+        elif restype is ResourceType.NSS:
+            QMessageBox.warning(
+                parentWindowWidget,
+                "No installation loaded",
+                "The toolset cannot use its full nss editor features until you select an installation.",
+            )
             editor = TXTEditor(None, installation)
         else:
             QMessageBox.warning(
-                parentWindowWidget, "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS."
+                parentWindowWidget,
+                "Cannot decompile NCS without an installation active",
+                "Please select an installation from the dropdown before loading an NCS.",
             )
             return None, None
 
@@ -143,23 +172,23 @@ def openResourceEditor(
         else:
             editor = DLGEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTC, ResourceType.BTC}:
+    if restype.target_type() in {ResourceType.UTC, ResourceType.BTC, ResourceType.BIC}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
-            editor = UTCEditor(None, installation, mainwindow=parentWindow)
+            editor = UTCEditor(None, installation)
 
     if restype.target_type() in {ResourceType.UTP, ResourceType.BTP}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
-            editor = UTPEditor(None, installation, mainWindow=parentWindow)
+            editor = UTPEditor(None, installation)
 
     if restype.target_type() in {ResourceType.UTD, ResourceType.BTD}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
-            editor = UTDEditor(None, installation, mainwindow=parentWindow)
+            editor = UTDEditor(None, installation)
 
     if restype.target_type() is ResourceType.UTS:
         if installation is None or not gff_specialized:  # noqa: SIM108
@@ -226,7 +255,7 @@ def openResourceEditor(
         if parentWindowWidget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
             editor.setWindowIcon(parentWindowWidget.windowIcon())
 
-    if restype.name in ERFType.__members__ or restype == ResourceType.RIM:
+    if restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM):
         editor = ERFEditor(None, installation)
 
     if restype in {ResourceType.MDL, ResourceType.MDX}:
@@ -248,24 +277,24 @@ def openResourceEditor(
 
         except Exception as e:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "An unexpected error has occurred",
                 str(universal_simplify_exception(e)),
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
                 parentWindowWidget,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
             ).show()
             raise
         else:
             return filepath, editor
     else:
         QMessageBox(
-            QMessageBox.Critical,
+            QMessageBox.Icon.Critical,
             "Failed to open file",
             f"The selected file format '{restype}' is not yet supported.",
-            QMessageBox.Ok,
+            QMessageBox.StandardButton.Ok,
             parentWindowWidget,
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
         ).show()
 
     return None, None

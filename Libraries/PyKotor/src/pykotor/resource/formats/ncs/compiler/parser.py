@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NoReturn
+from pathlib import Path
+from typing import TYPE_CHECKING, Collection, NoReturn
 
 from ply import yacc
 
@@ -55,7 +56,6 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     WhileLoopBlock,
 )
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from ply.lex import LexToken
@@ -74,7 +74,8 @@ class NssParser:
         library: dict[str, bytes],
         library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None,
         errorlog: yacc.NullLogger | None = yacc.NullLogger(),  # noqa: B008
-        debug=False,  # noqa: FBT002
+        *,
+        debug: bool = False,
     ):
         self.parser: yacc.LRParser = yacc.yacc(
             module=self,
@@ -89,7 +90,7 @@ class NssParser:
         if library_lookup:
             if not isinstance(library_lookup, list):
                 library_lookup = [library_lookup]
-            self.library_lookup = [Path.pathify(item) for item in library_lookup]
+            self.library_lookup = [Path(item) for item in library_lookup]
 
     tokens: list[str] = NssLexer.tokens
     literals: list[str] = NssLexer.literals
@@ -270,7 +271,7 @@ class NssParser:
                   | break_statement
                   | continue_statement
                   | scoped_block
-        """  # noqa: D400, D212, D415, D205
+        """  # noqa: D400, D212, D403, D415, D205
         if p[1] == ";":
             p[0] = EmptyStatement()
         else:
@@ -279,13 +280,13 @@ class NssParser:
     def p_nop_statement(self, p):
         """
         statement : NOP STRING_VALUE ';'
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = NopStatement(p[2].value)
 
     def p_expression_statement(self, p):
         """
         statement : expression ';'
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = ExpressionStatement(p[1])
 
     def p_break_statement(self, p):
@@ -332,31 +333,31 @@ class NssParser:
     def p_normal_assignment(self, p):
         """
         assignment : field_access '=' expression
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = Assignment(p[1], p[3])
 
     def p_addition_assignment(self, p):
         """
         assignment : field_access ADDITION_ASSIGNMENT_OPERATOR expression
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = AdditionAssignment(p[1], p[3])
 
     def p_subtraction_assignment(self, p):
         """
         assignment : field_access SUBTRACTION_ASSIGNMENT_OPERATOR expression
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = SubtractionAssignment(p[1], p[3])
 
     def p_multiplication_assignment(self, p):
         """
         assignment : field_access MULTIPLICATION_ASSIGNMENT_OPERATOR expression
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = MultiplicationAssignment(p[1], p[3])
 
     def p_division_assignment(self, p):
         """
         assignment : field_access DIVISION_ASSIGNMENT_OPERATOR expression
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = DivisionAssignment(p[1], p[3])
 
     # region If Statement
@@ -426,7 +427,7 @@ class NssParser:
     def p_parenthesis_expression(self, p):
         """
         expression : '(' expression ')'
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = p[2]
 
     def p_binary_operator(self, p):
@@ -449,7 +450,7 @@ class NssParser:
                    | expression BITWISE_LEFT expression
                    | expression BITWISE_RIGHT expression
                    | expression MOD expression
-        """  # noqa: D400, D212, D415, D205
+        """  # noqa: D400, D212, D403, D415, D205
         p[0] = BinaryOperatorExpression(p[1], p[3], p[2].binary)
 
     def p_unary_expression(self, p):
@@ -457,10 +458,10 @@ class NssParser:
         expression : MINUS expression
                    | BITWISE_NOT expression
                    | NOT expression
-        """  # noqa: D400, D212, D415, D205
+        """  # noqa: D400, D212, D403, D415, D205
         p[0] = UnaryOperatorExpression(p[2], p[1].unary)
 
-    def p_return_statement(self, p):
+    def p_return_statement(self, p: Collection):
         """
         return_statement : RETURN ';'
                          | RETURN expression ';'
@@ -476,7 +477,7 @@ class NssParser:
                    | IDENTIFIER
                    | assignment
                    | constant_expression
-        """  # noqa: D400, D212, D415, D205
+        """  # noqa: D400, D212, D403, D415, D205
         p[0] = IdentifierExpression(p[1]) if isinstance(p[1], Identifier) else p[1]
 
     def p_constant_expression(self, p):
@@ -495,7 +496,7 @@ class NssParser:
     def p_field_access_expression(self, p):
         """
         expression : field_access
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = FieldAccessExpression(p[1])
 
     def p_function_call(self, p):
@@ -544,7 +545,7 @@ class NssParser:
                   | ACTION_TYPE
                   | STRUCT IDENTIFIER
         """  # noqa: D400, D212, D415, D205
-        if len(p) == 3:
+        if len(p) == 3:  # noqa: PLR2004
             p[0] = DynamicDataType(p[1], p[2].label)
         else:
             p[0] = DynamicDataType(p[1])
@@ -566,31 +567,31 @@ class NssParser:
     def p_prefix_increment_expression(self, p):
         """
         expression : INCREMENT field_access
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D212, D403, D415
         p[0] = PrefixIncrementExpression(p[2])
 
     def p_postfix_increment_expression(self, p):
         """
         expression : field_access INCREMENT
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = PostfixIncrementExpression(p[1])
 
     def p_prefix_decrement_expression(self, p):
         """
         expression : DECREMENT field_access
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = PrefixDecrementExpression(p[2])
 
     def p_postfix_decrement_expression(self, p):
         """
         expression : field_access DECREMENT
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = PostfixDecrementExpression(p[1])
 
     def p_vector_expression(self, p):
         """
         expression : '[' FLOAT_VALUE ',' FLOAT_VALUE ',' FLOAT_VALUE ']'
-        """  # noqa: D200, D400, D212, D415
+        """  # noqa: D200, D400, D403, D212, D415
         p[0] = VectorExpression(p[2], p[4], p[6])
 
     # region Switch Statement

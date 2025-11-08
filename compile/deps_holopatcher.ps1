@@ -1,3 +1,6 @@
+#!/usr/bin/env pwsh
+
+[CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
   [string]$venv_name = ".venv"
@@ -72,9 +75,9 @@ if ((Get-OS) -eq "Mac") {
 }
 
 Write-Host "Installing required packages to build holopatcher..."
-. $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
-. $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on
+& $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
+& $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on

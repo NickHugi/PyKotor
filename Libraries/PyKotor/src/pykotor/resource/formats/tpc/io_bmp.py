@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+import io
 import struct
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.stream import BinaryReader
+try:
+    from PIL import Image
+
+    pillow_available = True
+except ImportError:
+    pillow_available = False
+
+
+from pykotor.common.stream import BinaryReader, BinaryWriterFile
 from pykotor.resource.formats.tpc.tpc_data import TPCTextureFormat
 from pykotor.resource.type import ResourceWriter, autoclose
 
@@ -40,7 +49,33 @@ class TPCBMPWriter(ResourceWriter):
             - Write bitmap header and info header
             - Read pixels from data and write to file in BGR format line by line.
         """
-        width, height, data = self._tpc.convert(TPCTextureFormat.RGB, 0)
+        if pillow_available:
+            self._write_with_pillow()
+        else:
+            self._write_with_custom_logic()
+
+    def _write_with_pillow(
+        self,
+    ):
+        if self._tpc is None:
+            raise ValueError("TPC instance is not set.")
+
+        if self._tpc.format() is TPCTextureFormat.RGBA:
+            width, height, _format, data = self._tpc.get()
+            mode = "RGBA"
+        else:
+            width, height, data = self._tpc.convert(TPCTextureFormat.RGB)
+            mode = "RGB"
+        img = Image.frombytes(mode, (width, height), data)
+        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        img.save(self._writer._stream if isinstance(self._writer, BinaryWriterFile) else io.BytesIO(self._writer._ba), format="BMP")
+
+    def _write_with_custom_logic(
+        self,
+    ):
+        if self._tpc is None:
+            raise ValueError("TPC instance is not set.")
+        width, height, data = self._tpc.convert(TPCTextureFormat.RGB)
         file_size = 14 + 40 + (width * height * 3)
 
         # Header

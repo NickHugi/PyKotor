@@ -1,13 +1,18 @@
 from __future__ import annotations
 
-from collections import namedtuple
+import multiprocessing
+
 from contextlib import contextmanager
 from operator import attrgetter
-from typing import TYPE_CHECKING, ClassVar
+from pathlib import Path, PurePath
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QRect, QRegExp, QSize
-from PyQt5.QtGui import (
+import qtpy
+
+from loggerplus import get_log_directory
+from qtpy import QtCore
+from qtpy.QtCore import QRect, QRegularExpression, QSize
+from qtpy.QtGui import (
     QColor,
     QFont,
     QFontMetricsF,
@@ -16,36 +21,55 @@ from PyQt5.QtGui import (
     QTextCharFormat,
     QTextFormat,
 )
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
+from toolset.gui.dialogs.github_selector import GitHubFileSelector
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
+from utility.misc import is_debug_mode
+from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import (
-        QPaintEvent,
-        QResizeEvent,
-        QTextBlock,
-        QTextDocument,
-    )
+    from qtpy.QtGui import QPaintEvent, QResizeEvent, QTextBlock, QTextDocument
 
     from pykotor.common.script import ScriptConstant, ScriptFunction
     from toolset.data.installation import HTInstallation
+    KOTOR_CONSTANTS: list[ScriptConstant] = []
+    KOTOR_FUNCTIONS: list[ScriptFunction] = []
+    TSL_CONSTANTS: list[ScriptConstant] = []
+    TSL_FUNCTIONS: list[ScriptFunction] = []
+else:
+    from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+
+
+def download_script(
+    url: str,
+    local_path: str,
+    script_relpath: str,
+):
+    """Downloads a file using `download_github_file` and updates the progress queue."""
+    print(f"Downloading script @ {url}")
+    print(f"Saving to {local_path}")
+    download_github_file(url, local_path, script_relpath)
 
 
 class NSSEditor(Editor):
     TAB_SIZE = 4
     TAB_AS_SPACE = True
 
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None,
+    ):
         """Initialize the script editor window.
 
         Args:
@@ -65,18 +89,32 @@ class NSSEditor(Editor):
         supported: list[ResourceType] = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
-        from toolset.uic.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
 
+        self.owner: str = "KOTORCommunityPatches"
+        self.repo: str = "Vanilla_KOTOR_Script_Source"
+        self.sourcerepo_url: str = f"https://github.com/{self.owner}/{self.repo}"
+        self.sourcerepo_forks_url: str = f"{self.sourcerepo_url}/forks"
+
         self._length: int = 0
         self._is_decompiled: bool = False
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._highlighter: SyntaxHighlighter = SyntaxHighlighter(self.ui.codeEdit.document(), installation)
-        self.setInstallation(self._installation)
+        self._highlighter: SyntaxHighlighter = SyntaxHighlighter(self.ui.codeEdit.document(), installation)  # pyright: ignore[reportArgumentType]
+        self.setInstallation(installation)  # pyright: ignore[reportArgumentType]
 
         self.ui.codeEdit.setTabStopDistance(QFontMetricsF(self.ui.codeEdit.font()).horizontalAdvance(" ") * NSSEditor.TAB_SIZE)
 
@@ -135,19 +173,28 @@ class NSSEditor(Editor):
 
         for function in functions:
             item = QListWidgetItem(function.name)
-            item.setData(QtCore.Qt.UserRole, function)
-            self.ui.functionList.addItem(item)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, function)
+            self.ui.functionList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
         for constant in constants:
             item = QListWidgetItem(constant.name)
-            item.setData(QtCore.Qt.UserRole, constant)
-            self.ui.constantList.addItem(item)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, constant)
+            self.ui.constantList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
-    # A context that can be saved and restored by _snapshotResTypeContext.
-    SavedContext = namedtuple("SavedContext", ["filepath", "resname", "restype", "revert", "saved_connection"])
+    class SavedContext(NamedTuple):
+        """A context that can be saved and restored by _snapshotResTypeContext."""
+
+        filepath: Path
+        resname: str
+        restype: ResourceType
+        revert: bytes
+        saved_connection: Any  # Specify the actual type here instead of 'any' if possible
 
     @contextmanager
-    def _snapshotResTypeContext(self, saved_file_callback=None):
+    def _snapshotResTypeContext(
+        self,
+        saved_file_callback: Callable | None = None,
+    ) -> Generator[SavedContext, Any, None]:
         """Snapshots the current _restype and associated state, to restore after a with statement.
 
         This saves the current _filepath, _resname and _revert data in a context object and restores it when done.
@@ -167,7 +214,13 @@ class NSSEditor(Editor):
             saved_connection = self.savedFile.connect(saved_file_callback)
         else:
             saved_connection = None
-        context = NSSEditor.SavedContext(self._filepath, self._resname, self._restype, self._revert, saved_connection)
+        context = NSSEditor.SavedContext(
+            self._filepath,
+            self._resname,
+            self._restype,
+            self._revert,
+            saved_connection,
+        )
         try:
             yield context
         finally:
@@ -181,7 +234,27 @@ class NSSEditor(Editor):
                 self._revert = context.revert
                 self.refreshWindowTitle()
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def determine_script_path(self, resref: str) -> str:
+        script_filename = f"{resref}.nss"
+        script_filename = script_filename.lower()
+        dialog = GitHubFileSelector(self.owner, self.repo, selectedFiles=[script_filename], parent=self)
+        if dialog.exec_() != QDialog.Accepted:
+            raise ValueError("No script selected.")
+
+        selected_path = dialog.getSelectedPath()
+        if not selected_path:
+            raise ValueError("No script selected.")
+        result = selected_path
+        print(f"User selected script path: {result}")
+        return result
+
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads a resource into the editor.
 
         Args:
@@ -200,28 +273,75 @@ class NSSEditor(Editor):
         super().load(filepath, resref, restype, data)
         self._is_decompiled = False
 
-        if restype == ResourceType.NSS:
+        if restype is ResourceType.NSS:
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
-        elif restype == ResourceType.NCS:
+        elif restype is ResourceType.NCS:
+            error_occurred = False
             try:
-                source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
-                self.ui.codeEdit.setPlainText(source)
-                self._is_decompiled = True
+                self._handle_user_ncs(data, resref)
             except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
-                self.new()
+                error_occurred = self._handle_exc_debug_mode("Decompilation/Download Failed", e)
             except NoConfigurationSetError as e:
-                QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
-                self.new()
+                error_occurred = self._handle_exc_debug_mode("Filepath is not set", e)
+            finally:
+                if error_occurred:
+                    self.new()
+
+    def _handle_exc_debug_mode(self, err_msg: str, e: Exception) -> bool:
+        QMessageBox(QMessageBox.Icon.Critical, err_msg, str(universal_simplify_exception(e))).exec_()
+        if is_debug_mode():
+            raise e
+        result = True
+        return result
+
+    def _handle_user_ncs(self, data: bytes, resname: str) -> None:
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            "Decompile or Download",
+            f"Would you like to decompile this script, or download it from the <a href='{self.sourcerepo_url}'>Vanilla Source Repository</a>?",
+            buttons=QMessageBox.Yes | QMessageBox.Ok | QMessageBox.Cancel,
+        )
+        box.setDefaultButton(QMessageBox.Cancel)
+        box.button(QMessageBox.Yes).setText("Decompile")
+        box.button(QMessageBox.Ok).setText("Download")
+        choice = box.exec_()
+        print(f"User chose {choice} in the decompile/download messagebox.")
+
+        if choice == QMessageBox.Yes:
+            assert self._installation is not None, "Installation not set, cannot determine path"
+            source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
+        elif choice == QMessageBox.Ok:
+            source = self._download_and_load_remote_script(resname)
+        else:
+            return
+        self.ui.codeEdit.setPlainText(source)
+        self._is_decompiled = True
+
+    def _download_and_load_remote_script(self, resref: str) -> str:
+        script_path: str = self.determine_script_path(resref)
+        local_path = CaseAwarePath(get_log_directory(self._global_settings.extractPath), PurePath(script_path).name)
+        print(f"Local path: {local_path}")
+
+        download_process = multiprocessing.Process(target=download_script, args=(f"{self.owner}/{self.repo}", str(local_path), script_path))
+        download_process.start()
+        download_process.join()
+
+        if not local_path.exists():
+            raise ValueError(f"Failed to download the script: '{local_path}' did not exist after download completed.")  # noqa: TRY301
+
+        result = BinaryReader.load_file(local_path).decode(encoding="windows-1252")
+
+        return result
 
     def build(self) -> tuple[bytes | None, bytes]:
-        if self._restype != ResourceType.NCS:
+        if self._restype is not ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
-        print("compiling script from nsseditor")
+        self._logger.debug(f"Compiling script '{self._resname}.{self._restype.extension}' from the NSSEditor...")
+        assert self._installation is not None, "Installation not set, cannot determine path"
         compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.path(), tsl=self._installation.tsl)
         if compiled_bytes is None:
-            print("user cancelled the compilation")
+            self._logger.debug(f"User cancelled the compilation of '{self._resname}.{self._restype.extension}'.")
             return None, b""
         return compiled_bytes, b""
 
@@ -255,12 +375,13 @@ class NSSEditor(Editor):
         with self._snapshotResTypeContext(self._compiledResourceSaved):
             try:
                 self._restype = ResourceType.NCS
-                filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
+                filepath: Path = Path.cwd() / "untitled_script.ncs" if self._filepath is None else self._filepath
                 if is_any_erf_type_file(filepath.name) or is_rim_file(filepath.name):
                     # Save the NCS resource into the given ERF/RIM.
                     # If this is not allowed save() will find a new path to save at.
                     self._filepath = filepath
                 elif not filepath or is_bif_file(filepath.name):
+                    assert self._installation is not None
                     self._filepath = self._installation.override_path() / f"{self._resname}.ncs"
                 else:
                     self._filepath = filepath.with_suffix(".ncs")
@@ -268,18 +389,24 @@ class NSSEditor(Editor):
                 # Save using the overridden filepath and resource type.
                 self.save()
             except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
             except OSError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
 
-    def _compiledResourceSaved(self, filepath: str, resname: str, restype: ResourceType, data: bytes):
+    def _compiledResourceSaved(
+        self,
+        filepath: str,
+        resname: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Shows a messagebox after compileCurrentScript successfully saves an NCS resource."""
         savePath = Path(filepath)
         if is_any_erf_type_file(savePath.name) or is_rim_file(savePath.name):
             # Format as /full/path/to/file.mod/resname.ncs
             savePath = savePath / f"{resname}.ncs"
         QMessageBox(
-            QMessageBox.Information,
+            QMessageBox.Icon.Information,
             "Success",
             f"Compiled script successfully saved to:\n {savePath}.",
         ).exec_()
@@ -305,12 +432,12 @@ class NSSEditor(Editor):
 
         if self.ui.tabWidget.currentIndex() == 0 and self.ui.functionList.selectedItems():  # Functions tab
             item = self.ui.functionList.selectedItems()[0]
-            function = item.data(QtCore.Qt.UserRole)
+            function = item.data(QtCore.Qt.ItemDataRole.UserRole)
             text = function.description + "\n" + str(function)
             self.ui.descriptionEdit.setPlainText(text)
         elif self.ui.tabWidget.currentIndex() == 1 and self.ui.constantList.selectedItems():  # Constants tab
             item = self.ui.constantList.selectedItems()[0]
-            constant = item.data(QtCore.Qt.UserRole)
+            constant = item.data(QtCore.Qt.ItemDataRole.UserRole)
             self.ui.descriptionEdit.setPlainText(str(constant))
 
     def insertSelectedConstant(self):
@@ -318,7 +445,7 @@ class NSSEditor(Editor):
         then shifted to the end of the newly inserted constant.
         """  # noqa: D205
         if self.ui.constantList.selectedItems():
-            constant = self.ui.constantList.selectedItems()[0].data(QtCore.Qt.UserRole)
+            constant = self.ui.constantList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
             insert = constant.name
             self.insertTextAtCursor(insert)
 
@@ -327,11 +454,15 @@ class NSSEditor(Editor):
         then shifted to the start of the first parameter of the inserted function.
         """  # noqa: D205
         if self.ui.functionList.selectedItems():
-            function: ScriptFunction = self.ui.functionList.selectedItems()[0].data(QtCore.Qt.UserRole)
+            function: ScriptFunction = self.ui.functionList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
             insert = f"{function.name}()"
             self.insertTextAtCursor(insert, insert.index("(") + 1)
 
-    def insertTextAtCursor(self, insert: str, offset: int | None = None):
+    def insertTextAtCursor(
+        self,
+        insert: str,
+        offset: int | None = None,
+    ):
         """Inserts the given text at the cursors location and then shifts the cursor position by the offset specified. If
         no offset is specified then the cursor is moved to the end of the inserted text.
 
@@ -448,7 +579,7 @@ class CodeEditor(QPlainTextEdit):
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
-        self._lineNumberArea = LineNumberArea(self)
+        self._lineNumberArea: LineNumberArea = LineNumberArea(self)
 
         self.blockCountChanged.connect(self._updateLineNumberAreaWidth)
         self.updateRequest.connect(self._updateLineNumberArea)
@@ -485,14 +616,7 @@ class CodeEditor(QPlainTextEdit):
             if block.isVisible() and bottom >= e.rect().top():
                 number = str(blockNumber + 1)
                 painter.setPen(QColor(140, 140, 140))
-                painter.drawText(
-                    0,
-                    int(top),
-                    self._lineNumberArea.width(),
-                    self.fontMetrics().height(),
-                    QtCore.Qt.AlignCenter,
-                    number,
-                )
+                painter.drawText(0, int(top), self._lineNumberArea.width(), self.fontMetrics().height(), QtCore.Qt.AlignCenter, number)
 
             block = block.next()
             top = bottom
@@ -531,7 +655,10 @@ class CodeEditor(QPlainTextEdit):
         cr: QRect = self.contentsRect()
         self._lineNumberArea.setGeometry(QRect(cr.left(), cr.top(), self.lineNumberAreaWidth(), cr.height()))
 
-    def _updateLineNumberAreaWidth(self, newBlockCount: int):
+    def _updateLineNumberAreaWidth(
+        self,
+        newBlockCount: int,
+    ):
         self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
 
     def _highlightCurrentLine(self):
@@ -540,14 +667,6 @@ class CodeEditor(QPlainTextEdit):
         Args:
         ----
             self: The text editor widget
-
-        Processing Logic:
-        ----------------
-            - Checks if the text editor is read only
-            - Creates a selection object and sets the background color and full width selection property
-            - Sets the selection cursor to the text cursor and clears any existing selection
-            - Appends the selection to the extra selections list
-            - Sets the extra selections on the text editor.
         """
         extraSelections: list[QTextEdit.ExtraSelection] = []
 
@@ -562,7 +681,11 @@ class CodeEditor(QPlainTextEdit):
 
         self.setExtraSelections(extraSelections)
 
-    def _updateLineNumberArea(self, rect: QRect, dy: int):
+    def _updateLineNumberArea(
+        self,
+        rect: QRect,
+        dy: int,
+    ):
         if dy:
             self._lineNumberArea.scroll(0, dy)
         else:
@@ -574,33 +697,37 @@ class CodeEditor(QPlainTextEdit):
 
 class SyntaxHighlighter(QSyntaxHighlighter):
     KEYWORDS: ClassVar[list[str]] = [
-        "return",
-        "float",
-        "int",
-        "object",
-        "location",
-        "void",
-        "effect",
-        "action",
-        "string",
-        "vector",
-        "talent",
-        "if",
-        "for",
-        "while",
         "#include",
-        "TRUE",
+        "action",
+        "effect",
         "FALSE",
+        "float",
+        "for",
+        "if",
+        "int",
+        "location",
+        "object",
+        "return",
+        "string",
+        "talent",
+        "TRUE",
+        "vector",
+        "void",
+        "while",
     ]
 
     OPERATORS: ClassVar[list[str]] = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "\\+", "-", "/", "<<", ">>", "\\&", "\\|"]
 
-    COMMENT_BLOCK_START = QRegExp("/\\*")
-    COMMENT_BLOCK_END = QRegExp("\\*/")
+    COMMENT_BLOCK_START = QRegularExpression("/\\*")
+    COMMENT_BLOCK_END = QRegularExpression("\\*/")
 
     BRACES: ClassVar[list[str]] = ["\\{", "\\}", "\\(", "\\)", "\\[", "\\]"]
 
-    def __init__(self, parent: QTextDocument, installation: HTInstallation):
+    def __init__(
+        self,
+        parent: QTextDocument,
+        installation: HTInstallation,
+    ):
         """Initializes the syntax highlighter.
 
         Args:
@@ -631,9 +758,9 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         constants: list[str] = [function.name for function in (TSL_CONSTANTS if installation.tsl else TSL_CONSTANTS)]
 
         rules: list[tuple[str, int, QTextCharFormat]] = []
-        rules += [(r"\b%s\b" % w, 0, self.styles["keyword"]) for w in SyntaxHighlighter.KEYWORDS]
-        rules += [(r"\b%s\b" % w, 0, self.styles["function"]) for w in functions]
-        rules += [(r"\b%s\b" % w, 0, self.styles["constant"]) for w in constants]
+        rules += [(rf"\b{w}\b", 0, self.styles["keyword"]) for w in SyntaxHighlighter.KEYWORDS]
+        rules += [(rf"\b{w}\b", 0, self.styles["function"]) for w in functions]
+        rules += [(rf"\b{w}\b", 0, self.styles["constant"]) for w in constants]
         rules += [(o, 0, self.styles["operator"]) for o in SyntaxHighlighter.OPERATORS]
         rules += [(o, 0, self.styles["brace"]) for o in SyntaxHighlighter.BRACES]
 
@@ -646,7 +773,10 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             (r"//[^\n]*", 0, self.styles["comment"]),
         ]
 
-        self.rules: list[tuple[QtCore.QRegExp, int, QTextCharFormat]] = [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
+        self.rules: list[tuple[QtCore.QRegularExpression, int, QTextCharFormat]] = [
+            (QtCore.QRegularExpression(pat), index, fmt)
+            for (pat, index, fmt) in rules
+        ]
 
     def highlightBlock(self, text: str | None):
         """Highlights blocks of text.
@@ -654,45 +784,38 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         Args:
         ----
             text (str | None): The text to highlight.
-
-        Returns:
-        -------
-            None: No value is returned.
-
-        Processing Logic:
-        ----------------
-            1. Checks if text is None and returns if so.
-            2. Loops through rules to find expressions and apply formatting.
-            3. Sets current block state to 0.
-            4. Finds comment blocks and applies comment formatting.
         """
         if text is None:
-            print("text cannot be None", "highlightBlock")
             return
-        for expression, nth, format in self.rules:
-            index: int = expression.indexIn(text, 0)
 
-            while index >= 0:
-                index = expression.pos(nth)
-                length: int = len(expression.cap(nth))
-                self.setFormat(index, length, format)
-                index = expression.indexIn(text, index + length)
+        for expression, _nth, format in self.rules:
+            matchIterator = expression.globalMatch(text)
+            while matchIterator.hasNext():
+                match = matchIterator.next()
+                self.setFormat(match.capturedStart(), match.capturedLength(), format)
 
         self.setCurrentBlockState(0)
 
         startIndex = 0
         if self.previousBlockState() != 1:
-            startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex)
+            match = SyntaxHighlighter.COMMENT_BLOCK_START.match(text)
+            startIndex = match.capturedStart() if match.hasMatch() else -1
 
         while startIndex >= 0:
-            endIndex = SyntaxHighlighter.COMMENT_BLOCK_END.indexIn(text, startIndex)
+            match = SyntaxHighlighter.COMMENT_BLOCK_END.match(text, startIndex)
+            endIndex = match.capturedStart() if match.hasMatch() else -1
+
             if endIndex == -1:
                 self.setCurrentBlockState(1)
                 commentLength = len(text) - startIndex
             else:
-                commentLength = endIndex - startIndex + 2
+                commentLength = endIndex - startIndex + match.capturedLength()
+
             self.setFormat(startIndex, commentLength, self.styles["comment"])
-            startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex + commentLength + 2)
+            if endIndex == -1:
+                break
+            match = SyntaxHighlighter.COMMENT_BLOCK_START.match(text, startIndex + commentLength)
+            startIndex = match.capturedStart() if match.hasMatch() else -1
 
     def getCharFormat(
         self,
@@ -701,7 +824,6 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         bold: bool = False,
         italic: bool = False,
     ) -> QTextCharFormat:
-        # The docs on QColor are different from the stubs? Not sure why the static typing is erroring here.
         qcolor_obj = QColor(color)  # type: ignore[]
         textFormat = QTextCharFormat()
         textFormat.setForeground(qcolor_obj)

@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+import qtpy
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utt import UTT, dismantle_utt, read_utt
@@ -14,7 +16,7 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
@@ -41,10 +43,19 @@ class UTTEditor(Editor):
             - Load data from the provided installation if given
             - Initialize an empty UTT object.
         """
-        supported = [ResourceType.UTT]
+        supported = [ResourceType.UTT, ResourceType.BTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        from toolset.uic.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -68,13 +79,46 @@ class UTTEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        cursors: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
-        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        traps: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
+        cursors: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
+        factions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        traps: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
+
+        if cursors:
+            self.ui.cursorSelect.setContext(cursors, installation, HTInstallation.TwoDA_CURSORS)
+        if factions:
+            self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+        if traps:
+            self.ui.trapSelect.setContext(traps, installation, HTInstallation.TwoDA_TRAPS)
 
         self.ui.cursorSelect.setItems(cursors.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
         self.ui.trapSelect.setItems(traps.get_column("label"))
+
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
+        )
+
+        self.ui.onClickEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onClickEdit, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onDisarmEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onDisarmEdit, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onEnterSelect, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onExitSelect, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onTrapTriggeredEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onTrapTriggeredEdit, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NCS, ResourceType.NSS])
 
     def load(
         self,
@@ -131,13 +175,13 @@ class UTTEditor(Editor):
         self.ui.trapSelect.setCurrentIndex(utt.trap_type)
 
         # Scripts
-        self.ui.onClickEdit.setText(str(utt.on_click))
-        self.ui.onDisarmEdit.setText(str(utt.on_disarm))
-        self.ui.onEnterEdit.setText(str(utt.on_enter))
-        self.ui.onExitEdit.setText(str(utt.on_exit))
-        self.ui.onHeartbeatEdit.setText(str(utt.on_heartbeat))
-        self.ui.onTrapTriggeredEdit.setText(str(utt.on_trap_triggered))
-        self.ui.onUserDefinedEdit.setText(str(utt.on_user_defined))
+        self.ui.onClickEdit.setComboBoxText(str(utt.on_click))
+        self.ui.onDisarmEdit.setComboBoxText(str(utt.on_disarm))
+        self.ui.onEnterSelect.setComboBoxText(str(utt.on_enter))
+        self.ui.onExitSelect.setComboBoxText(str(utt.on_exit))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(utt.on_heartbeat))
+        self.ui.onTrapTriggeredEdit.setComboBoxText(str(utt.on_trap_triggered))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(utt.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utt.comment)
@@ -180,13 +224,13 @@ class UTTEditor(Editor):
         utt.trap_type = self.ui.trapSelect.currentIndex()
 
         # Scripts
-        utt.on_click = ResRef(self.ui.onClickEdit.text())
-        utt.on_disarm = ResRef(self.ui.onDisarmEdit.text())
-        utt.on_enter = ResRef(self.ui.onEnterEdit.text())
-        utt.on_exit = ResRef(self.ui.onExitEdit.text())
-        utt.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        utt.on_trap_triggered = ResRef(self.ui.onTrapTriggeredEdit.text())
-        utt.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        utt.on_click = ResRef(self.ui.onClickEdit.currentText())
+        utt.on_disarm = ResRef(self.ui.onDisarmEdit.currentText())
+        utt.on_enter = ResRef(self.ui.onEnterSelect.currentText())
+        utt.on_exit = ResRef(self.ui.onExitSelect.currentText())
+        utt.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
+        utt.on_trap_triggered = ResRef(self.ui.onTrapTriggeredEdit.currentText())
+        utt.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
 
         # Comments
         utt.comment = self.ui.commentsEdit.toPlainText()

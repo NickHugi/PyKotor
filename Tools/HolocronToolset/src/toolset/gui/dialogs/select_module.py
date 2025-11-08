@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+from pathlib import PurePath
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QFileDialog, QListWidgetItem
+import qtpy
+
+from loggerplus import RobustLogger
+from qtpy import QtCore
+from qtpy.QtWidgets import QDialog, QFileDialog, QListWidgetItem
 
 from pykotor.common.module import Module
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -29,12 +33,22 @@ class SelectModuleDialog(QDialog):
             - Sets up filtering of module list.
         """
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
 
         self._installation: HTInstallation = installation
 
         self.module: str = ""
 
-        from toolset.uic.dialogs.select_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.select_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.select_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.select_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.select_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -43,6 +57,8 @@ class SelectModuleDialog(QDialog):
         self.ui.cancelButton.clicked.connect(self.reject)
         self.ui.browseButton.clicked.connect(self.browse)
         self.ui.moduleList.currentRowChanged.connect(self.onRowChanged)
+        self.ui.moduleList.doubleClicked.connect(self.confirm)
+        self.ui.moduleList.itemDoubleClicked.connect(self.confirm)
         self.ui.filterEdit.textEdited.connect(self.onFilterEdited)
 
         self._buildModuleList()
@@ -64,15 +80,14 @@ class SelectModuleDialog(QDialog):
         listedModules = set()
 
         for module in self._installation.modules_list():
-            root = Module.get_root(module)
-
-            if root in listedModules:
+            lowerModuleFileName = str(PurePath(module).with_stem(Module.find_root(module))).lower()
+            if lowerModuleFileName in listedModules:
                 continue
-            listedModules.add(root)
+            listedModules.add(lowerModuleFileName)
 
-            item = QListWidgetItem(f"{moduleNames[module]}  [{root}]")
-            item.setData(QtCore.Qt.UserRole, root)
-            self.ui.moduleList.addItem(item)
+            item = QListWidgetItem(f"{moduleNames[module]}  [{lowerModuleFileName}]")
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, lowerModuleFileName)
+            self.ui.moduleList.addItem(item)  # pyright: ignore[reportCallIssue]
 
     def browse(self):
         filepath, _ = QFileDialog.getOpenFileName(
@@ -82,9 +97,10 @@ class SelectModuleDialog(QDialog):
             "Module File (*.mod *.rim *.erf)",
         )
 
-        if filepath:
-            self.module = Module.get_root(filepath)
-            self.accept()
+        if not filepath or not filepath.strip():
+            return
+        self.module = Module.find_root(filepath)
+        self.accept()
 
     def confirm(self):
         """Confirms the selected module
@@ -95,7 +111,11 @@ class SelectModuleDialog(QDialog):
         - Gets the currently selected module from the module list widget
         - Calls accept to close the dialog and apply changes.
         """
-        self.module = self.ui.moduleList.currentItem().data(QtCore.Qt.UserRole)
+        curItem = self.ui.moduleList.currentItem()
+        if curItem is None:
+            RobustLogger().warning("currentItem() returned None in SelectModuleDialog.confirm()")
+            return
+        self.module = curItem.data(QtCore.Qt.ItemDataRole.UserRole)
         self.accept()
 
     def onRowChanged(self):
@@ -116,4 +136,7 @@ class SelectModuleDialog(QDialog):
         text = self.ui.filterEdit.text()
         for row in range(self.ui.moduleList.count()):
             item = self.ui.moduleList.item(row)
+            if item is None:
+                RobustLogger().warning(f"found None-typed item at row {row} while filtering text.")
+                continue
             item.setHidden(text.lower() not in item.text().lower())

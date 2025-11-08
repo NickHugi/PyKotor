@@ -2,16 +2,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QPlainTextEdit
+from qtpy import QtCore
+from qtpy.QtWidgets import QPlainTextEdit
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
+
+    from pykotor.common.language import LocalizedString
 
 
 class HTPlainTextEdit(QPlainTextEdit):
-    keyReleased = QtCore.pyqtSignal()
-    doubleClicked = QtCore.pyqtSignal()
+    keyReleased = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    doubleClicked = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.locstring: LocalizedString | None = None
 
     def keyReleaseEvent(self, e: QKeyEvent):
         super().keyReleaseEvent(e)

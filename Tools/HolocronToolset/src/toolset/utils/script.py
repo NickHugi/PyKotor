@@ -4,7 +4,10 @@ import os
 import re
 import uuid
 
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from pathlib import Path
+
+from loggerplus import RobustLogger
+from qtpy.QtWidgets import QFileDialog, QMessageBox
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -15,8 +18,6 @@ from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.resource.type import ResourceType
 from pykotor.tools.registry import SpoofKotorRegistry
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
-from utility.logger_util import get_root_logger
-from utility.system.path import Path
 
 NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
     "PyKotor has detected you are using the {} version of nwnnsscomp.<br>"
@@ -31,7 +32,7 @@ NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
 )
 
 
-log = get_root_logger()
+log = RobustLogger()
 
 class NoOpRegistrySpoofer:
     def __enter__(self):
@@ -41,7 +42,12 @@ class NoOpRegistrySpoofer:
         log.debug(f"NoOpRegistrySpoofer.__exit__({exc_type}, {exc_val}, {exc_tb})")
 
 
-def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool) -> str:
+def decompileScript(
+    compiled_bytes: bytes,
+    installation_path: Path,
+    *,
+    tsl: bool,
+) -> str:
     """Returns the NSS bytes of a decompiled script. If no NCS Decompiler is selected, prompts the user to find the executable.
 
     Current implementation copies the NCS to a temporary directory (configured in settings), decompiles it there,
@@ -67,10 +73,14 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
     extract_path = setupExtractPath()
 
     ncs_decompiler_path = Path(global_settings.ncsDecompilerPath)
-    if not ncs_decompiler_path.name or ncs_decompiler_path.suffix.lower() != ".exe" or not ncs_decompiler_path.safe_isfile():
+    if (
+        not ncs_decompiler_path.name
+        or ncs_decompiler_path.suffix.lower() != ".exe"  # TODO: require something with Xoreos-tools on unix and make this nt-specific.
+        or not ncs_decompiler_path.is_file()
+    ):
         lookup_path, _filter = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
         ncs_decompiler_path = Path(lookup_path)
-        if not ncs_decompiler_path.safe_isfile():
+        if not ncs_decompiler_path.is_file():
             global_settings.ncsDecompilerPath = ""
             msg = "NCS Decompiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
@@ -88,7 +98,10 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
 
     # Use polymorphism to allow easy conditional usage of the registry spoofer.
     reg_spoofer: SpoofKotorRegistry | NoOpRegistrySpoofer
-    if extCompiler.get_info() in {KnownExternalCompilers.KOTOR_SCRIPTING_TOOL, KnownExternalCompilers.KOTOR_TOOL}:
+    if extCompiler.get_info() in {
+        KnownExternalCompilers.KOTOR_SCRIPTING_TOOL,
+        KnownExternalCompilers.KOTOR_TOOL,
+    }:
         reg_spoofer = SpoofKotorRegistry(installation_path, gameEnum)
     else:
         reg_spoofer = NoOpRegistrySpoofer()
@@ -96,42 +109,35 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
         with reg_spoofer:
             stdout, stderr = extCompiler.decompile_script(tempCompiledPath, tempDecompiledPath, gameEnum)
     except PermissionError as e:
-        if isinstance(reg_spoofer, NoOpRegistrySpoofer):
-            raise
-
-        # Spoofing was required but failed. Show the relevant message.
-        msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
-            extCompiler.get_info().value.name, reg_spoofer.registry_path,
-            installation_path, reg_spoofer.original_value, str(e)
-        )
-        log.warning(msg.replace("<br>", "\n"))
-        QMessageBox(
-            QMessageBox.Warning,
-            "Permission denied when attempting to update nwnnsscomp in registry",
-            msg,
-        ).exec_()
+        handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
+        # Attempt to decompile anyway.
+        stdout, stderr = extCompiler.decompile_script(tempCompiledPath, tempDecompiledPath, gameEnum)
     except Exception:
         log.exception("Exception in extCompiler.decompile_script() call.")
         raise
-    else:
-        log.debug("stdout: %s\nstderr: %s", stdout, stderr)
-        if stderr:
-            raise ValueError(stderr)  # noqa: TRY301
-        return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
+    log.debug("stdout: %s\nstderr: %s", stdout, stderr)
+    if stderr:
+        raise ValueError(stderr)  # noqa: TRY301
+    return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
 
 def setupExtractPath() -> Path:
     global_settings = GlobalSettings()
     extract_path = Path(global_settings.extractPath)
 
-    if not extract_path.safe_isdir():
+    if not extract_path.is_dir():
         extract_path_str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
         extract_path = Path(extract_path_str) if extract_path_str else None
-        if not extract_path or not extract_path.safe_isdir():
+        if not extract_path or not extract_path.is_dir():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
     return extract_path
 
-def compileScript(source: str, installation_path: Path, *, tsl: bool) -> bytes | None:
+def compileScript(
+    source: str,
+    installation_path: Path,
+    *,
+    tsl: bool,
+) -> bytes | None:
     # sourcery skip: assign-if-exp, introduce-default-else
     """Returns the NCS bytes of compiled source script using either nwnnsscomp.exe (Windows only) or our built-in compiler. If no NSS Compiler is selected, prompts the user to find the executable.
 
@@ -161,16 +167,17 @@ def compileScript(source: str, installation_path: Path, *, tsl: bool) -> bytes |
     if os.name == "nt":
         returnValue = _prompt_user_for_compiler_option()
 
-    if os.name == "posix" or returnValue == QMessageBox.Yes:
+    if os.name == "posix" or returnValue == QMessageBox.StandardButton.Yes:
         log.debug("user chose Yes, compiling with builtin")
         return bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1, library_lookup=[extract_path]))
-    if returnValue == QMessageBox.No:
+    if returnValue == QMessageBox.StandardButton.No:
         log.debug("user chose No, compiling with nwnnsscomp")
-        return _win_setup_nwnnsscomp_compiler(global_settings, extract_path, source, installation_path, tsl=tsl)
+        return _execute_nwnnsscomp_compile(global_settings, extract_path, source, installation_path, tsl=tsl)
     if returnValue is not None:  # user cancelled
         log.debug("user exited")
         return None
 
+    # This should never be reached, leave in for static type checkers.
     raise ValueError("Could not get the NCS bytes.")  # noqa: TRY003, EM101
 
 def _prompt_additional_include_dirs(
@@ -181,7 +188,7 @@ def _prompt_additional_include_dirs(
     tempCompiledPath: os.PathLike | str,
     extract_path: Path,
     gameEnum: Game,
-):
+) -> tuple[str, str]:
     include_missing_errstr = "Unable to open the include file"
     pattern = rf'{include_missing_errstr} "([^"\n]*)"'
     while include_missing_errstr in stderr:
@@ -189,7 +196,7 @@ def _prompt_additional_include_dirs(
         include_path_str = QFileDialog.getExistingDirectory(
             None,
             f"Script requires include file '{Path(match[1]).name if match else '<unknown>'}', please choose the directory it's in.",
-            options=QFileDialog.Options(),
+            options=QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks,
         )
         if not include_path_str or not include_path_str.strip():
             log.debug("user cancelled include dir lookup for nss compilation with nwnnsscomp")
@@ -202,10 +209,10 @@ def _prompt_additional_include_dirs(
             if file.stem.lower() not in source_nss_lowercase and file.stem.lower() not in stderr.lower():
                 continue  # Skip any files in the include_path that aren't referenced by the script (faster)
 
-            if ResourceIdentifier.from_path(file).restype != ResourceType.NSS:
+            if ResourceIdentifier.from_path(file).restype is not ResourceType.NSS:
                 log.debug("%s is not an NSS script, skipping...", file.name)
                 continue
-            if not file.safe_isfile():
+            if not file.is_file():
                 log.debug("%s is a directory, skipping...", file.name)
                 continue
             new_include_script_path = extract_path / file.name
@@ -216,9 +223,9 @@ def _prompt_additional_include_dirs(
         stdout, stderr = extCompiler.compile_script(tempSourcePath, tempCompiledPath, gameEnum)
         log.debug("stdout: %s\nstderr: %s", stdout, stderr)
 
-    return "Error: Syntax error" not in stderr
+    return stdout, stderr
 
-def _win_setup_nwnnsscomp_compiler(
+def _execute_nwnnsscomp_compile(
     global_settings: GlobalSettings,
     extract_path: Path,
     source: str,
@@ -227,10 +234,10 @@ def _win_setup_nwnnsscomp_compiler(
     tsl: bool,
 ) -> bytes:
     nss_compiler_path = Path(global_settings.nssCompilerPath)
-    if not nss_compiler_path.safe_isfile():
+    if not nss_compiler_path.is_file():
         lookup_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
         nss_compiler_path = Path(lookup_path)
-        if not nss_compiler_path.safe_isfile():
+        if not nss_compiler_path.is_file():
             msg = "NCS Compiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
@@ -245,40 +252,49 @@ def _win_setup_nwnnsscomp_compiler(
     gameEnum: Game = Game.K2 if tsl else Game.K1
     extCompiler = ExternalNCSCompiler(global_settings.nssCompilerPath)
 
+    def _try_compile_script():
+        try:
+            stdout, stderr = extCompiler.compile_script(tempSourcePath, tempCompiledPath, gameEnum)
+            log.debug("stdout: %s\nstderr: %s", stdout, stderr)
+        except EntryPointError:
+            QMessageBox.warning(
+                None,
+                "Include scripts cannot be compiled",
+                "This script is an include script, compiling it serves no purpose. If this warning is incorrect, check that your script has an entry point and then compile again.",
+            )
+            raise  # TODO(th3w1zard1): return something ignorable.
+        else:
+            if stderr:
+                stdout, stderr = _prompt_additional_include_dirs(
+                    extCompiler,
+                    source,
+                    stderr,
+                    tempSourcePath,
+                    tempCompiledPath,
+                    extract_path,
+                    gameEnum
+                )
+            if stderr:
+                raise ValueError(f"{stdout}\n{stderr}")
+
     # Use polymorphism to allow easy conditional usage of the registry spoofer.
     reg_spoofer: SpoofKotorRegistry | NoOpRegistrySpoofer
-    if extCompiler.get_info() in {KnownExternalCompilers.KOTOR_SCRIPTING_TOOL, KnownExternalCompilers.KOTOR_TOOL}:
+    if extCompiler.get_info() in {
+        KnownExternalCompilers.KOTOR_SCRIPTING_TOOL,
+        KnownExternalCompilers.KOTOR_TOOL,
+    }:
         reg_spoofer = SpoofKotorRegistry(installation_path, gameEnum)
     else:
         reg_spoofer = NoOpRegistrySpoofer()
+
+    # Compile the script with nwnnsscomp.
     try:
         with reg_spoofer:
-            try:
-                stdout, stderr = extCompiler.compile_script(tempSourcePath, tempCompiledPath, gameEnum)
-                log.debug("stdout: %s\nstderr: %s", stdout, stderr)
-            except EntryPointError:
-                QMessageBox.warning(
-                    None,
-                    "Include scripts cannot be compiled",
-                    "This script is an include script, compiling it serves no purpose. If this warning is incorrect, check that your script has an entry point and then compile again.",
-                )
-                raise  # TODO(th3w1zard1): return something ignorable.
-            else:
-                next_result = True
-                if stderr:
-                    next_result = _prompt_additional_include_dirs(
-                        extCompiler,
-                        source,
-                        stderr,
-                        tempSourcePath,
-                        tempCompiledPath,
-                        extract_path,
-                        gameEnum
-                    )
-                if not next_result:
-                    raise ValueError(f"{stdout}\n{stderr}")
+            _try_compile_script()
     except PermissionError as e:
         handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
+        # Spoofing was required but failed, attempt to compile anyway...
+        _try_compile_script()
 
     # TODO(NickHugi): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
     # I do not think this version matches the versions used by Mac/Linux.
@@ -286,8 +302,9 @@ def _win_setup_nwnnsscomp_compiler(
     # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
 
     # All the abstraction work is now complete... verify the file exists one last time then return the compiled script's data.
-    if not tempCompiledPath.safe_isfile():
-        raise FileNotFoundError(f"Could not find temp compiled script at '{tempCompiledPath}'")  # noqa: TRY003, EM102
+    if not tempCompiledPath.is_file():
+        import errno
+        raise FileNotFoundError(errno.ENOENT, "Could not find the temp compiled script!", str(tempCompiledPath))  # noqa: TRY003, EM102
     return BinaryReader.load_file(tempCompiledPath)
 
 
@@ -302,16 +319,19 @@ def handle_permission_error(
 
     # Spoofing was required but failed. Show the relevant message.
     msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
-        extCompiler.get_info().value.name, reg_spoofer.registry_path,
-        installation_path, reg_spoofer.original_value, str(e)
+        extCompiler.get_info().value.name,
+        reg_spoofer.registry_path,
+        installation_path,
+        reg_spoofer.original_value,
+        str(e),
     )
     log.warning(msg.replace("<br>", "\n"))
     longMsgBoxErr = QMessageBox(
-        QMessageBox.Warning,
+        QMessageBox.Icon.Warning,
         "Permission denied when attempting to update nwnnsscomp in registry",
         msg,
     )
-    longMsgBoxErr.setIcon(QMessageBox.Warning)
+    longMsgBoxErr.setIcon(QMessageBox.Icon.Warning)
     longMsgBoxErr.exec_()
 
 
@@ -320,16 +340,20 @@ def _prompt_user_for_compiler_option() -> int:
     msgBox = QMessageBox()
 
     # Set the message box properties
-    msgBox.setIcon(QMessageBox.Question)
+    msgBox.setIcon(QMessageBox.Icon.Question)
     msgBox.setWindowTitle("Choose a NCS compiler")
     msgBox.setText("Would you like to use 'nwnnsscomp.exe' or Holocron Toolset's built-in compiler?")
     msgBox.setInformativeText("Choose one of the options below:")
-    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Abort)
-    msgBox.setDefaultButton(QMessageBox.Abort)
+    msgBox.setStandardButtons(
+        QMessageBox.StandardButton.Yes
+        | QMessageBox.StandardButton.No
+        | QMessageBox.StandardButton.Abort
+    )
+    msgBox.setDefaultButton(QMessageBox.StandardButton.Abort)
 
     # Set the button text
-    msgBox.button(QMessageBox.Yes).setText("Built-In Compiler")  # type: ignore[union-attr]
-    msgBox.button(QMessageBox.No).setText("nwnnsscomp.exe")  # type: ignore[union-attr]
-    msgBox.button(QMessageBox.Abort).setText("Cancel")  # type: ignore[union-attr]
+    msgBox.button(QMessageBox.StandardButton.Yes).setText("Built-In Compiler")  # type: ignore[union-attr]
+    msgBox.button(QMessageBox.StandardButton.No).setText("nwnnsscomp.exe")  # type: ignore[union-attr]
+    msgBox.button(QMessageBox.StandardButton.Abort).setText("Cancel")  # type: ignore[union-attr]
 
     return msgBox.exec_()

@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 [CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
@@ -11,7 +13,6 @@ $rootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
 Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
-Write-Host "Initializing python virtual environment..."
 Write-Host "Initializing python virtual environment..."
 if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
@@ -51,7 +52,6 @@ $pyInstallerArgs = @{
         'PIL',
         'Pillow',
         'matplotlib',
-        'multiprocessing',
         'PyOpenGL',
         'PyGLM',
         'dl_translate',
@@ -65,7 +65,6 @@ $pyInstallerArgs = @{
         'PyQt5-sip',
         'watchdog',
         'Markdown',
-        'pyperclip',
         'setuptools',
         'wheel',
         'ruff',
@@ -173,7 +172,7 @@ foreach ($arg in $pyInstallerArgs) {
 }
 
 # Append the final script path
-$argumentsArray += "__main__.py"
+$argumentsArray += "kotordiff/__main__.py"
 
 # Use the call operator with the arguments array
 Write-Host "Executing command: $pythonExePath $argumentsArray"

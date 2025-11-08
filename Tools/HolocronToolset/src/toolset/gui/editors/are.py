@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QColor, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog
+import qtpy
+
+from qtpy.QtGui import QColor, QImage, QPixmap
+from qtpy.QtWidgets import QColorDialog
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color, ResRef
@@ -21,7 +23,7 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QLabel, QWidget
+    from qtpy.QtWidgets import QLabel, QWidget
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -55,13 +57,22 @@ class AREEditor(Editor):
         """
         supported: list[ResourceType] = [ResourceType.ARE]
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
-        self.resize(400, 250)
+        self.setMinimumSize(400, 600)  # Lock the window size
 
         self._are: ARE = ARE()
         self._minimap = None
         self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
-        from toolset.uic.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -98,6 +109,22 @@ class AREEditor(Editor):
         self.ui.mapImageY1Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapImageY2Spin.valueChanged.connect(self.redoMinimap)
 
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
+        )
+
+        self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+
     def _setupInstallation(self, installation: HTInstallation):
         """Set up installation details.
 
@@ -119,6 +146,7 @@ class AREEditor(Editor):
         cameras: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_CAMERAS)
 
         self.ui.cameraStyleSelect.clear()
+        self.ui.cameraStyleSelect.setContext(cameras, self._installation, HTInstallation.TwoDA_CAMERAS)
         for label in cameras.get_column("name"):
             self.ui.cameraStyleSelect.addItem(label.title())
 
@@ -129,11 +157,17 @@ class AREEditor(Editor):
         self.ui.rainCheck.setVisible(installation.tsl)
         self.ui.lightningCheck.setVisible(installation.tsl)
 
+        installation.setupFileContextMenu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         are: ARE = read_are(data)
         self._loadARE(are)
+        self.adjustSize()
 
     def _loadARE(self, are: ARE):
         """Loads area data into UI widgets.
@@ -150,6 +184,9 @@ class AREEditor(Editor):
             - Sets script properties like onEnter, onExit
             - Sets comment text.
         """
+        if not self._installation:
+            print("Load an installation first.")
+            return
         self._rooms = are.rooms
         if self._resname:
             res_result_lyt: ResourceResult | None = self._installation.resource(self._resname, ResourceType.LYT)
@@ -236,10 +273,10 @@ class AREEditor(Editor):
         self.ui.dirtSize3Spin.setValue(are.dirty_size_3)
 
         # Scripts
-        self.ui.onEnterEdit.setText(str(are.on_enter))
-        self.ui.onExitEdit.setText(str(are.on_exit))
-        self.ui.onHeartbeatEdit.setText(str(are.on_heartbeat))
-        self.ui.onUserDefinedEdit.setText(str(are.on_user_defined))
+        self.ui.onEnterSelect.setComboBoxText(str(are.on_enter))
+        self.ui.onExitSelect.setComboBoxText(str(are.on_exit))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(are.on_heartbeat))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(are.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(are.comment)
@@ -328,10 +365,10 @@ class AREEditor(Editor):
         are.dirty_size_3 = self.ui.dirtSize3Spin.value()
 
         # Scripts
-        are.on_enter = ResRef(self.ui.onEnterEdit.text())
-        are.on_exit = ResRef(self.ui.onExitEdit.text())
-        are.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        are.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        are.on_enter = ResRef(self.ui.onEnterSelect.currentText())
+        are.on_exit = ResRef(self.ui.onExitSelect.currentText())
+        are.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
+        are.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
 
         # Comments
         are.comment = self.ui.commentsEdit.toPlainText()

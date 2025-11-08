@@ -6,16 +6,18 @@ import random
 import secrets
 import string
 
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 
 
-class LTR:
+class LTR(ComparableMixin):
     """Represents a LTR file."""
 
     CHARACTER_SET = string.ascii_lowercase + "'-"
     NUM_CHARACTERS = 28
 
     BINARY_TYPE = ResourceType.LTR
+    COMPARABLE_FIELDS = ("_singles", "_doubles", "_triples")
 
     def __init__(
         self,
@@ -26,6 +28,18 @@ class LTR:
             [LTRBlock(LTR.NUM_CHARACTERS) for _ in range(LTR.NUM_CHARACTERS)]
             for _ in range(LTR.NUM_CHARACTERS)
         ]
+
+    def __eq__(self, other):
+        if not isinstance(other, LTR):
+            return NotImplemented
+        return (
+            self._singles == other._singles
+            and self._doubles == other._doubles
+            and self._triples == other._triples
+        )
+
+    def __hash__(self):
+        return hash((self._singles, tuple(self._doubles), tuple(tuple(row) for row in self._triples)))
 
     @staticmethod
     def _chance() -> float:
@@ -105,7 +119,7 @@ class LTR:
                         break
                 else:
                     attempts += 1
-                    if len(name) < 4 or attempts > 100:
+                    if len(name) < 4 or attempts > 100:  # noqa: PLR2004
                         break
 
         msg = f"Unknown problem generating LTR from seed {seed}"
@@ -184,8 +198,10 @@ class LTR:
         self._triples[LTR.CHARACTER_SET.index(previous2)][LTR.CHARACTER_SET.index(previous1)].set_end(char, chance)
 
 
-class LTRBlock:
+class LTRBlock(ComparableMixin):
     """Stores three lists where each list index is mapped to a character and the value is a float representing the chance of the character occuring."""
+
+    COMPARABLE_SEQUENCE_FIELDS = ("_start", "_middle", "_end")
 
     def __init__(
         self,
@@ -194,6 +210,18 @@ class LTRBlock:
         self._start: list[float] = [0.0] * num_characters
         self._middle: list[float] = [0.0] * num_characters
         self._end: list[float] = [0.0] * num_characters
+
+    def __eq__(self, other):
+        if not isinstance(other, LTRBlock):
+            return NotImplemented
+        return (
+            self._start == other._start
+            and self._middle == other._middle
+            and self._end == other._end
+        )
+
+    def __hash__(self):
+        return hash((tuple(self._start), tuple(self._middle), tuple(self._end)))
 
     def set_start(
         self,

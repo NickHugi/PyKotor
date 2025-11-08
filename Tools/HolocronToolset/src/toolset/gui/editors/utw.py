@@ -3,6 +3,9 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+import qtpy
+
+from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utw import UTW, dismantle_utw, read_utw
@@ -13,7 +16,7 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -38,7 +41,16 @@ class UTWEditor(Editor):
         supported: list[ResourceType] = [ResourceType.UTW]
         super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 
-        from toolset.uic.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -90,7 +102,7 @@ class UTWEditor(Editor):
         # Advanced
         self.ui.isNoteCheckbox.setChecked(utw.has_map_note)
         self.ui.noteEnabledCheckbox.setChecked(utw.map_note_enabled)
-        self._loadLocstring(self.ui.noteEdit, utw.map_note)
+        self._loadLocstring(self.ui.noteEdit, utw.map_note)  # pyright: ignore[reportArgumentType]
 
         # Comments
         self.ui.commentsEdit.setPlainText(utw.comment)
@@ -120,7 +132,10 @@ class UTWEditor(Editor):
         utw.resref = ResRef(self.ui.resrefEdit.text())
         utw.has_map_note = self.ui.isNoteCheckbox.isChecked()
         utw.map_note_enabled = self.ui.noteEnabledCheckbox.isChecked()
-        utw.map_note = self.ui.noteEdit.locstring
+        try:
+            utw.map_note = self.ui.noteEdit.locstring  # FIXME:
+        except AttributeError:
+            utw.map_note = LocalizedString(self.ui.noteEdit.text())  # ALSO FIXME:
         utw.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
@@ -134,14 +149,19 @@ class UTWEditor(Editor):
         self._loadUTW(UTW())
 
     def changeName(self):
+        assert self._installation is not None
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
     def changeNote(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)
+        assert self._installation is not None
+        try:
+            dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)  # pyright: ignore[reportArgumentType]
+        except AttributeError:
+            dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.text())  # pyright: ignore[reportArgumentType]
         if dialog.exec_():
-            self._loadLocstring(self.ui.noteEdit, dialog.locstring)
+            self._loadLocstring(self.ui.noteEdit, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
     def generateTag(self):
         if not self.ui.resrefEdit.text():

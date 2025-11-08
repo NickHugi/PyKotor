@@ -4,14 +4,16 @@ import os
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QPlainTextEdit
+import qtpy
+
+from qtpy.QtWidgets import QPlainTextEdit
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -38,13 +40,22 @@ class TXTEditor(Editor):
             - Connects signals
             - Opens new empty document.
         """
-        supported: list[ResourceType] = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
+        supported: list[ResourceType] = [member for member in ResourceType if member.contents == "plaintext"]
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
         self._wordWrap: bool = False
 
-        from toolset.uic.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

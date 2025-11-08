@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from loggerplus import RobustLogger
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff.gff_data import GFFFieldType
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -223,13 +226,12 @@ class UTCClass:
 
     def __eq__(
         self,
-        other: UTCClass,
+        other: UTCClass | object,
     ):
+        if self is other:
+            return True
         if isinstance(other, UTCClass):
             return self.class_id == other.class_id and self.class_level == self.class_level
-
-        msg = f"Cannot compare {self!r} with {other!r}"
-        print(msg)
         return NotImplemented
 
 
@@ -320,6 +322,21 @@ def construct_utc(
     utc.on_death = root.acquire("ScriptDeath", ResRef.from_blank())
     utc.on_user_defined = root.acquire("ScriptUserDefine", ResRef.from_blank())
 
+    if not root.exists("SkillList") or root.what_type("SkillList") is not GFFFieldType.List:
+        if root.exists("SkillList"):
+            RobustLogger().error("SkillList in UTC's must be a GFFList, recreating now...")
+            del root._fields["SkillList"]
+        else:
+            RobustLogger().error("SkillList must exist in UTC's, creating now...")
+        skill_list = root.set_list("SkillList", GFFList())
+        skill_list.add(0).set_uint8("Rank", 0)
+        skill_list.add(1).set_uint8("Rank", 0)
+        skill_list.add(2).set_uint8("Rank", 0)
+        skill_list.add(3).set_uint8("Rank", 0)
+        skill_list.add(4).set_uint8("Rank", 0)
+        skill_list.add(5).set_uint8("Rank", 0)
+        skill_list.add(6).set_uint8("Rank", 0)
+        skill_list.add(7).set_uint8("Rank", 0)
     skill_list: GFFList = root.acquire("SkillList", GFFList())
     utc.computer_use = skill_list.at(0).acquire("Rank", 0)
     utc.demolitions = skill_list.at(1).acquire("Rank", 0)
@@ -488,7 +505,7 @@ def dismantle_utc(
     # Might be better to use GFFStructInterface from that PR.
     feat_list._structs = sorted(feat_list._structs, key=lambda feat: utc._original_feat_mapping.get(feat.get_uint16("Feat"), float("inf")))
 
-    # Not sure what these are for, verified they exist in K1's 'c_drdg.utc' in data\templates.bif
+    # Not sure what these are for, verified they exist in K1's 'c_drdg.utc' in data\templates.bif. Might be unused in which case this can be deleted.
     if utc._extra_unimplemented_skills:
         for val in utc._extra_unimplemented_skills:
             skill_list.add(0).set_uint8("Rank", val)

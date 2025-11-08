@@ -4,17 +4,24 @@ import struct
 
 from typing import TYPE_CHECKING
 
-import glm
-
-from glm import mat4, vec3, vec4
-
+from pykotor.gl import glm, mat4, vec3, vec4
 from pykotor.gl.models.mdl import Mesh, Model, Node
 
 if TYPE_CHECKING:
+    from glm import mat4x4
+
     from pykotor.common.stream import BinaryReader
+    from pykotor.gl.scene import Scene
 
 
-def _load_node(scene, node: Node | None, mdl: BinaryReader, mdx: BinaryReader, offset: int, names: list[str]) -> Node:
+def _load_node(
+    scene: Scene,
+    node: Node | None,
+    mdl: BinaryReader,
+    mdx: BinaryReader,
+    offset: int,
+    names: list[str],
+) -> Node:
     """Loads a node from the binary model data.
 
     Args:
@@ -127,7 +134,7 @@ def _load_node(scene, node: Node | None, mdl: BinaryReader, mdx: BinaryReader, o
     return node
 
 
-def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
+def gl_load_mdl(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     """Loads a model from binary files into a scene graph node.
 
     Args:
@@ -157,7 +164,7 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
 
     mdl.seek(offset_to_name_offsets)
     name_offsets = [mdl.read_uint32() for _ in range(name_count)]
-    names = []
+    names: list[str] = []
     for name_offset in name_offsets:
         mdl.seek(name_offset)
         names.append(mdl.read_terminated_string("\0"))
@@ -165,7 +172,7 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
 
 
-def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
+def gl_load_stitched_model(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     """Returns a model instance that has meshes with the same textures merged together.
 
     Loads and stitches together a gltf model from binary files
@@ -206,7 +213,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
         names.append(mdl.read_terminated_string("\0"))
 
     # Build list offset to nodes that: 1. Have meshes 2. Will render ingame
-    offsets = []
+    offsets: list[tuple[int, mat4x4]] = []
     search = [(offset, mat4())]
     while search:
         offset, transform = search.pop()
@@ -241,10 +248,10 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
         if names[name_list_index].lower() in {"headhook", "rhand", "lhand", "gogglehook", "maskhook"}:
             node = Node(scene, root, names[name_list_index])
             root.children.append(node)
-            glm.decompose(transform, vec3(), node._rotation, node._position, vec3(), vec4())  # noqa: SLF001  # type: ignore[reportCallIssue, reportArgumentType]
+            glm.decompose(transform, vec3(), node._rotation, node._position, vec3(), vec4())  # noqa: SLF001  # type: ignore[call-overload, reportCallIssue, reportArgumentType]
             node._recalc_transform()
 
-    merged = {}
+    merged: dict[str, list[tuple[int, mat4x4]]] = {}
     for offset, transform in offsets:
         mdl.seek(offset + 80 + 88)
         texture = mdl.read_terminated_string("\0", 32)
@@ -256,7 +263,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
 
     for key, value in merged.items():
         vertex_data = bytearray()
-        elements = []
+        elements: list[int] = []
         child = Node(scene, root, "child")
         root.children.append(child)
 

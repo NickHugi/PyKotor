@@ -1,0 +1,1556 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1135</width>
+    <height>647</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="0" column="0">
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <widget class="DLGTreeView" name="dialogTree">
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOn</enum>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOn</enum>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <attribute name="headerVisible">
+        <bool>false</bool>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <layout class="QHBoxLayout" name="horizontalLayout" stretch="3,0">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Speaker Tag:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="speakerEdit"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_21">
+            <property name="text">
+             <string>Listener Tag:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="listenerEdit"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Text:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPlainTextEdit" name="textEdit">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QTabWidget" name="tabWidget">
+          <property name="currentIndex">
+           <number>4</number>
+          </property>
+          <widget class="QWidget" name="fileTab">
+           <attribute name="title">
+            <string>This File</string>
+           </attribute>
+           <layout class="QHBoxLayout" name="horizontalLayout_11">
+            <item>
+             <layout class="QFormLayout" name="formLayout_6">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_37">
+                <property name="text">
+                 <string>Conversation Ends Script:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="FilterComboBox" name="onEndEdit"/>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_38">
+                <property name="text">
+                 <string>Conversation Aborts Script:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="FilterComboBox" name="onAbortEdit"/>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_39">
+                <property name="text">
+                 <string>Voiceover ID:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QLineEdit" name="voIdEdit">
+                <property name="maxLength">
+                 <number>16</number>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="label_40">
+                <property name="text">
+                 <string>Ambient Track:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QLineEdit" name="ambientTrackEdit">
+                <property name="maxLength">
+                 <number>16</number>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QLabel" name="label_41">
+                <property name="text">
+                 <string>Camera Model:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QLineEdit" name="cameraModelEdit">
+                <property name="maxLength">
+                 <number>16</number>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLabel" name="label_42">
+                <property name="text">
+                 <string>Conversation Type:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="0">
+               <widget class="QLabel" name="label_43">
+                <property name="text">
+                 <string>Computer Type:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
+               <widget class="QComboBox" name="conversationSelect">
+                <item>
+                 <property name="text">
+                  <string>Human</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Computer</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Type 3</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Type 4</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Type 5</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="6" column="1">
+               <widget class="QComboBox" name="computerSelect">
+                <item>
+                 <property name="text">
+                  <string>Modern</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Ancient</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_11">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_10">
+                <item>
+                 <widget class="QCheckBox" name="skippableCheckbox">
+                  <property name="text">
+                   <string>Skippable</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="animatedCutCheckbox">
+                  <property name="text">
+                   <string>Animated Cut</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="oldHitCheckbox">
+                  <property name="text">
+                   <string>Old Hit Check</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="unequipHandsCheckbox">
+                  <property name="text">
+                   <string>Unequip Hands</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="unequipAllCheckbox">
+                  <property name="text">
+                   <string>Unequip All</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QFormLayout" name="formLayout_7">
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_44">
+                  <property name="text">
+                   <string>Delay before entry:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="GFFFieldSpinBox" name="entryDelaySpin">
+                  <property name="minimum">
+                   <number>-2147483648</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_45">
+                  <property name="text">
+                   <string>Delay before reply:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="GFFFieldSpinBox" name="replyDelaySpin">
+                  <property name="minimum">
+                   <number>-2147483648</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_12">
+              <item>
+               <widget class="QLabel" name="label_46">
+                <property name="text">
+                 <string>Cutscene Model:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QListWidget" name="stuntList"/>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_13">
+                <item>
+                 <widget class="QPushButton" name="addStuntButton">
+                  <property name="text">
+                   <string>Add</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="removeStuntButton">
+                  <property name="text">
+                   <string>Remove</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="editStuntButton">
+                  <property name="text">
+                   <string>Edit</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="scriptsTab">
+           <attribute name="title">
+            <string>Scripts</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="0,3,1,1,1,1,1,2,0">
+              <item>
+               <widget class="QLabel" name="label_16">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_5">
+                <property name="text">
+                 <string>ResRef</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_6">
+                <property name="minimumSize">
+                 <size>
+                  <width>85</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>P1</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_7">
+                <property name="minimumSize">
+                 <size>
+                  <width>85</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>P2</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_8">
+                <property name="minimumSize">
+                 <size>
+                  <width>85</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>P3</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_9">
+                <property name="minimumSize">
+                 <size>
+                  <width>85</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>P4</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_10">
+                <property name="minimumSize">
+                 <size>
+                  <width>85</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>P5</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_11">
+                <property name="text">
+                 <string>P6</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_6">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>19</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,3,1,1,1,1,1,2,0">
+              <item>
+               <widget class="QLabel" name="script1Label">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Script #1:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="FilterComboBox" name="script1ResrefEdit"/>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script1Param1Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script1Param2Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script1Param3Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script1Param4Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script1Param5Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="script1Param6Edit"/>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_4">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>19</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,3,1,1,1,1,1,2,0">
+              <item>
+               <widget class="QLabel" name="script2Label">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Script #2:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="FilterComboBox" name="script2ResrefEdit"/>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script2Param1Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script2Param2Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script2Param3Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script2Param4Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="script2Param5Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="script2Param6Edit"/>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_5">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>19</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,3,1,1,1,1,1,2,0">
+              <item>
+               <widget class="QLabel" name="conditional1Label">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Conditional #1:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="FilterComboBox" name="condition1ResrefEdit"/>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition1Param1Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition1Param2Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition1Param3Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition1Param4Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition1Param5Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="condition1Param6Edit"/>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="condition1NotCheckbox">
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,3,1,1,1,1,1,2,0">
+              <item>
+               <widget class="QLabel" name="conditional2Label">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Conditional #2:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="FilterComboBox" name="condition2ResrefEdit"/>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition2Param1Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition2Param2Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition2Param3Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition2Param4Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="GFFFieldSpinBox" name="condition2Param5Spin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimum">
+                 <number>-2147483647</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="condition2Param6Edit"/>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="condition2NotCheckbox">
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>95</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="animsTab">
+           <attribute name="title">
+            <string>Animations</string>
+           </attribute>
+           <layout class="QHBoxLayout" name="horizontalLayout_12">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_5">
+                <item>
+                 <widget class="QLabel" name="label_12">
+                  <property name="text">
+                   <string>Current Animations</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QListWidget" name="animsList"/>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_4">
+                <item>
+                 <widget class="QPushButton" name="addAnimButton">
+                  <property name="text">
+                   <string>Add</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="removeAnimButton">
+                  <property name="text">
+                   <string>Remove</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="editAnimButton">
+                  <property name="text">
+                   <string>Edit</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="verticalSpacer_3">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_7">
+              <item>
+               <layout class="QFormLayout" name="formLayout">
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_17">
+                  <property name="text">
+                   <string>Emotion:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="ComboBox2DA" name="emotionSelect"/>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_18">
+                  <property name="text">
+                   <string>Expression:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="ComboBox2DA" name="expressionSelect"/>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="Line" name="line">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+                <layout class="QFormLayout" name="formLayout_2">
+                  <item row="0" column="0">
+                    <widget class="QLabel" name="label_19">
+                      <property name="text">
+                        <string>Sound:</string>
+                      </property>
+                    </widget>
+                  </item>
+                  <item row="0" column="1">
+                    <layout class="QVBoxLayout" name="verticalLayout_6">
+                      <item>
+                        <widget class="FilterComboBox" name="soundComboBox"/>
+                      </item>
+                      <item>
+                        <widget class="QPushButton" name="soundButton">
+                          <property name="text">
+                            <string>Play</string>
+                          </property>
+                        </widget>
+                      </item>
+                    </layout>
+                  </item>
+                  <item row="1" column="0">
+                    <widget class="QLabel" name="label_20">
+                      <property name="text">
+                        <string>Voice:</string>
+                      </property>
+                    </widget>
+                  </item>
+                  <item row="1" column="1">
+                    <layout class="QVBoxLayout" name="verticalLayout_8">
+                      <item>
+                        <widget class="FilterComboBox" name="voiceComboBox"/>
+                      </item>
+                      <item>
+                        <widget class="QPushButton" name="voiceButton">
+                          <property name="text">
+                            <string>Play</string>
+                          </property>
+                        </widget>
+                      </item>
+                    </layout>
+                  </item>
+                  <item row="2" column="1">
+                    <widget class="QCheckBox" name="soundCheckbox">
+                      <property name="text">
+                        <string>Enabled</string>
+                      </property>
+                    </widget>
+                  </item>
+                </layout>
+              </item>
+              <item>
+               <spacer name="verticalSpacer_2">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="journalTab">
+           <attribute name="title">
+            <string>Journal</string>
+           </attribute>
+           <layout class="QHBoxLayout" name="horizontalLayout_8" stretch="1,2">
+            <item>
+             <layout class="QFormLayout" name="formLayout_3">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_22">
+                <property name="text">
+                 <string>Plot Index:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="GFFFieldSpinBox" name="plotIndexSpin">
+                <property name="minimum">
+                 <number>-1</number>
+                </property>
+                <property name="maximum">
+                 <number>10000</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_23">
+                <property name="text">
+                 <string>Plot XP Percentage:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_24">
+                <property name="text">
+                 <string>Quest:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="label_25">
+                <property name="text">
+                 <string>Quest Entry:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="GFFFieldSpinBox" name="questEntrySpin">
+                <property name="minimum">
+                 <number>-2147483648</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QDoubleSpinBox" name="plotXpSpin"/>
+              </item>
+              <item row="2" column="1">
+               <widget class="QLineEdit" name="questEdit"/>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>516</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="cameraTab">
+           <attribute name="title">
+            <string>Camera</string>
+           </attribute>
+           <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="1,1">
+            <item>
+             <layout class="QFormLayout" name="formLayout_4">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_26">
+                <property name="text">
+                 <string>Camera ID:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="GFFFieldSpinBox" name="cameraIdSpin">
+                <property name="minimum">
+                 <number>-1</number>
+                </property>
+                <property name="maximum">
+                 <number>10000</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_27">
+                <property name="text">
+                 <string>Camera Animation:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_28">
+                <property name="text">
+                 <string>Camera Angle:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="GFFFieldSpinBox" name="cameraAnimSpin">
+                <property name="minimum">
+                 <number>-1</number>
+                </property>
+                <property name="maximum">
+                 <number>65534</number>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="label_29">
+                <property name="text">
+                 <string>Camera Video Effect:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QComboBox" name="cameraEffectSelect"/>
+              </item>
+              <item row="2" column="1">
+               <widget class="QComboBox" name="cameraAngleSelect">
+                <item>
+                 <property name="text">
+                  <string>Auto</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Face</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Shoulder</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Wide Shot</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Animated Camera</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>No Change</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Static Camera</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>324</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="otherTab">
+           <attribute name="title">
+            <string>Other</string>
+           </attribute>
+           <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="1,1">
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_9">
+              <item>
+               <widget class="QCheckBox" name="nodeUnskippableCheckbox">
+                <property name="text">
+                 <string>Node Unskippable</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <layout class="QFormLayout" name="formLayout_5">
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_30">
+                  <property name="text">
+                   <string>Node ID:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="GFFFieldSpinBox" name="nodeIdSpin">
+                  <property name="maximum">
+                   <number>999999</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_31">
+                  <property name="text">
+                   <string>Alien Race Node:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="GFFFieldSpinBox" name="alienRaceNodeSpin">
+                  <property name="minimum">
+                   <number>-1</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_32">
+                  <property name="text">
+                   <string>Post Proc Node:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="GFFFieldSpinBox" name="postProcSpin">
+                  <property name="minimum">
+                   <number>-1</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QLabel" name="label_33">
+                  <property name="text">
+                   <string>Delay:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="GFFFieldSpinBox" name="delaySpin">
+                  <property name="minimum">
+                   <number>-1</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QLabel" name="label_34">
+                  <property name="text">
+                   <string>Logic:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="1">
+                 <widget class="GFFFieldSpinBox" name="logicSpin">
+                  <property name="minimum">
+                   <number>-1</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QLabel" name="label_35">
+                  <property name="text">
+                   <string>Wait Flags:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="GFFFieldSpinBox" name="waitFlagSpin">
+                  <property name="minimum">
+                   <number>-1</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QLabel" name="label_36">
+                  <property name="text">
+                   <string>Fade Type:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="1">
+                 <widget class="GFFFieldSpinBox" name="fadeTypeSpin">
+                  <property name="minimum">
+                   <number>-1</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>324</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="commentsTab">
+           <attribute name="title">
+            <string>Comments</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout">
+            <item row="0" column="0">
+             <widget class="QPlainTextEdit" name="commentsEdit"/>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1135</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionNew"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSaveAs"/>
+    <addaction name="actionRevert"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionReloadTree"/>
+    <addaction name="actionUnfocus"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuTools"/>
+  </widget>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionSaveAs">
+   <property name="text">
+    <string>Save As</string>
+   </property>
+  </action>
+  <action name="actionRevert">
+   <property name="text">
+    <string>Revert</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionReloadTree">
+   <property name="text">
+    <string>Reload Tree</string>
+   </property>
+  </action>
+  <action name="actionUnfocus">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Unfocus Tree</string>
+   </property>
+  </action>
+ </widget>
+<customwidgets>
+  <customwidget>
+   <class>DLGTreeView</class>
+   <extends>QTreeView</extends>
+   <header location="global">toolset.gui.editors.dlg</header>
+  </customwidget>
+  <customwidget>
+   <class>LocalizedStringLineEdit</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.gui.widgets.edit.locstring</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
+  </customwidget>
+  <customwidget>
+   <class>FilterComboBox</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.common.widgets.combobox</header>
+  </customwidget>
+  <customwidget>
+   <class>GFFFieldSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header location="global">toolset.gui.widgets.edit.spinbox</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

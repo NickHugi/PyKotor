@@ -1,12 +1,15 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 from time import sleep
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel, QThread, Qt
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QVBoxLayout
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QSortFilterProxyModel, QThread, Qt
+from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QSpinBox, QVBoxLayout
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
@@ -21,12 +24,26 @@ from toolset.utils.window import addWindow, openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QModelIndex
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QModelIndex
+    from qtpy.QtGui import QKeyEvent
+    from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
+
+
+class EnterSpinBox(QSpinBox):
+    # Custom signal that you can emit when Enter is pressed
+    enterPressed = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            # Emit the custom signal when Enter or Return is pressed
+            self.enterPressed.emit()
+        else:
+            # Otherwise, proceed with the default behavior
+            super().keyPressEvent(event)
 
 
 class TLKEditor(Editor):
@@ -54,7 +71,16 @@ class TLKEditor(Editor):
         supported: list[ResourceType] = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 
-        from toolset.uic.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -88,6 +114,10 @@ class TLKEditor(Editor):
         """
         self.ui.actionGoTo.triggered.connect(self.toggleGotoBox)
         self.ui.jumpButton.clicked.connect(lambda: self.gotoLine(self.ui.jumpSpinbox.value()))
+        #self.ui.jumpSpinbox.editingFinished.connect(lambda: self.gotoLine(self.ui.jumpSpinbox.value()))
+        self.ui.jumpSpinbox.__class__ = EnterSpinBox
+        assert isinstance(self.ui.jumpSpinbox, EnterSpinBox)
+        self.ui.jumpSpinbox.enterPressed.connect(lambda: self.gotoLine(self.ui.jumpSpinbox.value()))
         self.ui.actionFind.triggered.connect(self.toggleFilterBox)
         self.ui.searchButton.clicked.connect(lambda: self.doFilter(self.ui.searchEdit.text()))
         self.ui.actionInsert.triggered.connect(self.insert)
@@ -96,7 +126,7 @@ class TLKEditor(Editor):
         self.ui.talkTable.clicked.connect(self.selectionChanged)
         self.ui.textEdit.textChanged.connect(self.updateEntry)
         self.ui.soundEdit.textChanged.connect(self.updateEntry)
-        self.ui.talkTable.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.talkTable.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.talkTable.customContextMenuRequested.connect(self.showContextMenu)
 
         self.populateLanguageMenu()
@@ -119,7 +149,7 @@ class TLKEditor(Editor):
         # Add languages from the enum
         for language in Language:
             action = QAction(language.name.replace("_", " "), self)
-            action.triggered.connect(lambda _checked, lang=language: self.onLanguageSelected(lang))
+            action.triggered.connect(lambda _checked=None, lang=language: self.onLanguageSelected(lang))
             self.ui.menuLanguage.addAction(action)
 
     def onLanguageSelected(
@@ -206,10 +236,10 @@ class TLKEditor(Editor):
         menu.addAction(findAction)
 
         # Add more actions as needed
-        otherAction = QAction("Other Action", self)
+        #otherAction = QAction("Other Action", self)
         # Connect otherAction to its slot here
 
-        menu.addAction(otherAction)
+        #menu.addAction(otherAction)
 
         # Show the menu at the current position
         menu.exec_(self.ui.talkTable.viewport().mapToGlobal(position))
@@ -221,16 +251,29 @@ class TLKEditor(Editor):
         # Implement the logic to find references based on the provided index
         stringref = index.row()
         print(f"Finding references to stringref: {stringref}")
+        from pykotor.tools.reference_cache import find_tlk_entry_references  # noqa: PLC0415
+
+        def run_find_references():
+            assert self._installation is not None, "Installation is required to find references"
+            return find_tlk_entry_references(self._installation, stringref)
+
+        assert self._installation is not None, "Installation is required to find references"
         loader = AsyncLoader(
             self,
             f"Looking for stringref '{stringref}' in {self._installation.path()}...",
-            lambda: self._installation.find_tlk_entry_references(stringref),
+            run_find_references,
             errorTitle="An unexpected error occurred searching the installation.",
             startImmediately=False,
         )
         loader.setModal(False)
         loader.show()
-        loader.optionalFinishHook.connect(lambda results: self.handleSearchCompleted(stringref, results, self._installation))
+        loader.optionalFinishHook.connect(
+            lambda results: self.handleSearchCompleted(
+                stringref,
+                results,
+                self._installation,
+            )
+        )
         loader.startWorker()
         addWindow(loader)
 
@@ -242,7 +285,7 @@ class TLKEditor(Editor):
     ):
         if not results_list:
             QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "No resources found",
                 f"There are no GFFs that reference this tlk entry (stringref {stringref})",
                 parent=self,
@@ -260,7 +303,7 @@ class TLKEditor(Editor):
         selection: FileResource,
     ):
         # Open relevant tab then select resource in the tree
-        filepath, editor = openResourceEditor(
+        _filepath, _editor = openResourceEditor(
             selection.filepath(),
             selection.resname(),
             selection.restype(),
@@ -313,7 +356,11 @@ class TLKEditor(Editor):
         self.proxyModel.setFilterFixedString(text)
 
     def toggleFilterBox(self):
-        self.ui.searchBox.setVisible(not self.ui.searchBox.isVisible())
+        isVisible: bool = self.ui.searchBox.isVisible()
+        self.ui.searchBox.setVisible(not isVisible)
+        if not isVisible:  # If the jump box was not visible before and now is
+            self.ui.searchEdit.setFocus()  # Activate the spinbox for immediate typing
+            self.ui.searchEdit.selectAll()
 
     def gotoLine(self, line: int):
         index = self.model.index(line, 0)
@@ -322,7 +369,11 @@ class TLKEditor(Editor):
         self.ui.talkTable.setCurrentIndex(proxyIndex)
 
     def toggleGotoBox(self):
-        self.ui.jumpBox.setVisible(not self.ui.jumpBox.isVisible())
+        isVisible: bool = self.ui.jumpBox.isVisible()
+        self.ui.jumpBox.setVisible(not isVisible)
+        if not isVisible:  # If the jump box was not visible before and now is
+            self.ui.jumpSpinbox.setFocus()  # Activate the spinbox for immediate typing
+            self.ui.jumpSpinbox.selectAll()
 
     def selectionChanged(self):
         """Handle selection changes in the talk table.
@@ -386,6 +437,7 @@ class LoaderDialog(QDialog):
             - Connects signals from worker to update progress bar.
         """
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
 
         self._progressBar = QProgressBar(self)
         self._progressBar.setMinimum(0)
@@ -398,8 +450,8 @@ class LoaderDialog(QDialog):
         self.setWindowTitle("Loading...")
         self.setFixedSize(200, 40)
 
-        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
+        self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(2)
@@ -438,10 +490,10 @@ class LoaderDialog(QDialog):
 
 
 class LoaderWorker(QThread):
-    batch = QtCore.pyqtSignal(object)
-    entryCount = QtCore.pyqtSignal(object)
-    loaded = QtCore.pyqtSignal()
-    language = QtCore.pyqtSignal(object)
+    batch = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    entryCount = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    loaded = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    language = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, fileData: bytes, model: QStandardItemModel):
         super().__init__()

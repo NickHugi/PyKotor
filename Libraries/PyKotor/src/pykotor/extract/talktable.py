@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+# Import reference cache classes and location types from tools module
+from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -18,7 +19,7 @@ class StringResult(NamedTuple):
 
 class TLKData(NamedTuple):
     flags: int
-    sound_resref: str
+    voiceover: str
     volume_variance: int
     pitch_variance: int
     text_offset: int
@@ -26,7 +27,7 @@ class TLKData(NamedTuple):
     sound_length: float
 
 
-class TalkTable:  # TODO: dialogf.tlk
+class TalkTable:  # TODO(th3w1zard1): dialogf.tlk  # noqa: FIX002, TD003
     """Talktables are for read-only loading of stringrefs stored in a dialog.tlk file.
 
     Files are only opened when accessing a stored string, this means that strings are always up to date at
@@ -37,7 +38,7 @@ class TalkTable:  # TODO: dialogf.tlk
         self,
         path: os.PathLike | str,
     ):
-        self._path: Path = Path.pathify(path)
+        self._path: Path = Path(path)
 
     def path(self) -> Path:
         return self._path
@@ -95,7 +96,7 @@ class TalkTable:  # TODO: dialogf.tlk
                 return ResRef.from_blank()
 
             tlkdata = self._extract_common_tlk_data(reader, stringref)
-            return ResRef(tlkdata.sound_resref)
+            return ResRef(tlkdata.voiceover)
 
     def _extract_common_tlk_data(
         self,
@@ -106,7 +107,7 @@ class TalkTable:  # TODO: dialogf.tlk
 
         return TLKData(
             flags=reader.read_uint32(),
-            sound_resref=reader.read_string(16),
+            voiceover=reader.read_string(16),
             volume_variance=reader.read_uint32(),
             pitch_variance=reader.read_uint32(),
             text_offset=reader.read_uint32(),
@@ -149,7 +150,7 @@ class TalkTable:  # TODO: dialogf.tlk
 
                 reader.seek(texts_offset + tlkdata.text_offset)
                 string = reader.read_string(tlkdata.text_length, encoding=encoding)
-                sound = ResRef(tlkdata.sound_resref)
+                sound = ResRef(tlkdata.voiceover)
 
                 batch[stringref] = StringResult(string, sound)
 

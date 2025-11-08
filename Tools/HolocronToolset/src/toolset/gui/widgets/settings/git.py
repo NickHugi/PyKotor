@@ -2,18 +2,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
+import qtpy
 
+from qtpy import QtCore
+
+from pykotor.common.misc import Color
 from toolset.data.settings import Settings
+from toolset.gui.common.filters import NoScrollEventFilter
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
 
 class GITWidget(SettingsWidget):
-    editedSignal = QtCore.pyqtSignal()
+    editedSignal = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         """Initializes the GIT settings widget.
@@ -33,9 +37,18 @@ class GITWidget(SettingsWidget):
         """
         super().__init__(parent)
 
-        self.settings = GITSettings()
+        self.settings: GITSettings = GITSettings()
 
-        from toolset.uic.widgets.settings.git import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.settings.git import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.settings.git import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.settings.git import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.settings.git import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -66,6 +79,10 @@ class GITWidget(SettingsWidget):
 
         self.setupValues()
 
+        # Install the event filter on all child widgets
+        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter(self)
+        self.installEventFilters(self, self.noScrollEventFilter)
+
     def _setupColourValues(self):
         for colorEdit in [widget for widget in dir(self.ui) if "ColourEdit" in widget]:
             self._registerColour(getattr(self.ui, colorEdit), colorEdit[:-4])
@@ -77,12 +94,6 @@ class GITWidget(SettingsWidget):
     def setupValues(self):
         self._setupColourValues()
         self._setupBindValues()
-
-    def save(self):
-        for widget, bindName in self.binds:
-            setattr(self.settings, bindName, widget.bind())
-        for widget, colourName in self.colours:
-            setattr(self.settings, colourName, widget.color().rgba_integer())
 
     def resetColours(self):
         self.settings.resetMaterialColors()
@@ -100,12 +111,12 @@ class GITSettings(Settings):
     def resetMaterialColors(self):
         for setting in dir(self):
             if setting.endswith("Colour"):
-                self.settings.remove(setting)
+                self.reset_setting(setting)
 
     def resetControls(self):
         for setting in dir(self):
             if setting.endswith("Bind"):
-                self.settings.remove(setting)
+                self.reset_setting(setting)
 
     # region Strings (Instance Labels)
     creatureLabel = Settings.addSetting(
@@ -149,83 +160,83 @@ class GITSettings(Settings):
     # region Ints (Material Colours)
     undefinedMaterialColour = Settings.addSetting(
         "undefinedMaterialColour",
-        671088895,
+        Color(0.400, 0.400, 0.400, 0.5).rgba_integer(),
     )
     dirtMaterialColour = Settings.addSetting(
         "dirtMaterialColour",
-        4281084972,
+        Color(0.610, 0.235, 0.050, 0.5).rgba_integer(),
     )
     obscuringMaterialColour = Settings.addSetting(
         "obscuringMaterialColour",
-        671088895,
+        Color(0.100, 0.100, 0.100, 0.5).rgba_integer(),
     )
     grassMaterialColour = Settings.addSetting(
         "grassMaterialColour",
-        4281084972,
+        Color(0.000, 0.600, 0.000, 0.5).rgba_integer(),
     )
     stoneMaterialColour = Settings.addSetting(
         "stoneMaterialColour",
-        4281084972,
+        Color(0.162, 0.216, 0.279, 0.5).rgba_integer(),
     )
     woodMaterialColour = Settings.addSetting(
         "woodMaterialColour",
-        4281084972,
+        Color(0.258, 0.059, 0.007, 0.5).rgba_integer(),
     )
     waterMaterialColour = Settings.addSetting(
         "waterMaterialColour",
-        4281084972,
+        Color(0.000, 0.000, 1.000, 0.5).rgba_integer(),
     )
     nonWalkMaterialColour = Settings.addSetting(
         "nonWalkMaterialColour",
-        671088895,
+        Color(1.000, 0.000, 0.000, 0.5).rgba_integer(),
     )
     transparentMaterialColour = Settings.addSetting(
         "transparentMaterialColour",
-        671088895,
+        Color(1.000, 1.000, 1.000, 0.5).rgba_integer(),
     )
     carpetMaterialColour = Settings.addSetting(
         "carpetMaterialColour",
-        4281084972,
+        Color(1.000, 0.000, 1.000, 0.5).rgba_integer(),
     )
     metalMaterialColour = Settings.addSetting(
         "metalMaterialColour",
-        4281084972,
+        Color(0.434, 0.552, 0.730, 0.5).rgba_integer(),
     )
     puddlesMaterialColour = Settings.addSetting(
         "puddlesMaterialColour",
-        4281084972,
+        Color(0.509, 0.474, 0.147, 0.5).rgba_integer(),
     )
     swampMaterialColour = Settings.addSetting(
         "swampMaterialColour",
-        4281084972,
+        Color(0.216, 0.216, 0.000, 0.5).rgba_integer(),
     )
     mudMaterialColour = Settings.addSetting(
         "mudMaterialColour",
-        4281084972,
+        Color(0.091, 0.147, 0.028, 0.5).rgba_integer(),
     )
     leavesMaterialColour = Settings.addSetting(
         "leavesMaterialColour",
-        4281084972,
+        Color(0.000, 0.000, 0.216, 0.5).rgba_integer(),
     )
     doorMaterialColour = Settings.addSetting(
         "doorMaterialColour",
-        4281084972,
+        Color(0.000, 0.000, 0.000, 0.5).rgba_integer(),
     )
     lavaMaterialColour = Settings.addSetting(
         "lavaMaterialColour",
-        671088895,
+        Color(0.300, 0.000, 0.000, 0.5).rgba_integer(),
     )
     bottomlessPitMaterialColour = Settings.addSetting(
         "bottomlessPitMaterialColour",
-        671088895,
+        Color(0.000, 0.000, 0.000, 0.5).rgba_integer(),
     )
     deepWaterMaterialColour = Settings.addSetting(
         "deepWaterMaterialColour",
-        671088895,
+        Color(0.000, 0.000, 0.216, 0.5).rgba_integer(),
     )
     nonWalkGrassMaterialColour = Settings.addSetting(
         "nonWalkGrassMaterialColour",
-        671088895,
+        Color(0.000, 0.600, 0.000, 0.5).rgba_integer(),
     )
     # endregion
 
@@ -240,7 +251,7 @@ class GITSettings(Settings):
     )
     zoomCameraBind = Settings.addSetting(
         "zoomCameraBind",
-        ({QtKey.Key_Control}, None),
+        ({QtKey.Key_Control}, set()),
     )
     rotateSelectedToPointBind = Settings.addSetting(
         "rotateSelectedToPointBind",

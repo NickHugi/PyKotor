@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import unittest
+from unittest import mock
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
@@ -26,6 +27,19 @@ from utility.system.path import Path, PosixPath, PurePath, PurePosixPath, PureWi
 
 
 class TestPathInheritance(unittest.TestCase):
+    def test_nt_case_hashing(self):
+        test_classes: tuple[type, ...] = (PureWindowsPath,) if os.name == "posix" else (WindowsPath, PureWindowsPath, Path)
+        for PathType in test_classes:
+            with self.subTest(PathType=PathType):
+                path1 = PathType("test\\path\\to\\nothing")
+                path2 = PathType("tesT\\PATH\\\\to\\noTHinG\\")
+
+            with mock.patch("os.name", "nt"):
+                test_set = {path1, path2}
+                self.assertEqual(path1, path2)
+                self.assertEqual(hash(path1), hash(path2))
+                self.assertSetEqual(test_set, {PathType("TEST\\path\\to\\\\nothing")})
+
     def test_path_attributes(self):
         self.assertIs(PureWindowsPath("mypath").__class__, PureWindowsPath)
         self.assertIs(PurePath("mypath").__class__, PurePosixPath if os.name == "posix" else PureWindowsPath)

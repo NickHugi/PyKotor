@@ -4,14 +4,17 @@ import math
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QDialog
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
+from qtpy.QtWidgets import QColorDialog, QDialog
 
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.generics.git import GITModuleLink
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QLabel, QWidget
+    from qtpy.QtWidgets import QLabel, QWidget
 
     from pykotor.resource.generics.git import GITDoor
     from toolset.data.installation import HTInstallation
@@ -21,8 +24,18 @@ if TYPE_CHECKING:
 class DoorDialog(QDialog):
     def __init__(self, parent: QWidget, door: GITDoor, installation: HTInstallation):
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
 
-        from toolset.uic.dialogs.instance.door import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.instance.door import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.instance.door import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.instance.door import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.instance.door import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -70,7 +83,7 @@ class DoorDialog(QDialog):
         )
         self.door.transition_destination = self.ui.transNameEdit.locstring()
 
-    def doorCheckboxesChanged(self, state: bool):
+    def doorCheckboxesChanged(self, state: bool):  # noqa: FBT001
         self.ui.linkToTagEdit.setEnabled(state)
         self.ui.linkToModuleEdit.setEnabled(state)
         self.ui.transNameEdit.setEnabled(state)

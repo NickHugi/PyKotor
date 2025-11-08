@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 from datetime import datetime, timezone
 from enum import IntEnum
 from typing import TYPE_CHECKING
@@ -8,6 +10,7 @@ from utility.event_util import Observable
 
 if TYPE_CHECKING:
     from typing_extensions import LiteralString
+
 
 class LogType(IntEnum):
     VERBOSE = 0
@@ -75,7 +78,7 @@ class PatchLog:
         self.message: str = message
         self.log_type: LogType = ltype
         self.timestamp = datetime.now(tz=timezone.utc).astimezone().time()
-        print(self.formatted_message)
+        print(self.formatted_message, file=sys.stderr if ltype is LogType.ERROR else sys.stdout)
 
     @property
     def formatted_message(self) -> str:  # REM: log_type should be first for kotormodsync support.

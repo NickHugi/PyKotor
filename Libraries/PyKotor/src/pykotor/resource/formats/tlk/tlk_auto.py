@@ -54,11 +54,19 @@ def detect_tlk(
         return ResourceType.INVALID
 
     try:
-        if isinstance(source, (os.PathLike, str)):
+        if isinstance(source, str):
+            inline_slice = source[offset : offset + 4]
+            file_format = check(inline_slice)
+            if file_format is not ResourceType.INVALID:
+                return file_format
+            with BinaryReader.from_file(source, offset) as reader:
+                file_format = check(reader.read_string(4))
+        elif isinstance(source, os.PathLike):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, (memoryview, bytes, bytearray)):
-            file_format = check(bytes(source[:4]).decode("ascii", "ignore"))
+            data_view = memoryview(source)[offset : offset + 4]
+            file_format = check(data_view.tobytes().decode("ascii", "ignore"))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
             source.skip(-4)
@@ -77,6 +85,7 @@ def read_tlk(
     offset: int = 0,
     size: int | None = None,
     language: Language | None = None,
+    file_format: ResourceType | None = None,
 ) -> TLK:
     """Returns an TLK instance from the source.
 
@@ -87,6 +96,8 @@ def read_tlk(
         source: The source of the data.
         offset: The byte offset of the file inside the data.
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
+        language: The language of the TLK data.
+        file_format: The file format to use (ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON). If not specified, it will be detected automatically.
 
     Raises:
     ------
@@ -99,18 +110,23 @@ def read_tlk(
     -------
         An TLK instance.
     """
-    file_format: ResourceType = detect_tlk(source, offset)
+    if file_format is None:
+        file_format = detect_tlk(source, offset)
 
-    if file_format == ResourceType.INVALID:
+    if file_format is ResourceType.INVALID:
         msg = "Failed to determine the format of the TLK file."
         raise ValueError(msg)
 
-    if file_format == ResourceType.TLK:
-        return TLKBinaryReader(source, offset, size or 0, language).load()
-    if file_format == ResourceType.TLK_XML:
-        return TLKXMLReader(source, offset, size or 0).load()
-    if file_format == ResourceType.TLK_JSON:
-        return TLKJSONReader(source, offset, size or 0).load()
+    normalized_source = source
+    if isinstance(source, str) and file_format in (ResourceType.TLK_XML, ResourceType.TLK_JSON) and not os.path.exists(source):  # noqa: PTH110
+        normalized_source = source.encode("utf-8")
+
+    if file_format is ResourceType.TLK:
+        return TLKBinaryReader(normalized_source, offset, size or 0, language).load()
+    if file_format is ResourceType.TLK_XML:
+        return TLKXMLReader(normalized_source, offset, size or 0).load()
+    if file_format is ResourceType.TLK_JSON:
+        return TLKJSONReader(normalized_source, offset, size or 0).load()
     msg = "Unsupported TLK format specified."
     raise ValueError(msg)
 
@@ -134,11 +150,11 @@ def write_tlk(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.TLK:
+    if file_format is ResourceType.TLK:
         TLKBinaryWriter(tlk, target).write()
-    elif file_format == ResourceType.TLK_XML:
+    elif file_format is ResourceType.TLK_XML:
         TLKXMLWriter(tlk, target).write()
-    elif file_format == ResourceType.TLK_JSON:
+    elif file_format is ResourceType.TLK_JSON:
         TLKJSONWriter(tlk, target).write()
     else:
         msg = "Unsupported format specified; use TLK or TLK_XML."
@@ -168,4 +184,4 @@ def bytes_tlk(
     """
     data = bytearray()
     write_tlk(tlk, data, file_format)
-    return data
+    return bytes(data)

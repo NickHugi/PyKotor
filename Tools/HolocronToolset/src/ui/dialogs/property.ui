@@ -134,7 +134,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="upgradeSelect"/>
+        <widget class="ComboBox2DA" name="upgradeSelect"/>
        </item>
       </layout>
      </item>
@@ -194,6 +194,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import math
-
 from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QOpenGLWidget
+from loggerplus import RobustLogger
+from qtpy import QtCore
+from qtpy.QtCore import QMetaObject, QThread, QTimer, Qt
+from qtpy.QtWidgets import QApplication, QMessageBox, QOpenGLWidget
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
@@ -18,36 +17,39 @@ from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
-    from PyQt5.QtWidgets import QWidget
-    from glm import vec3
+    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
+    from pykotor.gl import vec3
     from pykotor.resource.formats.bwm import BWMFace
     from toolset.data.installation import HTInstallation
 
 
-class ModuleRenderer(QOpenGLWidget):
-    sceneInitalized = QtCore.pyqtSignal()
+class ModuleRenderer(QOpenGLWidget):  # pyright: ignore[reportGeneralTypeIssues]
+    rendererInitialized = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    """Signal emitted when the context is being setup, the QMainWindow must be in an activated/unhidden state."""
+
+    sceneInitialized = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when scene has been initialized."""
 
-    mouseMoved = QtCore.pyqtSignal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys
+    mouseMoved = QtCore.Signal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys  # pyright: ignore[reportPrivateImportUsage]  # noqa: E501
     """Signal emitted when mouse is moved over the widget."""
 
-    mouseScrolled = QtCore.pyqtSignal(object, object, object)  # screen delta, mouse, keys
+    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when mouse is scrolled over the widget."""
 
-    mouseReleased = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when a mouse button is released after being pressed on the widget."""
 
-    mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    keyboardPressed = QtCore.pyqtSignal(object, object)  # mouse, keys
+    keyboardPressed = QtCore.Signal(object, object)  # mouse, keys  # pyright: ignore[reportPrivateImportUsage]
 
-    keyboardReleased = QtCore.pyqtSignal(object, object)  # mouse, keys
+    keyboardReleased = QtCore.Signal(object, object)  # mouse, keys  # pyright: ignore[reportPrivateImportUsage]
 
-    objectSelected = QtCore.pyqtSignal(object)
+    objectSelected = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when an object has been selected through the renderer."""
 
     def __init__(self, parent: QWidget):
@@ -67,11 +69,14 @@ class ModuleRenderer(QOpenGLWidget):
 
         from toolset.gui.windows.module_designer import ModuleDesignerSettings  # noqa: PLC0415  # pylint: disable=C0415
 
-        self.scene: Scene | None = None
+        self._scene: Scene | None = None
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self._module: Module | None = None
         self._installation: HTInstallation | None = None
-        self._init = False
+
+        self.loopTimer = QTimer(self)
+        self.loopTimer.timeout.connect(self.loop)
+        self.loopInterval: int = 33  # ms, approx 30 FPS
 
         self._renderTime: int = 0
         self._keysDown: set[int] = set()
@@ -83,11 +88,146 @@ class ModuleRenderer(QOpenGLWidget):
         self.freeCam: bool = False  # Changes how screenDelta is calculated in mouseMoveEvent
         self.delta: float = 0.0333
 
-    def init(self, installation: HTInstallation, module: Module):
+    @property
+    def scene(self) -> Scene:
+        if self._scene is None:
+            instance = QApplication.instance()
+            assert instance is not None
+            if QThread.currentThread() == instance.thread():
+                self.showSceneNotReadyMessage()
+            else:
+                QMetaObject.invokeMethod(self, "showSceneNotReadyMessage", Qt.QueuedConnection)
+            raise ValueError("Scene is not initialized.")
+        assert self._scene is not None
+        return self._scene
+
+    def showSceneNotReadyMessage(self):
+        QMessageBox.warning(self, "Scene Not Ready", "The scene is not ready yet.")
+
+    def isReady(self) -> bool:
+        return bool(self._module and self._installation)
+
+    def initializeRenderer(self, installation: HTInstallation, module: Module):
+        RobustLogger().debug("Initialize ModuleRenderer")
+        self.shutdownRenderer()
+        self.show()
+        QApplication.processEvents()  # Force the application to process all pending events
+        self.rendererInitialized.emit()  # Tell QMainWindow to show itself, required for a gl context to be created.
+
+        # Check if the widget and its top-level window are visible
+        if not self.isVisible() or (self.window() and not self.window().isVisible()):
+            RobustLogger().error("Widget or its window is not visible; OpenGL context may not be initialized.")
+            raise RuntimeError("The OpenGL context is not available because the widget or its parent window is not visible.")
+
+        # After ensuring visibility, finally check if a context is available.
+        if not self.context():
+            RobustLogger().error("initializeGL was not called or did not complete successfully.")
+            raise RuntimeError("Failed to initialize OpenGL context. Ensure that the widget is visible and properly integrated into the application's window.")
+
         self._installation = installation
         self._module = module
+        self._scene = Scene(installation=installation, module=module)
+        self.scene.camera.fov = self.settings.fieldOfView
+        self.scene.camera.width = self.width()
+        self.scene.camera.height = self.height()
+        self.sceneInitialized.emit()
+        self.resumeRenderLoop()
 
-        QTimer.singleShot(33, self.loop)
+    def initializeGL(self):
+        RobustLogger().debug("ModuleRenderer.initializeGL called.")
+        # Ensure OpenGL context is current
+        self.makeCurrent()
+
+        super().initializeGL()
+        RobustLogger().debug("ModuleRenderer.initializeGL - opengl context setup.")
+
+    def resizeEvent(self, e: QResizeEvent):
+        RobustLogger().debug("ModuleRenderer resizeEvent called.")
+        super().resizeEvent(e)
+
+    def resizeGL(self, width: int, height: int):
+        RobustLogger().debug("ModuleRenderer resizeGL called.")
+        super().resizeGL(width, height)
+        if not self._scene:
+            RobustLogger().debug("ignoring scene camera width/height updates in ModuleRenderer resizeGL - the scene is not initialized yet.")
+            return
+        self.scene.camera.width = width
+        self.scene.camera.height = height
+
+    def resumeRenderLoop(self):
+        """Resumes the rendering loop by starting the timer."""
+        RobustLogger().debug("ModuleRenderer - resumeRenderLoop called.")
+        if not self.loopTimer.isActive():
+            self.loopTimer.start(self.loopInterval)
+        self.scene.camera.width = self.width()
+        self.scene.camera.height = self.height()
+
+    def pauseRenderLoop(self):
+        """Pauses the rendering loop by stopping the timer."""
+        RobustLogger().debug("ModuleRenderer - pauseRenderLoop called.")
+        if self.loopTimer.isActive():
+            self.loopTimer.stop()
+
+    def shutdownRenderer(self):
+        """Stops the rendering loop, unloads the module and installation, and attempts to destroy the OpenGL context."""
+        RobustLogger().debug("ModuleRenderer - shutdownRenderer called.")
+        self.pauseRenderLoop()
+        self._module = None
+        self._installation = None
+
+        # Attempt to destroy the OpenGL context
+        glContext = self.context()
+        if glContext:
+            glContext.doneCurrent()  # Ensure the context is not current
+            self.update()  # Trigger an update which will indirectly handle context recreation when needed
+
+        self.hide()
+        self._scene = None
+
+    def paintGL(self):
+        """Renders the scene and handles object selection.
+
+        Args:
+        ----
+            self: The viewport widget
+
+        Processing Logic:
+        ----------------
+            - Initializes painting if not already initialized
+            - Handles object selection on mouse click
+            - Sets cursor position based on mouse
+            - Renders the scene
+            - Records render time.
+        """
+        if not self.loopTimer.isActive():
+            RobustLogger().debug("ModuleDesigner.paintGL - loop timer is paused or not started.")
+            return
+        if not self.isReady():
+            RobustLogger().warning("ModuleDesigner.paintGL - not initialized.")
+            return  # Do nothing if not initialized
+
+        # Ensure OpenGL context is current before any GL calls
+        self.makeCurrent()
+        #get_root_logger().debug("ModuleDesigner.paintGL called.")
+        super().paintGL()
+        start = datetime.now(tz=timezone.utc).astimezone()
+        if self.doSelect:
+            self.doSelect = False
+            obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
+
+            if obj is not None and isinstance(obj.data, GITInstance):
+                self.objectSelected.emit(obj.data)
+            else:
+                self.scene.selection.clear()
+                self.objectSelected.emit(None)
+
+        screenCursor = self.mapFromGlobal(self.cursor().pos())
+        worldCursor = self.scene.screenToWorld(screenCursor.x(), screenCursor.y())
+        if screenCursor.x() < self.width() and screenCursor.x() >= 0 and screenCursor.y() < self.height() and screenCursor.y() >= 0:
+            self.scene.cursor.set_position(worldCursor.x, worldCursor.y, worldCursor.z)
+
+        self.scene.render()
+        self._renderTime = int((datetime.now(tz=timezone.utc).astimezone() - start).total_seconds() * 1000)
 
     def loop(self):
         """Repaints and checks for keyboard input on mouse press.
@@ -107,10 +247,12 @@ class ModuleRenderer(QOpenGLWidget):
         if self.underMouse() and self.freeCam and len(self._keysDown) > 0:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
 
-        delay = max(0, 33 - self._renderTime)
-        QTimer.singleShot(delay, self.loop)
-
-    def walkmeshPoint(self, x: float, y: float, default_z: float = 0.0) -> Vector3:
+    def walkmeshPoint(
+        self,
+        x: float,
+        y: float,
+        default_z: float = 0.0,
+    ) -> Vector3:
         """Finds the face and z-height at a point on the walkmesh.
 
         Args:
@@ -130,8 +272,9 @@ class ModuleRenderer(QOpenGLWidget):
             - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
         """
         face: BWMFace | None = None
+        assert self._module is not None
         for module_resource in self._module.resources.values():
-            if module_resource.restype() != ResourceType.WOK:
+            if module_resource.restype() is not ResourceType.WOK:
                 continue
             walkmesh_resource = module_resource.resource()
             if walkmesh_resource is None:
@@ -148,57 +291,15 @@ class ModuleRenderer(QOpenGLWidget):
         z: float = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
 
-    def initializeGL(self):
-        self.scene = Scene()
-
-    def resetMouseButtons(self):
+    def resetButtonsDown(self):
         self._mouseDown.clear()
 
-    def paintGL(self):
-        """Renders the scene and handles object selection.
+    def resetKeysDown(self):
+        self._keysDown.clear()
 
-        Args:
-        ----
-            self: The viewport widget
-
-        Processing Logic:
-        ----------------
-            - Initializes painting if not already initialized
-            - Handles object selection on mouse click
-            - Sets cursor position based on mouse
-            - Renders the scene
-            - Records render time.
-        """
-        start = datetime.now(tz=timezone.utc).astimezone()
-        if not self._init:
-            self._initialize_paintGL()
-        if self.doSelect:
-            self.doSelect = False
-            obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
-
-            if obj is not None and isinstance(obj.data, GITInstance):
-                self.objectSelected.emit(obj.data)
-            else:
-                self.scene.selection.clear()
-                self.objectSelected.emit(None)
-
-        screenCursor = self.mapFromGlobal(self.cursor().pos())
-        worldCursor = self.scene.screenToWorld(screenCursor.x(), screenCursor.y())
-        if screenCursor.x() < self.width() and screenCursor.x() >= 0 and screenCursor.y() < self.height() and screenCursor.y() >= 0:
-            self.scene.cursor.set_position(worldCursor.x, worldCursor.y, worldCursor.z)
-
-        self.scene.render()
-        self._renderTime = int((datetime.now(tz=timezone.utc).astimezone() - start).total_seconds() * 1000)
-
-    def _initialize_paintGL(self):
-        self._init = True
-
-        self.scene = Scene(installation=self._installation, module=self._module)
-        self.scene.camera.fov = self.settings.fieldOfView
-        self.scene.camera.width = self.width()
-        self.scene.camera.height = self.height()
-
-        self.sceneInitalized.emit()
+    def resetAllDown(self):
+        self._mouseDown.clear()
+        self._keysDown.clear()
 
     # region Accessors
     def keysDown(self) -> set[int]:
@@ -228,22 +329,22 @@ class ModuleRenderer(QOpenGLWidget):
             up: Units to move upwards.
         """
         forward_vec: vec3 = forward * self.scene.camera.forward()
-        sideward = right * self.scene.camera.sideward()
+        sideways = right * self.scene.camera.sideward()
 
-        self.scene.camera.x += forward_vec.x + sideward.x
-        self.scene.camera.y += forward_vec.y + sideward.y
+        self.scene.camera.x += forward_vec.x + sideways.x
+        self.scene.camera.y += forward_vec.y + sideways.y
         self.scene.camera.z += up
 
     def moveCamera(self, forward: float, right: float, up: float):
         forward_vec: vec3 = forward * self.scene.camera.forward(ignore_z=False)
-        sideward = right * self.scene.camera.sideward(ignore_z=False)
-        upward = -up * self.scene.camera.upward(ignore_z=False)
+        sideways = right * self.scene.camera.sideward(ignore_z=False)
+        upward = -up * self.scene.camera.upward(ignore_xy=False)
 
-        self.scene.camera.x += upward.x + sideward.x + forward_vec.x
-        self.scene.camera.y += upward.y + sideward.y + forward_vec.y
-        self.scene.camera.z += upward.z + sideward.z + forward_vec.z
+        self.scene.camera.x += upward.x + sideways.x + forward_vec.x
+        self.scene.camera.y += upward.y + sideways.y + forward_vec.y
+        self.scene.camera.z += upward.z + sideways.z + forward_vec.z
 
-    def rotateCamera(self, yaw: float, pitch: float, snapRotations: bool = True):
+    def rotateCamera(self, yaw: float, pitch: float, *, clampRotations: bool = True):
         """Rotates the camera by the angles (radians) specified.
 
         Args:
@@ -252,11 +353,7 @@ class ModuleRenderer(QOpenGLWidget):
             pitch:
             snapRotations:
         """
-        self.scene.camera.rotate(yaw, pitch)
-        if self.scene.camera.pitch < math.pi / 2 and snapRotations:
-            self.scene.camera.pitch = math.pi / 2
-        if self.scene.camera.pitch > math.pi and snapRotations:
-            self.scene.camera.pitch = math.pi
+        self.scene.camera.rotate(yaw, pitch, clamp=clampRotations)
 
     def zoomCamera(self, distance: float):
         self.scene.camera.distance -= distance
@@ -265,18 +362,20 @@ class ModuleRenderer(QOpenGLWidget):
     # endregion
 
     # region Events
-    def resizeEvent(self, e: QResizeEvent):
-        super().resizeEvent(e)
-        if self.scene is None:
+
+    def focusOutEvent(self, e: QFocusEvent | None):
+        self._mouseDown.clear()  # Clears the set when focus is lost
+        self._keysDown.clear()  # Clears the set when focus is lost
+        super().focusOutEvent(e)  # Ensures that the default handler is still executed
+        print("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
+
+    def wheelEvent(self, e: QWheelEvent | None):
+        super().wheelEvent(e)
+        if e is None:
             return
-
-        self.scene.camera.width = e.size().width()
-        self.scene.camera.height = e.size().height()
-
-    def wheelEvent(self, e: QWheelEvent):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
-    def mouseMoveEvent(self, e: QMouseEvent):
+    def mouseMoveEvent(self, e: QMouseEvent | None):
         """Handles mouse move events.
 
         Args:
@@ -290,39 +389,58 @@ class ModuleRenderer(QOpenGLWidget):
             3. Get world position of cursor
             4. Emit signal with mouse data if time since press > threshold
         """
+        #super().mouseMoveEvent(e)
+        if e is None:
+            return
         screen = Vector2(e.x(), e.y())
         if self.freeCam:
             screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)
         else:
             screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
-        if self.scene is None:
-            return
 
         world = self.scene.cursor.position()
-        self._mousePrev = screen
         if datetime.now(tz=timezone.utc).astimezone() - self._mousePressTime > timedelta(milliseconds=60):
             self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
+        self._mousePrev = screen  # Always assign mousePrev after emitting: allows signal handlers (e.g. ModuleDesigner, GITEditor) to handle cursor lock.
 
     def mousePressEvent(self, e: QMouseEvent):
+        super().mousePressEvent(e)
         self._mousePressTime = datetime.now(tz=timezone.utc).astimezone()
-        self._mouseDown.add(e.button())
+        button = e.button()
+        self._mouseDown.add(button)
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
+        #RobustLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
-        self._mouseDown.discard(e.button())
+        super().mouseReleaseEvent(e)
+        button = e.button()
+        self._mouseDown.discard(button)
 
         coords = Vector2(e.x(), e.y())
-        self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
+        self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
+        #RobustLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
-    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
-        self._keysDown.add(e.key())
+    def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):
+        super().keyPressEvent(e)
+        if e is None:
+            return
+        key = e.key()
+        self._keysDown.add(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
+        #key_name = getQtKeyStringLocalized(key)
+        #RobustLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
-    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
-        self._keysDown.discard(e.key())
+    def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):
+        super().keyReleaseEvent(e)
+        if e is None:
+            return
+        key = e.key()
+        self._keysDown.discard(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
+        # key_name = getQtKeyStringLocalized(key)
+        # RobustLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

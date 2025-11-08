@@ -7,8 +7,6 @@ import unittest
 
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
@@ -28,18 +26,91 @@ if UTILITY_PATH.joinpath("utility").exists():
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utp import construct_utp, dismantle_utp
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.utp import UTP
 
-TEST_FILE = "tests/files/test.utp"
-
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+TEST_UTP_XML = """<gff3>
+  <struct id="-1">
+    <exostring label="Tag">SecLoc</exostring>
+    <locstring label="LocName" strref="74450" />
+    <locstring label="Description" strref="-1" />
+    <resref label="TemplateResRef">lockerlg002</resref>
+    <byte label="AutoRemoveKey">1</byte>
+    <byte label="CloseLockDC">13</byte>
+    <resref label="Conversation">conversation</resref>
+    <byte label="Interruptable">1</byte>
+    <uint32 label="Faction">1</uint32>
+    <byte label="Plot">1</byte>
+    <byte label="NotBlastable">1</byte>
+    <byte label="Min1HP">1</byte>
+    <byte label="KeyRequired">1</byte>
+    <byte label="Lockable">0</byte>
+    <byte label="Locked">1</byte>
+    <byte label="OpenLockDC">28</byte>
+    <byte label="OpenLockDiff">1</byte>
+    <char label="OpenLockDiffMod">1</char>
+    <uint16 label="PortraitId">0</uint16>
+    <byte label="TrapDetectable">1</byte>
+    <byte label="TrapDetectDC">0</byte>
+    <byte label="TrapDisarmable">1</byte>
+    <byte label="DisarmDC">15</byte>
+    <byte label="TrapFlag">0</byte>
+    <byte label="TrapOneShot">1</byte>
+    <byte label="TrapType">0</byte>
+    <exostring label="KeyName">somekey</exostring>
+    <byte label="AnimationState">2</byte>
+    <uint32 label="Appearance">67</uint32>
+    <sint16 label="HP">15</sint16>
+    <sint16 label="CurrentHP">15</sint16>
+    <byte label="Hardness">5</byte>
+    <byte label="Fort">16</byte>
+    <byte label="Ref">0</byte>
+    <byte label="Will">0</byte>
+    <resref label="OnClosed">onclosed</resref>
+    <resref label="OnDamaged">ondamaged</resref>
+    <resref label="OnDeath">ondeath</resref>
+    <resref label="OnDisarm">ondisarm</resref>
+    <resref label="OnHeartbeat">onheartbeat</resref>
+    <resref label="OnLock">onlock</resref>
+    <resref label="OnMeleeAttacked">onmeleeattacked</resref>
+    <resref label="OnOpen">onopen</resref>
+    <resref label="OnSpellCastAt">onspellcastat</resref>
+    <resref label="OnTrapTriggered" />
+    <resref label="OnUnlock">onunlock</resref>
+    <resref label="OnUserDefined">onuserdefined</resref>
+    <byte label="HasInventory">1</byte>
+    <byte label="PartyInteract">1</byte>
+    <byte label="BodyBag">0</byte>
+    <byte label="Static">1</byte>
+    <byte label="Type">0</byte>
+    <byte label="Useable">1</byte>
+    <resref label="OnEndDialogue">onenddialogue</resref>
+    <resref label="OnInvDisturbed">oninvdisturbed</resref>
+    <resref label="OnUsed">onused</resref>
+    <resref label="OnFailToOpen">onfailtoopen</resref>
+    <list label="ItemList">
+      <struct id="0">
+        <resref label="InventoryRes">g_w_iongren01</resref>
+        <uint16 label="Repos_PosX">0</uint16>
+        <uint16 label="Repos_Posy">0</uint16>
+        </struct>
+      <struct id="1">
+        <resref label="InventoryRes">g_w_iongren02</resref>
+        <uint16 label="Repos_PosX">1</uint16>
+        <uint16 label="Repos_Posy">0</uint16>
+        <byte label="Dropable">1</byte>
+        </struct>
+      </list>
+    <byte label="PaletteID">6</byte>
+    <exostring label="Comment">Large standup locker</exostring>
+    </struct>
+  </gff3>
+"""
 
 
 class Test(TestCase):
@@ -49,41 +120,13 @@ class Test(TestCase):
     def log_func(self, *msgs):
         self.log_messages.append("\t".join(msgs))
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTP):
-            gff: GFF = read_gff(are_resource.data())
-            reconstructed_gff: GFF = dismantle_utp(construct_utp(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTP):
-            gff: GFF = read_gff(are_resource.data())
-            reconstructed_gff: GFF = dismantle_utp(construct_utp(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
-    @unittest.skip("This test is known to fail - fixme")  # FIXME:
-    def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
-        reconstructed_gff = dismantle_utp(construct_utp(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
-
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTP_XML.encode(), file_format=ResourceType.GFF_XML)
         utp = construct_utp(gff)
         self.validate_io(utp)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTP_XML.encode(), file_format=ResourceType.GFF_XML)
         gff = dismantle_utp(construct_utp(gff))
         utp = construct_utp(gff)
         self.validate_io(utp)

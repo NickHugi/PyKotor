@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import re
+import shlex
 import subprocess
 import sys
 import uuid
@@ -10,18 +11,21 @@ import uuid
 from contextlib import suppress
 from functools import lru_cache
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, OrderedDict, Union, cast
+
+from loggerplus import RobustLogger
 
 from utility.error_handling import format_exception_with_variables
-from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
+    from logging import Logger
 
-    from typing_extensions import Self
+    from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
 
 PathElem = Union[str, os.PathLike]
 
+_WINDOWS_SPLITDRIVE_RE = re.compile(r"^([a-zA-Z]:)\\")
 _WINDOWS_PATH_NORMALIZE_RE = re.compile(r"^\\{3,}")
 _WINDOWS_EXTRA_SLASHES_RE = re.compile(r"(?<!^)\\+")
 _UNIX_EXTRA_SLASHES_RE = re.compile(r"/{2,}")
@@ -39,6 +43,62 @@ def pathlib_to_override(cls: type) -> type:
 
     return class_map.get(cls, cls)
 
+def _handle_non_hashable(
+    cache_func: Callable,
+    direct_func: Callable,
+    path: os.PathLike | str,
+) -> Any:
+    path_str = os.fspath(path)
+    try:
+        return cache_func(path_str)
+    except TypeError:
+        return direct_func(path_str)
+
+@lru_cache(maxsize=20000)
+def _cached_splitroot(path: str) -> tuple[str, str]:
+    return ("/", path[1:]) if path.startswith("/") else ("", path)
+
+def _direct_splitroot(path: str) -> tuple[str, str]:
+    return ("/", path[1:]) if path.startswith("/") else ("", path)
+
+@lru_cache(maxsize=20000)
+def _cached_normpath(path: str) -> str:
+    return os.path.normpath(path)
+
+def _direct_normpath(path: str) -> str:
+    return os.path.normpath(path)
+
+@lru_cache(maxsize=20000)
+def _cached_isabs(path: str) -> bool:
+    return os.path.isabs(path)  # noqa: PTH117
+
+def _direct_isabs(path: str) -> bool:
+    return os.path.isabs(path)  # noqa: PTH117
+
+@lru_cache(maxsize=20000)
+def _cached_splitdrive(path: str) -> tuple[str, str]:
+    if os.name == "nt":
+        return os.path.splitdrive(path)
+    match = _WINDOWS_SPLITDRIVE_RE.match(path)
+    return (match.group(0), path[match.end():]) if match else ("", path)
+
+def _direct_splitdrive(path: str) -> tuple[str, str]:
+    if os.name == "nt":
+        return os.path.splitdrive(path)
+    match = _WINDOWS_SPLITDRIVE_RE.match(path)
+    return (match.group(0), path[match.end():]) if match else ("", path)
+
+def cached_splitroot(path: os.PathLike | str) -> tuple[str, str]:
+    return _handle_non_hashable(_cached_splitroot, _direct_splitroot, path)
+
+def cached_normpath(path: os.PathLike | str) -> str:
+    return _handle_non_hashable(_cached_normpath, _direct_normpath, path)
+
+def cached_isabs(path: os.PathLike | str) -> bool:
+    return _handle_non_hashable(_cached_isabs, _direct_isabs, path)
+
+def cached_splitdrive(path: os.PathLike | str) -> tuple[str, str]:
+    return _handle_non_hashable(_cached_splitdrive, _direct_splitdrive, path)
 
 class PurePathType(type):
     def __instancecheck__(cls, instance: object) -> bool:  # sourcery skip: instance-method-first-arg-name
@@ -48,23 +108,55 @@ class PurePathType(type):
         return pathlib_to_override(cls) in pathlib_to_override(subclass).__mro__
 
 
+class _PartialFlavourTypeHint:
+    def __new__(cls, *args, **kwargs):
+        raise RuntimeError("This class cannot be instantiated and is only used for type hinting.")
+    sep: Literal["\\", "/"]
+
+
 class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
+    _flavour: _PartialFlavourTypeHint
+    _path: Self
+    _drv: str
+    _root: str
+    _tail: str
+    _tail_cached: str
+
+    # Custom FILO cache with a max size of 10000
+    _instance_cache: OrderedDict = OrderedDict()
+    _max_cache_size = 10000
+
     # pylint: disable-all
     def __new__(cls, *args, **kwargs) -> Self:
+        # sourcery skip: remove-unreachable-code
         if cls is PurePath:
-            cls = PureWindowsPath if os.name == "nt" else PurePosixPath
-        return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
+            cls = PureWindowsPath if os.name == "nt" else PurePosixPath  # type: ignore[assignment]  # noqa: PLW0642
+        # disable caching for now by making it unreachable, remove below line to re-enable.
+        return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[arg-type]
+        instance_id = (cls, args, tuple(kwargs.items()))
+        if instance_id in cls._instance_cache:
+            # Move the accessed item to the end to maintain order
+            instance = cls._instance_cache.pop(instance_id)
+            cls._instance_cache[instance_id] = instance
+        else:
+            instance = super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[arg-type]
+            cls._instance_cache[instance_id] = instance
+            if len(cls._instance_cache) > cls._max_cache_size:
+                # Remove the first item from the cache to maintain the size limit
+                cls._instance_cache.popitem(last=False)
+        return instance
 
     def __init__(
         self,
         *args,
         **kwargs,
     ):
-        if sys.version_info < (3, 12, 0):
-            super().__init__()
-        else:
-            super().__init__(*self.parse_args(args), **kwargs)
-        self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+        if sys.version_info >= (3, 12, 0):
+            self._raw_paths: list[str] = self.parse_args(args)
+            self._cached_str = self.str_norm(self._flavour.sep.join(self._raw_paths), slash=self._flavour.sep)
+        elif self._drv.strip().endswith(":") and self._flavour.sep == "\\":
+            self._root = "\\"
+            self._cached_str = self.str_norm(super().__str__(), slash=self._flavour.sep)
 
     @classmethod
     def _create_instance(
@@ -72,37 +164,55 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         *args: PathElem,
         **kwargs,  # noqa: ANN003
     ) -> Self:
-        instance: Self = cls.__new__(cls, *args, **kwargs)
-        instance.__init__(*args)  # type: ignore[misc]  # noqa: PLC2801
+        instance: Self = cls.__new__(cls, *args, **kwargs)  # type: ignore[arg-type]
+        if sys.version_info >= (3, 12, 0):
+            instance._raw_paths = cls.parse_args(args)  # noqa: SLF001
+            instance._cached_str = cls.str_norm(cls._flavour.sep.join(instance._raw_paths), slash=cls._flavour.sep)  # noqa: SLF001
         return instance
 
     @classmethod
     def parse_args(
         cls,
         args: tuple[PathElem, ...],
-    ) -> list[PathElem]:
-        args_list = list(args)
-        for i, arg in enumerate(args_list):
-            if isinstance(arg, cls):
-                continue  # Do nothing if already our instance type
+    ) -> list[str]:
+        args_list: list[str] = []
 
-            formatted_path_str: str = cls._fix_path_formatting(cls._fspath_str(arg), slash=cls._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
-            drive, path = os.path.splitdrive(formatted_path_str)
-            if drive and not path:
-                formatted_path_str = f"{drive}{cls._flavour.sep}"  # type: ignore[reportAttributeAccessIssue]
-            args_list[i] = formatted_path_str
+        # Find the last absolute path index using os.path.isabs and os.path.normpath
+        # joining an absolute path with another absolute path prioritizes the last one.
+        last_absolute_index = -1
+        for i, arg in enumerate(args):
+            if cached_isabs(cached_normpath(arg)):  # noqa: PTH117
+                last_absolute_index = i
+
+        # If there is an absolute path, splice the args
+        if last_absolute_index != -1:
+            args = args[last_absolute_index:]
+
+        for arg in args:
+            normpath_str: str = cls.str_norm(os.fspath(arg), slash=cls._flavour.sep)
+            if cached_isabs(normpath_str):
+                drive_or_root, splitpathpart = cached_splitdrive(normpath_str) if cls._flavour.sep == "\\" else cached_splitroot(normpath_str)
+                if drive_or_root:
+                    args_list.append(drive_or_root)
+                if splitpathpart and splitpathpart.strip():
+                    args_list.append(splitpathpart)
+            else:
+                parts = normpath_str.split(cls._flavour.sep)
+                args_list.extend(parts)
 
         return args_list
 
     @classmethod
     @lru_cache(maxsize=20000)
-    def _fix_path_formatting(
+    def str_norm(
         cls,
         str_path: str,
         *,
         slash: str = os.sep,
     ) -> str:  # sourcery skip: assign-if-exp, reintroduce-else
-        """Formats a path string.
+        """Normalizes a path string.
+
+        This differs from os.path.normpath in various ways, e.g. it leaves '..' parts intact just like pathlib.PurePath does.
 
         Args:
         ----
@@ -112,70 +222,41 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         Returns:
         -------
             str: The formatted path string
-
-        Processing Logic:
-        ----------------
-            1. Validate the slash character
-            2. Strip quotes from the path
-            3. Format Windows paths by replacing mixed slashes and normalizing slashes
-            4. Format Unix paths by replacing mixed slashes and normalizing slashes
-            5. Strip trailing slashes from the formatted path.
         """
         if slash not in ("\\", "/"):
             msg = f"Invalid slash str: '{slash}'"
             raise ValueError(msg)
 
-        other_slash = "\\" if slash == "/" else "/"
-        formatted_path: str = os.path.normpath(str_path.strip('"')).replace(other_slash, slash)
+        formatted_path: str = str_path.strip('"').strip()
+        if not formatted_path:
+            return "."
+
+        # For Windows paths
+        if slash == "\\":
+            formatted_path = formatted_path.replace("/", "\\").replace("\\.\\", "\\")
+            formatted_path = _WINDOWS_PATH_NORMALIZE_RE.sub(r"\\\\", formatted_path)
+            formatted_path = _WINDOWS_EXTRA_SLASHES_RE.sub(r"\\", formatted_path)
+        # For Unix-like paths
+        elif slash == "/":
+            formatted_path = formatted_path.replace("\\", "/").replace("/./", "/")
+            formatted_path = _UNIX_EXTRA_SLASHES_RE.sub("/", formatted_path)
+
 
         # Strip any trailing slashes, don't call rstrip if the formatted path == "/"
         if len(formatted_path) != 1:
-            return formatted_path.rstrip(slash)
-        if formatted_path == "\\":
-            return "."
-        return formatted_path
-
-    @staticmethod
-    def _fspath_str(arg: object) -> str:
-        """Convert object to a file system path string.
-
-        Args:
-        ----
-            arg: Object to convert to a file system path string
-
-        Returns:
-        -------
-            str: File system path string
-
-        Processing Logic:
-        ----------------
-            - Check if arg is already a string
-            - Check if arg has a __fspath__ method and call it
-            - Check if arg somehow inherits os.PathLike despite not having __fspath__ (redundant)
-            - Raise TypeError if arg is neither string nor has __fspath__ method.
-        """
-        if isinstance(arg, str):
-            return arg
-
-        fspath_method: Callable | None = getattr(arg, "__fspath__", None)
-        if fspath_method is not None:
-            return fspath_method()
-        if isinstance(arg, os.PathLike):
-            return str(arg)
-
-        msg = f"Object '{arg!r}' must be str, or path-like object (implementing __fspath__). Instead got type '{arg.__class__}'"
-        raise TypeError(msg)
+            formatted_path = formatted_path.rstrip(slash)
+        return formatted_path or "."
 
     def __str__(self):
         """Return the result from _fix_path_formatting that was initialized."""
         if not hasattr(self, "_cached_str"):  # Sometimes pathlib's internal instance creation mechanisms won't call our __init__
-            self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+            self._cached_str = self.str_norm(super().__str__(), slash=self._flavour.sep)  # pyright: ignore[reportAttributeAccessIssue]
         return self._cached_str
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self!s})"
 
-    def __eq__(self, __value):
+    def __eq__(self, __value):  # noqa: PYI063
         if __value is None:
             return False
         if self is __value:
@@ -184,22 +265,23 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             return os.fsencode(self) == __value
 
         self_compare: Self | str = self  # type: ignore[assignment]
-        other_compare: object = __value
+        other_compare = __value
         if isinstance(__value, (os.PathLike, str)):
             self_compare = str(self)
             if isinstance(__value, PurePath):
                 other_compare = str(__value)
             else:
-                other_compare = self._fix_path_formatting(self._fspath_str(__value), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+                fmt_other = self.str_norm(os.fspath(__value), slash=self._flavour.sep)  # pyright: ignore[reportAttributeAccessIssue]
+                other_compare = os.path.expanduser(fmt_other) if issubclass(self.__class__, (Path, WindowsPath, PosixPath)) else fmt_other  # noqa: PTH111
 
-            if self._flavour.sep == "\\":  # type: ignore[reportAttributeAccessIssue]
+            if self._flavour.sep == "\\":  # pyright: ignore[reportAttributeAccessIssue]
                 self_compare = self_compare.lower()
                 other_compare = other_compare.lower()
 
-        return self_compare == other_compare
+        return cast("bool", self_compare == other_compare)
 
     def __hash__(self):
-        return hash(self.as_posix() if self._flavour.sep == "/" else self.as_windows())  # type: ignore[reportAttributeAccessIssue]
+        return hash(self.as_posix() if self._flavour.sep == "/" else self.as_windows())  # pyright: ignore[reportAttributeAccessIssue]
 
     def __bytes__(self):
         """Return the bytes representation of the path.  This is only
@@ -208,7 +290,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         return os.fsencode(self)
 
     def __fspath__(self) -> str:
-        """Ensures any use of __fspath__ will call our __str__ method."""
+        """Required for path-like objects."""
         return str(self)
 
     def __truediv__(self, key: PathElem) -> Self:
@@ -246,7 +328,9 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             self: Path object
             key (path-like object or str path):
         """
-        return self._fix_path_formatting(str(self / key), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+        return self.str_norm(
+            str(self / key), slash=self._flavour.sep
+        )  # pyright: ignore[reportAttributeAccessIssue]
 
     def __radd__(self, key: PathElem) -> str:
         """Implicitly converts the path to a str when used with the addition operator '+'.
@@ -257,7 +341,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             self: Path object
             key (path-like object or str path):
         """
-        return self._fix_path_formatting(str(key / self), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+        return self.str_norm(str(key / self), slash=self._flavour.sep)  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def pathify(cls, path: PathElem) -> Self:
@@ -314,7 +398,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         -------
             str: POSIX representation of the path
         """
-        return self._fix_path_formatting(super().__str__(), slash="/")
+        return self.str_norm(super().__str__(), slash="/")
 
     def as_windows(self) -> str:
         """Convert path to a WINDOWS path, lowercasing the whole path and returning a str.
@@ -325,9 +409,19 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
         Returns:
         -------
-            str: POSIX representation of the path
+            str: WINDOWS representation of the path as lowercase
         """
-        return self._fix_path_formatting(super().__str__(), slash="\\").lower()
+        return self.str_norm(super().__str__(), slash="\\").lower()
+
+    def is_relative_to(self, *args, **kwargs) -> bool:
+        """Return True if the path is relative to another path or False."""
+        if not args or "other" in kwargs:
+            msg = f"{self.__class__.__name__}.is_relative_to() missing 1 required positional argument: 'other'"
+            raise TypeError(msg)
+
+        other, *_deprecated = args
+        parsed_other = self.with_segments(other, *_deprecated)
+        return parsed_other == self or parsed_other in self.parents
 
     def joinpath(self, *args: PathElem) -> Self:
         """Appends one or more path-like objects and/or relative paths to self.
@@ -362,10 +456,15 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
     def with_stem(self, stem: str) -> Self:  # type: ignore[type-var, misc]
         """Return a new path with the stem changed."""
-        self: PurePath = self  # type: ignore[] # noqa: PLW0127
+        self: PurePath = self  # type: ignore[]  # noqa: PLW0127, PLW0642
         return self.with_name(stem + self.suffix)  # type: ignore[return-value]
 
-    def endswith(self, text: str | tuple[str, ...], *, case_sensitive: bool = False) -> bool:  # type: ignore[override]
+    def endswith(
+        self,
+        text: str | tuple[str, ...],
+        *,
+        case_sensitive: bool = False,
+    ) -> bool:  # type: ignore[override]
         """Checks if string ends with the specified str or tuple of strings.
 
         Args:
@@ -398,18 +497,61 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
 
 class PurePosixPath(PurePath, pathlib.PurePosixPath):  # type: ignore[misc]
-    ...
+    if sys.version_info >= (3, 12):
+        import posixpath as _posixpath
+        _flavour = _posixpath  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info >= (3, 13):
+        class _PosixFlavourProxy:
+            def __init__(self, module):
+                self._module = module
+                self.sep = module.sep
+                self.altsep = getattr(module, "altsep", None)
+
+            def __getattr__(self, name):
+                return getattr(self._module, name)
+
+        _flavour = _PosixFlavourProxy(_posixpath)
 
 
 class PureWindowsPath(PurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
-    ...
+    if sys.version_info >= (3, 12):
+        import ntpath as _ntpath
+        _flavour = _ntpath  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info >= (3, 13):
+        class _WindowsFlavourProxy:
+            def __init__(self, module):
+                self._module = module
+                self.sep = module.sep
+                self.altsep = getattr(module, "altsep", None)
+
+            def __getattr__(self, name):
+                return getattr(self._module, name)
+
+        _flavour = _WindowsFlavourProxy(_ntpath)
 
 
 class Path(PurePath, pathlib.Path):  # type: ignore[misc]
+    if sys.version_info >= (3, 13):
+        _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore[assignment]  # noqa: SLF001  # pyright: ignore[reportUnreachable]
+
     def __new__(cls, *args, **kwargs) -> Self:
         if cls is Path:
-            cls = WindowsPath if os.name == "nt" else PosixPath
-        return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
+            cls = WindowsPath if os.name == "nt" else PosixPath  # type: ignore[assignment]  # noqa: PLW0642, SLF001
+        return super().__new__(cls, *args, **kwargs)  # pyright: ignore[reportArgumentType, reportReturnType]
+
+    def __init__(self, *args, **kwargs):
+        self._last_stat_result: os.stat_result | None = None
+        super().__init__(*args, **kwargs)
+
+    def get_stat_with_cache(self) -> os.stat_result:
+        """Returns the cached stat result if available, otherwise performs a stat call."""
+        if self._last_stat_result is None:
+            self._last_stat_result = super().stat()
+        return self._last_stat_result
+
+    def stat(self, *args, **kwargs) -> os.stat_result:
+        self._last_stat_result = super().stat(*args, **kwargs)
+        return self._last_stat_result
 
     # Safe rglob operation
     def safe_rglob(
@@ -423,7 +565,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             except StopIteration:  # noqa: PERF203
                 break  # StopIteration means there are no more files to iterate over
             except Exception:  # pylint: disable=W0718  # noqa: BLE001
-                get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+                RobustLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
                 continue  # Ignore the file that caused an exception and move to the next
 
     # Safe iterdir operation
@@ -435,7 +577,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             except StopIteration:  # noqa: PERF203
                 break  # StopIteration means there are no more files to iterate over
             except Exception:  # pylint: disable=W0718  # noqa: BLE001
-                get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+                RobustLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
                 continue  # Ignore the file that caused an exception and move to the next
 
     # Safe is_dir operation
@@ -444,7 +586,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_dir()
         except (OSError, ValueError):
-            get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            #RobustLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -455,7 +597,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_file()
         except (OSError, ValueError):
-            get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            #RobustLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -466,20 +608,10 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.exists()
         except (OSError, ValueError):
-            get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            # RobustLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
-
-    def is_relative_to(self, *args, **kwargs) -> bool:
-        """Return True if the path is relative to another path or False."""
-        if not args or "other" in kwargs:
-            msg = f"{self.__class__.__name__}.is_relative_to() missing 1 required positional argument: 'other'"
-            raise TypeError(msg)
-
-        other, *_deprecated = args
-        parsed_other = self.with_segments(other, *_deprecated)
-        return parsed_other == self or parsed_other in self.parents
 
     def get_highest_permission(self) -> int:
         read_permission: bool = os.access(self, os.R_OK)
@@ -494,6 +626,11 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         if execute_permission:
             permission_value += 0o1  # Add 1 for execute permission (001 in binary)
         return permission_value
+
+    def safe_relative_to(self, *other: PathElem) -> Self:
+        with suppress(ValueError):
+            return super().relative_to(*other)
+        return self.__class__(os.path.relpath(self, self.__class__(*other)))
 
     def has_access(
         self,
@@ -562,9 +699,6 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 return True
         except OSError as os_exc:
             print(format_exception_with_variables(os_exc))
-        except Exception as exc:
-            print(format_exception_with_variables(exc))
-            # raise
         return False
 
     def gain_access(
@@ -600,7 +734,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         """
         if os.name == "posix":
             print("(Unix) Gain ownership of the folder with os.chown()")
-            e = None
+            e: Exception | None = None
             try:
                 home_path = Path.home()
                 try:
@@ -614,7 +748,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 print(format_exception_with_variables(e, message=f"Error during chown for '{self}'"))
 
         # (Any OS) chmod the folder
-        print("Attempting pathlib.Path.chmod(self)...")
+        print(f"Attempting pathlib.Path.chmod({self})...")
         try:
             # Get the current permissions
             current_permissions: int = self.stat().st_mode
@@ -629,7 +763,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             else:
                 try:
                     self.lchmod(new_permissions)
-                except NotImplementedError as e2:
+                except NotImplementedError:
                     self.chmod(new_permissions)
         except (OSError, NotImplementedError) as e:
             print(format_exception_with_variables(e, message=f"Error during chmod at path '{self}'"))
@@ -670,7 +804,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
     if os.name == "nt":
 
         @staticmethod
-        def get_win_attrs(file_path):
+        def get_win_attrs(file_path: str) -> tuple[bool, bool, bool]:
             import ctypes
 
             # Constants for file attributes
@@ -682,8 +816,9 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
 
             # If the function fails, it returns INVALID_FILE_ATTRIBUTES
             if attrs == -1:
-                msg = f"Cannot access attributes of file: {file_path}"
-                raise FileNotFoundError(msg)
+                import errno
+                msg = "Cannot access attributes of the file"
+                raise FileNotFoundError(errno.ENOENT, msg, str(file_path))
 
             # Check for specific attributes
             is_read_only = bool(attrs & FILE_ATTRIBUTE_READONLY)
@@ -704,11 +839,11 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             # sourcery skip: extract-method
             with TemporaryDirectory() as tempdir:
                 # Ensure the script path is absolute
-                script_path: Path = cls(tempdir, "temp_script.bat").absolute()  # type: ignore[reportGeneralTypeIssues]
+                script_path: Path = cls(tempdir, "temp_script.bat").absolute()  # pyright: ignore[reportGeneralTypeIssues]
                 script_path_str = str(script_path)
 
                 # Write the commands to a batch file
-                with script_path.open("w") as file:
+                with script_path.open("w", encoding="utf-8") as file:
                     for command in cmd:
                         file.write(command + "\n")
                     if pause_after_command and not hide_window:
@@ -725,27 +860,28 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                     hide_window_cmdpart = ""
                     creation_flags = 0
 
-                # Construct the command to run the batch script with elevated privileges
-                run_script_cmd: list[str] = [
+                # Use shlex to escape arguments properly
+                run_script_cmd = [
                     "Powershell",
                     "-Command",
-                    f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path_str}\"' -Verb RunAs{hide_window_cmdpart} -Wait",
+                    f"Start-Process cmd.exe -ArgumentList {shlex.quote(f'{cmd_switch} {script_path_str}')}"
+                    f" -Verb RunAs{hide_window_cmdpart} -Wait",
                 ]
 
                 # Execute the batch script
                 if block_until_complete:
-                    subprocess.run(run_script_cmd, check=False, creationflags=creation_flags, timeout=5)
+                    subprocess.run(run_script_cmd, check=False, creationflags=creation_flags, timeout=5)  # noqa: S603
                 else:
-                    subprocess.Popen(run_script_cmd, creationflags=creation_flags, timeout=5)
+                    subprocess.Popen(run_script_cmd, creationflags=creation_flags, timeout=5)  # noqa: S603  # pyright: ignore[reportCallIssue]
 
             # Delete the batch script after execution
             with suppress(Exception):
                 if script_path.safe_isfile():
-                    script_path.unlink()
+                    script_path.unlink(missing_ok=True)
 
         # Inspired by the C# code provided by KOTORModSync at https://github.com/th3w1zard1/KOTORModSync
         def request_native_access(
-            self: Path,  # type: ignore[reportGeneralTypeIssues]
+            self: Path,  # pyright: ignore[reportGeneralTypeIssues]
             *,
             elevate: bool = False,
             recurse: bool = True,
@@ -766,7 +902,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:
                 commands.append(" ".join(icacls_reset_args))
             else:
-                icacls_reset_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_reset_args, timeout=60, check=False, capture_output=True, text=True)
+                icacls_reset_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_reset_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                 if icacls_reset_result.returncode != 0:
                     log_func(
                         f"Failed reset permissions of {self_path_str}:\n"
@@ -783,10 +919,10 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 takeown_args.extend(("/D", "Y"))
                 if recurse:
                     takeown_args.append("/R")
-            if elevate:  # sourcery skip: extract-duplicate-method
+            if elevate:
                 commands.append(" ".join(takeown_args))
             else:
-                takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False, capture_output=True, text=True)
+                takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                 if takeown_result.returncode != 0:
                     log_func(
                         f"Failed to take ownership of {self_path_str}:\n"
@@ -804,7 +940,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:
                 commands.append(" ".join(icacls_args))
             else:
-                icacls_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_args, timeout=60, check=False, capture_output=True, text=True)
+                icacls_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                 if icacls_result.returncode != 0:
                     log_func(
                         f"Could not set Windows icacls permissions at '{self_path_str}':\n"
@@ -816,7 +952,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                     log_func(f"Permissions set successfully. Output:\n{icacls_result.stdout}")
 
             print(f"Step 4: Removing system/hidden/read-only attribute from '{self_path_str}'...")
-            is_read_only, is_hidden, is_system = self.get_win_attrs(self_path_str.replace('"', ""))
+            _is_read_only, is_hidden, is_system = self.get_win_attrs(self_path_str.replace('"', ""))
             attrib_args: list[str] = ["attrib", "-R", self_path_str]
             if is_system:
                 attrib_args.insert(1, "-S")
@@ -829,7 +965,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:
                 commands.append(" ".join(attrib_args))
             else:
-                attrib_result: subprocess.CompletedProcess[str] = subprocess.run(attrib_args, timeout=60, check=False, capture_output=True, text=True)
+                attrib_result: subprocess.CompletedProcess[str] = subprocess.run(attrib_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                 if attrib_result.returncode != 0:
                     log_func(
                         f"Could not set Windows icacls permissions at '{self_path_str}':\n"
@@ -850,7 +986,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 if elevate:
                     commands.append(" ".join(rehide_args))
                 else:
-                    rehide_result: subprocess.CompletedProcess[str] = subprocess.run(rehide_args, timeout=60, check=False, capture_output=True, text=True)
+                    rehide_result: subprocess.CompletedProcess[str] = subprocess.run(rehide_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                     if rehide_result.returncode != 0:
                         log_func(
                             f"Could not set Windows icacls permissions at '{self_path_str}':\n"
@@ -863,22 +999,38 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 self.run_commands_as_admin(commands)
                 return
 
-    if os.name == "posix":
-
-        def get_highest_posix_permission(
-            self: Path,  # type: ignore[reportGeneralTypeIssues]
-            uid: int | None = None,
-            gid: int | None = None,
-        ) -> int:
-            """Similar to get_highest_permission but will not take runtime elevation (e.g. sudo) into account."""
-            # Retrieve the current user's UID and GID
-            current_uid = uid if uid is not None else os.getuid()
-            current_gid = gid if gid is not None else os.getgid()
-
 
 class PosixPath(Path):  # type: ignore[misc]
-    _flavour = pathlib.PurePosixPath._flavour  # noqa: SLF001  # type: ignore[reportAttributeAccessIssue]
+    if sys.version_info < (3, 12):
+        # In Python 3.12+, _flavour attribute was removed
+        _flavour = pathlib.PurePosixPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info >= (3, 13):
+        _flavour = PurePosixPath._flavour  # noqa: SLF001
 
 
 class WindowsPath(Path):  # type: ignore[misc]
-    _flavour = pathlib.PureWindowsPath._flavour  # noqa: SLF001  # type: ignore[reportAttributeAccessIssue]
+    if sys.version_info < (3, 12):
+        # In Python 3.12+, _flavour attribute was removed
+        _flavour = pathlib.PureWindowsPath._flavour  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue]
+    if sys.version_info >= (3, 13):
+        _flavour = PureWindowsPath._flavour  # noqa: SLF001
+
+
+
+class ChDir:
+    def __init__(
+        self,
+        path: os.PathLike | str,
+        logger: Logger | None = None,
+    ):
+        self.old_dir: Path = Path.cwd()
+        self.new_dir: Path = Path.pathify(path)
+        self.log = logger or RobustLogger()
+
+    def __enter__(self):
+        self.log.debug(f"Changing to Directory --> '{self.new_dir}'")  # noqa: G004
+        os.chdir(self.new_dir)
+
+    def __exit__(self, *args, **kwargs):
+        self.log.debug(f"Moving back to Directory --> '{self.old_dir}'")  # noqa: G004
+        os.chdir(self.old_dir)

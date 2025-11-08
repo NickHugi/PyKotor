@@ -5,13 +5,14 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-class LIP:
+class LIP(ComparableMixin):
     """Represents the data of a LIP file.
 
     Attributes:
@@ -21,6 +22,8 @@ class LIP:
     """
 
     BINARY_TYPE = ResourceType.LIP
+    COMPARABLE_FIELDS = ("length",)
+    COMPARABLE_SEQUENCE_FIELDS = ("frames",)
 
     def __init__(
         self,
@@ -42,7 +45,7 @@ class LIP:
 
     def __getitem__(
         self,
-        item,
+        item,  # noqa: ANN001
     ) -> LIPKeyFrame:
         """Returns a keyframe from the specified index.
 
@@ -90,36 +93,7 @@ class LIP:
         """
         return self.frames[index] if index < len(self.frames) else None
 
-    def compare(self, other: LIP, log_func=print) -> bool:
-        ret = True
-
-        # Check for differences in the length attribute
-        if self.length != other.length:
-            log_func(f"Length mismatch: '{self.length}' --> '{self.length}'")
-            ret = False
-
-        # Check for keyframe mismatches
-        old_frames = len(self)
-        new_frames = len(other)
-
-        if old_frames != new_frames:
-            log_func(f"Keyframe count mismatch: {old_frames} --> {new_frames}")
-            ret = False
-
-        # Compare individual keyframes
-        for i in range(min(old_frames, new_frames)):
-            old_keyframe: LIPKeyFrame = self[i]
-            new_keyframe: LIPKeyFrame = other[i]
-
-            if old_keyframe.time != new_keyframe.time:
-                log_func(f"Time mismatch at keyframe {i}: '{old_keyframe.time}' --> '{new_keyframe.time}'")
-                ret = False
-
-            if old_keyframe.shape != new_keyframe.shape:
-                log_func(f"Shape mismatch at keyframe {i}: '{old_keyframe.shape.name}' --> '{new_keyframe.shape.name}'")
-                ret = False
-
-        return ret
+    # compare is provided by ComparableMixin
 
 
 # mapping in LipSyncEditor is not very accurate. for example, shape 0 is neutral, not EE,
@@ -144,7 +118,8 @@ class LIPShape(IntEnum):
     KG = 15
 
 
-class LIPKeyFrame:
+class LIPKeyFrame(ComparableMixin):
+    COMPARABLE_FIELDS = ("time", "shape")
     """A keyframe for a lip animation.
 
     Attributes:

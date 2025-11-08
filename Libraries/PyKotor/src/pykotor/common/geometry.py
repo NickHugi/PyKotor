@@ -7,6 +7,8 @@ import math
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats._base import ComparableMixin
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -47,14 +49,19 @@ class Vector2:
     def __eq__(
         self,
         other,
-    ) -> bool:
+    ):
         """Two Vector2 components are equal if their components are approximately the same."""
+        if self is other:
+            return True
         if not isinstance(other, Vector2):
             return NotImplemented
 
         isclose_x = math.isclose(self.x, other.x)
         isclose_y = math.isclose(self.y, other.y)
         return isclose_x and isclose_y
+
+    def __hash__(self) -> int:
+        return hash((self.x, self.y))
 
     def __add__(
         self,
@@ -128,7 +135,7 @@ class Vector2:
     def __getitem__(
         self,
         item,
-    ) -> float:
+    ):
         if isinstance(item, int):
             if item == 0:
                 return self.x
@@ -383,6 +390,8 @@ class Vector3:
         other: Vector3 | object,
     ) -> bool:
         """Two Vector3 components are equal if their components are approximately the same."""
+        if self is other:
+            return True
         if not isinstance(other, Vector3):
             return NotImplemented
 
@@ -390,6 +399,9 @@ class Vector3:
         isclose_y = math.isclose(self.y, other.y)
         isclose_z = math.isclose(self.z, other.z)
         return isclose_x and isclose_y and isclose_z
+
+    def __hash__(self) -> int:
+        return hash((self.x, self.y, self.z))
 
     def __add__(
         self,
@@ -408,7 +420,7 @@ class Vector3:
     def __sub__(
         self,
         other,
-    ) -> Vector3:
+    ):
         """Subtracts the components of two Vector3 objects."""
         if not isinstance(other, Vector3):
             return NotImplemented
@@ -688,8 +700,10 @@ class Vector4:
     def __eq__(
         self,
         other,
-    ) -> bool:
+    ):
         """Two Vector4 components are equal if their components are approximately the same."""
+        if self is other:
+            return True
         if not isinstance(other, Vector4):
             return NotImplemented
 
@@ -699,10 +713,13 @@ class Vector4:
         isclose_w = math.isclose(self.w, other.w)
         return isclose_x and isclose_y and isclose_z and isclose_w
 
+    def __hash__(self) -> int:
+        return hash((self.x, self.y, self.z, self.w))
+
     def __add__(
         self,
         other,
-    ) -> Vector4:
+    ):
         """Adds the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -717,7 +734,7 @@ class Vector4:
     def __sub__(
         self,
         other,
-    ) -> Vector4:
+    ):
         """Subtracts the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -1085,7 +1102,7 @@ class SurfaceMaterial(IntEnum):
         }
 
 
-class Face:
+class Face(ComparableMixin):
     """Represents a triangle in 3D space.
 
     Attributes:
@@ -1101,12 +1118,27 @@ class Face:
         v1: Vector3,
         v2: Vector3,
         v3: Vector3,
-        material=SurfaceMaterial.UNDEFINED,
+        material: SurfaceMaterial = SurfaceMaterial.UNDEFINED,
     ):
         self.v1: Vector3 = v1
         self.v2: Vector3 = v2
         self.v3: Vector3 = v3
         self.material: SurfaceMaterial = material
+
+    COMPARABLE_FIELDS = ("v1", "v2", "v3", "material")
+
+    def __eq__(self, other):
+        if not isinstance(other, Face):
+            return NotImplemented
+        return (
+            self.v1 == other.v1
+            and self.v2 == other.v2
+            and self.v3 == other.v3
+            and self.material == other.material
+        )
+
+    def __hash__(self):
+        return hash((self.v1, self.v2, self.v3, self.material))
 
     def normal(
         self,
@@ -1161,7 +1193,7 @@ class Face:
         self,
         x: float,
         y: float,
-    ):
+    ) -> float:
         """Returns the Z-component determined from the given X and Y components.
 
         This method does not check if the point exists within the face, that must be done separately with inside().
@@ -1202,7 +1234,7 @@ class Polygon2:
     def __repr__(
         self,
     ) -> str:
-        return f"Polygon3({self.points})"
+        return f"Polygon2({self.points})"
 
     def __getitem__(
         self,
@@ -1402,6 +1434,50 @@ class Polygon3:
             poly3.points.append(Vector3(point.x, point.y, 0))
         return poly3
 
+    def create_triangle(
+        self,
+        size: float = 1.0,
+        origin: Vector3 | tuple[float, float, float] = (0.0, 0.0, 0.0),
+    ):
+        """Creates an equilateral triangle in the XY-plane with the given size and the bottom vertex at the specified origin.
+
+        Args:
+        ----
+            size: The length of each side of the triangle.
+            origin: A tuple representing the (x, y, z) coordinates of the bottom vertex of the triangle.
+
+        This method modifies the instance by adding three Vector3 points defining the triangle.
+        """
+        x, y, z = origin
+        height = size * (3 ** 0.5) / 2
+        self.points = [
+            Vector3(x, y, z),
+            Vector3(x + size, y, z),
+            Vector3(x + size / 2, y + height, z)
+        ]
+
+    def default_square(
+        self,
+        size: float = 1.0,
+        origin: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    ):
+        """Creates a square in the XY-plane with the given size and the bottom-left corner at the specified origin.
+
+        Args:
+        ----
+            size: The length of each side of the square.
+            origin: A tuple representing the (x, y, z) coordinates of the bottom-left corner of the square.
+
+        This method modifies the instance by adding four Vector3 points defining the square.
+        """
+        x, y, z = origin
+        self.points = [
+            Vector3(x, y, z),
+            Vector3(x + size, y, z),
+            Vector3(x + size, y + size, z),
+            Vector3(x, y + size, z)
+        ]
+
     def append(
         self,
         point: Vector3,
@@ -1425,3 +1501,17 @@ class Polygon3:
         point: Vector3,
     ) -> int:
         return self.points.index(point)
+
+def get_aurora_scale(obj):
+    """If the scale is uniform, i.e, x=y=z, we will return
+    the value. Else we'll return 1.
+    """
+    scale = obj.scale
+    if (scale[0] == scale[1] == scale[2]):
+        return scale[0]
+
+    return 1.0
+
+def get_aurora_rot_from_object(obj):
+    q = obj.rotation_quaternion
+    return [q.axis[0], q.axis[1], q.axis[2], q.angle]

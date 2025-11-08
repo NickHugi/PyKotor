@@ -1,58 +1,66 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import atexit
-import cProfile
+import gc
+import importlib
 import multiprocessing
 import os
 import pathlib
 import sys
 import tempfile
 
+from contextlib import suppress
+from types import TracebackType
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication, QMessageBox
-
 if TYPE_CHECKING:
-    from types import TracebackType
+    from qtpy.QtCore import QSettings
 
 
 def is_frozen() -> bool:
     return (
         getattr(sys, "frozen", False)
         or getattr(sys, "_MEIPASS", False)
-        or tempfile.gettempdir() in sys.executable
+        # or tempfile.gettempdir() in sys.executable
     )
 
 
 def onAppCrash(
     etype: type[BaseException],
-    e: BaseException,
+    exc: BaseException,
     tback: TracebackType | None,
-):
-    from utility.logger_util import get_root_logger
+):  # sourcery skip: extract-method
+    from loggerplus import RobustLogger
+
     if issubclass(etype, KeyboardInterrupt):
-        sys.__excepthook__(etype, e, tback)
+        sys.__excepthook__(etype, exc, tback)
         return
-    logger = get_root_logger()
-    logger.critical("Uncaught exception", exc_info=(etype, e, tback))
+    if tback is None:
+        with suppress(Exception):
+            import inspect
+
+            # Get the current stack frames
+            current_stack = inspect.stack()
+            if current_stack:
+                # Reverse the stack to have the order from caller to callee
+                current_stack = current_stack[1:][::-1]
+                fake_traceback = None
+                for frame_info in current_stack:
+                    frame = frame_info.frame
+                    fake_traceback = TracebackType(fake_traceback, frame, frame.f_lasti, frame.f_lineno)
+                exc = exc.with_traceback(fake_traceback)
+                # Now exc has a traceback :)
+                tback = exc.__traceback__
+    logger = RobustLogger()
+    logger.critical("Uncaught exception", exc_info=(etype, exc, tback))
 
 
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
 
-    This function will determine whether they have the source files downloaded for pykotor in the expected directory. If they do, we
-    insert the source path to pykotor to the beginning of sys.path so it'll have priority over pip's pykotor package if that is installed.
-    If the toolset dir exists, change directory to that of the toolset. Allows users to do things like `python -m toolset`
     This function should never be used in frozen code.
     This function also ensures a user can run toolset/__main__.py directly.
-
-    Processing Logic:
-    ----------------
-        - Checks if PyKotor package exists in parent directory of calling file.
-        - If exists, removes parent directory from sys.path and adds to front.
-        - Also checks for toolset package and changes cwd to that directory if exists.
-        - This ensures packages and scripts can be located correctly on import.
     """
 
     def update_sys_path(path: pathlib.Path):
@@ -76,83 +84,202 @@ def fix_sys_and_cwd_path():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
-def is_running_from_temp():
-    app_path = Path(sys.executable)
+    # Add KotorDiff to sys.path for kotordiff imports
+    kotordiff_path = file_absolute_path.parents[4] / "Tools" / "KotorDiff" / "src"
+    if kotordiff_path.exists():
+        update_sys_path(kotordiff_path)
+
+
+def fix_qt_env_var():
+    qtpy_case_map: dict[str, str] = {
+        "pyqt5": "PyQt5",
+        "pyqt6": "PyQt6",
+        "pyside2": "PySide2",
+        "pyside6": "PySide6",
+    }
+    case_api_name = qtpy_case_map.get(os.environ.get("QT_API", "").lower().strip())
+    if case_api_name in ("PyQt5", "PyQt6", "PySide2", "PySide6"):
+        print(f"QT_API manually set by user to '{case_api_name}'.")
+        os.environ["QT_API"] = case_api_name
+    else:
+        set_qt_api()
+
+
+def set_qt_api():
+    available_apis = ["PyQt5", "PyQt6", "PySide2", "PySide6"]
+    for api in available_apis:
+        try:
+            if api == "PyQt5":
+                importlib.import_module("PyQt5.QtCore")
+            elif api == "PyQt6":
+                importlib.import_module("PyQt6.QtCore")
+            elif api == "PySide2":
+                importlib.import_module("PySide2.QtCore")
+            elif api == "PySide6":
+                importlib.import_module("PySide6.QtCore")
+        except (ImportError):  # noqa: S112, PERF203
+            continue
+        else:
+            os.environ["QT_API"] = api
+            print(f"QT_API auto-resolved as '{api}'.")
+            break
+
+
+def is_running_from_temp() -> bool:
+    app_path = pathlib.Path(sys.executable)
     temp_dir = tempfile.gettempdir()
     return str(app_path).startswith(temp_dir)
 
-if __name__ == "__main__":
-    if os.name == "nt":
-        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
-    os.environ["QT_DEBUG_PLUGINS"] = "1"
+def qt_cleanup():
+    """Cleanup so we can exit."""
+    from loggerplus import RobustLogger
 
-    # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-    # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
-    # os.environ["QT_SCALE_FACTOR"] = "1"
+    from toolset.utils.window import WINDOWS
+    from utility.system.process import terminate_child_processes
+
+    RobustLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
+    for window in WINDOWS:
+        window.close()
+        window.destroy()
+    WINDOWS.clear()
+    gc.collect()
+    for obj in gc.get_objects():
+        with suppress(RuntimeError):  # wrapped C/C++ object of type QThread has been deleted
+            if isinstance(obj, QThread) and obj.isRunning():
+                RobustLogger().info(f"Terminating QThread: {obj}")
+                obj.terminate()
+                obj.wait()
+    terminate_child_processes()
+
+def last_resort_cleanup():
+    """Prevents the toolset from running in the background after sys.exit is called.
+
+    This function should be registered with atexit as early as possible.
+    """
+    from loggerplus import RobustLogger
+
+    from utility.system.process import gracefully_shutdown_threads, start_shutdown_process
+
+    RobustLogger().info("Fully shutting down Holocron Toolset...")
+    gracefully_shutdown_threads()
+    RobustLogger().debug("Starting new shutdown process...")
+    start_shutdown_process()
+    RobustLogger().debug("Shutdown process started...")
+
+
+def setupPreInitSettings():
+    from qtpy.QtWidgets import QApplication
+
+    from toolset.gui.widgets.settings.application import ApplicationSettings
+
+    # Some application settings must be set before the app starts.
+    # These ones are accessible through the in-app settings window widget.
+    settings_widget = ApplicationSettings()
+    environment_variables: dict[str, str] = settings_widget.EnvironmentVariables
+    for key, value in environment_variables.items():
+        os.environ[key] = os.environ.get(key, value)  # Use os.environ.get to prioritize the existing env.
+    for attr_name, attr_value in settings_widget.REQUIRES_RESTART.items():
+        if attr_value is None:  # attr not available in this qt version.
+            continue
+        QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
+
+
+def main_init():
+    sys.excepthook = onAppCrash
+    is_main_process: bool = multiprocessing.current_process() == "MainProcess"
+    if is_main_process:
+        multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to most likely 'fork' which breaks the built-in updater.
+        atexit.register(last_resort_cleanup)  # last_resort_cleanup already handles child processes.
 
     if is_frozen():
-        from utility.logger_util import get_root_logger
-        get_root_logger().debug("App is frozen - calling multiprocessing.freeze_support()")
+        from loggerplus import RobustLogger
+
+        RobustLogger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
+        if is_main_process:
+            set_qt_api()
     else:
         fix_sys_and_cwd_path()
-    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method which breaks the updater.
+        fix_qt_env_var()
+        # DO NOT USE `faulthandler` IN THIS TOOLSET!!
+        #import faulthandler
+        # https://bugreports.qt.io/browse/PYSIDE-2359
+        #faulthandler.enable()
 
-    from utility.system.path import Path
+
+def setupPostInitSettings():
+    from qtpy.QtGui import QFont
+
+    from toolset.gui.widgets.settings.application import ApplicationSettings
+    settings_widget = ApplicationSettings()
+    toolset_qsettings: QSettings = settings_widget.settings
+    app.setFont(toolset_qsettings.value("GlobalFont", QApplication.font(), QFont))
+
+    for attr_name, attr_value in settings_widget.__dict__.items():
+        if attr_value is None:  # attr not available in this qt version.
+            continue
+        if attr_name.startswith("AA_"):
+            QApplication.setAttribute(attr_value, toolset_qsettings.value(attr_name, QApplication.testAttribute(attr_value), bool))
+
+    for name, setting in settings_widget.MISC_SETTINGS.items():
+        if toolset_qsettings.contains(name):
+            qsetting_lookup_val = toolset_qsettings.value(name, setting.getter(), setting.setting_type)
+            setting.setter(qsetting_lookup_val)
+
+
+def setupToolsetDefaultEnv():
+    from utility.misc import is_debug_mode
+
+    if os.name == "nt":
+        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation")
+    if not is_debug_mode() or is_frozen():
+        os.environ["QT_DEBUG_PLUGINS"] = os.environ.get("QT_DEBUG_PLUGINS", "0")
+        os.environ["QT_LOGGING_RULES"] = os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")  # Disable specific Qt debug output
+
+
+if __name__ == "__main__":
+    main_init()
+
+    from qtpy.QtCore import QThread
+    from qtpy.QtGui import QSurfaceFormat
+    from qtpy.QtWidgets import QApplication, QMessageBox
+
+    setupPreInitSettings()
+
+    # Set default OpenGL surface format before creating QApplication
+    # This is critical for PyPy and ensures proper OpenGL context initialization
+    fmt = QSurfaceFormat()
+    fmt.setDepthBufferSize(24)
+    fmt.setStencilBufferSize(8)
+    fmt.setVersion(3, 3)  # Request OpenGL 3.3
+    # Use CompatibilityProfile instead of CoreProfile - CoreProfile requires VAO to be bound
+    # before any buffer operations, which causes issues with PyOpenGL's lazy loading
+    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+    fmt.setSamples(4)  # Enable multisampling for antialiasing
+    QSurfaceFormat.setDefaultFormat(fmt)
 
     app = QApplication(sys.argv)
+    app.setApplicationName("HolocronToolsetV3")
+    app.setOrganizationName("PyKotor")
+    app.setOrganizationDomain("github.com/NickHugi/PyKotor")
+    app.thread().setPriority(QThread.Priority.HighestPriority)  # pyright: ignore[reportOptionalMemberAccess]
+    app.aboutToQuit.connect(qt_cleanup)
 
-    # font = app.font()
-    # font.setPixelSize(15)
-    # app.setFont(font)
-    # app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-    # app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+    setupPostInitSettings()
+    setupToolsetDefaultEnv()
 
-    app.thread().setPriority(QThread.HighestPriority)
-
-    sys.excepthook = onAppCrash
     if is_running_from_temp():
         # Show error message using PyQt5's QMessageBox
         msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Critical)
+        msgBox.setIcon(QMessageBox.Icon.Critical)
         msgBox.setWindowTitle("Error")
         msgBox.setText("This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
-        msgBox.exec_()
+        msgBox.exec_()  # pyright: ignore[reportAttributeAccessIssue]
         sys.exit("Exiting: Application was run from a temporary or zip directory.")
 
     from toolset.gui.windows.main import ToolWindow
 
-    profiler = False  # Set to False or None to disable profiler
-    if profiler:
-        profiler = cProfile.Profile()
-        profiler.enable()
-
-    window = ToolWindow()
-    window.show()
-    window.checkForUpdates(silent=True)
-    def qt_cleanup():
-        """Cleanup so we can exit."""
-        from toolset.utils.window import WINDOWS
-        from utility.logger_util import get_root_logger
-        get_root_logger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
-        for window in WINDOWS:
-            window.close()
-            window.destroy()
-        WINDOWS.clear()
-
-    def last_resort_cleanup():
-        """Prevents the toolset from running in the background after sys.exit is called..."""
-        from utility.logger_util import get_root_logger
-        from utility.system.os_helper import kill_self_pid
-        get_root_logger().info("Fully shutting down Holocron Toolset...")
-        kill_self_pid()
-
-    app.aboutToQuit.connect(qt_cleanup)
-    atexit.register(last_resort_cleanup)
-
-    # Start main app loop.
-    app.exec_()
-
-    if profiler:
-        profiler.disable()
-        profiler.dump_stats(str(Path("profiler_output.pstat")))
+    toolWindow = ToolWindow()
+    toolWindow.show()
+    toolWindow.checkForUpdates(silent=True)
+    app.exec_()  # pyright: ignore[reportAttributeAccessIssue]

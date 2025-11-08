@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff.gff_data import GFFContent
 from pykotor.resource.formats.gff.io_gff import GFFBinaryReader, GFFBinaryWriter
+from pykotor.resource.formats.gff.io_gff_json import GFFJSONReader, GFFJSONWriter
 from pykotor.resource.formats.gff.io_gff_xml import GFFXMLReader, GFFXMLWriter
 from pykotor.resource.type import ResourceType
 
@@ -39,13 +40,13 @@ def detect_gff(
         The format of the GFF data.
     """
 
-    def check(first4) -> ResourceType:
+    def check(first4: str) -> ResourceType:
         if any(x.value == first4 for x in GFFContent):
             return ResourceType.GFF
         if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
             return ResourceType.GFF_XML
-        # if "{" in first4:
-        #    return ResourceType.GFF_JSON
+        if "{" in first4:
+            return ResourceType.GFF_JSON
         # if "," in first4:
         #    return ResourceType.GFF_CSV
         return ResourceType.INVALID
@@ -74,6 +75,7 @@ def read_gff(
     source: SOURCE_TYPES,
     offset: int = 0,
     size: int | None = None,
+    file_format: ResourceType | None = None,
 ) -> GFF:  # sourcery skip: hoist-statement-from-if, reintroduce-else
     """Returns an GFF instance from the source.
 
@@ -84,6 +86,7 @@ def read_gff(
         source: The source of the data.
         offset: The byte offset of the file inside the data.
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
+        file_format: The file format to use (ResourceType.GFF or ResourceType.GFF_XML or ResourceType.GFF_JSON). If not specified, it will be detected automatically.
 
     Raises:
     ------
@@ -96,15 +99,18 @@ def read_gff(
     -------
         A GFF instance.
     """
-    file_format = detect_gff(source, offset)
+    if file_format is None:
+        file_format = detect_gff(source, offset)
 
-    if file_format == ResourceType.GFF:
+    if file_format is ResourceType.GFF:
         return GFFBinaryReader(source, offset, size or 0).load()
-    if file_format == ResourceType.GFF_XML:
+    if file_format is ResourceType.GFF_XML:
         return GFFXMLReader(source, offset, size or 0).load()
+    if file_format is ResourceType.GFF_JSON:
+        return GFFJSONReader(source, offset, size or 0).load()
 
     msg = "Failed to determine the format of the GFF file."
-    # if file_format == ResourceType.INVALID:
+    # if file_format is ResourceType.INVALID:
     raise ValueError(msg)
 
 
@@ -127,12 +133,22 @@ def write_gff(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.GFF:
+    if file_format.is_gff():
         GFFBinaryWriter(gff, target).write()
-    elif file_format == ResourceType.GFF_XML:
+    elif (
+        file_format.name.endswith("_XML")
+        and file_format.is_gff()
+        and file_format.target_type().is_gff()
+    ):
         GFFXMLWriter(gff, target).write()
+    elif (
+        file_format.name.endswith("_JSON")
+        and file_format.is_gff()
+        and file_format.target_type().is_gff()
+    ):
+        GFFJSONWriter(gff, target).write()
     else:
-        msg = "Unsupported format specified; use GFF or GFF_XML."
+        msg = "Unsupported format specified; use GFF, GFF_XML, or GFF_JSON."
         raise ValueError(msg)
 
 
@@ -159,4 +175,4 @@ def bytes_gff(
     """
     data = bytearray()
     write_gff(gff, data, file_format)
-    return data
+    return bytes(data)

@@ -7,8 +7,10 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_file, is_mod_file, is_sav_file
+from utility.common.more_collections import OrderedSet
 
 if TYPE_CHECKING:
     import os
@@ -19,7 +21,6 @@ class ERFType(Enum):
 
     ERF = "ERF "
     MOD = "MOD "
-    SAV = "SAV "
 
     @classmethod
     def from_extension(cls, ext_or_filepath: os.PathLike | str) -> ERFType:
@@ -28,12 +29,12 @@ class ERFType(Enum):
         if is_mod_file(ext_or_filepath):
             return cls.MOD
         if is_sav_file(ext_or_filepath):
-            return cls.SAV
+            return cls.MOD
         msg = f"Invalid ERF extension in filepath '{ext_or_filepath}'."
         raise ValueError(msg)
 
 
-class ERF:
+class ERF(ComparableMixin):
     """Represents the data of a ERF file.
 
     Attributes:
@@ -42,13 +43,18 @@ class ERF:
     """
 
     BINARY_TYPE = ResourceType.ERF
+    COMPARABLE_FIELDS = ("erf_type", "is_save_erf")
+    COMPARABLE_SET_FIELDS = ("_resources",)
 
     def __init__(
         self,
         erf_type: ERFType = ERFType.ERF,
+        *,
+        is_save: bool = False,
     ):
         self.erf_type: ERFType = erf_type
-        self._resources: list[ERFResource] = []
+        self._resources: OrderedSet[ERFResource] = OrderedSet()
+        self.is_save_erf: bool = is_save
 
         # used for faster lookups
         self._resource_dict: dict[ResourceIdentifier, ERFResource] = {}
@@ -135,7 +141,7 @@ class ERF:
             The bytes data of the resource or None.
         """
         resource: ERFResource | None = self._resource_dict.get(ResourceIdentifier(resname, restype))
-        return resource.data if resource is not None else None
+        return None if resource is None else resource.data
 
     def remove(
         self,
@@ -151,7 +157,7 @@ class ERF:
         """
         key = ResourceIdentifier(resname, restype)
         resource: ERFResource | None = self._resource_dict.pop(key, None)
-        if resource:  # FIXME: should raise here
+        if resource:  # FIXME(th3w1zard1): should raise here
             self._resources.remove(resource)
 
     def to_rim(
@@ -170,8 +176,18 @@ class ERF:
             rim.set_data(str(resource.resref), resource.restype, resource.data)
         return rim
 
+    def __eq__(self, other):
+        from pykotor.resource.formats.rim import RIM  # Prevent circular imports  # noqa: PLC0415
+        if not isinstance(other, (ERF, RIM)):
+            return NotImplemented
+        return set(self._resources) == set(other._resources)
 
-class ERFResource:
+    def __hash__(self):
+        return hash((self.erf_type, tuple(self._resources), self.is_save_erf))
+
+
+class ERFResource(ComparableMixin):
+    COMPARABLE_FIELDS = ("resref", "restype", "data")
     def __init__(
         self,
         resref: ResRef,
@@ -180,4 +196,25 @@ class ERFResource:
     ):
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
+        if isinstance(data, bytearray):  # FIXME(th3w1zard1): Something is passing bytearray here
+            data = bytes(data)
         self.data: bytes = data
+
+    def __eq__(
+        self,
+        other,
+    ):
+        from pykotor.resource.formats.rim import RIMResource  # Prevent circular imports  # noqa: PLC0415
+        if not isinstance(other, (ERFResource, RIMResource)):
+            return NotImplemented
+        return (
+            self.resref == other.resref
+            and self.restype == other.restype
+            and self.data == other.data
+        )
+
+    def __hash__(self):
+        return hash((self.resref, self.restype, self.data))
+
+    def identifier(self) -> ResourceIdentifier:
+        return ResourceIdentifier(str(self.resref), self.restype)

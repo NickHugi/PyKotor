@@ -3,7 +3,9 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QMessageBox
+import qtpy
+
+from qtpy.QtWidgets import QMessageBox
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
@@ -21,8 +23,7 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QObject
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -32,9 +33,7 @@ class UTDEditor(Editor):
     def __init__(
         self,
         parent: QWidget | None,
-        installation: HTInstallation | None = None,
-        *,
-        mainwindow: QWidget | QObject | None = None,
+        installation: HTInstallation = None,
     ):
         """Initialize the Door Editor.
 
@@ -57,14 +56,23 @@ class UTDEditor(Editor):
             6. Set up menus, signals and installation.
             7. Update 3D preview and call new() to initialize editor.
         """
-        supported: list[ResourceType] = [ResourceType.UTD]
-        super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainwindow)
+        supported: list[ResourceType] = [ResourceType.UTD, ResourceType.BTD]
+        super().__init__(parent, "Door Editor", "door", supported, supported, installation)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._genericdoors2DA: TwoDA = installation.htGetCache2DA("genericdoors")
         self._utd: UTD = UTD()
 
-        from toolset.uic.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -75,6 +83,7 @@ class UTDEditor(Editor):
 
         self.update3dPreview()
         self.new()
+        self.resize(654, 495)
 
     def _setupSignals(self):
         """Connect GUI buttons and signals to methods.
@@ -120,17 +129,38 @@ class UTDEditor(Editor):
         required: list[str] = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
         installation.htBatchCache2DA(required)
 
-        appearances: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
-        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        appearances: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
+        factions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+
+        self.ui.appearanceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_DOORS)
+        self.ui.factionSelect.setContext(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
 
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
 
-        self.ui.notBlastableCheckbox.setVisible(installation.tsl)
-        self.ui.difficultyModSpin.setVisible(installation.tsl)
-        self.ui.difficultySpin.setVisible(installation.tsl)
-        self.ui.difficultyLabel.setVisible(installation.tsl)
-        self.ui.difficultyModLabel.setVisible(installation.tsl)
+        self.handleWidgetWithTSL(self.ui.notBlastableCheckbox, installation)
+        self.handleWidgetWithTSL(self.ui.difficultyModSpin, installation)
+        self.handleWidgetWithTSL(self.ui.difficultySpin, installation)
+        self.handleWidgetWithTSL(self.ui.difficultyLabel, installation)
+        self.handleWidgetWithTSL(self.ui.difficultyModLabel, installation)
+
+        installation.setupFileContextMenu(self.ui.onClickEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
+
+    def handleWidgetWithTSL(self, widget: QWidget, installation: HTInstallation):
+        widget.setEnabled(installation.tsl)
+        if not installation.tsl:
+            widget.setToolTip("This widget is only available in KOTOR II.")
 
     def load(
         self,
@@ -164,7 +194,7 @@ class UTDEditor(Editor):
         self.ui.tagEdit.setText(utd.tag)
         self.ui.resrefEdit.setText(str(utd.resref))
         self.ui.appearanceSelect.setCurrentIndex(utd.appearance_id)
-        self.ui.conversationEdit.setText(str(utd.conversation))
+        self.ui.conversationEdit.setComboBoxText(str(utd.conversation))
 
         # Advanced
         self.ui.min1HpCheckbox.setChecked(utd.min1_hp)
@@ -190,17 +220,51 @@ class UTDEditor(Editor):
         self.ui.difficultyModSpin.setValue(utd.unlock_diff_mod)
 
         # Scripts
-        self.ui.onClickEdit.setText(str(utd.on_click))
-        self.ui.onClosedEdit.setText(str(utd.on_closed))
-        self.ui.onDamagedEdit.setText(str(utd.on_damaged))
-        self.ui.onDeathEdit.setText(str(utd.on_death))
-        self.ui.onOpenFailedEdit.setText(str(utd.on_open_failed))
-        self.ui.onHeartbeatEdit.setText(str(utd.on_heartbeat))
-        self.ui.onMeleeAttackEdit.setText(str(utd.on_melee))
-        self.ui.onSpellEdit.setText(str(utd.on_power))
-        self.ui.onOpenEdit.setText(str(utd.on_open))
-        self.ui.onUnlockEdit.setText(str(utd.on_unlock))
-        self.ui.onUserDefinedEdit.setText(str(utd.on_user_defined))
+        self.ui.onClickEdit.setComboBoxText(str(utd.on_click))
+        self.ui.onClosedEdit.setComboBoxText(str(utd.on_closed))
+        self.ui.onDamagedEdit.setComboBoxText(str(utd.on_damaged))
+        self.ui.onDeathEdit.setComboBoxText(str(utd.on_death))
+        self.ui.onOpenFailedEdit.setComboBoxText(str(utd.on_open_failed))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(utd.on_heartbeat))
+        self.ui.onMeleeAttackEdit.setComboBoxText(str(utd.on_melee))
+        self.ui.onSpellEdit.setComboBoxText(str(utd.on_power))
+        self.ui.onOpenEdit.setComboBoxText(str(utd.on_open))
+        self.ui.onUnlockEdit.setComboBoxText(str(utd.on_unlock))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(utd.on_user_defined))
+
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
+        )
+        self.ui.onClickEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onClosedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDamagedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onMeleeAttackEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onOpenEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onOpenFailedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onSpellEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUnlockEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.conversationEdit.populateComboBox(
+            sorted(
+                iter(
+                    {
+                        res.resname().lower()
+                        for res in self._installation.getRelevantResources(
+                            ResourceType.DLG, self._filepath
+                        )
+                    }
+                )
+            )
+        )
 
         # Comments
         self.ui.commentsEdit.setPlainText(utd.comment)
@@ -225,7 +289,7 @@ class UTDEditor(Editor):
         utd.tag = self.ui.tagEdit.text()
         utd.resref = ResRef(self.ui.resrefEdit.text())
         utd.appearance_id = self.ui.appearanceSelect.currentIndex()
-        utd.conversation = ResRef(self.ui.conversationEdit.text())
+        utd.conversation = ResRef(self.ui.conversationEdit.currentText())
 
         # Advanced
         utd.min1_hp = self.ui.min1HpCheckbox.isChecked()
@@ -251,17 +315,17 @@ class UTDEditor(Editor):
         utd.key_name = self.ui.keyEdit.text()
 
         # Scripts
-        utd.on_click = ResRef(self.ui.onClickEdit.text())
-        utd.on_closed = ResRef(self.ui.onClosedEdit.text())
-        utd.on_damaged = ResRef(self.ui.onDamagedEdit.text())
-        utd.on_death = ResRef(self.ui.onDeathEdit.text())
-        utd.on_open_failed = ResRef(self.ui.onOpenFailedEdit.text())
-        utd.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        utd.on_melee = ResRef(self.ui.onMeleeAttackEdit.text())
-        utd.on_power = ResRef(self.ui.onSpellEdit.text())
-        utd.on_open = ResRef(self.ui.onOpenEdit.text())
-        utd.on_unlock = ResRef(self.ui.onUnlockEdit.text())
-        utd.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        utd.on_click = ResRef(self.ui.onClickEdit.currentText())
+        utd.on_closed = ResRef(self.ui.onClosedEdit.currentText())
+        utd.on_damaged = ResRef(self.ui.onDamagedEdit.currentText())
+        utd.on_death = ResRef(self.ui.onDeathEdit.currentText())
+        utd.on_open_failed = ResRef(self.ui.onOpenFailedEdit.currentText())
+        utd.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
+        utd.on_melee = ResRef(self.ui.onMeleeAttackEdit.currentText())
+        utd.on_power = ResRef(self.ui.onSpellEdit.currentText())
+        utd.on_open = ResRef(self.ui.onOpenEdit.currentText())
+        utd.on_unlock = ResRef(self.ui.onUnlockEdit.currentText())
+        utd.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
 
         # Comments
         utd.comment = self.ui.commentsEdit.toPlainText()
@@ -302,18 +366,18 @@ class UTDEditor(Editor):
             3. If not found, prompts to create a new file in the override folder
             4. If found or created, opens the resource editor window.
         """
-        resname = self.ui.conversationEdit.text()
+        resname = self.ui.conversationEdit.currentText()
         data, filepath = None, None
 
         if not resname or not resname.strip():
-            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 
         search = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.Yes | QMessageBox.No).exec_()
-            if QMessageBox.Yes == msgbox:
+            msgbox = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec_()
+            if QMessageBox.StandardButton.Yes == msgbox:
                 data = bytearray()
 
                 write_gff(dismantle_dlg(DLG()), data)
@@ -346,7 +410,7 @@ class UTDEditor(Editor):
         if self.globalSettings.showPreviewUTP:
             self._update_model()
         else:
-            self.setFixedSize(374, 457)
+            self.resize(max(374, self.sizeHint().width()), max(457, self.sizeHint().height()))
 
     def _update_model(self):
         """Updates the model preview.
@@ -359,7 +423,7 @@ class UTDEditor(Editor):
             - If resources are loaded, set them on the preview renderer
             - If not loaded, clear the existing model from the preview renderer.
         """
-        self.setFixedSize(674, 457)
+        self.resize(max(674, self.sizeHint().width()), max(457, self.sizeHint().height()))
 
         data, _ = self.build()
         modelname: str = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors2DA)

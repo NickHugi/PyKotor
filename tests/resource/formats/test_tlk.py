@@ -23,30 +23,26 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.tlk import (
-    TLK,
-    TLKBinaryReader,
-    TLKEntry,
-    TLKJSONReader,
-    TLKXMLReader,
-    detect_tlk,
-    read_tlk,
-    write_tlk,
-)
+from pykotor.resource.formats.tlk import TLK, TLKBinaryReader, TLKEntry, TLKJSONReader, TLKXMLReader, bytes_tlk, detect_tlk, read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "tests/files/test.tlk"
-XML_TEST_FILE = "tests/files/test.tlk.xml"
-JSON_TEST_FILE = "tests/files/test.tlk.json"
+BASE_TLK = TLK(Language.ENGLISH)
+BASE_TLK.add("abcdef", "resref01")
+BASE_TLK.add("ghijklmnop", "resref02")
+BASE_TLK.add("qrstuvwxyz", "")
+
+BINARY_TEST_DATA = bytes_tlk(BASE_TLK, ResourceType.TLK)
+XML_TEST_DATA = bytes_tlk(BASE_TLK, ResourceType.TLK_XML).decode("utf-8")
+JSON_TEST_DATA = bytes_tlk(BASE_TLK, ResourceType.TLK_JSON).decode("utf-8")
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.tlk"
-CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.tlk.xml"
-CORRUPT_JSON_TEST_FILE = "tests/files/test_corrupted.tlk.json"
+CORRUPT_BINARY_TEST_DATA = b"BAD"
+CORRUPT_XML_TEST_DATA = "<bad>"
+CORRUPT_JSON_TEST_DATA = "{"
 
 
 class TestTLK(unittest.TestCase):
     def test_resize(self):
-        tlk: TLK = TLKBinaryReader(BINARY_TEST_FILE).load()
+        tlk: TLK = TLKBinaryReader(BINARY_TEST_DATA).load()
         self.assertEqual(len(tlk), 3)
         tlk.resize(4)
         self.assertEqual(len(tlk), 4)
@@ -58,9 +54,9 @@ class TestTLK(unittest.TestCase):
         self.assertIsNone(tlk.get(1))
 
     def test_binary_io(self):
-        self.assertEqual(detect_tlk(BINARY_TEST_FILE), ResourceType.TLK)
+        self.assertEqual(detect_tlk(BINARY_TEST_DATA), ResourceType.TLK)
 
-        tlk: TLK = TLKBinaryReader(BINARY_TEST_FILE).load()
+        tlk: TLK = TLKBinaryReader(BINARY_TEST_DATA).load()
         self.validate_io(tlk)
 
         data = bytearray()
@@ -69,9 +65,9 @@ class TestTLK(unittest.TestCase):
         self.validate_io(tlk)
 
     def test_xml_io(self):
-        self.assertEqual(detect_tlk(XML_TEST_FILE), ResourceType.TLK_XML)
+        self.assertEqual(detect_tlk(XML_TEST_DATA.encode("utf-8")), ResourceType.TLK_XML)
 
-        tlk: TLK = TLKXMLReader(XML_TEST_FILE).load()
+        tlk: TLK = TLKXMLReader(XML_TEST_DATA.encode("utf-8")).load()
         self.validate_io(tlk)
 
         data = bytearray()
@@ -80,9 +76,9 @@ class TestTLK(unittest.TestCase):
         self.validate_io(tlk)
 
     def test_json_io(self):
-        self.assertEqual(detect_tlk(JSON_TEST_FILE), ResourceType.TLK_JSON)
+        self.assertEqual(detect_tlk(JSON_TEST_DATA.encode("utf-8")), ResourceType.TLK_JSON)
 
-        tlk: TLK = TLKJSONReader(JSON_TEST_FILE).load()
+        tlk: TLK = TLKJSONReader(JSON_TEST_DATA.encode("utf-8")).load()
         self.validate_io(tlk)
 
         data = bytearray()
@@ -103,9 +99,9 @@ class TestTLK(unittest.TestCase):
         else:
             self.assertRaises(IsADirectoryError, read_tlk, ".")
         self.assertRaises(FileNotFoundError, read_tlk, DOES_NOT_EXIST_FILE)
-        self.assertRaises(ValueError, read_tlk, CORRUPT_BINARY_TEST_FILE)
-        self.assertRaises(ValueError, read_tlk, CORRUPT_XML_TEST_FILE)
-        self.assertRaises(ValueError, read_tlk, CORRUPT_JSON_TEST_FILE)
+        self.assertRaises(ValueError, read_tlk, CORRUPT_BINARY_TEST_DATA)
+        self.assertRaises(ValueError, read_tlk, CORRUPT_XML_TEST_DATA)
+        self.assertRaises(ValueError, read_tlk, CORRUPT_JSON_TEST_DATA)
 
     def test_write_raises(self):
         if os.name == "nt":

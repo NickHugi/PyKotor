@@ -1,6 +1,17 @@
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=42,<70",
     "wheel",
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.pyright]
+include = ["src"]
+extraPaths = [
+    "../../Libraries/PyKotor/src",
+    "../../Libraries/Utility/src"
+]
+pythonVersion = "3.8"
+typeCheckingMode = "basic"
+reportMissingImports = "warning"
+reportMissingTypeStubs = false

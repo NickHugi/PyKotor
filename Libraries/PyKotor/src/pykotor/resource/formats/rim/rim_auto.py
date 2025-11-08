@@ -58,7 +58,7 @@ def write_rim(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.RIM:
+    if file_format is ResourceType.RIM:
         RIMBinaryWriter(rim, target).write()
     else:
         msg = "Unsupported format specified; use RIM."

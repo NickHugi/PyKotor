@@ -1,29 +1,42 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QDialog
+import qtpy
 
-from pykotor.common.language import Gender, Language
+from qtpy import QtCore
+from qtpy.QtWidgets import QDialog
+
+from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
-    from pykotor.common.language import LocalizedString
     from toolset.data.installation import HTInstallation
 
 
 class LocalizedStringDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, locstring: LocalizedString):
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
 
-        from toolset.uic.dialogs.locstring import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.locstring import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.locstring import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.locstring import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.locstring import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        self.ui.stringrefNoneButton.setToolTip("Override the TLK with a custom entry.")
+        self.ui.stringrefNewButton.setToolTip("Create a new entry in the TLK.")
         self.setWindowTitle(f"{installation.talktable().language().name.title()} - {installation.name} - Localized String Editor")
 
         self.ui.stringrefSpin.valueChanged.connect(self.stringrefChanged)
@@ -35,7 +48,7 @@ class LocalizedStringDialog(QDialog):
         self.ui.stringEdit.textChanged.connect(self.stringEdited)
 
         self._installation = installation
-        self.locstring = deepcopy(locstring)
+        self.locstring = LocalizedString.from_dict(locstring.to_dict())  # Deepcopy the object, we don't trust the `deepcopy` function though.
         self.ui.stringrefSpin.setValue(locstring.stringref)
 
     def accept(self):
@@ -44,7 +57,7 @@ class LocalizedStringDialog(QDialog):
             tlk = read_tlk(tlk_path)
             if len(tlk) <= self.locstring.stringref:
                 tlk.resize(self.locstring.stringref + 1)
-            tlk.get(self.locstring.stringref).text = self.ui.stringEdit.toPlainText()
+            tlk[self.locstring.stringref].text = self.ui.stringEdit.toPlainText()
             write_tlk(tlk, tlk_path)
         super().accept()
 

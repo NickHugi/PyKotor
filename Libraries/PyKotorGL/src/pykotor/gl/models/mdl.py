@@ -7,7 +7,6 @@ import struct
 from copy import copy
 from typing import TYPE_CHECKING
 
-import glm
 import numpy as np
 
 from OpenGL.GL import glGenBuffers, glGenVertexArrays, glVertexAttribPointer
@@ -20,9 +19,9 @@ from OpenGL.raw.GL.VERSION.GL_1_3 import GL_TEXTURE0, GL_TEXTURE1, glActiveTextu
 from OpenGL.raw.GL.VERSION.GL_1_5 import GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, glBindBuffer, glBufferData
 from OpenGL.raw.GL.VERSION.GL_2_0 import glEnableVertexAttribArray
 from OpenGL.raw.GL.VERSION.GL_3_0 import glBindVertexArray
-from glm import mat4, quat, vec3, vec4
 
 from pykotor.common.geometry import Vector3
+from pykotor.gl import glm, mat4, quat, vec3, vec4
 
 if TYPE_CHECKING:
     from _testbuffer import ndarray
@@ -36,7 +35,13 @@ class Model:
         self._scene: Scene = scene
         self.root: Node = root
 
-    def draw(self, shader: Shader, transform: mat4, *, override_texture: str | None = None):
+    def draw(
+        self,
+        shader: Shader,
+        transform: mat4,
+        *,
+        override_texture: str | None = None,
+    ):
         self.root.draw(shader, transform, override_texture)
 
     def find(self, name: str) -> Node | None:
@@ -88,7 +93,13 @@ class Model:
 
         return min_point, max_point
 
-    def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3):
+    def _box_rec(
+        self,
+        node: Node,
+        transform: mat4,
+        min_point: vec3,
+        max_point: vec3,
+    ):
         """Calculates bounding box of node and its children recursively.
 
         Call the 'box' function to get started here, don't call this directly.
@@ -107,8 +118,8 @@ class Model:
             - Transform vertices and update bounding box points
             - Recursively call function for each child node.
         """
-        transform = transform * glm.translate(node._position)
-        transform = transform * glm.mat4_cast(node._rotation)
+        transform = transform * glm.translate(node._position)  # noqa: SLF001
+        transform = transform * glm.mat4_cast(node._rotation)  # noqa: SLF001
 
         if node.mesh and node.render:
             vertex_count = len(node.mesh.vertex_data) // node.mesh.mdx_size
@@ -129,7 +140,12 @@ class Model:
 
 
 class Node:
-    def __init__(self, scene: Scene, parent: Node | None, name: str):
+    def __init__(
+        self,
+        scene: Scene,
+        parent: Node | None,
+        name: str,
+    ):
         self._scene: Scene = scene
         self._parent: Node | None = parent
         self.name: str = name
@@ -145,7 +161,7 @@ class Node:
     def root(self) -> Node | None:
         ancestor: Node | None = self._parent
         while ancestor:
-            ancestor = ancestor._parent
+            ancestor = ancestor._parent  # noqa: SLF001
         return ancestor
 
     def ancestors(self) -> list[Node]:
@@ -153,15 +169,15 @@ class Node:
         ancestor: Node | None = self._parent
         while ancestor:
             ancestors.append(ancestor)
-            ancestor = ancestor._parent
+            ancestor = ancestor._parent  # noqa: SLF001
         return list(reversed(ancestors))
 
     def global_position(self) -> vec3:  # sourcery skip: class-extract-method
         ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = transform * glm.translate(ancestor._position)
-            transform = transform * glm.mat4_cast(ancestor._rotation)
+            transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
+            transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         position = vec3()
         glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())
         return position
@@ -170,8 +186,8 @@ class Node:
         ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = transform * glm.translate(ancestor._position)
-            transform = transform * glm.mat4_cast(ancestor._rotation)
+            transform = transform * glm.translate(ancestor._position)  # noqa: SLF001
+            transform = transform * glm.mat4_cast(ancestor._rotation)  # noqa: SLF001
         rotation = quat()
         glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())
         return rotation
@@ -200,11 +216,21 @@ class Node:
     def rotation(self) -> quat:
         return copy(self._rotation)
 
-    def set_rotation(self, pitch: float, yaw: float, roll: float):
+    def set_rotation(
+        self,
+        pitch: float,
+        yaw: float,
+        roll: float,
+    ):
         self._rotation = quat(vec3(pitch, yaw, roll))
         self._recalc_transform()
 
-    def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
+    def draw(
+        self,
+        shader: Shader,
+        transform: mat4,
+        override_texture: str | None = None,
+    ):
         transform = transform * self._transform
 
         if self.mesh and self.render:
@@ -215,7 +241,21 @@ class Node:
 
 
 class Mesh:
-    def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags, vertex_offset, normal_offset, texture_offset, lightmap_offset):
+    def __init__(
+        self,
+        scene: Scene,
+        node: Node,
+        texture: str,
+        lightmap: str,
+        vertex_data: bytearray,
+        element_data: bytearray,
+        block_size: int,
+        data_bitflags: int,
+        vertex_offset: int,
+        normal_offset: int,
+        texture_offset: int,
+        lightmap_offset: int,
+    ):
         """Initializes a Mesh object.
 
         Args:
@@ -224,8 +264,8 @@ class Mesh:
             node: Node - The node object
             texture: str - The texture path
             lightmap: str - The lightmap path
-            vertex_data: list - The vertex data
-            element_data: list - The element data
+            vertex_data: bytearray - The vertex data
+            element_data: bytearray - The element data
             block_size: int - The block size
             data_bitflags: int - The data bitflags
             vertex_offset: int - The vertex offset
@@ -294,10 +334,10 @@ class Mesh:
         shader.set_matrix4("model", transform)
 
         glActiveTexture(GL_TEXTURE0)
-        self._scene.texture(override_texture or self.texture).use()
+        self._scene.loadTexture(override_texture or self.texture).use()
 
         glActiveTexture(GL_TEXTURE1)
-        self._scene.texture(self.lightmap).use()
+        self._scene.loadTexture(self.lightmap, lightmap=True).use()
 
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
@@ -377,7 +417,11 @@ class Cube:
 
 
 class Boundary:
-    def __init__(self, scene: Scene, vertices: list[Vector3]):
+    def __init__(
+        self,
+        scene: Scene,
+        vertices: list[Vector3],
+    ):
         """Initializes a mesh from vertices.
 
         Args:
@@ -416,7 +460,12 @@ class Boundary:
         glBindVertexArray(0)
 
     @classmethod
-    def from_circle(cls, scene: Scene, radius: float, smoothness: int = 10) -> Boundary:
+    def from_circle(
+        cls,
+        scene: Scene,
+        radius: float,
+        smoothness: int = 10,
+    ) -> Boundary:
         """Generates a circular boundary from a circle.
 
         Args:

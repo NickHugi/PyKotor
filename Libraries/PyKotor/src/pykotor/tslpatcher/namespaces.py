@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from utility.system.path import PurePath
+from pathlib import PurePath
 
 
 class PatcherNamespace:

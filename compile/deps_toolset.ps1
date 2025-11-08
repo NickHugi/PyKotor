@@ -1,3 +1,6 @@
+#!/usr/bin/env pwsh
+
+[CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
   [string]$venv_name = ".venv"
@@ -55,12 +58,13 @@ if (-not $qtApi) {
 
 # Define the Qt version and modules to install based on $qtApi
 $qtVersion = switch ($qtApi) {
-    "pyqt5" { "5.15.2" } # Last LTS version of Qt5
-    "pyside2" { "5.15.2" } # Last LTS version of Qt5
-    "pyqt6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
-    "pyside6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
+    "PyQt5" { "5.15.2" } # Last LTS version of Qt5
+    "PySide2" { "5.15.2" } # Last LTS version of Qt5
+    "PyQt6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
+    "PySide6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
     default { "5.15.2" }
 }
+Write-Host "Using $qtApi Version $qtVersion"
 
 if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
@@ -76,13 +80,13 @@ if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
     switch ($qtApi) {
-        "pyqt5"   { & bash -c "brew install qt@5 --overwrite --force" }
-        "pyqt6"   { & bash -c "brew install qt@6 --overwrite --force" }
-        "pyside2" { & bash -c "brew install qt@5 --overwrite --force" }  # PySide2 typically uses Qt5
-        "pyside6" { & bash -c "brew install qt@6 --overwrite --force" }
+        "PyQt5"   { & bash -c "brew install qt@5 --overwrite --force" }
+        "PyQt6"   { & bash -c "brew install qt@6 --overwrite --force" }
+        "PySide2" { & bash -c "brew install qt@5 --overwrite --force" }  # PySide2 typically uses Qt5
+        "PySide6" { & bash -c "brew install qt@6 --overwrite --force" }
         default   { & bash -c "brew install qt@5 --overwrite --force" }
     }
-    . $pythonExePath -m pip install $qtApi qtpy -U --prefer-binary
+    & $pythonExePath -m pip install $qtApi qtpy -U --prefer-binary
 
 } elseif ((Get-OS) -eq "Windows") {
     # Determine system architecture
@@ -183,7 +187,7 @@ if ((Get-OS) -eq "Mac") {
 
 
 if ($useAqtInstall -eq $true) {  # Windows seems to always have qt5/6?
-    . $pythonExePath -m pip install --upgrade aqtinstall --prefer-binary --progress-bar on
+    & $pythonExePath -m pip install --upgrade aqtinstall --prefer-binary --progress-bar on
     # Combine the new path with the current PATH
     $origUserPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
     if (-not $origUserPath -contains $qtInstallPath) {
@@ -198,8 +202,8 @@ if ($useAqtInstall -eq $true) {  # Windows seems to always have qt5/6?
     }
 
     # Execute the aqtinstall command directly with arguments
-    Write-Output "Executing $pythonExePath -m aqt install-qt $qtOs desktop $qtVersion $qtArch -m qtwebglplugin qtquick3d qtdatavis3d qt5compat --outputdir=$qtInstallPath"
-    . $pythonExePath -m aqt install-qt $qtOs desktop $qtVersion $qtArch -m qtwebglplugin qtquick3d qtdatavis3d --outputdir=$qtInstallPath 2>&1 | Out-String | Write-Output
+    Write-Output "Executing & $pythonExePath -m aqt install-qt $qtOs desktop $qtVersion $qtArch -m qtwebglplugin qtquick3d qtdatavis3d qt5compat --outputdir=$qtInstallPath"
+    & $pythonExePath -m aqt install-qt $qtOs desktop $qtVersion $qtArch -m qtwebglplugin qtquick3d qtdatavis3d --outputdir=$qtInstallPath 2>&1 | Out-String | Write-Output
     if ($LastExitCode -ne 0) {
         Write-Output "Qt installation failed with exit code $LastExitCode"
     }
@@ -207,26 +211,27 @@ if ($useAqtInstall -eq $true) {  # Windows seems to always have qt5/6?
 
 
 Write-Host "Installing pip packages to run the holocron toolset..."
-. $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
+& $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 switch ($qtApi) {
-    "pyqt5" {
-       # . $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
+    "PyQt5" {
+       # & $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
     }
-    "pyqt6" {
-        . $pythonExePath -m pip install -U PyQt6 --prefer-binary --progress-bar on
+    "PyQt6" {
+        & $pythonExePath -m pip install -U PyQt6 --prefer-binary --progress-bar on
     }
-    "pyside2" {
-        . $pythonExePath -m pip install -U PySide2 --prefer-binary --progress-bar on
+    "PySide2" {
+        & $pythonExePath -m pip install -U PySide2 --prefer-binary --progress-bar on
     }
-    "pyside6" {
-        . $pythonExePath -m pip install -U PySide6 --prefer-binary --progress-bar on
+    "PySide6" {
+        & $pythonExePath -m pip install -U PySide6 --prefer-binary --progress-bar on
     }
     default {
-        #. $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
+        #& $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
     }
 }
-. $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HolocronToolset" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorGL" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
-#. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorGL" + $pathSep + "optional.txt") --prefer-binary --compile --progress-bar on
+& $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HolocronToolset" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "recommended.txt") --prefer-binary --compile --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorGL" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
+#& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorGL" + $pathSep + "recommended.txt") --prefer-binary --compile --progress-bar on

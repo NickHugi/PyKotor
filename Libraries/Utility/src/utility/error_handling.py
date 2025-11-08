@@ -6,9 +6,11 @@ import sys
 import traceback
 import types
 
+from contextlib import suppress
 from contextvars import ContextVar
+from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, TypeVar, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -51,11 +53,11 @@ def universal_simplify_exception(
 
     # Handle PermissionError, which may have a 'filename' attribute
     if isinstance(e, PermissionError):
-        return error_name, f"Permission Denied: {e.filename if hasattr(e, 'filename') else e.args[0]}"
+        return error_name, f"Permission Denied: {e.filename if hasattr(e, 'filename') else e.args[0] if e.args else ''}"
 
     # Handle TimeoutError
     if isinstance(e, TimeoutError):
-        return error_name, f"Operation timed out: {e.args[0]}"
+        return error_name, f"Operation timed out: {e.args[0] if e.args else ''}"
 
     # Handle InterruptedError, which may have an 'errno' attribute
     if isinstance(e, InterruptedError):
@@ -86,9 +88,9 @@ def universal_simplify_exception(
 
 
 # Get default module attributes to filter out built-ins
-default_attrs: set[str] = set(dir(sys.modules["builtins"]))
+DEFAULT_ATTRS: set[str] = set(dir(sys.modules["builtins"]))
 
-ignore_attrs: set[str] = {
+IGNORE_ATTRS: set[str] = {
     "__file__",
     "__cached__",
     "__builtins__",
@@ -106,7 +108,7 @@ def is_builtin_class_instance(obj: Any) -> bool:
     return obj.__class__.__module__ in ("builtins", "__builtin__")
 
 
-_currently_processing: ContextVar[list] = ContextVar("_currently_processing", default=[])
+_CURRENTLY_PROCESSING: ContextVar[list] = ContextVar("_currently_processing", default=[])
 
 
 def safe_repr(
@@ -115,9 +117,11 @@ def safe_repr(
     indent_level: int = 0,
     max_depth: int = 3,
     _depth: int = 0,
+    *,
+    ignore_builtins: bool = True,
 ) -> str:
     """Safely generate a repr string for objects without a custom __repr__, with line wrapping and indentation."""
-    if is_builtin_class_instance(obj):
+    if ignore_builtins and is_builtin_class_instance(obj):
         try:
             obj_repr = repr(obj)
             # Truncate if necessary
@@ -130,7 +134,7 @@ def safe_repr(
     indent: str = "    "  # Define the indentation unit (4 spaces).
 
     # Retrieve the stack of objects currently being processed
-    current_stack = _currently_processing.get()
+    current_stack = _CURRENTLY_PROCESSING.get()
     obj_id = id(obj)
 
     # Check for recursion - if this object is already in the stack
@@ -157,7 +161,7 @@ def safe_repr(
         next_indent = indent * (indent_level + 1)
         representation: str = f"{obj.__class__.__name__}(\n{next_indent}"
         current_stack.append({"id": obj_id, "indent_level": indent_level, "representation": representation})
-        _currently_processing.set(current_stack)
+        _CURRENTLY_PROCESSING.set(current_stack)
 
         if hasattr(obj, "__class__") and obj.__class__.__repr__ is not object.__repr__:
             # Call the object's __repr__ with _is_safe_repr_call set to True
@@ -169,7 +173,7 @@ def safe_repr(
             return representation
 
         attrs: list[str] = []
-        for attr_name in dir(obj):
+        for attr_name in cast("Dict[str, Any]", vars(obj)):
             attr_value = getattr(obj, attr_name)
             if not attr_name.startswith("__") and not callable(attr_value):
                 try:
@@ -191,7 +195,7 @@ def safe_repr(
     finally:
         # Always remove the object from the stack to avoid leaks
         current_stack.pop()
-        _currently_processing.set(current_stack)
+        _CURRENTLY_PROCESSING.set(current_stack)
 
 
 def format_var_str(
@@ -200,7 +204,7 @@ def format_var_str(
     max_length: int = 512,
 ) -> str | None:
     """Format variable and its value into a string, handling exceptions and length."""
-    if var in default_attrs or var in ignore_attrs:
+    if var in DEFAULT_ATTRS or var in IGNORE_ATTRS:
         return None
 
     val_repr: str | object
@@ -252,48 +256,58 @@ def format_frame_info(
             detailed_message.append(formatted_var)
     return detailed_message
 
-
+@lru_cache(maxsize=128)
 def format_exception_with_variables(
-    value: BaseException,
+    exc: BaseException,
     etype: type[BaseException] | None = None,
     tb: types.TracebackType | None = None,
     message: str = "",
 ) -> str:
-    etype = etype if etype is not None else value.__class__
-    tb = tb if tb is not None else value.__traceback__
+    etype = type(exc) if etype is None else etype
+    tb = exc.__traceback__ if tb is None else tb
 
     # Check if the arguments are of the correct type
     if not issubclass(etype, BaseException):
         msg = f"{etype!r} is not an exception class"
         raise TypeError(msg)
-    if not isinstance(value, BaseException):
-        msg = f"{value!r} is not an exception instance"
+    if not isinstance(exc, BaseException):
+        msg = f"{exc!r} is not an exception instance"
         raise TypeError(msg)
     if not isinstance(tb, types.TracebackType):
-        try:
-            raise value  # noqa: TRY301
-        except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
-            tb = e.__traceback__  # Now we have the traceback object
-        if tb is None:
-            msg = f"Could not determine traceback from {value}"
-            raise RuntimeError(msg)
+        with suppress(Exception):
+            # Get the current stack frames
+            current_stack = inspect.stack()
+            if current_stack:
+                # Reverse the stack to have the order from caller to callee
+                current_stack = current_stack[1:][::-1]
+                fake_traceback = None
+                for frame_info in current_stack:
+                    frame = frame_info.frame
+                    fake_traceback = types.TracebackType(fake_traceback, frame, frame.f_lasti, frame.f_lineno)
+                exc = exc.with_traceback(fake_traceback)
+                # Now exc has a traceback :)
+                tb = exc.__traceback__
 
     # Construct the stack trace using traceback
-    formatted_traceback: str = "".join(traceback.format_exception(etype, value, tb))
-
-    # Capture the current stack trace
-    frames: list[inspect.FrameInfo] = inspect.getinnerframes(tb, context=5)
+    formatted_traceback: str = "".join(traceback.format_exception(etype, exc, tb))
 
     # Construct a detailed message with variables from all stack frames
     detailed_message: list[str] = [
-        f"{message} Exception '{value}' of type '{etype}' occurred.",
+        formatted_traceback,
+        f"{etype.__name__}: {exc}",
         "Stack Trace Variables:",
     ]
+    if tb is None:
+        detailed_message.append("<No stack information available>")
+        return "\n".join(detailed_message)
+
+    # Capture the current stack trace
+    frames: list[inspect.FrameInfo] = inspect.getinnerframes(tb, context=5)
     for frame_info in frames:
         detailed_message.extend(format_frame_info(frame_info))
-    if value.__cause__ is not None:
+    if exc.__cause__ is not None:
         detailed_message.append("This is the original exception:")
-        detailed_message.extend(format_exception_with_variables(value.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
+        detailed_message.extend(format_exception_with_variables(exc.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
 
     detailed_message.append(formatted_traceback)
     return "\n".join(detailed_message)
@@ -322,7 +336,7 @@ def enforce_instance_cast(
 
 
 def assert_with_variable_trace(
-    condition: bool,
+    condition: bool,  # noqa: FBT001
     message: str = "Assertion Failed",
 ):
     if condition:
@@ -362,9 +376,9 @@ unique_sentinel = object()
 
 def with_variable_trace(
     exception_types: type[Exception] | tuple[type[Exception], ...] = Exception,
-    return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]
+    return_type: type[RT] = unique_sentinel,  # pyright: ignore[reportGeneralTypeIssues, assignment]  # type: ignore[assignment]
     *,
-    action="print",
+    action: Literal["print", "stderr"] = "print",
     log: bool = True,
     rethrow: bool = False,
 ) -> Callable[[Callable[..., RT]], Callable[..., RT | None]]:
@@ -404,7 +418,7 @@ def with_variable_trace(
                 elif action == "print":
                     print(full_message)  # noqa: T201
                 if log:
-                    with Path("errorlog.txt", encoding="utf-8").open("a") as outfile:
+                    with Path("errorlog.txt", encoding="utf-8").open("a", encoding="utf-8") as outfile:
                         outfile.write(full_message)
                 if rethrow:
                     # Raise an exception with the detailed message

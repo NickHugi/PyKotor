@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import TYPE_CHECKING, Any, Generator
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 # BCP 47 language code
@@ -131,8 +135,8 @@ class Language(IntEnum):
     CHINESE_SIMPLIFIED = 130
     JAPANESE = 131
 
-    @staticmethod
-    def _missing_(value) -> IntEnum:
+    @classmethod
+    def _missing_(cls, value: Any) -> Language:
         if not isinstance(value, int):
             return NotImplemented
 
@@ -413,6 +417,17 @@ class Gender(IntEnum):
     FEMALE = 1
 
 
+class IntKeyDict(dict):
+    """This purely exists because something is setting the data with string key numbers incorrectly. This is a HACK:."""
+    def __setitem__(self, key, value):
+        if not isinstance(key, int):
+            try:
+                key = int(key)
+            except ValueError as e:
+                raise ValueError("Keys of the _substrings dictionary must be integers") from e
+        super().__setitem__(key, value)
+
+
 class LocalizedString:
     """Localized strings are a way of the game handling strings that need to be catered to a specific language or gender.
 
@@ -424,11 +439,27 @@ class LocalizedString:
         stringref: An index into the 'dialog.tlk' file. If this value is -1 the game will use the stored substrings.
     """
 
-    def __init__(self, stringref: int):
+    def __init__(self, stringref: int, substrings: dict[int, str] | None = None):
         self.stringref: int = stringref
-        self._substrings: dict[int, str] = {}
+        self._substrings_internal: IntKeyDict = IntKeyDict() if substrings is None else IntKeyDict(substrings)
 
-    def __iter__(self):
+    @property
+    def _substrings(self) -> dict[int, str]:
+        """Property getter for the _substrings_internal dictionary."""
+        return self._substrings_internal
+
+    @_substrings.setter
+    def _substrings(self, value: dict[int, str]):
+        """Property setter for the _substrings_internal dictionary, ensuring keys are integers."""
+        if value is not None:
+            new_dict = IntKeyDict()
+            for key, val in value.items():
+                new_dict[key] = val
+            self._substrings_internal = new_dict
+        else:
+            self._substrings_internal = IntKeyDict()
+
+    def __iter__(self) -> Generator[tuple[Language, Gender, str], Any, None]:
         """Iterates through the list of substrings. Yields a tuple containing (language, gender, text)."""
         for substring_id, text in self._substrings.items():
             language, gender = LocalizedString.substring_pair(substring_id)
@@ -456,19 +487,33 @@ class LocalizedString:
             return text
         return "-1"
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other) -> bool:  # noqa: ANN001
+        if self is other:
+            return True
         if not isinstance(other, LocalizedString):
-            return False
+            return NotImplemented
         if other.stringref != self.stringref:
             return False
         return other._substrings == self._substrings
 
+    def to_dict(self) -> dict:
+        return {
+            "stringref": self.stringref,
+            "substrings": self._substrings
+        }
+
     @classmethod
-    def from_invalid(cls):
+    def from_dict(cls, data: dict) -> Self:
+        localized_string = cls(data["stringref"])
+        localized_string._substrings = data.get("substrings", {})
+        return localized_string
+
+    @classmethod
+    def from_invalid(cls) -> Self:
         return cls(-1)
 
     @classmethod
-    def from_english(cls, text: str):
+    def from_english(cls, text: str) -> Self:
         """Returns a new localizedstring object with a english substring.
 
         Args:
@@ -479,7 +524,7 @@ class LocalizedString:
         -------
             a new localizedstring object.
         """
-        locstring = cls(-1)
+        locstring: Self = cls(-1)
         locstring.set_data(Language.ENGLISH, Gender.MALE, text)
         return locstring
 
@@ -499,7 +544,7 @@ class LocalizedString:
         return (language * 2) + gender
 
     @staticmethod
-    def substring_pair(substring_id: int) -> tuple[Language, Gender]:
+    def substring_pair(substring_id: int | str) -> tuple[Language, Gender]:
         """Returns a tuple containing the Language and Gender for a given substring ID.
 
         Args:
@@ -516,6 +561,8 @@ class LocalizedString:
             - Take the remainder of substring_id % 2 to get the Gender id
             - Return a tuple with the Language and Gender enum instances.
         """
+        if not isinstance(substring_id, int):
+            substring_id = int(substring_id)
         language = Language(substring_id // 2)
         gender = Gender(substring_id % 2)
         return language, gender
@@ -543,6 +590,8 @@ class LocalizedString:
         self,
         language: Language,
         gender: Gender,
+        *,
+        use_fallback: bool = False,
     ) -> str | None:
         """Gets the substring text with the corresponding language/gender pair.
 
@@ -556,7 +605,7 @@ class LocalizedString:
             The text of the substring if a matching pair is found, otherwise returns None.
         """
         substring_id: int = LocalizedString.substring_id(language, gender)
-        return self._substrings.get(substring_id, None)
+        return self._substrings.get(substring_id, next(iter(self._substrings.values()), None) if use_fallback else None)
 
     def remove(
         self,

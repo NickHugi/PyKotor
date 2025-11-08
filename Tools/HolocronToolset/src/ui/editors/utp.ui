@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>674</width>
-    <height>457</height>
+    <height>499</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -40,7 +40,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_9">
        <attribute name="title">
@@ -146,7 +146,14 @@
              <item row="1" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_16">
                <item>
-                <widget class="QLineEdit" name="tagEdit"/>
+                <widget class="QLineEdit" name="tagEdit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
                </item>
                <item>
                 <widget class="QPushButton" name="tagGenerateButton">
@@ -167,6 +174,12 @@
               <layout class="QHBoxLayout" name="horizontalLayout_17">
                <item>
                 <widget class="QLineEdit" name="resrefEdit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="maxLength">
                   <number>16</number>
                  </property>
@@ -190,7 +203,14 @@
              <item row="3" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_18">
                <item>
-                <widget class="ComboBox2DA" name="appearanceSelect"/>
+                <widget class="ComboBox2DA" name="appearanceSelect">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
                </item>
                <item>
                 <spacer name="horizontalSpacer_11">
@@ -220,14 +240,23 @@
              <item row="4" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_5">
                <item>
-                <widget class="QLineEdit" name="conversationEdit">
-                 <property name="maxLength">
-                  <number>16</number>
+                <widget class="FilterComboBox" name="conversationEdit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QPushButton" name="conversationModifyButton">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>1</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="maximumSize">
                   <size>
                    <width>26</width>
@@ -341,9 +370,18 @@
          </widget>
         </item>
         <item>
-         <widget class="QGroupBox" name="groupBox_4">
-          <property name="title">
-           <string>Stats</string>
+         <widget class="QFrame" name="frame_4">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>222</height>
+           </size>
           </property>
           <layout class="QFormLayout" name="formLayout_3">
            <item row="0" column="0">
@@ -355,6 +393,18 @@
            </item>
            <item row="0" column="1">
             <widget class="QSpinBox" name="currenHpSpin">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
              <property name="minimum">
               <number>-2147483648</number>
              </property>
@@ -370,6 +420,28 @@
              </property>
             </widget>
            </item>
+           <item row="1" column="1">
+            <widget class="QSpinBox" name="maxHpSpin">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>-2147483648</number>
+             </property>
+             <property name="maximum">
+              <number>2147483647</number>
+             </property>
+            </widget>
+           </item>
            <item row="2" column="0">
             <widget class="QLabel" name="label_20">
              <property name="text">
@@ -379,6 +451,18 @@
            </item>
            <item row="2" column="1">
             <widget class="QSpinBox" name="hardnessSpin">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
              <property name="minimum">
               <number>-2147483648</number>
              </property>
@@ -396,6 +480,18 @@
            </item>
            <item row="3" column="1">
             <widget class="QSpinBox" name="fortitudeSpin">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
              <property name="minimum">
               <number>-2147483648</number>
              </property>
@@ -413,6 +509,18 @@
            </item>
            <item row="4" column="1">
             <widget class="QSpinBox" name="reflexSpin">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
              <property name="minimum">
               <number>-2147483648</number>
              </property>
@@ -430,16 +538,18 @@
            </item>
            <item row="5" column="1">
             <widget class="QSpinBox" name="willSpin">
-             <property name="minimum">
-              <number>-2147483648</number>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
-             <property name="maximum">
-              <number>2147483647</number>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
              </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QSpinBox" name="maxHpSpin">
              <property name="minimum">
               <number>-2147483648</number>
              </property>
@@ -611,11 +721,7 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLineEdit" name="onClosedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onClosedEdit"/>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_7">
@@ -709,99 +815,47 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLineEdit" name="onDamagedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onDamagedEdit"/>
         </item>
         <item row="2" column="1">
-         <widget class="QLineEdit" name="onDeathEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onDeathEdit"/>
         </item>
         <item row="3" column="1">
-         <widget class="QLineEdit" name="onEndConversationEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onEndConversationEdit"/>
         </item>
         <item row="4" column="1">
-         <widget class="QLineEdit" name="onOpenFailedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onOpenFailedEdit"/>
         </item>
         <item row="5" column="1">
-         <widget class="QLineEdit" name="onHeartbeatEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onHeartbeatSelect"/>
         </item>
         <item row="6" column="1">
-         <widget class="QLineEdit" name="onInventoryEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onInventoryEdit"/>
         </item>
         <item row="7" column="1">
-         <widget class="QLineEdit" name="onMeleeAttackEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onMeleeAttackEdit"/>
         </item>
         <item row="8" column="1">
-         <widget class="QLineEdit" name="onSpellEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onSpellEdit"/>
         </item>
         <item row="9" column="1">
-         <widget class="QLineEdit" name="onOpenEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onOpenEdit"/>
         </item>
         <item row="10" column="1">
-         <widget class="QLineEdit" name="onLockEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onLockEdit"/>
         </item>
         <item row="11" column="1">
-         <widget class="QLineEdit" name="onUnlockEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onUnlockEdit"/>
         </item>
         <item row="12" column="1">
-         <widget class="QLineEdit" name="onUsedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onUsedEdit"/>
         </item>
         <item row="13" column="1">
-         <widget class="QLineEdit" name="onUserDefinedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onUserDefinedSelect"/>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_3">
+      <widget class="QWidget" name="commentsTab">
        <attribute name="title">
         <string>Comments</string>
        </attribute>
@@ -821,7 +875,7 @@
      <x>0</x>
      <y>0</y>
      <width>674</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuNew">
@@ -886,6 +940,16 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
+  </customwidget>
+  <customwidget>
+   <class>FilterComboBox</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.common.widgets.combobox</header>
+  </customwidget>
+  <customwidget>
    <class>ModelRenderer</class>
    <extends>QOpenGLWidget</extends>
    <header location="global">toolset.gui.widgets.renderer.model</header>
@@ -895,11 +959,6 @@
    <extends>QWidget</extends>
    <header location="global">toolset.gui.widgets.edit.locstring</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ComboBox2DA</class>
-   <extends>QComboBox</extends>
-   <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
   </customwidget>
  </customwidgets>
  <resources/>

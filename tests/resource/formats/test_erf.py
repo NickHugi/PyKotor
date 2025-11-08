@@ -27,7 +27,7 @@ from unittest import TestCase
 
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
-from utility.system.path import Path
+from pathlib import Path
 
 BINARY_TEST_FILE = Path("tests/files/test.erf").resolve()
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"

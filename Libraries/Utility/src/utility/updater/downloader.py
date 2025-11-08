@@ -9,6 +9,7 @@ import shutil
 import tempfile
 import time
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 import certifi
@@ -17,10 +18,8 @@ import urllib3
 
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
+from loggerplus import RobustLogger
 
-from utility.error_handling import format_exception_with_variables
-from utility.logger_util import get_root_logger
-from utility.system.path import Path
 from utility.updater.crypto import a32_to_str, base64_to_a32, base64_url_decode, decrypt_mega_attr, get_chunks, str_to_a32
 
 if TYPE_CHECKING:
@@ -43,7 +42,7 @@ class FileDownloader:
 
     Args:
     ----
-        filename (os.PathLike | str): The name of file to download
+        filepath (os.PathLike | str): The filepath to download to.
         urls (list[str]): List of urls to use for file download
         hexdigest (str | None): The hash of the file to download
 
@@ -60,7 +59,7 @@ class FileDownloader:
 
     def __init__(
         self,
-        filename: os.PathLike | str,
+        filepath: os.PathLike | str,
         urls: list[str],
         hexdigest: str | None,
         *,
@@ -68,15 +67,15 @@ class FileDownloader:
         headers: dict[str, Any] | None = None,
         max_download_retries: int | None = None,
         verify: bool = True,
-        http_timeout=None,
+        http_timeout: int | None = None,
         logger: Logger | None = None,
     ):
         # We'll append the filename to one of the provided urls
         # to create the download link
-        if not filename:
+        if not filepath:
             raise FileDownloaderError("No filename provided", expected=True)
-        self.filepath = Path.pathify(filename)
-        self.log = logger or get_root_logger()
+        self.filepath = Path(filepath)
+        self.log = logger or RobustLogger()
 
         self.file_binary_data: list = []  # Hold all binary data once file has been downloaded
         self.file_binary_path: Path = self.filepath.add_suffix(".part")  # Temporary file to hold large download data
@@ -179,7 +178,9 @@ class FileDownloader:
                     # Determine the filename from the Content-Disposition header or URL.
                     filename = self._get_filename_from_cd(r.headers.get("Content-Disposition")) or Path(url).name
                     self.downloaded_filename = filename
+                    RobustLogger().info(f"Expected downloaded filename: {self.downloaded_filename}")
                     file_path = self.filepath.parent / filename
+                    RobustLogger().info(f"Expected download path: {file_path}")
 
                     # Start the download process.
                     content_length = int(r.headers.get("Content-Length", 0))
@@ -242,8 +243,8 @@ class FileDownloader:
                 for block in self.file_binary_data:
                     f.write(block)
         else:
-            filepath = Path.pathify(self.filepath)
-            if filepath.safe_exists():
+            filepath = Path(self.filepath)
+            if filepath.exists():
                 filepath.unlink(missing_ok=True)
             self.file_binary_path.rename(self.filepath)
 
@@ -252,7 +253,7 @@ class FileDownloader:
         data,
     ) -> int | None:
         content_length_lookup: str | None = data.headers.get("Content-Length")
-        log = get_root_logger()
+        log = RobustLogger()
         log.debug("Got content length of: %s", content_length_lookup)
         return int(content_length_lookup) if content_length_lookup else None
 
@@ -286,7 +287,7 @@ class FileDownloader:
         if total is None:
             return "-.-%"
         percent = float(received) / total * 100
-        return "%.1f" % percent
+        return f"{percent:.1f}"
 
 
 
@@ -322,10 +323,10 @@ def _download_file(
     dest: os.PathLike | str | None = None,
     dest_filename: str | None = None,
     is_public: bool = False,
-    file=None,
+    file: dict[str, Any] | None = None,
     progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
 ):
-    dest_path = Path.pathify(dest or Path.cwd()).absolute()
+    dest_path = Path(dest or Path.cwd()).absolute()
     if file is None:
         if is_public:
             file_key = base64_to_a32(file_key)
@@ -415,7 +416,7 @@ def _download_file(
             }
         }
 
-        log = get_root_logger()
+        log = RobustLogger()
 
         # Call all progress hooks with status data
         log.debug(status)
@@ -441,7 +442,7 @@ def _download_file(
     if dest_path.name == file_name:
         dest_path = dest_path.parent
     dest_filepath = dest_path / file_name
-    if not dest_filepath.parent.safe_isdir():
+    if not dest_filepath.parent.is_dir():
         dest_filepath.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(temp_output_file.name, dest_filepath)
 

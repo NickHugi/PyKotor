@@ -15,5 +15,31 @@
         <Document name="Custom Robes" file="tutorials/1-creatingCustomRobes.md" />
         <Document name="New Store" file="tutorials/2-creatingANewStore.md" />
         <Document name="Area Transitions" file="tutorials/3-areaTransition.md" />
+        <Document name="DLG Static Cameras" file="tutorials/4-creatingStaticCameras.md" />
+    </Folder>
+    
+    <Folder name="Bioware Docs">
+        <Document name="Common GFF Structs" file="bioware-docs/Bioware_Aurora_CommonGFFStructs.md" />
+        <Document name="Localized Strings Format" file="bioware-docs/Bioware_Aurora_LocalizedStrings_Format.md" />
+        <Document name="2DA Format" file="bioware-docs/Bioware_Aurora_2DA_Format.md" />
+        <Document name="ARE Format" file="bioware-docs/Bioware_Aurora_AreaFile_Format.md" />
+        <Document name="BIF Format" file="bioware-docs/Bioware_Aurora_KeyBIF_Format.md" />
+        <Document name="DLG Format" file="bioware-docs/Bioware_Aurora_Conversation_Format.md" />
+        <Document name="ERF Format" file="bioware-docs/Bioware_Aurora_ERF_Format.md" />
+        <Document name="FAC Format" file="bioware-docs/Bioware_Aurora_Faction_Format.md" />
+        <Document name="GFF Format" file="bioware-docs/Bioware_Aurora_GFF_Format.md" />
+        <Document name="IFO Format" file="bioware-docs/Bioware_Aurora_IFO_Format.md" />
+        <Document name="Item Format" file="bioware-docs/Bioware_Aurora_Item_Format.md" />
+        <Document name="JRL Format" file="bioware-docs/Bioware_Aurora_Journal_Format.md" />
+        <Document name="ITP Format" file="bioware-docs/Bioware_Aurora_PaletteITP_Format.md" />
+        <Document name="Sound Object Format" file="bioware-docs/Bioware_Aurora_SoundObject_Format.md" />
+        <Document name="SSF Format" file="bioware-docs/Bioware_Aurora_SSF_Format.md" />
+        <Document name="UTC Format" file="bioware-docs/Bioware_Aurora_Creature_Format.md" />
+        <Document name="UTD/UTP GFF" file="bioware-docs/Bioware_Aurora_DoorPlaceableGFF.md" />
+        <Document name="UTM Format" file="bioware-docs/Bioware_Aurora_Store_Format.md" />
+        <Document name="TLK Format" file="bioware-docs/Bioware_Aurora_TalkTable_Format.md" />
+        <Document name="UTT Format" file="bioware-docs/Bioware_Aurora_Trigger_Format.md" />
+        <Document name="UTE Format" file="bioware-docs/Bioware_Aurora_Encounter_Format.md" />
+        <Document name="UTW Format" file="bioware-docs/Bioware_Aurora_Waypoint_Format.md" />
     </Folder>
 </Contents>

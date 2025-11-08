@@ -5,10 +5,10 @@ import json
 import math
 
 from copy import copy, deepcopy
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -166,7 +166,7 @@ class IndoorMap:
             - Replace texture references in kit textures and txis with new renamed texture.
         """
         for mdl in self.scanMdls:
-            for texture in (texture for texture in model.list_textures(mdl) if texture not in self.texRenames):
+            for texture in (texture for texture in model.iterate_textures(mdl) if texture not in self.texRenames):
                 renamed = f"{self.moduleId}_tex{len(self.texRenames.keys())}"
                 self.texRenames[texture] = renamed
                 for kit in self.usedKits:
@@ -232,7 +232,7 @@ class IndoorMap:
             - Adds the resource data to the mod with the extracted name and type.
         """
         for filename, data in room.component.kit.always.items():
-            resname, restype = ResourceIdentifier.from_path(filename)
+            resname, restype = ResourceIdentifier.from_path(filename).unpack()
             if restype == ResourceType.INVALID:
                 print("Invalid resource, skipping...", filename, restype)
                 continue
@@ -262,7 +262,7 @@ class IndoorMap:
             - Convert the model to target system format based on installation tsl property
             - Return processed model and material index strings.
         """
-        mdl, mdx = model.flip(room.component.mdl, room.component.mdx, room.flip_x, room.flip_y)
+        mdl, mdx = model.flip(room.component.mdl, room.component.mdx, flip_x=room.flip_x, flip_y=room.flip_y)
         mdl = model.transform(mdl, Vector3.from_null(), room.rotation)
         mdl = model.convert_to_k2(mdl) if installation.tsl else model.convert_to_k1(mdl)
         return mdl, mdx
@@ -290,7 +290,7 @@ class IndoorMap:
             - Returns the model with all lightmaps renamed according to the mapping.
         """
         lm_renames: dict[str, str] = {}
-        for lightmap in model.list_lightmaps(mdl_data):
+        for lightmap in model.iterate_lightmaps(mdl_data):
             renamed = f"{self.moduleId}_lm{self.totalLm}"
             self.totalLm += 1
             lm_renames[lightmap.lower()] = renamed
@@ -348,7 +348,7 @@ class IndoorMap:
         bwm.translate(room.position.x, room.position.y, room.position.z)
         for hookIndex, connection in enumerate(room.hooks):
             dummyIndex: int = room.component.hooks[hookIndex].edge
-            actualIndex: int | None = self.rooms.index(connection) if connection is not None else None
+            actualIndex: int | None = None if connection is None else self.rooms.index(connection)
             self.remap_transitions(bwm, dummyIndex, actualIndex)
         return bwm
 
@@ -442,7 +442,7 @@ class IndoorMap:
                         pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
                         pad_mdl = model.change_textures(pad_mdl, self.texRenames)
                         lmRenames = {}
-                        for lightmap in model.list_lightmaps(pad_mdl):
+                        for lightmap in model.iterate_lightmaps(pad_mdl):
                             renamed = f"{self.moduleId}_lm{self.totalLm}"
                             self.totalLm += 1
                             lmRenames[lightmap.lower()] = renamed
@@ -473,7 +473,7 @@ class IndoorMap:
                         pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
                         pad_mdl = model.change_textures(pad_mdl, self.texRenames)
                         lmRenames: dict[str, str] = {}
-                        for lightmap in model.list_lightmaps(pad_mdl):
+                        for lightmap in model.iterate_lightmaps(pad_mdl):
                             renamed = f"{self.moduleId}_lm{self.totalLm}"
                             self.totalLm += 1
                             lmRenames[lightmap.lower()] = renamed
@@ -758,7 +758,7 @@ class IndoorMap:
 
     def _load_data(
         self,
-        data,
+        data: dict[str, Any],
         kits: list[Kit],
     ):
         """Load data into an indoor map object.
@@ -938,6 +938,7 @@ class IndoorMapRoom:
     def hookPosition(
         self,
         hook: KitComponentHook,
+        *,
         worldOffset: bool = True,
     ) -> Vector3:
         """Calculates the position of a hook relative to the component.

@@ -3,24 +3,29 @@
 from __future__ import annotations
 
 from copy import copy
+from typing import Any, Generator
 
 from pykotor.common.misc import ResRef
+from pykotor.extract.file import ResourceIdentifier
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
+from utility.common.more_collections import OrderedSet
 
 
-class RIM:
+class RIM(ComparableMixin):
     """Represents the data of a RIM file."""
 
     BINARY_TYPE = ResourceType.RIM
+    COMPARABLE_SET_FIELDS = ("_resources",)
 
     def __init__(
         self,
     ):
-        self._resources: list[RIMResource] = []
+        self._resources: OrderedSet[RIMResource] = OrderedSet()
 
     def __iter__(
         self,
-    ):
+    ) -> Generator[RIMResource, Any, None]:
         """Iterates through the stored resources yielding a copied resource each iteration."""
         for resource in self._resources:
             yield copy(resource)
@@ -134,21 +139,31 @@ class RIM:
     def to_erf(
         self,
     ):
-        """Returns a ERF with the same resources.
+        """Returns a ERF with the same resources. Defaults to an ERF with ERFType.ERF set.
 
         Returns:
         -------
             A new ERF object.
         """
-        from pykotor.resource.formats.erf import ERF  # Prevent circular imports
+        from pykotor.resource.formats.erf import ERF  # Prevent circular imports  # noqa: PLC0415,F811
 
         erf = ERF()
         for resource in self._resources:
             erf.set_data(str(resource.resref), resource.restype, resource.data)
         return erf
 
+    def __eq__(self, other):
+        from pykotor.resource.formats.erf import ERF  # Prevent circular imports  # noqa: PLC0415,F811
+        if not isinstance(other, (ERF, RIM)):
+            return NotImplemented
+        return set(self._resources) == set(other._resources)
 
-class RIMResource:
+    def __hash__(self):
+        return hash(tuple(self._resources))
+
+
+class RIMResource(ComparableMixin):
+    COMPARABLE_FIELDS = ("resref", "restype", "data")
     def __init__(
         self,
         resref: ResRef,
@@ -157,4 +172,25 @@ class RIMResource:
     ):
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
+        if isinstance(data, bytearray):  # FIXME(th3w1zard1): Something is passing bytearray here
+            data = bytes(data)
         self.data: bytes = data
+
+    def __eq__(
+        self,
+        other,
+    ):
+        from pykotor.resource.formats.erf import ERFResource  # Prevent circular imports  # noqa: PLC0415
+        if not isinstance(other, (ERFResource, RIMResource)):
+            return NotImplemented
+        return (
+            self.resref == other.resref
+            and self.restype == other.restype
+            and self.data == other.data
+        )
+
+    def __hash__(self):
+        return hash((self.resref, self.restype, self.data))
+
+    def identifier(self) -> ResourceIdentifier:
+        return ResourceIdentifier(str(self.resref), self.restype)

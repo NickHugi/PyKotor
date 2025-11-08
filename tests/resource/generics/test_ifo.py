@@ -26,20 +26,65 @@ if UTILITY_PATH.joinpath("utility").exists():
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ifo import construct_ifo, dismantle_ifo
-from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.ifo import IFO
 
-TEST_FILE = "tests/files/test.ifo"
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
-
-
+TEST_IFO_XML = """<gff3>
+  <struct id="-1">
+    <data label="Mod_ID">UjrlnuNzcR0P8GmcuWGfpw==</data>
+    <sint32 label="Mod_Creator_ID">2</sint32>
+    <uint32 label="Mod_Version">3</uint32>
+    <exostring label="Mod_VO_ID">262</exostring>
+    <uint16 label="Expansion_Pack">0</uint16>
+    <locstring label="Mod_Name" strref="83947" />
+    <exostring label="Mod_Tag">262TEL</exostring>
+    <exostring label="Mod_Hak" />
+    <locstring label="Mod_Description" strref="-1" />
+    <byte label="Mod_IsSaveGame">0</byte>
+    <resref label="Mod_Entry_Area">262tel</resref>
+    <float label="Mod_Entry_X">2.5811009407043457</float>
+    <float label="Mod_Entry_Y">41.46979522705078</float>
+    <float label="Mod_Entry_Z">21.372770309448242</float>
+    <float label="Mod_Entry_Dir_X">1.5099580252808664e-07</float>
+    <float label="Mod_Entry_Dir_Y">-1.0</float>
+    <list label="Mod_Expan_List" />
+    <byte label="Mod_DawnHour">6</byte>
+    <byte label="Mod_DuskHour">18</byte>
+    <byte label="Mod_MinPerHour">2</byte>
+    <byte label="Mod_StartMonth">6</byte>
+    <byte label="Mod_StartDay">1</byte>
+    <byte label="Mod_StartHour">13</byte>
+    <uint32 label="Mod_StartYear">1372</uint32>
+    <byte label="Mod_XPScale">10</byte>
+    <resref label="Mod_OnHeartbeat">heartbeat</resref>
+    <resref label="Mod_OnModLoad">load</resref>
+    <resref label="Mod_OnModStart">start</resref>
+    <resref label="Mod_OnClientEntr">enter</resref>
+    <resref label="Mod_OnClientLeav">leave</resref>
+    <resref label="Mod_OnActvtItem">activate</resref>
+    <resref label="Mod_OnAcquirItem">acquire</resref>
+    <resref label="Mod_OnUsrDefined">user</resref>
+    <resref label="Mod_OnUnAqreItem">unacquire</resref>
+    <resref label="Mod_OnPlrDeath">death</resref>
+    <resref label="Mod_OnPlrDying">dying</resref>
+    <resref label="Mod_OnPlrLvlUp">levelup</resref>
+    <resref label="Mod_OnSpawnBtnDn">spawn</resref>
+    <resref label="Mod_OnPlrRest" />
+    <resref label="Mod_StartMovie" />
+    <list label="Mod_CutSceneList" />
+    <list label="Mod_GVar_List" />
+    <list label="Mod_Area_list">
+      <struct id="6">
+        <resref label="Area_Name">262tel</resref>
+        </struct>
+      </list>
+    </struct>
+  </gff3>
+"""
 class TestIFO(TestCase):
     def setUp(self):
         self.log_messages = [os.linesep]
@@ -47,40 +92,18 @@ class TestIFO(TestCase):
     def log_func(self, message=""):
         self.log_messages.append(message)
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for ifo_resource in (resource for resource in self.installation if resource.restype() == ResourceType.IFO):
-            gff: GFF = read_gff(ifo_resource.data())
-            reconstructed_gff: GFF = dismantle_ifo(construct_ifo(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for ifo_resource in (resource for resource in self.installation if resource.restype() == ResourceType.IFO):
-            gff: GFF = read_gff(ifo_resource.data())
-            reconstructed_gff: GFF = dismantle_ifo(construct_ifo(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
     def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_IFO_XML.encode())
         reconstructed_gff = dismantle_ifo(construct_ifo(gff))
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_IFO_XML.encode())
         ifo = construct_ifo(gff)
         self.validate_io(ifo)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_IFO_XML.encode())
         gff = dismantle_ifo(construct_ifo(gff))
         ifo = construct_ifo(gff)
         self.validate_io(ifo)

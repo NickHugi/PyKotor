@@ -1,22 +1,25 @@
 from __future__ import annotations
 
 import os
+import uuid
 
 from typing import Any
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QWidget
+import qtpy
+
+from loggerplus import RobustLogger, get_log_directory
+from qtpy import QtCore
+from qtpy.QtCore import QSettings
+from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QWidget
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
-from utility.logger_util import get_root_logger
 
 
 class InstallationsWidget(QWidget):
-    edited = QtCore.pyqtSignal()
+    edited = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         """Initialize the Installations widget.
@@ -38,7 +41,16 @@ class InstallationsWidget(QWidget):
         self.installationsModel: QStandardItemModel = QStandardItemModel()
         self.settings = GlobalSettings()
 
-        from toolset.uic.widgets.settings import installations
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = installations.Ui_Form()
         self.ui.setupUi(self)
@@ -144,7 +156,7 @@ class InstallationsWidget(QWidget):
 
 class InstallationConfig:
     def __init__(self, name: str):
-        self._settings = QSettings("HolocronToolset", "Global")
+        self._settings = QSettings("HolocronToolsetV3", "Global")
         self._name: str = name
 
     @property
@@ -167,7 +179,7 @@ class InstallationConfig:
     def path(self) -> str:
         try:
             installation = self._settings.value("installations", {})[self._name]
-        except Exception:
+        except Exception:  # noqa: BLE001
             return ""
         else:
             return installation.get("path", "")
@@ -180,14 +192,14 @@ class InstallationConfig:
             installations[self._name]["path"] = value
             self._settings.setValue("installations", installations)
         except Exception:
-            log = get_root_logger()
+            log = RobustLogger()
             log.exception("InstallationConfig.path property raised an exception.")
 
     @property
     def tsl(self) -> bool:
         all_installs: dict[str, dict[str, Any]] = self._settings.value("installations", {})
         installation = all_installs.get(self._name, {})
-        return installation["tsl"]
+        return installation.get("tsl", False)
 
     @tsl.setter
     def tsl(self, value: bool):
@@ -212,21 +224,33 @@ class GlobalSettings(Settings):
         -------
             dict: A dictionary of InstallationConfig objects keyed by installation name
 
-        Finds KotOR installation paths on the system, checks for duplicates, and records the paths and metadata in the user settings.
-        Paths are filtered to only existing ones. Duplicates are detected by path and the game name is incremented with a number.
-        Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.
-        The installations dictionary is then saved back to the user settings.
         """
         installations: dict[str, dict[str, Any]] = self.settings.value("installations")
         if installations is None:
             installations = {}
 
+        if self.firstTime:
+            self._handle_firsttime_user(installations)
+        self.settings.setValue("installations", installations)
+
+        return {name: InstallationConfig(name) for name in installations}
+
+    def _handle_firsttime_user(self, installations: dict[str, dict[str, Any]]):
+        """Finds KotOR installation paths on the system, checks for duplicates, and records the paths and metadata in the user settings.
+
+        Paths are filtered to only existing ones. Duplicates are detected by path and the game name is incremented with a number.
+        Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.
+        The installations dictionary is then saved back to the user settings.
+        """
+        RobustLogger().info("First time user, attempt auto-detection of currently installed KOTOR paths.")
+        self.extractPath = str(get_log_directory(f"{uuid.uuid4().hex[:7]}_extract"))
         counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
         # Create a set of existing paths
         existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
 
         for game, paths in find_kotor_paths_from_default().items():
-            for path in filter(CaseAwarePath.safe_isdir, paths):
+            for path in filter(CaseAwarePath.is_dir, paths):
+                RobustLogger().info(f"Autodetected game {game!r} path {path}")
                 if path in existing_paths:  # If the path is already recorded, skip to the next one
                     continue
 
@@ -245,12 +269,13 @@ class GlobalSettings(Settings):
                     "tsl": game.is_k2(),
                 }
                 existing_paths.add(path)  # Add the new path to the set of existing paths
-
-        self.settings.setValue("installations", installations)
-
-        return {name: InstallationConfig(name) for name in installations}
+        self.firstTime = False
 
     # region Strings
+    recentFiles = Settings.addSetting(
+        "recentFiles",
+        [],
+    )
     extractPath = Settings.addSetting(
         "extractPath",
         "",
@@ -263,23 +288,31 @@ class GlobalSettings(Settings):
         "ncsDecompilerPath",
         "",
     )
+    selectedTheme = Settings.addSetting(
+        "selectedTheme",
+        "Fusion (Light)",  # Default theme
+    )
     moduleSortOption = Settings.addSetting(
         "moduleSortOption",
-        1,
+        2,
     )
     # endregion
 
     # region Bools
+    profileToolset = Settings.addSetting(
+        "profileToolset",
+        False,
+    )
     disableRIMSaving = Settings.addSetting(
         "disableRIMSaving",
         True,
     )
+    attemptKeepOldGFFFields = Settings.addSetting(
+        "attemptKeepOldGFFFields",
+        False,
+    )
     useBetaChannel = Settings.addSetting(
         "useBetaChannel",
-        True,
-    )
-    alsoCheckReleaseVersion = Settings.addSetting(
-        "alsoCheckReleaseVersion",
         True,
     )
     firstTime = Settings.addSetting(
@@ -292,7 +325,7 @@ class GlobalSettings(Settings):
     )
     joinRIMsTogether = Settings.addSetting(
         "joinRIMsTogether",
-        False,
+        True,
     )
     useModuleFilenames = Settings.addSetting(
         "useModuleFilenames",

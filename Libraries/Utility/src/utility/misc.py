@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import hashlib
@@ -7,28 +8,28 @@ import sys
 
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING, Any, SupportsFloat, SupportsInt, TypeVar
-
-from utility.system.path import Path
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Iterable, OrderedDict, SupportsFloat, SupportsInt, TypeVar
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
 
-    from typing_extensions import Buffer, SupportsIndex
+    from typing_extensions import Buffer, Literal, Self, SupportsIndex
 
-
+T = TypeVar("T")
+U = TypeVar("U")
 class ProcessorArchitecture(Enum):
     BIT_32 = "32bit"
     BIT_64 = "64bit"
 
-    def __str__(self):
+    def __str__(self) -> Literal["32bit", "64bit"]:
         return self.value
 
-    def __int__(self):
-        return self.get_int() or -1
+    def __int__(self) -> Literal[32, 64]:
+        return self.get_int()
 
     @classmethod
-    def from_os(cls):
+    def from_os(cls) -> Self:
         return cls(platform.architecture()[0])
 
     @classmethod
@@ -38,30 +39,33 @@ class ProcessorArchitecture(Enum):
     def get_machine_repr(self):
         return self._get("x86", "x64")
 
-    def get_int(self):
+    def get_int(self) -> Literal[32, 64]:
         return self._get(32, 64)
 
     def get_dashed_bitness(self):
         return self._get("32-bit", "64-bit")
 
-    def _get(self, arg0, arg1) -> Any:  # sourcery skip: assign-if-exp, reintroduce-else  # noqa: ANN001
+    def _get(self, arg0: T, arg1: U) -> T | U:  # sourcery skip: assign-if-exp, reintroduce-else  # noqa: ANN001
         if self == self.BIT_32:
             return arg0
         if self == self.BIT_64:
             return arg1
-        return None
+        raise RuntimeError(arg0, arg1)
 
     def supports_64_bit(self) -> bool:
         """Check if the architecture supports 64-bit processing."""
         return self == self.BIT_64
 
 
-def format_gpu_info(info, headers):
+def format_gpu_info(
+    info: Iterable,
+    headers: tuple[str, ...],
+) -> str:
     # Determine the maximum width for each column
     column_widths: list[int] = [max(len(str(row[i])) for row in (headers, *info)) for i in range(len(headers))]
 
     # Function to format a single row
-    def format_row(row) -> str:
+    def format_row(row: Iterable) -> str:
         return " | ".join(f"{str(item).ljust(column_widths[i])}" for i, item in enumerate(row))
 
     # Build the output string
@@ -75,9 +79,42 @@ def format_gpu_info(info, headers):
     return output
 
 
-def get_system_info():
+def print_excluding_base_classes(
+    obj: object,
+    exclude_base_classes: list[type[object]] | None = None,
+):
+    if exclude_base_classes is None:
+        exclude_base_classes = [object, type]
+
+    def get_base_class_attributes(base_classes: Iterable[type[object]]) -> set[str]:
+        attrs = set()
+        for base_class in base_classes:
+            attrs.update(dir(base_class))
+        return attrs
+
+    def print_filtered_attributes(obj: object, obj_name: str, exclude_attrs: Iterable[str]):
+        print(f"{obj_name} Attributes:")
+        for attr in dir(obj):
+            if (
+                not attr.startswith("_")
+                and not callable(getattr(obj, attr))
+                and attr not in exclude_attrs
+            ):
+                try:
+                    print(f"  {attr}: {getattr(obj, attr)}")
+                except Exception as ex:  # noqa: BLE001
+                    print(f"  {attr}: Unable to retrieve value ({ex})")
+
+    # Get the attributes of the base classes to exclude
+    base_class_attrs = get_base_class_attributes(exclude_base_classes)
+
+    # Print the filtered attributes of the object
+    print_filtered_attributes(obj, obj.__class__.__name__, base_class_attrs)
+
+
+def get_system_info() -> dict[str, Any]:
     # sourcery skip: extract-method, list-comprehension, merge-dict-assign
-    info = {}
+    info: dict[str, Any] = {}
 
     # Basic OS information
     info["Platform"] = platform.system()
@@ -88,7 +125,7 @@ def get_system_info():
     # CPU information
     psutil = None
     with suppress(ImportError):
-        import psutil
+        import psutil  # pyright: ignore[reportMissingImports]  # type: ignore[no-redef]
     if psutil is not None:
         info["Physical cores"] = psutil.cpu_count(logical=False)
         info["Total cores"] = psutil.cpu_count(logical=True)
@@ -109,7 +146,7 @@ def get_system_info():
     # GPU Information
     GPUtil = None
     with suppress(ImportError):
-        import GPUtil
+        import GPUtil  # pyright: ignore[reportMissingImports]  # type: ignore[no-redef]
     if GPUtil is not None:
         gpus = GPUtil.getGPUs()
         gpu_info = []
@@ -130,24 +167,28 @@ def get_system_info():
     return info
 
 
-T = TypeVar("T")
-
-
-def remove_duplicates(my_list: list[T], *, case_insensitive: bool = False) -> list[T]:
-    seen = set()
-    return [x.lower() if case_insensitive and isinstance(x, str) else x for x in my_list if not (x in seen or seen.add(x))]
-
-
 def is_debug_mode() -> bool:
     ret = False
     if os.getenv("PYTHONDEBUG", None):
         ret = True
-    if os.getenv("DEBUG_MODE", "0") == "1":
-        ret = True
     if getattr(sys, "gettrace", None) is not None:
         ret = True
-    print(f"DEBUG MODE: {ret}")
+    if (
+        getattr(sys, "frozen", False)
+        or getattr(sys, "_MEIPASS", False)
+    ):
+        ret = False
+    if os.getenv("DEBUG_MODE", "0") == "1":
+        ret = True
     return ret
+
+
+def is_frozen() -> bool:
+    return (
+        getattr(sys, "frozen", False)
+        or getattr(sys, "_MEIPASS", False)
+        # or tempfile.gettempdir() in sys.executable
+    )
 
 
 def has_attr_excluding_object(cls: type, attr_name: str) -> bool:
@@ -180,7 +221,6 @@ def generate_hash(
     *,
     always_chunk: bool = False,  # Don't unnecessarily chunk bytes/bytearray inputs.
 ) -> str:
-    # Create a hash object for the specified algorithm
     try:
         hasher = hashlib.new(hash_algo)
     except ValueError as e:
@@ -189,7 +229,6 @@ def generate_hash(
         raise ValueError(msg) from e
 
     if isinstance(data_input, (bytes, bytearray, memoryview)):
-        # Process the byte-like data in chunks
         if always_chunk or isinstance(data_input, memoryview):
             for start in range(0, len(data_input), chunk_size):
                 end = start + chunk_size
@@ -197,15 +236,11 @@ def generate_hash(
         else:
             hasher.update(data_input)
     else:
-        with Path.pathify(data_input).open("rb") as f:
+        with Path(data_input).open("rb") as f:
             for chunk in iter(lambda: f.read(chunk_size), b""):
                 hasher.update(chunk)
 
-    # Special handling for SHAKE algorithms which require a digest length
-    if "shake" in hash_algo:
-        # Producing a 64-byte (512 bits) output
-        return hasher.hexdigest(64)  # type: ignore[]
-    return hasher.hexdigest()
+    return hasher.hexdigest(64) if "shake" in hash_algo else hasher.hexdigest()  # type: ignore[call-arg]
 
 
 def indent(
@@ -280,3 +315,20 @@ def is_float(val: str | float | Buffer | SupportsFloat | SupportsIndex) -> bool:
         return False
     else:
         return True
+
+
+def to_kwargs(
+    *args: Any,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    if sys.version_info < (3, 7):  # noqa: UP036
+        kwargs = OrderedDict(kwargs)
+    keys = iter(kwargs.keys())
+    for arg in args:
+        try:
+            key = next(keys)
+            if kwargs[key] is None:
+                kwargs[key] = arg
+        except StopIteration as e:  # noqa: PERF203
+            raise ValueError("Too many positional arguments for the available keyword arguments.") from e  # noqa: B904
+    return dict(kwargs)

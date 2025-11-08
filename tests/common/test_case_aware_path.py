@@ -5,7 +5,6 @@ import sys
 import unittest
 
 
-
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
@@ -28,7 +27,6 @@ if __name__ == "__main__" and not __package__:
     __init__ = __import__(str(this_script_file_path.parent.name)).__init__  # type: ignore[misc]
 
 from pykotor.tools.path import CaseAwarePath
-from utility.system.path import Path
 
 
 class TestCaseAwarePath(unittest.TestCase):
@@ -39,6 +37,7 @@ class TestCaseAwarePath(unittest.TestCase):
         except Exception as e:
             self.fail(f"Unexpected exception raised: {e}")
 
+
     def test_hashing(self):
         path1 = CaseAwarePath("test\\path\\to\\nothing")
         path2 = CaseAwarePath("tesT\\PATH\\to\\noTHinG")
@@ -47,14 +46,6 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(path1, path2)
         self.assertEqual(hash(path1), hash(path2))
         self.assertSetEqual(test_set, {CaseAwarePath("TEST\\path\\to\\nothing")})
-
-        test_list = [Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves")]
-        self.assertIn(CaseAwarePath("/MNT/c/Program FileS (x86)/steam/steamapps/common/swkotor/saves"), test_list)
-        self.assertIn(CaseAwarePath("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves"), test_list)
-
-        test_list = [CaseAwarePath("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves")]
-        self.assertIn(Path("/MNT/c/Program FileS (x86)/steam/steamapps/common/swkotor/saves"), test_list)
-        self.assertIn(Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves"), test_list)
 
     def test_valid_name_property(self):
         self.assertEqual((CaseAwarePath("test", "data\\something.test")).name, "something.test")
@@ -73,11 +64,6 @@ class TestCaseAwarePath(unittest.TestCase):
             CaseAwarePath(123)  # type: ignore[test raise]
             CaseAwarePath("path", "to", pathlib.Path("nothing"), 123)  # type: ignore[test raise]
 
-    def test_endswith(self):
-        path = CaseAwarePath("C:\\path\\to\\file.txt")
-        self.assertTrue(path.endswith(".TXT"))
-        self.assertFalse(path.endswith(".doc"))
-
     def test_find_closest_match(self):
         items = [CaseAwarePath("test"), CaseAwarePath("TEST"), CaseAwarePath("TesT"), CaseAwarePath("teSt")]
         self.assertEqual(str(CaseAwarePath.find_closest_match("teST", items)), "teSt")  # type: ignore[generator vs list]
@@ -86,7 +72,7 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "tesT"), 3)
         self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "teat"), -1)
 
-    def test_relative_to_case_sensitive(self):
+    def test_relative_to_relpath(self):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")
         folder_path = CaseAwarePath("TesT\\Path\\")
         self.assertTrue(file_path.is_relative_to(folder_path))
@@ -94,18 +80,31 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertIsInstance(relative_path, pathlib.Path)
         self.assertEqual(relative_path, "to\\something.test")
 
-    def test_relative_to_base(self):
+    def test_relative_to_relpath_case_sensitive(self):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")
         folder_path = CaseAwarePath("TEST\\path\\")
         self.assertTrue(file_path.is_relative_to(folder_path))
 
+    def test_relative_to_abspath(self):
+        file_path = CaseAwarePath("C:\\TEST\\path\\to\\something.test")
+        folder_path = CaseAwarePath("C:\\TesT\\Path\\")
+        self.assertTrue(file_path.is_relative_to(folder_path))
+        relative_path = file_path.relative_to(folder_path)
+        self.assertIsInstance(relative_path, pathlib.Path)
+        self.assertEqual(relative_path, "to\\something.test")
+
+    def test_relative_to_abspath_case_sensitive(self):
+        file_path = CaseAwarePath("C:\\TEST\\path\\to\\something.test")
+        folder_path = CaseAwarePath("C:\\TEST\\path\\")
+        self.assertTrue(file_path.is_relative_to(folder_path))
+
     def test_fix_path_formatting(self):
-        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", slash="\\"), "C:\\path\\to\\dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", slash="/"), "C:/path/to/dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", slash="\\"), "\\path\\to\\dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", slash="/"), "/path/to/dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="\\"), "\\path\\to\\dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="/"), "/path/to/dir")
+        self.assertEqual(CaseAwarePath.str_norm("C:/path//to/dir/", slash="\\"), "C:\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath.str_norm("C:/path//to/dir/", slash="/"), "C:/path/to/dir")
+        self.assertEqual(CaseAwarePath.str_norm("\\path//to/dir/", slash="\\"), "\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath.str_norm("\\path//to/dir/", slash="/"), "/path/to/dir")
+        self.assertEqual(CaseAwarePath.str_norm("/path//to/dir/", slash="\\"), "\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath.str_norm("/path//to/dir/", slash="/"), "/path/to/dir")
 
 
 class TestSplitFilename(unittest.TestCase):

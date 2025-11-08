@@ -8,8 +8,8 @@ import unittest
 from unittest import TestCase
 
 try:
-    from PyQt5.QtTest import QTest
-    from PyQt5.QtWidgets import QApplication
+    from qtpy.QtTest import QTest
+    from qtpy.QtWidgets import QApplication
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
@@ -54,7 +54,7 @@ from pykotor.resource.type import ResourceType
 )
 @unittest.skipIf(
     QTest is None or not QApplication,
-    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
+    "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class SSFEditorTest(TestCase):
     @classmethod
@@ -65,7 +65,7 @@ class SSFEditorTest(TestCase):
         cls.SSFEditor = SSFEditor
         from toolset.data.installation import HTInstallation
 
-        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=False, mainWindow=None)
+        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=False)
 
     def setUp(self):
         self.app = QApplication([])
@@ -96,7 +96,7 @@ class SSFEditorTest(TestCase):
     )
     def test_ssf_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for ssf_resource in (resource for resource in self.installation if resource.restype() == ResourceType.SSF):
+        for ssf_resource in (resource for resource in self.installation if resource.restype() is ResourceType.SSF):
             old = read_ssf(ssf_resource.data())
             self.editor.load(ssf_resource.filepath(), ssf_resource.resname(), ssf_resource.restype(), ssf_resource.data())
 
@@ -111,7 +111,7 @@ class SSFEditorTest(TestCase):
     )
     def test_ssf_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for bwm_resource in (resource for resource in self.installation if resource.restype() == ResourceType.SSF):
+        for bwm_resource in (resource for resource in self.installation if resource.restype() is ResourceType.SSF):
             old = read_ssf(bwm_resource.data())
             self.editor.load(bwm_resource.filepath(), bwm_resource.resname(), bwm_resource.restype(), bwm_resource.data())
 

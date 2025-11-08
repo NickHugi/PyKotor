@@ -7,8 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>414</width>
-    <height>319</height>
+    <height>335</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
@@ -122,7 +128,7 @@
               </property>
               <property name="maximum">
                <number>2147483647</number>
-                </property>
+              </property>
              </widget>
             </item>
             <item>
@@ -193,11 +199,8 @@
           </item>
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_2">
-            <item>
-             <widget class="QGroupBox" name="groupBox_2">
-              <property name="title">
-               <string>Other</string>
-              </property>
+            <item alignment="Qt::AlignVCenter">
+             <widget class="QFrame" name="frame_2">
               <layout class="QFormLayout" name="formLayout_3">
                <item row="0" column="0">
                 <widget class="QLabel" name="label_3">
@@ -208,6 +211,12 @@
                </item>
                <item row="0" column="1">
                 <widget class="QLineEdit" name="onOpenEdit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="maxLength">
                   <number>16</number>
                  </property>
@@ -222,6 +231,12 @@
                </item>
                <item row="1" column="1">
                 <widget class="QComboBox" name="storeFlagSelect">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <item>
                   <property name="text">
                    <string>Only Buy</string>
@@ -248,7 +263,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_3">
+      <widget class="QWidget" name="commentsTab">
        <attribute name="title">
         <string>Comments</string>
        </attribute>
@@ -268,7 +283,7 @@
      <x>0</x>
      <y>0</y>
      <width>414</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

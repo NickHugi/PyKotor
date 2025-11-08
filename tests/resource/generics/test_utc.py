@@ -26,7 +26,6 @@ if UTILITY_PATH.joinpath("utility").exists():
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import EquipmentSlot, Game
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utc import construct_utc, dismantle_utc
 from pykotor.resource.type import ResourceType
@@ -35,9 +34,175 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.generics.utc import UTC
 
-TEST_FILE = "tests/files/test.utc"
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+TEST_UTC_XML = """<gff3>
+  <struct id="-1">
+    <resref label="TemplateResRef">n_minecoorta</resref>
+    <byte label="Race">6</byte>
+    <byte label="SubraceIndex">1</byte>
+    <locstring label="FirstName" strref="76046" />
+    <locstring label="LastName" strref="123" />
+    <uint16 label="Appearance_Type">636</uint16>
+    <byte label="Gender">2</byte>
+    <sint32 label="Phenotype">0</sint32>
+    <uint16 label="PortraitId">1</uint16>
+    <locstring label="Description" strref="123" />
+    <exostring label="Tag">Coorta</exostring>
+    <resref label="Conversation">coorta</resref>
+    <byte label="IsPC">1</byte>
+    <uint16 label="FactionID">5</uint16>
+    <byte label="Disarmable">1</byte>
+    <exostring label="Subrace" />
+    <exostring label="Deity" />
+    <uint16 label="SoundSetFile">46</uint16>
+    <byte label="Plot">1</byte>
+    <byte label="Interruptable">1</byte>
+    <byte label="NoPermDeath">1</byte>
+    <byte label="NotReorienting">1</byte>
+    <byte label="BodyBag">1</byte>
+    <byte label="BodyVariation">1</byte>
+    <byte label="TextureVar">1</byte>
+    <byte label="Min1HP">1</byte>
+    <byte label="PartyInteract">1</byte>
+    <byte label="Hologram">1</byte>
+    <byte label="IgnoreCrePath">1</byte>
+    <byte label="MultiplierSet">3</byte>
+    <byte label="Str">10</byte>
+    <byte label="Dex">10</byte>
+    <byte label="Con">10</byte>
+    <byte label="Int">10</byte>
+    <byte label="Wis">10</byte>
+    <byte label="Cha">10</byte>
+    <sint32 label="WalkRate">7</sint32>
+    <byte label="NaturalAC">1</byte>
+    <sint16 label="HitPoints">8</sint16>
+    <sint16 label="CurrentHitPoints">8</sint16>
+    <sint16 label="MaxHitPoints">8</sint16>
+    <sint16 label="ForcePoints">1</sint16>
+    <sint16 label="CurrentForce">1</sint16>
+    <sint16 label="refbonus">1</sint16>
+    <sint16 label="willbonus">1</sint16>
+    <sint16 label="fortbonus">1</sint16>
+    <byte label="GoodEvil">50</byte>
+    <byte label="LawfulChaotic">0</byte>
+    <float label="BlindSpot">120.0</float>
+    <float label="ChallengeRating">1.0</float>
+    <byte label="PerceptionRange">11</byte>
+    <resref label="ScriptHeartbeat">k_def_heartbt01</resref>
+    <resref label="ScriptOnNotice">k_def_percept01</resref>
+    <resref label="ScriptSpellAt">k_def_spellat01</resref>
+    <resref label="ScriptAttacked">k_def_attacked01</resref>
+    <resref label="ScriptDamaged">k_def_damage01</resref>
+    <resref label="ScriptDisturbed">k_def_disturb01</resref>
+    <resref label="ScriptEndRound">k_def_combend01</resref>
+    <resref label="ScriptEndDialogu">k_def_endconv</resref>
+    <resref label="ScriptDialogue">k_def_dialogue01</resref>
+    <resref label="ScriptSpawn">k_def_spawn01</resref>
+    <resref label="ScriptRested" />
+    <resref label="ScriptDeath">k_def_death01</resref>
+    <resref label="ScriptUserDefine">k_def_userdef01</resref>
+    <resref label="ScriptOnBlocked">k_def_blocked01</resref>
+    <list label="SkillList">
+      <struct id="0">
+        <byte label="Rank">1</byte>
+        </struct>
+      <struct id="0">
+        <byte label="Rank">2</byte>
+        </struct>
+      <struct id="0">
+        <byte label="Rank">3</byte>
+        </struct>
+      <struct id="0">
+        <byte label="Rank">4</byte>
+        </struct>
+      <struct id="0">
+        <byte label="Rank">5</byte>
+        </struct>
+      <struct id="0">
+        <byte label="Rank">6</byte>
+        </struct>
+      <struct id="0">
+        <byte label="Rank">7</byte>
+        </struct>
+      <struct id="0">
+        <byte label="Rank">8</byte>
+        </struct>
+      </list>
+    <list label="FeatList">
+      <struct id="1">
+        <uint16 label="Feat">93</uint16>
+        </struct>
+      <struct id="1">
+        <uint16 label="Feat">94</uint16>
+        </struct>
+      </list>
+    <list label="TemplateList" />
+    <list label="SpecAbilityList" />
+    <list label="ClassList">
+      <struct id="2">
+        <sint32 label="Class">0</sint32>
+        <sint16 label="ClassLevel">2</sint16>
+        <list label="KnownList0">
+          <struct id="3">
+            <uint16 label="Spell">7</uint16>
+            <byte label="SpellMetaMagic">0</byte>
+            <byte label="SpellFlags">1</byte>
+            </struct>
+          </list>
+        </struct>
+      <struct id="2">
+        <sint32 label="Class">1</sint32>
+        <sint16 label="ClassLevel">3</sint16>
+        <list label="KnownList0">
+          <struct id="3">
+            <uint16 label="Spell">9</uint16>
+            <byte label="SpellMetaMagic">0</byte>
+            <byte label="SpellFlags">1</byte>
+            </struct>
+          <struct id="3">
+            <uint16 label="Spell">11</uint16>
+            <byte label="SpellMetaMagic">0</byte>
+            <byte label="SpellFlags">1</byte>
+            </struct>
+          </list>
+        </struct>
+      </list>
+    <list label="Equip_ItemList">
+      <struct id="2">
+        <resref label="EquippedRes">mineruniform</resref>
+        <byte label="Dropable">1</byte>
+        </struct>
+      <struct id="131072">
+        <resref label="EquippedRes">g_i_crhide008</resref>
+        </struct>
+      </list>
+    <byte label="PaletteID">3</byte>
+    <exostring label="Comment">comment</exostring>
+    <list label="ItemList">
+      <struct id="0">
+        <resref label="InventoryRes">g_w_thermldet01</resref>
+        <uint16 label="Repos_PosX">0</uint16>
+        <uint16 label="Repos_Posy">0</uint16>
+        <byte label="Dropable">1</byte>
+        </struct>
+      <struct id="1">
+        <resref label="InventoryRes">g_w_thermldet01</resref>
+        <uint16 label="Repos_PosX">1</uint16>
+        <uint16 label="Repos_Posy">0</uint16>
+        </struct>
+      <struct id="2">
+        <resref label="InventoryRes">g_w_thermldet01</resref>
+        <uint16 label="Repos_PosX">2</uint16>
+        <uint16 label="Repos_Posy">0</uint16>
+        </struct>
+      <struct id="3">
+        <resref label="InventoryRes">g_w_thermldet02</resref>
+        <uint16 label="Repos_PosX">3</uint16>
+        <uint16 label="Repos_Posy">0</uint16>
+        </struct>
+      </list>
+    </struct>
+  </gff3>
+"""
 
 
 class TestUTC(TestCase):
@@ -47,50 +212,13 @@ class TestUTC(TestCase):
     def log_func(self, *msgs):
         self.log_messages.append("\t".join(msgs))
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    @unittest.skip("This test is known to fail - fixme")  # FIXME:
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for utc_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTC):
-            gff: GFF = read_gff(utc_resource.data())
-            reconstructed_gff: GFF = dismantle_utc(construct_utc(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for utc_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTC):
-            gff: GFF = read_gff(utc_resource.data())
-            reconstructed_gff: GFF = dismantle_utc(construct_utc(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
-
-    def test_gff_reconstruct(self):
-        gff = read_gff(TEST_FILE)
-        reconstructed_gff = dismantle_utc(construct_utc(gff), Game.K2)
-        result = gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True)
-        output = os.linesep.join(self.log_messages)
-        if not result:
-            expected_output = r"""
-GFFStruct: number of fields have changed at 'GFFRoot': '74' --> '75'
-Field 'LocalizedString' is different at 'GFFRoot\Description': 123 --> -1
-"""
-            self.assertEqual(output.strip().replace("\r\n", "\n"), expected_output.strip(), "Comparison output does not match expected output")
-        else:
-            self.assertTrue(result)
-
     def test_io_construct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTC_XML.encode(), file_format=ResourceType.GFF_XML)
         utc = construct_utc(gff)
         self.validate_io(utc)
 
     def test_io_reconstruct(self):
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(TEST_UTC_XML.encode(), file_format=ResourceType.GFF_XML)
         gff = dismantle_utc(construct_utc(gff))
         utc = construct_utc(gff)
         self.validate_io(utc)

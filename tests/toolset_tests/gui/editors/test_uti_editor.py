@@ -8,8 +8,8 @@ import unittest
 from unittest import TestCase
 
 try:
-    from PyQt5.QtTest import QTest
-    from PyQt5.QtWidgets import QApplication
+    from qtpy.QtTest import QTest
+    from qtpy.QtWidgets import QApplication
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
@@ -54,7 +54,7 @@ from pykotor.resource.type import ResourceType
 )
 @unittest.skipIf(
     QTest is None or not QApplication,
-    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
+    "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class UTIEditorTest(TestCase):
     @classmethod
@@ -65,7 +65,7 @@ class UTIEditorTest(TestCase):
         cls.UTIEditor = UTIEditor
         from toolset.data.installation import HTInstallation
 
-        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
+        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
 
     def setUp(self):
         self.app = QApplication([])
@@ -97,7 +97,7 @@ class UTIEditorTest(TestCase):
     )
     def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for uti_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTI):
+        for uti_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTI):
             old = read_gff(uti_resource.data())
             self.editor.load(uti_resource.filepath(), uti_resource.resname(), uti_resource.restype(), uti_resource.data())
 
@@ -113,7 +113,7 @@ class UTIEditorTest(TestCase):
     )
     def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for uti_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTI):
+        for uti_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTI):
             old = read_gff(uti_resource.data())
             self.editor.load(uti_resource.filepath(), uti_resource.resname(), uti_resource.restype(), uti_resource.data())
 

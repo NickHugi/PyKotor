@@ -8,8 +8,8 @@ import unittest
 from unittest import TestCase
 
 try:
-    from PyQt5.QtTest import QTest
-    from PyQt5.QtWidgets import QApplication
+    from qtpy.QtTest import QTest
+    from qtpy.QtWidgets import QApplication
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
@@ -53,7 +53,7 @@ from pykotor.resource.type import ResourceType
 )
 @unittest.skipIf(
     QTest is None or not QApplication,
-    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
+    "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class BWMEditorTest(TestCase):
     @classmethod
@@ -64,8 +64,8 @@ class BWMEditorTest(TestCase):
         cls.BWMEditor = BWMEditor
         from toolset.data.installation import HTInstallation
 
-        # cls.INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
-        cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
+        # cls.INSTALLATION = HTInstallation(K1_PATH, "", tsl=False)
+        cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
 
     def setUp(self):
         self.app = QApplication([])

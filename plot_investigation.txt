@@ -1,0 +1,224 @@
+================================================================================
+PLOT FLAGS AND PROGRESSION ANALYSIS
+================================================================================
+
+
+PLOT 2DA
+--------------------------------------------------------------------------------
+  total_plots: 75
+  columns:
+    xp:
+      - 100
+      - 200
+      - 300
+      - 1000
+      - 3000
+      - 250
+      - 250
+      - 500
+      - 500
+      - 1000
+      - 1000
+      - 250
+      - 1000
+      - 1000
+      - 250
+      - 500
+      - 500
+      - 1000
+      - 500
+      - 1000
+      ... and 55 more
+    label:
+      - man28aa_security01
+      - man28aa_security02
+      - man28aa_security03
+      - man28ad_final
+      - QA_TEST_PLOT
+      - kor33_shaardan
+      - kor33_lashowe
+      - kor33_mekel
+      - kor25_doubtsith
+      - kor35_aidlashowe
+      - kor33_enteracademy
+      - kor33_findstarmap
+      - kor35_renegadesith
+      - kor38_roguedroid
+      - kor35_codesith
+      - kor35_doublecross
+      - kor35_doublecross2
+      - kor38_hermit
+      - kor35_mandalorian
+      - kor37_ajuntapall
+      ... and 55 more
+  plot_definitions:
+    [0]
+      index: 0
+      label: man28aa_security01
+      xp: 100
+    [1]
+      index: 1
+      label: man28aa_security02
+      xp: 200
+    [2]
+      index: 2
+      label: man28aa_security03
+      xp: 300
+    [3]
+      index: 3
+      label: man28ad_final
+      xp: 1000
+    [4]
+      index: 4
+      label: QA_TEST_PLOT
+      xp: 3000
+    [5]
+      index: 5
+      label: kor33_shaardan
+      xp: 250
+    [6]
+      index: 6
+      label: kor33_lashowe
+      xp: 250
+    [7]
+      index: 7
+      label: kor33_mekel
+      xp: 500
+    [8]
+      index: 8
+      label: kor25_doubtsith
+      xp: 500
+    [9]
+      index: 9
+      label: kor35_aidlashowe
+      xp: 1000
+    [10]
+      index: 10
+      label: kor33_enteracademy
+      xp: 1000
+    [11]
+      index: 11
+      label: kor33_findstarmap
+      xp: 250
+    [12]
+      index: 12
+      label: kor35_renegadesith
+      xp: 1000
+    [13]
+      index: 13
+      label: kor38_roguedroid
+      xp: 1000
+    [14]
+      index: 14
+      label: kor35_codesith
+      xp: 250
+    [15]
+      index: 15
+      label: kor35_doublecross
+      xp: 500
+    [16]
+      index: 16
+      label: kor35_doublecross2
+      xp: 500
+    [17]
+      index: 17
+      label: kor38_hermit
+      xp: 1000
+    [18]
+      index: 18
+      label: kor35_mandalorian
+      xp: 500
+    [19]
+      index: 19
+      label: kor37_ajuntapall
+      xp: 1000
+    ... and 30 more
+
+
+PLOT CREATURES
+--------------------------------------------------------------------------------
+  count: 0
+  creatures:
+
+
+PLOT PLACEABLES
+--------------------------------------------------------------------------------
+  count: 7
+  placeables:
+    [0]
+      resref: g_zoncont
+      tag: g_zoncont
+      name: 42799
+      plot_flag: True
+    [1]
+      resref: k_star_map_01
+      tag: K_STAR_MAP_01
+      name: 6277
+      plot_flag: True
+    [2]
+      resref: k_star_map_02
+      tag: K_STAR_MAP_02
+      name: 6278
+      plot_flag: True
+    [3]
+      resref: k_star_map_03
+      tag: K_STAR_MAP_03
+      name: 6279
+      plot_flag: True
+    [4]
+      resref: k_star_map_04
+      tag: K_STAR_MAP_04
+      name: 6280
+      plot_flag: True
+    [5]
+      resref: k_star_map_05
+      tag: K_STAR_MAP_05
+      name: 6281
+      plot_flag: True
+    [6]
+      resref: plc_starmap
+      tag: StarMap
+      name: 32513
+      plot_flag: True
+
+
+PLOT DOORS
+--------------------------------------------------------------------------------
+  count: 0
+  doors:
+
+
+PLOT ITEMS
+--------------------------------------------------------------------------------
+  count: 6
+  items:
+    [0]
+      resref: g_i_pazdeck
+      tag: g_i_pazdeck
+      name: 32473
+      plot_flag: 1
+    [1]
+      resref: g_i_pazsidebd001
+      tag: g_I_PazSidebd001
+      name: 32343
+      plot_flag: 1
+    [2]
+      resref: geno_datapad
+      tag: Geno_Datapad
+      name: 5773
+      plot_flag: 1
+    [3]
+      resref: kas25_wookcrysta
+      tag: kas25_wookcrysta
+      name: 12838
+      plot_flag: 1
+    [4]
+      resref: ptar_sitharmor
+      tag: ptar_sitharmor
+      name: 22873
+      plot_flag: 1
+    [5]
+      resref: tat17_sandperdis
+      tag: tat17_sandperdis
+      name: 29877
+      plot_flag: 1

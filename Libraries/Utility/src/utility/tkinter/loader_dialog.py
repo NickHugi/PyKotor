@@ -45,7 +45,7 @@ class LoadingDialog(tk.Toplevel):
 
     def start_work_thread(self):
         if self.func is not None:
-            self.work_thread = threading.Thread(target=self.work_task)
+            self.work_thread = threading.Thread(target=self.work_task, name="LoadingDialog_worker_thread")
             self.work_thread.start()
 
     def work_task(self):

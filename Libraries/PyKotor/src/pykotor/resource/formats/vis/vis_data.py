@@ -5,22 +5,36 @@ from __future__ import annotations
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING, Any
 
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from collections.abc import Generator
 
 
-class VIS:
+class VIS(ComparableMixin):
     """Represents a VIS file."""
 
     BINARY_TYPE = ResourceType.VIS
+    COMPARABLE_SET_FIELDS = ("_rooms",)
+    COMPARABLE_FIELDS = ("_visibility",)
 
     def __init__(
         self,
     ):
         self._rooms: set[str] = set()
         self._visibility: dict[str, set[str]] = {}
+
+    def __eq__(self, other):
+        if not isinstance(other, VIS):
+            return NotImplemented
+        return self._rooms == other._rooms and self._visibility == other._visibility
+
+    def __hash__(self):
+        return hash((
+            tuple(sorted(self._rooms)),
+            tuple(sorted((k, tuple(sorted(v))) for k, v in self._visibility.items())),
+        ))
 
     def __iter__(
         self,

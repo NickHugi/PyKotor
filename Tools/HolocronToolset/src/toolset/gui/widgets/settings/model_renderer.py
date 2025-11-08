@@ -3,7 +3,7 @@ from __future__ import annotations
 from toolset.data.settings import Settings
 
 
-class ModelRendererSettings(Settings):
+class ModelRendererSettings(Settings):  # TODO(NickHugi):
     def __init__(self):
         super().__init__("ModelRenderer")
 

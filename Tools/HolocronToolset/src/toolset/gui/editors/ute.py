@@ -1,22 +1,25 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
+import qtpy
+
+from qtpy.QtWidgets import QCheckBox, QDoubleSpinBox, QSizePolicy, QSpinBox
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.ute import UTE, UTECreature, dismantle_ute, read_ute
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
+from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QTableWidgetItem, QWidget
 
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -43,10 +46,19 @@ class UTEEditor(Editor):
             - Initialize UTE object
             - Call new() to start with a blank trigger.
         """
-        supported: list[ResourceType] = [ResourceType.UTE]
+        supported: list[ResourceType] = [ResourceType.UTE, ResourceType.BTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        from toolset.uic.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -98,14 +110,31 @@ class UTEEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         difficulties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
-
         self.ui.difficultySelect.clear()
         self.ui.difficultySelect.setItems(difficulties.get_column("label"))
+        self.ui.difficultySelect.setContext(difficulties, installation, HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
+        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         self.ui.factionSelect.clear()
-        self.ui.difficultySelect.setItems(factions.get_column("label"))
+        self.ui.factionSelect.setItems(factions.get_column("label"))
+        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+
+        self._installation.setupFileContextMenu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onExhaustedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+        self.relevant_creature_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.UTC, self._filepath
+                    )
+                }
+            )
+        )
 
     def load(
         self,
@@ -159,14 +188,36 @@ class UTEEditor(Editor):
         for _ in range(self.ui.creatureTable.rowCount()):
             self.ui.creatureTable.removeRow(0)
         for creature in ute.creatures:
-            self.addCreature(str(creature.resref), creature.appearance_id, creature.challenge_rating, creature.single_spawn)
+            self.addCreature(
+                resname=str(creature.resref),
+                appearanceId=creature.appearance_id,
+                challenge=creature.challenge_rating,
+                single=creature.single_spawn,
+            )
 
         # Scripts
-        self.ui.onEnterEdit.setText(str(ute.on_entered))
-        self.ui.onExitEdit.setText(str(ute.on_exit))
-        self.ui.onExhaustedEdit.setText(str(ute.on_exhausted))
-        self.ui.onHeartbeatEdit.setText(str(ute.on_heartbeat))
-        self.ui.onUserDefinedEdit.setText(str(ute.on_user_defined))
+        self.ui.onEnterSelect.setComboBoxText(str(ute.on_entered))
+        self.ui.onExitSelect.setComboBoxText(str(ute.on_exit))
+        self.ui.onExhaustedEdit.setComboBoxText(str(ute.on_exhausted))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(ute.on_heartbeat))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(ute.on_user_defined))
+
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
+        )
+
+        self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onExhaustedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
 
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)
@@ -208,23 +259,23 @@ class UTEEditor(Editor):
         # Creatures
         ute.creatures = []
         for i in range(self.ui.creatureTable.rowCount()):
-            singleCheckbox: QCheckBox = self.ui.creatureTable.cellWidget(i, 0)
-            challengeSpin: QDoubleSpinBox = self.ui.creatureTable.cellWidget(i, 1)
-            appearanceSpin: QSpinBox = self.ui.creatureTable.cellWidget(i, 2)
+            singleCheckbox = cast("QCheckBox", self.ui.creatureTable.cellWidget(i, 0))
+            challengeSpin = cast("QDoubleSpinBox", self.ui.creatureTable.cellWidget(i, 1))
+            appearanceSpin = cast("QSpinBox", self.ui.creatureTable.cellWidget(i, 2))
 
             creature = UTECreature()
-            creature.resref = ResRef(self.ui.creatureTable.item(i, 3).text())
+            creature.resref = ResRef(cast("FilterComboBox", self.ui.creatureTable.item(i, 3)).currentText())
             creature.single_spawn = singleCheckbox.isChecked()
             creature.appearance_id = appearanceSpin.value()
             creature.challenge_rating = challengeSpin.value()
             ute.creatures.append(creature)
 
         # Scripts
-        ute.on_entered = ResRef(self.ui.onEnterEdit.text())
-        ute.on_exit = ResRef(self.ui.onExitEdit.text())
-        ute.on_exhausted = ResRef(self.ui.onExhaustedEdit.text())
-        ute.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        ute.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        ute.on_entered = ResRef(self.ui.onEnterSelect.currentText())
+        ute.on_exit = ResRef(self.ui.onExitSelect.currentText())
+        ute.on_exhausted = ResRef(self.ui.onExhaustedEdit.currentText())
+        ute.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
+        ute.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
 
         # Comments
         ute.comment = self.ui.commentsEdit.toPlainText()
@@ -271,7 +322,7 @@ class UTEEditor(Editor):
         self.ui.respawnCountSpin.setValue(val)
         self.ui.respawnCountSpin.setEnabled(enabled)
 
-    def setContinuous(self):
+    def setContinuous(self, *args, **kwargs):
         isContinuous = self.ui.spawnSelect.currentIndex() == 1
         self.ui.respawnsCheckbox.setEnabled(isContinuous)
         self.ui.infiniteRespawnCheckbox.setEnabled(isContinuous)
@@ -280,6 +331,7 @@ class UTEEditor(Editor):
 
     def addCreature(
         self,
+        *args,
         resname: str = "",
         appearanceId: int = 0,
         challenge: float = 0.0,
@@ -312,11 +364,18 @@ class UTEEditor(Editor):
         challengeSpin.setValue(challenge)
         appearanceSpin = QSpinBox()
         appearanceSpin.setValue(appearanceId)
+        resrefCombo = FilterComboBox()
+        resrefCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        resrefCombo.setMinimumWidth(20)
+        resrefCombo.populateComboBox(self.relevant_creature_resnames)
+        resrefCombo.setComboBoxText(resname)
+        if self._installation is not None:
+            self._installation.setupFileContextMenu(resrefCombo, [ResourceType.UTC])
 
         self.ui.creatureTable.setCellWidget(rowId, 0, singleCheckbox)
         self.ui.creatureTable.setCellWidget(rowId, 1, challengeSpin)
         self.ui.creatureTable.setCellWidget(rowId, 2, appearanceSpin)
-        self.ui.creatureTable.setItem(rowId, 3, QTableWidgetItem(resname))
+        self.ui.creatureTable.setCellWidget(rowId, 3, resrefCombo)
 
     def removeSelectedCreature(self):
         if self.ui.creatureTable.selectedItems():

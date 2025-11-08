@@ -75,6 +75,7 @@ def read_2da(
     source: SOURCE_TYPES,
     offset: int = 0,
     size: int | None = None,
+    file_format: ResourceType | None = None,
 ) -> TwoDA:
     """Returns an TwoDA instance from the source.
 
@@ -85,6 +86,7 @@ def read_2da(
         source: The source of the data.
         offset: The byte offset of the file inside the data.
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
+        file_format: The file format to use (ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON). If not specified, it will be detected automatically.
 
     Raises:
     ------
@@ -97,17 +99,18 @@ def read_2da(
     -------
         An TwoDA instance.
     """
-    file_format: ResourceType = detect_2da(source, offset)
+    if file_format is None:
+        file_format = detect_2da(source, offset)
 
-    if file_format == ResourceType.INVALID:
+    if file_format is ResourceType.INVALID:
         msg = "Failed to determine the format of the 2DA file."
         raise ValueError(msg)
 
-    if file_format == ResourceType.TwoDA:
+    if file_format is ResourceType.TwoDA:
         return TwoDABinaryReader(source, offset, size or 0).load()
-    if file_format == ResourceType.TwoDA_CSV:
+    if file_format is ResourceType.TwoDA_CSV:
         return TwoDACSVReader(source, offset, size or 0).load()
-    if file_format == ResourceType.TwoDA_JSON:
+    if file_format is ResourceType.TwoDA_JSON:
         return TwoDAJSONReader(source, offset, size or 0).load()
     msg = "detect_2da failed unexpectedly"
     raise ValueError(msg)
@@ -134,11 +137,11 @@ def write_2da(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.TwoDA:
+    if file_format is ResourceType.TwoDA:
         TwoDABinaryWriter(twoda, target).write()
-    elif file_format == ResourceType.TwoDA_CSV:
+    elif file_format is ResourceType.TwoDA_CSV:
         TwoDACSVWriter(twoda, target).write()
-    elif file_format == ResourceType.TwoDA_JSON:
+    elif file_format is ResourceType.TwoDA_JSON:
         TwoDAJSONWriter(twoda, target).write()
     else:
         msg = "Unsupported format specified; use TwoDA, TwoDA_CSV or TwoDA_JSON."

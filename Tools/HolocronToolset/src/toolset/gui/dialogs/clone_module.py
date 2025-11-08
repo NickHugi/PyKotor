@@ -2,15 +2,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QMessageBox
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QDialog, QMessageBox
 
 from pykotor.common.module import Module
 from pykotor.tools import module
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -52,8 +55,18 @@ class CloneModuleDialog(QDialog):
             - Loads available modules into the dropdown.
         """
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.WindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint))
 
-        from toolset.uic.dialogs import clone_module  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = clone_module.Ui_Dialog()
         self.ui.setupUi(self)
@@ -117,20 +130,20 @@ class CloneModuleDialog(QDialog):
 
         if copyTextures:
             QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "This may take a while",
                 "You have selected to create copies of the " "texture. This process may add a few extra minutes to the waiting time.",
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec_()
 
         if not AsyncLoader(self, "Creating module", task, "Failed to create module").exec_():
             return
 
         QMessageBox(
-            QMessageBox.Information,
+            QMessageBox.Icon.Information,
             "Clone Successful",
             f"You can now warp to the cloned module '{identifier}'.",
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         ).exec_()
 
     def loadModules(self):
@@ -151,7 +164,7 @@ class CloneModuleDialog(QDialog):
         options: dict[str, ModuleOption] = {}
         for installation in self._installations.values():
             for filename, name in installation.module_names().items():
-                root = Module.get_root(filename)
+                root = Module.find_root(filename)
                 if root not in options:
                     options[root] = ModuleOption(name, root, [], installation)
                 options[root].files.append(filename)

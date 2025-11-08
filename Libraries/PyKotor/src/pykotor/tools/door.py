@@ -2,20 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.resource.formats.twoda import read_2da
+from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
-    from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.utd import UTD
+    from pykotor.resource.type import SOURCE_TYPES
 
 
 def get_model(
     utd: UTD,
     installation: Installation,
     *,
-    genericdoors: TwoDA | None = None,
+    genericdoors: TwoDA | SOURCE_TYPES | None = None,
 ) -> str:
     """Returns the model name for the given door.
 
@@ -23,15 +23,24 @@ def get_model(
 
     Args:
     ----
-        utd: UTD object of the target door.
+        utd: UTD object of the door to lookup the model for.
         installation: The relevant installation.
         genericdoors: The genericdoors.2da loaded into a TwoDA object.
 
     Returns:
     -------
         Returns the model name for the door.
+
+    Raises:
+    ------
+        ValueError: genericdoors.2da not found in passed arguments OR the installation.
     """
     if genericdoors is None:
-        genericdoors = read_2da(installation.resource("placeables", ResourceType.TwoDA).data)
+        result = installation.resource("genericdoors", ResourceType.TwoDA)
+        if not result:
+            raise ValueError("Resource 'genericdoors.2da' not found in the installation, cannot get UTD model.")
+        genericdoors = read_2da(result.data)
+    if not isinstance(genericdoors, TwoDA):
+        genericdoors = read_2da(genericdoors)
 
     return genericdoors.get_row(utd.appearance_id).get_string("modelname")

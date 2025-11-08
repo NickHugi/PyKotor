@@ -38,7 +38,7 @@ def detect_ssf(
         The format of the SSF data.
     """
 
-    def check(first4) -> ResourceType:
+    def check(first4: str) -> ResourceType:
         if first4 == "SSF ":
             return ResourceType.SSF
         if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
@@ -73,6 +73,7 @@ def read_ssf(
     source: SOURCE_TYPES,
     offset: int = 0,
     size: int | None = None,
+    file_format: ResourceType | None = None,
 ) -> SSF:
     """Returns an SSF instance from the source.
 
@@ -83,6 +84,7 @@ def read_ssf(
         source: The source of the data.
         offset: The byte offset of the file inside the data.
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
+        file_format: The file format to use (ResourceType.SSF, ResourceType.SSF_XML). If not specified, it will be detected automatically.
 
     Raises:
     ------
@@ -95,15 +97,16 @@ def read_ssf(
     -------
         An SSF instance.
     """
-    file_format: ResourceType = detect_ssf(source, offset)
+    if file_format is None:
+        file_format = detect_ssf(source, offset)
 
-    if file_format == ResourceType.INVALID:
+    if file_format is ResourceType.INVALID:
         msg = "Failed to determine the format of the GFF file."
         raise ValueError(msg)
 
-    if file_format == ResourceType.SSF:
+    if file_format is ResourceType.SSF:
         return SSFBinaryReader(source, offset, size or 0).load()
-    if file_format == ResourceType.SSF_XML:
+    if file_format is ResourceType.SSF_XML:
         return SSFXMLReader(source, offset, size or 0).load()
     msg = "Failed to determine the format of the GFF file."
     raise ValueError(msg)
@@ -128,9 +131,9 @@ def write_ssf(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.SSF:
+    if file_format is ResourceType.SSF:
         SSFBinaryWriter(ssf, target).write()
-    elif file_format == ResourceType.SSF_XML:
+    elif file_format is ResourceType.SSF_XML:
         SSFXMLWriter(ssf, target).write()
     else:
         msg = "Unsupported format specified; use SSF or SSF_XML."
@@ -160,4 +163,4 @@ def bytes_ssf(
     """
     data = bytearray()
     write_ssf(ssf, data, file_format)
-    return data
+    return bytes(data)

@@ -132,14 +132,16 @@ class PTHEdge:
 
     def __eq__(
         self,
-        other: PTHEdge,
+        other: PTHEdge | object,
     ):
+        if self is other:
+            return True
         if isinstance(other, PTHEdge):
             return self.source == other.source and self.target == other.target
-
-        msg = f"Cannot compare {self!r} with {other!r}."
-        print(msg)
         return NotImplemented
+
+    def __hash__(self):
+        return hash((self.source, self.target))
 
 
 def construct_pth(
@@ -158,7 +160,10 @@ def construct_pth(
         source: int = pth.add(x, y)
 
         for i in range(first_connection, first_connection + connections):
-            target: int = connections_list.at(i).acquire("Destination", 0)
+            connection_struct = connections_list.at(i)
+            if connection_struct is None:
+                continue
+            target: int = connection_struct.acquire("Destination", 0)
             pth.connect(source, target)
 
     return pth

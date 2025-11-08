@@ -106,7 +106,6 @@ def main():
                     "qt5-applications",
                     "watchdog",
                     "Markdown",
-                    "pyperclip",
                     "setuptools",
                     "java",
                     "java.lang",
@@ -142,7 +141,7 @@ def main():
                     "dest_base": "HoloPatcher",
                     "version_info": {
                         "description": project_metadata["description"],
-                        "copyright": "GPLv3 Licensing",
+                        "copyright": "LGPL-3.0-or-later Licensing",
                         "version": VERSION,
                         "product_name": "HoloPatcher",
                         "internal_name": "PyKotor",

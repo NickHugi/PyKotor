@@ -1,3 +1,4 @@
 requests  # for 'check for updates' feature.
 pycryptodome  # for autoupdate feature.
 charset-normalizer>=2.0,<3.4  # auto-detect encoding of INI/RTF files
+pypandoc  # basic rtf -> html parser

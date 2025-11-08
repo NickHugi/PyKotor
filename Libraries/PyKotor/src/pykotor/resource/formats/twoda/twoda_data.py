@@ -6,6 +6,7 @@ from contextlib import suppress
 from copy import copy
 from typing import TYPE_CHECKING, Any, TypeVar
 
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -15,10 +16,11 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class TwoDA:
+class TwoDA(ComparableMixin):
     """Represents a 2DA file."""
 
     BINARY_TYPE = ResourceType.TwoDA
+    COMPARABLE_SEQUENCE_FIELDS = ("_rows", "_headers", "_labels")
 
     def __init__(
         self,
@@ -27,6 +29,22 @@ class TwoDA:
         self._rows: list[dict[str, str]] = []
         self._headers: list[str] = [] if headers is None else headers  # for columns
         self._labels: list[str] = []  # for rows
+
+    def __eq__(self, other):
+        if not isinstance(other, TwoDA):
+            return NotImplemented
+        return (
+            self._rows == other._rows
+            and self._headers == other._headers
+            and self._labels == other._labels
+        )
+
+    def __hash__(self):
+        return hash((
+            tuple(tuple(sorted(row.items())) for row in self._rows),
+            tuple(self._headers),
+            tuple(self._labels)
+        ))
 
     def __repr__(
         self,
@@ -74,6 +92,17 @@ class TwoDA:
             raise KeyError(msg)
 
         return [self._rows[i][header] for i in range(self.get_height())]
+
+    def get_columns(
+        self,
+    ) -> dict[str, list[str]]:
+        """Returns all columns as a dictionary mapping header names to their column values.
+
+        Returns:
+        -------
+            A dictionary where keys are column headers and values are lists of cells.
+        """
+        return {header: self.get_column(header) for header in self._headers}
 
     def add_column(
         self,
@@ -142,6 +171,22 @@ class TwoDA:
         """
         return self._labels[row_index]
 
+    def get_row_label(
+        self,
+        row_index: int,
+    ) -> str:
+        """Returns the row label for the given row.
+
+        Args:
+        ----
+            row_index: The index of the row.
+
+        Returns:
+        -------
+            Returns the row label.
+        """
+        return self.get_label(row_index)
+
     def set_label(
         self,
         row_index: int,
@@ -159,6 +204,7 @@ class TwoDA:
     def get_row(
         self,
         row_index: int,
+        context: str | None = None,
     ) -> TwoDARow:
         """Returns a TwoDARow instance which can update and retrieve the values of the cells for the specified row.
 
@@ -174,7 +220,12 @@ class TwoDA:
         -------
             A new TwoDARow instance.
         """
-        return TwoDARow(self.get_label(row_index), self._rows[row_index])
+        try:
+            label_row = self.get_label(row_index)
+        except IndexError as e:
+            e.args = (f"Row index {row_index} not found in the 2DA." + (f" Context: {context}" if context is not None else ""),)
+            raise
+        return TwoDARow(label_row, self._rows[row_index])
 
     def find_row(
         self,
@@ -397,7 +448,7 @@ class TwoDA:
         """
         max_found = -1
         for cell in self.get_column(header):
-            with suppress(ValueError, IndexError):
+            with suppress(ValueError):
                 max_found = max(int(cell), max_found)
 
         return max_found + 1
@@ -424,12 +475,16 @@ class TwoDA:
         """
         max_found = -1
         for label in self.get_labels():
-            with suppress(ValueError, IndexError):
+            with suppress(ValueError):
                 max_found = max(int(label), max_found)
 
         return max_found + 1
 
-    def compare(self, other: TwoDA, log_func: Callable = print) -> bool:
+    def compare(
+        self,
+        other: TwoDA,
+        log_func: Callable = print,
+    ) -> bool:
         """Compares two TwoDA objects.
 
         Args:
@@ -496,7 +551,8 @@ class TwoDA:
         return ret
 
 
-class TwoDARow:
+class TwoDARow(ComparableMixin):
+    COMPARABLE_FIELDS = ("_row_label", "_data")
     def __init__(
         self,
         row_label: str,
@@ -510,10 +566,15 @@ class TwoDARow:
     ):
         return f"{self.__class__.__name__}(row_label={self._row_label}, row_data={self._data})"
 
-    def __eq__(self, other: TwoDARow):
+    def __eq__(self, other: TwoDARow | object):
+        if self is other:
+            return True
         if isinstance(other, TwoDARow):
             return self._row_label == other._row_label and self._data == other._data
         return NotImplemented
+
+    def __hash__(self):
+        return hash((self._row_label, tuple(sorted(self._data.items()))))
 
     def label(
         self,
@@ -548,6 +609,7 @@ class TwoDARow:
     def get_string(
         self,
         header: str,
+        context: str | None = None,
     ) -> str:
         """Returns the string value for the cell under the specified header.
 
@@ -565,6 +627,8 @@ class TwoDARow:
         """
         if header not in self._data:
             msg = f"The header '{header}' does not exist."
+            if context is not None:
+                msg += f"Context: {context}"
             raise KeyError(msg)
         return self._data[header]
 
@@ -593,7 +657,7 @@ class TwoDARow:
             raise KeyError(msg)
 
         value: int | T = default
-        with suppress(ValueError, IndexError):
+        with suppress(ValueError):
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
         return value
@@ -622,7 +686,7 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        with suppress(ValueError, IndexError):
+        with suppress(ValueError):
             cell = self._data[header]
             return float(cell)
         return default
@@ -728,7 +792,7 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
-        self._set_value(header, value.value if value is not None else None)
+        self._set_value(header, None if value is None else value.value)
 
     def _set_value(self, header: str, value: Enum | float | str | None):
         if header not in self._data:

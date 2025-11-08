@@ -1,71 +1,80 @@
 {
-  "justMyCode": false,
-  "python.analysis.inlayHints.callArgumentNames": "off",
-  "python.analysis.inlayHints.functionReturnTypes": true,
-  "python.analysis.inlayHints.variableTypes": false,
-  "python.analysis.typeCheckingMode": "basic",
-  "launch": {
-  //  "configurations": [],
-    "compounds": [],
-    "justMyCode": true,
-    "debugStdLib": false,
-  },
-  "debug.allowBreakpointsEverywhere": false,
-  "debugStdLib": true,
-  "python.analysis.enablePytestSupport": false,
-  "python.analysis.extraPaths": [
-    "./Tools/BatchPatcher/src",
-    "./Tools/GuiDuplicator/src",
-    "./Tools/HolocronToolset/src",
-    "./Tools/HoloPatcher/src",
-    "./Tools/KotorDiff/src",
-    "./Tools/MDLDecompile/src",
-    "./Libraries/PyKotor/src",
-    "./Libraries/PyKotorGL/src",
-    "./Libraries/PyKotorFont/src",
-    "./Libraries/Utility/src",
-  ],
-  "remote.WSL.fileWatcher.polling": true,
-  "files.watcherExclude": {
-      "**/.git/**": true
-  },
-  "python.testing.autoTestDiscoverOnSaveEnabled": true,
-  "python.testing.promptToConfigure": true,
-  "python.testing.pytestEnabled": false,
-  "python.testing.unittestEnabled": true,
-  "python.testing.unittestArgs": [
-    "-v",
-    "-s",
-    "./tests",
-    "-p",
-    "*test*.py"
-  ],
-  "python.missingPackage.severity": "Information",
-  "python.terminal.launchArgs": [
-    "-i",
-    "-m",
-    "debugpy",
-    "--listen",
-    "5678",
-    "--wait-for-client"
-  ],
-  "python.analysis.diagnosticSeverityOverrides": {
-    "reportGeneralTypeIssues": "warning",
-    "reportOptionalMemberAccess": "warning", // Ignores issues with defs that can optionally be None.
-    "reportCallIssue": "warning",  // doesn't handle NamedTuple correctly.
-    "reportAssignmentType": "warning",
-    "reportArgumentType": "warning",
-  },
-  "mypy-type-checker.args": [
-    "--check-untyped-defs" // Ignores issues with defs that can optionally be None.
-  ],
-  "python.analysis.autoFormatStrings": true,
-  "mypy.targets": [
-    "Libraries",
-    "Tools"
-  ],
-  "mypy.extraArguments": [
-    "--exclude='./.venv'",
-    "--exclude='tests/results'"
-  ],
+    "python.analysis.inlayHints.callArgumentNames": "off",
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "python.analysis.inlayHints.variableTypes": false,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.enablePytestSupport": true,
+    "python.analysis.extraPaths": [
+        "./Tools/BatchPatcher/src",
+        "./Tools/GuiConverter/src",
+        "./Tools/HolocronToolset/src",
+        "./Tools/HoloPatcher/src",
+        "./Tools/KotorDiff/src",
+        "./Tools/MDLDecompile/src",
+        "./Libraries/PyKotor/src",
+        "./Libraries/PyKotorGL/src",
+        "./Libraries/PyKotorFont/src",
+        "./Libraries/Utility/src"
+    ],
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.missingPackage.severity": "Information",
+
+    "python.terminal.launchArgs": [
+        "-i",
+        "-m",
+        "debugpy",
+        "--listen",
+        "5678",
+        "--wait-for-client"
+    ],
+    "python.testing.unittestEnabled": true,
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "*test*.py"
+    ],
+
+    "launch": {
+        "compounds": [],
+        "justMyCode": false,
+        "debugStdLib": true
+    },
+
+    "github-actions.workflows.pinned.workflows": [
+        ".github/workflows/publish_and_test_pykotor.yml"
+    ],
+
+    "mypy.extraArguments": [
+        "--exclude=./.venv",
+        "--exclude=tests/results",
+        "--check-untyped-defs",
+        "-v",
+        "--explicit-package-bases"
+    ],
+    "mypy.runUsingActiveInterpreter": true,
+    "mypy-type-checker.args": [
+        "--check-untyped-defs",
+        "--explicit-package-bases"
+    ],
+    "mypy-type-checker.preferDaemon": true,
+    "mypy-type-checker.reportingScope": "file",
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+
+    "remote.WSL.fileWatcher.polling": true,
+
+    "files.watcherExclude": {
+        "**/.git/**": true
+    },
+    "editor.inlineSuggest.enabled": true,
+    "editor.quickSuggestions": {
+        "other": "inline",
+        "comments": true,
+        "strings": true
+    },
+    "editor.quickSuggestionsDelay": 100,
+    "debugpy.debugJustMyCode": true,
+    "pythonTestExplorer.outputs.showOutputsOnRun": true,
+    "pythonTestExplorer.testFramework": "unittest"
 }

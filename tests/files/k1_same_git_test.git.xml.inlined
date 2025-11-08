@@ -1,0 +1,1179 @@
+<gff3>
+  <struct id="-1">
+    <struct label="AreaProperties" id="100">
+      <sint32 label="AmbientSndDay">8</sint32>
+      <sint32 label="AmbientSndNight">8</sint32>
+      <sint32 label="AmbientSndDayVol">82</sint32>
+      <sint32 label="AmbientSndNitVol">60</sint32>
+      <sint32 label="EnvAudio">58</sint32>
+      <sint32 label="MusicBattle">39</sint32>
+      <sint32 label="MusicDay">19</sint32>
+      <sint32 label="MusicNight">19</sint32>
+      <sint32 label="MusicDelay">5000</sint32>
+      </struct>
+    <list label="CameraList">
+      <struct id="14">
+        <sint32 label="CameraID">10</sint32>
+        <vector label="Position">
+          <double>28.31999969482422</double>
+          <double>-26.440000534057617</double>
+          <double>-0.03999999910593033</double>
+          </vector>
+        <float label="Pitch">90.0</float>
+        <float label="MicRange">0.0</float>
+        <orientation label="Orientation">
+          <double>0.8786699771881104</double>
+          <double>0.0</double>
+          <double>0.0</double>
+          <double>0.4774399995803833</double>
+          </orientation>
+        <float label="Height">1.5</float>
+        <float label="FieldOfView">45.0</float>
+        </struct>
+      </list>
+    <list label="Creature List">
+      <struct id="4">
+        <float label="XPosition">13.425110816955566</float>
+        <float label="YPosition">-29.33724594116211</float>
+        <float label="ZPosition">-0.03956466168165207</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand02</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">34.720001220703125</float>
+        <float label="YPosition">32.290000915527344</float>
+        <float label="ZPosition">0.0</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">9.819999694824219</float>
+        <float label="YPosition">37.45000076293945</float>
+        <float label="ZPosition">-0.03999999910593033</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand02</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">7.019999980926514</float>
+        <float label="YPosition">7.679999828338623</float>
+        <float label="ZPosition">-0.03999999910593033</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">25.889999389648438</float>
+        <float label="YPosition">-9.579999923706055</float>
+        <float label="ZPosition">-0.03999999910593033</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">14.779999732971191</float>
+        <float label="YPosition">-14.130000114440918</float>
+        <float label="ZPosition">-0.03999999910593033</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand02</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">24.170000076293945</float>
+        <float label="YPosition">-13.239999771118164</float>
+        <float label="ZPosition">-0.03999999910593033</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">73.47000122070312</float>
+        <float label="YPosition">-14.270000457763672</float>
+        <float label="ZPosition">0.0</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">28.219999313354492</float>
+        <float label="YPosition">-41.36000061035156</float>
+        <float label="ZPosition">-0.03999999910593033</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">-7.489999771118164</float>
+        <float label="YPosition">-34.619998931884766</float>
+        <float label="ZPosition">-0.07999999821186066</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">4.409999847412109</float>
+        <float label="YPosition">-64.88999938964844</float>
+        <float label="ZPosition">-0.07999999821186066</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand03</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">18.860000610351562</float>
+        <float label="YPosition">-30.469999313354492</float>
+        <float label="ZPosition">-0.03999999910593033</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">50.61000061035156</float>
+        <float label="YPosition">-30.059999465942383</float>
+        <float label="ZPosition">-0.03999999910593033</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">31.81999969482422</float>
+        <float label="YPosition">-27.219999313354492</float>
+        <float label="ZPosition">-0.03999999910593033</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_umand01</resref>
+        </struct>
+      <struct id="4">
+        <float label="XPosition">13.425110816955566</float>
+        <float label="YPosition">-29.33724594116211</float>
+        <float label="ZPosition">-0.03956466168165207</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        <resref label="TemplateResRef">ldr_meddrd</resref>
+        </struct>
+      </list>
+    <list label="Door List">
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_static</resref>
+        <exostring label="Tag">ldr_static</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">22.17009925842285</float>
+        <float label="Y">56.30179977416992</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3224629</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_agtoae</resref>
+        <exostring label="Tag">ldr_agtoae</exostring>
+        <resref label="LinkedToModule">unk_m41ae</resref>
+        <exostring label="LinkedTo">ldr_from41ag</exostring>
+        <byte label="LinkedToFlags">2</byte>
+        <locstring label="TransitionDestin" strref="-1">
+          <string language="0">Command Deck</string>
+          </locstring>
+        <float label="X">22.17009925842285</float>
+        <float label="Y">46.18550109863281</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3224629</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_agtoah</resref>
+        <exostring label="Tag">ldr_agtoah</exostring>
+        <resref label="LinkedToModule">unk_m41ah</resref>
+        <exostring label="LinkedTo">ldr_from41ah</exostring>
+        <byte label="LinkedToFlags">2</byte>
+        <locstring label="TransitionDestin" strref="-1">
+          <string language="0">Engine Deck</string>
+          </locstring>
+        <float label="X">22.007699966430664</float>
+        <float label="Y">-47.4744987487793</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">5855577</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">36.816001892089844</float>
+        <float label="Y">-42.07780075073242</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3817023</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">1.822510004043579</float>
+        <float label="Y">-56.8745002746582</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3817023</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_agtoaj</resref>
+        <exostring label="Tag">ldr_agtoaj</exostring>
+        <resref label="LinkedToModule">unk_m41aj</resref>
+        <exostring label="LinkedTo">ldr_from41aj</exostring>
+        <byte label="LinkedToFlags">2</byte>
+        <locstring label="TransitionDestin" strref="-1">
+          <string language="0">Revan's Quarters</string>
+          </locstring>
+        <float label="X">51.61140060424805</float>
+        <float label="Y">-47.4744987487793</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">5855577</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">-8.23904037475586</float>
+        <float label="Y">-19.849700927734375</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3948352</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">76.52339935302734</float>
+        <float label="Y">-22.562400817871094</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">4540489</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">57.014198303222656</float>
+        <float label="Y">-12.444000244140625</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">4540489</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">66.41619873046875</float>
+        <float label="Y">-42.06909942626953</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3948352</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">27.497699737548828</float>
+        <float label="Y">-12.4483003616333</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">4409159</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">11.204601287841797</float>
+        <float label="Y">-9.727629661560059</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3948352</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">22.17009925842285</float>
+        <float label="Y">-4.606810092926025</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3224629</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">22.17009925842285</float>
+        <float label="Y">5.206429481506348</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3224629</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">16.777000427246094</float>
+        <float label="Y">31.300100326538086</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3224629</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">27.58679962158203</float>
+        <float label="Y">31.300100326538086</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3224629</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">16.770999908447266</float>
+        <float label="Y">11.056500434875488</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3224629</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">42.217899322509766</float>
+        <float label="Y">-17.83839988708496</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">5855577</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">1.822510004043579</float>
+        <float label="Y">-36.67219924926758</float>
+        <float label="Z">-1.525880009012326e-07</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3948352</uint32>
+        </struct>
+      <struct id="8">
+        <resref label="TemplateResRef">ldr_door</resref>
+        <exostring label="Tag">ldr_door</exostring>
+        <resref label="LinkedToModule" />
+        <exostring label="LinkedTo" />
+        <byte label="LinkedToFlags">0</byte>
+        <locstring label="TransitionDestin" strref="-1" />
+        <float label="X">27.583099365234375</float>
+        <float label="Y">11.0600004196167</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">1</byte>
+        <uint32 label="TweakColor">3224629</uint32>
+        </struct>
+      </list>
+    <list label="Encounter List" />
+    <list label="List" />
+    <list label="SoundList">
+      <struct id="6">
+        <resref label="TemplateResRef">computersoundsrn</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">6.443410873413086</float>
+        <float label="YPosition">-21.94904136657715</float>
+        <float label="ZPosition">1.4604387283325195</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">computersoundsrn</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">14.726645469665527</float>
+        <float label="YPosition">-31.744903564453125</float>
+        <float label="ZPosition">1.4604352712631226</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">computersoundsrn</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">23.341062545776367</float>
+        <float label="YPosition">-25.294204711914062</float>
+        <float label="ZPosition">2.0361194610595703</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">computersoundsrn</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">37.628055572509766</float>
+        <float label="YPosition">-22.83580780029297</float>
+        <float label="ZPosition">1.4604346752166748</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">computersoundsrn</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">35.61634826660156</float>
+        <float label="YPosition">-32.14435577392578</float>
+        <float label="ZPosition">1.4604346752166748</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">computersoundsrn</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">50.38877487182617</float>
+        <float label="YPosition">-31.29869270324707</float>
+        <float label="ZPosition">1.4604346752166748</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">computersoundsrn</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">21.59896469116211</float>
+        <float label="YPosition">-11.25393009185791</float>
+        <float label="ZPosition">2.2563390731811523</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">computersoundsrn</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">38.463226318359375</float>
+        <float label="YPosition">-27.23176383972168</float>
+        <float label="ZPosition">-1.0395653247833252</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">koltotank</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">43.71770477294922</float>
+        <float label="YPosition">-31.321971893310547</float>
+        <float label="ZPosition">1.4604346752166748</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">computersoundsrn</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">-0.27454376220703125</float>
+        <float label="YPosition">-32.86918258666992</float>
+        <float label="ZPosition">1.4612228870391846</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">koltotank</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">18.008129119873047</float>
+        <float label="YPosition">-23.963647842407227</float>
+        <float label="ZPosition">0.16043558716773987</float>
+        </struct>
+      <struct id="6">
+        <resref label="TemplateResRef">metalstrainingar</resref>
+        <uint32 label="GeneratedType">0</uint32>
+        <float label="XPosition">22.77898406982422</float>
+        <float label="YPosition">43.153221130371094</float>
+        <float label="ZPosition">0.9604346752166748</float>
+        </struct>
+      </list>
+    <list label="StoreList" />
+    <list label="TriggerList" />
+    <byte label="UseTemplates">1</byte>
+    <list label="WaypointList">
+      <struct id="5">
+        <byte label="Appearance">1</byte>
+        <exostring label="LinkedTo" />
+        <resref label="TemplateResRef">ldr_from41ae</resref>
+        <exostring label="Tag">ldr_from41ae</exostring>
+        <locstring label="LocalizedName" strref="77889" />
+        <locstring label="Description" strref="-1" />
+        <byte label="HasMapNote">1</byte>
+        <locstring label="MapNote" strref="-1">
+          <string language="0">To Command Deck</string>
+          </locstring>
+        <byte label="MapNoteEnabled">1</byte>
+        <float label="XPosition">22.101900100708008</float>
+        <float label="YPosition">42.766212463378906</float>
+        <float label="ZPosition">-0.03956472873687744</float>
+        <float label="XOrientation">5.6656197557458654e-05</float>
+        <float label="YOrientation">-1.0</float>
+        </struct>
+      <struct id="5">
+        <byte label="Appearance">1</byte>
+        <exostring label="LinkedTo" />
+        <resref label="TemplateResRef">ldr_from41ah</resref>
+        <exostring label="Tag">ldr_from41ah</exostring>
+        <locstring label="LocalizedName" strref="77890" />
+        <locstring label="Description" strref="-1" />
+        <byte label="HasMapNote">1</byte>
+        <locstring label="MapNote" strref="-1">
+          <string language="0">To Engine Deck</string>
+          </locstring>
+        <byte label="MapNoteEnabled">1</byte>
+        <float label="XPosition">22.100980758666992</float>
+        <float label="YPosition">-45.45561981201172</float>
+        <float label="ZPosition">-0.03942537307739258</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        </struct>
+      <struct id="5">
+        <byte label="Appearance">1</byte>
+        <exostring label="LinkedTo" />
+        <resref label="TemplateResRef">ldr_from41aj</resref>
+        <exostring label="Tag">ldr_from41aj</exostring>
+        <locstring label="LocalizedName" strref="77890" />
+        <locstring label="Description" strref="-1" />
+        <byte label="HasMapNote">1</byte>
+        <locstring label="MapNote" strref="-1">
+          <string language="0">To Revan's Quarters</string>
+          </locstring>
+        <byte label="MapNoteEnabled">1</byte>
+        <float label="XPosition">51.71139907836914</float>
+        <float label="YPosition">-45.45561981201172</float>
+        <float label="ZPosition">-0.03942537307739258</float>
+        <float label="XOrientation">0.0</float>
+        <float label="YOrientation">1.0</float>
+        </struct>
+      </list>
+    <list label="Placeable List">
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_workbench</resref>
+        <float label="X">-0.6907825469970703</float>
+        <float label="Y">-32.831974029541016</float>
+        <float label="Z">-0.03877962380647659</float>
+        <float label="Bearing">1.5707942247390747</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_comp</resref>
+        <float label="X">38.12336730957031</float>
+        <float label="Y">-27.213748931884766</float>
+        <float label="Z">-0.03957009315490723</float>
+        <float label="Bearing">1.5707942247390747</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_footlocker5</resref>
+        <float label="X">37.98758316040039</float>
+        <float label="Y">12.329452514648438</float>
+        <float label="Z">0.1304337978363037</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_footlocker6</resref>
+        <float label="X">6.327930927276611</float>
+        <float label="Y">32.54682540893555</float>
+        <float label="Z">0.13043594360351562</float>
+        <float label="Bearing">3.14156436920166</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_plstc7</resref>
+        <float label="X">14.28121566772461</float>
+        <float label="Y">38.29270935058594</float>
+        <float label="Z">-0.03956568241119385</float>
+        <float label="Bearing">-1.5707942247390747</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_plstc8</resref>
+        <float label="X">36.86442184448242</float>
+        <float label="Y">6.528404235839844</float>
+        <float label="Z">-0.03106510639190674</float>
+        <float label="Bearing">-3.141535997390747</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_footlocker1</resref>
+        <float label="X">6.419308662414551</float>
+        <float label="Y">12.378714561462402</float>
+        <float label="Z">0.133353590965271</float>
+        <float label="Bearing">3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_refpilemed</resref>
+        <float label="X">25.629491806030273</float>
+        <float label="Y">-14.156513214111328</float>
+        <float label="Z">-0.03956735134124756</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_refpilelg</resref>
+        <float label="X">47.267738342285156</float>
+        <float label="Y">-11.006856918334961</float>
+        <float label="Z">0.0013725757598876953</float>
+        <float label="Bearing">1.7671421766281128</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_shpjnklg</resref>
+        <float label="X">38.8605842590332</float>
+        <float label="Y">-14.372123718261719</float>
+        <float label="Z">0.0013899803161621094</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_partpile</resref>
+        <float label="X">-7.3629984855651855</float>
+        <float label="Y">-10.522648811340332</float>
+        <float label="Z">-0.0394132137298584</float>
+        <float label="Bearing">-1.3744451999664307</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_shpjnklg</resref>
+        <float label="X">-7.084817886352539</float>
+        <float label="Y">-17.1240234375</float>
+        <float label="Z">-0.03941309452056885</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_refpilemed</resref>
+        <float label="X">15.130967140197754</float>
+        <float label="Y">-8.923247337341309</float>
+        <float label="Z">-0.03956639766693115</float>
+        <float label="Bearing">1.963485598564148</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_partpile</resref>
+        <float label="X">78.09207916259766</float>
+        <float label="Y">-19.782588958740234</float>
+        <float label="Z">0.00021946430206298828</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_shpjnklg</resref>
+        <float label="X">74.14459991455078</float>
+        <float label="Y">-12.290119171142578</float>
+        <float label="Z">9.5367431640625e-07</float>
+        <float label="Bearing">1.7671421766281128</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">46.85625457763672</float>
+        <float label="Y">-21.597530364990234</float>
+        <float label="Z">-0.039569854736328125</float>
+        <float label="Bearing">3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">50.86072540283203</float>
+        <float label="Y">-21.630640029907227</float>
+        <float label="Z">-0.03955543041229248</float>
+        <float label="Bearing">3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">51.660057067871094</float>
+        <float label="Y">-32.95039749145508</float>
+        <float label="Z">-0.03955543041229248</float>
+        <float label="Bearing">-2.7408351144231347e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">35.25666046142578</float>
+        <float label="Y">-33.01472854614258</float>
+        <float label="Z">-0.03955709934234619</float>
+        <float label="Bearing">-2.7408351144231347e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">31.10634994506836</float>
+        <float label="Y">-32.86901092529297</float>
+        <float label="Z">-0.03955638408660889</float>
+        <float label="Bearing">-2.7408351144231347e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">37.564369201660156</float>
+        <float label="Y">-21.570919036865234</float>
+        <float label="Z">-0.03956524282693863</float>
+        <float label="Bearing">-3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">33.542579650878906</float>
+        <float label="Y">-21.550928115844727</float>
+        <float label="Z">-0.03956513851881027</float>
+        <float label="Bearing">-3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">29.344221115112305</float>
+        <float label="Y">-21.41950225830078</float>
+        <float label="Z">-0.03956490010023117</float>
+        <float label="Bearing">-3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">19.132671356201172</float>
+        <float label="Y">-21.526212692260742</float>
+        <float label="Z">-0.03954780101776123</float>
+        <float label="Bearing">-3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">14.998623847961426</float>
+        <float label="Y">-21.52311897277832</float>
+        <float label="Z">-0.03956442326307297</float>
+        <float label="Bearing">-3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">10.880929946899414</float>
+        <float label="Y">-21.44046401977539</float>
+        <float label="Z">-0.03956442326307297</float>
+        <float label="Bearing">-3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">6.730045318603516</float>
+        <float label="Y">-21.499370574951172</float>
+        <float label="Z">-0.03955495357513428</float>
+        <float label="Bearing">-3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">2.626852035522461</float>
+        <float label="Y">-21.51705551147461</float>
+        <float label="Z">-0.03946554660797119</float>
+        <float label="Bearing">-3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">6.50346565246582</float>
+        <float label="Y">-32.973304748535156</float>
+        <float label="Z">-0.03956007957458496</float>
+        <float label="Bearing">-1.976361296840423e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">10.561617851257324</float>
+        <float label="Y">-32.97661209106445</float>
+        <float label="Z">-0.03955495357513428</float>
+        <float label="Bearing">-1.976361296840423e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">14.596324920654297</float>
+        <float label="Y">-33.01021957397461</float>
+        <float label="Z">-0.03955495357513428</float>
+        <float label="Bearing">-1.976361296840423e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">18.772811889648438</float>
+        <float label="Y">-32.98750305175781</float>
+        <float label="Z">-0.03956524282693863</float>
+        <float label="Bearing">-1.976361296840423e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_plstc1</resref>
+        <float label="X">0.5456008911132812</float>
+        <float label="Y">-21.15228843688965</float>
+        <float label="Z">-0.03950166702270508</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_plstc2</resref>
+        <float label="X">8.48210334777832</float>
+        <float label="Y">-33.39179229736328</float>
+        <float label="Z">-0.03955495357513428</float>
+        <float label="Bearing">3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_plstc3</resref>
+        <float label="X">17.190166473388672</float>
+        <float label="Y">-21.170635223388672</float>
+        <float label="Z">-0.03955543041229248</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_plstc4</resref>
+        <float label="X">33.12230682373047</float>
+        <float label="Y">-33.40436935424805</float>
+        <float label="Z">-0.03957009315490723</float>
+        <float label="Bearing">-3.141538381576538</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_plstc5</resref>
+        <float label="X">53.03544616699219</float>
+        <float label="Y">-21.197803497314453</float>
+        <float label="Z">-0.03955698013305664</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_ktank</resref>
+        <float label="X">43.519798278808594</float>
+        <float label="Y">-31.234699249267578</float>
+        <float label="Z">1.0</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">43.49174499511719</float>
+        <float label="Y">-32.96078109741211</float>
+        <float label="Z">-0.03955638408660889</float>
+        <float label="Bearing">-2.7408351144231347e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_footlker</resref>
+        <float label="X">-0.43583106994628906</float>
+        <float label="Y">-70.06068420410156</float>
+        <float label="Z">-0.07063007354736328</float>
+        <float label="Bearing">3.14154052734375</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_footlker</resref>
+        <float label="X">-0.4314150810241699</float>
+        <float label="Y">-68.43177795410156</float>
+        <float label="Z">-0.07063007354736328</float>
+        <float label="Bearing">3.14154052734375</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_footlker</resref>
+        <float label="X">-0.45330381393432617</float>
+        <float label="Y">-65.04716491699219</float>
+        <float label="Z">-0.07063007354736328</float>
+        <float label="Bearing">3.14154052734375</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_footlker</resref>
+        <float label="X">6.810039520263672</float>
+        <float label="Y">-68.41470336914062</float>
+        <float label="Z">-0.07063007354736328</float>
+        <float label="Bearing">-5.302705829990373e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_footlker</resref>
+        <float label="X">6.840808868408203</float>
+        <float label="Y">-63.253108978271484</float>
+        <float label="Z">-0.07063007354736328</float>
+        <float label="Bearing">-5.302705829990373e-08</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_plstc6</resref>
+        <float label="X">2.4290242195129395</float>
+        <float label="Y">-71.64323425292969</float>
+        <float label="Z">-0.07842326164245605</float>
+        <float label="Bearing">3.14154052734375</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_plstccrt</resref>
+        <float label="X">1.12681245803833</float>
+        <float label="Y">-71.6885757446289</float>
+        <float label="Z">-0.0788947343826294</float>
+        <float label="Bearing">3.14154052734375</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_plstc</resref>
+        <float label="X">-0.160919189453125</float>
+        <float label="Y">-71.71696472167969</float>
+        <float label="Z">-0.07912492752075195</float>
+        <float label="Bearing">3.14154052734375</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_refpilemed</resref>
+        <float label="X">74.96389770507812</float>
+        <float label="Y">-31.023977279663086</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">1.7671421766281128</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_shpjnklg</resref>
+        <float label="X">77.71408081054688</float>
+        <float label="Y">-39.062156677246094</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">-2.945192575454712</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_refpilelg</resref>
+        <float label="X">53.267513275146484</float>
+        <float label="Y">-43.55673599243164</float>
+        <float label="Z">0.0014699697494506836</float>
+        <float label="Bearing">1.7671421766281128</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_partpile</resref>
+        <float label="X">27.37844467163086</float>
+        <float label="Y">-43.03294372558594</float>
+        <float label="Z">-0.03826141357421875</float>
+        <float label="Bearing">2.945190191268921</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_refpilemed</resref>
+        <float label="X">14.428658485412598</float>
+        <float label="Y">-40.912391662597656</float>
+        <float label="Z">-0.03854072093963623</float>
+        <float label="Bearing">1.7671421766281128</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_refpilemed</resref>
+        <float label="X">0.8318343162536621</float>
+        <float label="Y">-49.52989959716797</float>
+        <float label="Z">-0.0791170597076416</float>
+        <float label="Bearing">1.7671421766281128</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_shpjnklg</resref>
+        <float label="X">-8.716375350952148</float>
+        <float label="Y">-33.451866149902344</float>
+        <float label="Z">-0.07035064697265625</float>
+        <float label="Bearing">1.7671421766281128</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_partpile</resref>
+        <float label="X">-6.265684604644775</float>
+        <float label="Y">-25.982269287109375</float>
+        <float label="Z">-0.07579553127288818</float>
+        <float label="Bearing">-2.552544355392456</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_refpilelg</resref>
+        <float label="X">-9.05089282989502</float>
+        <float label="Y">-23.33961296081543</float>
+        <float label="Z">-0.07913398742675781</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_refpilemed</resref>
+        <float label="X">62.74446487426758</float>
+        <float label="Y">-40.67362594604492</float>
+        <float label="Z">-8.642673492431641e-07</float>
+        <float label="Bearing">-2.159846067428589</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_partpile</resref>
+        <float label="X">77.89022064208984</float>
+        <float label="Y">-26.702604293823242</float>
+        <float label="Z">0.0</float>
+        <float label="Bearing">3.14154052734375</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_footlocker2</resref>
+        <float label="X">6.824617385864258</float>
+        <float label="Y">-64.93578338623047</float>
+        <float label="Z">-0.07063007354736328</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_footlocker3</resref>
+        <float label="X">-0.4449293613433838</float>
+        <float label="Y">-63.26761245727539</float>
+        <float label="Z">-0.07063007354736328</float>
+        <float label="Bearing">-3.1415655612945557</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_footlocker4</resref>
+        <float label="X">37.91122817993164</float>
+        <float label="Y">32.55180740356445</float>
+        <float label="Z">0.13043427467346191</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">plc_koltank</resref>
+        <float label="X">47.58784484863281</float>
+        <float label="Y">-32.92717742919922</float>
+        <float label="Z">-0.039565376937389374</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">k_trans_abort</resref>
+        <float label="X">22.31777000427246</float>
+        <float label="Y">40.63745880126953</float>
+        <float label="Z">-0.0395662784576416</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">k_trans_abort</resref>
+        <float label="X">22.0344295501709</float>
+        <float label="Y">-43.78351974487305</float>
+        <float label="Z">-0.03816699981689453</float>
+        <float label="Bearing">-0.0</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      <struct id="9">
+        <resref label="TemplateResRef">ldr_invis</resref>
+        <float label="X">25.729999542236328</float>
+        <float label="Y">-27.3799991607666</float>
+        <float label="Z">0.30000001192092896</float>
+        <float label="Bearing">1.5707942247390747</float>
+        <byte label="UseTweakColor">0</byte>
+        <uint32 label="TweakColor">16777215</uint32>
+        </struct>
+      </list>
+    </struct>
+  </gff3>

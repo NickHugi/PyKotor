@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 import unittest
 
+from pathlib import Path
+
 from PIL import Image
 
 from pykotor.common.language import Language
 from pykotor.font.draw import write_bitmap_font, write_bitmap_fonts
-from utility.system.path import Path
 
 os.chdir("./Libraries/PyKotorFont")
 FONT_PATH_FILE = Path("tests/files/roboto/Roboto-Black.ttf")
@@ -41,13 +42,13 @@ class TestWriteBitmapFont(unittest.TestCase):
         write_bitmap_font(target_path, FONT_PATH_FILE, resolution, lang, draw_box=True)
 
         # Verify output files were generated
-        self.assertTrue(target_path.exists())
-        self.assertTrue(target_path.with_suffix(".txi").exists())
+        assert target_path.exists()
+        assert target_path.with_suffix(".txi").exists()
 
         # Verify image file
         img = Image.open(target_path)
-        self.assertEqual(img.size, resolution)
-        self.assertEqual(img.mode, "RGBA")
+        assert img.size == resolution
+        assert img.mode == "RGBA"
         img.close()
 
     def test_invalid_font_path(self):

@@ -4,27 +4,38 @@ import struct
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QListWidgetItem, QShortcut
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
+from qtpy.QtWidgets import QListWidgetItem, QShortcut
 
 from pykotor.common.geometry import SurfaceMaterial
+from pykotor.common.misc import Color
 from pykotor.resource.formats.bwm import read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.geometry import Vector2, Vector3
     from pykotor.resource.formats.bwm import BWM, BWMFace
     from toolset.data.installation import HTInstallation
 
-_TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1  # type: ignore[attr-defined]
-_TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2  # type: ignore[attr-defined]
+_TRANS_FACE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1  # type: ignore[attr-defined]
+_TRANS_EDGE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2  # type: ignore[attr-defined]
+
+
+def calculate_zoom_strength(delta_y: float, sensSetting: int) -> float:
+    m = 0.00202
+    b = 1
+    factor_in = (m * sensSetting + b)
+    return 1 / abs(factor_in) if delta_y < 0 else abs(factor_in)
 
 
 class BWMEditor(Editor):
@@ -49,7 +60,16 @@ class BWMEditor(Editor):
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
-        from toolset.uic.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -58,28 +78,34 @@ class BWMEditor(Editor):
 
         self._bwm: BWM | None = None
 
+        moduleDesignerSettings = ModuleDesignerSettings()
+
+        def intColorToQColor(intvalue: int) -> QColor:
+            color = Color.from_rgba_integer(intvalue)
+            return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
+
         self.materialColors: dict[SurfaceMaterial, QColor] = {
-            SurfaceMaterial.UNDEFINED: QColor(0xF45086),
-            SurfaceMaterial.OBSCURING: QColor(0x555555),
-            SurfaceMaterial.DIRT: QColor(0x800000),
-            SurfaceMaterial.GRASS: QColor(0x33CC33),
-            SurfaceMaterial.STONE: QColor(0x808080),
-            SurfaceMaterial.WOOD: QColor(0x5E260C),
-            SurfaceMaterial.WATER: QColor(0x0066FF),
-            SurfaceMaterial.NON_WALK: QColor(0xFF00FF),
-            SurfaceMaterial.TRANSPARENT: QColor(0xB3FFFF),
-            SurfaceMaterial.CARPET: QColor(0xFFFF00),
-            SurfaceMaterial.METAL: QColor(0x4D4D4D),
-            SurfaceMaterial.PUDDLES: QColor(0x00FFAA),
-            SurfaceMaterial.SWAMP: QColor(0x00995C),
-            SurfaceMaterial.MUD: QColor(0xCC6600),
-            SurfaceMaterial.LEAVES: QColor(0x009933),
-            SurfaceMaterial.LAVA: QColor(0xFF944D),
-            SurfaceMaterial.BOTTOMLESS_PIT: QColor(0xE6E6E6),
-            SurfaceMaterial.DEEP_WATER: QColor(0x9999FF),
-            SurfaceMaterial.DOOR: QColor(0xFFB3B3),
-            SurfaceMaterial.NON_WALK_GRASS: QColor(0xB3FFB3),
-            SurfaceMaterial.TRIGGER: QColor(0x4D0033),
+            SurfaceMaterial.UNDEFINED: intColorToQColor(moduleDesignerSettings.undefinedMaterialColour),
+            SurfaceMaterial.OBSCURING: intColorToQColor(moduleDesignerSettings.obscuringMaterialColour),
+            SurfaceMaterial.DIRT: intColorToQColor(moduleDesignerSettings.dirtMaterialColour),
+            SurfaceMaterial.GRASS: intColorToQColor(moduleDesignerSettings.grassMaterialColour),
+            SurfaceMaterial.STONE: intColorToQColor(moduleDesignerSettings.stoneMaterialColour),
+            SurfaceMaterial.WOOD: intColorToQColor(moduleDesignerSettings.woodMaterialColour),
+            SurfaceMaterial.WATER: intColorToQColor(moduleDesignerSettings.waterMaterialColour),
+            SurfaceMaterial.NON_WALK: intColorToQColor(moduleDesignerSettings.nonWalkMaterialColour),
+            SurfaceMaterial.TRANSPARENT: intColorToQColor(moduleDesignerSettings.transparentMaterialColour),
+            SurfaceMaterial.CARPET: intColorToQColor(moduleDesignerSettings.carpetMaterialColour),
+            SurfaceMaterial.METAL: intColorToQColor(moduleDesignerSettings.metalMaterialColour),
+            SurfaceMaterial.PUDDLES: intColorToQColor(moduleDesignerSettings.puddlesMaterialColour),
+            SurfaceMaterial.SWAMP: intColorToQColor(moduleDesignerSettings.swampMaterialColour),
+            SurfaceMaterial.MUD: intColorToQColor(moduleDesignerSettings.mudMaterialColour),
+            SurfaceMaterial.LEAVES: intColorToQColor(moduleDesignerSettings.leavesMaterialColour),
+            SurfaceMaterial.LAVA: intColorToQColor(moduleDesignerSettings.lavaMaterialColour),
+            SurfaceMaterial.BOTTOMLESS_PIT: intColorToQColor(moduleDesignerSettings.bottomlessPitMaterialColour),
+            SurfaceMaterial.DEEP_WATER: intColorToQColor(moduleDesignerSettings.deepWaterMaterialColour),
+            SurfaceMaterial.DOOR: intColorToQColor(moduleDesignerSettings.doorMaterialColour),
+            SurfaceMaterial.NON_WALK_GRASS: intColorToQColor(moduleDesignerSettings.nonWalkGrassMaterialColour),
+            SurfaceMaterial.TRIGGER: intColorToQColor(moduleDesignerSettings.nonWalkGrassMaterialColour),
         }
         self.ui.renderArea.materialColors = self.materialColors
         self.rebuildMaterials()
@@ -111,7 +137,7 @@ class BWMEditor(Editor):
             icon = QIcon(QPixmap(image))
             text = material.name.replace("_", " ").title()
             item = QListWidgetItem(icon, text)
-            item.setData(QtCore.Qt.UserRole, material)  # type: ignore[attr-defined]
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, material)  # type: ignore[attr-defined]
             self.ui.materialList.addItem(item)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
@@ -174,13 +200,16 @@ class BWMEditor(Editor):
         """
         world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         worldData: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
+        assert self._bwm is not None
         face: BWMFace | None = self._bwm.faceAt(world.x, world.y)
 
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+        if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+            self.ui.renderArea.doCursorLock(screen)
             self.ui.renderArea.camera.nudgePosition(-worldData.x, -worldData.y)
-        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+        elif QtCore.Qt.MouseButton.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+            self.ui.renderArea.doCursorLock(screen)
             self.ui.renderArea.camera.nudgeRotation(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons and face is not None:  # face will be None if user is clicking on nothing/background.
+        elif QtCore.Qt.MouseButton.LeftButton in buttons and face is not None:  # face will be None if user is clicking on nothing/background.
             self.changeFaceMaterial(face)
 
         coordsText = f"x: {world.x:.2f}, {world.y:.2f}"
@@ -192,11 +221,11 @@ class BWMEditor(Editor):
         self.statusBar().showMessage(coordsText + faceText + xy)
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        if QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
-            zoomInFactor = 1.1
-            zoomOutFactor = 0.90
-
-            zoomFactor = zoomInFactor if delta.y > 0 else zoomOutFactor
+        if not delta.y:
+            return  # sometimes it'll be zero when holding middlemouse-down.
+        if QtCore.Qt.Key_Control in keys:  # pyright: ignore[reportGeneralTypeIssues, attr-defined]
+            sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
+            zoomFactor = calculate_zoom_strength(delta.y, sensSetting)
             self.ui.renderArea.camera.nudgeZoom(zoomFactor)
             self.ui.renderArea.update()  # Trigger a re-render
 
@@ -213,8 +242,8 @@ class BWMEditor(Editor):
             - Check if the current face material is different than the selected material
             - Assign the selected material to the provided face.
         """
-        newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)  # type: ignore[attr-defined]
-        if face and face.material != newMaterial:
+        newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.ItemDataRole.UserRole)  # type: ignore[attr-defined]
+        if face.material != newMaterial:
             face.material = newMaterial
 
     def onTransitionSelect(self):

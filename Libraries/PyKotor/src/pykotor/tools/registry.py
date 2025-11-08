@@ -3,12 +3,13 @@ from __future__ import annotations
 import os
 
 from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING
 
+from loggerplus import RobustLogger
+
 from pykotor.common.misc import Game
-from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     import types
@@ -69,7 +70,7 @@ def find_software_key(software_name: str) -> str | None:
     return None
 
 
-def resolve_reg_key_to_path(reg_key: str, keystr: str):
+def resolve_reg_key_to_path(reg_key: str, keystr: str) -> str | None:
     r"""Resolves a registry key to a file system path.
 
     Args:
@@ -103,8 +104,9 @@ def check_reg_keys_existence_and_validity() -> tuple[list[tuple[str, str]], list
     """Check registry keys for their existence and validity against default paths."""
     import winreg
 
+    from pathlib import WindowsPath
+
     from pykotor.tools.path import find_kotor_paths_from_default
-    from utility.system.path import WindowsPath
 
     non_existent_keys = []
     invalid_path_keys = []
@@ -206,7 +208,7 @@ def set_winreg_path(game: Game, path: str):
 
 def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-error
     """Recursively creates the registry path if it doesn't exist."""
-    log = get_root_logger()
+    log = RobustLogger()
     try:
         import winreg
 
@@ -247,7 +249,7 @@ class SpoofKotorRegistry:
 
         # Key name at the path containing the value.
         self.key: str = "Path"
-        self.spoofed_path: Path = Path.pathify(installation_path).resolve()
+        self.spoofed_path: Path = Path(installation_path).resolve()
 
         if game is not None:
             determined_game = game
@@ -274,7 +276,7 @@ class SpoofKotorRegistry:
         exc_tb: types.TracebackType | None,
     ):
         # Revert the registry key to its original value if it was altered
-        if self.original_value is not None:
+        if self.original_value is not None and self.spoofed_path != self.original_value:
             set_registry_key_value(self.registry_path, self.key, self.original_value)
         # TODO(th3w1zard1): Determine what to do if the regpath never existed, as deleting it isn't easy. Set it to ""?
 
@@ -291,7 +293,7 @@ def set_registry_key_value(full_key_path: str, value_name: str, value_data: str)
     ------
         - PermissionError: PyKotor doesn't have permission to change the registry (usually fixed by running as admin).
     """
-    log = get_root_logger()
+    log = RobustLogger()
     try:
         import winreg
 

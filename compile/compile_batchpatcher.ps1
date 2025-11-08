@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 [CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
@@ -46,7 +48,6 @@ $pyInstallerArgs = @{
         'PyOpenGL'
         'PyGLM'
         'numpy'
-        'multiprocessing'
         'pykotor-gl'
     )
     'upx-exclude' = @(
@@ -152,7 +153,7 @@ foreach ($arg in $pyInstallerArgs) {
 }
 
 # Append the final script path
-$argumentsArray += "__main__.py"
+$argumentsArray += "batchpatcher/__main__.py"
 
 # Use the call operator with the arguments array
 Write-Host "Executing command: $pythonExePath $argumentsArray"

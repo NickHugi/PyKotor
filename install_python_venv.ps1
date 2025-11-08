@@ -1,7 +1,9 @@
+#!/usr/bin/env pwsh
+
 [CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
-  [string]$venv_name = ".venv_fedora",
+  [string]$venv_name = ".venv",
   [string]$force_python_version
 )
 $global:force_python_version = $force_python_version
@@ -14,7 +16,46 @@ $latestSetuptoolsUrl = "https://files.pythonhosted.org/packages/4d/5b/dc575711b6
 $global:pythonInstallPath = ""
 $global:pythonVersion = ""
 
-$repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$scriptPath = $MyInvocation.MyCommand.Definition  # Absolute path to this script.
+$repoRootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path  # Path to PyKotor repo root.
+Write-Host "The path to the script directory is: $scriptPath"
+Write-Host "The path to the root directory is: $repoRootPath"
+
+function Handle-Error {
+    param (
+        [Parameter(Mandatory=$true)]
+        [System.Management.Automation.ErrorRecord]$ErrorRecord
+    )
+
+    Write-Host -ForegroundColor Red "Detailed Error Report:"
+    Write-Host -ForegroundColor Red "Message: $($ErrorRecord.Exception.Message)"
+            
+    # Attempt to provide a more detailed location of the error
+    if ($ErrorRecord.InvocationInfo -and $ErrorRecord.InvocationInfo.MyCommand) {
+        Write-Host -ForegroundColor Red "Command Name: $($ErrorRecord.InvocationInfo.MyCommand.Name)"
+        Write-Host -ForegroundColor Red "Script Name: $($ErrorRecord.InvocationInfo.ScriptName)"
+        Write-Host -ForegroundColor Red "Line Number: $($ErrorRecord.InvocationInfo.ScriptLineNumber)"
+        Write-Host -ForegroundColor Red "Line: $($ErrorRecord.InvocationInfo.Line)"
+    } else {
+        Write-Host -ForegroundColor Red "No invocation information available."
+    }
+
+    # Extract and display the script stack trace if available
+    if ($ErrorRecord.ScriptStackTrace) {
+        Write-Host -ForegroundColor Red "Script Stack Trace:"
+        Write-Host -ForegroundColor Red $ErrorRecord.ScriptStackTrace
+    } else {
+        Write-Host -ForegroundColor Red "No script stack trace available."
+    }
+}
+
+trap {
+    Write-Error "An error occurred: $_"
+    $response = Read-Host "Press Enter to continue or type 'q' or the hotkey `ctrl+c` to quit."
+    if ($response -eq 'exit') { exit }
+    continue
+}
+
 function Get-OS {
     if ($IsWindows) {
         return "Windows"
@@ -39,6 +80,7 @@ function Get-OS {
         exit
     }
 }
+
 
 function Invoke-BashCommand {
     param (
@@ -135,7 +177,7 @@ function Set-EnvironmentVariablesFromEnvFile {
                 Write-Debug "Original value: $originalValue, Final value: $value"
 
                 # Set environment variable
-                Write-Host "Set environment variable $key from '${$env:$key}' to '$value'"
+                Write-Host "`$env:$key='$value'"
                 Set-Item -LiteralPath "env:$key" -Value $value
             }
         }
@@ -237,7 +279,7 @@ function Install-TclTk {
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
         } catch {
-            Write-Host "Error comparing with version '$requiredVersion' for $command : $_"
+            Handle-Error -ErrorRecord $_
             return $false
         }
     }
@@ -379,27 +421,24 @@ function Install-Python-Linux {
                     break
                 }
                 "almalinux" {
-                    $wildcardVersion = $pythonVersion -replace '\.', '?'
                     Invoke-BashCommand -Command "sudo dnf update -y"
                     #Invoke-BashCommand -Command "sudo dnf upgrade -y"
-                    Invoke-BashCommand -Command "sudo dnf install python$wildcardVersion python$wildcardVersion-tkinter tk tcl tk-devel tcl-devel -y"
+                    Invoke-BashCommand -Command "sudo dnf install python$pythonVersion python$pythonVersion tk tcl tk-devel tcl-devel -y"
                     break
                 }
                 "fedora" {
-                    $wildcardVersion = $pythonVersion -replace '\.', '?'
                     Invoke-BashCommand -Command "sudo dnf update -y"
                     #Invoke-BashCommand -Command "sudo dnf upgrade -y"
-                    Invoke-BashCommand -Command "sudo dnf install python$wildcardVersion python$wildcardVersion-tkinter tk tcl tk-devel tcl-devel -y"
+                    Invoke-BashCommand -Command "sudo dnf install python$pythonVersion python$pythonVersion tk tcl tk-devel tcl-devel dnf-plugins-core -y"
                     break
                 }
                 "centos" {
-                    $wildcardVersion = $pythonVersion -replace '\.', '?'
                     Invoke-BashCommand -Command "sudo yum update -y"
                     if ( $versionId -eq "7" ) {
                         Invoke-BashCommand -Command "sudo yum install epel-release -y"
                     }
                     #Invoke-BashCommand -Command "sudo dnf upgrade -y"
-                    Invoke-BashCommand -Command "sudo yum install python$wildcardVersion python$wildcardVersion-tkinter tk tcl tk-devel tcl-devel -y"
+                    Invoke-BashCommand -Command "sudo yum install python$pythonVersion python$pythonVersion tk tcl tk-devel tcl-devel -y"
                     break
                 }
                 "arch" {
@@ -419,11 +458,12 @@ function Install-Python-Linux {
                 }
             }
             Find-Python -installIfNotFound $false
-            if ( $global:pythonInstallPath -eq "" ) {
+            if ( -not $global:pythonInstallPath ) {
                 throw "Python not found/installed"
             }
         } catch {
             $errMsg = $_.Exception.Message
+            Handle-Error -ErrorRecord $_
             $errStr = "Error: $errMsg`nCould not install python from your package manager`n`nWould you like to attempt to build from source instead? (y/N)"
             if ($noprompt) {
                 Write-Host $errStr
@@ -454,7 +494,7 @@ function Install-Python-Linux {
                 }
                 "fedora" {
                     Invoke-BashCommand -Command 'sudo dnf groupinstall "Development Tools" -y'
-                    Invoke-BashCommand -Command 'sudo dnf install -y tk tcl tk-devel tcl-devel zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel libffi-devel'
+                    Invoke-BashCommand -Command 'sudo dnf install -y tk tcl tk-devel dnf-plugins-core tcl-devel zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel libffi-devel'
                 }
                 "almalinux" {
                     Invoke-BashCommand -Command 'sudo yum groupinstall "Development Tools" -y'
@@ -564,11 +604,11 @@ function Install-Python-Mac {
         # Execute the installer command with sudo
         Invoke-BashCommand "sudo installer -pkg $installerPath -target /"
     } catch {
-        Write-Error "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+        Handle-Error -ErrorRecord $_
         try {
             Install-PythonUnixSource -pythonVersion $pythonVersion
         } catch {
-            Write-Error "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+            Handle-Error -ErrorRecord $_
             Write-Host "Attempting to install via brew."
             brew install python@$pyVersion python-tk@$pyVersion
             return $true
@@ -588,6 +628,7 @@ function Install-PythonUnixSource {
         "3.10" { "3.10.13" }
         "3.11" { "3.11.8" }
         "3.12" { "3.12.2" }
+        "3.13" { "3.13.0a5" }
         default { throw "Unsupported Python version: $pythonVersion" }
     }
 
@@ -597,12 +638,11 @@ function Install-PythonUnixSource {
     Invoke-BashCommand -Command "tar -xvf Python-$pyVersion.tgz"
     $current_working_dir = (Get-Location).Path
     Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
-    $env:LDFLAGS=""
 
     # Conditionally apply --disable-new-dtags based on platform
     $configureOptions = "--enable-optimizations --with-ensurepip=install --enable-shared"
     if ((Get-OS) -eq "Linux") {
-        $env:LDFLAGS="-Wl,--disable-new-dtags"
+        $configureOptions += ' LDFLAGS="-Wl,--disable-new-dtags"'
     }
 
     Invoke-BashCommand -Command "sudo ./configure $configureOptions"
@@ -615,6 +655,7 @@ function Install-PythonUnixSource {
     # Using `make install` may break system packages, so we use `make altinstall` here.
     Invoke-BashCommand -Command "sudo make altinstall"
     Set-Location -LiteralPath $current_working_dir
+    $global:pythonInstallPath = "/usr/local/bin/python$pythonVersion"
 }
 
 function RefreshEnvVar {
@@ -816,6 +857,17 @@ function Find-Python {
     Param (
         [bool]$installIfNotFound
     )
+    if ($global:pythonInstallPath) {
+        $testVersion = Get-Python-Version -pythonPath $global:pythonInstallPath
+        if ($testVersion -ne [Version]"0.0.0") {
+            $global:pythonVersion = Get-Python-Version $global:pythonInstallPath
+            if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+                Write-Host "Found python command with version $global:pythonVersion at path $global:pythonInstallPath"
+                return
+            }
+        }
+    }
+
     # Check for Python 3 command and version
     if ($global:force_python_version) {
         $fallbackVersion = $global:force_python_version
@@ -827,18 +879,7 @@ function Find-Python {
     }
     foreach ($pyCommandPathCheck in $pythonVersions) {
         if (Test-PythonCommand -CommandName $pyCommandPathCheck) {
-            if ($installIfNotFound) {
-                # Even if python is installed, debian-based distros need python3-venv packages and a few others.
-                # Example: while a venv can be partially created, the 
-                # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
-                # they'll also be missing things like pip. This step fixes that.
-                if ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu") {
-                    $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
-                    $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
-                    Install-Python-Linux -pythonVersion $shortVersion
-                }
-            }
-            return
+            break
         }
     }
 
@@ -859,17 +900,39 @@ function Find-Python {
                             Write-Host "Check 4: $resolvedPath has $thisVersion which matches our version range."
                             # Valid path or better recommended path found.
                             if (-not $global:pythonInstallPath -or $thisVersion -le $recommendedVersion) {
-                                Write-Host "Found python install path with version $thisVersion at path '$resolvedPath'"
+                                Write-Host "Found better python install path with version $thisVersion at path '$resolvedPath'"
                                 $global:pythonInstallPath = $resolvedPath
                                 $global:pythonVersion = $thisVersion
+                            }
+
+                            # HACK: to prevent ubuntu/debian reinstalls
+                            if ($resolvedPath.StartsWith("/usr/local/bin/python") -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
+                                Write-Host "altinstall detected with version $thisVersion at path '$resolvedPath', not running custom install hook."
+                                $global:pythonInstallPath = $resolvedPath
+                                $global:pythonVersion = $thisVersion
+                                return
                             }
                         }
                     }
                 } catch {
-                    Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+                    Handle-Error -ErrorRecord $_
                 }
             }
         }
+    }
+    
+    # Even if python is installed, debian-based distros need python3-venv packages and a few others.
+    # Example: while a venv can be partially created, the 
+    # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
+    # they'll also be missing things like pip. This step fixes that.
+    if ($installIfNotFound -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
+        try {
+            $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
+        } catch {
+            $versionTypeObj = New-Object -TypeName "System.Version" $fallbackVersion
+        }
+        $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
+        Install-Python-Linux -pythonVersion $shortVersion
     }
 
     if ( -not $global:pythonInstallPath ) {
@@ -897,7 +960,7 @@ function Find-Python {
                     Install-Python-Mac -pythonVersion $fallbackVersion
                 }
             } catch {
-                Write-Error $_
+                Handle-Error -ErrorRecord $_
                 Write-Host "The Python install either failed or has been cancelled."
                 Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
                 Write-Host "Press any key to exit..."
@@ -907,16 +970,6 @@ function Find-Python {
             Write-Host "Find python again now that it's been installed."
             Find-Python -installIfNotFound $false
         }
-    }
-    
-    # Even if python is installed, debian-based distros need python3-venv packages and a few others.
-    # Example: while a venv can be partially created, the 
-    # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
-    # they'll also be missing things like pip. This step fixes that.
-    if ($installIfNotFound -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
-        $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
-        $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
-        Install-Python-Linux -pythonVersion $shortVersion
     }
 }
 
@@ -1076,112 +1129,88 @@ if ( $findVenvExecutable -eq $true) {
     }
 }
 
-function Activate-PythonVenv {
-    param (
-        [Parameter(Mandatory=$true)]
-        [string]$venvPath
-    )
 
-    # Check if the venvPath exists
-    if (-not (Test-Path -LiteralPath $venvPath)) {
-        Write-Error "Virtual environment path '$venvPath' does not exist."
-        return
-    }
-
-    Write-Host "Activating venv at '$venvPath'"
-    if ((Get-OS) -eq "Windows") {
-        $venvScriptBinPath = Join-Path -Path $venvPath -ChildPath "Scripts"
-    } else {
-        $venvScriptBinPath = Join-Path -Path $venvPath -ChildPath "bin"
-    }
-    $activateScriptPath = Join-Path -Path $venvScriptBinPath -ChildPath "Activate.ps1"
-    try {
-        & $activateScriptPath
-    } catch {  # Sometimes a system may be missing activation scripts... manually add them here.
-        $errMsg = $_.Exception.Message
-        $errStr = "Error: $errMsg`n venv activation script at '$activateScriptPath' failed, attempting to set venv manually."
-        Write-Warning $errStr
-
-        $activateBashScriptContents = @'
+# Sometimes a system may be missing activation scripts...
+$activateBashScriptContents = @"
 # This file must be used with "source bin/activate" *from bash*
 # You cannot run it directly
 
 deactivate () {
-    # reset old environment variables
-    if [ -n "${_OLD_VIRTUAL_PATH:-}" ] ; then
-        PATH="${_OLD_VIRTUAL_PATH:-}"
-        export PATH
-        unset _OLD_VIRTUAL_PATH
-    fi
-    if [ -n "${_OLD_VIRTUAL_PYTHONHOME:-}" ] ; then
-        PYTHONHOME="${_OLD_VIRTUAL_PYTHONHOME:-}"
-        export PYTHONHOME
-        unset _OLD_VIRTUAL_PYTHONHOME
-    fi
+# reset old environment variables
+if [ -n "`${_OLD_VIRTUAL_PATH:-}" ] ; then
+PATH="`${_OLD_VIRTUAL_PATH:-}"
+export PATH
+unset _OLD_VIRTUAL_PATH
+fi
+if [ -n "`${_OLD_VIRTUAL_PYTHONHOME:-}" ] ; then
+PYTHONHOME="`${_OLD_VIRTUAL_PYTHONHOME:-}"
+export PYTHONHOME
+unset _OLD_VIRTUAL_PYTHONHOME
+fi
 
-    # Call hash to forget past commands. Without forgetting
-    # past commands the $PATH changes we made may not be respected
-    hash -r 2> /dev/null
+# Call hash to forget past commands. Without forgetting
+# past commands the `$PATH changes we made may not be respected
+hash -r 2> /dev/null
 
-    if [ -n "${_OLD_VIRTUAL_PS1:-}" ] ; then
-        PS1="${_OLD_VIRTUAL_PS1:-}"
-        export PS1
-        unset _OLD_VIRTUAL_PS1
-    fi
+if [ -n "`${_OLD_VIRTUAL_PS1:-}" ] ; then
+PS1="`${_OLD_VIRTUAL_PS1:-}"
+export PS1
+unset _OLD_VIRTUAL_PS1
+fi
 
-    unset VIRTUAL_ENV
-    unset VIRTUAL_ENV_PROMPT
-    if [ ! "${1:-}" = "nondestructive" ] ; then
-    # Self destruct!
-        unset -f deactivate
-    fi
+unset VIRTUAL_ENV
+unset VIRTUAL_ENV_PROMPT
+if [ ! "`${1:-}" = "nondestructive" ] ; then
+# Self destruct!
+unset -f deactivate
+fi
 }
 
 # unset irrelevant variables
 deactivate nondestructive
 
 # on Windows, a path can contain colons and backslashes and has to be converted:
-if [ "$OSTYPE" = "cygwin" ] || [ "$OSTYPE" = "msys" ] ; then
-    # transform D:\path\to\venv to /d/path/to/venv on MSYS
-    # and to /cygdrive/d/path/to/venv on Cygwin
-    export VIRTUAL_ENV=$(cygpath "/mnt/c/GitHub/PyKotor/.venv_fedora")
+if [ "`$OSTYPE" = "cygwin" ] || [ "`$OSTYPE" = "msys" ] ; then
+# transform D:\path\to\venv to /d/path/to/venv on MSYS
+# and to /cygdrive/d/path/to/venv on Cygwin
+export VIRTUAL_ENV=`$(cygpath "$venvScriptBinPath")
 else
-    # use the path as-is
-    export VIRTUAL_ENV="/mnt/c/GitHub/PyKotor/.venv_fedora"
+# use the path as-is
+export VIRTUAL_ENV="$venvScriptBinPath"
 fi
 
-_OLD_VIRTUAL_PATH="$PATH"
-PATH="$VIRTUAL_ENV/bin:$PATH"
+_OLD_VIRTUAL_PATH="`$PATH"
+PATH="`$VIRTUAL_ENV/bin:`$PATH"
 export PATH
 
 # unset PYTHONHOME if set
 # this will fail if PYTHONHOME is set to the empty string (which is bad anyway)
-# could use `if (set -u; : $PYTHONHOME) ;` in bash
-if [ -n "${PYTHONHOME:-}" ] ; then
-    _OLD_VIRTUAL_PYTHONHOME="${PYTHONHOME:-}"
-    unset PYTHONHOME
+# could use `if (set -u; : `$PYTHONHOME) ;` in bash
+if [ -n "`${PYTHONHOME:-}" ] ; then
+_OLD_VIRTUAL_PYTHONHOME="`${PYTHONHOME:-}"
+unset PYTHONHOME
 fi
 
-if [ -z "${VIRTUAL_ENV_DISABLE_PROMPT:-}" ] ; then
-    _OLD_VIRTUAL_PS1="${PS1:-}"
-    PS1="(.venv_fedora) ${PS1:-}"
-    export PS1
-    VIRTUAL_ENV_PROMPT="(.venv_fedora) "
-    export VIRTUAL_ENV_PROMPT
+if [ -z "`${VIRTUAL_ENV_DISABLE_PROMPT:-}" ] ; then
+_OLD_VIRTUAL_PS1="`${PS1:-}"
+PS1="($venv_name) `${PS1:-}"
+export PS1
+VIRTUAL_ENV_PROMPT="($venv_name) "
+export VIRTUAL_ENV_PROMPT
 fi
 
 # Call hash to forget past commands. Without forgetting
-# past commands the $PATH changes we made may not be respected
-hash -r 2> /dev/null'@
+# past commands the `$PATH changes we made may not be respected
+hash -r 2> /dev/null"@
 
-        $activatePwshScriptContents = @'
+$activatePwshScriptContents = @"
 <#
 .Synopsis
 Activate a Python virtual environment for the current PowerShell session.
 
 .Description
 Pushes the python executable for a virtual environment to the front of the
-$Env:PATH environment variable and sets the prompt to signify that you are
+`$Env:PATH environment variable and sets the prompt to signify that you are
 in a Python virtual environment. Makes use of the command line switches as
 well as the `pyvenv.cfg` file values present in the virtual environment.
 
@@ -1226,12 +1255,12 @@ https://go.microsoft.com/fwlink/?LinkID=135170
 
 #>
 Param(
-    [Parameter(Mandatory = $false)]
-    [String]
-    $VenvDir,
-    [Parameter(Mandatory = $false)]
-    [String]
-    $Prompt
+[Parameter(Mandatory = $false)]
+[String]
+`$VenvDir,
+[Parameter(Mandatory = $false)]
+[String]
+`$Prompt
 )
 
 <# Function declarations --------------------------------------------------- #>
@@ -1247,41 +1276,41 @@ If present, do not remove this function from the global namespace for the
 session.
 
 #>
-function global:deactivate ([switch]$NonDestructive) {
-    # Revert to original values
+function global:deactivate ([switch]`$NonDestructive) {
+# Revert to original values
 
-    # The prior prompt:
-    if (Test-Path -Path Function:_OLD_VIRTUAL_PROMPT) {
-        Copy-Item -Path Function:_OLD_VIRTUAL_PROMPT -Destination Function:prompt
-        Remove-Item -Path Function:_OLD_VIRTUAL_PROMPT
-    }
+# The prior prompt:
+if (Test-Path -Path Function:_OLD_VIRTUAL_PROMPT) {
+Copy-Item -Path Function:_OLD_VIRTUAL_PROMPT -Destination Function:prompt
+Remove-Item -Path Function:_OLD_VIRTUAL_PROMPT
+}
 
-    # The prior PYTHONHOME:
-    if (Test-Path -Path Env:_OLD_VIRTUAL_PYTHONHOME) {
-        Copy-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME -Destination Env:PYTHONHOME
-        Remove-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME
-    }
+# The prior PYTHONHOME:
+if (Test-Path -Path Env:_OLD_VIRTUAL_PYTHONHOME) {
+Copy-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME -Destination Env:PYTHONHOME
+Remove-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME
+}
 
-    # The prior PATH:
-    if (Test-Path -Path Env:_OLD_VIRTUAL_PATH) {
-        Copy-Item -Path Env:_OLD_VIRTUAL_PATH -Destination Env:PATH
-        Remove-Item -Path Env:_OLD_VIRTUAL_PATH
-    }
+# The prior PATH:
+if (Test-Path -Path Env:_OLD_VIRTUAL_PATH) {
+Copy-Item -Path Env:_OLD_VIRTUAL_PATH -Destination Env:PATH
+Remove-Item -Path Env:_OLD_VIRTUAL_PATH
+}
 
-    # Just remove the VIRTUAL_ENV altogether:
-    if (Test-Path -Path Env:VIRTUAL_ENV) {
-        Remove-Item -Path env:VIRTUAL_ENV
-    }
+# Just remove the VIRTUAL_ENV altogether:
+if (Test-Path -Path Env:VIRTUAL_ENV) {
+Remove-Item -Path env:VIRTUAL_ENV
+}
 
-    # Just remove the _PYTHON_VENV_PROMPT_PREFIX altogether:
-    if (Get-Variable -Name "_PYTHON_VENV_PROMPT_PREFIX" -ErrorAction SilentlyContinue) {
-        Remove-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Scope Global -Force
-    }
+# Just remove the _PYTHON_VENV_PROMPT_PREFIX altogether:
+if (Get-Variable -Name "_PYTHON_VENV_PROMPT_PREFIX" -ErrorAction SilentlyContinue) {
+Remove-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Scope Global -Force
+}
 
-    # Leave deactivate function in the global namespace if requested:
-    if (-not $NonDestructive) {
-        Remove-Item -Path function:deactivate
-    }
+# Leave deactivate function in the global namespace if requested:
+if (-not `$NonDestructive) {
+Remove-Item -Path function:deactivate
+}
 }
 
 <#
@@ -1301,87 +1330,87 @@ stripped from the value before being captured.
 Path to the directory that contains the `pyvenv.cfg` file.
 #>
 function Get-PyVenvConfig(
-    [String]
-    $ConfigDir
+[String]
+`$ConfigDir
 ) {
-    Write-Verbose "Given ConfigDir=$ConfigDir, obtain values in pyvenv.cfg"
+Write-Verbose "Given ConfigDir=`$ConfigDir, obtain values in pyvenv.cfg"
 
-    # Ensure the file exists, and issue a warning if it doesn't (but still allow the function to continue).
-    $pyvenvConfigPath = Join-Path -Resolve -Path $ConfigDir -ChildPath 'pyvenv.cfg' -ErrorAction Continue
+# Ensure the file exists, and issue a warning if it doesn't (but still allow the function to continue).
+`$pyvenvConfigPath = Join-Path -Resolve -Path `$ConfigDir -ChildPath 'pyvenv.cfg' -ErrorAction Continue
 
-    # An empty map will be returned if no config file is found.
-    $pyvenvConfig = @{ }
+# An empty map will be returned if no config file is found.
+`$pyvenvConfig = @{ }
 
-    if ($pyvenvConfigPath) {
+if (`$pyvenvConfigPath) {
 
-        Write-Verbose "File exists, parse `key = value` lines"
-        $pyvenvConfigContent = Get-Content -Path $pyvenvConfigPath
+Write-Verbose "File exists, parse `key = value` lines"
+`$pyvenvConfigContent = Get-Content -Path `$pyvenvConfigPath
 
-        $pyvenvConfigContent | ForEach-Object {
-            $keyval = $PSItem -split "\s*=\s*", 2
-            if ($keyval[0] -and $keyval[1]) {
-                $val = $keyval[1]
+`$pyvenvConfigContent | ForEach-Object {
+`$keyval = `$PSItem -split "\s*=\s*", 2
+if (`$keyval[0] -and `$keyval[1]) {
+    `$val = `$keyval[1]
 
-                # Remove extraneous quotations around a string value.
-                if ("'""".Contains($val.Substring(0, 1))) {
-                    $val = $val.Substring(1, $val.Length - 2)
-                }
-
-                $pyvenvConfig[$keyval[0]] = $val
-                Write-Verbose "Adding Key: '$($keyval[0])'='$val'"
-            }
-        }
+    # Remove extraneous quotations around a string value.
+    if ("'""".Contains(`$val.Substring(0, 1))) {
+        `$val = `$val.Substring(1, `$val.Length - 2)
     }
-    return $pyvenvConfig
+
+    `$pyvenvConfig[`$keyval[0]] = `$val
+    Write-Verbose "Adding Key: '`$(`$keyval[0])'='`$val'"
+}
+}
+}
+return `$pyvenvConfig
 }
 
 
 <# Begin Activate script --------------------------------------------------- #>
 
 # Determine the containing directory of this script
-$VenvExecPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$VenvExecDir = Get-Item -Path $VenvExecPath
+`$VenvExecPath = Split-Path -Parent `$MyInvocation.MyCommand.Definition
+`$VenvExecDir = Get-Item -Path `$VenvExecPath
 
-Write-Verbose "Activation script is located in path: '$VenvExecPath'"
-Write-Verbose "VenvExecDir Fullname: '$($VenvExecDir.FullName)"
-Write-Verbose "VenvExecDir Name: '$($VenvExecDir.Name)"
+Write-Verbose "Activation script is located in path: '`$VenvExecPath'"
+Write-Verbose "VenvExecDir Fullname: '`$(`$VenvExecDir.FullName)"
+Write-Verbose "VenvExecDir Name: '`$(`$VenvExecDir.Name)"
 
 # Set values required in priority: CmdLine, ConfigFile, Default
 # First, get the location of the virtual environment, it might not be
 # VenvExecDir if specified on the command line.
-if ($VenvDir) {
-    Write-Verbose "VenvDir given as parameter, using '$VenvDir' to determine values"
+if (`$VenvDir) {
+Write-Verbose "VenvDir given as parameter, using '`$VenvDir' to determine values"
 }
 else {
-    Write-Verbose "VenvDir not given as a parameter, using parent directory name as VenvDir."
-    $VenvDir = $VenvExecDir.Parent.FullName.TrimEnd("\\/")
-    Write-Verbose "VenvDir=$VenvDir"
+Write-Verbose "VenvDir not given as a parameter, using parent directory name as VenvDir."
+`$VenvDir = `$VenvExecDir.Parent.FullName.TrimEnd("\\/")
+Write-Verbose "VenvDir=`$VenvDir"
 }
 
 # Next, read the `pyvenv.cfg` file to determine any required value such
 # as `prompt`.
-$pyvenvCfg = Get-PyVenvConfig -ConfigDir $VenvDir
+`$pyvenvCfg = Get-PyVenvConfig -ConfigDir `$VenvDir
 
 # Next, set the prompt from the command line, or the config file, or
 # just use the name of the virtual environment folder.
-if ($Prompt) {
-    Write-Verbose "Prompt specified as argument, using '$Prompt'"
+if (`$Prompt) {
+Write-Verbose "Prompt specified as argument, using '`$Prompt'"
 }
 else {
-    Write-Verbose "Prompt not specified as argument to script, checking pyvenv.cfg value"
-    if ($pyvenvCfg -and $pyvenvCfg['prompt']) {
-        Write-Verbose "  Setting based on value in pyvenv.cfg='$($pyvenvCfg['prompt'])'"
-        $Prompt = $pyvenvCfg['prompt'];
-    }
-    else {
-        Write-Verbose "  Setting prompt based on parent's directory's name. (Is the directory name passed to venv module when creating the virutal environment)"
-        Write-Verbose "  Got leaf-name of $VenvDir='$(Split-Path -Path $venvDir -Leaf)'"
-        $Prompt = Split-Path -Path $venvDir -Leaf
-    }
+Write-Verbose "Prompt not specified as argument to script, checking pyvenv.cfg value"
+if (`$pyvenvCfg -and `$pyvenvCfg['prompt']) {
+Write-Verbose "  Setting based on value in pyvenv.cfg='`$(`$pyvenvCfg['prompt'])'"
+`$Prompt = `$pyvenvCfg['prompt'];
+}
+else {
+Write-Verbose "  Setting prompt based on parent's directory's name. (Is the directory name passed to venv module when creating the virutal environment)"
+Write-Verbose "  Got leaf-name of `$VenvDir='`$(Split-Path -Path `$venvDir -Leaf)'"
+`$Prompt = Split-Path -Path `$venvDir -Leaf
+}
 }
 
-Write-Verbose "Prompt = '$Prompt'"
-Write-Verbose "VenvDir='$VenvDir'"
+Write-Verbose "Prompt = '`$Prompt'"
+Write-Verbose "VenvDir='`$VenvDir'"
 
 # Deactivate any currently active virtual environment, but leave the
 # deactivate function in place.
@@ -1389,36 +1418,98 @@ deactivate -nondestructive
 
 # Now set the environment variable VIRTUAL_ENV, used by many tools to determine
 # that there is an activated venv.
-$env:VIRTUAL_ENV = $VenvDir
+`$env:VIRTUAL_ENV = `$VenvDir
 
-if (-not $Env:VIRTUAL_ENV_DISABLE_PROMPT) {
+if (-not `$Env:VIRTUAL_ENV_DISABLE_PROMPT) {
 
-    Write-Verbose "Setting prompt to '$Prompt'"
+Write-Verbose "Setting prompt to '`$Prompt'"
 
-    # Set the prompt to include the env name
-    # Make sure _OLD_VIRTUAL_PROMPT is global
-    function global:_OLD_VIRTUAL_PROMPT { "" }
-    Copy-Item -Path function:prompt -Destination function:_OLD_VIRTUAL_PROMPT
-    New-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Description "Python virtual environment prompt prefix" -Scope Global -Option ReadOnly -Visibility Public -Value $Prompt
+# Set the prompt to include the env name
+# Make sure _OLD_VIRTUAL_PROMPT is global
+function global:_OLD_VIRTUAL_PROMPT { "" }
+Copy-Item -Path function:prompt -Destination function:_OLD_VIRTUAL_PROMPT
+New-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Description "Python virtual environment prompt prefix" -Scope Global -Option ReadOnly -Visibility Public -Value `$Prompt
 
-    function global:prompt {
-        Write-Host -NoNewline -ForegroundColor Green "($_PYTHON_VENV_PROMPT_PREFIX) "
-        _OLD_VIRTUAL_PROMPT
-    }
+function global:prompt {
+Write-Host -NoNewline -ForegroundColor Green "(`$_PYTHON_VENV_PROMPT_PREFIX) "
+_OLD_VIRTUAL_PROMPT
+}
 }
 
 # Clear PYTHONHOME
 if (Test-Path -Path Env:PYTHONHOME) {
-    Copy-Item -Path Env:PYTHONHOME -Destination Env:_OLD_VIRTUAL_PYTHONHOME
-    Remove-Item -Path Env:PYTHONHOME
+Copy-Item -Path Env:PYTHONHOME -Destination Env:_OLD_VIRTUAL_PYTHONHOME
+Remove-Item -Path Env:PYTHONHOME
 }
 
 # Add the venv to the PATH
 Copy-Item -Path Env:PATH -Destination Env:_OLD_VIRTUAL_PATH
-$Env:PATH = "$VenvExecDir$([System.IO.Path]::PathSeparator)$Env:PATH"
-'@
-    $activateBashScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "activate"
-    $activatePwshScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "Activate.ps1"
+`$Env:PATH = "`$VenvExecDir`$([System.IO.Path]::PathSeparator)`$Env:PATH"
+"@
+
+function Activate-Script {
+    param (
+        [string]$scriptPath
+    )
+    try {
+        & $scriptPath
+        return $true
+    } catch {
+        Handle-Error -ErrorRecord $_
+        return $false
+    }
+}
+
+function Activate-PythonVenv {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$venvPath,
+        [switch]$noRecurse
+    )
+
+    # Check if the venvPath exists
+    if (-not (Test-Path -LiteralPath $venvPath)) {
+        Write-Error "Virtual environment path '$venvPath' does not exist."
+        return
+    }
+
+    Write-Host "Activating venv at '$venvPath'"
+    if ((Get-OS) -eq "Windows") {
+        $venvScriptBinPath = Join-Path -Path $venvPath -ChildPath "Scripts"
+    } else {
+        $venvScriptBinPath = Join-Path -Path $venvPath -ChildPath "bin"
+    }
+    try {
+        $activateScriptPathPwsh = Join-Path -Path $venvScriptBinPath -ChildPath "Activate.ps1"
+        $activateScriptPathBash = Join-Path -Path $venvScriptBinPath -ChildPath "activate"
+        if (Test-Path $activateScriptPathPwsh) {
+            if (-not (Activate-Script -scriptPath $activateScriptPathPwsh)) {
+                if (Test-Path $activateScriptPathBash) {
+                    Activate-Script -scriptPath $activateScriptPathBash
+                } else {
+                    throw "Bash script did not exist as a fallback."
+                }
+            }
+        } elseif (Test-Path $activateScriptPathBash) {
+            if (-not (Activate-Script -scriptPath $activateScriptPathBash)) {
+                if (Test-Path $activateScriptPathPwsh) {
+                    Activate-Script -scriptPath $activateScriptPathPwsh
+                } else {
+                    throw "PowerShell script did not exist as a fallback."
+                }
+            }
+        } else {
+            Write-Warning "venv activation script at '$activateScriptPath' did not exist, attempting to create activation scripts manually..."
+            $activateBashScriptContents | Out-File -FilePath $activateScriptPathBash
+            $activatePwshScriptContents | Out-File -FilePath $activateScriptPathPwsh
+            if (-not $noRecurse) {
+                Activate-PythonVenv -venvPath $venvPath -noRecurse
+            }
+        }
+    } catch {
+        Handle-Error -ErrorRecord $_
+        Write-Error $_.Exception.Message
+        Write-Error "venv activation script at '$activateScriptPath' failed."
     }
 }
 
@@ -1464,14 +1555,17 @@ if ($installPipToVenvManually) {
 }
 
 $pythonInfo = Initialize-Python $pythonExePath
-Write-Host "Initialized Python Version: $($pythonInfo.Version)"
-Write-Host "Initialized Python Path: $($pythonInfo.Path)"
+Write-Host "`nInitialized Python Version: $($pythonInfo.Version)    Path: $($pythonInfo.Path)"
 $pythonVersion = $pythonInfo.Version
 $pythonExePath = $pythonInfo.Path
 
+# Use Python to find the site-packages directory using sysconfig for compatibility with virtual environments
+$sitePackagesPath = & $pythonExePath -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+Write-Host "`nSite-Packages Path: $sitePackagesPath"
+
 # Set environment variables from .env file
 $dotenv_path = "$repoRootPath$pathSep.env"
-Write-Host "Loading project environment variables from '$dotenv_path'"
+Write-Host "-----------------`nLoading project environment variables from '$dotenv_path':"
 $envFileFound = Set-EnvironmentVariablesFromEnvFile "$dotenv_path"
 if ($envFileFound) {
     Write-Host ".env file has been loaded into session."

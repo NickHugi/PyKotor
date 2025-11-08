@@ -8,6 +8,7 @@ from enum import IntEnum
 from typing import NamedTuple, Tuple, cast
 
 from pykotor.common.stream import BinaryReader
+from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
 
 
@@ -24,7 +25,7 @@ class TPCConvertResult(NamedTuple):
     data: bytearray
 
 
-class TPC:
+class TPC(ComparableMixin):
     """Represents a TPC file.
 
     Attributes:
@@ -33,6 +34,8 @@ class TPC:
     """
 
     BINARY_TYPE = ResourceType.TPC
+    COMPARABLE_FIELDS = ("_texture_format", "_width", "_height", "txi", "original_datatype_code")
+    COMPARABLE_SEQUENCE_FIELDS = ("_mipmaps",)
 
     def __init__(
         self,
@@ -42,11 +45,33 @@ class TPC:
         self._width: int = 4
         self._height: int = 4
         self.txi: str = ""
-        from pykotor.resource.formats.tpc.io_tga import _DataTypes
+        from pykotor.resource.formats.tpc.io_tga import _DataTypes  # Prevent circular imports  # noqa: PLC0415
 
         self.original_datatype_code: _DataTypes = _DataTypes.NO_IMAGE_DATA
 
-        # TODO: cube maps
+        # TODO(NickHugi): cube maps
+
+    def __eq__(self, other):
+        if not isinstance(other, TPC):
+            return NotImplemented
+        return (
+            self._texture_format == other._texture_format
+            and self._mipmaps == other._mipmaps
+            and self._width == other._width
+            and self._height == other._height
+            and self.txi == other.txi
+            and self.original_datatype_code == other.original_datatype_code
+        )
+
+    def __hash__(self):
+        return hash((
+            self._texture_format,
+            tuple(self._mipmaps),
+            self._width,
+            self._height,
+            self.txi,
+            self.original_datatype_code
+        ))
 
     def mipmap_count(
         self,
@@ -102,7 +127,7 @@ class TPC:
         self,
         convert_format: TPCTextureFormat,
         mipmap: int = 0,
-        y_flip: bool | None = None,
+        y_flip: bool | None = None,  # noqa: FBT001
     ) -> TPCConvertResult:
         """Returns a tuple containing the width, height and data of the specified mipmap where the data returned is in the texture format specified.
 
@@ -128,22 +153,22 @@ class TPC:
                 bytes_per_pixel = 4 if self._texture_format == TPCTextureFormat.RGBA else 3
             # If the image needs to be flipped and it's an uncompressed format
             if bytes_per_pixel > 0:
-                raw_data = bytearray(self.flip_image_data(raw_data, width, height, bytes_per_pixel))
+                raw_data = self.flip_image_data(raw_data, width, height, bytes_per_pixel)
                 y_flip = False
 
         data: bytearray = bytearray(raw_data)
         if convert_format == TPCTextureFormat.Greyscale:
             if self._texture_format == TPCTextureFormat.DXT5:
                 rgba_data = TPC._dxt5_to_rgba(raw_data, width, height)
-                data = TPC._rgba_to_grey(rgba_data, width, height)
+                data = TPC._rgba_to_grey(bytes(rgba_data), width, height)
             elif self._texture_format == TPCTextureFormat.DXT1:
                 rgba_data = TPC._dxt1_to_rgba(raw_data, width, height)
-                data = TPC._rgba_to_grey(rgba_data, width, height)
+                data = TPC._rgba_to_grey(bytes(rgba_data), width, height)
             elif self._texture_format == TPCTextureFormat.RGBA:
                 data = TPC._rgba_to_grey(raw_data, width, height)
             elif self._texture_format == TPCTextureFormat.RGB:
                 rgba_data = TPC._rgb_to_rgba(raw_data, width, height)
-                data = TPC._rgba_to_grey(rgba_data, width, height)
+                data = TPC._rgba_to_grey(bytes(rgba_data), width, height)
 
         if convert_format == TPCTextureFormat.RGBA:
             if self._texture_format == TPCTextureFormat.DXT5:
@@ -164,18 +189,7 @@ class TPC:
                 data = TPC._rgba_to_rgb(raw_data, width, height)
             elif self._texture_format == TPCTextureFormat.Greyscale:
                 rgba_data = TPC._grey_to_rgba(raw_data, width, height)
-                data = TPC._rgba_to_rgb(rgba_data, width, height)
-
-        if y_flip:
-            bytes_per_pixel = 0
-            if convert_format == TPCTextureFormat.Greyscale:
-                bytes_per_pixel = 1
-            elif convert_format in {TPCTextureFormat.RGB, TPCTextureFormat.RGBA}:
-                bytes_per_pixel = 4 if convert_format == TPCTextureFormat.RGBA else 3
-
-            # If the image needs to be flipped and it's an uncompressed format
-            if bytes_per_pixel > 0:
-                data = bytearray(self.flip_image_data(data, width, height, bytes_per_pixel))
+                data = TPC._rgba_to_rgb(bytes(rgba_data), width, height)
 
         return TPCConvertResult(width, height, data)
 
@@ -235,25 +249,7 @@ class TPC:
             mipmaps: The new mipmaps data.
             texture_format: The texture format.
         """
-        # TODO: Some sort of simple sanity check on the data; make sure the mipmaps' data have the appropriate size
-        #       according to their texture format.
-        # possible fix for the todo:
-        # Check if the number of mipmaps matches the expected count based on the width and height.
-        # This simplistic check assumes square textures for simplicity.
-        # max_dimension = max(width, height)
-        # expected_mipmap_count = 1 + math.floor(math.log2(max_dimension))
-        # if len(mipmaps) != expected_mipmap_count:
-        # raise ValueError(f"Expected {expected_mipmap_count} mipmaps, got {len(mipmaps)}.")
-        # Iterate over mipmaps and check if their data sizes match the expected sizes.
-        # current_width, current_height = width, height
-        # for i, mipmap in enumerate(mipmaps):
-        # expected_size = (current_width * current_height * bits_per_pixel) // 8
-        # if len(mipmap) != expected_size:
-        # raise ValueError(f"Mipmap level {i} has incorrect size. Expected {expected_size} bytes, got {len(mipmap)} bytes.")
-
-        # Update dimensions for the next mipmap level.
-        # current_width = max(1, current_width // 2)
-        # current_height = max(1, current_height // 2)
+        # TODO(NickHugi): Some sort of simple sanity check on the data; make sure the mipmaps' data have the appropriate size
 
         self._texture_format = texture_format
         self._mipmaps = mipmaps
@@ -328,7 +324,7 @@ class TPC:
         compressed_data = bytearray()
         for y, x in tpc_itertools.product(range(0, height, 4), range(0, width, 4)):
             rgba_block: list[tuple[int, int, int, int]] = [
-                cast(Tuple[int, int, int, int], tuple(rgba_data[i : i + 4]))
+                cast("Tuple[int, int, int, int]", tuple(rgba_data[i : i + 4]))
                 for dy in range(4)
                 for dx in range(4)
                 for i in range((y * width + x + dy * width + dx) * 4, (y * width + x + dy * width + dx) * 4 + 4, 4)
@@ -552,10 +548,8 @@ class TPC:
             b = rgb_reader.read_uint8()
             rgb_reader.read_uint8()
             highest = r
-            if g > highest:
-                highest = g
-            if b > highest:
-                highest = b
+            highest = max(highest, g)
+            highest = max(highest, b)
             new_data.extend([highest])
 
         return new_data
@@ -748,8 +742,8 @@ class TPC:
     @staticmethod
     def _interpolate_rgb(
         weight: float,
-        color0,
-        color1,
+        color0: tuple[int, int, int],
+        color1: tuple[int, int, int],
     ) -> tuple[int, int, int]:
         color0_blue = color0[2]
         color0_greed = color0[1]
@@ -769,7 +763,14 @@ class TPC:
     def _integer48(
         bytes48: bytes,
     ) -> int:
-        return bytes48[0] + (bytes48[1] << 8) + (bytes48[2] << 16) + (bytes48[3] << 24) + (bytes48[4] << 32) + (bytes48[5] << 40)
+        return (
+            bytes48[0]
+            + (bytes48[1] << 8)
+            + (bytes48[2] << 16)
+            + (bytes48[3] << 24)
+            + (bytes48[4] << 32)
+            + (bytes48[5] << 40)
+        )
 
 
 class TPCTextureFormat(IntEnum):

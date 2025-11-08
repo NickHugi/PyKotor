@@ -1,19 +1,45 @@
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import TYPE_CHECKING, Callable
+import tempfile
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut
+from abc import abstractmethod
+from contextlib import suppress
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable, cast
+
+import qtpy
+
+from loggerplus import RobustLogger
+from qtpy import QtCore
+from qtpy.QtCore import QBuffer, QIODevice, QPoint, QTimer, QUrl, Qt
+from qtpy.QtGui import QIcon, QPixmap
+from qtpy.QtMultimedia import QMediaPlayer
+from qtpy.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QShortcut,
+    QSlider,
+    QStyle,
+    QVBoxLayout,
+    QWidget,
+)
 
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERF
+from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
@@ -24,18 +50,235 @@ from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from ui import stylesheet_resources  # noqa: PLC0415, F401, I001  # pylint: disable=C0415
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
-from utility.logger_util import get_root_logger
-from utility.system.path import Path
+from utility.system.os_helper import remove_any
+
+if qtpy.API_NAME == "PySide2":
+    from toolset.rcc import resources_rc_pyside2  # noqa: PLC0415, F401  # pylint: disable=C0415
+elif qtpy.API_NAME == "PySide6":
+    from toolset.rcc import resources_rc_pyside6  # noqa: PLC0415, F401  # pylint: disable=C0415
+elif qtpy.API_NAME == "PyQt5":
+    from toolset.rcc import resources_rc_pyqt5  # noqa: PLC0415, F401  # pylint: disable=C0415
+elif qtpy.API_NAME == "PyQt6":
+    from toolset.rcc import resources_rc_pyqt6  # noqa: PLC0415, F401  # pylint: disable=C0415
+else:
+    raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from pathlib import PurePath
+
+    from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer
+    from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer
+    from qtpy.QtGui import QFocusEvent, QMouseEvent, QShowEvent
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
+
+
+class MediaPlayerWidget(QWidget):
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.buffer: QBuffer = QBuffer(self)
+        self.player: QMediaPlayer = QMediaPlayer(self)
+        self.setupMediaPlayer()
+        self._setupSignals()
+
+        self.hideWidget()
+
+    def setupMediaPlayer(self):
+        self.speed_levels: list[float] = [1, 1.25, 1.5, 2, 5, 10]
+        self.current_speed_index: int = 0
+
+        self.playPauseButton: QPushButton = QPushButton()
+        self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))  # pyright: ignore[reportOptionalMemberAccess]
+        self.playPauseButton.setFixedSize(24, 24)
+
+        self.stopButton: QPushButton = QPushButton()
+        self.stopButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaStop))  # pyright: ignore[reportOptionalMemberAccess]
+        self.stopButton.setFixedSize(24, 24)
+
+        self.muteButton: QPushButton = QPushButton()
+        self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))  # pyright: ignore[reportOptionalMemberAccess]
+        self.muteButton.setFixedSize(24, 24)
+
+        buttonLayout: QHBoxLayout = QHBoxLayout()
+        for button in [self.playPauseButton, self.stopButton, self.muteButton]:
+            buttonLayout.addWidget(button)
+            buttonLayout.setAlignment(button, Qt.AlignmentFlag.AlignBottom)
+        self.timeLabel: QLabel = QLabel("00:00 / 00:00")
+        self.setupTimeSlider()
+
+        buttonLayout.addWidget(self.timeLabel)
+        buttonLayout.addWidget(self.timeSlider, 1)
+
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        buttonLayout.setSpacing(0)
+        self.setLayout(buttonLayout)
+        self.hideWidget()
+
+    def setupTimeSlider(self):
+        self.timeSlider: QSlider = QSlider(Qt.Orientation.Horizontal)
+        self.timeSlider.setMouseTracking(True)
+        self.dragPosition = QPoint()
+
+        def sliderMousePressEvent(ev: QMouseEvent, slider: QSlider = self.timeSlider):
+            if ev.button() == Qt.LeftButton:  # pyright: ignore[reportAttributeAccessIssue]
+                self.player.pause()
+                self.dragPosition = ev.pos()  # Store click position
+                ev.accept()
+            super(QSlider, slider).mousePressEvent(ev)
+        def sliderMouseMoveEvent(ev: QMouseEvent, slider: QSlider = self.timeSlider):
+            if ev.buttons() == Qt.LeftButton and not self.dragPosition.isNull():  # pyright: ignore[reportAttributeAccessIssue]
+                value = int((ev.pos().x() / slider.width()) * slider.maximum())
+                slider.setValue(value)
+                self.player.setPosition(value)
+                ev.accept()
+            super(QSlider, slider).mouseMoveEvent(ev)
+        def sliderMouseReleaseEvent(ev: QMouseEvent, slider: QSlider = self.timeSlider):
+            if ev.button() == Qt.LeftButton and not self.dragPosition.isNull():  # pyright: ignore[reportAttributeAccessIssue]
+                # Set the final value and clear dragPosition
+                value = int((ev.pos().x() / slider.width()) * slider.maximum())
+                slider.setValue(value)
+                self.player.setPosition(value)
+                self.player.play()
+                self.dragPosition = QPoint()  # Reset drag position
+                ev.accept()
+            super(QSlider, slider).mouseReleaseEvent(ev)
+        def sliderFocusOutEvent(ev: QFocusEvent, slider: QSlider = self.timeSlider):
+            if not self.dragPosition.isNull():
+                value = int((self.dragPosition.x() / slider.width()) * slider.maximum())
+                slider.setValue(value)
+                self.player.setPosition(value)
+                self.player.play()
+                ev.accept()
+            super(QSlider, slider).focusOutEvent(ev)
+        self.timeSlider.mouseMoveEvent = sliderMouseMoveEvent  # type: ignore[method-override]
+        self.timeSlider.mousePressEvent = sliderMousePressEvent  # type: ignore[method-override]
+        self.timeSlider.mouseReleaseEvent = sliderMouseReleaseEvent  # type: ignore[method-override]
+        self.timeSlider.focusOutEvent = sliderFocusOutEvent  # type: ignore[method-override]
+
+    def playPauseButtonClick(self):
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
+        if stateGetter() == stateEnum.PlayingState:
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))  # pyright: ignore[reportOptionalMemberAccess]
+            self.player.pause()
+        else:
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPause))  # pyright: ignore[reportOptionalMemberAccess]
+            self.player.play()
+
+    def _setupSignals(self):
+        self.player.mediaStatusChanged.connect(self.mediaStateChanged)
+        self.player.positionChanged.connect(self.positionChanged)
+        self.player.durationChanged.connect(self.durationChanged)
+        stateChanged = self.player.stateChanged if qtpy.QT5 else self.player.playbackStateChanged  # pyright: ignore[reportAttributeAccessIssue]
+        stateChanged.connect(self.stateChanged)
+
+        self.playPauseButton.clicked.connect(self.playPauseButtonClick)
+        self.stopButton.clicked.connect(lambda *args: self.player.stop() or self.hideWidget())
+        self.muteButton.clicked.connect(self.toggleMute)
+
+    def stateChanged(self, state: QMediaPlayer.MediaStatus):
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        if state == stateEnum.PlayingState:
+            self.showWidget()
+
+    def format_time(self, msecs: int) -> str:
+        secs = msecs // 1000
+        mins = secs // 60
+        hrs = mins // 60
+        return f"{hrs:02}:{mins % 60:02}:{secs % 60:02}"
+
+    def mediaStateChanged(self, state: QMediaPlayer.MediaStatus):
+        if state == QMediaPlayer.MediaStatus.EndOfMedia:
+            self.timeSlider.setValue(self.timeSlider.maximum())
+            self.hideWidget()
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        if state == stateEnum.PlayingState:
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPause))  # pyright: ignore[reportOptionalMemberAccess]
+        else:
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))  # pyright: ignore[reportOptionalMemberAccess]
+
+    def changePlaybackSpeed(self, direction: int):
+        """Some qt bug prevents this from working properly. Requires a start and a play in order to take effect."""
+        self.current_speed_index = max(0, min(len(self.speed_levels) - 1, self.current_speed_index + direction))
+        newRate = self.speed_levels[self.current_speed_index]
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
+        wasPlaying = stateGetter() == stateEnum.PlayingState
+        currentPosition = self.player.position()
+        self.player.setPlaybackRate(newRate)
+        self.player.setPosition(currentPosition)
+        if wasPlaying:
+            self.player.play()
+
+    def toggleMute(self):
+        if qtpy.QT5:
+            self.player.setMuted(not self.player.isMuted())
+            muted = self.player.isMuted()
+        else:
+            audio_output = self.player.audioOutput()  # pyright: ignore[reportAttributeAccessIssue]
+            current_volume = audio_output.volume()
+            if current_volume > 0:
+                self.previous_volume = current_volume
+                audio_output.setVolume(0)
+                muted = True
+            else:
+                audio_output.setVolume(self.previous_volume if hasattr(self, "previous_volume") else 0.5)
+                muted = False
+        if muted:
+            self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolumeMuted))  # pyright: ignore[reportOptionalMemberAccess]
+        else:
+            self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))  # pyright: ignore[reportOptionalMemberAccess]
+
+    def positionChanged(self, position: int):
+        if not self.timeSlider.isSliderDown():
+            self.timeSlider.setValue(position)
+        current_time = self.format_time(position)
+        total_time = self.format_time(self.timeSlider.maximum())
+        self.timeLabel.setText(f"{current_time} / {total_time}")
+
+    def durationChanged(self, duration: int):
+        self.timeSlider.setRange(0, duration)
+        total_time = self.format_time(duration)
+        current_time = self.format_time(self.timeSlider.value())
+        self.timeLabel.setText(f"{current_time} / {total_time}")
+
+    def showWidget(self):
+        self.show()
+        self.playPauseButton.show()
+        self.stopButton.show()
+        self.muteButton.show()
+        self.timeLabel.show()
+        self.timeSlider.show()
+
+    def hideWidget(self):
+        self.hide()
+        self.playPauseButton.hide()
+        self.stopButton.hide()
+        self.muteButton.hide()
+        self.timeLabel.hide()
+        self.timeSlider.hide()
+
+    def setVisible(self, visible: bool):  # noqa: FBT001
+        """Override to control visibility based on player state."""
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
+        if stateGetter() == stateEnum.PlayingState:
+            return
+        super().setVisible(visible)
+
+    def showEvent(self, event: QShowEvent):
+        """Override to prevent showing unless playing."""
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
+        if stateGetter() != stateEnum.PlayingState:
+            return
+        super().showEvent(event)
 
 
 # TODO: Creating a child editor from this class is not intuitive, document the requirements at some point.
@@ -45,9 +288,11 @@ class Editor(QMainWindow):
     Provides methods for saving and loading files that are stored directly in folders and for files that are encapsulated in a MOD or RIM.
     """
 
-    newFile = QtCore.pyqtSignal()
-    savedFile = QtCore.pyqtSignal(object, object, object, object)
-    loadedFile = QtCore.pyqtSignal(object, object, object, object)
+    newFile = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    savedFile = QtCore.Signal(object, object, object, object)  # pyright: ignore[reportPrivateImportUsage]
+    loadedFile = QtCore.Signal(object, object, object, object)  # pyright: ignore[reportPrivateImportUsage]
+
+    CAPSULE_FILTER = "*.mod *.erf *.rim *.sav"
 
     def __init__(
         self,
@@ -57,7 +302,6 @@ class Editor(QMainWindow):
         readSupported: list[ResourceType],
         writeSupported: list[ResourceType],
         installation: HTInstallation | None = None,
-        mainWindow: QMainWindow | None = None,
     ):
         """Initializes the editor.
 
@@ -69,7 +313,6 @@ class Editor(QMainWindow):
             readSupported: list[ResourceType]: The supported resource types for reading
             writeSupported: list[ResourceType]: The supported resource types for writing
             installation: HTInstallation | None: The installation context
-            mainwindow: QMainWindow | None: The main window
 
         Initializes editor properties:
             - Sets up title, icon and parent widget
@@ -80,46 +323,31 @@ class Editor(QMainWindow):
         super().__init__(parent)
         self._is_capsule_editor: bool = False
         self._installation: HTInstallation | None = installation
+        self._logger = RobustLogger()
+        self._global_settings: GlobalSettings = GlobalSettings()
 
+        self._editorTitle: str = title
         self._filepath: Path | None = None
         self._resname: str | None = None
         self._restype: ResourceType | None = None
         self._revert: bytes | None = None
-
-        writeSupported = readSupported.copy() if readSupported is writeSupported else writeSupported
-        additional_formats = {"XML", "JSON", "CSV", "ASCII", "YAML"}
-        for add_format in additional_formats:
-            readSupported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in readSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
-            )
-            writeSupported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in writeSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
-            )
-        self._readSupported: list[ResourceType] = readSupported
-        self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._mainWindow: QMainWindow | None = mainWindow  # FIXME: unused?
 
-        self._editorTitle: str = title
+        self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self)
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.mediaPlayer)
         self.setWindowTitle(title)
         self._setupIcon(iconName)
 
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
-        self._saveFilter: str = "All valid files ("
-        for resource in writeSupported:
-            self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
-        self._saveFilter += f" {capsule_types});;"
-        for resource in writeSupported:
-            self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._saveFilter += f"Save into module ({capsule_types})"
+        self.setupEditorFilters(readSupported, writeSupported)
 
-        self._openFilter: str = "All valid files ("
-        for resource in readSupported:
-            self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
-        self._openFilter += f" {capsule_types});;"
-        for resource in readSupported:
-            self._openFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._openFilter += f"Load from module ({capsule_types})"
+
+    def showEvent(self, event: QShowEvent):
+        # Set minimum size based on the current size
+        self.setMinimumSize(
+            self.size().width() + QApplication.font().pointSize() * 2,
+            self.size().height(),
+        )
 
     def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
@@ -130,7 +358,10 @@ class Editor(QMainWindow):
             - Sets Revert action to disabled
             - Connects keyboard shortcuts for New, Open, Save, Save As, Revert and Exit.
         """
-        for action in self.menuBar().actions()[0].menu().actions():
+        menubar = self.menuBar().actions()[0].menu()
+        if not isinstance(menubar, QMenu):
+            raise TypeError(f"self.menuBar().actions()[0].menu() returned a {type(menubar).__name__} object, expected QMenu.")
+        for action in menubar.actions():
             if action.text() == "New":  # sourcery skip: extract-method
                 action.triggered.connect(self.new)
             if action.text() == "Open":
@@ -158,27 +389,58 @@ class Editor(QMainWindow):
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
     def refreshWindowTitle(self):
-        """Refreshes the window title based on the current state.
-
-        Processing Logic:
-        ----------------
-            - Sets the installation name variable based on whether an installation is set or not
-            - Checks if a file path is set, if not just uses the editor title
-            - If encapsulated, constructs the title combining file path, installation, editor title
-            - If not encapsulated, constructs title combining parent folder, file, installation, editor title.
-        """
+        """Refreshes the window title based on the current state of the editor."""
         installationName = "No Installation" if self._installation is None else self._installation.name
+        if self._filepath is None or self._resname is None or self._restype is None:
+            self.setWindowTitle(f"{self._editorTitle}({installationName})")
+            return
 
-        if self._filepath is None:
-            self.setWindowTitle(self._editorTitle)
-        elif is_capsule_file(self._filepath.name):
-            assert self._restype is not None
-            self.setWindowTitle(f"{self._filepath.name}/{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
-        else:
-            assert self._restype is not None
-            hierarchy: tuple[str, ...] = self._filepath.parts
-            folder = f"{hierarchy[-2]}/" if len(hierarchy) >= 2 else ""
-            self.setWindowTitle(f"{folder}{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
+        relpath = self._filepath.relative_to(self._filepath.parent.parent) if self._filepath.parent.parent.name else self._filepath.parent
+        if is_bif_file(relpath) or is_capsule_file(self._filepath):
+            from toolset.gui.editors.erf import ERFEditor
+            if not isinstance(self, ERFEditor):
+                relpath /= f"{self._resname}.{self._restype.extension}"
+        self.setWindowTitle(f"{relpath} - {self._editorTitle}({installationName})")
+
+    def setupEditorFilters(self, readSupported: list[ResourceType], writeSupported: list[ResourceType]):
+        writeSupported = readSupported.copy() if readSupported is writeSupported else writeSupported
+        additional_formats = {"XML", "JSON", "CSV", "ASCII", "YAML"}
+        for add_format in additional_formats:
+            readSupported.extend(
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in readSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
+            )
+            writeSupported.extend(
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in writeSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
+            )
+        self._readSupported: list[ResourceType] = readSupported
+        self._writeSupported: list[ResourceType] = writeSupported
+
+        self._saveFilter: str = "All valid files ("
+        for resource in writeSupported:
+            self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
+        self._saveFilter += f" {self.CAPSULE_FILTER});;"
+        for resource in writeSupported:
+            self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
+        self._saveFilter += f"Save into module ({self.CAPSULE_FILTER})"
+
+        self._openFilter: str = "All valid files ("
+        for resource in readSupported:
+            self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
+        self._openFilter += f" {self.CAPSULE_FILTER});;"
+        for resource in readSupported:
+            self._openFilter += f"{resource.category} File (*.{resource.extension});;"
+        self._openFilter += f"Load from module ({self.CAPSULE_FILTER})"
+
+    def getOpenedFileName(self) -> str:
+        if self._filepath is not None and self._filepath.name and self._restype is not None:
+            return (
+                f"{self._resname or ''}.{self._restype.extension}"
+                if is_bif_file(self._filepath) or is_capsule_file(self._filepath)
+                else self._filepath.name
+            )
+        return ""
 
     def saveAs(self):
         """Saves the file with the selected filepath.
@@ -193,26 +455,33 @@ class Editor(QMainWindow):
             - Refreshes the window title
             - Enables the Revert menu item
         """
-        filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
+        filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", self.getOpenedFileName(), self._saveFilter, "")
         if not filepath_str:
             return
+        error_msg, e, invalid = "", None, False
         try:
-            identifier = ResourceIdentifier.from_path(filepath_str).validate()
+            identifier = ResourceIdentifier.from_path(filepath_str)
+            if identifier.restype.is_invalid:
+                invalid = True
         except ValueError as e:
-            get_root_logger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
+            invalid = True
+            RobustLogger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(
-                QMessageBox.Critical,
+        if invalid:
+            msgBox = QMessageBox(
+                QMessageBox.Icon.Critical,
                 "Invalid filename/extension",
-                f"Check the filename and try again. Could not save!<br><br>{error_msg}",
+                f"Check the filename and try again. Could not save!{f'<br><br>{error_msg}' if error_msg else ''}",
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
-            ).exec_()
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
+            )
+            if error_msg:
+                msgBox.setDetailedText(format_exception_with_variables(e))
+            msgBox.exec_()
             return
 
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
-        if is_capsule_file(filepath_str) and f"Save into module ({capsule_types})" in self._saveFilter:
-            if self._resname is None:
+        if is_capsule_file(filepath_str) and f"Save into module ({self.CAPSULE_FILTER})" in self._saveFilter:
+            if self._resname is None or self._restype is None:
                 self._resname = "new"
                 self._restype = self._writeSupported[0]
 
@@ -246,8 +515,22 @@ class Editor(QMainWindow):
 
         try:
             data, data_ext = self.build()
-            if data is None:  # nsseditor
+            if data is None:  # HACK: nsseditor
                 return
+            from toolset.gui.editors.gff import GFFEditor
+
+            if (  # HACK: we need a proper save editor, but this is better than nothing.
+                self._global_settings.attemptKeepOldGFFFields
+                and self._restype is not None
+                and self._restype.is_gff()
+                and not isinstance(self, GFFEditor)
+                and self._revert is not None
+            ):
+                print("Adding deleted fields from original gff into final gff.")
+                old_gff = read_gff(self._revert)
+                new_gff = read_gff(data)
+                new_gff.root.add_missing(old_gff.root)
+                data = bytes_gff(new_gff)
             self._revert = data
 
             self.refreshWindowTitle()
@@ -263,12 +546,11 @@ class Editor(QMainWindow):
             else:
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                lines = format_exception_with_variables(e)
-                file.writelines(lines)
-                file.write("\n----------------------\n")
-            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Critical, "Failed to write to file", error_msg).exec_()
+            self.blinkWindow()
+            RobustLogger().critical("Failed to write to file", exc_info=True)
+            msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", str(universal_simplify_exception(e)).replace("\n", "<br>"))
+            msgBox.setDetailedText(format_exception_with_variables(e))
+            msgBox.exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         """Saves data if dialog returns specific options.
@@ -293,6 +575,8 @@ class Editor(QMainWindow):
                 print(f"User cancelled filepath lookup in _saveEndsWithBif ({self._resname}.{self._restype})")
                 return
 
+            assert self._resname is not None
+            assert self._restype is not None
             r_filepath = Path(str_filepath)
             dialog2 = SaveToModuleDialog(self._resname, self._restype, self._writeSupported)
             if dialog2.exec_():
@@ -301,6 +585,9 @@ class Editor(QMainWindow):
                 self._filepath = r_filepath
                 self.save()
         elif dialog.option == BifSaveOption.Override:
+            assert self._resname is not None
+            assert self._restype is not None
+            assert self._installation is not None
             self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
             self.save()
         else:
@@ -330,11 +617,12 @@ class Editor(QMainWindow):
             dialog.exec_()
             if dialog.option == RimSaveOption.MOD:
                 folderpath: Path = self._filepath.parent
-                filename: str = f"{Module.get_root(self._filepath)}.mod"
+                filename: str = f"{Module.find_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()
             elif dialog.option == RimSaveOption.Override:
+                assert self._installation is not None
                 self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
                 self.save()
             return
@@ -342,7 +630,7 @@ class Editor(QMainWindow):
         rim: RIM = read_rim(self._filepath)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
-        if self._restype == ResourceType.MDL:
+        if self._restype is ResourceType.MDL:
             rim.set_data(self._resname, ResourceType.MDX, data_ext)
 
         rim.set_data(self._resname, self._restype, data)
@@ -359,43 +647,51 @@ class Editor(QMainWindow):
         assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
         assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
 
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
-        nested_capsule_idents: list[ResourceIdentifier] = []
+        # Determine the physical file and the nested paths.
+        c_filepath: CaseAwarePath = CaseAwarePath(self._filepath)
+        nested_paths: list[PurePath] = []
         if is_any_erf_type_file(c_filepath) or is_rim_file(c_filepath):
-            nested_capsule_idents.append(ResourceIdentifier.from_path(c_filepath))
+            nested_paths.append(c_filepath)
 
         c_parent_filepath = c_filepath.parent
-        res_parent_ident = ResourceIdentifier.from_path(c_parent_filepath)
-        while (res_parent_ident.restype.name in ERFType.__members__ or res_parent_ident.restype == ResourceType.RIM) and not c_parent_filepath.safe_isdir():
-            nested_capsule_idents.append(res_parent_ident)
+        while (  # Iterate all parents until we find a physical folder on disk.
+            ResourceType.from_extension(c_parent_filepath.suffix).name
+            in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV, ResourceType.RIM)
+        ) and not c_parent_filepath.is_dir():
+            nested_paths.append(c_parent_filepath)
             c_filepath = c_parent_filepath
             c_parent_filepath = c_filepath.parent
-            res_parent_ident = ResourceIdentifier.from_path(c_parent_filepath)
 
-        erf_or_rim = read_rim(c_filepath) if res_parent_ident.restype == ResourceType.RIM else read_erf(c_filepath)
-        nested_capsules: list[tuple[ResourceIdentifier, ERF | RIM]] = [(ResourceIdentifier.from_path(c_filepath), erf_or_rim)]
-        for res_ident in reversed(nested_capsule_idents[:-1]):
-            nested_erf_or_rim_data = erf_or_rim.get(*res_ident.unpack())
-            if nested_erf_or_rim_data is None:
-                msg = f"You must save the ERFEditor window you added '{res_ident}' to before modifying its nested resources. Do so and try again."
+        # At this point, c_filepath points to the physical ERF/RIM on disk
+        # and c_parent_filepath points to the physical folder containing the file.
+        erf_or_rim: ERF | RIM = read_rim(c_filepath) if ResourceType.from_extension(c_parent_filepath.suffix) is ResourceType.RIM else read_erf(c_filepath)
+        nested_capsules: list[tuple[PurePath, ERF | RIM]] = [(c_filepath, erf_or_rim)]
+        for capsule_path in reversed(nested_paths[:-1]):
+            nested_erf_or_rim_data = erf_or_rim.get(capsule_path.stem, ResourceType.from_extension(capsule_path.suffix))
+            if nested_erf_or_rim_data is None:  # TODO(th3w1zard1): loop through all windows and send hotkey ctrl+s?
+                msg = f"You must save the ERFEditor for '{capsule_path.relative_to(c_parent_filepath)}' to before modifying its nested resources. Do so and try again."
                 raise ValueError(msg)
 
-            erf_or_rim = read_rim(nested_erf_or_rim_data) if res_ident.restype == ResourceType.RIM else read_erf(nested_erf_or_rim_data)
-            nested_capsules.append((res_ident, erf_or_rim))
-        for index, (res_ident, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
+            erf_or_rim = read_rim(nested_erf_or_rim_data) if ResourceType.from_extension(capsule_path.suffix) is ResourceType.RIM else read_erf(nested_erf_or_rim_data)
+            nested_capsules.append((capsule_path, erf_or_rim))
+
+        # Let's now save each erf/rim to its parent.
+        for index, (capsule_path, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
+            rel_capsule_path = capsule_path.relative_to(c_parent_filepath)
             if index == 0:
-                if self._is_capsule_editor:
-                    print(f"Not saving '{self._resname}.{self._restype}' to '{res_ident}', is ERF/RIM editor save.")
-                    continue
-                print(f"Saving '{self._resname}.{self._restype}' to '{res_ident}'")
-                this_erf_or_rim.set_data(self._resname, self._restype, data)
+                if not self._is_capsule_editor:
+                    print(f"Saving non ERF/RIM '{self._resname}.{self._restype.extension}' to '{rel_capsule_path}'")
+                    this_erf_or_rim.set_data(self._resname, self._restype, data)
                 continue
             child_index = len(nested_capsules) - index
-            child_res_ident, child_erf_or_rim = nested_capsules[child_index]
-            data = bytearray()
-            print(f"Saving {child_res_ident} to {res_ident}")
-            write_erf(child_erf_or_rim, data) if isinstance(child_erf_or_rim, ERF) else write_rim(child_erf_or_rim, data)
-            this_erf_or_rim.set_data(*child_res_ident.unpack(), bytes(data))
+            child_capsule_path, child_erf_or_rim = nested_capsules[child_index]
+            if self._filepath != child_capsule_path or not self._is_capsule_editor:
+                data = bytearray()
+                print(f"Saving {child_capsule_path.relative_to(c_parent_filepath)} to {capsule_path.relative_to(c_parent_filepath)}")
+                write_erf(child_erf_or_rim, data) if isinstance(child_erf_or_rim, ERF) else write_rim(child_erf_or_rim, data)
+            this_erf_or_rim.set_data(child_capsule_path.stem, ResourceType.from_extension(child_capsule_path.suffix), bytes(data))
+
+        print(f"All nested capsules saved, finally saving physical file '{c_filepath}'")
         write_erf(this_erf_or_rim, c_filepath) if isinstance(this_erf_or_rim, ERF) else write_rim(this_erf_or_rim, c_filepath)
         self.savedFile.emit(str(c_filepath), self._resname, self._restype, data)
 
@@ -424,7 +720,7 @@ class Editor(QMainWindow):
         assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
 
         erftype: ERFType = ERFType.from_extension(self._filepath)
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(self._filepath)
 
         if c_filepath.is_file():
             erf: ERF = read_erf(c_filepath)
@@ -437,7 +733,7 @@ class Editor(QMainWindow):
         erf.erf_type = erftype
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
-        if self._restype == ResourceType.MDL:
+        if self._restype is ResourceType.MDL:
             assert data_ext is not None, assert_with_variable_trace(data_ext is not None)
             erf.set_data(self._resname, ResourceType.MDX, data_ext)
 
@@ -452,16 +748,14 @@ class Editor(QMainWindow):
 
     def _saveEndsWithOther(self, data: bytes, data_ext: bytes):
         assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
-
-        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath(self._filepath)
         with c_filepath.open("wb") as file:
             file.write(data)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
-        if self._restype == ResourceType.MDL:
+        if self._restype is ResourceType.MDL:
             with c_filepath.with_suffix(".mdx").open("wb") as file:
                 file.write(data_ext)
-
         self.savedFile.emit(self._filepath, self._resname, self._restype, data)
 
     def open(self):
@@ -479,15 +773,14 @@ class Editor(QMainWindow):
             return
         r_filepath = Path(filepath_str)
 
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
-        if is_capsule_file(r_filepath) and f"Load from module ({capsule_types})" in self._openFilter:
-            dialog = LoadFromModuleDialog(Capsule(r_filepath), self._readSupported)
+        if is_capsule_file(r_filepath) and f"Load from module ({self.CAPSULE_FILTER})" in self._openFilter:
+            dialog = LoadFromModuleDialog(Capsule(r_filepath), self._readSupported)  # type: ignore[arg-type]
             if dialog.exec_():
                 self._load_module_from_dialog_info(dialog, r_filepath)
         else:
             data: bytes = BinaryReader.load_file(r_filepath)
             res_ident: ResourceIdentifier = ResourceIdentifier.from_path(r_filepath).validate()
-            self.load(r_filepath, *res_ident.unpack(), data)
+            self.load(r_filepath, res_ident.resname, res_ident.restype, data)
 
     def _load_module_from_dialog_info(self, dialog: LoadFromModuleDialog, c_filepath: Path):
         resname: str | None = dialog.resname()
@@ -501,6 +794,25 @@ class Editor(QMainWindow):
 
     @abstractmethod
     def build(self) -> tuple[bytes, bytes]: ...
+
+    def centerAndAdjustWindow(self):
+        # Get the screen geometry
+        screen = QApplication.primaryScreen().geometry()
+
+        # Calculate the new position to center the window
+        new_x = (screen.width() - self.width()) // 2
+        new_y = (screen.height() - self.height()) // 2
+
+        # Adjust the position to ensure the window is fully visible
+        new_x = max(0, min(new_x, screen.width() - self.width()))
+        new_y = max(0, min(new_y, screen.height() - self.height()))
+
+        # Set the new position
+        self.move(new_x, new_y)
+
+    #@property
+    #def filepath(self):
+    #    return self._resource.filepath()
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load a resource from a file.
@@ -520,14 +832,14 @@ class Editor(QMainWindow):
             - Refresh window title
             - Emit loadedFile signal with load details.
         """
-        self._filepath = Path.pathify(filepath)  # type: ignore[reportGeneralTypeIssues]
+        self._filepath = Path(filepath)  # pyright: ignore[reportGeneralTypeIssues]
         self._resname = resref
         self._restype = restype
         self._revert = data
         for action in self.menuBar().actions()[0].menu().actions():
-            if action.text() != "Revert":
-                continue
-            action.setEnabled(True)
+            if action.text() == "Revert":
+                action.setEnabled(True)
+                break
         self.refreshWindowTitle()
         self.loadedFile.emit(str(self._filepath), self._resname, self._restype, data)
 
@@ -547,6 +859,7 @@ class Editor(QMainWindow):
     def revert(self):
         if self._revert is None:
             print("No data to revert from")
+            self.blinkWindow()
             return
         assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
         assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
@@ -572,15 +885,104 @@ class Editor(QMainWindow):
         setText: Callable[[str], None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
         className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
 
-        textbox.locstring = locstring  # type: ignore[reportAttributeAccessIssue]
+        textbox.locstring = locstring  # pyright: ignore[reportAttributeAccessIssue]
+        theme = GlobalSettings().selectedTheme
         if locstring.stringref == -1:
             text = str(locstring)
             setText(text if text != "-1" else "")
-            textbox.setStyleSheet(className + " {background-color: white;}")
-        else:
-            assert self._installation is not None
+            # Check theme condition for setting stylesheet
+            if theme in ("Native", "Fusion (Light)"):
+                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: white;}}")
+            else:
+                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: white; color: black;}}")
+        elif self._installation is not None:
             setText(self._installation.talktable().string(locstring.stringref))
-            textbox.setStyleSheet(className + " {background-color: #fffded;}")
+            # Check theme condition for setting stylesheet
+            if theme in ("Native", "Fusion (Light)"):
+                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded;}}")
+            else:
+                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded; color: black;}}")
+
+    def blinkWindow(self, *, sound: bool = True):
+        if sound:
+            with suppress(Exception):
+                self.playSound("dr_metal_lock")
+        self.setWindowOpacity(0.7)
+        QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
+
+    def play_byte_source_media(self, data: bytes | None) -> bool:
+        if qtpy.API_NAME in ["PyQt5", "PySide2"]:
+            from qtpy.QtMultimedia import QMediaContent
+            if data:
+                self.mediaPlayer.buffer = buffer = QBuffer(self)
+                buffer.setData(data)
+                buffer.open(QIODevice.OpenModeFlag.ReadOnly)
+                self.mediaPlayer.player.setMedia(QMediaContent(), buffer)
+                QTimer.singleShot(0, self.mediaPlayer.player.play)  # IMPORTANT!! in pyqt5/pyside2, ONLY works when singleShot from a timer. No idea why.
+            else:
+                self.blinkWindow()
+                return False
+            return True
+
+        if qtpy.API_NAME in ["PyQt6", "PySide6"]:
+            if data:
+                self._play_byte_data_qt6(data)
+            else:
+                self.blinkWindow()
+                return False
+            return True
+        raise RuntimeError(f"Unsupported QT_API value: {qtpy.API_NAME}")
+
+    def _play_byte_data_qt6(self, data: bytes):
+        from qtpy.QtMultimedia import QAudioOutput
+        tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+        tempFile.write(data)
+        tempFile.flush()
+        tempFile.seek(0)
+        tempFile.close()
+
+        player: PyQt6MediaPlayer | PySide6MediaPlayer = cast("Any", self.mediaPlayer.player)
+        audioOutput = QAudioOutput(self)  # pyright: ignore[reportCallIssue]
+        player.setAudioOutput(audioOutput)  # type: ignore[attr-name]
+        player.setSource(QUrl.fromLocalFile(tempFile.name))  # type: ignore[attr-name]
+        audioOutput.setVolume(1)  # IMPORTANT!! volume starts off at 0% otherwise.
+        player.mediaStatusChanged.connect(lambda status, file_name=tempFile.name: self.removeTempAudioFile(status, file_name))
+        player.play()
+
+    def playSound(self, resname: str, order: list[SearchLocation] | None = None) -> bool:
+        """Plays a sound resource."""
+        if not resname or not resname.strip() or self._installation is None:
+            self.blinkWindow(sound=False)
+            return False
+
+        self.mediaPlayer.player.stop()
+
+        data: bytes | None = self._installation.sound(
+            resname,
+            order if order is not None else [
+                SearchLocation.MUSIC,
+                SearchLocation.VOICE,
+                SearchLocation.SOUND,
+                SearchLocation.OVERRIDE,
+                SearchLocation.CHITIN,
+            ],
+        )
+        if not data:
+            self.blinkWindow(sound=False)
+        return self.play_byte_source_media(data)
+
+    def removeTempAudioFile(
+        self,
+        status: QMediaPlayer.MediaStatus,
+        filePathStr: str,
+    ):
+        print("<SDM> [removeTempAudioFile scope] status: ", status)
+        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+            try:
+                self.mediaPlayer.player.stop()
+                QTimer.singleShot(33, lambda: remove_any(filePathStr))
+            except OSError:
+                self._logger.exception(f"Error removing temporary file {filePathStr}")
 
     def filepath(self) -> str | None:
         return str(self._filepath)

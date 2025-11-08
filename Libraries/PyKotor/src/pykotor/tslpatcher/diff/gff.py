@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
 
-def flatten_differences(compare_result):
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFCompareResult
+
+
+def flatten_differences(compare_result: GFFCompareResult) -> dict[str, Any]:
     """Flattens the differences from GFFCompareResult into a flat dictionary.
 
     Args:
@@ -12,13 +17,10 @@ def flatten_differences(compare_result):
     -------
         dict: A flat dictionary representing the changes.
     """
-    flat_changes = {}
-    for diff in compare_result.get_differences():
-        path_str = str(diff.path).replace("\\", "/")  # Use forward slashes for INI compatibility
-        if diff.new_value is not None:  # Changed or added
-            flat_changes[path_str] = diff.new_value
-        else:  # Removed
-            flat_changes[path_str] = None  # Represent removals as None or consider a special marker
+    flat_changes: dict[str, Any] = {}
+    for diff in compare_result.differences:
+        path_str = str(diff.path).replace("\\", "/")
+        flat_changes[path_str] = diff.new_value
     return flat_changes
 
 
@@ -33,19 +35,19 @@ def build_hierarchy(flat_changes):
     -------
         dict: A hierarchical dictionary representing the nested structure.
     """
-    hierarchy = {}
+    hierarchy: dict[str, Any] = {}
     for path, value in flat_changes.items():
         parts = path.split("/")
-        current_level = hierarchy
-        for part in parts[:-1]:  # Navigate/create to the correct nested level, excluding the last part
+        current_level: dict[str, Any] = hierarchy
+        for part in parts[:-1]:
             if part not in current_level:
                 current_level[part] = {}
             current_level = current_level[part]
-        current_level[parts[-1]] = value  # Set the final part as the value
+        current_level[parts[-1]] = value
     return hierarchy
 
 
-def serialize_to_ini(hierarchy):
+def serialize_to_ini(hierarchy: dict[str, Any]) -> str:
     """Serializes a hierarchical dictionary into an INI-formatted string.
 
     Args:
@@ -54,9 +56,13 @@ def serialize_to_ini(hierarchy):
     Returns:
         str: A string formatted in INI structure.
     """
-    ini_lines = []
+    ini_lines: list[str] = []
 
-    def serialize_section(name, content, indent_level=0):
+    def serialize_section(
+        name: str,
+        content: dict[str, Any],
+        indent_level: int = 0,
+    ):
         """Serializes a section of the hierarchy into INI format, recursively for nested sections.
 
         Args:
@@ -64,7 +70,7 @@ def serialize_to_ini(hierarchy):
             content (dict): The content of the section.
             indent_level (int): The current indentation level (for nested sections).
         """
-        prefix = " " * indent_level * 4  # TODO(th3w1zard1): adjust indent later.
+        prefix: str = " " * indent_level * 4  # TODO(th3w1zard1): adjust indent later.
         if indent_level == 0:
             ini_lines.append(f"[{name}]")
         else:
@@ -91,8 +97,12 @@ def serialize_to_ini(hierarchy):
     return "\n".join(ini_lines)
 
 
-if __name__ == "__main__":
-    # gff_compare_result = something.compare(another)
-    hierarchy = build_hierarchy(flatten_differences(gff_compare_result))
-    ini_content = serialize_to_ini(hierarchy)
-    print(ini_content)
+# Example usage - requires a GFFCompareResult object:
+# if __name__ == "__main__":
+#     from pykotor.resource.formats.gff import read_gff
+#     gff1 = read_gff("file1.utc")
+#     gff2 = read_gff("file2.utc")
+#     compare_result = gff1.compare_detailed(gff2)
+#     hierarchy = build_hierarchy(flatten_differences(compare_result))
+#     ini_content = serialize_to_ini(hierarchy)
+#     print(ini_content)

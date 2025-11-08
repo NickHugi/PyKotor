@@ -8,8 +8,8 @@ import unittest
 from unittest import TestCase
 
 try:
-    from PyQt5.QtTest import QTest
-    from PyQt5.QtWidgets import QApplication
+    from qtpy.QtTest import QTest
+    from qtpy.QtWidgets import QApplication
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
@@ -53,7 +53,7 @@ from pykotor.resource.type import ResourceType
 )
 @unittest.skipIf(
     QTest is None or not QApplication,
-    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
+    "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class UTTEditorTest(TestCase):
     @classmethod
@@ -63,8 +63,8 @@ class UTTEditorTest(TestCase):
         from toolset.gui.editors.utt import UTTEditor
 
         cls.UTTEditor = UTTEditor
-        # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
-        cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=False, mainWindow=None)
+        # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False)
+        cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=False)
 
     def setUp(self):
         from toolset.gui.editors.utt import UTTEditor
@@ -98,7 +98,7 @@ class UTTEditorTest(TestCase):
     )
     def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for utt_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTT):
+        for utt_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTT):
             old = read_gff(utt_resource.data())
             self.editor.load(utt_resource.filepath(), utt_resource.resname(), utt_resource.restype(), utt_resource.data())
 
@@ -114,7 +114,7 @@ class UTTEditorTest(TestCase):
     )
     def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for utt_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTT):
+        for utt_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTT):
             old = read_gff(utt_resource.data())
             self.editor.load(utt_resource.filepath(), utt_resource.resname(), utt_resource.restype(), utt_resource.data())
 

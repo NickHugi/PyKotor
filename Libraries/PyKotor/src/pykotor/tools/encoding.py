@@ -54,7 +54,11 @@ def decode_bytes_with_fallbacks(
     """
     provided_encoding: str | None = encoding or (lang.get_encoding() if lang else None)
     if provided_encoding is not None:
-        return byte_content.decode(encoding=provided_encoding, errors=errors)
+        # Try decoding with provided encoding, but fall back to auto-detection if it fails
+        with suppress(UnicodeDecodeError):
+            return byte_content.decode(encoding=provided_encoding, errors=errors)
+        # If provided encoding fails, fall through to auto-detection
+        provided_encoding = None
     if charset_normalizer is None:
         if provided_encoding is None:
             provided_encoding = "windows-1252" if only_8bit_encodings else "utf-8"
@@ -72,7 +76,14 @@ def decode_bytes_with_fallbacks(
                 return byte_content.decode(provided_encoding, errors=attempt_errors)
 
         # Detect encoding using charset_normalizer
-        detected_encodings = detected_encodings or charset_normalizer.from_bytes(byte_content)  # type: ignore[reportOptionalMemberAccess]
+        detected_encodings = detected_encodings or charset_normalizer.from_bytes(byte_content)  # pyright: ignore[reportOptionalMemberAccess]
+
+        if detected_encodings is None:
+            # Semi-Final fallback (utf-8) if no encoding is detected
+            with suppress(UnicodeDecodeError):
+                return byte_content.decode(encoding="utf-8", errors=attempt_errors)
+            # Final fallback (latin1) if no encoding is detected
+            return byte_content.decode(encoding="latin1", errors=attempt_errors)
 
         # Filter the charset-normalizer results to encodings with a maximum of 256 characters
         if only_8bit_encodings:
@@ -96,8 +107,8 @@ def decode_bytes_with_fallbacks(
 
         # Special handling for BOM
         aliases: set[str] = {alias.lower() for alias in result_detect.encoding_aliases}
+        aliases.add(best_encoding.lower())
         if result_detect.bom:
-            aliases.add(best_encoding.lower())
             for alias in aliases:
                 normalized_alias: str = alias.replace("_", "-")
                 if normalized_alias.startswith("utf-8"):
@@ -106,6 +117,19 @@ def decode_bytes_with_fallbacks(
                 if normalized_alias.startswith("utf-16"):
                     best_encoding = "UTF-16LE"
                     break
+
+        # Check all detected encodings and prioritize UTF-8 if it's detected
+        for match in detected_encodings:
+            match_aliases: set[str] = {alias.lower() for alias in match.encoding_aliases}
+            match_aliases.add(match.encoding.lower())
+            if "utf-8" in match_aliases or match.encoding.lower() in {"utf-8", "utf8"}:
+                with suppress(UnicodeDecodeError):
+                    return byte_content.decode(encoding="utf-8", errors=attempt_errors)
+
+        # Try UTF-8 first if it's a valid detection, as it's more common and reliable
+        if "utf-8" in aliases or best_encoding.lower() in {"utf-8", "utf8"}:
+            with suppress(UnicodeDecodeError):
+                return byte_content.decode(encoding="utf-8", errors=attempt_errors)
 
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
 

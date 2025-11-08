@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QMenu, QShortcut, QTreeView
+import qtpy
+
+from qtpy.QtGui import QColor, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QMenu, QMessageBox, QShortcut, QTreeView
 
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.jrl import JRL, JRLEntry, JRLQuest, JRLQuestPriority, dismantle_jrl, read_jrl
@@ -15,8 +17,8 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QItemSelection, QPoint
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QItemSelection, QPoint
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
@@ -29,8 +31,8 @@ class JRLEditor(Editor):
     or quest can be edited at the bottom of the window.
     """
 
-    # JRLEditor stores a tree model and a JRL instance. These two objects must be kept in sync with each other manually:
-    # eg. if you code an entry to be deleted from the journal, ensure that you delete corresponding item in the tree.\
+    # TODO(NickHugi): JRLEditor stores a tree model and a JRL instance. These two objects must be kept in sync with each other manually:
+    # eg. if you code an entry to be deleted from the journal, ensure that you delete corresponding item in the tree.
     # It would be nice at some point to create our own implementation of QAbstractItemModel that automatically mirrors
     # the JRL object.
 
@@ -54,10 +56,20 @@ class JRLEditor(Editor):
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.ui.categoryCommentEdit.setVisible(False)  # FIXME:
         self._setupMenus()
         self._setupSignals()
         if installation is not None:  # will only be none in the unittests
@@ -97,12 +109,13 @@ class JRLEditor(Editor):
         # programmatically, otherwise values bleed into other items when onSelectionChanged() fires.
         self.ui.categoryNameEdit.editingFinished.connect(self.onValueUpdated)
         self.ui.categoryTag.editingFinished.connect(self.onValueUpdated)
-        self.ui.categoryPlotSpin.editingFinished.connect(self.onValueUpdated)
+        self.ui.categoryPlotSelect.currentIndexChanged.connect(self.onValueUpdated)
         self.ui.categoryPlanetSelect.activated.connect(self.onValueUpdated)
         self.ui.categoryPrioritySelect.activated.connect(self.onValueUpdated)
         self.ui.categoryCommentEdit.keyReleased.connect(self.onValueUpdated)
         self.ui.entryIdSpin.editingFinished.connect(self.onValueUpdated)
         self.ui.entryXpSpin.editingFinished.connect(self.onValueUpdated)
+        self.ui.entryXpSpin.setToolTip("The game multiplies the value set here by 1000 to calculate actual XP to award.")
         self.ui.entryEndCheck.clicked.connect(self.onValueUpdated)
 
         QShortcut("Del", self).activated.connect(self.onDeleteShortcut)
@@ -111,13 +124,27 @@ class JRLEditor(Editor):
         self._installation = installation
         self.ui.categoryNameEdit.setInstallation(installation)
 
-        planets: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
+        planets: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
+        if planets is None:
+            QMessageBox(QMessageBox.Icon.Warning, "Missing 2DA", f"'{HTInstallation.TwoDA_PLANETS}.2da' is missing from your installation. Please reinstall your game, this should be in the read-only bifs.").exec_()
+            return
+
+        plot2DA: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_PLOT)
+        if plot2DA:
+            self.ui.categoryPlotSelect.clear()
+            self.ui.categoryPlotSelect.setPlaceholderText("[Unset]")
+            self.ui.categoryPlotSelect.setItems(
+                [cell.title() for cell in plot2DA.get_column("label")],
+                cleanupStrings=True,
+            )
+            self.ui.categoryPlotSelect.setContext(plot2DA, installation, HTInstallation.TwoDA_PLOT)
 
         self.ui.categoryPlanetSelect.clear()
-        self.ui.categoryPlanetSelect.addItem("[None]", -1)
+        self.ui.categoryPlanetSelect.setPlaceholderText("[Unset]")
         for row in planets:
             text = self._installation.talktable().string(row.get_integer("name", 0)) or row.get_string("label").replace("_", " ").title()
             self.ui.categoryPlanetSelect.addItem(text)
+        self.ui.categoryPlanetSelect.setContext(planets, self._installation, HTInstallation.TwoDA_PLANETS)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load quest data from a file.
@@ -203,7 +230,7 @@ class JRLEditor(Editor):
 
     def changeEntryText(self):
         """Opens a LocalizedStringDialog for editing the text of the selected entry."""
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)  # FIXME: locstring or locstring()?
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.entryTextEdit, dialog.locstring)
             self.onValueUpdated()
@@ -265,7 +292,7 @@ class JRLEditor(Editor):
         self._model.appendRow(questItem)
         self._jrl.quests.append(newQuest)
 
-    def onValueUpdated(self):
+    def onValueUpdated(self, *args, **kwargs):
         """Updates the selected item in the journal tree when values change.
 
         This method should be connected to all the widgets that store data related quest or entry text (besides the
@@ -288,12 +315,13 @@ class JRLEditor(Editor):
         if isinstance(data, JRLQuest):  # sourcery skip: extract-method
             data.name = self.ui.categoryNameEdit.locstring()
             data.tag = self.ui.categoryTag.text()
-            data.plot_index = self.ui.categoryPlotSpin.value()
+            data.plot_index = self.ui.categoryPlotSelect.currentIndex()
             data.planet_id = self.ui.categoryPlanetSelect.currentIndex() - 1
             data.priority = JRLQuestPriority(self.ui.categoryPrioritySelect.currentIndex())
-            data.comment = self.ui.categoryCommentEdit.toPlainText()
+            # data.comment = self.ui.categoryCommentEdit.toPlainText()
         elif isinstance(data, JRLEntry):
-            data.text = self.ui.entryTextEdit.locstring
+            if self.ui.entryTextEdit.locstring is not None:
+                data.text = self.ui.entryTextEdit.locstring
             data.end = self.ui.entryEndCheck.isChecked()
             data.xp_percentage = self.ui.entryXpSpin.value()
             data.entry_id = self.ui.entryIdSpin.value()
@@ -329,10 +357,10 @@ class JRLEditor(Editor):
                 self.ui.questPages.setCurrentIndex(0)
                 self.ui.categoryNameEdit.setLocstring(data.name)
                 self.ui.categoryTag.setText(data.tag)
-                self.ui.categoryPlotSpin.setValue(data.plot_index)
+                self.ui.categoryPlotSelect.setCurrentIndex(data.plot_index)
                 self.ui.categoryPlanetSelect.setCurrentIndex(data.planet_id + 1)
                 self.ui.categoryPrioritySelect.setCurrentIndex(data.priority.value)
-                self.ui.categoryCommentEdit.setPlainText(data.comment)
+                #self.ui.categoryCommentEdit.setPlainText(data.comment)
             elif isinstance(data, JRLEntry):
                 self.ui.questPages.setCurrentIndex(1)
                 self._loadLocstring(self.ui.entryTextEdit, data.text)
@@ -374,6 +402,9 @@ class JRLEditor(Editor):
             if isinstance(data, JRLQuest):
                 menu.addAction("Add Entry").triggered.connect(lambda: self.addEntry(item, JRLEntry()))
                 menu.addAction("Remove Quest").triggered.connect(lambda: self.removeQuest(item))
+                # it's not easy to right click without selecting an item - add the 'addQuest' action here as well.
+                menu.addSeparator()
+                menu.addAction("Add Quest").triggered.connect(lambda: self.addQuest(JRLQuest()))
             elif isinstance(data, JRLEntry):
                 menu.addAction("Remove Entry").triggered.connect(lambda: self.removeEntry(item))
         else:

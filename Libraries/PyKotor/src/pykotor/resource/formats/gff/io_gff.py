@@ -342,7 +342,7 @@ class GFFBinaryWriter(ResourceWriter):
         elif field_type is GFFFieldType.Single:
             self._field_writer.write_single(value)
         else:
-            msg = "Unknown field type"
+            msg = f"Unknown field type '{field_type}'"
             raise ValueError(msg)
 
     def _label_index(

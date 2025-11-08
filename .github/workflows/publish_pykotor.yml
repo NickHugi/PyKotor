@@ -1,23 +1,23 @@
-name: Compile PyKotor
+name: Publish PyKotor Tools CI/CD
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  OS_RUNNERS_JSON: '["windows-2019", "ubuntu-20.04", "macos-12"]'
-  PYTHON_VERSIONS_JSON: '["3.8", "3.9", "3.10", "3.11", "3.12"]'
+  OS_RUNNERS_JSON: '["windows-latest", "ubuntu-20.04", "macos-12"]'
+  PYTHON_VERSIONS_JSON: '["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]'
   ARCHITECTURES_JSON: '["x86", "x64"]'
   INTERPRETERS_JSON: '["python"]'
   UPX_VERSION: '4.2.2'
   USE_UPX: true
-  BUILD_BOOTLOADERS: false  # TODO(th3w1zard1):
+  BUILD_BOOTLOADERS: false  # Build pyinstaller bootloaders. Pretty much unusable due to AV heuristics.
   
 on:
 #  push:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 6 * * 1'  # Runs every Monday at 06:00 UTC
 
 permissions:
   contents: write
@@ -67,7 +67,7 @@ jobs:
         python-version: ${{ fromJson(needs.setup.outputs.python-version) }}
         architecture: ${{ fromJson(needs.setup.outputs.architecture) }}
         python_pypy: ${{ fromJson(needs.setup.outputs.python-pypy) }}
-        #qt_version: ['pyqt5', 'pyqt6', 'pyside2', 'pyside6']
+        qt_version: ['pyqt5']
         include:
           - arch: x86
             vc_redist2015: "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x86.exe"
@@ -89,15 +89,15 @@ jobs:
           - python_pypy: 'pypy'
             python-version: '3.12'
           # PyQt5 doesn't seem to be compatible with PyPy
-          #- python_pypy: "pypy"
-          #  qt_version: 'pyqt5'
-          #- python_pypy: "pypy"
-          #  qt_version: 'pyside2'
-          #- python_pypy: "pypy"
-          #  qt_version: 'pyqt6'
-          #- python_pypy: "pypy"
-          #  python-version: '3.10'
-          #  os: 'windows-2019'
+          - python_pypy: "pypy"
+            qt_version: 'pyqt5'
+          - python_pypy: "pypy"
+            qt_version: 'pyside2'
+          - python_pypy: "pypy"
+            qt_version: 'pyqt6'
+          - python_pypy: "pypy"
+            python-version: '3.10'
+            os: 'windows-latest'
 
     steps:
     - name: Determine Python version string
@@ -188,7 +188,7 @@ jobs:
             if (-not (Test-Path -Path "upx-dir")) {
                 New-Item -ItemType Directory -Path "upx-dir"
             }
-            Get-ChildItem -Path "temp_folder_upx/$fileNameWithoutExtension" -Recurse | Move-Item -Destination "upx-dir"
+            Get-ChildItem -LiteralPath "temp_folder_upx/$fileNameWithoutExtension" -Recurse | Move-Item -Destination "upx-dir"
             Remove-Item "temp_folder_upx" -Recurse -Force -ErrorAction SilentlyContinue
           } else {
             tar -xvf $archiveName --strip-components=1 -C "upx-dir"
@@ -262,7 +262,7 @@ jobs:
           } else {
             pip install pyinstaller -U --prefer-binary
           }
-          #$env:QT_API = if (-not [string]::IsNullOrEmpty($env:QT_API)) { $env:QT_API } else { "{{ matrix.qt_version }}" }
+          $env:QT_API = if (-not [string]::IsNullOrEmpty($env:QT_API)) { $env:QT_API } else { "${{ matrix.qt_version }}" }
           $output = ""
           $errorLines = @()
           . ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
@@ -318,13 +318,13 @@ jobs:
         Write-Host "Virtual environment path: $venvPath"
         
         # Dynamically find the Python version directory inside the venv
-        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $pythonLibPath = Get-ChildItem -LiteralPath "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
         $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
         
         Write-Host "Site-packages path: $sitePackagesPath"
 
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
-        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+        Get-ChildItem -LiteralPath $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
@@ -337,11 +337,29 @@ jobs:
         Get-PSDrive -PSProvider FileSystem | ForEach-Object {
           $drive = $_.Root
           Write-Host "Searching in $drive"
-          Get-ChildItem -Path $drive -Filter 'api-ms-win-crt-*.dll' -Recurse -ErrorAction SilentlyContinue -Force | ForEach-Object {
+          Get-ChildItem -LiteralPath $drive -Filter 'api-ms-win-crt-*.dll' -Recurse -ErrorAction SilentlyContinue -Force | ForEach-Object {
             Write-Host $_.FullName
           }
         }
       shell: pwsh
+
+    - name: Search for DLL files
+      if: ${{ matrix.python-version == '3.12' && runner.os == 'Windows' }}
+      run: |
+        $nullDir = New-Item -Path "NullDir" -ItemType Directory -Force
+        Get-PSDrive -PSProvider FileSystem | ForEach-Object {
+          $drive = $_.Root
+          Write-Host "Searching in $drive"
+          robocopy $drive $nullDir 'api-ms-win-core-path-l1-1-0.dll' /s /ndl /njh /njs /nc /ns /np | Where-Object { $_ -notlike '*Bytes*' } | ForEach-Object {
+            $path = Join-Path -Path $drive -ChildPath $_.Trim()
+            if(Test-Path $path) {
+              Write-Host $path
+            }
+          }
+        }
+        Remove-Item -Path "NullDir" -Force
+      shell: pwsh
+    
 
     - name: Compile Holocron Toolset
       if: ${{ (success() || failure()) && steps.toolset_deps.outputs.success == 'true' }}
@@ -467,13 +485,13 @@ jobs:
         Write-Host "Virtual environment path: $venvPath"
         
         # Dynamically find the Python version directory inside the venv
-        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $pythonLibPath = Get-ChildItem -LiteralPath "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
         $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
         
         Write-Host "Site-packages path: $sitePackagesPath"
 
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
-        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+        Get-ChildItem -LiteralPath $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
@@ -604,13 +622,13 @@ jobs:
         Write-Host "Virtual environment path: $venvPath"
         
         # Dynamically find the Python version directory inside the venv
-        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $pythonLibPath = Get-ChildItem -LiteralPath "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
         $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
         
         Write-Host "Site-packages path: $sitePackagesPath"
 
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
-        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+        Get-ChildItem -LiteralPath $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
@@ -729,7 +747,7 @@ jobs:
         Move-Item -LiteralPath ./dist/KotorDiff-static -Destination ./dist/KotorDiff -Force
       shell: pwsh
 
-    - name: Compile GUIDuplicator
+    - name: Compile GUIConverter
       if: ${{ success() || failure() }}
       env:
         MATRIX_ARCH: ${{ matrix.architecture }}
@@ -737,7 +755,7 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $env:PYTHONOPTIMIZE = "1"
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiconverter_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
         & $pythonExePath -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
@@ -750,9 +768,9 @@ jobs:
         } else {
           pip install pyinstaller -U --prefer-binary
         }
-        pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
+        pip install -r Tools/GuiConverter/requirements.txt --prefer-binary
         $output = ""
-        . ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+        . ./compile/compile_gui_converter.ps1 -noprompt -venv_name .venv_guiconverter_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           if($_ -match 'ERROR:') {
             $errorLines += $_.ToString()
@@ -781,15 +799,15 @@ jobs:
         }
       shell: pwsh
 
-    - name: GUIDuplicator - Create Static Binary
+    - name: GUIConverter - Create Static Binary
       if: ${{ (success() || failure()) && runner.os == 'Linux' }}
       run: |
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiconverter_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExePath -m pip install staticx
-        staticx ./dist/GuiDuplicator ./dist/GuiDuplicator-static
+        staticx ./dist/GuiConverter ./dist/GuiConverter-static
         # Rename the static binary for clarity and consistency
-        Write-Output "./dist/GuiDuplicator-static  --> ./dist/GuiDuplicator"
-        Move-Item -LiteralPath ./dist/GuiDuplicator-static -Destination ./dist/GuiDuplicator -Force
+        Write-Output "./dist/GuiConverter-static  --> ./dist/GuiConverter"
+        Move-Item -LiteralPath ./dist/GuiConverter-static -Destination ./dist/GuiConverter -Force
       shell: pwsh
 
     - name: Upload compiled binaries attempt 1
@@ -877,12 +895,12 @@ jobs:
               $shortOsName = "Linux"
             } elseif ($os -eq "macos-11" -or $os -eq "macos-12" -or $os -eq "macos-latest") {
               $shortOsName = "Mac"
-            } elseif ($os -eq "windows-2019" -or $os -eq "windows-2022" -or $os -eq "windows-latest") {
+            } elseif ($os -eq "windows-latest" -or $os -eq "windows-2022" -or $os -eq "windows-latest") {
               $shortOsName = "Win"
             }
 
             # Iterate through each tool in the folder
-            Get-ChildItem -Path $matrixPackagePath | ForEach-Object {
+            Get-ChildItem -LiteralPath $matrixPackagePath | ForEach-Object {
               $toolExePath = $_.FullName
               $toolFileName = $_.Name
               $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name)

@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QVariant, Qt
-from PyQt5.QtWidgets import QDialog, QListWidgetItem
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QDialog, QListWidgetItem
 
 if TYPE_CHECKING:
     from pykotor.extract.capsule import Capsule
@@ -14,7 +17,7 @@ if TYPE_CHECKING:
 class LoadFromModuleDialog(QDialog):
     """LoadFromModuleDialog lets the user select a resource from a ERF or RIM."""
 
-    def __init__(self, capsule: Capsule, supported):
+    def __init__(self, capsule: Capsule, supported: list[ResourceType]):
         """Initialize a dialog to load resources from a capsule.
 
         Args:
@@ -30,8 +33,18 @@ class LoadFromModuleDialog(QDialog):
             - Associates the original resource with each list item.
         """
         super().__init__()
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
 
-        from toolset.uic.dialogs.load_from_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.load_from_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.load_from_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.load_from_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.load_from_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -41,13 +54,13 @@ class LoadFromModuleDialog(QDialog):
                 continue
             filename = resource.filename()
             item = QListWidgetItem(filename)
-            item.setData(Qt.UserRole, QVariant(resource))
+            item.setData(Qt.ItemDataRole.UserRole, resource)
             self.ui.resourceList.addItem(item)
 
     def resname(self) -> str | None:
         currentItem: QListWidgetItem | None = self.ui.resourceList.currentItem()
         if currentItem:
-            resource: FileResource = currentItem.data(Qt.UserRole)
+            resource: FileResource = currentItem.data(Qt.ItemDataRole.UserRole)
             if resource:
                 return resource.resname()
         return None
@@ -55,7 +68,7 @@ class LoadFromModuleDialog(QDialog):
     def restype(self) -> ResourceType | None:
         currentItem: QListWidgetItem | None = self.ui.resourceList.currentItem()
         if currentItem:
-            resource: FileResource = currentItem.data(Qt.UserRole)
+            resource: FileResource = currentItem.data(Qt.ItemDataRole.UserRole)
             if resource:
                 return resource.restype()
         return None
@@ -63,7 +76,7 @@ class LoadFromModuleDialog(QDialog):
     def data(self) -> bytes | None:
         currentItem: QListWidgetItem | None = self.ui.resourceList.currentItem()
         if currentItem:
-            resource: FileResource = currentItem.data(Qt.UserRole)
+            resource: FileResource = currentItem.data(Qt.ItemDataRole.UserRole)
             if resource:
                 return resource.data()
         return None
