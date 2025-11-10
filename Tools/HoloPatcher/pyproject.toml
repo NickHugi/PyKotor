@@ -1,25 +1,33 @@
 [build-system]
-requires = [
-    "setuptools>=42,<70",
-    "wheel",
-]
+requires = ["setuptools>=42,<70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="HoloPatcher"
-description="A faster, cross-platform alternative to TSLPatcher written in Python."
-version="1.5.3"
+name = "HoloPatcher"
+description = "A faster, cross-platform alternative to TSLPatcher written in Python."
+version = "1.5.3"
 requires-python = ">= 3.8"
 dependencies = [
-    "requests>=2.25.0,<2.32.0; python_version<\"3.9\"",  # for 'check for updates' feature.
-    "requests>=2.25.0; python_version>=\"3.9\"",         # for 'check for updates' feature.
-    "charset-normalizer>=2.0,<3.4",                      # optional but recommended, auto-detect encoding of INI files
+    "requests>=2.25.0,<2.32.0; python_version<\"3.9\"", # for 'check for updates' feature.
+    "requests>=2.25.0; python_version>=\"3.9\"",        # for 'check for updates' feature.
+    "charset-normalizer>=2.0,<3.4",                     # optional but recommended, auto-detect encoding of INI files
 ]
-authors = [{name = "NickHugi"}]
-maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
-readme = {file = "README.md", content-type = "text/markdown"}
-license = {text = "LGPL-3.0-or-later License"}
-keywords = ["kotor", "library", "holo", "patcher", "pykotor", "star", "wars", "knights", "holopatcher", "tslpatcher"]
+authors = [{ name = "NickHugi" }]
+maintainers = [{ name = "th3w1zard1", email = "halomastar@gmail.com" }]
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { text = "LGPL-3.0-or-later License" }
+keywords = [
+    "kotor",
+    "library",
+    "holo",
+    "patcher",
+    "pykotor",
+    "star",
+    "wars",
+    "knights",
+    "holopatcher",
+    "tslpatcher",
+]
 
 [tool.poetry]
 name = "HoloPatcher"
@@ -29,7 +37,18 @@ authors = ["NickHugi"]
 maintainers = ["Benjamin Auquite <halomastar@gmail.com>"]
 readme = "README.md"
 license = "LGPL-3.0-or-later License"
-keywords = ["kotor", "library", "holo", "patcher", "pykotor", "star", "wars", "knights", "holopatcher", "tslpatcher"]
+keywords = [
+    "kotor",
+    "library",
+    "holo",
+    "patcher",
+    "pykotor",
+    "star",
+    "wars",
+    "knights",
+    "holopatcher",
+    "tslpatcher",
+]
 
 [project.optional-dependencies]
 updates = ["requests", "pycryptodome"]

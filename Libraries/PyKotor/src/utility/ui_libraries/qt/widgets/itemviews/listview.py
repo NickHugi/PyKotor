@@ -14,6 +14,11 @@ if TYPE_CHECKING:
 
 class RobustListView(RobustAbstractItemView, QListView):
     QT_WIDGET: ClassVar[type] = QListView
+
+    def __new__(cls, *args, **kwargs):
+        # For PySide6 compatibility with multiple inheritance
+        return QListView.__new__(cls)
+
     def __init__(
         self,
         parent: QWidget | None = None,

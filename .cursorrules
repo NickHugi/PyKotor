@@ -8,7 +8,7 @@ When creating ANY new `.md` files, always follow these guidelines:
 - Exclusively provide public-facing documentation, something an end user will need to read if they want to either develop for PyKotor or work with it.
 - All documentation must go into the root-level `./docs` folder.
 
-Please do not create .md documentation unless relevant to a public-facing end user for PyKotor.
+Please do not create .md documentation unless it delivers public-facing information or authoritative gameplay/platform references that an end user or developer genuinely needs for PyKotor or the games themselves.
 
 ## Helper Scripts
 
@@ -34,16 +34,15 @@ Please do not create .md documentation unless relevant to a public-facing end us
 
 - Use ./vendor for code examples working with the KOTOR game. Note that some projects may be inaccurate or incomplete. Assume reone, xoreos, kotor.js, mdlops, and tga2tpc or anything by ndix UR are the most accurate, with everything else being significantly questionable.
 - Use ./wiki if you require information about the codebase.
-- Always assume ./docs has highly inaccurate and questionable material; try not to reference it unless absolutely necessary. Always second-guess its contents!
+- Always assume ./docs has highly inaccurate and questionable material; try not to reference it unless absolutely necessary. Always second-guess its contents, but remember that vetted gameplay rules, system behavior, or platform notes can still be essential information that could be written here.
 
 ### Submodules in this PyKotor project
 
 Relevance to pykotor means a few different things. All relevant submodules should:
 
-- contain source code for something relevant to the game. i.e.. literal mods on public github repos are just mods and not really relevant to improving PyKotor's codebase as a whole.
-- Actually has somewhat accurate content, and is somewhat comprehensive (at least 500 lines of code or so written).
-- Is something we wouldn't regret being associated with. For example something that is involved in piracy or anything should NOT be included or referenced by PyKotor
-
+- contain implementation code, automation, reverse-engineering research, platform-specific documentation, or test‑critical assets/specifications directly relevant to the Knights of the Old Republic games (e.g., format parsers, engine/reimplementation work, installers/patchers, scripting/editor tooling, or authoritative data/route documentation used to drive automated tests e.g. speedrunning routes/pathways). Explicitly excluded are documentation that cannot inform development, testing, or cross-platform support. Also explicitly excluded are pre-built game payloads (install-ready mods, bundled override assets, binary patch drops without source, or other content redistributions).
+- actually have accurate content and be sufficiently comprehensive — typically around ≥500 lines of meaningful code or equivalent complexity. Smaller utilities are acceptable when they provide essential platform integration or developer workflows (e.g., registry path helpers, system installers), or when they expose non‑trivial logic operating on KotOR formats or subsystems such as Pazaak or other mini-games.
+- be appropriate to associate with: no piracy, malware, or illicit content. Legitimate developer/test tools (including cheat, debug, speedrun, or automation tools) are acceptable when used to support development, testing, or research of PyKotor or the games; piracy remains strictly disallowed.
 
 ### Codebase Structure
 
@@ -57,10 +56,8 @@ Relevance to pykotor means a few different things. All relevant submodules shoul
 - `logs`: One or more of the tools will be outputting logs here (probably holopatcher/toolset), should always be in `.gitignore`.
 - .env: contains PYTHONPATH, K1_PATH, K2_PATH, etc used for tests and python environment configs. Should match the exact paths used in `.vscode/settings.json` and root-level `./pyproject.toml`'s paths.
 
-
 ## Linting
 
 - Always use `ruff`. Don't use anything else!
-
 
 See `./CONVENTIONS.md` for more information!

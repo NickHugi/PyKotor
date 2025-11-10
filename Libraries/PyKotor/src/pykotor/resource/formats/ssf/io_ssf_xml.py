@@ -34,7 +34,7 @@ class SSFXMLReader(ResourceReader):
         self._ssf: SSF | None = None
 
     @autoclose
-    def load(self) -> SSF:
+    def load(self, *, auto_close: bool = True) -> SSF:  # noqa: FBT001, FBT002, ARG002
         self._ssf = SSF()
 
         data = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
@@ -60,7 +60,7 @@ class SSFXMLWriter(ResourceWriter):
         self.ssf: SSF = ssf
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         for sound_name, sound in SSFSound.__members__.items():
             ElementTree.SubElement(
                 self.xml_root,

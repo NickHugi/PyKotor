@@ -31,7 +31,7 @@ class TLKBinaryReader(ResourceReader):
         self._language: Language | None = language
 
     @autoclose
-    def load(self) -> TLK:
+    def load(self, *, auto_close: bool = True) -> TLK:  # noqa: FBT001, FBT002, ARG002
         self._tlk = TLK()
         self._texts_offset = 0
         self._text_headers = []
@@ -106,7 +106,7 @@ class TLKBinaryWriter(ResourceWriter):
         self._tlk: TLK = tlk
 
     @autoclose
-    def write(self):
+    def write(self, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002
         self._write_file_header()
 
         text_offset = WrappedInt(0)

@@ -8,13 +8,12 @@ import traceback
 
 from contextlib import contextmanager
 from operator import attrgetter
-from typing import TYPE_CHECKING, Any, Callable, Generator, NamedTuple
 from pathlib import Path, PurePath
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, Generator, NamedTuple
 
 from loggerplus import RobustLogger, get_log_directory
 from qtpy.QtCore import QSettings, QStringListModel, Qt
-from qtpy.QtGui import QKeySequence, QTextCursor
+from qtpy.QtGui import QFont, QKeySequence, QTextCursor
 from qtpy.QtWidgets import (
     QCompleter,
     QDialog,
@@ -58,6 +57,7 @@ from toolset.gui.common.widgets.syntax_highlighter import SyntaxHighlighter  # p
 from toolset.gui.dialogs.github_selector import GitHubFileSelector  # pyright: ignore[reportPrivateImportUsage]
 from toolset.gui.editor import Editor  # pyright: ignore[reportPrivateImportUsage]
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError  # pyright: ignore[reportPrivateImportUsage]
+from toolset.gui.widgets.terminal_widget import TerminalWidget  # pyright: ignore[reportPrivateImportUsage]
 from toolset.utils.script import ht_compile_script, ht_decompile_script  # pyright: ignore[reportPrivateImportUsage]
 from toolset.utils.window import open_resource_editor  # pyright: ignore[reportPrivateImportUsage]
 from utility.error_handling import universal_simplify_exception  # pyright: ignore[reportPrivateImportUsage]
@@ -317,13 +317,16 @@ class NSSEditor(Editor):
         self.ui.codeEdit.mouseMoveEvent = self._show_hover_documentation
         self.ui.codeEdit.textChanged.connect(self._update_outline)
 
-        # Add output tab
-        self.outputTab: QWidget = QWidget()
-        self.ui.panelTabs.addTab(self.ui.outputTab, "Output")
-        self.output_text_edit: QTextEdit = QTextEdit(self.ui.outputTab)
+        # Use the existing outputEdit widget from UI file with proper encoding
+        self.output_text_edit = self.ui.outputEdit
         self.output_text_edit.setReadOnly(True)
-        self.outputLayout: QVBoxLayout = QVBoxLayout(self.ui.outputTab)
-        self.outputLayout.addWidget(self.output_text_edit)
+        # Set proper font for output
+        output_font = QFont("Consolas" if sys.platform == "win32" else "Monaco", 10)
+        output_font.setStyleHint(QFont.StyleHint.Monospace)
+        self.output_text_edit.setFont(output_font)
+
+        # Initialize the terminal widget
+        self._setup_terminal()
 
         # Add error badge
         self.error_badge: QLabel = QLabel(self)
@@ -335,6 +338,54 @@ class NSSEditor(Editor):
         """)
         self.error_badge.hide()
         self._setup_shortcuts()
+
+    def _setup_terminal(self):
+        """Set up the integrated terminal widget."""
+        # Clear existing layout if any
+        old_layout = self.ui.terminalWidget.layout()
+        if old_layout is not None:
+            while old_layout.count():
+                item = old_layout.takeAt(0)
+                if item and item.widget():
+                    item.widget().deleteLater()
+            QWidget().setLayout(old_layout)  # Delete old layout
+
+        # Create and add terminal widget
+        terminal_layout = QVBoxLayout(self.ui.terminalWidget)
+        terminal_layout.setContentsMargins(0, 0, 0, 0)
+        terminal_layout.setSpacing(0)
+
+        self.terminal = TerminalWidget(self.ui.terminalWidget)
+        terminal_layout.addWidget(self.terminal)
+
+        # Connect terminal signals
+        self.terminal.command_executed.connect(self._on_terminal_command)
+
+    def _on_terminal_command(self, command: str):
+        """Handle commands executed in the terminal.
+
+        Args:
+        ----
+            command: str: The command that was executed
+        """
+        # Log command to output if needed
+        self._log_to_output(f"> {command}")
+
+    def _log_to_output(self, message: str):
+        """Log a message to the output panel with proper encoding.
+
+        Args:
+        ----
+            message: str: The message to log
+        """
+        try:
+            # Ensure proper text encoding
+            if isinstance(message, bytes):
+                message = message.decode('utf-8', errors='replace')
+            self.output_text_edit.appendPlainText(message)
+        except Exception as e:
+            # Fallback if there's any encoding issue
+            self.output_text_edit.appendPlainText(str(message))
 
     def _setup_error_reporting(self):
         self.error_count: int = 0
@@ -362,9 +413,25 @@ class NSSEditor(Editor):
         self.error_count += 1
         self.error_badge.setText(str(self.error_count))
         self.error_badge.show()
-        self.output_text_edit.append(f"Error: {error_message}")
+
+        # Log error with proper encoding
+        try:
+            if isinstance(error_message, bytes):
+                error_message = error_message.decode('utf-8', errors='replace')
+            self.output_text_edit.appendPlainText(f"Error: {error_message}")
+        except Exception:
+            self.output_text_edit.appendPlainText(f"Error: {str(error_message)}")
+
         self.ui.panelTabs.setCurrentWidget(self.ui.outputTab)
-        self.output_text_edit.append(self.error_stream.getvalue())
+
+        # Append error stream content with proper encoding
+        error_content = self.error_stream.getvalue()
+        if error_content:
+            try:
+                self.output_text_edit.appendPlainText(error_content)
+            except Exception:
+                self.output_text_edit.appendPlainText(str(error_content))
+
         self.error_stream.truncate(0)
         self.error_stream.seek(0)
 
@@ -666,7 +733,15 @@ class NSSEditor(Editor):
         self._is_decompiled = False
 
         if restype is ResourceType.NSS:
-            self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
+            # Try multiple encodings to properly decode the text
+            try:
+                text = data.decode("utf-8")
+            except UnicodeDecodeError:
+                try:
+                    text = data.decode("windows-1252", errors="replace")
+                except UnicodeDecodeError:
+                    text = data.decode("latin-1", errors="replace")
+            self.ui.codeEdit.setPlainText(text)
         elif restype is ResourceType.NCS:
             error_occurred = False
             try:
@@ -720,11 +795,26 @@ class NSSEditor(Editor):
         if not local_path.exists():
             raise ValueError(f"Failed to download the script: '{local_path}' did not exist after download completed.")  # noqa: TRY301
 
-        return local_path.read_text(encoding="windows-1252")
+        # Try multiple encodings
+        try:
+            return local_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            try:
+                return local_path.read_text(encoding="windows-1252")
+            except UnicodeDecodeError:
+                return local_path.read_text(encoding="latin-1", errors="replace")
 
     def build(self) -> tuple[bytes | bytearray, bytes]:
         if self._restype is not ResourceType.NCS:
-            return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
+            # Encode with proper error handling
+            text = self.ui.codeEdit.toPlainText()
+            try:
+                return text.encode("utf-8"), b""
+            except UnicodeEncodeError:
+                try:
+                    return text.encode("windows-1252", errors="replace"), b""
+                except UnicodeEncodeError:
+                    return text.encode("latin-1", errors="replace"), b""
 
         RobustLogger().debug(f"Compiling script '{self._resname}.{self._restype.extension}' from the NSSEditor...")
         assert self._installation is not None, "Installation not set, cannot determine path"

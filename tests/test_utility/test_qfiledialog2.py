@@ -124,6 +124,41 @@ class FilterDirModel(QAbstractProxyModel):
         return self._source_model.flags(self.mapToSource(index))
 
 
+class sortProxy(QSortFilterProxyModel):  # noqa: N801
+    """Proxy model that sorts directories first, then files, case-insensitive."""
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+
+    def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
+        source_model = self.sourceModel()
+        if not isinstance(source_model, QFileSystemModel):
+            return super().lessThan(left, right)
+        
+        left_info = source_model.fileInfo(left)
+        right_info = source_model.fileInfo(right)
+        
+        if left_info.isDir() == right_info.isDir():
+            return left_info.filePath().lower() < right_info.filePath().lower()
+        elif left_info.isDir():
+            return False
+        else:
+            return True
+
+
+class CrashDialog(PythonQFileDialog):
+    """Test dialog for crash scenarios with proxy model."""
+    def __init__(
+        self,
+        parent: QWidget | None,
+        caption: str,
+        directory: str,
+        filter: str,  # noqa: A002
+    ):
+        super().__init__(parent, caption, directory, filter)
+        proxy_model = sortProxy(self)
+        self.setProxyModel(proxy_model)
+
+
 class TestQFileDialog2(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -149,6 +184,7 @@ class TestQFileDialog2(unittest.TestCase):
 
     def tearDown(self):
         self.temp_dir.cleanup()
+        self.temp_path.mkdir(parents=True, exist_ok=True)
         self.cleanupSettingsFile()
         for widget in self.app.topLevelWidgets():
             widget.close()

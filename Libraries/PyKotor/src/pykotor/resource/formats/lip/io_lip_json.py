@@ -34,7 +34,7 @@ class LIPJSONReader(ResourceReader):
         self._lip: LIP | None = None
 
     @autoclose
-    def load(self) -> LIP:
+    def load(self, *, auto_close: bool = True) -> LIP:  # noqa: FBT001, FBT002, ARG002
         self._lip = LIP()
         self._json = json.loads(decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size())))
 
@@ -67,7 +67,7 @@ class LIPJSONWriter(ResourceWriter):
         }
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         # Populate the dictionary with keyframe data
         for keyframe in self._lip:
             self._json["keyframes"].append(

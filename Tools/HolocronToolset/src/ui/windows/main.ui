@@ -57,24 +57,68 @@
                   <attribute name="title">
                     <string>Saves</string>
                   </attribute>
-                  <layout class="QGridLayout" name="gridLayoutSaves">
-                    <property name="leftMargin">
-                      <number>0</number>
-                    </property>
-                    <property name="topMargin">
-                      <number>0</number>
-                    </property>
-                    <property name="rightMargin">
-                      <number>0</number>
-                    </property>
-                    <property name="bottomMargin">
-                      <number>0</number>
-                    </property>
-                    <property name="spacing">
-                      <number>0</number>
-                    </property>
-                    <item row="0" column="0" rowspan="2" colspan="2">
-                      <widget class="ResourceList" name="savesWidget" native="true" />
+                  <layout class="QVBoxLayout" name="verticalLayoutSavesTab">
+                    <item>
+                      <layout class="QHBoxLayout" name="horizontalLayoutSaveButtons">
+                        <item>
+                          <widget class="QPushButton" name="openSaveEditorButton">
+                            <property name="text">
+                              <string>Open Save Editor</string>
+                            </property>
+                            <property name="enabled">
+                              <bool>false</bool>
+                            </property>
+                            <property name="toolTip">
+                              <string>Open the selected save in the Save Editor</string>
+                            </property>
+                          </widget>
+                        </item>
+                        <item>
+                          <widget class="QPushButton" name="fixCorruptionButton">
+                            <property name="text">
+                              <string>Fix Corruption</string>
+                            </property>
+                            <property name="toolTip">
+                              <string>Fixes all possible save corruption in all saves</string>
+                            </property>
+                          </widget>
+                        </item>
+                        <item>
+                          <spacer name="horizontalSpacerSaves">
+                            <property name="orientation">
+                              <enum>Qt::Horizontal</enum>
+                            </property>
+                            <property name="sizeHint" stdset="0">
+                              <size>
+                                <width>40</width>
+                                <height>20</height>
+                              </size>
+                            </property>
+                          </spacer>
+                        </item>
+                      </layout>
+                    </item>
+                    <item>
+                      <layout class="QGridLayout" name="gridLayoutSaves">
+                        <property name="leftMargin">
+                          <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                          <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                          <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                          <number>0</number>
+                        </property>
+                        <property name="spacing">
+                          <number>0</number>
+                        </property>
+                        <item row="0" column="0" rowspan="2" colspan="2">
+                          <widget class="ResourceList" name="savesWidget" native="true" />
+                        </item>
+                      </layout>
                     </item>
                   </layout>
                 </widget>

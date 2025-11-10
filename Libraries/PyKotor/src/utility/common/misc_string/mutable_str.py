@@ -84,7 +84,6 @@ class WrappedStr(str):
             if self._content.endswith(parsed_suffix):
                 return self.__class__(self._content[: -len(parsed_suffix)])
             return self.__class__(self._content)
-    if sys.version_info < (3, 11) or not hasattr(object, "__getstate__"):
-        def __getstate__(self) -> str:
-            return self._content
+    def __getstate__(self) -> str:
+        return self._content
     # endregion

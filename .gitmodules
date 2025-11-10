@@ -1,6 +1,284 @@
 [submodule "wiki"]
 	path = wiki
 	url = https://github.com/NickHugi/PyKotor.wiki.git
-[submodule "tests/Vanilla_KOTOR_Script_Source"]
-	path = tests/Vanilla_KOTOR_Script_Source
+[submodule "vendor/Vanilla_KOTOR_Script_Source"]
+	path = vendor/Vanilla_KOTOR_Script_Source
 	url = https://github.com/KOTORCommunityPatches/Vanilla_KOTOR_Script_Source
+[submodule "vendor/PyKotorGL"]
+	path = vendor/PyKotorGL
+	url = https://github.com/th3w1zard1/PyKotorGL.git
+[submodule "vendor/HoloLSP"]
+	path = vendor/HoloLSP
+	url = https://github.com/th3w1zard1/HoloLSP.git
+[submodule "vendor/HoloPatcher.NET"]
+	path = vendor/HoloPatcher.NET
+	url = https://github.com/th3w1zard1/HoloPatcher.NET.git
+[submodule "vendor/KotOR-dotNET"]
+	path = vendor/KotOR-dotNET
+	url = https://github.com/th3w1zard1/KotOR-dotNET.git
+[submodule "vendor/KotOR-Switch-modding"]
+	path = vendor/KotOR-Switch-modding
+	url = https://github.com/th3w1zard1/KotOR-Switch-modding.git
+[submodule "vendor/KotOR_IO"]
+	path = vendor/KotOR_IO
+	url = https://github.com/th3w1zard1/KotOR_IO.git
+[submodule "vendor/KotOR-Save-Editor"]
+	path = vendor/KotOR-Save-Editor
+	url = https://github.com/th3w1zard1/KotOR-Save-Editor.git
+[submodule "vendor/kotor-savegame-editor"]
+	path = vendor/kotor-savegame-editor
+	url = https://github.com/th3w1zard1/kotor-savegame-editor.git
+[submodule "vendor/xoreos-tools"]
+	path = vendor/xoreos-tools
+	url = https://github.com/th3w1zard1/NorthernLights.git
+[submodule "vendor/KotOR-Modding-Guide"]
+	path = vendor/KotOR-Modding-Guide
+	url = https://github.com/th3w1zard1/KotOR-Modding-Guide.git
+
+# KOTOR Core Modding Tools
+#[submodule "vendor/K1_Community_Patch"]
+#	path = vendor/K1_Community_Patch
+#	url = https://github.com/th3w1zard1/K1_Community_Patch.git
+#[submodule "vendor/TSL_Community_Patch"]
+#	path = vendor/TSL_Community_Patch
+#	url = https://github.com/th3w1zard1/TSL_Community_Patch.git
+[submodule "vendor/TSLPatcher"]
+	path = vendor/TSLPatcher
+	url = https://github.com/th3w1zard1/TSLPatcher.git
+[submodule "vendor/KotOR-Bioware-Libs"]
+	path = vendor/KotOR-Bioware-Libs
+	url = https://github.com/th3w1zard1/KotOR-Bioware-Libs.git
+[submodule "vendor/xoreos"]
+	path = vendor/xoreos
+	url = https://github.com/th3w1zard1/xoreos-tools.git
+
+# KOTOR Engines & Reimplementations
+[submodule "vendor/KotOR.js"]
+	path = vendor/KotOR.js
+	url = https://github.com/th3w1zard1/KotOR.js.git
+[submodule "vendor/reone"]
+	path = vendor/reone
+	url = https://github.com/th3w1zard1/reone.git
+[submodule "vendor/NorthernLights"]
+	path = vendor/NorthernLights
+	url = https://github.com/th3w1zard1/xoreos.git
+[submodule "vendor/KotOR-Unity"]
+	path = vendor/KotOR-Unity
+	url = https://github.com/th3w1zard1/KotOR-Unity.git
+[submodule "vendor/kotor.three.js"]
+	path = vendor/kotor.three.js
+	url = https://github.com/th3w1zard1/kotor.three.js.git
+
+# KOTOR 3D/Asset Tools
+[submodule "vendor/kotorblender"]
+	path = vendor/kotorblender
+	url = https://github.com/th3w1zard1/kotorblender.git
+[submodule "vendor/tga2tpc"]
+	path = vendor/tga2tpc
+	url = https://github.com/th3w1zard1/tga2tpc.git
+[submodule "vendor/mdlops"]
+	path = vendor/mdlops
+	url = https://github.com/th3w1zard1/mdlops.git
+[submodule "vendor/DLZ-Tool"]
+	path = vendor/DLZ-Tool
+	url = https://github.com/th3w1zard1/DLZ-Tool.git
+[submodule "vendor/WalkmeshVisualizer"]
+	path = vendor/WalkmeshVisualizer
+	url = https://github.com/th3w1zard1/WalkmeshVisualizer.git
+
+# KOTOR Script Editing & Development
+[submodule "vendor/KotOR-Scripting-Tool"]
+	path = vendor/KotOR-Scripting-Tool
+	url = https://github.com/th3w1zard1/KotOR-Scripting-Tool.git
+[submodule "vendor/nwscript-mode.el"]
+	path = vendor/nwscript-mode.el
+	url = https://github.com/th3w1zard1/nwscript-mode.el.git
+[submodule "vendor/nwscript-ts-mode"]
+	path = vendor/nwscript-ts-mode
+	url = https://github.com/th3w1zard1/nwscript-ts-mode.git
+
+# KOTOR Save Editors
+[submodule "vendor/sotor"]
+	path = vendor/sotor
+	url = https://github.com/th3w1zard1/sotor.git
+[submodule "vendor/KSELinux"]
+	path = vendor/KSELinux
+	url = https://github.com/th3w1zard1/KSELinux.git
+
+# KOTOR UI & GUI Tools
+[submodule "vendor/kotor-gui-editor"]
+	path = vendor/kotor-gui-editor
+	url = https://github.com/th3w1zard1/kotor-gui-editor.git
+
+# KOTOR Audio Tools
+[submodule "vendor/SithCodec"]
+	path = vendor/SithCodec
+	url = https://github.com/th3w1zard1/SithCodec.git
+[submodule "vendor/SWKotOR-Audio-Encoder"]
+	path = vendor/SWKotOR-Audio-Encoder
+	url = https://github.com/th3w1zard1/SWKotOR-Audio-Encoder.git
+
+# KOTOR Randomizers & Challenge Mods
+[submodule "vendor/Kotor-Randomizer"]
+	path = vendor/Kotor-Randomizer
+	url = https://github.com/th3w1zard1/Kotor-Randomizer.git
+[submodule "vendor/KotorMessageInjector"]
+	path = vendor/KotorMessageInjector
+	url = https://github.com/th3w1zard1/KotorMessageInjector.git
+
+# KOTOR Speedrunning Tools
+[submodule "vendor/kotor-speedruns.github.io"]
+	path = vendor/kotor-speedruns.github.io
+	url = https://github.com/th3w1zard1/kotor-speedruns.github.io.git
+#[submodule "vendor/Autosplitter"]
+#	path = vendor/Autosplitter
+#	url = https://github.com/th3w1zard1/Autosplitter.git
+#[submodule "vendor/LiveSplit.Kotor"]
+#	path = vendor/LiveSplit.Kotor
+#	url = https://github.com/th3w1zard1/LiveSplit.Kotor.git
+#[submodule "vendor/LiveSplit.Kotor2"]
+#	path = vendor/LiveSplit.Kotor2
+#	url = https://github.com/th3w1zard1/LiveSplit.Kotor2.git
+
+# KOTOR Modding Tools & Installers
+[submodule "vendor/KotORModSync"]
+	path = vendor/KotORModSync
+	url = https://github.com/th3w1zard1/KotORModSync.git
+[submodule "vendor/StarForge"]
+	path = vendor/StarForge
+	url = https://github.com/th3w1zard1/StarForge.git
+[submodule "vendor/KotorModTools"]
+	path = vendor/KotorModTools
+	url = https://github.com/th3w1zard1/KotorModTools.git
+[submodule "vendor/KOTOR_Registry_Install_Path_Editor"]
+	path = vendor/KOTOR_Registry_Install_Path_Editor
+	url = https://github.com/th3w1zard1/KOTOR_Registry_Install_Path_Editor.git
+
+# KOTOR Shader & Graphics Fixes
+[submodule "vendor/3C-FD-Patcher"]
+	path = vendor/3C-FD-Patcher
+	url = https://github.com/th3w1zard1/3C-FD-Patcher.git
+[submodule "vendor/KOTR-II-ShaderOverride-Injector"]
+	path = vendor/KOTR-II-ShaderOverride-Injector
+	url = https://github.com/th3w1zard1/KOTR-II-ShaderOverride-Injector.git
+
+# KOTOR Community Mods Collection (JCarter426)
+[submodule "vendor/KOTOR-utils"]
+	path = vendor/KOTOR-utils
+	url = https://github.com/th3w1zard1/KOTOR-utils.git
+
+# KOTOR Other Mods & Fixes
+[submodule "vendor/CHORD"]  # FIXME: need to fork this from wherever the original repository came from.
+	path = vendor/CHORD
+	url = https://github.com/th3w1zard1/CHORD.git
+[submodule "vendor/kotor-ii-switch-modding"]
+	path = vendor/kotor-ii-switch-modding
+	url = https://github.com/th3w1zard1/kotor-ii-switch-modding.git
+
+# KOTOR Data & Research
+[submodule "vendor/Item-Finder-StarWars-KOTOR"]
+	path = vendor/Item-Finder-StarWars-KOTOR
+	url = https://github.com/th3w1zard1/Item-Finder-StarWars-KOTOR.git
+[submodule "vendor/kotorAPI"]
+	path = vendor/kotorAPI
+	url = https://github.com/th3w1zard1/kotorAPI.git
+[submodule "vendor/ds-kotor-modding-wiki"]
+	path = vendor/ds-kotor-modding-wiki
+	url = https://github.com/th3w1zard1/ds-kotor-modding-wiki.git
+[submodule "vendor/kotor_combat_faq"]
+	path = vendor/kotor_combat_faq
+	url = https://github.com/th3w1zard1/kotor_combat_faq.git
+
+# KOTOR Misc Tools & Utilities
+[submodule "vendor/KotORStuff"]
+	path = vendor/KotORStuff
+	url = https://github.com/th3w1zard1/KotORStuff.git
+[submodule "vendor/SWKOTOR2RotationPuzzle"]
+	path = vendor/SWKOTOR2RotationPuzzle
+	url = https://github.com/th3w1zard1/SWKOTOR2RotationPuzzle.git
+[submodule "vendor/FoundryVTT_SWKOTOR"]
+	path = vendor/FoundryVTT_SWKOTOR
+	url = https://github.com/th3w1zard1/FoundryVTT_SWKOTOR.git
+[submodule "vendor/kotor"]
+	path = vendor/kotor
+	url = https://github.com/th3w1zard1/kotor.git
+[submodule "vendor/swkotor-quicksave-backup-generator"]
+	path = vendor/swkotor-quicksave-backup-generator
+	url = https://github.com/th3w1zard1/swkotor-quicksave-backup-generator.git
+
+# KOTOR Pazaak Card Game Implementations (Multiple Languages)
+[submodule "vendor/pazaak-eggborne"]
+	path = vendor/pazaak-eggborne
+	url = https://github.com/th3w1zard1/pazaak-eggborne.git
+[submodule "vendor/pazaak-iron-ginger"]
+	path = vendor/pazaak-iron-ginger
+	url = https://github.com/th3w1zard1/Pazaak-Card-Game.git
+[submodule "vendor/pure-pazaak-michaeljoelphillips"]
+	path = vendor/pure-pazaak-michaeljoelphillips
+	url = https://github.com/th3w1zard1/pure-pazaak-michaeljoelphillips.git
+[submodule "vendor/pazaak-loomisdf"]
+	path = vendor/pazaak-loomisdf
+	url = https://github.com/th3w1zard1/pazaak-loomisdf.git
+[submodule "vendor/pazaak-alexander-ye"]
+	path = vendor/pazaak-alexander-ye
+	url = https://github.com/th3w1zard1/pazaak-alexander-ye.git
+[submodule "vendor/Java_Pazaak"]
+	path = vendor/Java_Pazaak
+	url = https://github.com/th3w1zard1/Java_Pazaak.git
+[submodule "vendor/GetLucky33"]
+	path = vendor/GetLucky33
+	url = https://github.com/th3w1zard1/GetLucky33.git
+[submodule "vendor/Pazaak-sKm-games"]
+	path = vendor/Pazaak-sKm-games
+	url = https://github.com/th3w1zard1/Pazaak-sKm-games.git
+[submodule "vendor/Star-Wars-Cantina-Games"]
+	path = vendor/Star-Wars-Cantina-Games
+	url = https://github.com/th3w1zard1/Star-Wars-Cantina-Games.git
+[submodule "vendor/Pazaak-Camputron"]
+	path = vendor/Pazaak-Camputron
+	url = https://github.com/th3w1zard1/Pazaak-Camputron.git
+[submodule "vendor/react-pazaak"]
+	path = vendor/react-pazaak
+	url = https://github.com/th3w1zard1/react-pazaak.git
+[submodule "vendor/pazaak-EclecticTaco"]
+	path = vendor/pazaak-EclecticTaco
+	url = https://github.com/th3w1zard1/pazaak-EclecticTaco.git
+[submodule "vendor/pazaak-eMonk42"]
+	path = vendor/pazaak-eMonk42
+	url = https://github.com/th3w1zard1/pazaak-eMonk42.git
+[submodule "vendor/Pazaak-ebc1201"]
+	path = vendor/Pazaak-ebc1201
+	url = https://github.com/th3w1zard1/Pazaak-ebc1201.git
+[submodule "vendor/Pazaak-JustWaltuh"]
+	path = vendor/Pazaak-JustWaltuh
+	url = https://github.com/th3w1zard1/Pazaak-JustWaltuh.git
+[submodule "vendor/pure-pazaak-LinkWentz"]
+	path = vendor/pure-pazaak-LinkWentz
+	url = https://github.com/th3w1zard1/pure-pazaak-LinkWentz.git
+[submodule "vendor/vue-pazaak"]
+	path = vendor/vue-pazaak
+	url = https://github.com/th3w1zard1/vue-pazaak.git
+[submodule "vendor/PazaakApp"]
+	path = vendor/PazaakApp
+	url = https://github.com/th3w1zard1/PazaakApp.git
+[submodule "vendor/ConsolePazaak"]
+	path = vendor/ConsolePazaak
+	url = https://github.com/th3w1zard1/ConsolePazaak.git
+[submodule "vendor/pazaak-KhanRayhanAli"]
+	path = vendor/pazaak-KhanRayhanAli
+	url = https://github.com/th3w1zard1/pazaak-KhanRayhanAli.git
+[submodule "vendor/cs403-final"]
+	path = vendor/cs403-final
+	url = https://github.com/th3w1zard1/cs403-final.git
+[submodule "vendor/PurePazaak"]
+	path = vendor/PurePazaak
+	url = https://github.com/th3w1zard1/PurePazaak.git
+[submodule "vendor/Pazaak-Handensaken"]
+	path = vendor/Pazaak-Handensaken
+	url = https://github.com/th3w1zard1/Pazaak-Handensaken.git
+[submodule "vendor/K1_Community_Patch"]
+	path = vendor/K1_Community_Patch
+	url = https://github.com/th3w1zard1/K1_Community_Patch.git
+[submodule "vendor/Kotor.NET"]
+	path = vendor/Kotor.NET
+	url = https://github.com/NickHugi/Kotor.NET.git

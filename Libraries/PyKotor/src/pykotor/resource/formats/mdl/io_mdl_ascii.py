@@ -3,11 +3,53 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TextIO
 
-from pykotor.resource.formats.mdl.mdl_types import MDLControllerType, MDLDangly, MDLSkin
+from pykotor.resource.formats.mdl.mdl_data import MDLDangly, MDLMesh, MDLSkin
+from pykotor.resource.formats.mdl.mdl_types import MDLControllerType
 
 if TYPE_CHECKING:
-    from pykotor.resource.formats.mdl.mdl_types import MDLController, MDLData, MDLEmitter, MDLLight, MDLMesh, MDLNode, MDLReference, MDLSaber, MDLWalkmesh
+    from pykotor.resource.formats.mdl.mdl_data import MDL, MDLController, MDLEmitter, MDLFace, MDLLight, MDLNode, MDLReference, MDLSaber, MDLWalkmesh
     from utility.common.geometry import Vector3, Vector4
+
+
+_FACE_SURFACE_MASK = 0x1F
+_FACE_SMOOTH_SHIFT = 5
+
+
+def _unpack_face_material(face: "MDLFace") -> tuple[int, int]:
+    """Return (surface_material, smoothing_group) from packed face material flags.
+
+    Binary MDL packs multiple flags in the 32-bit material field:
+    - Bits 0-4  : Surface material (surfacemat.2da index)
+      Reference: vendor/mdlops/MDLOpsM.pm:2254-2256
+    - Bits 5-31 : Smoothing group and vendor specific flags (MDLOps uses this to
+      preserve smoothgroup numbers when exporting ASCII, see mdlops:1292-1300).
+
+    The legacy dataclass (mdl_types.MDLFace) stored smoothing_group separately.
+    After refactoring to mdl_data.MDLFace, the packed integer is preserved in
+    face.material (see mdl_data.MDLFace comments).  This helper restores the
+    original ASCII semantics without losing information.
+
+    Args:
+        face: MDLFace instance (either mdl_types or mdl_data variants).
+
+    Returns:
+        Tuple of (surface_material, smoothing_group) as integers.
+
+    References:
+        vendor/mdlops/MDLOpsM.pm:1292-1300 - Smoothing stored via material ID
+        vendor/mdlops/MDLOpsM.pm:2254-2256 - Notes on smoothgroup numbering
+    """
+    material_raw = getattr(face.material, "value", face.material)
+    material_int = int(material_raw) if material_raw is not None else 0
+
+    # Legacy structures may still expose .smoothing_group; prefer explicit value.
+    if hasattr(face, "smoothing_group"):
+        smoothing = int(getattr(face, "smoothing_group"))
+    else:
+        smoothing = material_int >> _FACE_SMOOTH_SHIFT
+
+    surface = material_int & _FACE_SURFACE_MASK
+    return surface, smoothing
 
 
 @dataclass
@@ -20,7 +62,7 @@ class MDLAsciiWriter:
         """Write a line with indentation."""
         self._writer.write("  " * indent + line + "\n")
 
-    def write_mdl(self, mdl: MDLData) -> None:
+    def write_mdl(self, mdl: "MDL") -> None:
         """Write MDL data to ASCII format."""
         self.write_line(0, "# ASCII MDL")
         self.write_line(0, "filedependancy unknown.tga")
@@ -99,7 +141,11 @@ class MDLAsciiWriter:
 
         self.write_line(indent, "faces " + str(len(mesh.faces)))
         for i, face in enumerate(mesh.faces):
-            self.write_line(indent + 1, f"{i} {face.v1} {face.v2} {face.v3} {face.material.value} {face.smoothing_group}")
+            surface_material, smoothing_group = _unpack_face_material(face)
+            self.write_line(
+                indent + 1,
+                f"{i} {face.v1} {face.v2} {face.v3} {surface_material} {smoothing_group}",
+            )
 
     def _write_skin(self, indent: int, skin: MDLSkin) -> None:
         """Write skin-specific data."""

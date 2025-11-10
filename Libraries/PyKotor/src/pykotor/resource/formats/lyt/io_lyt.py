@@ -31,7 +31,7 @@ class LYTAsciiReader(ResourceReader):
         self._lines: list[str] = []
 
     @autoclose
-    def load(self) -> LYT:
+    def load(self, *, auto_close: bool = True) -> LYT:  # noqa: FBT001, FBT002, ARG002
         self._lyt = LYT()
 
         self._lines: list[str] = self._reader.read_string(self._reader.size()).splitlines()
@@ -121,7 +121,7 @@ class LYTAsciiWriter(ResourceWriter):
         self._lyt: LYT = lyt
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         roomcount: int = len(self._lyt.rooms)
         trackcount: int = len(self._lyt.tracks)
         obstaclecount: int = len(self._lyt.obstacles)

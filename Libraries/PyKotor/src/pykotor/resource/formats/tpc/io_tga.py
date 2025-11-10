@@ -1,28 +1,47 @@
 from __future__ import annotations
 
-import struct
-
-from enum import IntEnum
+import io
 from typing import TYPE_CHECKING
 
-from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
+from pykotor.resource.formats.tpc.tga import read_tga
+from pykotor.resource.formats.tpc.tpc_data import TPC, TPCLayer, TPCMipmap, TPCTextureFormat
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
-class _DataTypes(IntEnum):
-    NO_IMAGE_DATA = 0
-    UNCOMPRESSED_COLOR_MAPPED = 1
-    UNCOMPRESSED_RGB = 2
-    UNCOMPRESSED_BLACK_WHITE = 3
-    RLE_COLOR_MAPPED = 9
-    RLE_RGB = 10
-    COMPRESSED_BLACK_WHITE = 11
-    COMPRESSED_COLOR_MAPPED_A = 32
-    COMPRESSED_COLOR_MAPPED_B = 33
+def _decode_mipmap_to_rgba(mipmap: TPCMipmap) -> bytes:
+    """Return a copy of the mipmap's pixels in RGBA order."""
+    working = mipmap.copy()
+    if working.tpc_format != TPCTextureFormat.RGBA:
+        working.convert(TPCTextureFormat.RGBA)
+    return bytes(working.data)
+
+
+def _has_alpha_channel(pixels: bytes) -> bool:
+    """Return True when any pixel contains transparency."""
+    return any(pixels[i + 3] != 0xFF for i in range(0, len(pixels), 4))
+
+
+def _write_tga_rgba(writer: ResourceWriter, width: int, height: int, rgba: bytes) -> None:
+    """Write a simple uncompressed RGBA TGA image."""
+    writer._writer.write_uint8(0)  # ID length
+    writer._writer.write_uint8(0)  # colour map type
+    writer._writer.write_uint8(2)  # image type (uncompressed true colour)
+    writer._writer.write_bytes(bytes(5))  # colour map specification
+    writer._writer.write_uint16(0)  # x origin
+    writer._writer.write_uint16(0)  # y origin
+    writer._writer.write_uint16(width)
+    writer._writer.write_uint16(height)
+    writer._writer.write_uint8(32)
+    writer._writer.write_uint8(0x20 | 0x08)  # top-left origin, 8-bit alpha
+
+    total_pixels = width * height
+    for i in range(total_pixels):
+        offset = i * 4
+        r, g, b, a = rgba[offset : offset + 4]
+        writer._writer.write_bytes(bytes((b, g, r, a)))
 
 
 class TPCTGAReader(ResourceReader):
@@ -134,98 +153,42 @@ class TPCTGAReader(ResourceReader):
         return data
 
     @autoclose
-    def load(self) -> TPC:
+    def load(self, *, auto_close: bool = True) -> TPC:  # noqa: FBT001, FBT002, ARG002
         self._tpc = TPC()
-        id_length = self._reader.read_uint8()
-        colormap_type = self._reader.read_uint8()
-        datatype_code = self._reader.read_uint8()
-        _colormap_origin = self._reader.read_uint16()
-        colormap_length = self._reader.read_uint16()
-        colormap_depth = self._reader.read_uint8()
-        _x_origin = self._reader.read_uint16()
-        _y_origin = self._reader.read_uint16()
-        width = self._reader.read_uint16()
-        height = self._reader.read_uint16()
-        bits_per_pixel = self._reader.read_uint8()
-        image_descriptor = self._reader.read_uint8()
-        self._reader.skip(id_length)
+        raw = self._reader.read_all()
+        image = read_tga(io.BytesIO(raw))
 
-        # Read the color map if necessary
-        color_map = None
-        if colormap_type and colormap_length:
-            color_map = self._read_color_map(colormap_length, colormap_depth)
+        width, height = image.width, image.height
+        rgba = image.data
+        face_count = 1
+        face_height = height
 
-        y_flipped = bool(image_descriptor & 0b00100000)
-        interleaving_id = (image_descriptor & 0b11000000) >> 6
-        if interleaving_id:
-            raise ValueError("The image data must not be interleaved.")
-
-        data: bytearray = bytearray()
-        if datatype_code == _DataTypes.UNCOMPRESSED_COLOR_MAPPED:
-            if color_map is None:
-                msg = "Expected color map not found for uncompressed color-mapped data"
-                raise ValueError(msg)
-            data = self._process_non_rle_color_mapped(width, height, color_map)
-        elif datatype_code == _DataTypes.UNCOMPRESSED_RGB:
-            self._reader.skip(colormap_length * colormap_depth // 8)
-
-            if bits_per_pixel not in {24, 32}:
-                raise ValueError("The image must store 24 or 32 bits per pixel.")
-
-            pixel_rows: list[bytearray] = []
-            for y in range(height):
-                pixel_rows.append(bytearray())
-                for _ in range(width):
-                    b, g, r = (
-                        self._reader.read_uint8(),
-                        self._reader.read_uint8(),
-                        self._reader.read_uint8(),
-                    )
-                    if bits_per_pixel == 32:
-                        pixel_rows[y].extend([r, g, b, self._reader.read_uint8()])
-                    else:
-                        pixel_rows[y].extend([r, g, b])
-
-            if y_flipped:
-                for pixels in reversed(pixel_rows):
-                    data.extend(pixels)
-            else:
-                for pixels in pixel_rows:
-                    data.extend(pixels)
-        elif datatype_code == _DataTypes.UNCOMPRESSED_BLACK_WHITE:
-            data = bytearray()
-            for _ in range(width * height):
-                # Read the grayscale value (should be 1 byte per pixel)
-                gray_value = self._reader.read_uint8()
-                # Convert grayscale to RGB
-                data.extend([gray_value, gray_value, gray_value])
-        elif datatype_code == _DataTypes.RLE_COLOR_MAPPED:
-            if color_map is None:
-                msg = "Expected color map not found for RLE color-mapped data"
-                raise ValueError(msg)
-            data = self._process_rle_data(width, height, bits_per_pixel, color_map=color_map)
-        elif datatype_code == _DataTypes.RLE_RGB:
-            data = self._process_rle_data(width, height, bits_per_pixel, is_direct_rgb=True)
-        elif datatype_code == _DataTypes.COMPRESSED_BLACK_WHITE:
-            data = self._process_rle_data(width, height, bits_per_pixel)
-        elif datatype_code in {_DataTypes.COMPRESSED_COLOR_MAPPED_A, _DataTypes.COMPRESSED_COLOR_MAPPED_B}:
-            if color_map is None:
-                msg = "Expected color map not found for compressed color-mapped data"
-                raise ValueError(msg)
-            data = self._process_rle_data(width, height, bits_per_pixel, color_map=color_map)
+        if height and width and height % width == 0 and height // width == 6:
+            face_count = 6
+            face_height = height // 6
+            self._tpc.is_cube_map = True
         else:
-            msg = f"The image format '{datatype_code}' is not currently supported."
-            raise ValueError(msg)
+            self._tpc.is_cube_map = False
 
-        # Set the texture format based on the bits per pixel
-        datacode_name = next((c.name for c in _DataTypes if c.value == datatype_code), _DataTypes.NO_IMAGE_DATA.name)
-        self._tpc.original_datatype_code = _DataTypes.__members__[datacode_name]
-        texture_format = (
-            TPCTextureFormat.RGBA
-            if bits_per_pixel == 32
-            else TPCTextureFormat.RGB
-        )
-        self._tpc.set_single(data, texture_format, width, height)
+        self._tpc.layers = []
+        self._tpc.is_animated = False
+
+        has_alpha = _has_alpha_channel(rgba)
+
+        for face in range(face_count):
+            layer = TPCLayer()
+            slice_rgba = bytearray(face_height * width * 4)
+            for row in range(face_height):
+                src_offset = ((face * face_height) + row) * width * 4
+                dst_offset = row * width * 4
+                slice_rgba[dst_offset : dst_offset + width * 4] = rgba[src_offset : src_offset + width * 4]
+            layer.set_single(width, face_height, slice_rgba, TPCTextureFormat.RGBA)
+            self._tpc.layers.append(layer)
+
+        self._tpc._format = TPCTextureFormat.RGBA  # noqa: SLF001
+        if not has_alpha:
+            self._tpc.convert(TPCTextureFormat.RGB)
+
         return self._tpc
 
 class TPCTGAWriter(ResourceWriter):
@@ -239,27 +202,47 @@ class TPCTGAWriter(ResourceWriter):
         self._tpc: TPC = tpc
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         if self._tpc is None:
             raise ValueError("TPC instance is not set.")
-        width, height = self._tpc.dimensions()
+        base_layer = self._tpc.layers[0].mipmaps[0]
+        frame_width, frame_height = base_layer.width, base_layer.height
 
-        self._writer.write_uint8(0)  # id length
-        self._writer.write_uint8(0)  # colormap_type
-        self._writer.write_uint8(2)  # datatype_code
-        self._writer.write_bytes(bytes(5))  # colormap_origin
-        self._writer.write_uint16(0)  # colormap_length, colormap_depth
-        self._writer.write_uint16(0)  # x,y origin
-        self._writer.write_uint16(width)
-        self._writer.write_uint16(height)
-        self._tpc.convert(TPCTextureFormat.RGBA)
-        self._writer.write_uint8(32)  # bits_per_pixel
-        self._writer.write_uint8(0)  # image_descriptor
-        data: bytearray = self._tpc.get(0, 0).data
-        pixel_reader = BinaryReader.from_bytes(data)
-        for _ in range(len(data) // 4):
-            r = pixel_reader.read_uint8()
-            g = pixel_reader.read_uint8()
-            b = pixel_reader.read_uint8()
-            a = pixel_reader.read_uint8()
-            self._writer.write_bytes(struct.pack("BBBB", b, g, r, a))
+        if self._tpc.is_animated:
+            txi = self._tpc._txi  # noqa: SLF001
+            numx = max(1, txi.features.numx or 0)
+            numy = max(1, txi.features.numy or 0)
+            if numx * numy != len(self._tpc.layers):
+                numx = len(self._tpc.layers)
+                numy = 1
+            width = frame_width * numx
+            height = frame_height * numy
+            canvas = bytearray(width * height * 4)
+
+            for index, layer in enumerate(self._tpc.layers):
+                rgba_frame = _decode_mipmap_to_rgba(layer.mipmaps[0])
+                tile_x = index % numx
+                tile_y = index // numx
+                for row in range(frame_height):
+                    src = row * frame_width * 4
+                    dst_row = tile_y * frame_height + row
+                    dst = (dst_row * width + tile_x * frame_width) * 4
+                    canvas[dst : dst + frame_width * 4] = rgba_frame[src : src + frame_width * 4]
+
+        elif self._tpc.is_cube_map:
+            width = frame_width
+            height = frame_height * len(self._tpc.layers)
+            canvas = bytearray(width * height * 4)
+            for index, layer in enumerate(self._tpc.layers):
+                rgba_face = _decode_mipmap_to_rgba(layer.mipmaps[0])
+                for row in range(frame_height):
+                    src = row * width * 4
+                    dst_row = index * frame_height + row
+                    dst = (dst_row * width) * 4
+                    canvas[dst : dst + width * 4] = rgba_face[src : src + width * 4]
+
+        else:
+            width, height = frame_width, frame_height
+            canvas = bytearray(_decode_mipmap_to_rgba(self._tpc.layers[0].mipmaps[0]))
+
+        _write_tga_rgba(self, width, height, bytes(canvas))

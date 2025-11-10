@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
@@ -50,6 +51,11 @@ def detect_tlk(
         if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
             return ResourceType.TLK_XML
         return ResourceType.INVALID
+
+    if isinstance(source, str) and not os.path.exists(source):
+        stripped = source.lstrip()
+        if stripped.startswith(("TLK ", "{", "<")):
+            return check(stripped[:4].ljust(4))
 
     file_format: ResourceType
     try:

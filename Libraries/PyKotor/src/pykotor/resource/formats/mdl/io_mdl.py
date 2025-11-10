@@ -27,6 +27,14 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
+# Fast-loading flags for render-only mode
+MDL_FAST_LOAD_FLAGS = {
+    "skip_controllers": True,
+    "skip_animations": True,
+    "minimal_mesh_data": True,
+}
+
+
 class _ModelHeader:
     SIZE: ClassVar[int] = 196
 
@@ -1233,7 +1241,361 @@ class _Face:
         writer.write_uint16(self.vertex3)
 
 
+# Geometry calculation utilities
+# Reference: vendor/mdlops/MDLOpsM.pm:463-520
+
+def _calculate_face_area(v1: Vector3, v2: Vector3, v3: Vector3) -> float:
+    """Calculate a triangle face's surface area using Heron's formula.
+    
+    Args:
+    ----
+        v1: First vertex position
+        v2: Second vertex position
+        v3: Third vertex position
+    
+    Returns:
+    -------
+        The surface area of the triangle
+    
+    References:
+    ----------
+        vendor/mdlops/MDLOpsM.pm:465-488 - facearea() function
+        Formula: Uses Heron's formula with semi-perimeter
+    """
+    # Calculate edge lengths (mdlops:471-482)
+    import math
+    
+    a = math.sqrt(
+        (v1.x - v2.x) ** 2 +
+        (v1.y - v2.y) ** 2 +
+        (v1.z - v2.z) ** 2
+    )
+    
+    b = math.sqrt(
+        (v1.x - v3.x) ** 2 +
+        (v1.y - v3.y) ** 2 +
+        (v1.z - v3.z) ** 2
+    )
+    
+    c = math.sqrt(
+        (v2.x - v3.x) ** 2 +
+        (v2.y - v3.y) ** 2 +
+        (v2.z - v3.z) ** 2
+    )
+    
+    # Semi-perimeter (mdlops:483)
+    s = (a + b + c) / 2.0
+    
+    # Heron's formula (mdlops:485-487)
+    inter = s * (s - a) * (s - b) * (s - c)
+    return math.sqrt(inter) if inter > 0.0 else 0.0
+
+
+def _decompress_quaternion(compressed: int) -> Vector4:
+    """Decompress a packed quaternion from a 32-bit integer.
+    
+    KotOR uses compressed quaternions for orientation controllers to save space.
+    The compression packs X, Y, Z components into 11, 11, and 10 bits respectively,
+    with W calculated from the constraint that |q| = 1.
+    
+    Args:
+    ----
+        compressed: 32-bit packed quaternion value
+    
+    Returns:
+    -------
+        Vector4: Decompressed quaternion (x, y, z, w)
+    
+    References:
+    ----------
+        vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:850-868
+        Formula: X uses bits 0-10 (11 bits), Y uses bits 11-21 (11 bits),
+                 Z uses bits 22-31 (10 bits), W computed from magnitude
+    
+    Notes:
+    -----
+        The compressed format maps values to [-1, 1] range:
+        - X: 11 bits -> [0, 2047] -> mapped to [-1, 1]
+        - Y: 11 bits -> [0, 2047] -> mapped to [-1, 1]  
+        - Z: 10 bits -> [0, 1023] -> mapped to [-1, 1]
+        - W: Computed from sqrt(1 - x² - y² - z²) if mag < 1, else 0
+    """
+    # Extract components from packed integer (kotorblender:855-858)
+    # X component: bits 0-10 (11 bits, mask 0x7FF = 2047)
+    x = ((compressed & 0x7FF) / 1023.0) - 1.0
+    
+    # Y component: bits 11-21 (11 bits, shift 11 then mask 0x7FF)
+    y = (((compressed >> 11) & 0x7FF) / 1023.0) - 1.0
+    
+    # Z component: bits 22-31 (10 bits, shift 22, max value 1023)
+    z = ((compressed >> 22) / 511.0) - 1.0
+    
+    # Calculate W from quaternion unit constraint (kotorblender:859-863)
+    mag2 = x * x + y * y + z * z
+    if mag2 < 1.0:
+        import math
+        w = math.sqrt(1.0 - mag2)
+    else:
+        w = 0.0
+    
+    return Vector4(x, y, z, w)
+
+
+def _compress_quaternion(quat: Vector4) -> int:
+    """Compress a quaternion into a 32-bit integer.
+    
+    Inverse of _decompress_quaternion. Packs X, Y, Z components into a single
+    32-bit value. The W component is not stored as it can be recomputed from
+    the quaternion unit constraint.
+    
+    Args:
+    ----
+        quat: Quaternion to compress (x, y, z, w)
+    
+    Returns:
+    -------
+        int: 32-bit packed quaternion value
+    
+    References:
+    ----------
+        vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:850-868 (decompression)
+        Inverse operation derived from decompression algorithm
+    
+    Notes:
+    -----
+        Values are clamped to [-1, 1] range before packing to prevent overflow.
+    """
+    import math
+    
+    # Clamp values to valid range
+    x = max(-1.0, min(1.0, quat.x))
+    y = max(-1.0, min(1.0, quat.y))
+    z = max(-1.0, min(1.0, quat.z))
+    
+    # Map from [-1, 1] to integer ranges and pack
+    # X: [-1, 1] -> [0, 2047] (11 bits)
+    x_packed = int((x + 1.0) * 1023.0) & 0x7FF
+    
+    # Y: [-1, 1] -> [0, 2047] (11 bits)
+    y_packed = int((y + 1.0) * 1023.0) & 0x7FF
+    
+    # Z: [-1, 1] -> [0, 1023] (10 bits)  
+    z_packed = int((z + 1.0) * 511.0) & 0x3FF
+    
+    # Pack into single 32-bit integer
+    return x_packed | (y_packed << 11) | (z_packed << 22)
+
+
+def _calculate_face_normal(v1: Vector3, v2: Vector3, v3: Vector3) -> tuple[Vector3, float]:
+    """Calculate a triangle face's normalized normal vector and plane distance.
+    
+    The normal vector is computed using the cross product of two edge vectors,
+    then normalized. The plane distance is the dot product of the normal with
+    any vertex position.
+    
+    Args:
+    ----
+        v1: First vertex position
+        v2: Second vertex position
+        v3: Third vertex position
+    
+    Returns:
+    -------
+        tuple: (normalized normal vector, plane distance from origin)
+    
+    References:
+    ----------
+        vendor/mdlops/MDLOpsM.pm:492-520 - facenormal() function
+        Formula: Cross product of edges, then normalize
+    """
+    import math
+    
+    # Calculate unnormalized normal using cross product formula (mdlops:497-500)
+    # This is the determinant form of cross product: (v2-v3) × (v1-v3)
+    normal_x = (
+        v1.y * (v2.z - v3.z) +
+        v2.y * (v3.z - v1.z) +
+        v3.y * (v1.z - v2.z)
+    )
+    
+    normal_y = (
+        v1.z * (v2.x - v3.x) +
+        v2.z * (v3.x - v1.x) +
+        v3.z * (v1.x - v2.x)
+    )
+    
+    normal_z = (
+        v1.x * (v2.y - v3.y) +
+        v2.x * (v3.y - v1.y) +
+        v3.x * (v1.y - v2.y)
+    )
+    
+    # Normalize the normal vector (mdlops:502-509)
+    length = math.sqrt(normal_x ** 2 + normal_y ** 2 + normal_z ** 2)
+    
+    if length > 0.0:
+        normal_x /= length
+        normal_y /= length
+        normal_z /= length
+    
+    normal = Vector3(normal_x, normal_y, normal_z)
+    
+    # Calculate plane distance (dot product with vertex) (mdlops:511)
+    plane_distance = -(normal_x * v1.x + normal_y * v1.y + normal_z * v1.z)
+    
+    return normal, plane_distance
+
+
+def _calculate_tangent_space(
+    v0: Vector3,
+    v1: Vector3,
+    v2: Vector3,
+    uv0: tuple[float, float],
+    uv1: tuple[float, float],
+    uv2: tuple[float, float],
+    face_normal: Vector3,
+) -> tuple[Vector3, Vector3]:
+    """Calculate tangent and bitangent vectors for a triangle face for normal mapping.
+    
+    This function computes the tangent space basis vectors required for bump/normal mapping.
+    The calculation is based on the OpenGL tutorial method with KotOR-specific modifications
+    for handedness and texture mirroring.
+    
+    The tangent space forms a coordinate system at each vertex:
+    - Tangent (T): Points along the U texture axis in 3D space
+    - Bitangent/Binormal (B): Points along the V texture axis in 3D space  
+    - Normal (N): The surface normal
+    
+    KotOR expects the tangent space to NOT form a right-handed coordinate system,
+    meaning dot(cross(N,T), B) should be negative. The function also handles texture
+    mirroring by detecting the orientation of the UV triangle.
+    
+    Args:
+    ----
+        v0: First vertex position
+        v1: Second vertex position  
+        v2: Third vertex position
+        uv0: First vertex texture coordinates (u, v)
+        uv1: Second vertex texture coordinates (u, v)
+        uv2: Third vertex texture coordinates (u, v)
+        face_normal: The triangle's surface normal vector
+    
+    Returns:
+    -------
+        tuple: (tangent vector, bitangent vector) - both normalized
+    
+    References:
+    ----------
+        vendor/mdlops/MDLOpsM.pm:5477-5596 - Tangent space calculation
+        Based on: http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/
+        with key differences for KotOR's coordinate system requirements
+        
+    Notes:
+    -----
+        - Handles overlapping texture vertices by using a magic fallback value (mdlops:5510-5512)
+        - Fixes zero vectors from degenerate UVs to [1.0, 0.0, 0.0] (mdlops:5536-5539, 5563-5566)
+        - Corrects handedness to match KotOR's left-handed tangent space (mdlops:5570-5587)
+        - Inverts both vectors when texture is mirrored (mdlops:5588-5596)
+    """
+    import math
+    
+    # Calculate position deltas between vertices (mdlops:5491-5492)
+    deltaPos1 = Vector3(v1.x - v0.x, v1.y - v0.y, v1.z - v0.z)
+    deltaPos2 = Vector3(v2.x - v0.x, v2.y - v0.y, v2.z - v0.z)
+    
+    # Calculate UV deltas (mdlops:5493-5494)
+    deltaUV1 = (uv1[0] - uv0[0], uv1[1] - uv0[1])
+    deltaUV2 = (uv2[0] - uv0[0], uv2[1] - uv0[1])
+    
+    # Calculate texture normal's Z component to detect mirroring (mdlops:5495-5502)
+    # This is the Z (or W) component of cross(uv0-uv1, uv2-uv1) in 2D texture space
+    tNz = (uv0[0] - uv1[0]) * (uv2[1] - uv1[1]) - (uv0[1] - uv1[1]) * (uv2[0] - uv1[0])
+    
+    # Calculate the divisor for tangent/bitangent formulas (mdlops:5504)
+    r = deltaUV1[0] * deltaUV2[1] - deltaUV1[1] * deltaUV2[0]
+    
+    # Handle divide-by-zero from overlapping texture vertices (mdlops:5505-5515)
+    if abs(r) < 1e-10:  # Near-zero check
+        # Magic factor determined algebraically from p_g0t01.mdl analysis (mdlops:5510-5512)
+        r = 2406.6388
+    else:
+        r = 1.0 / r
+    
+    # Compute face tangent vector (mdlops:5516-5521)
+    tangent_x = (deltaPos1.x * deltaUV2[1] - deltaPos2.x * deltaUV1[1]) * r
+    tangent_y = (deltaPos1.y * deltaUV2[1] - deltaPos2.y * deltaUV1[1]) * r
+    tangent_z = (deltaPos1.z * deltaUV2[1] - deltaPos2.z * deltaUV1[1]) * r
+    
+    # Normalize tangent vector (mdlops:5522-5534)
+    tangent_length = math.sqrt(tangent_x**2 + tangent_y**2 + tangent_z**2)
+    if tangent_length > 1e-10:
+        tangent_x /= tangent_length
+        tangent_y /= tangent_length
+        tangent_z /= tangent_length
+    
+    # Fix zero vectors from degenerate UVs (mdlops:5535-5540)
+    if abs(tangent_x) < 1e-10 and abs(tangent_y) < 1e-10 and abs(tangent_z) < 1e-10:
+        tangent_x, tangent_y, tangent_z = 1.0, 0.0, 0.0
+    
+    tangent = Vector3(tangent_x, tangent_y, tangent_z)
+    
+    # Compute face bitangent vector (mdlops:5543-5548)
+    bitangent_x = (deltaPos2.x * deltaUV1[0] - deltaPos1.x * deltaUV2[0]) * r
+    bitangent_y = (deltaPos2.y * deltaUV1[0] - deltaPos1.y * deltaUV2[0]) * r
+    bitangent_z = (deltaPos2.z * deltaUV1[0] - deltaPos1.z * deltaUV2[0]) * r
+    
+    # Normalize bitangent vector (mdlops:5549-5561)
+    bitangent_length = math.sqrt(bitangent_x**2 + bitangent_y**2 + bitangent_z**2)
+    if bitangent_length > 1e-10:
+        bitangent_x /= bitangent_length
+        bitangent_y /= bitangent_length
+        bitangent_z /= bitangent_length
+    
+    # Fix zero vectors from degenerate UVs (mdlops:5562-5567)
+    if abs(bitangent_x) < 1e-10 and abs(bitangent_y) < 1e-10 and abs(bitangent_z) < 1e-10:
+        bitangent_x, bitangent_y, bitangent_z = 1.0, 0.0, 0.0
+    
+    bitangent = Vector3(bitangent_x, bitangent_y, bitangent_z)
+    
+    # Fix tangent space handedness (mdlops:5570-5587)
+    # KotOR wants dot(cross(N,T), B) < 0 (NOT a right-handed system)
+    # Calculate cross(normal, tangent) (mdlops:5573-5580)
+    cross_nt_x = face_normal.y * tangent.z - face_normal.z * tangent.y
+    cross_nt_y = face_normal.z * tangent.x - face_normal.x * tangent.z
+    cross_nt_z = face_normal.x * tangent.y - face_normal.y * tangent.x
+    
+    # Check if dot(cross(N,T), B) > 0, if so flip tangent (mdlops:5581-5587)
+    dot_product = cross_nt_x * bitangent.x + cross_nt_y * bitangent.y + cross_nt_z * bitangent.z
+    if dot_product > 0.0:
+        tangent = Vector3(-tangent.x, -tangent.y, -tangent.z)
+    
+    # Handle texture mirroring (mdlops:5588-5596)
+    # If texture is mirrored (tNz > 0), invert both tangent and bitangent
+    if tNz > 0.0:
+        tangent = Vector3(-tangent.x, -tangent.y, -tangent.z)
+        bitangent = Vector3(-bitangent.x, -bitangent.y, -bitangent.z)
+    
+    return tangent, bitangent
+
+
 class MDLBinaryReader:
+    """Binary MDL/MDX file reader.
+
+    This class provides loading of MDL (model) and MDX (model extension) files.
+    Supports both full loading and fast loading optimized for rendering.
+
+    Args:
+    ----
+        source: The source of the MDL data
+        offset: The byte offset within the source
+        size: Size of the data to read
+        source_ext: The source of the MDX data
+        offset_ext: The byte offset within the MDX source
+        size_ext: Size of the MDX data to read
+        game: The game version (K1 or K2)
+        fast_load: If True, skips animations and controllers for faster loading (optimized for rendering)
+    """
+
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -1243,6 +1605,7 @@ class MDLBinaryReader:
         offset_ext: int = 0,
         size_ext: int = 0,
         game: Game = Game.K2,
+        fast_load: bool = False,
     ):
         self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
 
@@ -1251,10 +1614,22 @@ class MDLBinaryReader:
         # first 12 bytes do not count in offsets used within the file
         self._reader.set_offset(self._reader.offset() + 12)
 
+        self._fast_load: bool = fast_load
+
     def load(
         self,
         auto_close: bool = True,  # noqa: FBT002, FBT001
     ) -> MDL:
+        """Load the MDL file.
+
+        Args:
+        ----
+            auto_close: If True, automatically close readers after loading
+
+        Returns:
+        -------
+            The loaded MDL instance
+        """
         self._mdl: MDL = MDL()
         self._names: list[str] = []
 
@@ -1267,11 +1642,13 @@ class MDLBinaryReader:
         self._load_names(model_header)
         self._mdl.root = self._load_node(model_header.geometry.root_node_offset)
 
-        self._reader.seek(model_header.offset_to_animations)
-        animation_offsets: list[int] = [self._reader.read_uint32() for _ in range(model_header.animation_count)]
-        for animation_offset in animation_offsets:
-            anim: MDLAnimation = self._load_anim(animation_offset)
-            self._mdl.anims.append(anim)
+        # Skip animations when fast loading (not needed for rendering)
+        if not self._fast_load:
+            self._reader.seek(model_header.offset_to_animations)
+            animation_offsets: list[int] = [self._reader.read_uint32() for _ in range(model_header.animation_count)]
+            for animation_offset in animation_offsets:
+                anim: MDLAnimation = self._load_anim(animation_offset)
+                self._mdl.anims.append(anim)
 
         if auto_close:
             self._reader.close()
@@ -1376,7 +1753,7 @@ class MDLBinaryReader:
                 face.a3 = bin_face.adjacent3
                 face.normal = bin_face.normal
                 face.coefficient = int(bin_face.plane_coefficient)
-                face.material = SurfaceMaterial(bin_face.material)
+                face.material = bin_face.material
 
         if bin_node.skin:
             node.skin = MDLSkin()
@@ -1411,13 +1788,15 @@ class MDLBinaryReader:
             child_node: MDLNode = self._load_node(child_offset)
             node.children.append(child_node)
 
-        for i in range(bin_node.header.controller_count):
-            offset = bin_node.header.offset_to_controllers + i * _Controller.SIZE
-            controller: MDLController = self._load_controller(
-                offset,
-                bin_node.header.offset_to_controller_data,
-            )
-            node.controllers.append(controller)
+        # Skip controllers when fast loading (not needed for rendering)
+        if not self._fast_load:
+            for i in range(bin_node.header.controller_count):
+                offset = bin_node.header.offset_to_controllers + i * _Controller.SIZE
+                controller: MDLController = self._load_controller(
+                    offset,
+                    bin_node.header.offset_to_controller_data,
+                )
+                node.controllers.append(controller)
 
         return node
 
@@ -1467,9 +1846,18 @@ class MDLBinaryReader:
         time_keys: list[int] = [self._reader.read_single() for _ in range(row_count)]
 
         # There are some special cases when reading controller data rows.
+        data_pointer: int = data_offset + bin_controller.data_offset
+        self._reader.seek(data_pointer)
 
+        # Detect bezier interpolation flag (bit 4 = 0x10) in column count
+        # vendor/mdlops/MDLOpsM.pm:1704-1710 - Bezier flag detection
+        # vendor/mdlops/MDLOpsM.pm:1749-1756 - Bezier data expansion (3 values per column)
+        bezier_flag: int = 0x10
+        is_bezier: bool = bool(column_count & bezier_flag)
+        
         # Orientation data stored in controllers is sometimes compressed into 4 bytes. We need to check for that and
         # uncompress the quaternion if that is the case.
+        # vendor/mdlops/MDLOpsM.pm:1714-1719 - Compressed quaternion detection
         if bin_controller.type_id == MDLControllerType.ORIENTATION and bin_controller.column_count == 2:
             data: list[list[float]] = []
             for _ in range(bin_controller.row_count):
@@ -1477,12 +1865,28 @@ class MDLBinaryReader:
                 decompressed: Vector4 = Vector4.from_compressed(compressed)
                 data.append([decompressed.x, decompressed.y, decompressed.z, decompressed.w])
         else:
-            self._reader.seek(data_offset + bin_controller.data_offset * 4)
-            data = [[self._reader.read_single() for _ in range(column_count)] for _ in range(row_count)]
+            # vendor/mdlops/MDLOpsM.pm:1721-1726 - Bezier data reading
+            # Bezier controllers store 3 floats per column: (value, in_tangent, out_tangent)
+            # Non-bezier controllers store 1 float per column
+            if is_bezier:
+                base_columns = column_count - bezier_flag
+                effective_columns = base_columns * 3
+            else:
+                effective_columns = column_count
+            
+            # Ensure we have at least some columns to read
+            if effective_columns <= 0:
+                effective_columns = column_count & ~bezier_flag  # Strip bezier flag
+            
+            data = [
+                [self._reader.read_single() for _ in range(effective_columns)]
+                for _ in range(row_count)
+            ]
 
         controller_type: int = bin_controller.type_id
         rows: list[MDLControllerRow] = [MDLControllerRow(time_keys[i], data[i]) for i in range(row_count)]
-        controller = MDLController(MDLControllerType(controller_type), rows)
+        # vendor/mdlops/MDLOpsM.pm:1709 - Store bezier flag with controller
+        controller = MDLController(MDLControllerType(controller_type), rows, is_bezier=is_bezier)
         return controller
 
 
@@ -1632,7 +2036,7 @@ class MDLBinaryWriter:
                 bin_face.adjacent1 = face.a1
                 bin_face.adjacent2 = face.a2
                 bin_face.adjacent3 = face.a3
-                bin_face.material = face.material.value
+                bin_face.material = face.material
                 bin_face.plane_coefficient = face.coefficient
                 bin_face.normal = face.normal
 

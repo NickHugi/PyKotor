@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+from logging import Logger
 import os
 import platform
 import sys
@@ -23,6 +24,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
+from pykotor.extract.savedata import SaveFolderEntry
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList, GFFStruct
@@ -33,6 +35,7 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.sound import deobfuscate_audio
+from pykotor.tools.path import CaseAwarePath
 from utility.common.more_collections import CaseInsensitiveDict
 
 if TYPE_CHECKING:
@@ -173,6 +176,7 @@ class Installation:
         self._modules_data: dict[str, list[FileResource]] = {}
         self._lips_data: dict[str, list[FileResource]] = {}
         self.saves: dict[Path, dict[Path, list[FileResource]]] = {}
+        self.save_folders: dict[Path, SaveFolderEntry] = {}  # Map save folder path to SaveFolderEntry
         self._texturepacks_data: dict[str, list[FileResource]] = {}
         self._rims_data: dict[str, list[FileResource]] = {}
 
@@ -190,7 +194,6 @@ class Installation:
         self._lips_loaded: bool = False
         self._saves_loaded: bool = False
         self._texturepacks_loaded: bool = False
-        self._rims_loaded: bool = False
         self._override_loaded: bool = False
         self._patch_erf_loaded: bool = False
         self._chitin_loaded: bool = False
@@ -234,12 +237,6 @@ class Installation:
         if not self._texturepacks_loaded:
             self.load_textures()
         return self._texturepacks_data
-
-    @property
-    def _rims(self) -> dict[str, list[FileResource]]:
-        if not self._rims_loaded:
-            self.load_rims()
-        return self._rims_data
 
     @property
     def _override(self) -> dict[str, list[FileResource]]:
@@ -304,9 +301,6 @@ class Installation:
         self.load_lips()
         self._report_main_progress("Loading modules...")
         self.load_modules()
-        # K1 doesn't actually use the RIMs in the Rims folder.
-        # if self.game().is_k1():
-        #    self.load_rims()
         self._report_main_progress("Loading streammusic...")
         self.load_streammusic()
         self._report_main_progress("Loading streamsounds...")
@@ -396,12 +390,13 @@ class Installation:
         files_iter = r_path.rglob("*") if recurse else r_path.iterdir()
 
         resources_dict: dict[str, list[FileResource]] = {}
+        str_path = str(r_path)
 
         for file in files_iter:
-            filepath, resource = self._build_resource_list(file, capsule_check)
-            if resource is None:
+            resource_list = self._build_resource_list(file, capsule_check)
+            if resource_list is None:
                 continue
-            resources_dict[filepath.name] = resource
+            resources_dict[file.name] = resource_list
         if not resources_dict:
             RobustLogger().warning(f"No resources found at '{str_path}' when loading the installation, skipping...")
         return resources_dict
@@ -429,9 +424,10 @@ class Installation:
             return []
 
         self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
-        files_iter = path.rglob("*") if recurse else path.iterdir()
+        files_iter = r_path.rglob("*") if recurse else r_path.iterdir()
 
         resources_list: list[FileResource] = []
+        str_path = str(r_path)
         RobustLogger().info(f"Loading '{os.path.relpath(str_path, self._path)}' from installation...")
 
         try:
@@ -500,15 +496,6 @@ class Installation:
             self.load_modules()
         self._modules_data[module] = list(Capsule(self.module_path() / module))
 
-    def load_rims(
-        self,
-    ):
-        """Reloads the list of module files in the rims folder linked to the Installation."""
-        if self._rims_loaded:
-            return
-        self._rims_data = self.load_resources_dict(self.rims_path(), capsule_check=is_rim_file)
-        self._rims_loaded = True
-
     def load_textures(
         self,
     ):
@@ -521,10 +508,16 @@ class Installation:
     def load_saves(
         self,
     ):
-        """Reloads the data in the 'saves' folder linked to the Installation."""
+        """Reloads the data in the 'saves' folder linked to the Installation.
+        
+        This method loads both:
+        1. File resources for each save (for UI display)
+        2. SaveFolderEntry objects (for save editing and corruption detection)
+        """
         if self._saves_loaded:
             return
         self.saves = {}
+        self.save_folders = {}
         for save_location in self.save_locations():
             RobustLogger().debug(f"Found an active save location at '{save_location}'")
             self.saves[save_location] = {}
@@ -532,10 +525,21 @@ class Installation:
                 if not this_save_path.is_dir():
                     continue
                 self.saves[save_location][this_save_path] = []
+                
+                # Load file resources for UI display
                 for file in this_save_path.iterdir():
                     res_ident = ResourceIdentifier.from_path(file)
                     file_res = FileResource(res_ident.resname, res_ident.restype, file.stat().st_size, 0, file)
                     self.saves[save_location][this_save_path].append(file_res)
+                
+                # Load SaveFolderEntry for save editing and corruption detection
+                try:
+                    save_folder = SaveFolderEntry(str(this_save_path))
+                    # Don't fully load the save yet (lazy loading) - just store the path
+                    self.save_folders[this_save_path] = save_folder
+                except Exception as e:  # noqa: BLE001
+                    RobustLogger().warning(f"Failed to create SaveFolderEntry for '{this_save_path}': {e}")
+                    
         self._saves_loaded = True
 
     def load_override(self, directory: str | None = None):
@@ -910,8 +914,6 @@ class Installation:
         for resources in self._lips.values():
             yield from resources
         for resources in self._texturepacks.values():
-            yield from resources
-        for resources in self._rims.values():
             yield from resources
         tlk_path = self._path / "dialog.tlk"
         yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)

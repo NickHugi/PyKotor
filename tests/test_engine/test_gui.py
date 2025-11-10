@@ -6,6 +6,18 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+THIS_SCRIPT_PATH = Path(__file__).parent
+LIBRARY_PATH = THIS_SCRIPT_PATH.parents[1].joinpath("Libraries")
+PYKOTOR_PATH = LIBRARY_PATH.joinpath("PyKotor", "src")
+UTILITY_PATH = LIBRARY_PATH.joinpath("Utility", "src")
+
+assert PYKOTOR_PATH.exists() and PYKOTOR_PATH.is_dir(), f"PyKotor path not found: {PYKOTOR_PATH}"
+if PYKOTOR_PATH.exists() and PYKOTOR_PATH.is_dir() and str(PYKOTOR_PATH) not in sys.path:
+    sys.path.append(str(PYKOTOR_PATH))
+assert UTILITY_PATH.exists() and UTILITY_PATH.is_dir(), f"Utility path not found: {UTILITY_PATH}"
+if UTILITY_PATH.exists() and UTILITY_PATH.is_dir() and str(UTILITY_PATH) not in sys.path:
+    sys.path.append(str(UTILITY_PATH))
+
 from pykotor.engine.core import KotorEngine
 from pykotor.engine.graphics import GUIManager
 

@@ -27,7 +27,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
 from utility.common.misc_string.util import ireplace
-from utility.system.path import CaseAwarePath
+from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     import os

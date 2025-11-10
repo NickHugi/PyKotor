@@ -499,9 +499,20 @@ class HTInstallation(Installation):
 
         relevant_resources: set[FileResource] = {res for res in (*self.override_resources(), *self.chitin_resources()) if res.restype() is restype}
 
-        if os.path.commonpath([src_filepath.absolute(), self.module_path()]) == self.module_path():
+        src_absolute = Path(src_filepath).absolute()
+        module_path = Path(self.module_path()).absolute()
+        override_path = Path(self.override_path()).absolute()
+
+        def _is_within(child: Path, parent: Path) -> bool:
+            try:
+                child.relative_to(parent)
+            except ValueError:
+                return False
+            return True
+
+        if _is_within(src_absolute, module_path):
             relevant_resources.update(res for cap in Module.find_capsules(self, src_filepath.name, strict=True) for res in cap if res.restype() is restype)
-        elif os.path.commonpath([src_filepath.absolute(), self.override_path()]) == self.override_path():
+        elif _is_within(src_absolute, override_path):
             relevant_resources.update(res for reslist in self._modules.values() if any(r.identifier() == src_filepath.name for r in reslist) for res in reslist if res.restype() is restype)  # noqa: E501
 
         return relevant_resources

@@ -17,6 +17,10 @@ if TYPE_CHECKING:
 class RobustTableView(RobustAbstractItemView, QTableView):
     """A table view that supports common features and settings."""
 
+    def __new__(cls, *args, **kwargs):
+        # For PySide6 compatibility with multiple inheritance
+        return QTableView.__new__(cls)
+
     def __init__(
         self,
         parent: QWidget | None = None,

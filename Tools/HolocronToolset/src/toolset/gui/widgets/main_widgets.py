@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import multiprocessing
 import os
 
@@ -14,12 +15,12 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, cast
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy import QtCore
 from qtpy.QtCore import (
-    QFileInfo,
-    QModelIndex,
+    QFileInfo,  # pyright: ignore[reportPrivateImportUsage]
+    QModelIndex,  # pyright: ignore[reportPrivateImportUsage]
     QPoint,  # pyright: ignore[reportPrivateImportUsage]
-    QSortFilterProxyModel,
-    QTimer,
-    Qt,
+    QSortFilterProxyModel,  # pyright: ignore[reportPrivateImportUsage]
+    QTimer,  # pyright: ignore[reportPrivateImportUsage]
+    Qt,  # pyright: ignore[reportPrivateImportUsage]
     Signal,  # pyright: ignore[reportPrivateImportUsage]
     Slot,  # pyright: ignore[reportPrivateImportUsage]
 )
@@ -37,6 +38,11 @@ from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.type import ResourceType
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
 from toolset.gui.widgets.settings.installations import GlobalSettings
+
+try:
+    from toolset.gui.widgets.texture_loader import TextureLoaderProcess
+except Exception:  # noqa: BLE001
+    TextureLoaderProcess = None
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -249,10 +255,64 @@ class ResourceList(MainWindowList):
         menu.addAction("Open").triggered.connect(lambda: self.sig_request_open_resource.emit(resources, True))
         if all(resource.restype().contents == "gff" for resource in resources):
             menu.addAction("Open with GFF Editor").triggered.connect(lambda: self.sig_request_open_resource.emit(resources, False))
+        
+        # Add save-specific context menu items if this is a save resource
+        # Check if this resource list is from the saves widget by checking parent
+        parent_widget = self.parent()
+        while parent_widget:
+            parent_name = parent_widget.objectName() if hasattr(parent_widget, 'objectName') else ''
+            if 'saves' in parent_name.lower() or (hasattr(parent_widget, 'ui') and hasattr(parent_widget.ui, 'savesWidget')):
+                # This is the saves tab - add save-specific menu items
+                menu.addSeparator()
+                menu.addAction("Open Save Editor").triggered.connect(self.on_open_save_editor_from_context)
+                menu.addAction("Fix savegame corruption").triggered.connect(self.on_fix_save_corruption_from_context)
+                break
+            parent_widget = parent_widget.parent() if hasattr(parent_widget, 'parent') else None
+        
         menu.addSeparator()
         builder = ResourceItems(resources=resources)
         builder.viewport = lambda: self.ui.resourceTree
         builder.run_context_menu(point, menu=menu)
+    
+    def on_open_save_editor_from_context(self):
+        """Signal the main window to open the save editor."""
+        # Get the main window and call its open_save_editor method
+        main_window = self.window()
+        if hasattr(main_window, 'on_open_save_editor'):
+            main_window.on_open_save_editor()
+    
+    def on_fix_save_corruption_from_context(self):
+        """Signal the main window to fix save corruption."""
+        # Get the main window and call its fix_save_corruption_for_path method
+        main_window = self.window()
+        if not hasattr(main_window, 'active') or not main_window.active:
+            return
+        
+        # Get the selected save path from the tree
+        selected_indexes = self.ui.resourceTree.selectedIndexes()
+        if not selected_indexes:
+            return
+        
+        proxy_model = self.ui.resourceTree.model()
+        
+        for index in selected_indexes:
+            source_index = proxy_model.mapToSource(index)
+            item = self.modules_model.itemFromIndex(source_index)
+            
+            # Navigate up to find the save folder item (top-level item)
+            while item and item.parent():
+                item = item.parent()
+            
+            if item:
+                save_name = item.text()
+                # Find the save path
+                current_save_location = Path(self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole))
+                for save_path in main_window.active.saves.get(current_save_location, {}):
+                    if save_name in str(save_path):
+                        if hasattr(main_window, 'fix_save_corruption_for_path'):
+                            main_window.fix_save_corruption_for_path(save_path)
+                        break
+                break
 
     @Slot()
     def on_resource_double_clicked(self):
@@ -412,6 +472,8 @@ class TextureList(MainWindowList):
     def __init__(self, parent: QWidget):
         """Initialize the texture list."""
         print(f"Initializing TextureList with parent: {parent}")
+        # Ensure loader attribute exists even if initialization aborts early.
+        self._loader: multiprocessing.Process | None = None
         super().__init__(parent)
 
         from toolset.uic.qtpy.widgets.texture_list import Ui_Form
@@ -434,11 +496,26 @@ class TextureList(MainWindowList):
         self.ui.resourceList.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
         self.ui.resourceList.customContextMenuRequested.connect(self.on_resource_context_menu)
         self._loading_resources: set[FileResource] = set()
+        self._loadRequestQueue: multiprocessing.Queue[Any] = multiprocessing.Queue()
+        self._loadedTextureQueue: multiprocessing.Queue[Any] = multiprocessing.Queue()
 
     def __del__(self):
         """Shutdown the executor when the texture list is deleted."""
         print("Shutting down executor in TextureList destructor")
         self._executor.shutdown(wait=False)
+        loader: multiprocessing.Process | None = getattr(self, "_loader", None)
+        if loader is not None:
+            try:
+                loader.terminate()
+            except Exception:  # noqa: BLE001
+                RobustLogger().exception("Failed to terminate texture loader process during cleanup")
+            self._loader = None
+        with contextlib.suppress(Exception):
+            self._loadRequestQueue.close()
+            self._loadRequestQueue.join_thread()
+        with contextlib.suppress(Exception):
+            self._loadedTextureQueue.close()
+            self._loadedTextureQueue.join_thread()
 
     def setup_signals(self):
         """Setup the signals for the texture list."""
@@ -460,9 +537,13 @@ class TextureList(MainWindowList):
         """Set the installation for the resource list."""
         self._installation = installation
         # Terminate old loader if exists
-        if self._loader is not None:
-            self._loader.terminate()
+        loader: multiprocessing.Process | None = getattr(self, "_loader", None)
+        if loader is not None:
+            loader.terminate()
             self._loader = None
+        if TextureLoaderProcess is None:
+            RobustLogger().warning("TextureLoaderProcess is unavailable; texture loading will run on the main process")
+            return
         # Start new loader process with installation path
         if installation is not None:
             try:

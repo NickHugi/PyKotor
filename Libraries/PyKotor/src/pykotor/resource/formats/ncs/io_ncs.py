@@ -26,11 +26,7 @@ class NCSBinaryReader(ResourceReader):
         self._jumps: list[tuple[NCSInstruction, int]] = []
 
     @autoclose
-    def load(
-        self,
-        *,
-        auto_close: bool = True,
-    ) -> NCS:
+    def load(self, *, auto_close: bool = True) -> NCS:
         """Loads an NCS file from the reader.
 
         Returns:
@@ -464,11 +460,7 @@ class NCSBinaryWriter(ResourceWriter):
         self._sizes: dict[int, int] = {}
 
     @autoclose
-    def write(
-        self,
-        *,
-        auto_close: bool = True,
-    ):
+    def write(self, *, auto_close: bool = True):
         """Writes the NCS file.
 
         Args:

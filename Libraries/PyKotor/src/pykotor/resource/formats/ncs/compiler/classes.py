@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, cast
 
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
@@ -464,7 +464,7 @@ class CodeRoot:
 
         offset = 0
         for param, arg in zip(definition.parameters, args_list):
-            arg_datatype: DynamicDataType = arg.compile(ncs, root, block)
+            arg_datatype: DynamicDataType = arg.compile(ncs, self, block)
             offset += arg_datatype.size(self)
             block.temp_stack += arg_datatype.size(self)
             if param.data_type != arg_datatype:
@@ -781,11 +781,16 @@ class IncludeScript(TopLevelObject):
     def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         from pykotor.resource.formats.ncs.compiler.parser import NssParser  # noqa: PLC0415
 
+        lookup_paths = cast(
+            list[str] | None,
+            [str(path) for path in root.library_lookup] if root.library_lookup else None,
+        )
+
         nss_parser = NssParser(
             root.functions,
             root.constants,
             root.library,
-            root.library_lookup,
+            lookup_paths,
         )
         nss_parser.library = self.library
         nss_parser.constants = root.constants
@@ -813,7 +818,8 @@ class IncludeScript(TopLevelObject):
             filepath: Path = folder / f"{self.file.value}.nss"
             if filepath.is_file():
                 try:
-                    source: str = BinaryReader.load_file(filepath).decode(errors="ignore")
+                    source_bytes = filepath.read_bytes()
+                    source = source_bytes.decode(errors="ignore")
                     break
                 except Exception as e:
                     msg = f"Failed to read include file '{filepath}': {e}"

@@ -31,7 +31,7 @@ class LIPXMLReader(ResourceReader):
         self._lip: LIP | None = None
 
     @autoclose
-    def load(self) -> LIP:
+    def load(self, *, auto_close: bool = True) -> LIP:  # noqa: FBT001, FBT002, ARG002
         self._lip = LIP()
 
         data: str = self._reader.read_bytes(self._reader.size()).decode()
@@ -73,7 +73,7 @@ class LIPXMLWriter(ResourceWriter):
         self._xml_root: ET.Element = ET.Element("lip")
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         self._xml_root.set("duration", str(self._lip.length))
 
         for keyframe in self._lip:

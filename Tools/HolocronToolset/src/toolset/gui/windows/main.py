@@ -9,8 +9,7 @@ from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from pathlib import Path, PurePath
-from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import qtpy
 
@@ -19,6 +18,7 @@ from qtpy import QtCore
 from qtpy.QtCore import (
     QCoreApplication,
     QThread,
+    QTimer,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
     Slot,  # pyright: ignore[reportPrivateImportUsage]
@@ -36,7 +36,6 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
@@ -78,13 +77,12 @@ from toolset.gui.widgets.main_widgets import ResourceList, ResourceStandardItem
 from toolset.gui.widgets.settings.widgets.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
-from toolset.gui.windows.kotordiff import KotorDiffWindow
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.gui.windows.update_manager import UpdateManager
 from toolset.utils.misc import open_link
 from toolset.utils.window import add_window, open_resource_editor
 from utility.error_handling import universal_simplify_exception
-from utility.misc import ProcessorArchitecture, is_debug_mode
+from utility.misc import is_debug_mode
 from utility.tricks import debug_reload_pymodules
 
 if TYPE_CHECKING:
@@ -99,13 +97,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import TextureList
-    from utility.common.more_collections import CaseInsensitiveDict
-    from pykotor.extract.file import LocationResult
     from pykotor.resource.formats.mdl.mdl_data import MDL
-    from pykotor.resource.formats.tpc import TPC
-    from pykotor.resource.type import SOURCE_TYPES
-    from toolset.gui.widgets.main_widgets import TextureList
-    from utility.common.more_collections import CaseInsensitiveDict
 
 def run_module_designer(
     active_path: str,
@@ -313,17 +305,33 @@ class ToolWindow(QMainWindow):
         self.ui.savesWidget.sig_request_extract_resource.connect(self.on_extract_resources)
         self.ui.savesWidget.sig_request_open_resource.connect(self.on_open_resources)
         self.sig_installation_changed.connect(self.ui.savesWidget.set_installation)
+        
+        # Save Editor and corruption fix buttons
+        self.ui.openSaveEditorButton.clicked.connect(self.on_open_save_editor)
+        self.ui.fixCorruptionButton.clicked.connect(self.on_fix_all_corruption)
+        
+        # Enable/disable Open Save Editor button based on selection
+        self.ui.savesWidget.ui.resourceTree.selectionModel().selectionChanged.connect(self.on_save_selection_changed)
         self.ui.resourceTabs.currentChanged.connect(self.on_tab_changed)
 
         def open_module_designer(*args) -> ModuleDesigner | None:
             """Open the module designer."""
             assert self.active is not None
-
-            designer_window = ModuleDesigner(
-                None,
-                self.active,
-                self.active.module_path() / self.ui.modulesWidget.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole),
-            )
+            module_data = self.ui.modulesWidget.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+            module_path: Path | None = None
+            if module_data:
+                module_path = self.active.module_path() / Path(str(module_data))
+            try:
+                designer_window = ModuleDesigner(  # pyright: ignore[call-arg]
+                    None,
+                    self.active,
+                    mod_filepath=module_path,
+                )
+            except TypeError as exc:
+                RobustLogger().warning(f"ModuleDesigner signature mismatch: {exc}. Falling back without module path.")
+                designer_window = ModuleDesigner(None, self.active)
+                if module_path is not None:
+                    QTimer.singleShot(33, lambda: designer_window.open_module(module_path))
 
             designer_window.setWindowIcon(cast(QApplication, QApplication.instance()).windowIcon())
             add_window(designer_window)
@@ -496,6 +504,8 @@ class ToolWindow(QMainWindow):
         self,
         new_save_dir: str,
     ):
+        from qtpy.QtGui import QBrush, QColor
+        
         assert self.active is not None, "No active installation selected"
         self.ui.savesWidget.modules_model.invisibleRootItem().removeRows(0, self.ui.savesWidget.modules_model.rowCount())  # pyright: ignore[reportOptionalMemberAccess]
         new_save_dir_path = Path(new_save_dir)
@@ -505,6 +515,19 @@ class ToolWindow(QMainWindow):
             return
         for save_path, resource_list in self.active.saves[new_save_dir_path].items():
             save_path_item = QStandardItem(str(save_path.relative_to(save_path.parent.parent)))
+            
+            # Check if this save is corrupted
+            is_corrupted = self.active.is_save_corrupted(save_path)
+            if is_corrupted:
+                # Add red border/background color for corrupted saves
+                save_path_item.setBackground(QBrush(QColor(255, 220, 220)))  # Light red background
+                save_path_item.setForeground(QBrush(QColor(139, 0, 0)))  # Dark red text
+                # Add tooltip
+                save_path_item.setToolTip(
+                    "This save is corrupted.\n"
+                    "Right click and press <i>'Fix savegame corruption'</i> to fix this."
+                )
+            
             self.ui.savesWidget.modules_model.invisibleRootItem().appendRow(save_path_item)  # pyright: ignore[reportOptionalMemberAccess]
             category_items_under_save_path: dict[str, QStandardItem] = {}
             for resource in resource_list:
@@ -543,6 +566,132 @@ class ToolWindow(QMainWindow):
     def on_save_refresh(self):
         RobustLogger().info("Refreshing save list")
         self.refresh_saves_list()
+    
+    @Slot()
+    def on_save_selection_changed(self):
+        """Enable/disable Open Save Editor button based on selection."""
+        has_selection = len(self.ui.savesWidget.ui.resourceTree.selectedIndexes()) > 0
+        self.ui.openSaveEditorButton.setEnabled(has_selection)
+    
+    @Slot()
+    def on_open_save_editor(self):
+        """Open the Save Editor for the selected save."""
+        if self.active is None:
+            return
+        
+        # Get selected save folder
+        selected_indexes = self.ui.savesWidget.ui.resourceTree.selectedIndexes()
+        if not selected_indexes:
+            return
+        
+        # Get the top-level save folder item
+        model = self.ui.savesWidget.modules_model
+        proxy_model = self.ui.savesWidget.ui.resourceTree.model()
+        
+        for index in selected_indexes:
+            source_index = proxy_model.mapToSource(index)
+            item = model.itemFromIndex(source_index)
+            
+            # Navigate up to find the save folder item (top-level item)
+            while item and item.parent():
+                item = item.parent()
+            
+            if item:
+                save_name = item.text()
+                # Find the save path
+                current_save_location = Path(self.ui.savesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
+                for save_path in self.active.saves.get(current_save_location, {}):
+                    if save_name in str(save_path):
+                        self.open_save_editor_for_path(save_path)
+                        break
+                break
+    
+    def open_save_editor_for_path(self, save_path: Path):
+        """Open the Save Editor for a specific save path."""
+        from toolset.gui.editors.savegame import SaveGameEditor
+        
+        try:
+            # Create and show the save editor
+            editor = SaveGameEditor(self, self.active)
+            
+            # Load the save
+            savegame_sav = save_path / "SAVEGAME.sav"
+            if savegame_sav.exists():
+                with open(savegame_sav, "rb") as f:
+                    data = f.read()
+                editor.load(str(save_path), save_path.name, ResourceType.SAV, data)
+            else:
+                # If SAVEGAME.sav doesn't exist, load the folder directly
+                editor.load(str(save_path), save_path.name, ResourceType.SAV, b"")
+            
+            editor.show()
+            
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error Opening Save Editor",
+                f"Failed to open save editor:\n{e}",
+            )
+            RobustLogger().exception(f"Failed to open save editor for '{save_path}'")
+    
+    @Slot()
+    def on_fix_all_corruption(self):
+        """Fix EventQueue corruption in all saves."""
+        if self.active is None:
+            return
+        
+        fixed_count = 0
+        failed_count = 0
+        
+        # Fix all saves in all locations
+        for save_location in self.active.saves:
+            for save_path in self.active.saves[save_location]:
+                try:
+                    if self.active.fix_save_corruption(save_path):
+                        fixed_count += 1
+                except Exception as e:
+                    RobustLogger().error(f"Failed to fix corruption in '{save_path}': {e}")
+                    failed_count += 1
+        
+        # Show results
+        if fixed_count > 0 or failed_count > 0:
+            msg = f"Fixed corruption in {fixed_count} save(s)."
+            if failed_count > 0:
+                msg += f"\nFailed to fix {failed_count} save(s)."
+            QMessageBox.information(self, "Fix Corruption Complete", msg)
+        else:
+            QMessageBox.information(self, "No Corruption Found", "No corrupted saves were found.")
+        
+        # Refresh the saves list to update corruption indicators
+        self.refresh_saves_list()
+    
+    def fix_save_corruption_for_path(self, save_path: Path):
+        """Fix EventQueue corruption for a specific save path."""
+        if self.active is None:
+            return
+        
+        try:
+            if self.active.fix_save_corruption(save_path):
+                QMessageBox.information(
+                    self,
+                    "Corruption Fixed",
+                    f"Successfully fixed corruption in save:\n{save_path.name}",
+                )
+                # Refresh the saves list to update corruption indicators
+                self.refresh_saves_list()
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Fix Failed",
+                    f"Failed to fix corruption in save:\n{save_path.name}",
+                )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"An error occurred while fixing corruption:\n{e}",
+            )
+            RobustLogger().exception(f"Failed to fix corruption for '{save_path}'")
 
     def on_override_file_updated(
         self,
@@ -872,7 +1021,21 @@ class ToolWindow(QMainWindow):
 
     def open_module_designer(self):
         assert self.active is not None, "No installation loaded."
-        add_window(ModuleDesigner(None, self.active))
+        selected_module: Path | None = None
+        try:
+            combo_data = self.ui.modulesWidget.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+        except Exception:  # noqa: BLE001
+            combo_data = None
+        if combo_data:
+            selected_module = self.active.module_path() / Path(str(combo_data))
+        try:
+            designer_window = ModuleDesigner(None, self.active, mod_filepath=selected_module)  # pyright: ignore[call-arg]
+        except TypeError as exc:
+            RobustLogger().warning(f"ModuleDesigner signature mismatch: {exc}. Falling back without module path.")
+            designer_window = ModuleDesigner(None, self.active)
+            if selected_module is not None:
+                QTimer.singleShot(33, lambda: designer_window.open_module(selected_module))
+        add_window(designer_window)
 
     def open_settings_dialog(self):
         """Opens the Settings dialog and refresh installation combo list if changes."""

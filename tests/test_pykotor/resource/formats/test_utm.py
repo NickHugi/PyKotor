@@ -61,21 +61,21 @@ class TestUTM(unittest.TestCase):
         self.validate_io(utm)
 
     def validate_io(self, utm: UTM):
-        assert utm.resref == "dan_droid"
-        assert utm.name.stringref == 33399
-        assert utm.tag == "dan_droid"
-        assert utm.mark_up == 100
-        assert utm.mark_down == 25
-        assert utm.on_open == "onopenstore"
-        assert utm.comment == "comment"
-        assert utm.id == 5
-        assert utm.can_buy
-        assert utm.can_sell
+        assert utm.resref == ResRef("dan_droid"), f"Expected ResRef('dan_droid'), got '{utm.resref}'"
+        assert utm.name.stringref == 33399, f"Expected stringref 33399, got '{utm.name.stringref}'"
+        assert utm.tag == "dan_droid", f"Expected 'dan_droid', got '{utm.tag}'"
+        assert utm.mark_up == 100, f"Expected 100, got '{utm.mark_up}'"
+        assert utm.mark_down == 25, f"Expected 25, got '{utm.mark_down}'"
+        assert utm.on_open == ResRef("onopenstore"), f"Expected ResRef('onopenstore'), got '{utm.on_open}'"
+        assert utm.comment == "comment", f"Expected 'comment', got '{utm.comment}'"
+        assert utm.id == 5, f"Expected 5, got '{utm.id}'"
+        assert utm.can_buy, f"Expected True, got '{utm.can_buy}'"
+        assert utm.can_sell, f"Expected True, got '{utm.can_sell}'"
 
-        assert len(utm.inventory) == 2
-        assert not utm.inventory[0].infinite
-        assert utm.inventory[1].infinite
-        assert utm.inventory[1].resref == "g_i_drdltplat002"
+        assert len(utm.inventory) == 2, f"Expected 2, got {len(utm.inventory)}"
+        assert not utm.inventory[0].infinite, f"Expected False, got '{utm.inventory[0].infinite}'"
+        assert utm.inventory[1].infinite, f"Expected True, got '{utm.inventory[1].infinite}'"
+        assert utm.inventory[1].resref == ResRef("g_i_drdltplat002"), f"Expected ResRef('g_i_drdltplat002'), got '{utm.inventory[1].resref}'"
 
 
 if __name__ == "__main__":

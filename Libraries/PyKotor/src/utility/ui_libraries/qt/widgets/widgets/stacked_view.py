@@ -73,7 +73,7 @@ class DynamicStackedView(QStackedWidget):
         if common_selection_model is None:
             self.common_selection_model = QItemSelectionModel(first_view.model())
         else:
-            self.common_selection_model: QItemSelectionModel = common_selection_model
+            self.common_selection_model = common_selection_model
         for widget in self.all_widgets():
             actual_view: QAbstractItemView = self.get_actual_view(widget)
             if actual_view:
@@ -117,6 +117,12 @@ class DynamicStackedView(QStackedWidget):
     ) -> None:
         for view in self.all_views():
             view.setModel(model)
+        
+        # After setting the model, create a new common selection model
+        # because the old one is tied to the old model
+        self.common_selection_model = QItemSelectionModel(model)
+        for view in self.all_views():
+            view.setSelectionModel(self.common_selection_model)
 
     def current_view(self) -> QAbstractItemView | None:
         current_widget: QWidget | None = self.currentWidget()

@@ -9,7 +9,7 @@ import struct
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from loggerplus import RobustLogger
 
@@ -910,6 +910,29 @@ class RawBinaryWriter(ABC):
         return RawBinaryWriterBytearray(data)
 
     @classmethod
+    def to_stream(
+        cls,
+        stream: io.BufferedIOBase | io.RawIOBase,
+        offset: int = 0,
+    ) -> RawBinaryWriterFile:
+        """Returns a new BinaryWriter backed by the given binary stream.
+
+        Args:
+        ----
+            stream: The binary stream to write to.
+            offset: Byte offset within the stream to begin writing from.
+
+        Returns:
+        -------
+            A new BinaryWriter instance.
+        """
+        if not isinstance(stream, (io.BufferedIOBase, io.RawIOBase)):
+            msg = "Stream must be a buffered or raw binary IO object."
+            raise TypeError(msg)
+        validated_stream = cast(io.BufferedIOBase | io.RawIOBase, stream)
+        return RawBinaryWriterFile(validated_stream, offset)
+
+    @classmethod
     def to_auto(
         cls,
         source: TARGET_TYPES,
@@ -921,7 +944,7 @@ class RawBinaryWriter(ABC):
         if isinstance(source, (bytes, memoryview)):  # is immutable binary data
             return cls.to_bytearray(bytearray(source))
         if isinstance(source, RawBinaryWriterFile):
-            return RawBinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
+            return RawBinaryWriterFile(source._stream, source._offset)  # noqa: SLF001
         if isinstance(source, RawBinaryWriterBytearray):
             return RawBinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
         if isinstance(source, (io.RawIOBase, io.BufferedIOBase, mmap.mmap)):
@@ -1284,7 +1307,7 @@ class RawBinaryWriterFile(RawBinaryWriter):
         offset: int = 0,
     ):
         self._stream: io.BufferedIOBase | io.RawIOBase = stream
-        self.offset: int = offset  # FIXME(th3w1zard1): rename to _offset like all the other classes in this file.
+        self._offset: int = offset  # FIXME(th3w1zard1): rename to _offset like all the other classes in this file.
         self.auto_close: bool = True
 
         self._stream.seek(offset)
@@ -1356,7 +1379,7 @@ class RawBinaryWriterFile(RawBinaryWriter):
         ----
             position: The byte index into stream.
         """
-        self._stream.seek(position + self.offset)
+        self._stream.seek(position + self._offset)
 
     def end(
         self,
@@ -1373,7 +1396,7 @@ class RawBinaryWriterFile(RawBinaryWriter):
         -------
             The byte offset.
         """
-        return self._stream.tell() - self.offset
+        return self._stream.tell() - self._offset
 
     def write_uint8(
         self,
@@ -1586,7 +1609,7 @@ class RawBinaryWriterFile(RawBinaryWriter):
 
     def write_bytes(
         self,
-        value: bytes,
+        value: bytes | bytearray,
     ):
         """Writes the specified bytes to the stream.
 
@@ -2064,7 +2087,7 @@ class RawBinaryWriterBytearray(RawBinaryWriter):
 
     def write_bytes(
         self,
-        value: bytes,
+        value: bytes | bytearray,
     ):
         """Writes the specified bytes to the stream.
 
@@ -2126,6 +2149,19 @@ class RawBinaryWriterBytearray(RawBinaryWriter):
             value = value[:string_length]
 
         self._encode_val_and_update_position(value, encoding, errors)
+
+    def write_terminated_string(
+        self,
+        value: str,
+        encoding: str | None = "windows-1252",
+        errors: str = "strict",
+    ):
+        """Writes the specified string to the stream with a terminating null character.
+        """
+        encoded: bytes = value.encode(encoding or "windows-1252", errors=errors)
+        self._ba[self._position : self._position + len(encoded)] = encoded
+        self._ba[self._position + len(encoded)] = 0
+        self._position += len(encoded) + 1
 
     def write_line(
         self,

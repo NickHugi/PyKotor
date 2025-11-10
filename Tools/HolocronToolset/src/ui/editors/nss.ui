@@ -148,9 +148,19 @@
                                         <widget class="QPlainTextEdit" name="outputEdit">
                                             <property name="font">
                                                 <font>
-                                                    <family>Lucida Console</family>
+                                                    <family>Consolas</family>
                                                     <pointsize>10</pointsize>
                                                 </font>
+                                            </property>
+                                            <property name="styleSheet">
+                                                <string notr="true">QPlainTextEdit {
+    background-color: #1e1e1e;
+    color: #cccccc;
+    border: none;
+    padding: 8px;
+    selection-background-color: #264f78;
+    selection-color: #ffffff;
+}</string>
                                             </property>
                                             <property name="cursor" stdset="0">
                                                 <cursorShape>IBeamCursor</cursorShape>
@@ -163,6 +173,9 @@
                                             </property>
                                             <property name="readOnly">
                                                 <bool>true</bool>
+                                            </property>
+                                            <property name="lineWrapMode">
+                                                <enum>QPlainTextEdit::WidgetWidth</enum>
                                             </property>
                                             <property name="placeholderText">
                                                 <string>Important errors and logs will appear here.</string>

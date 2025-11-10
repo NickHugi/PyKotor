@@ -66,7 +66,15 @@ class TXTEditor(Editor):
         self.ui.textEdit.setPlainText(decode_bytes_with_fallbacks(data))
 
     def build(self) -> tuple[bytes, bytes]:
-        return self.ui.textEdit.toPlainText().replace("\r\n", os.linesep).replace("\n", os.linesep).encode(), b""
+        text = self.ui.textEdit.toPlainText().replace("\r\n", os.linesep).replace("\n", os.linesep)
+        # Encode with proper error handling
+        try:
+            return text.encode("utf-8"), b""
+        except UnicodeEncodeError:
+            try:
+                return text.encode("windows-1252", errors="replace"), b""
+            except UnicodeEncodeError:
+                return text.encode("latin-1", errors="replace"), b""
 
     def new(self):
         super().new()

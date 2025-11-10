@@ -35,7 +35,7 @@ class TLKJSONReader(ResourceReader):
         self._tlk: TLK | None = None
 
     @autoclose
-    def load(self) -> TLK:
+    def load(self, *, auto_close: bool = True) -> TLK:  # noqa: FBT001, FBT002, ARG002
         self._tlk = TLK()
         self._json = json.loads(decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size())))
 
@@ -59,7 +59,7 @@ class TLKJSONWriter(ResourceWriter):
         self._json: TLKJSONDict = {"strings": []}
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         for stringref, entry in self._tlk:
             string: TLKStringEntry = {
                 "_index": str(stringref),

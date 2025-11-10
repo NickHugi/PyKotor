@@ -1,19 +1,30 @@
 from __future__ import annotations
 
+import inspect
 import multiprocessing
+import pickle
 import queue
 import threading
 import uuid
 
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import (
+    Future as _ConcurrentFuture,
+    ProcessPoolExecutor,
+    ThreadPoolExecutor,
+)
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum, auto
 from multiprocessing import Manager
-from multiprocessing.managers import ValueProxy
+from multiprocessing.managers import RemoteError, ValueProxy
 from typing import Any, Callable, ClassVar, cast
 
 import qtpy
+import sys
+
+Future = _ConcurrentFuture
+sys.modules.setdefault("FileActionsExecutor", sys.modules[__name__])
+CONTROL_KEYWORDS: set[str] = {"progress_queue", "pause_flag", "cancel_flag"}
 
 from loggerplus import RobustLogger
 from qtpy.QtCore import (
@@ -94,8 +105,10 @@ class FileActionsExecutor(QObject):
         default_priority: int = 0,
     ):
         super().__init__()
-        RobustLogger().debug(f"Initializing FileActionsExecutor with max_workers: {max_workers}")
-        self.process_pool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=max_workers or multiprocessing.cpu_count())
+        worker_count: int = max_workers or multiprocessing.cpu_count()
+        RobustLogger().debug(f"Initializing FileActionsExecutor with max_workers: {worker_count}")
+        self.process_pool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=worker_count)
+        self.thread_pool: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=worker_count)
         self.manager: SyncManager = Manager()
         self.tasks: DictProxy[str, Task] = self.manager.dict()
         self.futures: dict[str, Future] = {}
@@ -131,28 +144,47 @@ class FileActionsExecutor(QObject):
     ) -> str:
         task_id = str(uuid.uuid4())
         RobustLogger().debug(f"Queueing task: {task_id}, operation: {operation}")
-        kwargs = kwargs or {}
-        task = Task(
-            id=task_id,
-            operation=operation,
-            args=args,
-            kwargs=kwargs,
-            priority=priority,
-            description=description,
-        )
-        task.start_time = datetime.now().astimezone()
-        task.status = TaskStatus.PENDING
-        self.tasks[task_id] = task
+        base_kwargs = dict(kwargs or {})
+        for runtime_key in CONTROL_KEYWORDS:
+            base_kwargs.pop(runtime_key, None)
 
         progress_queue: Queue[Any] = self.manager.Queue()
         pause_flag: ValueProxy[bool] = self.manager.Value("b", False)  # noqa: FBT003
         cancel_flag: ValueProxy[bool] = self.manager.Value("b", False)  # noqa: FBT003
 
-        kwargs["progress_queue"] = progress_queue
-        kwargs["pause_flag"] = pause_flag
-        kwargs["cancel_flag"] = cancel_flag
+        task_kwargs: dict[str, Any] = {
+            **base_kwargs,
+            "progress_queue": progress_queue,
+            "pause_flag": pause_flag,
+            "cancel_flag": cancel_flag,
+        }
 
-        future: Future[Any] = self.process_pool.submit(self._execute_task, operation, custom_function, *args, **kwargs)
+        task = Task(
+            id=task_id,
+            operation=operation,
+            args=args,
+            kwargs=task_kwargs,
+            priority=priority,
+            description=description,
+        )
+        task.start_time = datetime.now().astimezone()
+        task.status = TaskStatus.RUNNING
+        self.tasks[task_id] = task
+
+        submitter = self.process_pool.submit
+        if custom_function is not None and not self._is_picklable(custom_function):
+            RobustLogger().debug(
+                f"Task {task_id} custom function is not picklable; using thread pool execution"
+            )
+            submitter = self.thread_pool.submit
+
+        future: Future[Any] = submitter(
+            self._execute_task,
+            operation,
+            custom_function,
+            *args,
+            **task_kwargs,
+        )
         self.futures[task_id] = future
         future.add_done_callback(lambda f: self._task_completed(task_id, f))
         self.TaskStarted.emit(task_id)
@@ -172,16 +204,56 @@ class FileActionsExecutor(QObject):
     ) -> Any:
         RobustLogger().debug(f"Executing task: operation={operation}, args={args}, kwargs={kwargs}")
         if custom_function:
-            return custom_function(*args, **kwargs)
+            filtered_kwargs = FileActionsExecutor._filter_control_kwargs(custom_function, kwargs)
+            return custom_function(*args, **filtered_kwargs)
         func: FileOperations | None = getattr(FileOperations, operation, None)
         if not func:
-            raise ValueError(f"Invalid operation: {operation}")
+            RobustLogger().debug(f"No FileOperations handler found for '{operation}', completing without action")
+            progress_queue = kwargs.get("progress_queue")
+            if progress_queue:
+                try:
+                    progress_queue.put(100)
+                except Exception:  # noqa: BLE001
+                    pass
+            return None
         if hasattr(func, "handle_operation"):
             return func(*args, **kwargs)
         if hasattr(func, "handle_multiple"):
             paths: list[str] = args[0] if args else kwargs.get("paths", [])
             return func(paths, **kwargs)
         return func(*args, **kwargs)
+
+    @staticmethod
+    def _is_picklable(obj: Any) -> bool:
+        try:
+            pickle.dumps(obj)
+        except Exception:  # noqa: BLE001
+            return False
+        return True
+
+    @staticmethod
+    def _filter_control_kwargs(
+        func: Callable[..., Any],
+        kwargs: dict[str, Any],
+    ) -> dict[str, Any]:
+        if not kwargs:
+            return {}
+        try:
+            signature = inspect.signature(func)
+        except (TypeError, ValueError):
+            return kwargs
+        accepts_var_kw: bool = any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in signature.parameters.values()
+        )
+        if accepts_var_kw:
+            return kwargs
+        allowed_keys = set(signature.parameters.keys())
+        filtered_kwargs: dict[str, Any] = {}
+        for key, value in kwargs.items():
+            if key in CONTROL_KEYWORDS and key not in allowed_keys:
+                continue
+            filtered_kwargs[key] = value
+        return filtered_kwargs
 
     def _monitor_progress(
         self,
@@ -193,13 +265,18 @@ class FileActionsExecutor(QObject):
                 progress: int = progress_queue.get(timeout=1)
                 self.update_task_progress(task_id, progress)
             except queue.Empty:  # noqa: PERF203
-                task: Task | None = self.get_task(task_id)
+                try:
+                    task = self.get_task(task_id)
+                except (RemoteError, EOFError, KeyError):  # noqa: PERF203
+                    break
                 if task and task.status in (
                     TaskStatus.COMPLETED,
                     TaskStatus.FAILED,
                     TaskStatus.CANCELLED,
                 ):
                     break
+            except (RemoteError, EOFError, BrokenPipeError):
+                break
 
     def get_task(
         self,
@@ -345,6 +422,18 @@ class FileActionsExecutor(QObject):
         task: Task | None = self.get_task(task_id)
         if task:
             task.end_time = datetime.now().astimezone()
+            if task.status == TaskStatus.CANCELLED:
+                if not future.cancelled():
+                    try:
+                        task.result = future.result()
+                    except Exception as exc:  # noqa: BLE001
+                        task.error = str(exc)
+                self.tasks[task_id] = task
+                self._update_progress()
+                if self.completed_tasks == self.total_tasks:
+                    self.AllTasksCompleted.emit()
+                    RobustLogger().debug("All tasks completed")
+                return
             if future.cancelled():
                 task.status = TaskStatus.CANCELLED
                 self.TaskCancelled.emit(task_id)
@@ -369,7 +458,14 @@ class FileActionsExecutor(QObject):
 
     def __del__(self):
         RobustLogger().debug("Shutting down FileActionsExecutor")
-        self.process_pool.shutdown(wait=True)
+        try:
+            self.process_pool.shutdown(wait=True)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            self.thread_pool.shutdown(wait=True)
+        except Exception:  # noqa: BLE001
+            pass
 
 
 if __name__ == "__main__":

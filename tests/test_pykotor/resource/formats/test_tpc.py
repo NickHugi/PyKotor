@@ -14,7 +14,7 @@ class TestTPCData(unittest.TestCase):
     def setUp(self):
         self.tpc = TPC()
         # Real DXT1 block data representing actual texture patterns
-        self.dxt1_red: bytes = bytes.fromhex('F800F800000000E4')  # Pure red DXT1 block
+        self.dxt1_red: bytes = bytes.fromhex('00F800F800000000')  # Pure red DXT1 block with pure red indices
         self.dxt1_gradient: bytes = bytes.fromhex('F80007E0A4A4A4A4')  # Red-green gradient
 
     def test_dxt1_decompression_accuracy(self):
@@ -23,7 +23,7 @@ class TestTPCData(unittest.TestCase):
         result: bytearray = dxt1_to_rgb(self.dxt1_red, width, height)
         
         # Verify correct decompression of red color (5:6:5 format)
-        self.assertEqual(result[0:3], b'\xf8\x00\x00')  # Red with 5-bit precision
+        self.assertEqual(bytes(result[0:3]), b'\xff\x00\x00')  # Red expanded from 5-bit precision
         self.assertEqual(len(result), width * height * 3)
 
     def test_dxt1_gradient_compression(self):

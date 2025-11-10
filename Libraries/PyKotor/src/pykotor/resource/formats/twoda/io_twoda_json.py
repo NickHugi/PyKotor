@@ -24,7 +24,7 @@ class TwoDAJSONReader(ResourceReader):
         self._twoda: TwoDA | None = None
 
     @autoclose
-    def load(self) -> TwoDA:
+    def load(self, *, auto_close: bool = True) -> TwoDA:  # noqa: FBT001, FBT002, ARG002
         self._twoda = TwoDA()
         self._json = json.loads(decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size())))
 
@@ -52,7 +52,7 @@ class TwoDAJSONWriter(ResourceWriter):
         self._json: dict[str, list] = {"rows": []}
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True) -> None:  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         for row in self._twoda:
             json_row: dict[str, str] = {"_id": row.label()}
             self._json["rows"].append(json_row)

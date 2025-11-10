@@ -31,7 +31,7 @@ from pykotor.resource.formats import gff, lip, ssf, tlk, twoda
 from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.formats.gff.gff_data import GFF, GFFContent
+from pykotor.resource.formats.gff.gff_data import GFF, GFFComparisonResult, GFFContent
 from pykotor.resource.formats.ncs.ncs_data import NCS
 from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da
@@ -473,7 +473,6 @@ def _add_missing_file_to_install(
             destination = "movies"
         else:
             destination = "Override"
-
         incremental_writer.add_install_file(destination, filename, file2_path)
 
 
@@ -827,7 +826,11 @@ class CachedFileComparison:
 
 
 def _compare_gff(a: bytes, b: bytes) -> bool:
-    return gff.read_gff(a).compare(gff.read_gff(b), lambda *_a, **_k: None)
+    left_gff = gff.read_gff(a)
+    right_gff = gff.read_gff(b)
+    comparison_result = GFFComparisonResult()
+    are_same = left_gff.compare(right_gff, lambda *_a, **_k: None, comparison_result=comparison_result)
+    return are_same and not comparison_result.has_field_differences()
 
 
 def _compare_2da(a: bytes, b: bytes) -> bool:
@@ -1314,7 +1317,11 @@ def diff_data(  # noqa: PLR0913
         # Extract just the filename from context.where to avoid duplication in field paths
         # If context.where is "swkotor\Override\journal.gui", use just "journal.gui" as the root path
         compare_path = PureWindowsPath(Path(str(context.where)).name)
-        if not (gff1 and gff2) or gff1.compare(gff2, log_func, compare_path):
+        comparison_result = GFFComparisonResult()
+        if not (gff1 and gff2):
+            return True
+        are_same = gff1.compare(gff2, log_func, compare_path, comparison_result=comparison_result)
+        if are_same and not comparison_result.has_field_differences():
             return True
 
         # Generate INI modifications if requested (log BEFORE final separator)
@@ -3155,6 +3162,19 @@ def compare_resources_n_way(  # noqa: PLR0913
                 # Determine destination - default to Override for safety
                 destination: str = "Override"
 
+                resource_path: Path | None = None
+                if incremental_writer is not None:
+                    try:
+                        base_path = path_info.get_path()
+                        if path_info.is_file:
+                            resource_path = base_path
+                        elif path_info.is_folder:
+                            resource_path = base_path / Path(resource.identifier)
+                        else:
+                            resource_path = None
+                    except Exception:  # noqa: BLE001
+                        resource_path = None
+
                 # Create context for patch creation
                 file1_rel: Path = Path(f"path{path_index}") / filename
                 file2_rel: Path = Path("missing") / filename
@@ -3167,10 +3187,17 @@ def compare_resources_n_way(  # noqa: PLR0913
                     filename,
                     log_func=log_func,
                     modded_data=resource.data,
-                    modded_path=path_info.get_path() if path_info.is_file else None,
+                    modded_path=resource_path,
                     context=context,
                     incremental_writer=incremental_writer,
                 )
+
+                if incremental_writer is not None and resource_path is not None:
+                    try:
+                        if hasattr(resource_path, "is_file") and resource_path.is_file():
+                            incremental_writer.add_install_file(destination, filename, resource_path)
+                    except Exception as exc:  # noqa: BLE001
+                        log_func(f"  [Warning] Failed to stage install file '{filename}': {universal_simplify_exception(exc)}")
 
             diff_count += 1
             is_same_result = False

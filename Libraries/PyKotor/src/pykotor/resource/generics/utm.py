@@ -44,26 +44,26 @@ class UTM:
         id: int = 5,
         can_buy: bool = False,
         can_sell: bool = False,
-        inventory: list[InventoryItem] = [],
+        inventory: list[InventoryItem] | None = None,
     ):
-        self.resref: ResRef = ResRef.from_blank()
-        self.comment: str = ""
-        self.tag: str = ""
+        self.resref: ResRef = resref
+        self.comment: str = comment
+        self.tag: str = tag
 
-        self.name: LocalizedString = LocalizedString.from_invalid()
+        self.name: LocalizedString = name
 
-        self.can_buy: bool = False
-        self.can_sell: bool = False
+        self.can_buy: bool = can_buy
+        self.can_sell: bool = can_sell
 
-        self.mark_up: int = 0
-        self.mark_down: int = 0
+        self.mark_up: int = mark_up
+        self.mark_down: int = mark_down
 
-        self.on_open: ResRef = ResRef.from_blank()
+        self.on_open: ResRef = on_open
 
-        self.inventory: list[InventoryItem] = []
+        self.inventory: list[InventoryItem] = list(inventory) if inventory is not None else []
 
         # Deprecated:
-        self.id: int = 5
+        self.id: int = id
 
 
 def construct_utm(

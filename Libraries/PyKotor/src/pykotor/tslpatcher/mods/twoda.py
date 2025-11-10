@@ -678,10 +678,10 @@ class Modifications2DA(PatcherModifications):
             return
 
         # Exceeding row count maximums will break the game.
-        twoda_row_limit = hardcapped_row_limits.get(self.saveas.lower())
+        twoda_row_limit = self.hardcapped_row_limits.get(self.saveas.lower())
         if twoda_row_limit is None:
             return
-        cur_row_count = len(twoda._rows)
+        cur_row_count = len(mutable_data._rows)
         rows_added = cur_row_count - twoda_row_limit
         if cur_row_count > twoda_row_limit:
             raise ValueError(f"{self.saveas} has a max row count of {twoda_row_limit}. Adding more will break the game. This mod attempted to add {rows_added} rows and have not been applied.")

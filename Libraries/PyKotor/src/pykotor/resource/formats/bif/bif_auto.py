@@ -42,7 +42,7 @@ def detect_bif(
             msg: str = f"Invalid BIF file type: {file_type}"
             raise ValueError(msg)
 
-        if file_version != "V1  ":
+        if file_version != "V1  " and file_version != "V1.1":
             msg: str = f"Unsupported BIF version: {file_version}"
             raise ValueError(msg)
 

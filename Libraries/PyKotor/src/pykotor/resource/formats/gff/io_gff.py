@@ -41,7 +41,7 @@ class GFFBinaryReader(ResourceReader):
         self._field_offset: int = 0
 
     @autoclose
-    def load(self) -> GFF:
+    def load(self, *, auto_close: bool = True) -> GFF:  # noqa: FBT001, FBT002, ARG002
         self._gff = GFF()
 
         file_type = self._reader.read_string(4)
@@ -192,7 +192,7 @@ class GFFBinaryWriter(ResourceWriter):
         self._field_count: int = 0
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         self._build_struct(self._gff.root)
 
         struct_offset = 56

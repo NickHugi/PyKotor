@@ -20,7 +20,7 @@ class SSFBinaryReader(ResourceReader):
         self._ssf: SSF | None = None
 
     @autoclose
-    def load(self) -> SSF:
+    def load(self, *, auto_close: bool = True) -> SSF:  # noqa: FBT001, FBT002, ARG002
         self._ssf = SSF()
 
         file_type = self._reader.read_string(4)
@@ -82,7 +82,7 @@ class SSFBinaryWriter(ResourceWriter):
         self._ssf: SSF = ssf
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         self._writer.write_string("SSF ")
         self._writer.write_string("V1.1")
         self._writer.write_uint32(12)

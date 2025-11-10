@@ -23,7 +23,7 @@ class TPCBMPWriter(ResourceWriter):
         self._tpc: TPC = tpc
 
     @autoclose
-    def write(self):  # TODO(th3w1zard1): Other layers???
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # TODO(th3w1zard1): Other layers???  # pyright: ignore[reportUnusedParameters]
         self._tpc.convert(TPCTextureFormat.RGB)
         mm: TPCMipmap = self._tpc.get(0, 0)
         file_size = 14 + 40 + (mm.width * mm.height * 3)

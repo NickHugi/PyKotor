@@ -35,6 +35,7 @@ from pykotor.gl.models.predefined_mdl import (
 )
 from pykotor.gl.models.read_mdl import gl_load_stitched_model
 from pykotor.gl.scene import Camera, RenderObject
+from pykotor.gl.scene.async_loader import AsyncResourceLoader, create_model_from_intermediate, create_texture_from_intermediate
 from pykotor.gl.shader import Texture
 from pykotor.resource.formats.lyt.lyt_data import LYT
 from pykotor.resource.formats.tpc.tpc_data import TPC
@@ -96,11 +97,16 @@ class SceneBase:
         self.selection: list[RenderObject] = []
         self._module: Module | None = module
         self.camera: Camera = Camera()
-        self.cursor: RenderObject = RenderObject("cursor")
 
         self.git: GIT | None = None
         self.layout: LYT | None = None
         self.clear_cache_buffer: list[ResourceIdentifier] = []
+        
+        # Async resource loading
+        self.async_loader: AsyncResourceLoader = AsyncResourceLoader()
+        self.async_loader.start()
+        self._pending_texture_futures: dict[str, Any] = {}  # name -> Future
+        self._pending_model_futures: dict[str, Any] = {}  # name -> Future
 
         self.hide_creatures: bool = False
         self.hide_placeables: bool = False
@@ -119,6 +125,15 @@ class SceneBase:
         self.show_cursor: bool = True
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().debug(f"Completed pre-initialize Scene{module_id_part}")
+    
+    def __del__(self):
+        """Cleanup async resources when scene is destroyed."""
+        try:
+            if hasattr(self, "async_loader") and self.async_loader is not None:
+                self.async_loader.shutdown(wait=False)
+                RobustLogger().debug("Scene cleanup: shutdown async loader")
+        except Exception:  # noqa: BLE001, S110
+            pass  # Don't raise exceptions in __del__
 
     def set_lyt(self, lyt: LYT):
         self.layout = lyt
@@ -294,6 +309,81 @@ class SceneBase:
             self.camera.x = point.x
             self.camera.y = point.y
             self.camera.z = point.z + 1.8
+    
+    def invalidate_cache(self):
+        """Invalidate resource caches and cancel pending async operations."""
+        # Cancel pending operations
+        for future in self._pending_texture_futures.values():
+            future.cancel()
+        for future in self._pending_model_futures.values():
+            future.cancel()
+        
+        self._pending_texture_futures.clear()
+        self._pending_model_futures.clear()
+        
+        # Clear caches (but keep predefined models/textures)
+        predefined_models = {"waypoint", "sound", "store", "entry", "encounter", "trigger", "camera", "empty", "cursor", "unknown"}
+        self.models = CaseInsensitiveDict({k: v for k, v in self.models.items() if k in predefined_models})
+        self.textures = CaseInsensitiveDict({"NULL": self.textures.get("NULL", Texture.from_color())})
+        
+        RobustLogger().debug("Invalidated resource cache")
+    
+    def poll_async_resources(self):
+        """Poll for completed async resource loading and create OpenGL objects.
+        
+        MUST be called from main thread with active OpenGL context.
+        This is non-blocking and processes only completed futures.
+        """
+        # Check completed texture futures
+        completed_textures: list[str] = []
+        for name, future in self._pending_texture_futures.items():
+            if future.done():
+                try:
+                    resource_name, intermediate, error = future.result()
+                    if error:
+                        RobustLogger().warning(f"Async texture load failed for '{resource_name}': {error}")
+                        self.textures[resource_name] = Texture.from_color(255, 0, 255)  # Magenta placeholder
+                    elif intermediate:
+                        self.textures[resource_name] = create_texture_from_intermediate(intermediate)
+                        RobustLogger().debug(f"Async loaded texture: {resource_name}")
+                    completed_textures.append(name)
+                except Exception:  # noqa: BLE001
+                    RobustLogger().exception(f"Error processing completed texture future for '{name}'")
+                    self.textures[name] = Texture.from_color(255, 0, 255)
+                    completed_textures.append(name)
+        
+        for name in completed_textures:
+            del self._pending_texture_futures[name]
+        
+        # Check completed model futures
+        completed_models: list[str] = []
+        for name, future in self._pending_model_futures.items():
+            if future.done():
+                try:
+                    resource_name, intermediate, error = future.result()
+                    if error:
+                        RobustLogger().warning(f"Async model load failed for '{resource_name}': {error}")
+                        # Load empty model as fallback
+                        self.models[resource_name] = gl_load_stitched_model(
+                            self,  # pyright: ignore[reportArgumentType]
+                            BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+                            BinaryReader.from_bytes(EMPTY_MDX_DATA),
+                        )
+                    elif intermediate:
+                        self.models[resource_name] = create_model_from_intermediate(self, intermediate)
+                        RobustLogger().debug(f"Async loaded model: {resource_name}")
+                    completed_models.append(name)
+                except Exception:  # noqa: BLE001
+                    RobustLogger().exception(f"Error processing completed model future for '{name}'")
+                    self.models[name] = gl_load_stitched_model(
+                        self,  # pyright: ignore[reportArgumentType]
+                        BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+                        BinaryReader.from_bytes(EMPTY_MDX_DATA),
+                    )
+                    completed_models.append(name)
+        
+        for name in completed_models:
+            del self._pending_model_futures[name]
 
     def texture(
         self,
@@ -301,8 +391,25 @@ class SceneBase:
         *,
         lightmap: bool = False,
     ) -> Texture:
+        # Already cached?
         if name in self.textures:
             return self.textures[name]
+        
+        # Already loading?
+        if name in self._pending_texture_futures:
+            # Return placeholder while loading
+            placeholder = Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
+            return placeholder
+        
+        # Start async loading if installation available
+        if self.installation is not None and self.async_loader.io_pool is not None:
+            future = self.async_loader.load_texture_async(name, self._module, self.installation)
+            self._pending_texture_futures[name] = future
+            RobustLogger().debug(f"Started async loading for texture: {name}")
+            # Return gray placeholder immediately
+            return Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
+        
+        # Fallback to synchronous loading (e.g., if process pools unavailable)
         type_name: Literal["lightmap", "texture"] = "lightmap" if lightmap else "texture"
         tpc: TPC | None = None
         try:
@@ -331,58 +438,86 @@ class SceneBase:
         self,
         name: str,
     ) -> Model:
-        mdl_data: bytes = EMPTY_MDL_DATA
-        mdx_data: bytes = EMPTY_MDX_DATA
-
-        if name not in self.models:
-            if name == "waypoint":
-                mdl_data = WAYPOINT_MDL_DATA
-                mdx_data = WAYPOINT_MDX_DATA
-            elif name == "sound":
-                mdl_data = SOUND_MDL_DATA
-                mdx_data = SOUND_MDX_DATA
-            elif name == "store":
-                mdl_data = STORE_MDL_DATA
-                mdx_data = STORE_MDX_DATA
-            elif name == "entry":
-                mdl_data = ENTRY_MDL_DATA
-                mdx_data = ENTRY_MDX_DATA
-            elif name == "encounter":
-                mdl_data = ENCOUNTER_MDL_DATA
-                mdx_data = ENCOUNTER_MDX_DATA
-            elif name == "trigger":
-                mdl_data = TRIGGER_MDL_DATA
-                mdx_data = TRIGGER_MDX_DATA
-            elif name == "camera":
-                mdl_data = CAMERA_MDL_DATA
-                mdx_data = CAMERA_MDX_DATA
-            elif name == "empty":
-                mdl_data = EMPTY_MDL_DATA
-                mdx_data = EMPTY_MDX_DATA
-            elif name == "cursor":
-                mdl_data = CURSOR_MDL_DATA
-                mdx_data = CURSOR_MDX_DATA
-            elif name == "unknown":
-                mdl_data, mdx_data = UNKNOWN_MDL_DATA, UNKNOWN_MDX_DATA
-            elif self.installation is not None:
-                capsules: list[ModulePieceResource] = [] if self._module is None else self.module.capsules()
-                mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
-                mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
-                if mdl_search is not None and mdx_search is not None:
-                    mdl_data = mdl_search.data
-                    mdx_data = mdx_search.data
-
+        # Already cached?
+        if name in self.models:
+            return self.models[name]
+        
+        # Special/predefined models - load synchronously
+        predefined_models = {
+            "waypoint": (WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA),
+            "sound": (SOUND_MDL_DATA, SOUND_MDX_DATA),
+            "store": (STORE_MDL_DATA, STORE_MDX_DATA),
+            "entry": (ENTRY_MDL_DATA, ENTRY_MDX_DATA),
+            "encounter": (ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA),
+            "trigger": (TRIGGER_MDL_DATA, TRIGGER_MDX_DATA),
+            "camera": (CAMERA_MDL_DATA, CAMERA_MDX_DATA),
+            "empty": (EMPTY_MDL_DATA, EMPTY_MDX_DATA),
+            "cursor": (CURSOR_MDL_DATA, CURSOR_MDX_DATA),
+            "unknown": (UNKNOWN_MDL_DATA, UNKNOWN_MDX_DATA),
+        }
+        
+        if name in predefined_models:
+            mdl_data, mdx_data = predefined_models[name]
             try:
                 mdl_reader: BinaryReader = BinaryReader.from_bytes(mdl_data, 12)
                 mdx_reader: BinaryReader = BinaryReader.from_bytes(mdx_data)
                 model: Model = gl_load_stitched_model(self, mdl_reader, mdx_reader)  # pyright: ignore[reportArgumentType]
+                self.models[name] = model
+                return model
             except Exception:  # noqa: BLE001
-                RobustLogger().warning(f"Could not load model '{name}'.")
-                model = gl_load_stitched_model(
+                RobustLogger().exception(f"Could not load predefined model '{name}'.")
+                # Fall through to empty model
+        
+        # Already loading?
+        if name in self._pending_model_futures:
+            # Return empty model placeholder while loading
+            if "empty" not in self.models:
+                empty_model = gl_load_stitched_model(
                     self,  # pyright: ignore[reportArgumentType]
                     BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
                     BinaryReader.from_bytes(EMPTY_MDX_DATA),
                 )
+                self.models["empty"] = empty_model
+            return self.models["empty"]
+        
+        # Start async loading if installation available
+        if self.installation is not None and self.async_loader.io_pool is not None:
+            future = self.async_loader.load_model_async(name, self._module, self.installation)
+            self._pending_model_futures[name] = future
+            RobustLogger().debug(f"Started async loading for model: {name}")
+            # Return empty model immediately as placeholder
+            if "empty" not in self.models:
+                empty_model = gl_load_stitched_model(
+                    self,  # pyright: ignore[reportArgumentType]
+                    BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+                    BinaryReader.from_bytes(EMPTY_MDX_DATA),
+                )
+                self.models["empty"] = empty_model
+            return self.models["empty"]
+        
+        # Fallback to synchronous loading
+        mdl_data: bytes = EMPTY_MDL_DATA
+        mdx_data: bytes = EMPTY_MDX_DATA
+        
+        if self.installation is not None:
+            capsules: list[ModulePieceResource] = [] if self._module is None else self.module.capsules()
+            mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
+            mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
+            if mdl_search is not None and mdx_search is not None:
+                mdl_data = mdl_search.data
+                mdx_data = mdx_search.data
 
-            self.models[name] = model
-        return self.models[name]
+        try:
+            mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
+            mdx_reader = BinaryReader.from_bytes(mdx_data)
+            model = gl_load_stitched_model(self, mdl_reader, mdx_reader)  # pyright: ignore[reportArgumentType]
+        except Exception:  # noqa: BLE001
+            RobustLogger().warning(f"Could not load model '{name}'.")
+            model = gl_load_stitched_model(
+                self,  # pyright: ignore[reportArgumentType]
+                BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+                BinaryReader.from_bytes(EMPTY_MDX_DATA),
+            )
+
+        self.models[name] = model
+        return model

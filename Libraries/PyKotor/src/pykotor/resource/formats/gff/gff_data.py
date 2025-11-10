@@ -240,6 +240,10 @@ class GFFComparisonResult:
     def is_identical(self) -> bool:
         return not (self.struct_id_mismatches or self.field_count_mismatches or self.value_mismatches)
 
+    def has_field_differences(self) -> bool:
+        """Return True if any extra/missing/mismatched field stats were recorded."""
+        return any(self.field_stats.get(category) for category in ("missing", "extra", "mismatched"))
+
     def add_field_stat(self, category: str, field_name: str) -> None:
         """Increment the count for a field in a given category."""
         self.field_stats[category][field_name] = self.field_stats[category].get(field_name, 0) + 1
@@ -307,6 +311,7 @@ class GFF(ComparableMixin):
         log_func: Callable = print,
         path: PureWindowsPath | None = None,
         ignore_default_changes: bool = False,  # noqa: FBT001, FBT002
+        comparison_result: GFFComparisonResult | None = None,
     ) -> bool:
         """Compare two GFF objects.
 
@@ -339,7 +344,8 @@ class GFF(ComparableMixin):
             log_func("")
             is_same = False
             return is_same
-        return self.root.compare(other.root, log_func, path, ignore_default_changes)
+        comparison_result = comparison_result or GFFComparisonResult()
+        return self.root.compare(other.root, log_func, path, ignore_default_changes, comparison_result=comparison_result)
 
 
 class _GFFField:
@@ -1611,7 +1617,7 @@ class GFFList(ComparableMixin):
         # Build content-based lookup to detect moved/reordered structs
         def _hashable_value(value: Any) -> Any:
             """Convert a GFF field value into a hashable, comparable representation."""
-            from pykotor.common.geometry import Vector3, Vector4  # Local import to avoid circular deps
+            from utility.common.geometry import Vector3, Vector4  # Local import to avoid circular deps
             from pykotor.common.language import LocalizedString
             from pykotor.common.misc import ResRef
             if value is None or isinstance(value, (int, float, str, bool, bytes)):
@@ -1688,6 +1694,8 @@ class GFFList(ComparableMixin):
 
         if len1 != len2:
             log_func(f"GFFList size mismatch at '{current_path}': Old has {len1} structs, New has {len2} structs (diff: {len2 - len1:+d})")
+            if comparison_result is not None:
+                comparison_result.add_field_count_mismatch(str(current_path), len1, len2)
 
         # Report added structs (in new file only, by content)
         if added_keys:
@@ -1703,6 +1711,8 @@ class GFFList(ComparableMixin):
                     log_func("")
                     reported_indices_new.add(idx)
             is_same_result = False
+            if comparison_result is not None:
+                comparison_result.add_field_stat("extra", str(current_path))
 
         # Report removed structs (in old file only, by content)
         if removed_keys:
@@ -1718,6 +1728,8 @@ class GFFList(ComparableMixin):
                     log_func("")
                     reported_indices_old.add(idx)
             is_same_result = False
+            if comparison_result is not None:
+                comparison_result.add_field_stat("missing", str(current_path))
 
         # Detect moved/reordered structs (same content, different index)
         moved_count = 0
@@ -1741,6 +1753,8 @@ class GFFList(ComparableMixin):
         if moved_count > 0:
             log_func("")
             is_same_result = False
+            if comparison_result is not None:
+                comparison_result.add_field_stat("mismatched", str(current_path))
 
         # Check for structs at same index that have different content (genuine modifications)
         modified_count = 0
@@ -1764,7 +1778,13 @@ class GFFList(ComparableMixin):
                 log_func(f"  [{idx}] Old: Struct#{old_struct.struct_id}")
                 log_func(f"  [{idx}] New: Struct#{new_struct.struct_id}")
                 # Do detailed comparison of the structs
-                if not old_struct.compare(new_struct, log_func, current_path / str(idx), ignore_default_changes):
+                if not old_struct.compare(
+                    new_struct,
+                    log_func,
+                    current_path / str(idx),
+                    ignore_default_changes,
+                    comparison_result=comparison_result,
+                ):
                     is_same_result = False
                 reported_indices_old.add(idx)
                 reported_indices_new.add(idx)
@@ -1779,8 +1799,17 @@ class GFFList(ComparableMixin):
             new_struct = other[idx]
 
             # These should be identical at the top level, but check nested structures
-            if not old_struct.compare(new_struct, log_func, current_path / str(idx), ignore_default_changes):
+            if not old_struct.compare(
+                new_struct,
+                log_func,
+                current_path / str(idx),
+                ignore_default_changes,
+                comparison_result=comparison_result,
+            ):
                 is_same_result = False
+
+        if modified_count > 0 and comparison_result is not None:
+            comparison_result.add_field_stat("mismatched", str(current_path))
 
         # Summary
         has_differences = bool(added_keys or removed_keys or moved_count or modified_count)

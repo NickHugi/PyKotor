@@ -12,7 +12,7 @@ from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QCursor
 from qtpy.QtWidgets import QOpenGLWidget
 
-from pykotor.common.geometry import Vector2
+from utility.common.geometry import Vector2
 from pykotor.common.stream import BinaryReader
 from pykotor.gl import vec3
 from pykotor.gl.models.read_mdl import gl_load_mdl

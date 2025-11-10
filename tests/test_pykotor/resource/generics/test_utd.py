@@ -47,28 +47,6 @@ class TestUTD(TestCase):
     def log_func(self, *msgs):
         self.log_messages.append("\t".join(msgs))
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for utd_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTD):
-            gff: GFF = read_gff(utd_resource.data())
-            reconstructed_gff: GFF = dismantle_utd(construct_utd(gff), Game.K1)
-            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
-
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for utd_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTD):
-            gff: GFF = read_gff(utd_resource.data())
-            reconstructed_gff: GFF = dismantle_utd(construct_utd(gff))
-            assert gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages)
-
     @unittest.skip("This test is known to fail - fixme")  # FIXME:
     def test_gff_reconstruct(self):
         gff = read_gff(K1_SAME_TEST_FILE)

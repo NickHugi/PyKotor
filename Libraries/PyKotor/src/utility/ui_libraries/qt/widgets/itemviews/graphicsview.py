@@ -12,6 +12,10 @@ if TYPE_CHECKING:
 
 
 class RobustGraphicsView(RobustAbstractItemView, QGraphicsView):
+    def __new__(cls, *args, **kwargs):
+        # For PySide6 compatibility with multiple inheritance
+        return QGraphicsView.__new__(cls)
+
     def __init__(
         self,
         parent: QWidget | None = None,

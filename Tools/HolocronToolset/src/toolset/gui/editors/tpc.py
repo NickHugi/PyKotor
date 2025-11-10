@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PIL import Image
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt  # type: ignore[attr-defined]
 from qtpy.QtGui import QIcon, QImage, QImageReader, QPixmap
 from qtpy.QtWidgets import (
     QAction,  # pyright: ignore[reportPrivateImportUsage]
@@ -98,7 +98,7 @@ class TPCEditor(Editor):
     def setup_navigation_buttons(self):
         layout = self.ui.scrollAreaWidgetContents.layout()
         assert isinstance(layout, (QVBoxLayout, QHBoxLayout))
-        if self._tpc.is_animated:
+        if self._tpc.is_animated or self._tpc.is_cube_map:
             hbox = QHBoxLayout()
             prev_button = QPushButton("Previous")
             next_button = QPushButton("Next")
@@ -117,7 +117,7 @@ class TPCEditor(Editor):
     def new(self):
         super().new()
 
-        self._tpc: TPC = TPC.from_blank()
+        self._tpc = TPC.from_blank()
         self.update_image()
 
     def load(
@@ -132,13 +132,14 @@ class TPCEditor(Editor):
         if restype in {ResourceType.TPC, ResourceType.TGA}:
             self._tpc = read_tpc(data, txi_source=Path(filepath).with_suffix(".txi"))
         else:
-            supported_formats: list[str] = [x.data().decode().strip().lstrip(".") for x in QImageReader.supportedImageFormats()]
+            supported_formats: list[str] = [x.data().decode().strip().lstrip(".") for x in QImageReader.supportedImageFormats()]  # pyright: ignore[reportGeneralTypeIssues]
             if restype.extension.lstrip(".") not in supported_formats:
                 warnings.warn(f"Unsupported image format: {restype.extension!r}", stacklevel=1)
             image: QImage = QImage.fromData(data)
             if image.isNull():
                 raise ValueError(f"Failed to load image data for resource of type {restype!r}")
             self._tpc.convert(TPCTextureFormat.from_qimage_format(image.format()))
+        self.current_frame = 0
         self.update_image()
 
     def build(self) -> tuple[bytes, bytes]:
@@ -176,35 +177,64 @@ class TPCEditor(Editor):
         self.update_image()
 
     def export_image(self):
-        file_path, _ = QFileDialog.getSaveFileName(self, "Export Image", "", "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)")
-        if not file_path:
+        file_path: str = ""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Image",
+            "",
+            "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;TGA (*.tga)",
+        )  # pyright: ignore[reportGeneralTypeIssues]
+        if not file_path or not file_path.strip():
+            print("User cancelled exporting the image to a path.")
             return
-        mm: TPCMipmap = self._tpc.get(0, 0)
-        image = Image.frombytes(self._tpc.format().to_pil_mode(), (mm.width, mm.height), mm.data)
+        layer_index = 0
+        if self._tpc.is_animated or self._tpc.is_cube_map:
+            layer_index = max(0, min(self.current_frame, len(self._tpc.layers) - 1))
+        mm: TPCMipmap = self._tpc.layers[layer_index].mipmaps[0].copy()
+        export_format = mm.tpc_format
+        if export_format == TPCTextureFormat.DXT1:
+            mm.convert(TPCTextureFormat.RGB)
+        elif export_format in (TPCTextureFormat.DXT3, TPCTextureFormat.DXT5, TPCTextureFormat.BGRA):
+            mm.convert(TPCTextureFormat.RGBA)
+        elif export_format == TPCTextureFormat.BGR:
+            mm.convert(TPCTextureFormat.RGB)
+        elif export_format == TPCTextureFormat.Greyscale:
+            mm.convert(TPCTextureFormat.RGBA)
+        image = Image.frombytes(mm.tpc_format.to_pil_mode(), (mm.width, mm.height), bytes(mm.data))
         image.save(file_path)
 
     def update_image(self):
-        tpc_format = self._tpc.format()
-        if tpc_format is TPCTextureFormat.DXT1:
-            tpc_format = TPCTextureFormat.RGB
-            self._tpc.convert(tpc_format)
-        elif tpc_format in (TPCTextureFormat.DXT3, TPCTextureFormat.DXT5):
-            tpc_format = TPCTextureFormat.RGBA
-            self._tpc.convert(tpc_format)
-        mm: TPCMipmap = self._tpc.get(0, 0)
+        if not self._tpc.layers or not self._tpc.layers[0].mipmaps:
+            return
+
+        layer_index: int = 0
+        if self._tpc.is_animated or self._tpc.is_cube_map:
+            layer_index = max(0, min(self.current_frame, len(self._tpc.layers) - 1))
+
+        mm: TPCMipmap = self._tpc.layers[layer_index].mipmaps[0].copy()
+        display_format = mm.tpc_format
+        if display_format == TPCTextureFormat.DXT1:
+            mm.convert(TPCTextureFormat.RGB)
+        elif display_format in (TPCTextureFormat.DXT3, TPCTextureFormat.DXT5, TPCTextureFormat.BGRA):
+            mm.convert(TPCTextureFormat.RGBA)
+        elif display_format == TPCTextureFormat.BGR:
+            mm.convert(TPCTextureFormat.RGB)
+        elif display_format == TPCTextureFormat.Greyscale:
+            mm.convert(TPCTextureFormat.RGBA)
+        target_format = mm.tpc_format
 
         image: QImage = QImage(
             bytes(mm.data),
             mm.width,
             mm.height,
-            tpc_format.to_qimage_format(),
+            target_format.to_qimage_format(),
         )
         image = image.mirrored(False, True)  # flip vertically.
 
         # Calculate new dimensions maintaining aspect ratio
         max_width, max_height = 640, 480
-        aspect_ratio: float = mm.width / mm.height
-        if mm.width / mm.height > max_width / max_height:
+        aspect_ratio: float = mm.width / mm.height if mm.height else 1.0
+        if mm.height and mm.width / mm.height > max_width / max_height:
             new_width = max_width
             new_height = int(new_width / aspect_ratio)
         else:
@@ -221,10 +251,11 @@ class TPCEditor(Editor):
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.textureImage.setScaledContents(True)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
+        self.setup_navigation_buttons()
         self.center_and_adjust_window()
 
-    def navigate_frames(self, direction):
-        num_frames = len(self._tpc.layers)
+    def navigate_frames(self, direction: int):
+        num_frames: int = len(self._tpc.layers)
         if num_frames > 0:
-            self.current_frame = (self.current_frame + direction) % num_frames
-            # TODO: ui code to move a slider or something.
+            self.current_frame = max(0, min(self.current_frame + direction, num_frames - 1))
+            self.update_image()

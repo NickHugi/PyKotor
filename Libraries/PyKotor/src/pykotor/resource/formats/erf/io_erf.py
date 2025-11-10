@@ -20,7 +20,7 @@ class ERFBinaryReader(ResourceReader):
         self._erf: ERF | None = None
 
     @autoclose
-    def load(self) -> ERF:
+    def load(self, *, auto_close: bool = True) -> ERF:  # noqa: FBT001, FBT002, ARG002
         """Load ERF file.
 
         Args:
@@ -105,7 +105,7 @@ class ERFBinaryWriter(ResourceWriter):
         self.erf: ERF = erf
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         entry_count: int = len(self.erf)
         offset_to_keys: int = ERFBinaryWriter.FILE_HEADER_SIZE
         offset_to_resources: int = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count

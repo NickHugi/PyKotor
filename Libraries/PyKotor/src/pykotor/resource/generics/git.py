@@ -30,7 +30,8 @@ if TYPE_CHECKING:
 
 def _iterate_gff_list(struct: GFFStruct, label: str) -> list[GFFStruct]:
     try:
-        return list(struct.get_list(label))
+        gff_list = struct.get_list(label)
+        return list([] if gff_list is None else gff_list)
     except KeyError:
         RobustLogger().debug(f"Missing list label encountered: {label=} struct_id={struct.struct_id}")
         return []

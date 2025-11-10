@@ -23,7 +23,7 @@ from utility.system.path import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Callable, Generator, Iterable
     from typing import Any, ClassVar
 
     from typing_extensions import Self
@@ -713,6 +713,69 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         if isinstance(result, int):
             print(f"result somehow an int: {result}")
         return str(result)
+
+    def _iter_caseaware_matches(
+        self,
+        matches: Iterable[os.PathLike | str | CaseAwarePath],
+    ) -> Generator[CaseAwarePath, None, None]:
+        for candidate in matches:
+            if isinstance(candidate, CaseAwarePath):
+                yield candidate
+                continue
+            yield type(self).get_case_sensitive_path(candidate)
+
+    def glob(
+        self,
+        pattern: str,
+        *,
+        case_sensitive: bool | None = None,
+        recurse_symlinks: bool | None = None,
+        **kwargs: Any,
+    ) -> Generator[CaseAwarePath, None, None]:
+        """Override glob to avoid wrapping pathlib internals that changed in Python 3.13.
+
+        Delegates to pathlib.Path.glob so the signature stays in sync with the stdlib,
+        then normalizes the resulting paths back into CaseAwarePath instances.
+        """
+        options: dict[str, Any] = dict(kwargs)
+        if case_sensitive is not None:
+            options["case_sensitive"] = case_sensitive
+        if recurse_symlinks is not None:
+            options["recurse_symlinks"] = recurse_symlinks
+
+        base_path = pathlib.Path(str(self))
+        try:
+            iterator = base_path.glob(pattern, **options)
+        except TypeError:
+            # Match pathlib's behaviour when unsupported keyword arguments are supplied.
+            if options:
+                raise
+            raise
+        return self._iter_caseaware_matches(iterator)
+
+    def rglob(
+        self,
+        pattern: str,
+        *,
+        case_sensitive: bool | None = None,
+        recurse_symlinks: bool | None = None,
+        **kwargs: Any,
+    ) -> Generator[CaseAwarePath, None, None]:
+        """Override rglob for compatibility with Python 3.13's _Globber changes."""
+        options: dict[str, Any] = dict(kwargs)
+        if case_sensitive is not None:
+            options["case_sensitive"] = case_sensitive
+        if recurse_symlinks is not None:
+            options["recurse_symlinks"] = recurse_symlinks
+
+        base_path = pathlib.Path(str(self))
+        try:
+            iterator = base_path.rglob(pattern, **options)
+        except TypeError:
+            if options:
+                raise
+            raise
+        return self._iter_caseaware_matches(iterator)
 
     def relative_to(
         self,

@@ -22,7 +22,7 @@ class WAVBinaryReader(ResourceReader):
         self._wav: WAV | None = None
 
     @autoclose
-    def load(self) -> WAV:
+    def load(self, *, auto_close: bool = True) -> WAV:  # noqa: FBT001, FBT002, ARG002
         """Load WAV file.
 
         Returns:
@@ -120,7 +120,7 @@ class WAVBinaryWriter(ResourceWriter):
         self.wav: WAV = wav
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True) -> None:  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         """Write WAV data to target.
 
         Processing Logic:

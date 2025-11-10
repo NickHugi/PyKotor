@@ -93,10 +93,12 @@ class RobustBaseWidget(QWidget if TYPE_CHECKING else object):
         *,
         settings_name: str | None = None,
     ):
+        def get_object_name():
+            return self.__class__.__name__
         self._settings_name: str = (
             settings_name
             and settings_name.strip()
-            or getattr(self, "objectName", lambda: self.__class__.__name__)()
+            or getattr(self, "objectName", get_object_name)()
         )
 
         self._settings_cache: dict[str, QSettings] = {}

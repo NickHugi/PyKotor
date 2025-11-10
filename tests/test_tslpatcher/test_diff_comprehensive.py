@@ -44,7 +44,7 @@ add_sys_path(pathlib.Path(__file__).parents[2] / "Tools" / "KotorDiff" / "src")
 
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.language import LocalizedString, Language, Gender
-from pykotor.common.geometry import Vector3, Vector4
+from utility.common.geometry import Vector3, Vector4
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFStruct, GFFList, read_gff, write_gff
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
@@ -177,7 +177,7 @@ class TestDataHelper:
         """
         ssf = SSF()
         for sound, strref in sound_mappings.items():
-            ssf.set(sound, strref)
+            ssf.set_data(sound, strref)
         return ssf
 
     @staticmethod
@@ -1033,7 +1033,7 @@ class TestIntegrationComprehensive(unittest.TestCase):
         spell_struct1 = GFFStruct(1)
         spell_struct1.set_uint16("Spell", 0)
         known_list._structs.append(spell_struct1)  # noqa: SLF001
-        spell_struct2 = GFFStruct(1)
+        spell_struct2 = GFFStruct(2)
         spell_struct2.set_uint16("Spell", 1)  # New spell
         known_list._structs.append(spell_struct2)  # noqa: SLF001
         class_struct.set_list("KnownList0", known_list)
@@ -1048,7 +1048,7 @@ class TestIntegrationComprehensive(unittest.TestCase):
         spell_struct1 = GFFStruct(1)
         spell_struct1.set_uint16("Spell", 0)
         known_list._structs.append(spell_struct1)  # noqa: SLF001
-        spell_struct2 = GFFStruct(1)
+        spell_struct2 = GFFStruct(2)
         spell_struct2.set_uint16("Spell", 1)  # New spell
         known_list._structs.append(spell_struct2)  # noqa: SLF001
         class_struct.set_list("KnownList0", known_list)

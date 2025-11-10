@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, Callable, Iterable
 
-from pykotor.common.geometry import Vector3, Vector4
+from utility.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.capsule import Capsule
@@ -1670,13 +1670,117 @@ class IncrementalTSLPatchDataWriter:
         self._next_2da_token_id += 1
         return token_id
 
+    def _create_addcolumn_2damemory_tokens(self) -> None:
+        """Create 2DAMEMORY tokens for AddColumn index_insert values that match GFF field values.
+
+        This implements cross-file token linking for AddColumn modifications:
+        1. Scans all AddColumn index_insert values
+        2. Finds GFF FieldValueConstant that match those values
+        3. Allocates 2DAMEMORY tokens and stores them in AddColumn.store_2da
+        4. Replaces GFF field values with FieldValue2DAMemory references
+
+        Example:
+            AddColumn: I1=42 (index_insert[1] = RowValueConstant("42"))
+            GFF:       CustomStat=42 (FieldValueConstant(42))
+            
+            After linking:
+            AddColumn: I1=42, 2DAMEMORY0=I1 (store_2da[0] = "I1")
+            GFF:       CustomStat=2DAMEMORY0 (FieldValue2DAMemory(0))
+        """
+        from pykotor.tslpatcher.mods.gff import FieldValue2DAMemory, FieldValueConstant, ModifyFieldGFF
+        from pykotor.tslpatcher.mods.twoda import AddColumn2DA, RowValueConstant
+
+        # Build a map of cell values -> list of (AddColumn, row_index) that have that value
+        # Format: {cell_value_string: [(add_column_modifier, row_index), ...]}
+        value_to_addcolumn_cells: dict[str, list[tuple[AddColumn2DA, str]]] = {}
+
+        for mod_2da in self.all_modifications.twoda:
+            for modifier in mod_2da.modifiers:
+                if not isinstance(modifier, AddColumn2DA):
+                    continue
+
+                # Scan index_insert for values
+                # Index-based inserts (I#)
+                for row_idx, row_value in modifier.index_insert.items():
+                    if not isinstance(row_value, RowValueConstant):
+                        continue
+
+                    cell_value_str = row_value.string
+                    store_key = f"I{row_idx}"
+                    if cell_value_str not in value_to_addcolumn_cells:
+                        value_to_addcolumn_cells[cell_value_str] = []
+                    value_to_addcolumn_cells[cell_value_str].append((modifier, store_key))
+
+                # Label-based inserts (Llabel)
+                for row_label, row_value in modifier.label_insert.items():
+                    if not isinstance(row_value, RowValueConstant):
+                        continue
+                    cell_value_str = row_value.string
+                    store_key = f"L{row_label}"
+                    if cell_value_str not in value_to_addcolumn_cells:
+                        value_to_addcolumn_cells[cell_value_str] = []
+                    value_to_addcolumn_cells[cell_value_str].append((modifier, store_key))
+
+        if not value_to_addcolumn_cells:
+            return  # No AddColumn values to link
+
+        # Scan all GFF modifications for matching field values
+        tokens_created = 0
+        for mod_gff in self.all_modifications.gff:
+            for gff_modifier in mod_gff.modifiers:
+                if not isinstance(gff_modifier, ModifyFieldGFF):
+                    continue
+
+                # Check if this field value matches any AddColumn cell value
+                if not isinstance(gff_modifier.value, FieldValueConstant):
+                    continue
+
+                # Convert field value to string for comparison
+                field_value_str = str(gff_modifier.value.stored)
+
+                if field_value_str not in value_to_addcolumn_cells:
+                    continue
+
+                # MATCH FOUND! Create token and link
+                # Use the first matching AddColumn cell (if multiple match the same value)
+                add_column_modifier, store_key = value_to_addcolumn_cells[field_value_str][0]
+
+                # Check if a token already exists for this value
+                existing_token_id = None
+                for token_id, store_value in add_column_modifier.store_2da.items():
+                    if store_value == store_key:
+                        existing_token_id = token_id
+                        break
+
+                if existing_token_id is None:
+                    # Allocate new token
+                    token_id = self._allocate_2da_token()
+
+                    # Store in AddColumn: 2DAMEMORY#=I{row_idx}
+                    # Note: store_2da for AddColumn uses string values, not RowValue objects
+                    add_column_modifier.store_2da[token_id] = store_key
+
+                    self.log_func(f"  [AddColumn Token] Created 2DAMEMORY{token_id}={store_key} for value '{field_value_str}'")
+                    tokens_created += 1
+                else:
+                    token_id = existing_token_id
+                    self.log_func(f"  [AddColumn Token] Reusing existing 2DAMEMORY{token_id}={store_key} for value '{field_value_str}'")
+
+                # Replace GFF field value with token reference
+                gff_modifier.value = FieldValue2DAMemory(token_id)
+                self.log_func(f"  [AddColumn Token] Replaced {mod_gff.sourcefile} {gff_modifier.path} = {field_value_str} with 2DAMEMORY{token_id}")
+
+        if tokens_created > 0:
+            self.log_func(f"  Created {tokens_created} AddColumn 2DAMEMORY token(s) with cross-file linking")
+
     def _replace_cells_with_2damemory_tokens(self) -> None:
         """Replace cell values with 2DAMEMORY token references when values match stored tokens.
 
         After all 2DA modifications are created, this method:
-        1. Processes modifiers in order, tracking which tokens are stored at each point
-        2. Replaces RowValueConstant values that match stored values with RowValue2DAMemory references
-        3. Only replaces with tokens that have been stored in previous modifiers (ensures proper ordering)
+        1. Creates tokens for AddColumn index_insert values that match GFF field values
+        2. Processes modifiers in order, tracking which tokens are stored at each point
+        3. Replaces RowValueConstant values that match stored values with RowValue2DAMemory references
+        4. Only replaces with tokens that have been stored in previous modifiers (ensures proper ordering)
 
         This ensures that when we store 2DAMEMORY0=RowIndex, any cell values that equal that row index
         will be written as `column=2DAMEMORY0` instead of `column=80`.
@@ -1689,6 +1793,9 @@ class IncrementalTSLPatchDataWriter:
             RowValueRowIndex,
             TargetType,
         )
+
+        # First, handle AddColumn token linking (must happen before processing other modifiers)
+        self._create_addcolumn_2damemory_tokens()
 
         # Track which tokens are available at each point (tokens that have been stored)
         # Format: {stored_value: token_id} - only includes tokens that have been stored so far
@@ -3934,6 +4041,13 @@ class IncrementalTSLPatchDataWriter:
         self.ini_path.write_text(new_content, encoding="utf-8")
         _log_verbose(f"Created {folder_section} section")
 
+    def _mark_install_list_dirty(self) -> None:
+        """Mark the InstallList portion of the INI as needing a rewrite."""
+        self._pending_ini_writes.add("install")
+        self._writes_since_last_flush += 1
+        if not self._batch_writes or self._writes_since_last_flush >= self._write_batch_size:
+            self._flush_pending_writes()
+
     def _add_to_install_folder(
         self,
         folder: str,
@@ -3943,10 +4057,16 @@ class IncrementalTSLPatchDataWriter:
 
         The InstallList will be written when the INI file is rewritten.
         """
+        _log_debug(f"Tracking install file '{filename}' for folder '{folder}'")
+        added: bool = False
         if folder not in self.install_folders:
             self.install_folders[folder] = []
         if filename not in self.install_folders[folder]:
             self.install_folders[folder].append(filename)
+            added = True
+
+        if added:
+            self._mark_install_list_dirty()
 
     def add_install_file(
         self,
@@ -3963,6 +4083,7 @@ class IncrementalTSLPatchDataWriter:
         """
         # Add to tracking
         self._add_to_install_folder(folder, filename)
+        _log_debug(f"add_install_file scheduled '{filename}' for folder '{folder}' (source={source_path})")
 
         # Copy file if source provided
         if source_path is not None:

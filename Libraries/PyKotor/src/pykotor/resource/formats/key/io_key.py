@@ -25,7 +25,7 @@ class KEYBinaryReader(ResourceReader):
         self.key: KEY = KEY()
 
     @autoclose
-    def load(self) -> KEY:
+    def load(self, *, auto_close: bool = True) -> KEY:  # noqa: FBT001, FBT002, ARG002
         """Load KEY data from source."""
         # Read signature
         self.key.file_type = self._reader.read_string(4)
@@ -97,7 +97,7 @@ class KEYBinaryWriter(ResourceWriter):
         self.key: KEY = key
 
     @autoclose
-    def write(self) -> None:
+    def write(self, *, auto_close: bool = True) -> None:  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         """Write KEY data to target."""
         self._write_header()
         self._write_file_table()

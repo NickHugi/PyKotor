@@ -27,7 +27,7 @@ class GFFTwineReader(ResourceReader):
         self._passage_map: dict[str, DLGEntry | DLGReply] = {}
 
     @autoclose
-    def load(self) -> DLG:
+    def load(self, *, auto_close: bool = True) -> DLG:  # noqa: FBT001, FBT002, ARG002
         """Load Twine story data into DLG format.
 
         Returns:
@@ -88,7 +88,7 @@ class GFFTwineWriter(ResourceWriter):
         self.xml_root: ET.Element = ET.Element("tw-storydata")
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         """Write the DLG data as a Twine story."""
         # Set story metadata
         self.xml_root.set("name", "Converted Dialog")

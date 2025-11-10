@@ -445,6 +445,7 @@ class TPC(ComparableMixin):
         self.layers: list[TPCLayer] = []
         self.is_animated: bool = False
         self.is_cube_map: bool = False
+        self.alpha_test: float = 1.0
 
     @classmethod
     def from_blank(cls) -> Self:

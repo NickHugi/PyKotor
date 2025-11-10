@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import sys
+import tempfile
 import unittest
 from unittest import TestCase
 
@@ -28,6 +29,7 @@ from pykotor.resource.formats.gff import (
     GFF,
     GFFBinaryReader,
     GFFXMLReader,
+    bytes_gff,
     read_gff,
     write_gff,
 )
@@ -38,6 +40,7 @@ XML_TEST_FILE = "tests/test_pykotor/test_files/test.gff.xml"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
 CORRUPT_BINARY_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.gff"
 CORRUPT_XML_TEST_FILE = "tests/test_pykotor/test_files/test_corrupted.gff.xml"
+GIT_TEST_FILE = "tests/test_pykotor/test_files/test.git"
 
 
 class TestGFF(TestCase):
@@ -58,6 +61,27 @@ class TestGFF(TestCase):
         write_gff(gff, data, ResourceType.GFF_XML)
         gff = read_gff(data)
         self.validate_io(gff)
+
+    def test_to_raw_data_simple_read_size_unchanged(self):
+        """Verify that converting a GFF to raw data preserves its byte length."""
+        original_data = pathlib.Path(BINARY_TEST_FILE).read_bytes()
+        gff = read_gff(original_data)
+
+        raw_data = bytes_gff(gff)
+
+        self.assertEqual(len(original_data), len(raw_data), "Size of raw data has changed.")
+
+    def test_write_to_file_valid_path_size_unchanged(self):
+        """Verify that writing a GFF to disk preserves the original byte length."""
+        original_size = pathlib.Path(GIT_TEST_FILE).stat().st_size
+        gff = read_gff(GIT_TEST_FILE)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = pathlib.Path(tmpdir).joinpath("test_copy.git")
+            write_gff(gff, output_path, ResourceType.GIT)
+
+            self.assertTrue(output_path.exists(), "GFF output file was not created.")
+            self.assertEqual(original_size, output_path.stat().st_size, "File size has changed.")
 
     def validate_io(self, gff: GFF):
         assert gff.root.get_uint8("uint8") == 255
@@ -80,14 +104,24 @@ class TestGFF(TestCase):
         assert gff.root.get_vector3("position") == Vector3(11, 22, 33)
 
         locstring = gff.root.get_locstring("locstring")
-        assert locstring.stringref == -1
-        assert len(locstring) == 2
-        assert locstring.get(Language.ENGLISH, Gender.MALE) == "male_eng"
-        assert locstring.get(Language.GERMAN, Gender.FEMALE) == "fem_german"
+        assert locstring is not None, "Locstring is None"
+        assert locstring.stringref == -1, f"Locstring stringref {locstring.stringref} is not -1"
+        assert len(locstring) == 2, f"Locstring length {len(locstring)} is not 2"
+        assert locstring.get(Language.ENGLISH, Gender.MALE) == "male_eng", "Locstring get(Language.ENGLISH, Gender.MALE) {locstring.get(Language.ENGLISH, Gender.MALE)} is not 'male_eng'"
+        assert locstring.get(Language.GERMAN, Gender.FEMALE) == "fem_german", "Locstring get(Language.GERMAN, Gender.FEMALE) {locstring.get(Language.GERMAN, Gender.FEMALE)} is not 'fem_german'"
 
-        assert gff.root.get_struct("child_struct").get_uint8("child_uint8") == 4
-        assert gff.root.get_list("list").at(0).struct_id == 1
-        assert gff.root.get_list("list").at(1).struct_id == 2
+        child_struct = gff.root.get_struct("child_struct")
+        assert child_struct is not None, "Child struct is None"
+        assert child_struct.get_uint8("child_uint8") == 4, f"Child struct get_uint8('child_uint8') {child_struct.get_uint8('child_uint8')} is not 4"
+        gff_list = gff.root.get_list("list")
+        assert gff_list is not None, "List is None"
+        gff_list_entry_0 = gff_list.at(0)
+        assert gff_list_entry_0 is not None, "List at(0) is None"
+        assert gff_list_entry_0.struct_id == 1, f"List at(0).struct_id {gff_list_entry_0.struct_id} is not 1"
+        gff_list_entry_1 = gff_list.at(1)
+        assert gff_list_entry_1 is not None, "List at(1) is None"
+        assert gff_list_entry_1.struct_id == 2, f"List at(1).struct_id {gff_list_entry_1.struct_id} is not 2"
+        assert len(gff_list) == 2, f"List length {len(gff_list)} is not 2"
 
     def test_read_raises(self):
         if os.name == "nt":

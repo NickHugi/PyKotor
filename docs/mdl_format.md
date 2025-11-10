@@ -4,55 +4,71 @@ This document provides a detailed description of the MDL/MDX file format used in
 
 ## Table of Contents
 
-1. [File Structure Overview](#file-structure-overview)
-2. [File Headers](#file-headers)
-   - [MDL File Header](#mdl-file-header)
-   - [Model Header](#model-header)
-   - [Geometry Header](#geometry-header)
-   - [Names Header](#names-header)
-   - [Animation Header](#animation-header)
-   - [Event Structure](#event-structure)
-3. [Node Structures](#node-structures)
-   - [Node Header](#node-header)
-   - [Trimesh Header](#trimesh-header)
-   - [Danglymesh Header](#danglymesh-header)
-   - [Skinmesh Header](#skinmesh-header)
-   - [Lightsaber Header](#lightsaber-header)
-   - [Light Header](#light-header)
-   - [Emitter Header](#emitter-header)
-   - [Reference Header](#reference-header)
-4. [Controllers](#controllers)
-   - [Controller Structure](#controller-structure)
-   - [Additional Controller Types](#additional-controller-types)
-5. [Node Types](#node-types)
-   - [Node Type Bitmasks](#node-type-bitmasks)
-   - [Common Node Type Combinations](#common-node-type-combinations)
-6. [MDX Data Format](#mdx-data-format)
-   - [MDX Data Bitmap Masks](#mdx-data-bitmap-masks)
-   - [Skin Mesh Specific Data](#skin-mesh-specific-data)
-7. [Vertex and Face Data](#vertex-and-face-data)
-   - [Vertex Structure](#vertex-structure)
-   - [Face Structure](#face-structure)
-8. [Vertex Data Processing](#vertex-data-processing)
-   - [Vertex Normal Calculation](#vertex-normal-calculation)
-   - [Tangent Space Calculation](#tangent-space-calculation)
-9. [Model Classification Flags](#model-classification-flags)
-10. [File Identification](#file-identification)
+- [KotOR MDL/MDX File Format Documentation](#kotor-mdlmdx-file-format-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [File Structure Overview](#file-structure-overview)
+  - [File Headers](#file-headers)
+    - [MDL File Header](#mdl-file-header)
+    - [Model Header](#model-header)
+    - [Geometry Header](#geometry-header)
+    - [Names Header](#names-header)
+    - [Animation Header](#animation-header)
+    - [Event Structure](#event-structure)
+  - [Node Structures](#node-structures)
+    - [Node Header](#node-header)
+    - [Trimesh Header](#trimesh-header)
+    - [Danglymesh Header](#danglymesh-header)
+    - [Skinmesh Header](#skinmesh-header)
+    - [Lightsaber Header](#lightsaber-header)
+    - [Light Header](#light-header)
+    - [Emitter Header](#emitter-header)
+    - [Reference Header](#reference-header)
+  - [Controllers](#controllers)
+    - [Controller Structure](#controller-structure)
+  - [Additional Controller Types](#additional-controller-types)
+    - [Light Controllers](#light-controllers)
+    - [Emitter Controllers](#emitter-controllers)
+  - [Node Types](#node-types)
+    - [Node Type Bitmasks](#node-type-bitmasks)
+    - [Common Node Type Combinations](#common-node-type-combinations)
+  - [MDX Data Format](#mdx-data-format)
+    - [MDX Data Bitmap Masks](#mdx-data-bitmap-masks)
+    - [Skin Mesh Specific Data](#skin-mesh-specific-data)
+  - [Vertex and Face Data](#vertex-and-face-data)
+    - [Vertex Structure](#vertex-structure)
+    - [Face Structure](#face-structure)
+  - [Vertex Data Processing](#vertex-data-processing)
+    - [Vertex Normal Calculation](#vertex-normal-calculation)
+    - [Tangent Space Calculation](#tangent-space-calculation)
+  - [Model Classification Flags](#model-classification-flags)
+  - [File Identification](#file-identification)
     - [Binary vs ASCII Format](#binary-vs-ascii-format)
     - [KotOR 1 vs KotOR 2 Models](#kotor-1-vs-kotor-2-models)
-11. [Model Hierarchy](#model-hierarchy)
+  - [Model Hierarchy](#model-hierarchy)
     - [Node Relationships](#node-relationships)
     - [Node Transformations](#node-transformations)
-12. [Smoothing Groups](#smoothing-groups)
-13. [ASCII MDL Format](#ascii-mdl-format)
+  - [Smoothing Groups](#smoothing-groups)
+  - [ASCII MDL Format](#ascii-mdl-format)
     - [Model Header Section](#model-header-section)
     - [Geometry Section](#geometry-section)
     - [Node Definitions](#node-definitions)
     - [Animation Data](#animation-data)
-14. [Controller Data Formats](#controller-data-formats)
+  - [Controller Data Formats](#controller-data-formats)
     - [Single Controllers](#single-controllers)
     - [Keyed Controllers](#keyed-controllers)
-15. [Additional References](#additional-references)
+    - [Special Controller Cases](#special-controller-cases)
+  - [Skin Meshes and Skeletal Animation](#skin-meshes-and-skeletal-animation)
+    - [Bone Mapping and Lookup Tables](#bone-mapping-and-lookup-tables)
+      - [Bone Map (`bonemap`)](#bone-map-bonemap)
+      - [Bone Serial and Node Number Lookups](#bone-serial-and-node-number-lookups)
+    - [Vertex Skinning](#vertex-skinning)
+      - [Bone Weight Format (MDX)](#bone-weight-format-mdx)
+      - [Vertex Transformation](#vertex-transformation)
+    - [Bind Pose Data](#bind-pose-data)
+      - [QBones (Quaternion Rotations)](#qbones-quaternion-rotations)
+      - [TBones (Translation Vectors)](#tbones-translation-vectors)
+      - [Bone Matrix Computation](#bone-matrix-computation)
+  - [Additional References](#additional-references)
     - [Editors](#editors)
     - [See Also](#see-also)
 
@@ -64,6 +80,8 @@ KotOR models are defined using two files:
 
 - **MDL**: Contains the primary model data, including geometry and node structures.
 - **MDX**: Contains additional mesh data, such as vertex buffers.
+
+**Implementation:** [`Libraries/PyKotor/src/pykotor/resource/formats/mdl/`](Libraries/PyKotor/src/pykotor/resource/formats/mdl/)
 
 The MDL file begins with a file header, followed by a model header, geometry header, and various node structures. Offsets within the MDL file are typically relative to the start of the file, excluding the first 12 bytes (the file header).
 
@@ -576,6 +594,7 @@ Vertex normals are computed using surrounding face normals, with optional weight
    area = 0.5f * length(cross(edge1, edge2))
    weighted_normal = face_normal * area
    ```
+   **Reference**: `vendor/mdlops/MDLOpsM.pm:465-488` - Heron's formula implementation
 
 2. **Angle Weighting**: Faces contribute based on the angle at the vertex.
 
@@ -588,7 +607,10 @@ Vertex normals are computed using surrounding face normals, with optional weight
 
 ### Tangent Space Calculation
 
-For normal mapping, tangent and bitangent vectors are calculated per face:
+For normal/bump mapping, tangent and bitangent vectors are calculated per face. KotOR uses a specific tangent space convention that differs from standard implementations.
+
+**Reference**: `vendor/mdlops/MDLOpsM.pm:5470-5596` - Complete tangent space calculation  
+**Based on**: [OpenGL Tutorial - Normal Mapping](http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/) with KotOR-specific modifications
 
 1. **Per-Face Tangent and Bitangent**:
 
@@ -599,19 +621,56 @@ For normal mapping, tangent and bitangent vectors are calculated per face:
    deltaUV2 = uv2 - uv0;
 
    float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+   
+   // Handle divide-by-zero from overlapping texture vertices
+   if (r == 0.0f) {
+       r = 2406.6388; // Magic factor from p_g0t01.mdl analysis (mdlops:5510-5512)
+   }
+   
    tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
    bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * r;
-   ```
-
-2. **Handedness Correction**:
-
-   ```c
-   if (dot(cross(normal, tangent), bitangent) < 0.0f) {
-       tangent = tangent * -1.0f;
+   
+   // Normalize both vectors
+   tangent = normalize(tangent);
+   bitangent = normalize(bitangent);
+   
+   // Fix zero vectors from degenerate UVs (mdlops:5536-5539, 5563-5566)
+   if (length(tangent) < epsilon) {
+       tangent = vec3(1.0, 0.0, 0.0);
+   }
+   if (length(bitangent) < epsilon) {
+       bitangent = vec3(1.0, 0.0, 0.0);
    }
    ```
 
-3. **Per-Vertex Tangent Space**: Averaged from connected face tangents and bitangents, using the same weighting methods as normals.
+2. **KotOR-Specific Handedness Correction**:
+
+   **Important**: KotOR expects tangent space to NOT form a right-handed coordinate system.  
+   **Reference**: `vendor/mdlops/MDLOpsM.pm:5570-5587`
+
+   ```c
+   // KotOR wants dot(cross(N,T), B) < 0 (NOT right-handed)
+   if (dot(cross(normal, tangent), bitangent) > 0.0f) {
+       tangent = -tangent;
+   }
+   ```
+
+3. **Texture Mirroring Detection and Correction**:
+
+   **Reference**: `vendor/mdlops/MDLOpsM.pm:5588-5596`
+
+   ```c
+   // Detect texture mirroring via UV triangle orientation
+   tNz = (uv0.x - uv1.x) * (uv2.y - uv1.y) - (uv0.y - uv1.y) * (uv2.x - uv1.x);
+   
+   // If texture is mirrored, invert both tangent and bitangent
+   if (tNz > 0.0f) {
+       tangent = -tangent;
+       bitangent = -bitangent;
+   }
+   ```
+
+4. **Per-Vertex Tangent Space**: Averaged from connected face tangents and bitangents, using the same weighting methods as normals.
 
 ---
 
@@ -741,6 +800,9 @@ For constant values that don't change over time:
 <controller_name> <value>
 ```
 
+**Reference**: `vendor/mdlops/MDLOpsM.pm:3734-3754` - Single controller reading  
+**Example**: `position 0.0 1.5 0.0` (static position at X=0, Y=1.5, Z=0)
+
 ### Keyed Controllers
 
 For animated values that change over time:
@@ -754,14 +816,203 @@ For animated values that change over time:
   endlist
   ```
 
+  **Reference**: `vendor/mdlops/MDLOpsM.pm:3760-3802` - Keyed controller reading  
+  **Example**:
+  ```plaintext
+  positionkey
+    0.0 0.0 0.0 0.0
+    1.0 0.0 1.0 0.0
+    2.0 0.0 0.0 0.0
+  endlist
+  ```
+  Linear interpolation between keyframes.
+
 - **Bezier Interpolation**:
+
+  **Reference**: `vendor/mdlops/MDLOpsM.pm:1704-1710, 1721-1756` - Bezier flag detection and data reading  
+  **Format**: Each keyframe stores 3 values per column: (value, in_tangent, out_tangent)
 
   ```plaintext
   <controller_name>bezierkey
-    <time> <value> <control_point1> <control_point2>
+    <time> <value> <in_tangent> <out_tangent>
     ...
   endlist
   ```
+
+  **Example**:
+  ```plaintext
+  positionbezierkey
+    0.0 0.0 0.0 0.0  0.0 0.3 0.0  0.0 0.3 0.0
+    1.0 0.0 1.0 0.0  0.0 0.7 0.0  0.0 0.7 0.0
+  endlist
+  ```
+  
+  **Binary Storage**: Bezier controllers use bit 4 (value 0x10) in the column count field to indicate bezier interpolation (mdlops:1704-1710). When this flag is set, the data section contains 3 times as many floats per keyframe (mdlops:1721-1723).
+  
+  **Interpolation**: Bezier curves provide smooth, non-linear interpolation between keyframes using control points (tangents) that define the curve shape entering and leaving each keyframe.
+
+### Special Controller Cases
+
+1. **Compressed Quaternion Orientation** (`MDLControllerType.ORIENTATION` with column_count=2):
+   
+   **Reference**: `vendor/mdlops/MDLOpsM.pm:1714-1719` - Compressed quaternion detection  
+   **Format**: Single 32-bit packed value instead of 4 floats
+   
+   ```
+   X: bits 0-10  (11 bits, range [0, 2047] maps to [-1, 1])
+   Y: bits 11-21 (11 bits, range [0, 2047] maps to [-1, 1])
+   Z: bits 22-31 (10 bits, range [0, 1023] maps to [-1, 1])
+   W: computed from unit constraint (|q| = 1)
+   ```
+   
+   Decompression: `vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:850-868`
+
+2. **Position Delta Encoding** (ASCII only):
+   
+   **Reference**: `vendor/mdlops/MDLOpsM.pm:3788-3793`  
+   In ASCII format animations, position controller values are stored as deltas from the geometry node's static position.
+   
+   ```
+   animated_position = geometry_position + position_controller_value
+   ```
+
+3. **Angle-Axis to Quaternion Conversion** (ASCII only):
+   
+   **Reference**: `vendor/mdlops/MDLOpsM.pm:3718-3728, 3787`  
+   ASCII orientation controllers use angle-axis representation `[x, y, z, angle]` which is converted to quaternion `[x, y, z, w]` on import:
+   
+   ```c
+   sin_a = sin(angle / 2);
+   quat.x = axis.x * sin_a;
+   quat.y = axis.y * sin_a;
+   quat.z = axis.z * sin_a;
+   quat.w = cos(angle / 2);
+   ```
+
+---
+
+## Skin Meshes and Skeletal Animation
+
+### Bone Mapping and Lookup Tables
+
+Skinned meshes require bone mapping to connect mesh vertices to skeleton bones across model parts.
+
+**Reference**: `vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:703-723` - `prepareSkinMeshes()`
+
+#### Bone Map (`bonemap`)
+
+Maps local bone indices (0-15) to global skeleton bone numbers. Each skinned mesh part can reference different bones from the full character skeleton.
+
+**Example**: Body part might use bones 0-10, while head uses bones 5-15. The bone map translates local indices to the correct skeleton bones.
+
+#### Bone Serial and Node Number Lookups
+
+After loading, bone lookup tables must be prepared for efficient matrix computation:
+
+```python
+def prepare_bone_lookups(skin_mesh, all_nodes):
+    for local_idx, bone_idx in enumerate(skin_mesh.bonemap):
+        # Skip invalid bone slots (0xFFFF)
+        if bone_idx == 0xFFFF:
+            continue
+        
+        # Ensure lookup arrays are large enough
+        if bone_idx >= len(skin_mesh.bone_serial):
+            skin_mesh.bone_serial.extend([0] * (bone_idx + 1 - len(skin_mesh.bone_serial)))
+            skin_mesh.bone_node_number.extend([0] * (bone_idx + 1 - len(skin_mesh.bone_node_number)))
+        
+        # Store serial position and node number
+        bone_node = all_nodes[local_idx]
+        skin_mesh.bone_serial[bone_idx] = local_idx
+        skin_mesh.bone_node_number[bone_idx] = bone_node.node_id
+```
+
+### Vertex Skinning
+
+Each vertex can be influenced by up to 4 bones with normalized weights.
+
+**References**:
+- `vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:261-268` - Bone weight/index reading
+- `vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:478-485` - Skinning data structure
+
+#### Bone Weight Format (MDX)
+
+Per-vertex data stored in MDX file:
+- 4 bone indices (as floats, cast to int)
+- 4 bone weights (as floats, should sum to 1.0)
+
+**Layout**:
+```
+Offset   Type        Description
++0       float[4]    Bone indices (cast to uint16)
++16      float[4]    Bone weights (normalized to sum to 1.0)
+```
+
+#### Vertex Transformation
+
+```c
+// For each vertex
+vec3 skinned_position = vec3(0.0);
+vec3 skinned_normal = vec3(0.0);
+
+for (int i = 0; i < 4; i++) {
+    if (vertex.bone_weights[i] > 0.0) {
+        int bone_idx = vertex.bone_indices[i];
+        mat4 bone_matrix = getBoneMatrix(bone_idx);
+        
+        skinned_position += bone_matrix * vec4(vertex.position, 1.0) * vertex.bone_weights[i];
+        skinned_normal += mat3(bone_matrix) * vertex.normal * vertex.bone_weights[i];
+    }
+}
+
+// Renormalize skinned normal
+skinned_normal = normalize(skinned_normal);
+```
+
+### Bind Pose Data
+
+**References**:
+- `vendor/mdlops/MDLOpsM.pm:1760-1768` - Bind pose arrays
+- Skin mesh stores bind pose transforms for each bone
+
+#### QBones (Quaternion Rotations)
+
+Array of quaternions representing each bone's bind pose orientation:
+```c
+struct QBone {
+    float x, y, z, w;  // Quaternion components
+};
+```
+
+#### TBones (Translation Vectors)
+
+Array of Vector3 representing each bone's bind pose position:
+```c
+struct TBone {
+    float x, y, z;  // Position in model space
+};
+```
+
+#### Bone Matrix Computation
+
+```c
+mat4 computeBoneMatrix(int bone_idx, Animation anim, float time) {
+    // Get bind pose
+    quat q_bind = skin.qbones[bone_idx];
+    vec3 t_bind = skin.tbones[bone_idx];
+    mat4 inverse_bind = inverse(translate(t_bind) * mat4_cast(q_bind));
+    
+    // Get current pose from animation
+    quat q_current = evaluateQuaternionController(bone_node, anim, time);
+    vec3 t_current = evaluatePositionController(bone_node, anim, time);
+    mat4 current = translate(t_current) * mat4_cast(q_current);
+    
+    // Final bone matrix: inverse bind pose * current pose
+    return current * inverse_bind;
+}
+```
+
+**Note**: KotOR uses left-handed coordinate system, ensure proper matrix conventions.
 
 ---
 

@@ -39,7 +39,7 @@ class GFFXMLReader(ResourceReader):
         self._gff: GFF | None = None
 
     @autoclose
-    def load(self) -> GFF:
+    def load(self, *, auto_close: bool = True) -> GFF:  # noqa: FBT001, FBT002, ARG002
         self._gff = GFF()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
@@ -151,7 +151,7 @@ class GFFXMLWriter(ResourceWriter):
         self.gff: GFF = gff
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         self.xml_root.tag = "gff3"
 
         xml_struct = ET.Element("struct")

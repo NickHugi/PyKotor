@@ -6,7 +6,7 @@ GUI files (.gui) are GFF format files that define the user interface elements in
 
 ## Implementation Details
 
-The GUI system is implemented with the following key components:
+The GUI system is implemented in [`Libraries/PyKotor/src/pykotor/resource/generics/gui.py`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py) with the following key components:
 
 - Rendering: Uses Three.js for WebGL-based rendering
 - Textures: Supports texture mapping with configurable UV coordinates
@@ -25,16 +25,33 @@ The GUI system is implemented with the following key components:
 
 | Type ID | Name | Description |
 |---------|------|-------------|
-| 0 | CONTROL | Base control type |
-| 2 | PANEL | Container control that can hold other controls |
-| 4 | LABEL | Static text display |
-| 5 | PROTOITEM | Template for list items |
-| 6 | BUTTON | Clickable button control |
-| 7 | CHECKBOX | Toggle control |
-| 8 | SLIDER | Value slider control |
-| 9 | SCROLLBAR | Scrolling control |
-| 10 | PROGRESSBAR | Progress indicator |
-| 11 | LISTBOX | Scrollable list of items |
+<<<<<<< Current (Your changes)
+| 0 | [CONTROL](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Base control type |
+| 2 | [PANEL](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L237) | Container control that can hold other controls |
+| 4 | [LABEL](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L211) | Static text display |
+| 5 | [PROTOITEM](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L317) | Template for list items |
+| 6 | [BUTTON](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L199) | Clickable button control |
+| 7 | [CHECKBOX](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L306) | Toggle control |
+| 8 | [SLIDER](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L223) | Value slider control |
+| 9 | [SCROLLBAR](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L185) | Scrolling control |
+| 10 | [PROGRESSBAR](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L327) | Progress indicator |
+| 11 | [LISTBOX](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L248) | Scrollable list of items |
+=======
+| 0 | [`GUIControlType.CONTROL`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Base control type |
+| 2 | [`GUIControlType.PANEL`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Container control that can hold other controls |
+| 4 | [`GUIControlType.LABEL`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Static text display |
+| 5 | [`GUIControlType.PROTOITEM`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Template for list items |
+| 6 | [`GUIControlType.BUTTON`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Clickable button control |
+| 7 | [`GUIControlType.CHECKBOX`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Toggle control |
+| 8 | [`GUIControlType.SLIDER`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Value slider control |
+| 9 | [`GUIControlType.SCROLLBAR`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Scrolling control |
+| 10 | [`GUIControlType.PROGRESSBAR`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Progress indicator |
+| 11 | [`GUIControlType.LISTBOX`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Scrollable list of items |
+
+## Main GUI Class
+
+The main [`GUI`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L153) class represents a GUI resource in KotOR games.
+>>>>>>> Incoming (Background Agent changes)
 
 ## Common Properties
 
@@ -44,7 +61,7 @@ All controls share these base properties:
 
 | Property | Type | Description | Default |
 |----------|------|-------------|---------|
-| CONTROLTYPE | sint32 | Type of control | Required |
+| [CONTROLTYPE](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | sint32 | Type of control | Required |
 | ID | sint32 | Unique identifier | Required |
 | TAG | exostring | Control identifier | Required |
 | Obj_Locked | byte | Lock state (0/1) | 0 |
@@ -55,7 +72,7 @@ All controls share these base properties:
 | ALPHA | float | Opacity (0.0-1.0) | 1.0 |
 | COLOR | vector | Control color (RGB as 3 doubles) | KotOR 1: [0.0, 0.658824, 0.980392], KotOR 2: [0.101961, 0.698039, 0.549020] |
 
-### EXTENT Struct
+### [EXTENT](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L66) Struct
 
 Defines position and size:
 
@@ -66,7 +83,7 @@ Defines position and size:
 | WIDTH | sint32 | Width | Required |
 | HEIGHT | sint32 | Height | Required |
 
-### BORDER Struct
+### [BORDER](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L51) Struct
 
 Defines border appearance:
 
@@ -82,13 +99,13 @@ Defines border appearance:
 | COLOR | vector | Border color (RGB) | KotOR 1: [1.0, 1.0, 1.0], KotOR 2: [0.101961, 0.698039, 0.549020] |
 | PULSING | byte | Pulsing effect (0/1) | 0 |
 
-### TEXT Struct
+### [TEXT](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L76) Struct
 
 Defines text properties:
 
 | Property | Type | Description | Default |
 |----------|------|-------------|---------|
-| ALIGNMENT | sint32 | Text alignment | 18 (Center) |
+| [ALIGNMENT](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L37) | sint32 | Text alignment | 18 (Center) |
 | COLOR | vector | Text color (RGB) | KotOR 1: [1.0, 1.0, 1.0], KotOR 2: [0.101961, 0.698039, 0.549020] |
 | FONT | resref | Font resource | "fnt_d16x16" |
 | TEXT | exostring | Text content | "" |
@@ -107,7 +124,7 @@ Text Alignment Values:
 - 34: BottomCenter
 - 35: BottomRight
 
-### MOVETO Struct
+### [MOVETO](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L88) Struct
 
 Defines D-pad/keyboard navigation:
 
@@ -134,7 +151,7 @@ Defines hover state appearance:
 | COLOR | vector | Hover state color (RGB) | [1.0, 1.0, 1.0] |
 | PULSING | byte | Pulsing effect in hover state (0/1) | 0 |
 
-### SELECTED Struct
+### [SELECTED](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L276) Struct
 
 Defines selected state appearance:
 
@@ -150,7 +167,7 @@ Defines selected state appearance:
 | COLOR | vector | Selected state color (RGB) | [1.0, 1.0, 1.0] |
 | PULSING | byte | Pulsing effect in selected state (0/1) | 0 |
 
-### HILIGHTSELECTED Struct
+### [HILIGHTSELECTED](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L291) Struct
 
 Defines appearance when both selected and hovered:
 

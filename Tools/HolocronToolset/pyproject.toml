@@ -9,12 +9,12 @@ version = "3.1.1"
 requires-python = ">= 3.8"
 dependencies = [
   "certifi>=2021.10.8",
-  "idna>=3.11",                                     # Tested with 3.3
+  "idna>=3.11",                                           # Tested with 3.3
   "jsmin>=3.0.1",
   "Markdown>=3.4.4,<3.9; python_version<\"3.9\"",
   "Markdown>=3.4.4; python_version>=\"3.9\"",
   "numpy>=1.19.0,<1.25.0; python_version<\"3.9\"",
-  "numpy>=1.19.0; python_version>=\"3.9\"",
+  "numpy>=1.19.0,<2; python_version>=\"3.9\"",
   "PyQt5-Qt5~=5.15; python_implementation == 'CPython'",
   "PyQt5-sip~=12.10; python_implementation == 'CPython'",
   "PyQt5~=5.15; python_implementation == 'CPython'",
@@ -24,12 +24,8 @@ dependencies = [
   "requests>=2.25.0; python_version>=\"3.9\"",
   "urllib3>=1.26.0,<2.0.0; python_version<\"3.9\"",
   "urllib3>=1.26.0; python_version>=\"3.9\"",
-  "watchdog>=2.0.0,<6.0.0; python_version<\"3.9\"",
-  "watchdog>=2.0.0; python_version>=\"3.9\"",
   "jsonpickle>=4.1.1",
   "send2trash>=1.8.3",
-  #    "pykotor>=1.7",
-  #    "pykotor[gl]>=1.7"
 ]
 authors = [{ name = "NickHugi" }]
 maintainers = [{ name = "th3w1zard1", email = "halomastar@gmail.com" }]
@@ -56,16 +52,12 @@ keywords = [
 ]
 
 [project.optional-dependencies]
-updater = [
-    "requests>=2.27,<2.32",
-    "certifi==2021.10.8",
-    "pycryptodome>=3.19.0"
-]
+updater = ["requests>=2.27,<2.32", "certifi==2021.10.8", "pycryptodome>=3.19.0"]
 dev = [
-    "pytest-qt>=4.2.0",
-    "pytest-xvfb>=3.0.0",
-    "types-Pillow",
-    "types-Send2Trash"
+  "pytest-qt>=4.2.0",
+  "pytest-xvfb>=3.0.0",
+  "types-Pillow",
+  "types-Send2Trash",
 ]
 qt5 = ["PyQt5>=5.15", "PyQt5-Qt5>=5.15", "PyQt5-sip>=12.10"]
 qt6 = ["PyQt6>=6.6.1"]
@@ -96,7 +88,7 @@ Markdown = ">=3.3,<3.6"
 jsmin = "~3.0"
 qtpy = "*"
 send2trash = "*"
-pykotor = "^1.0.0"  # Will be replaced by PyPI version when split
+pykotor = "^1.0.0"      # Will be replaced by PyPI version when split
 
 # Optional dependencies
 pycryptodome = { version = "^3.19.0", optional = true }
@@ -129,21 +121,21 @@ pyside6 = ["PySide6"]
 reportIncompatibleMethodOverride = false
 reportOptionalMemberAccess = false
 
+[tool.basedpyright]
+reportIncompatibleMethodOverride = false
+reportOptionalMemberAccess = false
+
 [tool.pyright.defineConstant]
 PYQT5 = false
 PYSIDE2 = false
 PYQT6 = false
 PYSIDE6 = true
-
-[tool.basedpyright]
-reportIncompatibleMethodOverride = false
-reportOptionalMemberAccess = false
-
 [tool.basedpyright.defineConstant]
-PYQT5 = true
+PYQT5 = false
 PYSIDE2 = false
 PYQT6 = false
-PYSIDE6 = false
+PYSIDE6 = true
+
 
 [tool.ruff]
 extend = "../../pyproject.toml"

@@ -9,6 +9,7 @@ from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor, QFont, QGuiApplication
 from qtpy.QtWidgets import QApplication, QCheckBox, QDialog, QFontDialog, QHBoxLayout, QLabel, QMenu, QMessageBox, QPushButton, QSpinBox, QTableWidgetItem, QToolTip
 
+from Tools.HolocronToolset.src.toolset.gui.windows.main import qtpy
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.widgets.base import SettingsWidget
 from toolset.gui.widgets.settings.widgets.env_vars import ENV_VARS, EnvVariableDialog
@@ -317,15 +318,24 @@ class ApplicationSettings(Settings):
     }
 
     # region Application Attributes
-    REQUIRES_RESTART: ClassVar[dict[str, Qt.ApplicationAttribute | None]] = {
-        "AA_PluginApplication": Qt.ApplicationAttribute.AA_PluginApplication,
-        "AA_UseDesktopOpenGL": Qt.ApplicationAttribute.AA_UseDesktopOpenGL,
-        "AA_UseOpenGLES": Qt.ApplicationAttribute.AA_UseOpenGLES,
-        "AA_UseSoftwareOpenGL": Qt.ApplicationAttribute.AA_UseSoftwareOpenGL,
-        "AA_ShareOpenGLContexts": Qt.ApplicationAttribute.AA_ShareOpenGLContexts,
-        "AA_EnableHighDpiScaling": getattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling", None),
-        "AA_DisableHighDpiScaling": getattr(Qt.ApplicationAttribute, "AA_DisableHighDpiScaling", None),
-    }
+    if qtpy.API_NAME in ("PyQt5", "PySide2"):
+        REQUIRES_RESTART: ClassVar[dict[str, Qt.ApplicationAttribute | None]] = {
+            "AA_PluginApplication": Qt.ApplicationAttribute.AA_PluginApplication,
+            "AA_UseDesktopOpenGL": Qt.ApplicationAttribute.AA_UseDesktopOpenGL,
+            "AA_UseOpenGLES": Qt.ApplicationAttribute.AA_UseOpenGLES,
+            "AA_UseSoftwareOpenGL": Qt.ApplicationAttribute.AA_UseSoftwareOpenGL,
+            "AA_ShareOpenGLContexts": Qt.ApplicationAttribute.AA_ShareOpenGLContexts,
+            "AA_EnableHighDpiScaling": getattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling", None),
+            "AA_DisableHighDpiScaling": getattr(Qt.ApplicationAttribute, "AA_DisableHighDpiScaling", None),
+        }
+    else:
+        REQUIRES_RESTART: ClassVar[dict[str, Qt.ApplicationAttribute | None]] = {
+            "AA_PluginApplication": Qt.ApplicationAttribute.AA_PluginApplication,
+            "AA_UseDesktopOpenGL": Qt.ApplicationAttribute.AA_UseDesktopOpenGL,
+            "AA_UseOpenGLES": Qt.ApplicationAttribute.AA_UseOpenGLES,
+            "AA_UseSoftwareOpenGL": Qt.ApplicationAttribute.AA_UseSoftwareOpenGL,
+            "AA_ShareOpenGLContexts": Qt.ApplicationAttribute.AA_ShareOpenGLContexts,
+        }
 
     # Note: if you see hasattr, means it is only available on certain apis (i.e. pyqt5 vs pyqt6 vs pyside6 vs pyside2)
     AA_ImmediateWidgetCreation: SettingsProperty[bool] = Settings.addSetting(
@@ -404,14 +414,6 @@ class ApplicationSettings(Settings):
             else False
         ),
     )
-    AA_UseHighDpiPixmaps: SettingsProperty[bool] = Settings.addSetting(
-        "AA_UseHighDpiPixmaps",
-        (
-            QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)  # pyright: ignore[reportAttributeAccessIssue]
-            if hasattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps")
-            else True
-        ),
-    )
     AA_ForceRasterWidgets: SettingsProperty[bool] = Settings.addSetting(
         "AA_ForceRasterWidgets",
         (QApplication.testAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets) if hasattr(Qt.ApplicationAttribute, "AA_ForceRasterWidgets") else False),
@@ -436,22 +438,31 @@ class ApplicationSettings(Settings):
         "AA_SetPalette",
         (QApplication.testAttribute(Qt.ApplicationAttribute.AA_SetPalette) if hasattr(Qt.ApplicationAttribute, "AA_SetPalette") else False),
     )
-    AA_EnableHighDpiScaling: SettingsProperty[bool] = Settings.addSetting(
-        "AA_EnableHighDpiScaling",
-        (
-            QApplication.testAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)  # pyright: ignore[reportAttributeAccessIssue]
-            if hasattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling")
-            else True
-        ),
-    )
-    AA_DisableHighDpiScaling: SettingsProperty[bool] = Settings.addSetting(
-        "AA_DisableHighDpiScaling",
-        (
-            QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling)  # pyright: ignore[reportAttributeAccessIssue]
-            if hasattr(Qt.ApplicationAttribute, "AA_DisableHighDpiScaling")
-            else False
-        ),
-    )
+    if qtpy.API_NAME in ("PyQt5", "PySide2"):
+        AA_DisableHighDpiScaling: SettingsProperty[bool] = Settings.addSetting(
+            "AA_DisableHighDpiScaling",
+            (
+                QApplication.testAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling)  # pyright: ignore[reportAttributeAccessIssue]
+                if hasattr(Qt.ApplicationAttribute, "AA_DisableHighDpiScaling")
+                else False
+            ),
+        )
+        AA_EnableHighDpiScaling: SettingsProperty[bool] = Settings.addSetting(
+            "AA_EnableHighDpiScaling",
+            (
+                QApplication.testAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)  # pyright: ignore[reportAttributeAccessIssue]
+                if hasattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling")
+                else True
+            ),
+        )
+        AA_UseHighDpiPixmaps: SettingsProperty[bool] = Settings.addSetting(
+            "AA_UseHighDpiPixmaps",
+            (
+                QApplication.testAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)  # pyright: ignore[reportAttributeAccessIssue]
+                if hasattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps")
+                else True
+            ),
+        )
     AA_PluginApplication: SettingsProperty[bool] = Settings.addSetting(
         "AA_PluginApplication",
         (QApplication.testAttribute(Qt.ApplicationAttribute.AA_PluginApplication) if hasattr(Qt.ApplicationAttribute, "AA_PluginApplication") else False),

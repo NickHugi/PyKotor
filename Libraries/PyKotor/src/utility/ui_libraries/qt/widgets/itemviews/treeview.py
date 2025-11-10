@@ -19,6 +19,10 @@ if TYPE_CHECKING:
 
 class RobustTreeView(RobustAbstractItemView, QTreeView):
     """A tree view that supports common features and settings."""
+    def __new__(cls, *args, **kwargs):
+        # For PySide6 compatibility with multiple inheritance
+        return QTreeView.__new__(cls)
+
     def __init__(
         self,
         parent: QWidget | None = None,

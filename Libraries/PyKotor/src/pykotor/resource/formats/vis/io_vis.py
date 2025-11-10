@@ -18,7 +18,7 @@ class VISAsciiReader(ResourceReader):
         self._lines: list[str] = []
 
     @autoclose
-    def load(self) -> VIS:
+    def load(self, *, auto_close: bool = True) -> VIS:  # noqa: FBT001, FBT002, ARG002
         self._vis = VIS()
         self._lines = self._reader.read_string(self._reader.size()).splitlines()
 
@@ -70,7 +70,7 @@ class VISAsciiWriter(ResourceWriter):
         self._vis: VIS = vis
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         for observer, observed in self._vis:
             self._writer.write_string(f"{observer} {len(observed)}{os.linesep}")
             for room in observed:

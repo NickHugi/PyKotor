@@ -7,22 +7,23 @@ import shutil
 import sys
 from contextlib import suppress
 from io import StringIO
+from pathlib import Path  # noqa: E402
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import pytest
-from pykotor.extract.file import FileResource, ResourceIdentifier
-from utility.error_handling import format_exception_with_variables
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "PyKotor", "src")
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "Utility", "src")
-
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Libraries", "Utility", "src")
 
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
+        print(f"Adding {working_dir} to sys.path")
         sys.path.append(working_dir)
+    else:
+        print(f"{working_dir} already in sys.path!")
 
 
 if PYKOTOR_PATH.joinpath("pykotor").exists():
@@ -30,7 +31,8 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pathlib import Path  # noqa: E402
+from pykotor.extract.file import FileResource, ResourceIdentifier
+from utility.error_handling import format_exception_with_variables
 
 from pykotor.common.misc import Game  # noqa: E402
 from pykotor.extract.installation import Installation  # noqa: E402

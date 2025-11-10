@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Callable, cast
 
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "Utility", "src")
 
 
 def add_sys_path(p: pathlib.Path):
@@ -2743,7 +2743,7 @@ class TestTSLPatcher(unittest.TestCase):
 
     def test_gff_modify_type_vector3(self):
         """Test modifying Vector3 fields."""
-        from pykotor.common.geometry import Vector3
+        from utility.common.geometry import Vector3
         config: PatcherConfig = self._setupIniAndConfig(
             """
             [GFFList]
@@ -2771,7 +2771,7 @@ class TestTSLPatcher(unittest.TestCase):
 
     def test_gff_modify_type_vector4(self):
         """Test modifying Vector4 fields."""
-        from pykotor.common.geometry import Vector4
+        from utility.common.geometry import Vector4
         config: PatcherConfig = self._setupIniAndConfig(
             """
             [GFFList]
@@ -3060,7 +3060,7 @@ class TestTSLPatcher(unittest.TestCase):
 
     def test_gff_add_vector3(self):
         """Test adding Vector3 fields."""
-        from pykotor.common.geometry import Vector3
+        from utility.common.geometry import Vector3
         config: PatcherConfig = self._setupIniAndConfig(
             """
             [GFFList]
@@ -3091,7 +3091,7 @@ class TestTSLPatcher(unittest.TestCase):
 
     def test_gff_add_vector4(self):
         """Test adding Vector4 fields."""
-        from pykotor.common.geometry import Vector4
+        from utility.common.geometry import Vector4
         config: PatcherConfig = self._setupIniAndConfig(
             """
             [GFFList]
@@ -3494,7 +3494,7 @@ class TestTSLPatcher(unittest.TestCase):
 
     def test_modify_field_vector3(self):
         """Test modifying Vector3 fields."""
-        from pykotor.common.geometry import Vector3
+        from utility.common.geometry import Vector3
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -3513,7 +3513,7 @@ class TestTSLPatcher(unittest.TestCase):
 
     def test_modify_field_vector4(self):
         """Test modifying Vector4 fields."""
-        from pykotor.common.geometry import Vector4
+        from utility.common.geometry import Vector4
         ini_text = """
             [GFFList]
             File0=test.gff

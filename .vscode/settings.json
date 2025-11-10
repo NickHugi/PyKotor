@@ -5,16 +5,17 @@
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.enablePytestSupport": true,
     "python.analysis.extraPaths": [
+        "./tests",
+        "./Libraries/PyKotor/src",
+        "./Libraries/PyKotorFont/src",
+        "./Libraries/PyKotorGL/src",
+        "./Libraries/Utility/src",
         "./Tools/BatchPatcher/src",
         "./Tools/GuiConverter/src",
         "./Tools/HolocronToolset/src",
         "./Tools/HoloPatcher/src",
         "./Tools/KotorDiff/src",
-        "./Tools/MDLDecompile/src",
-        "./Libraries/PyKotor/src",
-        "./Libraries/PyKotorGL/src",
-        "./Libraries/PyKotorFont/src",
-        "./Libraries/Utility/src"
+        "./Tools/MDLDecompile/src"
     ],
     "python.envFile": "${workspaceFolder}/.env",
     "python.missingPackage.severity": "Information",

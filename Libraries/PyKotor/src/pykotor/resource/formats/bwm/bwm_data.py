@@ -1,4 +1,40 @@
 from __future__ import annotations
+"""
+Binary WalkMesh (BWM/WOK) runtime model for KotOR (Aurora/NWN engine lineage).
+
+Overview
+--------
+KotOR areas use a walkmesh (stored on disk in WOK/BWM form) to describe the set of
+triangles the player and AI can stand on, plus edge metadata for transitions
+(e.g., doors, area hooks) and an acceleration structure (AABB tree) for queries.
+
+This module contains a high-level, in-memory representation of that data:
+ - BWM:     The entire walkmesh object (faces, transforms/hooks, helpers)
+ - BWMFace: A single triangle with a material and up to 3 per-edge transition ids
+ - BWMEdge: A boundary edge for perimeters (computed from geometry, not stored)
+ - BWMAdjacency: Logical adjacency of one face/edge to a neighboring face/edge
+ - BWMNodeAABB: AABB tree node for broad-phase intersection
+
+Identity vs Equality
+--------------------
+Faces and vertices implement value-based equality to support comparisons, hashing
+and tests. However, certain algorithms must map a specific face OBJECT back to its
+index in the `BWM.faces` sequence to produce edge indices of the form:
+
+    edge_index = face_index * 3 + local_edge_index
+
+Value-based equality makes Python's list.index() unsuitable here because it may
+return the index of a different but equal face. To avoid this, code in this module
+uses identity-based selection (the `is` operator) when computing indices.
+See `_index_by_identity()` and the writer logic in `io_bwm.py`.
+
+Transitions vs Adjacency
+------------------------
+The `trans1`, `trans2`, and `trans3` fields on `BWMFace` are optional per-edge
+transition indices into other area data (e.g., LYT/door references). They are NOT
+unique identifiers and do not encode geometric adjacency. Adjacency is derived
+purely from geometry (shared vertices on walkable faces).
+"""
 
 import itertools
 import math
@@ -18,12 +54,13 @@ if TYPE_CHECKING:
 
 
 class BWMType(IntEnum):
+    """Aurora/NWN walkmesh type."""
     PlaceableOrDoor = 0
     AreaModel = 1
 
 
 class BWM(ComparableMixin):
-    """Represents the data of a RIM file."""
+    """In-memory walkmesh model (faces, hooks, helpers)."""
 
     COMPARABLE_FIELDS = ("walkmesh_type", "position", "relative_hook1", "relative_hook2", "absolute_hook1", "absolute_hook2")
     COMPARABLE_SEQUENCE_FIELDS = ("faces",)
@@ -76,6 +113,12 @@ class BWM(ComparableMixin):
         Returns:
         -------
             list[BWMFace]: List of faces that are walkable
+
+        Processing Logic:
+        ----------------
+            - Iterate through all faces in self.faces
+            - Check if each face's material is walkable using face.material.walkable()
+            - Add face to return list if walkable.
         """
         return [face for face in self.faces if face.material.walkable()]
 
@@ -87,17 +130,25 @@ class BWM(ComparableMixin):
         Returns:
         -------
             list[BWMFace]: List of unwalkable faces in the mesh
+
+        Processing Logic:
+        ----------------
+            - Iterate through all faces in the mesh
+            - Check if the material of the face is not walkable
+            - Add the face to the return list if material is not walkable
+            - Return the list of unwalkable faces.
         """
         return [face for face in self.faces if not face.material.walkable()]
 
     def vertices(
         self,
     ) -> list[Vector3]:
-        """Returns a list of vectors stored in the faces of the walkmesh.
+        """Returns unique vertex objects referenced by faces in the walkmesh.
 
         Returns:
         -------
-            A list of Vector3 objects.
+            A list of Vector3 objects. Uniqueness is identity-based; the order
+            is first-seen while iterating faces.
         """
         vertices: list[Vector3] = []
         for face in self.faces:
@@ -121,6 +172,13 @@ class BWM(ComparableMixin):
         Returns:
         -------
             list[BWMNodeAABB]: List of AABB objects for each face
+
+        Processing Logic:
+        ----------------
+            - Recursively traverse the faces tree to collect all leaf faces
+            - Calculate AABB for each leaf face
+            - Add AABB to return list
+            - Return list of all AABBs.
         """
         aabbs: list[BWMNodeAABB] = []
         self._aabbs_rec(aabbs, copy(self.faces))
@@ -143,6 +201,13 @@ class BWM(ComparableMixin):
         Returns:
         -------
             None: Tree is built by side effect of modifying aabbs
+
+        Processing Logic:
+        ----------------
+            - Calculate bounding box of all faces
+            - Split faces into left and right based on longest axis
+            - Recursively build left and right trees
+            - Stop when single face remains or axes exhausted
         """
         max_level = 128
         if rlevel > max_level:
@@ -221,7 +286,7 @@ class BWM(ComparableMixin):
     def edges(
         self,
     ) -> list[BWMEdge]:
-        """Returns the edges in the BWM.
+        """Returns perimeter edges (edges with no walkable neighbor).
 
         Args:
         ----
@@ -229,7 +294,16 @@ class BWM(ComparableMixin):
 
         Returns:
         -------
-            list[BWMEdge]: A list of edges in the BWM.
+            list[BWMEdge]: A list of perimeter edges in face-order traversal.
+
+        Processing Logic:
+        ----------------
+            - Finds walkable faces and their adjacencies
+            - Iterates through faces and edges to find unconnected edges
+            - Traces edge paths and adds them to the edges list until it loops back
+            - Marks final edges and records perimeter lengths
+            - Uses identity-based face indexing when converting adjacency to an
+              edge index (see `_index_by_identity`).
         """
         walkable: list[BWMFace] = [face for face in self.faces if face.material.walkable()]
         adjacencies: list[tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]] = [self.adjacencies(face) for face in walkable]
@@ -247,7 +321,9 @@ class BWM(ComparableMixin):
             while next_face != -1:
                 adj_edge: BWMAdjacency | None = adjacencies[next_face][next_edge]
                 if adj_edge is not None:
-                    adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge
+                    # Do NOT use list.index() here; faces have value-based equality,
+                    # so we must recover indices strictly by identity.
+                    adj_edge_index = self._index_by_identity(adj_edge.face) * 3 + adj_edge.edge
                     next_face = adj_edge_index // 3
                     next_edge = ((adj_edge_index % 3) + 1) % 3
                     continue
@@ -273,6 +349,30 @@ class BWM(ComparableMixin):
         return edges
 
 
+    def _index_by_identity(
+        self,
+        face: BWMFace,
+    ) -> int:
+        """Find the index of a face by object identity, not value equality.
+        
+        Args:
+        ----
+            face: The face object to find.
+            
+        Returns:
+        -------
+            The index of the face in self.faces.
+            
+        Raises:
+        ------
+            ValueError: If the face is not found.
+        """
+        for i, f in enumerate(self.faces):
+            if f is face:
+                return i
+        msg = "Face not found in faces list"
+        raise ValueError(msg)
+
     def adjacencies(
         self,
         face: BWMFace,
@@ -286,6 +386,13 @@ class BWM(ComparableMixin):
         Returns:
         -------
             tuple: {Tuple of adjacencies or None}
+
+        Processing Logic:
+        ----------------
+            1. Get list of walkable faces
+            2. Define edge lists for each potential adjacency
+            3. Iterate through walkable faces and check if edges match using a bit flag
+            4. Return adjacencies or None.
         """
         walkable: list[BWMFace] = self.walkable_faces()
         adj1: list[Vector3] = [face.v1, face.v2]
@@ -297,16 +404,15 @@ class BWM(ComparableMixin):
         adj_index3 = None
 
         def matches(
-            face_index: int,
+            face_obj: BWMFace,
             edges: list[Vector3],
         ) -> Literal[2, 1, 0, -1]:
             flag = 0x00
-            other_face: BWMFace = self.faces[face_index]
-            if other_face.v1 in edges:
+            if face_obj.v1 in edges:
                 flag += 0x01
-            if other_face.v2 in edges:
+            if face_obj.v2 in edges:
                 flag += 0x02
-            if other_face.v3 in edges:
+            if face_obj.v3 in edges:
                 flag += 0x04
             edge: Literal[2, 1, 0, -1] = -1
             if flag == 0x03:
@@ -320,22 +426,16 @@ class BWM(ComparableMixin):
         for other in walkable:
             if other is face:
                 continue
-            other_index: int = self.faces.index(other)
-            if matches(other_index, adj1) != -1:
-                adj_index1 = BWMAdjacency(
-                    self.faces[other_index],
-                    matches(other_index, adj1),
-                )
-            if matches(other_index, adj2) != -1:
-                adj_index2 = BWMAdjacency(
-                    self.faces[other_index],
-                    matches(other_index, adj2),
-                )
-            if matches(other_index, adj3) != -1:
-                adj_index3 = BWMAdjacency(
-                    self.faces[other_index],
-                    matches(other_index, adj3),
-                )
+            edge_match1 = matches(other, adj1)
+            edge_match2 = matches(other, adj2)
+            edge_match3 = matches(other, adj3)
+            
+            if edge_match1 != -1:
+                adj_index1 = BWMAdjacency(other, edge_match1)
+            if edge_match2 != -1:
+                adj_index2 = BWMAdjacency(other, edge_match2)
+            if edge_match3 != -1:
+                adj_index3 = BWMAdjacency(other, edge_match3)
 
         return adj_index1, adj_index2, adj_index3
 
@@ -351,6 +451,14 @@ class BWM(ComparableMixin):
         Returns:
         -------
             tuple[Vector3, Vector3]: Bounding box minimum and maximum points
+
+        Processing Logic:
+        ----------------
+            - Initialize bounding box minimum and maximum points to extreme values
+            - Iterate through all vertices of the mesh
+            - Update minimum x, y, z values of bbmin
+            - Update maximum x, y, z values of bbmax
+            - Return bounding box minimum and maximum points.
         """
         bbmin = Vector3(1000000, 1000000, 1000000)
         bbmax = Vector3(-1000000, -1000000, -1000000)
@@ -370,6 +478,11 @@ class BWM(ComparableMixin):
         Returns:
         -------
             None - Updates bbmin and bbmax in place
+
+        Processing Logic:
+        ----------------
+            - Compare vertex x, y, z to bbmin x, y, z and update bbmin with minimum
+            - Compare vertex x, y, z to bbmax x, y, z and update bbmax with maximum.
         """
         bbmin.x = min(bbmin.x, vertex.x)
         bbmin.y = min(bbmin.y, vertex.y)
@@ -457,6 +570,14 @@ class BWM(ComparableMixin):
         ----
             old: Index to replace
             new: New index to set or None
+
+        Processing Logic:
+        ----------------
+            - Loops through all faces in the object
+            - Checks if face's trans1 attribute equals old index
+            - If equal, sets trans1 to new index
+            - Checks if face's trans2 attribute equals old index
+            - If equal, sets trans2 to new index.
         """
         for face in self.faces:
             if face.trans1 == old:
@@ -495,7 +616,15 @@ class BWM(ComparableMixin):
 
 
 class BWMFace(Face, ComparableMixin):
-    """An extension of the Face class with a transition index for each edge."""
+    """Triangle with material and optional per-edge transitions (trans1..3).
+
+    Notes
+    -----
+    - `trans1`, `trans2`, `trans3` are metadata for engine transitions (e.g.,
+      LYT/door indices) and are not unique identifiers.
+    - They do not encode geometric adjacency; adjacency is derived from shared
+      vertex identity on walkable faces.
+    """
 
     def __init__(
         self,
@@ -511,8 +640,11 @@ class BWMFace(Face, ComparableMixin):
     def __eq__(self, other):
         if not isinstance(other, BWMFace):
             return NotImplemented
+        parent_eq = super().__eq__(other)
+        if parent_eq is NotImplemented:
+            return NotImplemented
         return (
-            super().__eq__(other)
+            parent_eq
             and self.trans1 == other.trans1
             and self.trans2 == other.trans2
             and self.trans3 == other.trans3
@@ -560,6 +692,12 @@ class BWMNodeAABB(ComparableMixin):
         Returns:
         -------
             self - The initialized BWMNodeAABB object
+
+        Processing Logic:
+        ----------------
+            - Sets the bounding box minimum and maximum bounds
+            - Sets the splitting face and most significant plane
+            - Sets the left and right child nodes.
         """
         self.bb_min: Vector3 = bb_min
         self.bb_max: Vector3 = bb_max

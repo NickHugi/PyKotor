@@ -20,7 +20,7 @@ class LIPBinaryReader(ResourceReader):
         self._lip: LIP | None = None
 
     @autoclose
-    def load(self) -> LIP:
+    def load(self, *, auto_close: bool = True) -> LIP:  # noqa: FBT001, FBT002, ARG002
         self._lip = LIP()
 
         file_type = self._reader.read_string(4)
@@ -58,7 +58,7 @@ class LIPBinaryWriter(ResourceWriter):
         self._lip: LIP = lip
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         self._writer.write_string("LIP ")
         self._writer.write_string("V1.0")
         self._writer.write_single(self._lip.length)

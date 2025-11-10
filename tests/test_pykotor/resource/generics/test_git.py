@@ -24,7 +24,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING, cast
 
-from pykotor.common.geometry import Vector3  # pyright: ignore[reportMissingImports]
+from utility.common.geometry import Vector3  # pyright: ignore[reportMissingImports]
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Color
 from pykotor.resource.formats.gff import read_gff

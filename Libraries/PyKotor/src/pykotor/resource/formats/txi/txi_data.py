@@ -418,6 +418,17 @@ class TXIFeatures:
         self.waterwidth: float | None = None
         self.xbox_downsample: bool | None = None
 
+    @property
+    def is_flipbook(self) -> bool:
+        """Return True when the TXI describes a flipbook animation."""
+        return (
+            isinstance(self.proceduretype, str)
+            and self.proceduretype.lower() == "cycle"
+            and bool(self.numx)
+            and bool(self.numy)
+            and bool(self.fps)
+        )
+
 
 class TXICommand(Enum):
     """This class is used to store the commands of a texture."""

@@ -5,8 +5,8 @@ import sys
 import unittest
 
 THIS_SCRIPT_PATH: pathlib.Path = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
-UTILITY_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+PYKOTOR_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH: pathlib.Path = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "Utility", "src")
 
 
 def add_sys_path(p: pathlib.Path) -> None:

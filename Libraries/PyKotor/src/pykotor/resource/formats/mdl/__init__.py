@@ -20,7 +20,7 @@ from pykotor.resource.formats.mdl.mdl_data import (
 from pykotor.resource.formats.mdl.mdl_types import MDLClassification, MDLControllerType, MDLData, MDLEmitter
 from pykotor.resource.formats.mdl.io_mdl import MDLBinaryReader, MDLBinaryWriter
 from pykotor.resource.formats.mdl.io_mdl_ascii import MDLAsciiReader, MDLAsciiWriter
-from pykotor.resource.formats.mdl.mdl_auto import bytes_mdl, write_mdl, read_mdl
+from pykotor.resource.formats.mdl.mdl_auto import bytes_mdl, write_mdl, read_mdl, read_mdl_fast
 
 __all__ = [
     "MDLClassification",
@@ -49,5 +49,6 @@ __all__ = [
     "MDLNodeFlags",
     "bytes_mdl",
     "read_mdl",
+    "read_mdl_fast",
     "write_mdl",
 ]

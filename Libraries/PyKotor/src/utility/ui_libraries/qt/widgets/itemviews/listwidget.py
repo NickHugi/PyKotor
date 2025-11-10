@@ -13,12 +13,17 @@ if TYPE_CHECKING:
 
 class RobustListWidget(QListWidget, RobustListView):
     """A list widget that supports common features and settings."""
+
+    def __new__(cls, *args, **kwargs):
+        # For PySide6 compatibility with multiple inheritance
+        return QListWidget.__new__(cls)
+
     def __init__(
         self,
         parent: QWidget | None = None,
     ):
         QListWidget.__init__(self, parent)
-        RobustListView.__init__(self, parent)
+        RobustListView.__init__(self, parent, should_call_qt_init=False)
 
     def invert_selection(self):
         for i in range(self.count()):

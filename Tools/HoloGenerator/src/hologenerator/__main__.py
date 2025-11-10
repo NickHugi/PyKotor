@@ -15,7 +15,7 @@ from pathlib import Path
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
         working_dir = str(path)
-        hologenerator_path = path.parents[2].joinpath("Tools/HoloGenerator/src")
+        hologenerator_path = path.parents[3].joinpath("Tools/HoloGenerator/src")
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)

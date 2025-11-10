@@ -16,7 +16,7 @@ for path in (PYKOTOR_SRC, UTILITY_SRC):
     if as_posix not in sys.path:
         sys.path.insert(0, as_posix)
 
-from pykotor.common.geometry import Vector3
+from utility.common.geometry import Vector3
 from pykotor.resource.formats.gff.gff_data import GFFList
 
 

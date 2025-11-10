@@ -36,6 +36,9 @@ class Scene(SceneBase):
         self.shader: Shader = Shader(KOTOR_VSHADER, KOTOR_FSHADER)
 
     def render(self):
+        # Poll for completed async resources (non-blocking) - MAIN PROCESS ONLY
+        self.poll_async_resources()
+        
         SceneCache.build_cache(self)
 
         self._prepare_gl_and_shader()
@@ -219,3 +222,4 @@ class Scene(SceneBase):
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
+

@@ -3,15 +3,15 @@ requires = ["setuptools>=67.8.0,<70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="PyKotor"
-version="1.7"
-description="Read, modify and write files used by KotOR's game engine."
+name = "PyKotor"
+version = "1.7"
+description = "Read, modify and write files used by KotOR's game engine."
 authors = [{name = "NickHugi"}]
 maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "LGPL-3.0-or-later License"}
 keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
-requires-python = ">= 3.8"
+requires-python = ">=3.8"
 dependencies = []
 
 [project.optional-dependencies]
@@ -51,8 +51,6 @@ gl = [
   "PyOpenGL~=3.1",    # ( might need 3.1.6 )
   "PyGLM>=2.0,<2.8; python_implementation == 'CPython'",  # ( might need 2.5.7 )
 ]
-license = {text = "LGPL-3.0-or-later License"}
-keywords = ["kotor", "library", "holo", "patcher", "pykotor", "star", "wars", "knights", "holopatcher", "tslpatcher"]
 
 [tool.poetry]
 name = "pykotor-workspace"

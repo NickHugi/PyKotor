@@ -20,7 +20,7 @@ class RIMBinaryReader(ResourceReader):
         self._rim: RIM | None = None
 
     @autoclose
-    def load(self) -> RIM:
+    def load(self, *, auto_close: bool = True) -> RIM:  # noqa: FBT001, FBT002, ARG002
         self._rim = RIM()
 
         file_type = self._reader.read_string(4)
@@ -72,7 +72,7 @@ class RIMBinaryWriter(ResourceWriter):
         self._rim: RIM = rim
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         entry_count = len(self._rim)
         offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
 

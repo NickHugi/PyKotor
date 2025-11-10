@@ -13,6 +13,10 @@ if TYPE_CHECKING:
 
 
 class RobustColumnView(RobustAbstractItemView, QColumnView):
+    def __new__(cls, *args, **kwargs):
+        # For PySide6 compatibility with multiple inheritance
+        return QColumnView.__new__(cls)
+
     def __init__(
         self,
         parent: QWidget | None = None,

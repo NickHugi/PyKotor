@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 
 
 class RobustHeaderView(RobustAbstractItemView, QHeaderView):
+    def __new__(cls, *args, **kwargs):
+        # For PySide6 compatibility with multiple inheritance
+        return QHeaderView.__new__(cls)
+
     @overload
     def __init__(self, orientation: Qt.Orientation | None = None, parent: QWidget | None = None, *args, should_call_qt_init: bool = True, **kwargs): ...
     @overload

@@ -11,6 +11,7 @@ from enum import Enum
 from functools import lru_cache
 from io import BytesIO
 from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union, cast
+import uuid
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -80,7 +81,7 @@ class ResourceReader:
                 loaded_src = bytearray(source.read_all())
 
             self._offset: int = offset
-            self._size: int = len(loaded_src)
+            self._size = len(loaded_src)
             self._source: bytearray = loaded_src[offset : self._size]
 
     def close(

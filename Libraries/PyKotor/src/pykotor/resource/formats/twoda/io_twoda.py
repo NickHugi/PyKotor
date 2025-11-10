@@ -20,7 +20,7 @@ class TwoDABinaryReader(ResourceReader):
         self._twoda: TwoDA | None = None
 
     @autoclose
-    def load(self) -> TwoDA:
+    def load(self, *, auto_close: bool = True) -> TwoDA:  # noqa: FBT001, FBT002, ARG002
         """Loads a 2DA file from the provided reader.
 
         Args:
@@ -98,7 +98,7 @@ class TwoDABinaryWriter(ResourceWriter):
         self._twoda: TwoDA = twoda
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True) -> None:  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         """Writes the 2DA data to a binary file.
 
         Args:

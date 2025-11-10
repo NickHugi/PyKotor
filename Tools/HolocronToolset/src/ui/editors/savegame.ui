@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Save Game Editor</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayoutMain">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      
+      <!-- Save Info Tab -->
+      <widget class="QWidget" name="tabSaveInfo">
+       <attribute name="title">
+        <string>Save Info</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutSaveInfo">
+        <item>
+         <widget class="QGroupBox" name="groupBasicInfo">
+          <property name="title">
+           <string>Basic Information</string>
+          </property>
+          <layout class="QFormLayout" name="formLayoutBasicInfo">
+           <item row="0" column="0">
+            <widget class="QLabel" name="labelSaveName">
+             <property name="text">
+              <string>Save Name:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="lineEditSaveName"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="labelAreaName">
+             <property name="text">
+              <string>Area Name:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="lineEditAreaName"/>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="labelLastModule">
+             <property name="text">
+              <string>Last Module:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="lineEditLastModule"/>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="labelTimePlayed">
+             <property name="text">
+              <string>Time Played (seconds):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QSpinBox" name="spinBoxTimePlayed">
+             <property name="maximum">
+              <number>2147483647</number>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="labelPCName">
+             <property name="text">
+              <string>PC Name (K2):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLineEdit" name="lineEditPCName"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupPortraits">
+          <property name="title">
+           <string>Portraits</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayoutPortraits">
+           <item>
+            <widget class="QLineEdit" name="lineEditPortrait0">
+             <property name="placeholderText">
+              <string>Portrait 0</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="lineEditPortrait1">
+             <property name="placeholderText">
+              <string>Portrait 1</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="lineEditPortrait2">
+             <property name="placeholderText">
+              <string>Portrait 2</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacerSaveInfo">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      
+      <!-- Party Table Tab -->
+      <widget class="QWidget" name="tabPartyTable">
+       <attribute name="title">
+        <string>Party &amp;&amp; Resources</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutPartyTable">
+        <item>
+         <widget class="QGroupBox" name="groupResources">
+          <property name="title">
+           <string>Resources</string>
+          </property>
+          <layout class="QFormLayout" name="formLayoutResources">
+           <item row="0" column="0">
+            <widget class="QLabel" name="labelGold">
+             <property name="text">
+              <string>Credits/Gold:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QSpinBox" name="spinBoxGold">
+             <property name="maximum">
+              <number>2147483647</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="labelXPPool">
+             <property name="text">
+              <string>XP Pool:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QSpinBox" name="spinBoxXPPool">
+             <property name="maximum">
+              <number>2147483647</number>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="labelComponents">
+             <property name="text">
+              <string>Components (K2):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="spinBoxComponents">
+             <property name="maximum">
+              <number>2147483647</number>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="labelChemicals">
+             <property name="text">
+              <string>Chemicals (K2):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QSpinBox" name="spinBoxChemicals">
+             <property name="maximum">
+              <number>2147483647</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupPartyMembers">
+          <property name="title">
+           <string>Party Members</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayoutPartyMembers">
+           <item>
+            <widget class="QListWidget" name="listWidgetPartyMembers"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      
+      <!-- Global Variables Tab -->
+      <widget class="QWidget" name="tabGlobalVars">
+       <attribute name="title">
+        <string>Global Variables</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutGlobalVars">
+        <item>
+         <widget class="QTabWidget" name="tabWidgetGlobalVarsType">
+          <widget class="QWidget" name="tabBooleans">
+           <attribute name="title">
+            <string>Booleans</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayoutBooleans">
+            <item>
+             <widget class="QTableWidget" name="tableWidgetBooleans">
+              <property name="columnCount">
+               <number>2</number>
+              </property>
+              <column>
+               <property name="text">
+                <string>Name</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Value</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tabNumbers">
+           <attribute name="title">
+            <string>Numbers</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayoutNumbers">
+            <item>
+             <widget class="QTableWidget" name="tableWidgetNumbers">
+              <property name="columnCount">
+               <number>2</number>
+              </property>
+              <column>
+               <property name="text">
+                <string>Name</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Value</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tabStrings">
+           <attribute name="title">
+            <string>Strings</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayoutStrings">
+            <item>
+             <widget class="QTableWidget" name="tableWidgetStrings">
+              <property name="columnCount">
+               <number>2</number>
+              </property>
+              <column>
+               <property name="text">
+                <string>Name</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Value</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tabLocations">
+           <attribute name="title">
+            <string>Locations</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayoutLocations">
+            <item>
+             <widget class="QTableWidget" name="tableWidgetLocations">
+              <property name="columnCount">
+               <number>5</number>
+              </property>
+              <column>
+               <property name="text">
+                <string>Name</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>X</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Y</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Z</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Ori</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      
+      <!-- Characters Tab -->
+      <widget class="QWidget" name="tabCharacters">
+       <attribute name="title">
+        <string>Characters</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayoutCharacters">
+        <item>
+         <widget class="QListWidget" name="listWidgetCharacters">
+          <property name="maximumWidth">
+           <number>200</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTabWidget" name="tabWidgetCharacterDetails">
+          <widget class="QWidget" name="tabCharStats">
+           <attribute name="title">
+            <string>Stats</string>
+           </attribute>
+           <layout class="QFormLayout" name="formLayoutCharStats">
+            <item row="0" column="0">
+             <widget class="QLabel" name="labelCharName">
+              <property name="text">
+               <string>Name:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="lineEditCharName"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="labelCharHP">
+              <property name="text">
+               <string>HP / Max HP:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayoutHP">
+              <item>
+               <widget class="QSpinBox" name="spinBoxCharHP">
+                <property name="maximum">
+                 <number>32767</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelHPSeparator">
+                <property name="text">
+                 <string>/</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="spinBoxCharMaxHP">
+                <property name="maximum">
+                 <number>32767</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="labelCharFP">
+              <property name="text">
+               <string>FP / Max FP:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayoutFP">
+              <item>
+               <widget class="QSpinBox" name="spinBoxCharFP">
+                <property name="maximum">
+                 <number>32767</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelFPSeparator">
+                <property name="text">
+                 <string>/</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="spinBoxCharMaxFP">
+                <property name="maximum">
+                 <number>32767</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="labelCharXP">
+              <property name="text">
+               <string>Experience:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QSpinBox" name="spinBoxCharXP">
+              <property name="maximum">
+               <number>2147483647</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tabCharEquipment">
+           <attribute name="title">
+            <string>Equipment</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayoutCharEquipment">
+            <item>
+             <widget class="QListWidget" name="listWidgetEquipment"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tabCharSkills">
+           <attribute name="title">
+            <string>Skills</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayoutCharSkills">
+            <item>
+             <widget class="QTableWidget" name="tableWidgetSkills">
+              <property name="columnCount">
+               <number>2</number>
+              </property>
+              <column>
+               <property name="text">
+                <string>Skill</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Rank</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      
+      <!-- Inventory Tab -->
+      <widget class="QWidget" name="tabInventory">
+       <attribute name="title">
+        <string>Inventory</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutInventory">
+        <item>
+         <widget class="QTableWidget" name="tableWidgetInventory">
+          <property name="columnCount">
+           <number>3</number>
+          </property>
+          <column>
+           <property name="text">
+            <string>Item</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Count</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>ResRef</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      
+      <!-- Journal Tab -->
+      <widget class="QWidget" name="tabJournal">
+       <attribute name="title">
+        <string>Journal</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutJournal">
+        <item>
+         <widget class="QTableWidget" name="tableWidgetJournal">
+          <property name="columnCount">
+           <number>4</number>
+          </property>
+          <column>
+           <property name="text">
+            <string>Plot ID</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>State</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Date</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Time</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1200</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="actionNew"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSaveAs"/>
+    <addaction name="separator"/>
+    <addaction name="actionRevert"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>&amp;Tools</string>
+    </property>
+    <addaction name="actionFlushEventQueue"/>
+    <addaction name="actionRebuildCachedModules"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuTools"/>
+  </widget>
+  
+  <widget class="QStatusBar" name="statusBar"/>
+  
+  <action name="actionNew">
+   <property name="text">
+    <string>&amp;New</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>&amp;Open...</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>&amp;Save</string>
+   </property>
+  </action>
+  <action name="actionSaveAs">
+   <property name="text">
+    <string>Save &amp;As...</string>
+   </property>
+  </action>
+  <action name="actionRevert">
+   <property name="text">
+    <string>&amp;Revert</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>E&amp;xit</string>
+   </property>
+  </action>
+  <action name="actionFlushEventQueue">
+   <property name="text">
+    <string>Flush EventQueue (Fix Corruption)</string>
+   </property>
+  </action>
+  <action name="actionRebuildCachedModules">
+   <property name="text">
+    <string>Rebuild Cached Modules</string>
+   </property>
+  </action>
+  
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
+

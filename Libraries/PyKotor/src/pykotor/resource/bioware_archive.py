@@ -150,6 +150,14 @@ class BiowareArchive(ComparableMixin, ABC):
             and super().__eq__(other)  # ComparableMixin.__eq__
         )
 
+    def set_resource(
+        self,
+        resname: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
+        self.set_data(resname, restype, data)
+
     def set_data(
         self,
         resname: str,

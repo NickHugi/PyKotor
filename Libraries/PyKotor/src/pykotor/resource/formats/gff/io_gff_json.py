@@ -42,7 +42,7 @@ class GFFJSONReader(ResourceReader):
         super().__init__(source, offset, size)
 
     @autoclose
-    def load(self, auto_close: bool = True) -> GFF:  # noqa: FBT002, FBT001
+    def load(self, *, auto_close: bool = True) -> GFF:  # noqa: FBT002, FBT001
         """Load the GFF data from JSON.
 
         Args:
@@ -153,7 +153,8 @@ class GFFJSONWriter(ResourceWriter):
         super().__init__(target)
         self._gff = gff
 
-    def write(self):
+    @autoclose
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         """Write the GFF data as JSON.
 
         This method converts the GFF object to a JSON object and writes it to the target.
@@ -161,7 +162,6 @@ class GFFJSONWriter(ResourceWriter):
         json_data = self._serialize_struct(self._gff.root)
         json_str = json.dumps(json_data, indent=2)
         self._writer.write_string(json_str)
-        self._writer.close()
 
     def _serialize_struct(self, struct: GFFStruct) -> dict[str, Any]:
         """Serialize a GFFStruct to a JSON object.

@@ -1,40 +1,41 @@
 [build-system]
-requires = [
-    "setuptools>=42,<70",
-    "wheel",
-]
+requires = ["setuptools>=42,<70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="PyKotorFont"
-description="Work with KOTOR's font textures and txi files."
-version="1.7"
+name = "PyKotorFont"
+description = "Work with KOTOR's font textures and txi files."
+version = "1.7"
 requires-python = ">= 3.8"
 dependencies = [
-    "ply>=3.11,<4",     # required for the nss compiler lexer
-    "numpy~=1.22",      # probably required by PyKotorGL
-    "charset-normalizer>=2.0,<3.4",  # used for localized string decodings
-    "defusedxml~=0.7",  # secure XML parsing
-    "pykotor>=1.7",
-    "Pillow>=9.5",
+  "ply>=3.11,<4",                 # required for the nss compiler lexer
+  "numpy~=1.22",                  # probably required by PyKotorGL
+  "charset-normalizer>=2.0,<3.4", # used for localized string decodings
+  "defusedxml~=0.7",              # secure XML parsing
+  "Pillow>=9.5",
 ]
-authors = [
-  {name = "NickHugi"},
+authors = [{ name = "NickHugi" }]
+maintainers = [{ name = "th3w1zard1", email = "halomastar@gmail.com" }]
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { text = "LGPL-3.0-or-later License" }
+keywords = [
+  "kotor",
+  "library",
+  "holocron",
+  "toolset",
+  "pykotor",
+  "editor",
+  "holopatcher",
+  "tslpatcher",
 ]
-maintainers = [
-  {name = "th3w1zard1", email = "halomastar@gmail.com"},
-]
-readme = {file = "README.md", content-type = "text/markdown"}
-license = {text = "LGPL-3.0-or-later License"}
-keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
 
 [project.optional-dependencies]
 font_writer = [
-  "pillow>=9.5; python_implementation == 'CPython'",       # required for TXI/TGA fonts (CPython)
-  "pillow>10,<11.1.0; python_implementation == 'PyPy'",    # required for TXI/TGA fonts (PyPy)
+  "pillow>=9.5; python_implementation == 'CPython'",    # required for TXI/TGA fonts (CPython)
+  "pillow>10,<11.1.0; python_implementation == 'PyPy'", # required for TXI/TGA fonts (PyPy)
 ]
 xml = [
-  "defusedxml~=0.7"           # secure XML parsing
+  "defusedxml~=0.7", # secure XML parsing
 ]
 gl = [
   "PyGLM>=2.0,<2.8",

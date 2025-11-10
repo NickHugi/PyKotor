@@ -71,14 +71,14 @@ class CaseInsensImmutableStr(WrappedStr):
         match: re.Match[str] | None = pattern.search(self._content)
 
         if match is None:
-            return (self.__class__(self._content), self.__class__(""), self.__class__(""))
+            return (self._content, "", "")
 
         idx: int = match.start()
         sep_length: int = len(__sep)
         return (
-            self.__class__(self._content[:idx]),
-            self.__class__(self._content[idx:idx + sep_length]),
-            self.__class__(self._content[idx + sep_length:]),
+            self._content[:idx],
+            self._content[idx : idx + sep_length],
+            self._content[idx + sep_length :],
         )
 
     def rpartition(
@@ -90,13 +90,13 @@ class CaseInsensImmutableStr(WrappedStr):
         matches = list(pattern.finditer(self._content))
 
         if not matches:
-            return (self.__class__(""), self.__class__(""), self.__class__(self._content))
+            return ("", "", self._content)
         match: re.Match[str] = matches[-1]  # Get the last match for rpartition
         idx: int = match.start()
         return (
-            self.__class__(self._content[:idx]),
-            self.__class__(self._content[idx : idx + len(__sep)]),
-            self.__class__(self._content[idx + len(__sep) :]),
+            self._content[:idx],
+            self._content[idx : idx + len(__sep)],
+            self._content[idx + len(__sep) :],
         )
 
     def endswith(
@@ -118,35 +118,95 @@ class CaseInsensImmutableStr(WrappedStr):
         __start=None,
         __end=None,
     ):
-        return self._casefold_content.rfind(self._coerce_str(__sub), __start, __end)
+        start_idx = 0 if __start is None else int(__start)
+        end_idx = len(self._content) if __end is None else int(__end)
+        slice_text = self._casefold_content[start_idx:end_idx]
+        target = self._coerce_str(__sub)
+        result = slice_text.rfind(target)
+        if result == -1:
+            return -1
+        if __start is None and __end is None:
+            return result
+        return result
 
     def split(
         self,
         sep=None,
-        maxsplit=-1,
-    ):
+        maxsplit: int = -1,
+    ) -> list[str]:
         if sep is None:
-            # Default split behavior on whitespace
-            return super().split(None, maxsplit)
+            return self._content.split(None, maxsplit)
 
-        # Case-insensitive split using regular expression
-        pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(sep)), re.IGNORECASE)
-        split_parts: list[int] = [m.start() for m in pattern.finditer(self._content)]
-        return self._split_by_indices(split_parts, int(maxsplit))
+        sep_str = str(sep)
+        if sep_str == "":
+            msg = "empty separator"
+            raise ValueError(msg)
 
-    def _split_by_indices(self, indices: list[int], maxsplit: int, reverse: bool = False) -> list[Self]:
-        # Split the string using indices from the regular expression
-        if maxsplit > 0:
-            indices = indices[-maxsplit:] if reverse else indices[:maxsplit]
+        pattern: re.Pattern[str] = re.compile(re.escape(sep_str), re.IGNORECASE)
+        maxsplit_arg = maxsplit if maxsplit is not None and maxsplit >= 0 else 0
+        parts = pattern.split(self._content, maxsplit_arg)
+        return parts
 
-        last_index: int = 0
-        results: list[Self] = []
-        for index in reversed(indices) if reverse else indices:
-            results.append(self.__class__(self._content[last_index:index]))
-            last_index = index + 1
+    def _split_by_indices(
+        self,
+        indices: list[int | tuple[int, int]],
+        maxsplit: int,
+        reverse: bool = False,
+    ) -> list[Self]:
+        if maxsplit == 0:
+            return [self.__class__(self._content)]
 
-        results.append(self.__class__(self._content[last_index:]))
-        return list(reversed(results)) if reverse else results
+        spans: list[tuple[int, int]] = []
+        for entry in indices:
+            if isinstance(entry, tuple):
+                spans.append(entry)
+            else:
+                spans.append((entry, entry + 1))
+
+        if reverse:
+            spans = list(reversed(spans))
+
+        parts: list[Self] = []
+        splits_done = 0
+
+        if not reverse:
+            last_index = 0
+            for start, end in spans:
+                segment = self.__class__(self._content[last_index:start])
+                parts.append(segment)
+                splits_done += 1
+
+                if maxsplit != -1 and splits_done >= maxsplit:
+                    parts[-1] = self.__class__(self._content[last_index:])
+                    return parts
+
+                parts.append(self.__class__(self._content[start:end]))
+                last_index = end
+
+            parts.append(self.__class__(self._content[last_index:]))
+            return parts
+
+        # reverse=True handling
+        content_len = len(self._content)
+        last_index = content_len
+        temp_parts: list[Self] = []
+
+        for start, end in spans:
+            # spans are already reversed order; adjust to actual coordinates
+            adj_start, adj_end = content_len - end, content_len - start
+            segment = self.__class__(self._content[adj_end:last_index])
+            temp_parts.append(segment)
+            splits_done += 1
+
+            if maxsplit != -1 and splits_done >= maxsplit:
+                temp_parts[-1] = self.__class__(self._content[:last_index])
+                return list(reversed(temp_parts))
+
+            temp_parts.append(self.__class__(self._content[adj_start:adj_end]))
+            last_index = adj_start
+
+        temp_parts.append(self.__class__(self._content[:last_index]))
+        return list(reversed(temp_parts))
 
     def count(
         self,
@@ -180,18 +240,18 @@ class CaseInsensImmutableStr(WrappedStr):
         self,
         __prefix: WrappedStr | str,
     ) -> Self:
-        parsed_prefix: str = self._coerce_str(__prefix)
-        if self._casefold_content.startswith(parsed_prefix):
-            return self.__class__(self._content[len(__prefix) :])
+        prefix_str = str(__prefix)
+        if self._content.startswith(prefix_str):
+            return self.__class__(self._content[len(prefix_str) :])
         return self.__class__(self._content)
 
     def removesuffix(
         self,
         __suffix: WrappedStr | str,
     ) -> Self:
-        parsed_suffix: str = self._coerce_str(__suffix)
-        if self._casefold_content.endswith(parsed_suffix):
-            return self.__class__(self._content[: -len(__suffix)])
+        suffix_str = str(__suffix)
+        if self._content.endswith(suffix_str):
+            return self.__class__(self._content[: -len(suffix_str)])
         return self.__class__(self._content)
 
     def replace(
@@ -244,20 +304,31 @@ class CaseInsensImmutableStr(WrappedStr):
         self,
         __sep=None,
         __maxsplit=-1,
-    ):
+    ) -> list[str]:
         if __sep is None:
-            # Default split behavior on whitespace
-            return [self.__class__(part) for part in self._content.rsplit(None, __maxsplit)]
+            return self._content.rsplit(None, __maxsplit)
 
-        # Case-insensitive split using regular expression
-        pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
-        split_parts: list[str] = pattern.split(self._content)
+        sep_str = str(__sep)
+        if sep_str == "":
+            msg = "empty separator"
+            raise ValueError(msg)
 
-        if __maxsplit > 0:
-            # Perform the split from the right
-            split_parts = split_parts[-__maxsplit - 1 :]
+        pattern: re.Pattern[str] = re.compile(re.escape(sep_str), re.IGNORECASE)
+        matches = list(pattern.finditer(self._content))
+        if not matches:
+            return [self._content]
 
-        return [self.__class__(part) for part in split_parts]
+        if __maxsplit is not None and __maxsplit > 0:
+            matches = matches[-__maxsplit:]
+
+        parts: list[str] = []
+        last_index = len(self._content)
+        for match in reversed(matches):
+            start, end = match.span()
+            parts.append(self._content[end:last_index])
+            last_index = start
+        parts.append(self._content[:last_index])
+        return list(reversed(parts))
 
     def rindex(
         self,
@@ -265,7 +336,11 @@ class CaseInsensImmutableStr(WrappedStr):
         __start: SupportsIndex | None = None,
         __end: SupportsIndex | None = None,
     ) -> int:
-        return self._casefold_content.rindex(self._coerce_str(__sub), __start, __end)
+        value = self.rfind(__sub, __start, __end)
+        if value == -1:
+            msg = "substring not found"
+            raise ValueError(msg)
+        return value
 
     def startswith(
         self,

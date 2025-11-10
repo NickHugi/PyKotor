@@ -1,0 +1,9 @@
+# PyKotorEngine Requirements
+# Panda3D game engine for KotOR model rendering
+
+# Core rendering engine
+panda3d>=1.10.13
+
+# PyKotor is installed separately from Libraries/PyKotor
+# See ../../Libraries/PyKotor/requirements.txt for PyKotor dependencies
+

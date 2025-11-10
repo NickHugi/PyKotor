@@ -13,6 +13,11 @@ if TYPE_CHECKING:
 
 class RobustGraphicsWidget(QGraphicsWidget, RobustGraphicsView):
     """A graphics widget that supports common features and settings."""
+
+    def __new__(cls, *args, **kwargs):
+        # For PySide6 compatibility with multiple inheritance
+        return QGraphicsWidget.__new__(cls)
+
     def __init__(
         self,
         parent: QGraphicsItem | None = None,
@@ -23,7 +28,7 @@ class RobustGraphicsWidget(QGraphicsWidget, RobustGraphicsView):
     ):
         if should_call_qt_init:
             QGraphicsWidget.__init__(self, parent, flags)
-        RobustGraphicsView.__init__(self)
+        RobustGraphicsView.__init__(self, should_call_qt_init=False)
 
     def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
         menu = super().build_context_menu()

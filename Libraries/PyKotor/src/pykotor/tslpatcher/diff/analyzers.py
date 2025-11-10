@@ -59,6 +59,33 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.template import PatcherModifications
 
 
+def _parse_numeric_row_label(label: str | None) -> int | None:
+    """Convert a 2DA row label to an int when possible."""
+    if not label:
+        return None
+    stripped = label.strip()
+    if not stripped:
+        return None
+    if stripped[0] in "+-":
+        sign = stripped[0]
+        digits = stripped[1:]
+        if digits.isdigit():
+            return int(sign + digits)
+        return None
+    if stripped.isdigit():
+        return int(stripped)
+    return None
+
+
+def _resolve_row_index_value(fallback_index: int, *labels: str | None) -> int:
+    """Prefer numeric row labels over positional indices for ChangeRow targets."""
+    for label in labels:
+        numeric = _parse_numeric_row_label(label)
+        if numeric is not None:
+            return numeric
+    return fallback_index
+
+
 class DiffAnalyzer(ABC):
     """Abstract base class for diff analyzers."""
 
@@ -182,9 +209,22 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
                 change_row_id = f"change_row_{change_row_counter}"
                 change_row_counter += 1
 
+                left_label: str | None = None
+                right_label: str | None = None
+                try:
+                    left_label = left_2da.get_label(row_idx)
+                except Exception:  # noqa: BLE001
+                    left_label = None
+                try:
+                    right_label = right_2da.get_label(row_idx)
+                except Exception:  # noqa: BLE001
+                    right_label = None
+
+                target_row_index = _resolve_row_index_value(row_idx, right_label, left_label)
+
                 change_row = ChangeRow2DA(
                     identifier=change_row_id,
-                    target=Target(TargetType.ROW_INDEX, row_idx),
+                    target=Target(TargetType.ROW_INDEX, target_row_index),
                     cells=changed_cells,
                 )
                 modifications.modifiers.append(change_row)
@@ -1158,10 +1198,16 @@ def analyze_tlk_strref_references(  # noqa: PLR0913
                                             existing_mod = Modifications2DA(filename)
                                             twoda_modifications.append(existing_mod)
 
+                                        try:
+                                            row_label = twoda_obj.get_label(row_idx)
+                                        except Exception:  # noqa: BLE001
+                                            row_label = None
+                                        target_row_index = _resolve_row_index_value(row_idx, row_label)
+
                                         # Create ChangeRow2DA with 2DAMEMORY token
                                         change_row = ChangeRow2DA(
                                             identifier=f"strref_update_{row_idx}_{column_name}",
-                                            target=Target(TargetType.ROW_INDEX, row_idx),
+                                            target=Target(TargetType.ROW_INDEX, target_row_index),
                                             cells={column_name: RowValueTLKMemory(token_id)},
                                         )
                                         existing_mod.modifiers.append(change_row)
@@ -1184,7 +1230,7 @@ def analyze_tlk_strref_references(  # noqa: PLR0913
                         ssf_obj = read_ssf(resource.data())
 
                         # Check all SSF sounds for this StrRef
-                        modified_sounds = []
+                        modified_sounds: list[SSFSound] = []
                         for sound in SSFSound:
                             sound_strref = ssf_obj.get(sound)
                             if sound_strref == old_strref:

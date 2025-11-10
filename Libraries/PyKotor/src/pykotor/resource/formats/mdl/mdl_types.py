@@ -39,18 +39,34 @@ class MDLClassification(IntEnum):
 
 
 class MDLNodeFlags(IntFlag):
-    """Node flags indicating what type of data is attached to the node."""
-
-    HEADER = 1
-    LIGHT = 2
-    EMITTER = 4
-    CAMERA = 8
-    REFERENCE = 16
-    MESH = 32
-    SKIN = 64
-    DANGLY = 256
-    AABB = 512
-    SABER = 2048
+    """Node flags indicating what type of data is attached to the node.
+    
+    These flags are combined to create specific node types. For example:
+    - mesh = HEADER + MESH = 0x021 = 33
+    - skin mesh = HEADER + MESH + SKIN = 0x061 = 97
+    - dangly mesh = HEADER + MESH + DANGLY = 0x121 = 289
+    - aabb mesh = HEADER + MESH + AABB = 0x221 = 545
+    - saber mesh = HEADER + MESH + SABER = 0x821 = 2081
+    
+    References:
+    - vendor/mdlops/MDLOpsM.pm:301-311 (Node type quick reference)
+    - vendor/mdlops/MDLOpsM.pm:313-323 (Node Type constants)
+    - vendor/kotorblender/io_scene_kotor/format/mdl/types.py:93-101 (Node flags)
+    - vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:153 (Flag validation)
+    """
+    # Base node flags
+    # Reference: vendor/mdlops/MDLOpsM.pm:302-311, vendor/kotorblender:93
+    HEADER = 0x0001      # NODE_HAS_HEADER - Base node data (mdlops:302)
+    LIGHT = 0x0002       # NODE_HAS_LIGHT - Light data (mdlops:303, kotorblender:94)
+    EMITTER = 0x0004     # NODE_HAS_EMITTER - Particle emitter data (mdlops:304, kotorblender:95)
+    CAMERA = 0x0008      # NODE_HAS_CAMERA - Camera data (not in mdlops quick ref)
+    REFERENCE = 0x0010   # NODE_HAS_REFERENCE - Reference to another model (mdlops:305, kotorblender:96)
+    MESH = 0x0020        # NODE_HAS_MESH - Mesh geometry (mdlops:306, kotorblender:97)
+    SKIN = 0x0040        # NODE_HAS_SKIN - Skinned mesh (mdlops:307, kotorblender:98)
+    ANIM = 0x0080        # NODE_HAS_ANIM - Animation mesh (mdlops:308)
+    DANGLY = 0x0100      # NODE_HAS_DANGLY - Cloth/hair physics mesh (mdlops:309, kotorblender:99)
+    AABB = 0x0200        # NODE_HAS_AABB - Walkmes/collision data (mdlops:310, kotorblender:100)
+    SABER = 0x0800       # NODE_HAS_SABER - Lightsaber blade mesh (mdlops:311, kotorblender:101)
 
 
 class MDLNodeType(IntEnum):
@@ -72,62 +88,108 @@ class MDLNodeType(IntEnum):
 
 # region Controller Data
 class MDLControllerType(IntEnum):
-    """Controller types for animations."""
+    """Controller types for animations and node properties.
+    
+    These controller types are used to animate various properties of nodes in MDL models.
+    Controllers can be indexed by node type since some IDs are reused for different node types.
+    
+    References:
+    - vendor/mdlops/MDLOpsM.pm:325-405 (Comprehensive controller mapping)
+    - vendor/kotorblender/io_scene_kotor/format/mdl/types.py:140-197 (Controller constants)
+    - vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:663-701 (Controller reading)
+    
+    Note: Controller indexing by node type is necessary because at least one controller ID (100)
+    is used for different purposes in different node types (per vendor/mdlops/MDLOpsM.pm:325)
+    """
     INVALID = -1
-    POSITION = 8
-    ORIENTATION = 20
-    SCALE = 36
-    COLOR = 76
-    ALPHAEND = 80
-    ALPHASTART = 84
-    RADIUS = 88
-    BIRTHRATE = 88
-    BOUNCECO = 92
-    SHADOWRADIUS = 96
-    COMBINEETIME = 96
-    VERTICALDISPLACEMENT = 100
-    DRAG = 100
-    ILLUM_COLOR = 100
-    ILLUM = 100
-    FOCUSZONETX = 104
-    FOCUSZONETY = 108
-    FRAME = 112
-    GRAV = 116
-    LIFEEXP = 120
-    MASS = 124
-    P2P_BEZIER2 = 128
-    ALPHA = 132
-    P2P_BEZIER_2 = 132
-    P2P_BEZIER3 = 132
-    PARTICLEROTX = 136
-    MULTIPLIER = 140
-    PARTICLEROTY = 140
-    PARTICLEROTZ = 144
-    RANDVELX = 148
-    RANDVELY = 152
-    RANDVELZ = 156
-    SIZESTART = 160
-    SIZEEND = 164
-    SIZESTART_Y = 168
-    SIZEEND_Y = 172
-    SPREAD = 176
-    THRESHOLD = 180
-    VELOCITY = 184
-    XSIZE = 188
-    YSIZE = 192
-    BLUR = 196
-    LIGHTNINGDELAY = 200
-    LIGHTNINGRADIUS = 204
-    LIGHTNINGSCALE = 208
-    DETONATE = 212
-    ALPHAMID = 216
-    SIZEMID = 220
-    SIZEMID_Y = 224
-    BOUNCE_CO = 228
-    RANDOMVELX = 232
-    RANDOMVELY = 236
-    RANDOMVELZ = 240
-    TILING = 244
+    
+    # Base node controllers (NODE_HAS_HEADER)
+    # Reference: vendor/mdlops/MDLOpsM.pm:329-335
+    POSITION = 8            # position - All nodes (mdlops:329)
+    ORIENTATION = 20        # orientation - All nodes (mdlops:330)
+    SCALE = 36              # scale - All nodes (mdlops:331)
+    ALPHA = 132             # alpha - All nodes (mdlops:332, was 128)
+    
+    # Light controllers (NODE_HAS_LIGHT)
+    # Reference: vendor/mdlops/MDLOpsM.pm:342-346, vendor/kotorblender:145-149
+    COLOR = 76              # color - Light nodes (mdlops:342)
+    RADIUS = 88             # radius - Light nodes (mdlops:343)
+    SHADOWRADIUS = 96       # shadowradius - Light nodes (mdlops:344)
+    VERTICALDISPLACEMENT = 100  # verticaldisplacement - Light nodes (mdlops:345)
+    MULTIPLIER = 140        # multiplier - Light nodes (mdlops:346)
+    
+    # Emitter controllers (NODE_HAS_EMITTER)
+    # Reference: vendor/mdlops/MDLOpsM.pm:357-405, vendor/kotorblender:150-196
+    # These mappings were updated based on fx_flame01.mdl analysis (mdlops:352-355)
+    ALPHAEND = 80           # alphaEnd - Emitter (mdlops:357)
+    ALPHASTART = 84         # alphaStart - Emitter (mdlops:358)
+    BIRTHRATE = 88          # birthrate - Emitter (mdlops:359, same as RADIUS for lights)
+    BOUNCECO = 92           # bounce_co - Emitter (mdlops:360)
+    COMBINETIME = 96        # combinetime - Emitter, was 120 (mdlops:361)
+    DRAG = 100              # drag - Emitter (mdlops:362, same as VERTICALDISPLACEMENT for lights)
+    FPS = 104               # fps - Emitter, was 128 (mdlops:363)
+    FRAMEEND = 108          # frameEnd - Emitter, was 132 (mdlops:364)
+    FRAMESTART = 112        # frameStart - Emitter, was 136 (mdlops:365)
+    GRAV = 116              # grav - Emitter, was 140 (mdlops:366)
+    LIFEEXP = 120           # lifeExp - Emitter, was 144 (mdlops:367)
+    MASS = 124              # mass - Emitter, was 148 (mdlops:368)
+    P2P_BEZIER2 = 128       # p2p_bezier2 - Emitter, was 152 (mdlops:369)
+    P2P_BEZIER3 = 132       # p2p_bezier3 - Emitter, was 156 (mdlops:370)
+    PARTICLEROT = 136       # particleRot - Emitter, was 160 (mdlops:371)
+    RANDVEL = 140           # randvel - Emitter, was 164 (mdlops:372)
+    SIZESTART = 144         # sizeStart - Emitter, was 168 (mdlops:373)
+    SIZEEND = 148           # sizeEnd - Emitter, was 172 (mdlops:374)
+    SIZESTART_Y = 152       # sizeStart_y - Emitter, was 176 (mdlops:375)
+    SIZEEND_Y = 156         # sizeEnd_y - Emitter, was 180 (mdlops:376)
+    SPREAD = 160            # spread - Emitter, was 184 (mdlops:377)
+    THRESHOLD = 164         # threshold - Emitter, was 188 (mdlops:378)
+    VELOCITY = 168          # velocity - Emitter, was 192 (mdlops:379)
+    XSIZE = 172             # xsize - Emitter, was 196 (mdlops:380)
+    YSIZE = 176             # ysize - Emitter, was 200 (mdlops:381)
+    BLURLENGTH = 180        # blurlength - Emitter, was 204 (mdlops:382)
+    LIGHTNINGDELAY = 184    # lightningDelay - Emitter, was 208 (mdlops:383)
+    LIGHTNINGRADIUS = 188   # lightningRadius - Emitter, was 212 (mdlops:384)
+    LIGHTNINGSCALE = 192    # lightningScale - Emitter, was 216 (mdlops:385)
+    LIGHTNINGSUBDIV = 196   # lightningSubDiv - Emitter (mdlops:386)
+    LIGHTNINGZIGZAG = 200   # lightningzigzag - Emitter (mdlops:387)
+    ALPHAMID = 216          # alphaMid - Emitter, was 464 (mdlops:388)
+    PERCENTSTART = 220      # percentStart - Emitter, was 480 (mdlops:389)
+    PERCENTMID = 224        # percentMid - Emitter, was 481 (mdlops:390)
+    PERCENTEND = 228        # percentEnd - Emitter, was 482 (mdlops:391)
+    SIZEMID = 232           # sizeMid - Emitter, was 484 (mdlops:392)
+    SIZEMID_Y = 236         # sizeMid_y - Emitter, was 488 (mdlops:393)
+    RANDOMBIRTHRATE = 240   # m_fRandomBirthRate - Emitter (mdlops:394)
+    TARGETSIZE = 252        # targetsize - Emitter (mdlops:395)
+    NUMCONTROLPTS = 256     # numcontrolpts - Emitter (mdlops:396)
+    CONTROLPTRADIUS = 260   # controlptradius - Emitter (mdlops:397)
+    CONTROLPTDELAY = 264    # controlptdelay - Emitter (mdlops:398)
+    TANGENTSPREAD = 268     # tangentspread - Emitter (mdlops:399)
+    TANGENTLENGTH = 272     # tangentlength - Emitter (mdlops:400)
+    COLORMID = 284          # colorMid - Emitter, was 468 (mdlops:401)
+    COLOREND = 380          # colorEnd - Emitter, was 96 (mdlops:402)
+    COLORSTART = 392        # colorStart - Emitter, was 108 (mdlops:403)
+    DETONATE = 502          # detonate - Emitter, was 228 (mdlops:404)
+    
+    # Mesh controllers (NODE_HAS_MESH)
+    # Reference: vendor/mdlops/MDLOpsM.pm:406, vendor/kotorblender:143
+    SELFILLUMCOLOR = 100    # selfillumcolor - Mesh (mdlops:406, same as DRAG and VERTICALDISPLACEMENT)
+    
+    # Legacy aliases for backward compatibility
+    BOUNCE_CO = BOUNCECO
+    P2P_BEZIER_2 = P2P_BEZIER2
+    ILLUM_COLOR = SELFILLUMCOLOR
+    ILLUM = SELFILLUMCOLOR
+    SIZESTART_emitter = SIZESTART
+    SIZEEND_emitter = SIZEEND
+    LIGHTNINGDELAY_emitter = LIGHTNINGDELAY
+    LIGHTNINGRADIUS_emitter = LIGHTNINGRADIUS
+    LIGHTNINGSCALE_emitter = LIGHTNINGSCALE
+    ALPHAMID_emitter = ALPHAMID
+    SIZEMID_emitter = SIZEMID
+    DETONATE_emitter = DETONATE
+    
+    # Note: Some controller IDs that were previously defined have been removed or
+    # corrected based on vendor analysis. See fx_flame01.mdl analysis in mdlops:352-355
 
 
 class MDLTrimeshProps(IntFlag):
@@ -205,15 +267,34 @@ class MDLLightFlags(IntFlag):
 
 
 class MDLEmitterFlags(IntFlag):
-    """Emitter flags from xoreos KotOR implementation."""
-    LOOP = 0x0001  # Particle system loops
-    BOUNCE = 0x0002  # Particles bounce
-    RANDOM = 0x0004  # Random initial rotation
-    INHERIT = 0x0008  # Inherit parent orientation
-    INHERIT_VEL = 0x0010  # Inherit parent velocity
-    INHERIT_LOCAL = 0x0020  # Inherit local transform
-    SPLAT = 0x0040  # Splat particles on collision
-    INHERIT_PART = 0x0080  # Inherit parent particle
+    """Particle emitter behavior flags.
+    
+    These flags control various aspects of particle emitter behavior including physics,
+    inheritance, and rendering properties.
+    
+    References:
+    - vendor/kotorblender/io_scene_kotor/format/mdl/types.py:115-127 (Comprehensive list)
+    - vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:35-49 (EmitterFlags struct)
+    - vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:295-306 (Flag parsing)
+    """
+    # Reference: vendor/kotorblender:115-127, vendor/reone:35-49
+    P2P = 0x0001               # EMITTER_FLAG_P2P - Point-to-point emitter (kotorblender:115, reone:36)
+    P2P_SEL = 0x0002           # EMITTER_FLAG_P2P_SEL - P2P selection (kotorblender:116)
+    P2P_BEZIER = 0x0002        # P2P with Bezier curves (reone:37, same as P2P_SEL)
+    AFFECTED_WIND = 0x0004     # EMITTER_FLAG_AFFECTED_WIND - Affected by wind (kotorblender:117, reone:38)
+    TINTED = 0x0008            # EMITTER_FLAG_TINTED - Particles are tinted (kotorblender:118, reone:39)
+    BOUNCE = 0x0010            # EMITTER_FLAG_BOUNCE - Particles bounce on collision (kotorblender:119, reone:40)
+    RANDOM = 0x0020            # EMITTER_FLAG_RANDOM - Random rotation (kotorblender:120, reone:41)
+    INHERIT = 0x0040           # EMITTER_FLAG_INHERIT - Inherit parent orientation (kotorblender:121, reone:42)
+    INHERIT_VEL = 0x0080       # EMITTER_FLAG_INHERIT_VEL - Inherit parent velocity (kotorblender:122, reone:43)
+    INHERIT_LOCAL = 0x0100     # EMITTER_FLAG_INHERIT_LOCAL - Inherit local transform (kotorblender:123, reone:44)
+    SPLAT = 0x0200             # EMITTER_FLAG_SPLAT - Splat on collision (kotorblender:124, reone:45)
+    INHERIT_PART = 0x0400      # EMITTER_FLAG_INHERIT_PART - Inherit particle properties (kotorblender:125, reone:46)
+    DEPTH_TEXTURE = 0x0800     # EMITTER_FLAG_DEPTH_TEXTURE - Use depth texture (kotorblender:126, reone:47)
+    FLAG_13 = 0x1000           # Unknown flag 13 (kotorblender:127, reone:48)
+    
+    # Legacy aliases
+    LOOP = P2P  # Backward compatibility
 
 
 class MDLSaberFlags(IntFlag):

@@ -34,7 +34,7 @@ class TLKXMLReader(ResourceReader):
         self._tlk: TLK | None = None
 
     @autoclose
-    def load(self) -> TLK:
+    def load(self, *, auto_close: bool = True) -> TLK:  # noqa: FBT001, FBT002, ARG002
         self._tlk = TLK()
 
         data = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
@@ -79,7 +79,7 @@ class TLKXMLWriter(ResourceWriter):
         self._tlk: TLK = tlk
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         self._xml.tag = "tlk"
         self._xml.set("language", str(self._tlk.language.value))
 

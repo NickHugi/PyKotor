@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 import unittest
 
+import pytest
+
 from concurrent.futures import Future
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING

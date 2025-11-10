@@ -28,7 +28,7 @@ class TXIBinaryReader(ResourceReader):
         self._txi: TXI = TXI()
 
     @autoclose
-    def load(self) -> TXI:
+    def load(self, *, auto_close: bool = True) -> TXI:  # noqa: FBT001, FBT002, ARG002
         from pykotor.resource.formats.txi.txi_data import TXI, TXICommand, TXIFeatures
 
         self._txi.features = TXIFeatures()
@@ -276,7 +276,7 @@ class TXIBinaryWriter(ResourceWriter):
         self._txi: TXI = txi
 
     @autoclose
-    def write(self):
+    def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         from pykotor.resource.formats.txi.txi_data import TXICommand
 
         lines: list[str] = []

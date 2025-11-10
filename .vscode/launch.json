@@ -47,6 +47,9 @@
             "request": "launch",
             "module": "toolset",
             "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder};${workspaceFolder}/Libraries/Utility/src;${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/PyKotorGL/src;${env:PYTHONPATH}"
+            },
             "pythonArgs": [
                 "-Xfrozen_modules=off",
                 "-Xdev"

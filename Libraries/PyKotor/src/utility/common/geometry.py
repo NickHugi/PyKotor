@@ -830,30 +830,41 @@ class Vector4:
         cls,
         data: int,
     ) -> Self:
-        """Decompresses a compressed Vector4.
+        """Decompress a packed quaternion from a 32-bit integer.
+
+        KotOR uses compressed quaternions for orientation controllers to save space.
+        The compression packs X, Y, Z components into 11, 11, and 10 bits respectively,
+        with W calculated from the constraint that |q| = 1.
 
         Args:
         ----
-            data: The compressed data as an integer
+            data: 32-bit packed quaternion value
 
         Returns:
         -------
-            Vector4: The decompressed Vector4
+            Vector4: Decompressed quaternion (x, y, z, w)
 
-        Processing Logic:
-        ----------------
-            - Extract x, y, z components from data bits
-            - Calculate w component from x, y, z
-            - Normalize vector if magnitude is greater than 1
-            - Return new Vector4 instance.
+        References:
+        ----------
+            vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:850-868
+            Formula: X uses bits 0-10 (11 bits), Y uses bits 11-21 (11 bits),
+                     Z uses bits 22-31 (10 bits), W computed from magnitude
         """
-        x = 1 - (data & 0x7FF) / 1023
-        y = 1 - ((data >> 11) & 0x7FF) / 1023
-        z = 1 - (data >> 22) / 511
+        # Extract components from packed integer (kotorblender:855-858)
+        # X component: bits 0-10 (11 bits, mask 0x7FF = 2047)
+        # Maps [0, 2047] -> [-1, 1] via (value/1023 - 1)
+        x = ((data & 0x7FF) / 1023.0) - 1.0
+        
+        # Y component: bits 11-21 (11 bits, shift 11 then mask 0x7FF)
+        y = (((data >> 11) & 0x7FF) / 1023.0) - 1.0
+        
+        # Z component: bits 22-31 (10 bits, shift 22, max value 1023)
+        z = ((data >> 22) / 511.0) - 1.0
 
+        # Calculate W from quaternion unit constraint (kotorblender:859-863)
         temp = x**2 + y**2 + z**2
         if temp < 1.0:
-            w = -math.sqrt(1.0 - temp)
+            w = math.sqrt(1.0 - temp)
         else:
             temp = math.sqrt(temp)
             x /= temp
@@ -892,6 +903,46 @@ class Vector4:
         qw: float = math.cos(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2) + math.sin(roll / 2) * math.sin(pitch / 2) * math.sin(yaw / 2)
 
         return cls(qx, qy, qz, qw)
+
+    def to_compressed(
+        self,
+    ) -> int:
+        """Compress this quaternion into a 32-bit integer.
+        
+        Inverse of from_compressed. Packs X, Y, Z components into a single
+        32-bit value. The W component is not stored as it can be recomputed from
+        the quaternion unit constraint.
+        
+        Returns:
+        -------
+            int: 32-bit packed quaternion value
+        
+        References:
+        ----------
+            vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:850-868 (decompression)
+            Inverse operation derived from decompression algorithm
+        
+        Notes:
+        -----
+            Values are clamped to [-1, 1] range before packing to prevent overflow.
+        """
+        # Clamp values to valid range
+        x = max(-1.0, min(1.0, self.x))
+        y = max(-1.0, min(1.0, self.y))
+        z = max(-1.0, min(1.0, self.z))
+        
+        # Map from [-1, 1] to integer ranges and pack
+        # X: [-1, 1] -> [0, 2047] (11 bits) via (value + 1) * 1023
+        x_packed = int((x + 1.0) * 1023.0) & 0x7FF
+        
+        # Y: [-1, 1] -> [0, 2047] (11 bits)
+        y_packed = int((y + 1.0) * 1023.0) & 0x7FF
+        
+        # Z: [-1, 1] -> [0, 1023] (10 bits)  
+        z_packed = int((z + 1.0) * 511.0) & 0x3FF
+        
+        # Pack into single 32-bit integer
+        return x_packed | (y_packed << 11) | (z_packed << 22)
 
     def to_euler(
         self,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 
 from abc import abstractmethod
@@ -29,7 +30,7 @@ class QPlatformDialogHelper(QObject):
     def __new__(cls, *args, **kwargs) -> Self:
         new_cls: type[Self] = cls
         if cls is QPlatformDialogHelper:
-            if sys.platform == ("win32", "cygwin"):
+            if sys.platform in ("win32", "cygwin"):
                 from utility.ui_libraries.qt.adapters.kernel.qplatformdialoghelper.qwindowsdialoghelpers import QWindowsDialogHelper
                 new_cls = QWindowsDialogHelper  # type: ignore[misc]
             elif sys.platform == "linux":
@@ -104,7 +105,28 @@ class QPlatformFileDialogHelper(QPlatformDialogHelper if TYPE_CHECKING else QObj
 
     @staticmethod
     def cleanFilterList(filter: str) -> list[str]:
-        return [filter.strip()]
+        """
+        Mirror Qt's QPlatformFileDialogHelper::cleanFilterList behaviour.
+
+        The incoming string can contain an optional human readable label followed by
+        one or more glob patterns enclosed in parentheses, e.g. "Images (*.png *.jpg)".
+        """
+
+        if not filter:
+            return []
+
+        filter = filter.strip()
+        match = re.match(QPlatformFileDialogHelper.filterRegExp, filter)
+        if not match:
+            # No parenthesised pattern list – treat the entire string as a pattern.
+            return [filter]
+
+        pattern_section: str = match.group(2).strip()
+        if not pattern_section:
+            return []
+
+        # Patterns are separated by whitespace in Qt's implementation.
+        return [pattern for pattern in pattern_section.split() if pattern]
 
     FileMode = QFileDialog.FileMode.AnyFile
     AcceptMode = QFileDialog.AcceptMode.AcceptOpen

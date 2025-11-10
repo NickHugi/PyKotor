@@ -4,12 +4,47 @@ import lzma
 
 from typing import TYPE_CHECKING
 
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.bif.bif_data import BIF, BIFResource, BIFType
 from pykotor.resource.type import ResourceReader, ResourceType, ResourceWriter, autoclose
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
+
+
+_LZMA_RAW_FILTERS: list[dict[str, int]] = [{"id": lzma.FILTER_LZMA1}]
+
+
+def _decompress_bzf_payload(payload: bytes, expected_size: int) -> bytes:
+    """Handle both raw and containerised LZMA payloads, tolerating 4-byte padding."""
+    try:
+        data = lzma.decompress(payload, format=lzma.FORMAT_RAW, filters=_LZMA_RAW_FILTERS)
+    except lzma.LZMAError:
+        cleaned_payload = payload
+        while True:
+            try:
+                decompressor = lzma.LZMADecompressor()
+                data = decompressor.decompress(cleaned_payload)
+            except lzma.LZMAError:
+                stripped = cleaned_payload.rstrip(b"\0")
+                if len(stripped) == len(cleaned_payload):
+                    raise
+                cleaned_payload = stripped
+                continue
+
+            leftover = getattr(decompressor, "unused_data", b"")
+            if leftover and any(byte != 0 for byte in leftover):
+                cleaned_payload = cleaned_payload[: len(cleaned_payload) - len(leftover)]
+                continue
+
+            break
+
+    if len(data) != expected_size:
+        msg = f"Decompressed size mismatch: got {len(data)}, expected {expected_size}"
+        raise lzma.LZMAError(msg)
+
+    return data
 
 
 class BIFBinaryReader(ResourceReader):
@@ -28,7 +63,7 @@ class BIFBinaryReader(ResourceReader):
         self.data_offset: int = 0
 
     @autoclose
-    def load(self) -> BIF:
+    def load(self, *, auto_close: bool = True) -> BIF:  # noqa: FBT001, FBT002, ARG002
         """Load BIF/BZF data from source."""
         self._check_signature()
         self._read_header()
@@ -50,7 +85,7 @@ class BIFBinaryReader(ResourceReader):
             raise ValueError(msg)
 
         # Check version
-        if signature[4:] != "V1  ":
+        if signature[4:] != "V1  " and signature[4:] != "V1.1":
             msg = f"Unsupported BIF/BZF version: {signature[4:]}"
             raise ValueError(msg)
 
@@ -59,7 +94,6 @@ class BIFBinaryReader(ResourceReader):
         self.var_res_count = self._reader.read_uint32()
         self.fixed_res_count = self._reader.read_uint32()
         self.data_offset = self._reader.read_uint32()
-        self._reader.read_uint32()  # Skip reserved 4 bytes
 
         if self.fixed_res_count > 0:
             msg = "Fixed resources not supported"
@@ -100,11 +134,8 @@ class BIFBinaryReader(ResourceReader):
                 # For BZF, decompress the data
                 compressed: bytes = self._reader.read_bytes(resource.packed_size)
                 try:
-                    resource.data = lzma.decompress(compressed)
-                    if len(resource.data) != resource.size:
-                        msg: str = f"Decompressed size mismatch: got {len(resource.data)}, expected {resource.size}"
-                        raise ValueError(msg)
-                except lzma.LZMAError as e:
+                    resource.data = _decompress_bzf_payload(compressed, resource.size)
+                except lzma.LZMAError as e:  # noqa: PERF203
                     msg = f"Failed to decompress BZF resource: {e}"
                     raise ValueError(msg) from e
             else:
@@ -127,7 +158,7 @@ class BIFBinaryWriter(ResourceWriter):
         self._data_offset: int = 0
 
     @autoclose
-    def write(self) -> None:
+    def write(self, *, auto_close: bool = True) -> None:  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         """Write BIF/BZF data to target."""
         self._write_header()
         self._write_resource_table()
@@ -139,16 +170,18 @@ class BIFBinaryWriter(ResourceWriter):
         self._writer.write_string(self.bif.bif_type.value)
         self._writer.write_string("V1  ")
 
-        # Write counts and offset
+        # Write counts and offset to resource table (always right after header)
         self._writer.write_uint32(self.bif.var_count)
         self._writer.write_uint32(self.bif.fixed_count)
-        self._writer.write_uint32(BIF.HEADER_SIZE + (self.bif.var_count * BIF.VAR_ENTRY_SIZE))
-        self._writer.write_uint32(0)  # Reserved 4 bytes
+        self._writer.write_uint32(BIF.HEADER_SIZE)  # Offset to variable resource table (20 bytes)
 
     def _write_resource_table(self) -> None:
         """Write BIF/BZF resource table."""
-        # Calculate data offsets
-        current_offset = 0
+        # Calculate absolute file offsets for resource data
+        # Data section starts after header and resource table
+        data_section_offset = BIF.HEADER_SIZE + (self.bif.var_count * BIF.VAR_ENTRY_SIZE)
+        current_offset = data_section_offset
+        
         for resource in self.bif.resources:
             # Align resource data to 4-byte boundary
             if current_offset % 4 != 0:
@@ -156,17 +189,17 @@ class BIFBinaryWriter(ResourceWriter):
             resource.offset = current_offset
 
             if self.bif.bif_type == BIFType.BZF:
-                # For BZF, compress the data to get size
-                compressed: bytes = lzma.compress(resource.data)
+                # For BZF, compress the data to get size using raw LZMA1 format
+                compressed: bytes = lzma.compress(resource.data, format=lzma.FORMAT_RAW, filters=_LZMA_RAW_FILTERS)
                 resource.packed_size = len(compressed)
                 current_offset += resource.packed_size
             else:
                 current_offset += resource.size
 
-        # Write resource table
+        # Write resource table entries with absolute file offsets
         for resource in self.bif.resources:
             self._writer.write_uint32(resource.resname_key_index)
-            self._writer.write_uint32(resource.offset)
+            self._writer.write_uint32(resource.offset)  # Absolute file offset
             self._writer.write_uint32(resource.size)
             self._writer.write_uint32(resource.restype.type_id)
 
@@ -180,8 +213,9 @@ class BIFBinaryWriter(ResourceWriter):
                 self._writer.write_bytes(bytes(4 - calc))
 
             if self.bif.bif_type == BIFType.BZF:
-                # Write compressed data for BZF
-                self._writer.write_bytes(lzma.compress(resource.data))
+                # Write compressed data for BZF using raw LZMA1 format
+                compressed: bytes = lzma.compress(resource.data, format=lzma.FORMAT_RAW, filters=_LZMA_RAW_FILTERS)
+                self._writer.write_bytes(compressed)
             else:
                 # Write raw data for BIF
                 self._writer.write_bytes(resource.data)
