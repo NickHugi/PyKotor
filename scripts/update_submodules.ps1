@@ -27,17 +27,102 @@ function Write-ErrorMessage {
 function Invoke-ExternalCommand {
     param(
         [Parameter(Mandatory = $true)] [string] $Tool,
-        [Parameter()] [string[]] $Arguments = @()
+        [Parameter()] [string[]] $Arguments = @(),
+        [bool]$SuppressOutput = $false
     )
+
+    # Log the command being executed (raw, no normalization)
+    if (-not $SuppressOutput) {
+        $argString = if ($Arguments.Count -gt 0) { $Arguments -join ' ' } else { '' }
+        $cmdString = if ($argString) { "$Tool $argString" } else { $Tool }
+        Write-Host "" -ForegroundColor Gray
+        Write-Host "[CMD] $cmdString" -ForegroundColor DarkGray
+    }
 
     try {
         $output = & $Tool @Arguments 2>&1
         $exitCode = $LASTEXITCODE
+        
+        # Log the raw output (no filtering, no normalization)
+        if (-not $SuppressOutput) {
+            Write-Host "[EXIT CODE] $exitCode" -ForegroundColor DarkGray
+            
+            if ($null -eq $output) {
+                Write-Host "[OUTPUT] (empty)" -ForegroundColor DarkGray
+            }
+            else {
+                # Ensure output is always an array
+                $outputLines = @($output)
+                
+                # Check if we have any output lines
+                if ($outputLines.Count -eq 0 -or ($outputLines.Count -eq 1 -and [string]::IsNullOrWhiteSpace($outputLines[0]))) {
+                    Write-Host "[OUTPUT] (empty)" -ForegroundColor DarkGray
+                }
+                else {
+                    Write-Host "[OUTPUT START]" -ForegroundColor DarkGray
+                    
+                    # Calculate total output length
+                    $totalLength = 0
+                    foreach ($line in $outputLines) {
+                        $totalLength += ([string]$line).Length
+                    }
+                    
+                    # If output is excessively large (over 5000 chars), show first portion then truncate
+                    if ($totalLength -gt 5000) {
+                        $charCount = 0
+                        $lineCount = 0
+                        $charLimit = 2000
+                        $lineLimit = 20
+
+                        foreach ($line in $outputLines) {
+                            $lineValue = [string]$line
+                            $lineLength = $lineValue.Length
+
+                            if ($charCount -ge $charLimit -or $lineCount -ge $lineLimit) {
+                                break
+                            }
+
+                            if ($charCount + $lineLength -le $charLimit) {
+                                Write-Host $lineValue -ForegroundColor Gray
+                                $charCount += $lineLength
+                            }
+                            else {
+                                $remaining = $charLimit - $charCount
+                                if ($remaining -gt 0) {
+                                    Write-Host ($lineValue.Substring(0, $remaining)) -ForegroundColor Gray
+                                    $charCount += $remaining
+                                }
+                                break
+                            }
+
+                            $lineCount++
+                        }
+
+                        if ($charCount -lt $totalLength) {
+                            Write-Host "" -ForegroundColor Gray
+                            Write-Host "... (output truncated - showing first ~${charCount} chars of $totalLength total chars) ..." -ForegroundColor DarkGray
+                        }
+                    }
+                    else {
+                        foreach ($line in $outputLines) {
+                            Write-Host $line -ForegroundColor Gray
+                        }
+                    }
+                    Write-Host "[OUTPUT END]" -ForegroundColor DarkGray
+                    Write-Host "" -ForegroundColor Gray
+                }
+            }
+        }
+        
         return [PSCustomObject]@{
             ExitCode = $exitCode
             Output   = if ($null -eq $output) { @() } elseif ($output -is [System.Array]) { $output } else { @($output) }
         }
-    } catch {
+    }
+    catch {
+        if (-not $SuppressOutput) {
+            Write-Host "[EXCEPTION] $($_.Exception.Message)" -ForegroundColor Red
+        }
         return [PSCustomObject]@{
             ExitCode = 1
             Output   = @($_.Exception.Message)
@@ -188,7 +273,8 @@ function Test-SubmodulePathClean {
         $aheadCountRaw = ($aheadResult.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1)
         try {
             $aheadCount = [int]$aheadCountRaw
-        } catch {
+        }
+        catch {
             $aheadCount = -1
         }
 
@@ -252,7 +338,8 @@ function Remove-StaleSubmodulePathIfClean {
     try {
         Remove-Item -Path $SubmodulePath -Recurse -Force -ErrorAction Stop
         Write-Success "    ✓ Removed stale submodule directory: $SubmodulePath"
-    } catch {
+    }
+    catch {
         Write-WarningMessage "    ⚠ Failed to remove directory '$SubmodulePath': $($_.Exception.Message)"
     }
 }
@@ -300,7 +387,8 @@ function Sync-SubmoduleState {
                         Write-WarningMessage "      $line"
                     }
                 }
-            } else {
+            }
+            else {
                 Write-Success "    ✓ Removed from git config"
             }
 
@@ -311,7 +399,8 @@ function Sync-SubmoduleState {
                 try {
                     Remove-Item -Path $moduleCachePath -Recurse -Force -ErrorAction Stop
                     Write-Success "    ✓ Removed cache directory"
-                } catch {
+                }
+                catch {
                     Write-WarningMessage "    ⚠ Warning: Could not remove cache directory: $($_.Exception.Message)"
                 }
             }
@@ -351,7 +440,8 @@ function Sync-SubmoduleState {
                 Write-WarningMessage "  $line"
             }
         }
-    } else {
+    }
+    else {
         Write-Success "✓ Git state synchronized successfully"
     }
     
@@ -374,7 +464,8 @@ function Sync-SubmoduleState {
         }
         Write-WarningMessage "  This may indicate submodules were never initialized or git config is corrupted."
         Write-WarningMessage "  Initialization will be attempted during submodule update."
-    } else {
+    }
+    else {
         Write-Success "✓ All .gitmodules paths are now synchronized in git config"
     }
     
@@ -443,10 +534,10 @@ function Get-ForkInfo {
     )
 
     $info = [PSCustomObject]@{
-        IsFork             = $false
-        ParentFullName     = $null
+        IsFork              = $false
+        ParentFullName      = $null
         ParentDefaultBranch = $null
-        UpstreamUrl        = $null
+        UpstreamUrl         = $null
     }
 
     if (-not $GhAvailable -or -not $RepoIdentifier) {
@@ -470,7 +561,8 @@ function Get-ForkInfo {
 
     try {
         $repoInfo = ($ghResult.Output | Out-String | ConvertFrom-Json)
-    } catch {
+    }
+    catch {
         Write-WarningMessage "  Received invalid JSON from GitHub CLI when checking fork info."
         return $info
     }
@@ -496,6 +588,321 @@ function Get-ForkInfo {
     $info.UpstreamUrl = Get-UpstreamUrl -OriginUrl $OriginUrl -ParentFullName $parentFullName
 
     return $info
+}
+
+function Get-RemoteDefaultBranch {
+    param(
+        [string]$RemoteName = 'origin'
+    )
+
+    # Try using symbolic-ref first (more reliable)
+    $symlinkResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('symbolic-ref', "refs/remotes/$RemoteName/HEAD")
+    if ($symlinkResult.ExitCode -eq 0) {
+        $output = ($symlinkResult.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1)
+        if ($output -match 'refs/remotes/.+/(.+)$') {
+            return $Matches[1]
+        }
+    }
+
+    # Fallback: use ls-remote --symref
+    $lsRemoteResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('ls-remote', '--symref', $RemoteName, 'HEAD')
+    if ($lsRemoteResult.ExitCode -eq 0) {
+        foreach ($line in $lsRemoteResult.Output) {
+            if ($line -match 'ref:\s+refs/heads/(.+)\s+HEAD') {
+                return $Matches[1]
+            }
+        }
+    }
+
+    return $null
+}
+
+function Ensure-SubmoduleRemotesConfiguration {
+    param(
+        [string]$UpstreamUrl,
+        [string]$OriginUrl = $null
+    )
+
+    if (-not (Test-WorkingTreeClean)) {
+        Write-ErrorMessage "  ✗ Cannot configure remotes when working tree has uncommitted changes."
+        return $false
+    }
+
+    # Resolve origin URL if not provided
+    if (-not $OriginUrl) {
+        $originResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('config', '--get', 'remote.origin.url')
+        if ($originResult.ExitCode -eq 0) {
+            $OriginUrl = ($originResult.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1)
+        }
+    }
+
+    if (-not $OriginUrl) {
+        Write-ErrorMessage "  ✗ Cannot configure remotes: origin URL not found"
+        return $false
+    }
+
+    Write-Info "    Current remotes before configuration:"
+    $null = Invoke-ExternalCommand -Tool 'git' -Arguments @('remote', '-v')
+
+    # Ensure origin remote URL is correct
+    $checkOrigin = Invoke-ExternalCommand -Tool 'git' -Arguments @('config', '--get', 'remote.origin.url')
+    $currentOriginUrl = if ($checkOrigin.ExitCode -eq 0) { ($checkOrigin.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1) } else { $null }
+    if ($currentOriginUrl -ne $OriginUrl) {
+        Write-Info "    Configuring origin remote..."
+        $setOriginResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('remote', 'set-url', 'origin', $OriginUrl)
+        if ($setOriginResult.ExitCode -ne 0) {
+            Write-ErrorMessage "    ✗ Failed to set origin URL"
+            return $false
+        }
+        Write-Success "      ✓ Origin configured"
+    }
+
+    $hasUpstream = $false
+    if ($UpstreamUrl) {
+        $checkUpstream = Invoke-ExternalCommand -Tool 'git' -Arguments @('config', '--get', 'remote.upstream.url')
+        if ($checkUpstream.ExitCode -ne 0) {
+            Write-Info "    Adding upstream remote..."
+            $addUpstreamResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('remote', 'add', 'upstream', $UpstreamUrl)
+            if ($addUpstreamResult.ExitCode -ne 0) {
+                Write-ErrorMessage "    ✗ Failed to add upstream remote"
+                return $false
+            }
+            Write-Success "      ✓ Upstream added"
+            $hasUpstream = $true
+        }
+        else {
+            $currentUpstreamUrl = ($checkUpstream.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1)
+            if ($currentUpstreamUrl -ne $UpstreamUrl) {
+                Write-Info "    Updating upstream remote..."
+                $setUpstreamResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('remote', 'set-url', 'upstream', $UpstreamUrl)
+                if ($setUpstreamResult.ExitCode -ne 0) {
+                    Write-ErrorMessage "    ✗ Failed to update upstream URL"
+                    return $false
+                }
+                Write-Success "      ✓ Upstream updated"
+            }
+            $hasUpstream = $true
+        }
+    }
+
+    Write-Info "    Remotes after configuration:"
+    $null = Invoke-ExternalCommand -Tool 'git' -Arguments @('remote', '-v')
+
+    # Fetch remotes so default branch information is current
+    Write-Info "    Fetching remotes to refresh branch data..."
+    $fetchOriginResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('fetch', 'origin')
+    if ($fetchOriginResult.ExitCode -ne 0) {
+        Write-WarningMessage "    ⚠ Failed to fetch from origin"
+    }
+    else {
+        Write-Success "      ✓ Fetched from origin"
+    }
+
+    if ($hasUpstream) {
+        $fetchUpstreamResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('fetch', 'upstream')
+        if ($fetchUpstreamResult.ExitCode -ne 0) {
+            Write-WarningMessage "    ⚠ Failed to fetch from upstream"
+        }
+        else {
+            Write-Success "      ✓ Fetched from upstream"
+        }
+    }
+
+    # Determine default branches
+    $originDefaultBranch = Get-RemoteDefaultBranch -RemoteName 'origin'
+    if (-not $originDefaultBranch) { $originDefaultBranch = 'master' }
+    Write-Info "    Origin default branch resolved as '$originDefaultBranch'"
+
+    $upstreamDefaultBranch = $null
+    if ($hasUpstream) {
+        $upstreamDefaultBranch = Get-RemoteDefaultBranch -RemoteName 'upstream'
+        if (-not $upstreamDefaultBranch) { $upstreamDefaultBranch = $originDefaultBranch }
+        Write-Info "    Upstream default branch resolved as '$upstreamDefaultBranch'"
+    }
+
+    # Ensure remote-tracking aliases origin/master and upstream/master exist
+    $originBranchExists = $false
+    $originHashResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('rev-parse', "origin/$originDefaultBranch")
+    if ($originHashResult.ExitCode -eq 0) {
+        $originBranchExists = $true
+    }
+
+    $upstreamBranchExists = $false
+    if ($hasUpstream -and $upstreamDefaultBranch) {
+        $upstreamHashResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('rev-parse', "upstream/$upstreamDefaultBranch")
+        if ($upstreamHashResult.ExitCode -eq 0) {
+            $upstreamBranchExists = $true
+        }
+    }
+
+    # Ensure local master branch exists and tracks origin default branch
+    Write-Info "    Ensuring local 'master' branch tracks origin/$originDefaultBranch..."
+    $sourceRef = $null
+    if ($originBranchExists) {
+        $sourceRef = "origin/$originDefaultBranch"
+    }
+    elseif ($upstreamBranchExists) {
+        $sourceRef = "upstream/$upstreamDefaultBranch"
+    }
+
+    $checkMasterResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('rev-parse', '--verify', 'master')
+    if ($checkMasterResult.ExitCode -ne 0) {
+        if ($sourceRef) {
+            Invoke-ExternalCommand -Tool 'git' -Arguments @('checkout', '-B', 'master', $sourceRef) | Out-Null
+        }
+        else {
+            Write-WarningMessage "    ⚠ Remote default branch not found. Creating empty 'master' branch."
+            Invoke-ExternalCommand -Tool 'git' -Arguments @('checkout', '-B', 'master') | Out-Null
+        }
+    }
+    else {
+        Invoke-ExternalCommand -Tool 'git' -Arguments @('checkout', 'master') | Out-Null
+    }
+
+    # Configure branch settings for pull/push defaults
+    Invoke-ExternalCommand -Tool 'git' -Arguments @('config', 'branch.master.remote', 'origin') | Out-Null
+    Invoke-ExternalCommand -Tool 'git' -Arguments @('config', 'branch.master.merge', "refs/heads/$originDefaultBranch") | Out-Null
+    if ($originBranchExists) {
+        Invoke-ExternalCommand -Tool 'git' -Arguments @('branch', '--set-upstream-to', "origin/$originDefaultBranch", 'master') | Out-Null
+    }
+    else {
+        Write-WarningMessage "    ⚠ origin/$originDefaultBranch does not exist; upstream configuration skipped."
+    }
+
+    if ($hasUpstream -and $upstreamBranchExists) {
+        Invoke-ExternalCommand -Tool 'git' -Arguments @('config', 'branch.master.pushRemote', 'upstream') | Out-Null
+        Invoke-ExternalCommand -Tool 'git' -Arguments @('config', 'remote.pushDefault', 'upstream') | Out-Null
+    }
+
+    Write-Info "    Branch configuration summary:"
+    $null = Invoke-ExternalCommand -Tool 'git' -Arguments @('config', '--get', 'branch.master.remote')
+    $null = Invoke-ExternalCommand -Tool 'git' -Arguments @('config', '--get', 'branch.master.merge')
+    if ($hasUpstream -and $upstreamBranchExists) {
+        $null = Invoke-ExternalCommand -Tool 'git' -Arguments @('config', '--get', 'branch.master.pushRemote')
+        $null = Invoke-ExternalCommand -Tool 'git' -Arguments @('config', '--get', 'remote.pushDefault')
+    }
+
+    Write-Success "    ✓ Remotes and branches configured successfully"
+    return $true
+}
+
+function Test-WorkingTreeClean {
+    $statusResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('status', '--porcelain')
+    if ($statusResult.ExitCode -ne 0) {
+        Write-ErrorMessage "  ✗ Failed to check working tree status"
+        return $false
+    }
+    
+    $hasChanges = @($statusResult.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count -gt 0
+    if ($hasChanges) {
+        Write-ErrorMessage "  ✗ Working tree has uncommitted changes:"
+        foreach ($line in $statusResult.Output) {
+            if (-not [string]::IsNullOrWhiteSpace($line)) {
+                Write-ErrorMessage "      $line"
+            }
+        }
+        return $false
+    }
+    
+    return $true
+}
+
+function Pull-From-Upstream {
+    param(
+        [string]$RemoteName = 'upstream'
+    )
+
+    # Check working tree is clean
+    if (-not (Test-WorkingTreeClean)) {
+        return $false
+    }
+
+    # Get default branch from upstream
+    $upstreamDefaultBranch = Get-RemoteDefaultBranch -RemoteName $RemoteName
+    if (-not $upstreamDefaultBranch) {
+        Write-WarningMessage "  ⚠ Could not determine default branch on $RemoteName"
+        return $false
+    }
+
+    Write-Info "    Pulling from $RemoteName/$upstreamDefaultBranch..."
+    
+    $pullResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('pull', '--ff-only', $RemoteName, $upstreamDefaultBranch)
+    if ($pullResult.ExitCode -ne 0) {
+        Write-ErrorMessage "    ✗ Pull failed"
+        return $false
+    }
+
+    # Check if already up to date
+    $outputStr = ($pullResult.Output | Out-String).Trim()
+    $isUpToDate = $outputStr -match 'Already up to date|Already up-to-date' -or ($pullResult.Output -join ' ') -match 'Already up'
+    
+    if ($isUpToDate) {
+        Write-Info "    ✓ Already up to date with $RemoteName/$upstreamDefaultBranch"
+    }
+    else {
+        Write-Success "    ✓ Pulled latest from $RemoteName/$upstreamDefaultBranch"
+    }
+
+    return $true
+}
+
+function Push-To-Remote {
+    param(
+        [string]$RemoteName = 'origin',
+        [string]$LocalBranch = 'master'
+    )
+
+    $resultInfo = [PSCustomObject]@{
+        Success     = $false
+        Pushed      = $false
+        CommitCount = 0
+    }
+
+    # Check working tree is clean
+    if (-not (Test-WorkingTreeClean)) {
+        return $resultInfo
+    }
+
+    # Get default branch on origin
+    $originDefaultBranch = Get-RemoteDefaultBranch -RemoteName $RemoteName
+    if (-not $originDefaultBranch) {
+        Write-WarningMessage "  ⚠ Could not determine default branch on $RemoteName"
+        return $resultInfo
+    }
+
+    Write-Info "    Checking for commits to push to $RemoteName..."
+
+    $commitCountResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('rev-list', '--count', "$RemoteName/$originDefaultBranch..$LocalBranch")
+    if ($commitCountResult.ExitCode -ne 0) {
+        Write-WarningMessage "    ⚠ Could not check for commits on $RemoteName/$originDefaultBranch"
+        return $resultInfo
+    }
+
+    try {
+        $resultInfo.CommitCount = [int]($commitCountResult.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1)
+    }
+    catch {
+        $resultInfo.CommitCount = 0
+    }
+
+    if ($resultInfo.CommitCount -eq 0) {
+        Write-Info "    ⊘ No commits to push to $RemoteName"
+        $resultInfo.Success = $true
+        return $resultInfo
+    }
+
+    Write-Info "    Found $($resultInfo.CommitCount) commit(s) to push. Pushing to $RemoteName/$originDefaultBranch..."
+
+    $pushResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('push', $RemoteName, "$LocalBranch`:$originDefaultBranch")
+    if ($pushResult.ExitCode -ne 0) {
+        Write-ErrorMessage "    ✗ Push failed"
+        return $resultInfo
+    }
+
+    Write-Success "    ✓ Successfully pushed $($resultInfo.CommitCount) commit(s) to $RemoteName/$originDefaultBranch"
+    $resultInfo.Success = $true
+    $resultInfo.Pushed = $true
+    return $resultInfo
 }
 
 function Resolve-TargetBranch {
@@ -606,16 +1013,11 @@ function Update-From-Origin {
         [string]$BranchName
     )
 
+    Write-Info "  Checking origin for updates..."
+    
     $pullResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('pull', '--ff-only', 'origin', $BranchName)
     if ($pullResult.ExitCode -ne 0) {
-        $errorMsg = ($pullResult.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1)
-        Write-WarningMessage "  Unable to fast-forward with origin/${BranchName}: ${errorMsg}"
-        Write-WarningMessage "    Full diagnostic output:"
-        foreach ($line in $pullResult.Output) {
-            if (-not [string]::IsNullOrWhiteSpace($line)) {
-                Write-WarningMessage "      $line"
-            }
-        }
+        Write-ErrorMessage "  ✗ Failed to update from origin/$BranchName"
         return $false
     }
 
@@ -623,132 +1025,12 @@ function Update-From-Origin {
     $isUpToDate = $outputStr -match 'Already up to date|Already up-to-date' -or $pullResult.Output -contains 'Already up to date.'
 
     if ($isUpToDate) {
-        Write-Info "  ⊘ Origin already up to date for branch '$BranchName'."
-    } else {
-        Write-Success "  ✓ Updated from origin/$BranchName."
+        Write-Info "    ✓ Origin already up to date for branch '$BranchName'"
+    }
+    else {
+        Write-Success "    ✓ Updated from origin/$BranchName"
     }
 
-    return $true
-}
-
-function Update-From-Upstream {
-    param(
-        [string]$TempRemoteName,
-        [string]$UpstreamUrl,
-        [string]$TargetBranch
-    )
-
-    $addRemote = Invoke-ExternalCommand -Tool 'git' -Arguments @('remote', 'add', $TempRemoteName, $UpstreamUrl)
-    if ($addRemote.ExitCode -ne 0) {
-        # Attempt to overwrite if remote already exists
-        $setRemote = Invoke-ExternalCommand -Tool 'git' -Arguments @('remote', 'set-url', $TempRemoteName, $UpstreamUrl)
-        if ($setRemote.ExitCode -ne 0) {
-            Write-WarningMessage "  Unable to add temporary upstream remote ($UpstreamUrl)."
-            Write-WarningMessage "    Full diagnostic output:"
-            foreach ($line in $setRemote.Output) {
-                if (-not [string]::IsNullOrWhiteSpace($line)) {
-                    Write-WarningMessage "      $line"
-                }
-            }
-            return $false
-        }
-    }
-
-    $fetchResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('fetch', $TempRemoteName, $TargetBranch)
-    if ($fetchResult.ExitCode -ne 0) {
-        Write-WarningMessage "  Failed to fetch $TargetBranch from upstream ($UpstreamUrl)."
-        Write-WarningMessage "    Command: git fetch $TempRemoteName $TargetBranch"
-        Write-WarningMessage "    Exit Code: $($fetchResult.ExitCode)"
-        Write-WarningMessage "    Full Output:"
-        foreach ($line in $fetchResult.Output) {
-            if (-not [string]::IsNullOrWhiteSpace($line)) {
-                Write-WarningMessage "      $line"
-            }
-        }
-        return $false
-    }
-
-    $mergeRef = "$TempRemoteName/$TargetBranch"
-
-    $revParse = Invoke-ExternalCommand -Tool 'git' -Arguments @('rev-parse', $mergeRef)
-    if ($revParse.ExitCode -ne 0) {
-        Write-WarningMessage "  Upstream branch '$TargetBranch' does not exist."
-        Write-WarningMessage "    Command: git rev-parse $mergeRef"
-        Write-WarningMessage "    Exit Code: $($revParse.ExitCode)"
-        Write-WarningMessage "    Full Output:"
-        foreach ($line in $revParse.Output) {
-            if (-not [string]::IsNullOrWhiteSpace($line)) {
-                Write-WarningMessage "      $line"
-            }
-        }
-        return $false
-    }
-
-    $upToDateCheck = Invoke-ExternalCommand -Tool 'git' -Arguments @('merge-base', '--is-ancestor', $mergeRef, 'HEAD')
-    if ($upToDateCheck.ExitCode -eq 0) {
-        Write-Info "  ⊘ Upstream already up to date (all changes already present locally)."
-        return $true
-    }
-
-    $canFastForward = Invoke-ExternalCommand -Tool 'git' -Arguments @('merge-base', '--is-ancestor', 'HEAD', $mergeRef)
-    if ($canFastForward.ExitCode -eq 0) {
-        $ffMerge = Invoke-ExternalCommand -Tool 'git' -Arguments @('merge', '--ff-only', $mergeRef)
-        if ($ffMerge.ExitCode -ne 0) {
-            Write-WarningMessage "  ✗ Unable to fast-forward to upstream/$TargetBranch"
-            Write-WarningMessage "    Reason: Fast-forward merge failed"
-            Write-WarningMessage "    Command: git merge --ff-only $mergeRef"
-            Write-WarningMessage "    Exit Code: $($ffMerge.ExitCode)"
-            Write-WarningMessage "    Output:"
-            foreach ($line in $ffMerge.Output) {
-                if (-not [string]::IsNullOrWhiteSpace($line)) {
-                    Write-WarningMessage "      $line"
-                }
-            }
-            return $false
-        }
-
-        Write-Success "  ✓ Fast-forwarded to match upstream/$TargetBranch."
-        return $true
-    }
-
-    $testMerge = Invoke-ExternalCommand -Tool 'git' -Arguments @('merge', '--no-commit', '--no-ff', $mergeRef)
-    if ($testMerge.ExitCode -ne 0) {
-        Invoke-ExternalCommand -Tool 'git' -Arguments @('merge', '--abort') | Out-Null
-        Write-WarningMessage "  ✗ Merge conflicts detected when trying to merge upstream/$TargetBranch"
-        Write-WarningMessage "    Reason: Conflicting changes between local fork and upstream repository"
-        Write-WarningMessage "    This usually means the upstream has diverged from the fork"
-        Write-WarningMessage "    Skipping fork sync to preserve local modifications"
-        Write-WarningMessage "    Command: git merge --no-commit --no-ff $mergeRef"
-        Write-WarningMessage "    Exit Code: $($testMerge.ExitCode)"
-        Write-WarningMessage "    Full Output:"
-        foreach ($line in $testMerge.Output) {
-            if (-not [string]::IsNullOrWhiteSpace($line)) {
-                Write-WarningMessage "      $line"
-            }
-        }
-        return $false
-    }
-
-    # Abort the dry-run merge
-    Invoke-ExternalCommand -Tool 'git' -Arguments @('merge', '--abort') | Out-Null
-
-    $fullMerge = Invoke-ExternalCommand -Tool 'git' -Arguments @('merge', '--no-ff', '--no-edit', $mergeRef)
-    if ($fullMerge.ExitCode -ne 0) {
-        Invoke-ExternalCommand -Tool 'git' -Arguments @('merge', '--abort') | Out-Null
-        Write-WarningMessage "  ✗ Merge with upstream/$TargetBranch failed"
-        Write-WarningMessage "    Command: git merge --no-ff --no-edit $mergeRef"
-        Write-WarningMessage "    Exit Code: $($fullMerge.ExitCode)"
-        Write-WarningMessage "    Output:"
-        foreach ($line in $fullMerge.Output) {
-            if (-not [string]::IsNullOrWhiteSpace($line)) {
-                Write-WarningMessage "      $line"
-            }
-        }
-        Write-WarningMessage "    Skipping fork sync for this submodule"
-        return $false
-    }
-
-    Write-Success "  ✓ Merged upstream/$TargetBranch without conflicts."
     return $true
 }
 
@@ -762,6 +1044,10 @@ Write-Info "══════════════════════�
 
 # First, reconcile git state with .gitmodules
 Sync-SubmoduleState
+
+Write-Host "git submodule sync; git submodule update --init --recursive"
+Invoke-ExternalCommand -Tool 'git' -Arguments @('submodule', 'sync')
+Invoke-ExternalCommand -Tool 'git' -Arguments @('submodule', 'update', '--init', '--recursive')
 
 Write-Info "Updating all submodules..."
 
@@ -808,7 +1094,8 @@ foreach ($submodule in $submodules) {
             try {
                 New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
                 Write-Info "    Created parent directory: $parentDir"
-            } catch {
+            }
+            catch {
                 Write-ErrorMessage "  ✗ FAILED: Could not create parent directory '$parentDir'"
                 Write-ErrorMessage "    Error: $($_.Exception.Message)"
                 $failedCount++
@@ -864,7 +1151,8 @@ foreach ($submodule in $submodules) {
                     continue
                 }
             }
-        } catch {
+        }
+        catch {
             Write-WarningMessage "  ⚠ Could not validate .git file: $($_.Exception.Message)"
         }
     }
@@ -872,7 +1160,8 @@ foreach ($submodule in $submodules) {
     # Enter submodule directory
     try {
         Push-Location $submodule
-    } catch {
+    }
+    catch {
         Write-ErrorMessage "  ✗ FAILED: Unable to enter submodule directory '$submodule'"
         Write-ErrorMessage "    Error: $($_.Exception.Message)"
         $failedCount++
@@ -880,6 +1169,9 @@ foreach ($submodule in $submodules) {
     }
 
     try {
+        Write-Info "  Remotes (git remote -v):"
+        $null = Invoke-ExternalCommand -Tool 'git' -Arguments @('remote', '-v')
+
         # Get origin URL
         $originUrlResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('config', '--get', 'remote.origin.url')
         $originUrl = ($originUrlResult.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1)
@@ -927,54 +1219,78 @@ foreach ($submodule in $submodules) {
             continue
         }
 
-        # Check if this is a fork and update from upstream
+        # Check if this is a fork and setup remotes for proper pull/push workflow
         $forkInfo = Get-ForkInfo -RepoIdentifier $repoIdentifier -GhAvailable $ghAvailable -OriginUrl $originUrl
 
-        $upstreamUpdated = $false
         if ($forkInfo.IsFork -and $forkInfo.UpstreamUrl) {
             Write-Info "  Detected fork of: $($forkInfo.ParentFullName)"
-            $upstreamBranch = if ($forkInfo.ParentDefaultBranch) { $forkInfo.ParentDefaultBranch } else { $targetBranch }
-            $tempRemoteName = '__update_submodules_upstream__'
-
-            try {
-                $upstreamUpdated = Update-From-Upstream -TempRemoteName $tempRemoteName -UpstreamUrl $forkInfo.UpstreamUrl -TargetBranch $upstreamBranch
-                if ($upstreamUpdated) {
-                    $pushResult = Invoke-ExternalCommand -Tool 'git' -Arguments @('push', 'origin', $targetBranch)
-                    if ($pushResult.ExitCode -ne 0) {
-                        Write-WarningMessage "  ✗ Failed to push updates back to origin for branch '$targetBranch'."
-                        Write-WarningMessage "    Command: git push origin $targetBranch"
-                        Write-WarningMessage "    Exit Code: $($pushResult.ExitCode)"
-                        Write-WarningMessage "    Full Output:"
-                        foreach ($line in $pushResult.Output) {
-                            if (-not [string]::IsNullOrWhiteSpace($line)) {
-                                Write-WarningMessage "      $line"
-                            }
+            
+            # Configure remotes idempotently
+            Write-Info "  Configuring remotes for fork workflow..."
+            if (Ensure-SubmoduleRemotesConfiguration -UpstreamUrl $forkInfo.UpstreamUrl -OriginUrl $originUrl) {
+                Write-Info "  ✓ Fork remotes configured"
+                
+                # Pull latest from upstream
+                Write-Info "  Pulling latest from upstream..."
+                if (Pull-From-Upstream -RemoteName 'upstream') {
+                    Write-Info "  ✓ Successfully pulled from upstream"
+                    
+                    # Push to upstream (original)
+                    Write-Info "  Pushing updates to upstream (original)..."
+                    $pushUpstream = Push-To-Remote -RemoteName 'upstream' -LocalBranch 'master'
+                    if ($pushUpstream.Success) {
+                        if ($pushUpstream.Pushed) {
+                            Write-Success "  ✓ Upstream updated (pushed $($pushUpstream.CommitCount) commit(s))"
                         }
-                        $upstreamUpdated = $false
-                    } else {
-                        Write-Success "  ✓ Pushed fork updates to origin/$targetBranch."
+                        else {
+                            Write-Info "  ⊘ Upstream push skipped (no commits to push)"
+                        }
+                    }
+                    else {
+                        Write-WarningMessage "  ⚠ Could not push to upstream"
+                    }
+
+                    # Push to origin (fork)
+                    Write-Info "  Pushing updates to fork (origin)..."
+                    $pushOrigin = Push-To-Remote -RemoteName 'origin' -LocalBranch 'master'
+                    if ($pushOrigin.Success) {
+                        if ($pushOrigin.Pushed) {
+                            Write-Success "  ✓ Fork updated (pushed $($pushOrigin.CommitCount) commit(s))"
+                        }
+                        else {
+                            Write-Info "  ⊘ Fork push skipped (no commits to push)"
+                        }
+                    }
+                    else {
+                        Write-WarningMessage "  ⚠ Could not push to fork"
                     }
                 }
-            } finally {
-                Invoke-ExternalCommand -Tool 'git' -Arguments @('remote', 'remove', $tempRemoteName) | Out-Null
+                else {
+                    Write-WarningMessage "  ⚠ Could not pull from upstream"
+                }
             }
-
-            if (-not $upstreamUpdated) {
-                Write-WarningMessage "  ⊘ Fork update skipped for '$submodule'."
+            else {
+                Write-WarningMessage "  ⚠ Could not configure remotes"
             }
-        } else {
+        }
+        else {
             if (-not $forkInfo.IsFork) {
                 Write-Info "  ⊘ Not a fork (upstream sync not applicable)."
+            }
+            else {
+                Write-WarningMessage "  ⚠ Fork detected but upstream URL not available."
             }
         }
 
         $updatedCount++
-    } catch {
+    }
+    catch {
         Write-ErrorMessage "  ✗ FAILED: Unexpected error while updating '$submodule'"
         Write-ErrorMessage "    Error: $($_.Exception.Message)"
         Write-ErrorMessage "    Stack Trace: $($_.StackTrace)"
         $failedCount++
-    } finally {
+    }
+    finally {
         Pop-Location
     }
 }

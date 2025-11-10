@@ -19,6 +19,7 @@ Please do not create .md documentation unless it delivers public-facing informat
 ## Terminal usage
 
 - Always check the operating system you're functioning in. Do NOT try to execute e.g. bash commands on powershell or vice versa. Most of the time you'lle xclusively be writing powershell given the windows-dominant nature of this repo's intended recipients.
+- If for any reason you're running `git diff` e.g. `git diff -- scripts/update_submodules.ps1`, ensure you pass whatever argument is necessary to ensure NON-INTERACTIVE PLAIN OUTPUT is given. IMPORTANT! `gif diff`'s output is **COLORED** and **INTERACTIVE (with paging)** by default and should NEVER be executed by agents utilizing the terminal for any reason, always use plain output.
 
 ### Python usage in terminal
 
