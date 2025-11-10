@@ -1,24 +1,51 @@
+
+
+
+
+
+
+
+
+
+
 __pycache__
+__pycache__/
+!.cursorrules
+!.cursorrules.txt
+!.gitignore
+!.gitmodules
+!tslpatchdata/*.ini
+!tslpatchdata/generated_ini_output.log
+!tslpatchdata/test_kotordiff_profile_summary.txt
+!tslpatchdata/test_kotordiff_profile.prof
+!tslpatchdata/test_step1_generate_patch_profile_summary.txt
+!tslpatchdata/test_step1_generate_patch_profile.prof
+!tslpatchdata/test_step2_install_patch_profile_summary.txt
+!tslpatchdata/test_step2_install_patch_profile.prof
+.*
 ./vendor
 .aider.chat.history.md
 .aider.input.history
 .aiderignore
+.cursor/
 .cursorignore
 .env
+.flake8
 .git
+.github/
 .history/
 .idea/
-.idea/misc.xml
-.idea/PyKotor.iml
 .mypy_cache
+.pre-commit-config.yaml
+.python-version
 .secrets
-.venv
-.venv_wsl
 .venv*
+.vscode/
 .vscode/PythonImportHelper-v2-Completion.json
 .vscode/PythonImportHelper*.json
 *.cpuprofile
 *.egg-info*
+*.egg-info/
 *.exe.manifest
 *.heapsnapshot
 *.log
@@ -26,7 +53,10 @@ __pycache__
 *.prof
 *.pstat
 *.pyc
+*.pyc
 *.spec
+*.tar.gz
+*.whl
 *.zip
 *PYZ-*.pyz
 /__main__.build/
@@ -41,18 +71,48 @@ __pycache__
 /toolset/help/
 /toolset/kits/
 /vendor
+# .cursorignore contents
+# Ignore all dotfiles and dotdirs except specific ones
+# Ignore build, compile, and packaging artifacts
+# Ignore CI/CD, workflows, and testing configs
+# Ignore documentation (inaccurate per rules; AI should avoid referencing)
+# Ignore engine examples and tests (non-core)
+# Ignore IDE and editor configs
+# Ignore install scripts (helper/utils, not core code)
+# Ignore library manifests and setups (packaging, not code)
+# Ignore tool-specific non-core files (e.g., web srcs, UIs, tests in tools)
+```
+```
 Analysis-*.toc
 base_library.zip
 build
 build-windows.ps1
+build/
+compile/
 dist
 dist-lin
 dist-mac
 dist-win
+dist/
+docs/
+Engines/*/examples/
+Engines/*/requirements.txt
+Engines/*/setup.py
+Engines/*/tests/
 errorlog.txt
 EXE-*.toc
 ignore
+install_*.ps1
+install_*.sh
 installlog.txt
+Libraries/*/.vscode/
+Libraries/*/LICENSE
+Libraries/*/MANIFEST.in
+Libraries/*/PyKotor.code-workspace
+Libraries/*/pyproject.toml
+Libraries/*/recommended.txt
+Libraries/*/requirements.txt
+Libraries/*/setup.py
 Libraries/Utility/.aider.model.settings.json
 logs/*
 nuitka_dist
@@ -65,7 +125,26 @@ tests/results/
 tests/test_tslpatcher/reference_changes.ini
 tests/tmp/*
 tests/tslpatcher/tmp/*
+tests/Vanilla_KOTOR_Script_Source
 this file has no permissions.txt
+Tools/*/demo.sh
+Tools/*/HoloPatcher.code-workspace
+Tools/*/integration_test.py
+Tools/*/KotorDiff.code-workspace
+Tools/*/LICENSE*
+Tools/*/pyproject.toml
+Tools/*/README.md
+Tools/*/recommended.txt
+Tools/*/requirements.txt
+Tools/*/run_tests.sh
+Tools/*/setup_dev.py
+Tools/*/setup.py
+Tools/*/src/*/__tests__/
+Tools/*/src/*/help/
+Tools/*/src/*/tests/
+Tools/*/src/spyder-plugin/
+Tools/*/src/ui/
+Tools/*/web/
 Tools/HolocronToolset/src/toolset/32d802b_extract
 Tools/HolocronToolset/src/toolset/kits
 Tools/HolocronToolset/src/toolset/kits/*/*
@@ -76,15 +155,9 @@ Tools/HoloPatcher/src/holopatcher/package-lock.json
 Tools/HoloPatcher/src/holopatcher/package.json
 Tools/KotorDiff/INI_GENERATOR_README.md
 Tools/KotorDiff/WINDOWS_PATH_GUIDE.md
+tox.ini
 Tree-*.toc
 tslpatchdata/*
-!tslpatchdata/*.ini
-!tslpatchdata/generated_ini_output.log
 typings/*
 venv
-!tslpatchdata/test_kotordiff_profile_summary.txt
-!tslpatchdata/test_kotordiff_profile.prof
-!tslpatchdata/test_step1_generate_patch_profile_summary.txt
-!tslpatchdata/test_step1_generate_patch_profile.prof
-!tslpatchdata/test_step2_install_patch_profile_summary.txt
-!tslpatchdata/test_step2_install_patch_profile.prof
+wiki/
