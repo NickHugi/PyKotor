@@ -162,7 +162,14 @@ include = ["*.py"]
 exclude = ["**/node_modules/**", "**/__pycache__/**", "**/build/**", "**/dist/**", "**/venv/**", "**/__pycache__/**"]
 extraPaths = [
     "Libraries/PyKotor/src",
-    "Libraries/Utility/src"
+    "Libraries/PyKotorGL/src",
+    "Libraries/PyKotorFont/src",
+    "Libraries/Utility/src",
+    "Tools/HolocronToolset/src",
+    "Tools/BatchPatcher/src",
+    "Tools/HoloPatcher/src",
+    "Tools/KotorDiff/src",
+    "Tools/GuiConverter/src"
 ]
 reportMissingImports = true
 reportMissingTypeStubs = false

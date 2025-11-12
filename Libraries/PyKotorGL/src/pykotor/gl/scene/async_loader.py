@@ -5,19 +5,27 @@ import struct
 import traceback
 
 from concurrent.futures import Future, ProcessPoolExecutor
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, NamedTuple, Protocol
 
 from loggerplus import RobustLogger
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc.tpc_auto import read_tpc
-from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from pykotor.common.module import Module
-    from pykotor.extract.installation import Installation
     from pykotor.resource.formats.tpc.tpc_data import TPC
+
+
+class ResourceLoader(Protocol):
+    """Protocol for loading resources - implemented by caller (e.g., HolocronToolset)."""
+    
+    def load_texture_data(self, name: str) -> bytes | None:
+        """Load texture bytes by name. Returns None if not found."""
+        ...
+    
+    def load_model_data(self, name: str) -> tuple[bytes | None, bytes | None]:
+        """Load model bytes (MDL, MDX) by name. Returns (mdl_bytes, mdx_bytes)."""
+        ...
 
 
 # Intermediate data structures that can be pickled and sent between processes
@@ -61,91 +69,99 @@ class IntermediateModel(NamedTuple):
     max_point: tuple[float, float, float]
 
 
-# ===== IO Workers (Process Pool #1) =====
-def _io_load_texture_bytes(
+# ===== Combined IO + Parsing Workers (Child Process) =====
+# CRITICAL: NO Installation objects here! Only raw file IO + parsing
+
+def _load_and_parse_texture(
     name: str,
-    module_root: str | None,
-    module_capsule_paths: list[str],
-    installation_path: str,
-    installation_name: str,
-    tsl: bool,  # noqa: FBT001
-) -> tuple[str, bytes | None, str | None]:
-    """Load texture bytes from disk in a separate process.
+    filepath: str,
+    offset: int,
+    size: int,
+) -> tuple[str, IntermediateTexture | None, str | None]:
+    """Load texture bytes from file AND parse in child process.
+    
+    Args:
+    ----
+        name: Resource name
+        filepath: Absolute path to file
+        offset: Byte offset in file
+        size: Number of bytes to read
     
     Returns:
     -------
-        tuple[resource_name, data_bytes, error_message]
+        tuple[resource_name, intermediate_texture, error_message]
     """
     try:
-        # Import here to avoid pickling issues
         from pathlib import Path
-
-        from pykotor.extract.installation import Installation
-
-        installation = Installation(Path(installation_path), installation_name, tsl=tsl)
         
-        # Try module first if available
-        if module_root:
-            from pykotor.common.module import Module
-            module = Module(module_root, installation)
-            module_tex = module.texture(name)
-            if module_tex is not None:
-                data = module_tex.data()
-                if data is not None:
-                    return (name, data, None)
+        # IO: Read raw bytes from file
+        path = Path(filepath)
+        if not path.exists():
+            return (name, None, f"File not found: {filepath}")
         
-        # Search in installation
-        search_locs = [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN]
-        result = installation.resource(name, ResourceType.TPC, search_locs)
-        if result is not None:
-            return (name, result.data, None)
+        with path.open("rb") as f:
+            f.seek(offset)
+            tpc_bytes = f.read(size)
         
-        return (name, None, f"Texture '{name}' not found")
+        # Parsing: Convert bytes to intermediate texture
+        return _parse_texture_data(name, tpc_bytes)
     except Exception as e:  # noqa: BLE001
-        return (name, None, f"IO error loading texture '{name}': {e!s}\n{traceback.format_exc()}")
+        return (name, None, f"IO+parse error for texture '{name}': {e!s}\n{traceback.format_exc()}")
 
 
-def _io_load_model_bytes(
+def _load_and_parse_model(
     name: str,
-    module_root: str | None,
-    module_capsule_paths: list[str],
-    installation_path: str,
-    installation_name: str,
-    tsl: bool,  # noqa: FBT001
-) -> tuple[str, bytes | None, bytes | None, str | None]:
-    """Load model bytes (MDL+MDX) from disk in a separate process.
+    mdl_filepath: str,
+    mdl_offset: int,
+    mdl_size: int,
+    mdx_filepath: str,
+    mdx_offset: int,
+    mdx_size: int,
+) -> tuple[str, IntermediateModel | None, str | None]:
+    """Load model bytes from files AND parse in child process.
+    
+    Args:
+    ----
+        name: Resource name
+        mdl_filepath: Absolute path to MDL file
+        mdl_offset: Byte offset in MDL file
+        mdl_size: Number of bytes to read from MDL
+        mdx_filepath: Absolute path to MDX file
+        mdx_offset: Byte offset in MDX file
+        mdx_size: Number of bytes to read from MDX
     
     Returns:
     -------
-        tuple[resource_name, mdl_bytes, mdx_bytes, error_message]
+        tuple[resource_name, intermediate_model, error_message]
     """
     try:
         from pathlib import Path
-
-        from pykotor.extract.installation import Installation
         
-        installation = Installation(Path(installation_path), installation_name, tsl=tsl)
-        search_locs = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+        # IO: Read MDL bytes
+        mdl_path = Path(mdl_filepath)
+        if not mdl_path.exists():
+            return (name, None, f"MDL file not found: {mdl_filepath}")
         
-        # Get capsules if module exists
-        capsules: list[Any] = []
-        if module_root:
-            from pykotor.common.module import Module
-            module = Module(module_root, installation)
-            capsules = module.capsules()
+        with mdl_path.open("rb") as f:
+            f.seek(mdl_offset)
+            mdl_bytes = f.read(mdl_size)
         
-        mdl_result = installation.resource(name, ResourceType.MDL, search_locs, capsules=capsules)
-        mdx_result = installation.resource(name, ResourceType.MDX, search_locs, capsules=capsules)
+        # IO: Read MDX bytes
+        mdx_path = Path(mdx_filepath)
+        if not mdx_path.exists():
+            return (name, None, f"MDX file not found: {mdx_filepath}")
         
-        if mdl_result is None or mdx_result is None:
-            return (name, None, None, f"Model '{name}' MDL or MDX not found")
+        with mdx_path.open("rb") as f:
+            f.seek(mdx_offset)
+            mdx_bytes = f.read(mdx_size)
         
-        return (name, mdl_result.data, mdx_result.data, None)
+        # Parsing: Convert bytes to intermediate model
+        return _parse_model_data(name, mdl_bytes, mdx_bytes)
     except Exception as e:  # noqa: BLE001
-        return (name, None, None, f"IO error loading model '{name}': {e!s}\n{traceback.format_exc()}")
+        return (name, None, f"IO+parse error for model '{name}': {e!s}\n{traceback.format_exc()}")
 
 
-# ===== Parsing Workers (Process Pool #2) =====
+# ===== Parsing Functions =====
 def _parse_texture_data(
     name: str,
     tpc_bytes: bytes,
@@ -157,11 +173,21 @@ def _parse_texture_data(
         tuple[resource_name, intermediate_texture, error_message]
     """
     try:
+        from pykotor.resource.formats.tpc.tpc_data import TPCTextureFormat
+        
         tpc: TPC = read_tpc(tpc_bytes)
         
-        # Convert to RGBA format for OpenGL
-        width, height = tpc.width, tpc.height
-        rgba_data = tpc.convert(tpc.TPC_RGBA, 0).data
+        # Get the first mipmap
+        mm = tpc.get(0, 0)
+        width = mm.width
+        height = mm.height
+        
+        # Convert to RGBA if needed
+        if mm.tpc_format != TPCTextureFormat.RGBA:
+            tpc.convert(TPCTextureFormat.RGBA)
+            mm = tpc.get(0, 0)
+        
+        rgba_data = bytes(mm.data)  # Ensure it's bytes, not bytearray
         
         return (
             name,
@@ -169,7 +195,7 @@ def _parse_texture_data(
                 width=width,
                 height=height,
                 rgba_data=rgba_data,
-                mipmap_count=tpc.mipmap_count,
+                mipmap_count=1,  # We only use the first mipmap
             ),
             None,
         )
@@ -189,7 +215,7 @@ def _parse_model_data(  # noqa: C901, PLR0915, PLR0912
         tuple[resource_name, intermediate_model, error_message]
     """
     try:
-        mdl_reader = BinaryReader.from_bytes(mdl_bytes)
+        mdl_reader = BinaryReader.from_bytes(mdl_bytes, 12)  # Skip 12-byte header
         mdx_reader = BinaryReader.from_bytes(mdx_bytes)
         
         # Read model header
@@ -350,29 +376,38 @@ def _parse_model_data(  # noqa: C901, PLR0915, PLR0912
 
 # ===== Main Async Loader Class =====
 class AsyncResourceLoader:
-    """Manages asynchronous resource loading using two process pools."""
+    """Manages asynchronous resource loading using ProcessPoolExecutor.
+    
+    CRITICAL: ALL IO happens in child processes, NEVER in the main thread.
+    
+    NOTE: This class does NOT use Installation directly. The caller provides
+    loader functions that handle resource loading using whatever mechanism they want
+    (Installation, HTInstallation, direct file access, etc.)
+    """
     
     def __init__(
         self,
-        max_io_workers: int | None = None,
-        max_parse_workers: int | None = None,
+        texture_location_resolver: Callable[[str], tuple[str, int, int] | None] | None = None,
+        model_location_resolver: Callable[[str], tuple[tuple[str, int, int] | None, tuple[str, int, int] | None]] | None = None,
+        max_workers: int | None = None,
     ):
-        """Initialize the async loader with two process pools.
+        """Initialize the async loader with ProcessPoolExecutor.
         
         Args:
         ----
-            max_io_workers: Max workers for IO pool (default: CPU count)
-            max_parse_workers: Max workers for parsing pool (default: CPU count)
+            texture_location_resolver: Function that resolves texture name to (filepath, offset, size) in MAIN thread
+            model_location_resolver: Function that resolves model name to ((mdl_path, offset, size), (mdx_path, offset, size)) in MAIN thread
+            max_workers: Max workers for process pool (default: CPU count)
         """
+        self.texture_location_resolver = texture_location_resolver
+        self.model_location_resolver = model_location_resolver
+        
         cpu_count = multiprocessing.cpu_count()
-        self.max_io_workers = max_io_workers or max(1, cpu_count // 2)
-        self.max_parse_workers = max_parse_workers or max(1, cpu_count // 2)
+        self.max_workers = max_workers or max(1, cpu_count // 2)
+        self.process_pool: ProcessPoolExecutor | None = None
         
-        self.io_pool: ProcessPoolExecutor | None = None
-        self.parse_pool: ProcessPoolExecutor | None = None
-        
-        self.pending_io: dict[str, Future] = {}
-        self.pending_parse: dict[str, Future] = {}
+        self.pending_textures: dict[str, Future] = {}
+        self.pending_models: dict[str, Future] = {}
         
         self.logger = RobustLogger()
         
@@ -384,167 +419,151 @@ class AsyncResourceLoader:
         self.shutdown()
     
     def start(self):
-        """Start both process pools."""
-        if self.io_pool is None:
-            self.io_pool = ProcessPoolExecutor(
-                max_workers=self.max_io_workers,
+        """Start the ProcessPoolExecutor for async IO operations."""
+        if self.process_pool is None:
+            self.process_pool = ProcessPoolExecutor(
+                max_workers=self.max_workers,
                 mp_context=multiprocessing.get_context("spawn"),
             )
-            self.logger.debug(f"Started IO process pool with {self.max_io_workers} workers")
-        
-        if self.parse_pool is None:
-            self.parse_pool = ProcessPoolExecutor(
-                max_workers=self.max_parse_workers,
-                mp_context=multiprocessing.get_context("spawn"),
-            )
-            self.logger.debug(f"Started Parse process pool with {self.max_parse_workers} workers")
+            self.logger.debug(f"Started ProcessPoolExecutor with {self.max_workers} workers for async IO")
     
     def shutdown(self, *, wait: bool = True):
-        """Shutdown both process pools."""
-        if self.io_pool is not None:
-            self.io_pool.shutdown(wait=wait)
-            self.io_pool = None
-            self.logger.debug("Shutdown IO process pool")
+        """Shutdown ProcessPoolExecutor and cleanup pending futures."""
+        # Cancel any pending futures
+        for future in self.pending_textures.values():
+            if not future.done():
+                future.cancel()
+        for future in self.pending_models.values():
+            if not future.done():
+                future.cancel()
         
-        if self.parse_pool is not None:
-            self.parse_pool.shutdown(wait=wait)
-            self.parse_pool = None
-            self.logger.debug("Shutdown Parse process pool")
+        self.pending_textures.clear()
+        self.pending_models.clear()
         
-        self.pending_io.clear()
-        self.pending_parse.clear()
+        if self.process_pool is not None:
+            self.process_pool.shutdown(wait=wait)
+            self.process_pool = None
+            self.logger.debug("Shutdown ProcessPoolExecutor")
+        
+        self.logger.debug("Async loader shutdown complete")
     
     def load_texture_async(
         self,
         name: str,
-        module: Module | None,
-        installation: Installation,
     ) -> Future[tuple[str, IntermediateTexture | None, str | None]]:
         """Load and parse texture asynchronously.
+        
+        Main thread: Resolve file location
+        Child process: Do raw file IO + parsing
         
         Returns:
         -------
             Future that resolves to (name, intermediate_texture, error)
         """
-        if self.io_pool is None or self.parse_pool is None:
+        self.logger.debug(f"load_texture_async called for: {name}")
+        
+        if self.texture_location_resolver is None:
+            # No resolver provided, return immediate failure
+            self.logger.warning(f"No texture location resolver provided for: {name}")
+            result: Future = Future()
+            result.set_result((name, None, "No texture location resolver provided"))
+            return result
+        
+        if self.process_pool is None:
+            self.logger.debug("Process pool is None, starting...")
             self.start()
         
-        # Chain: IO -> Parse
-        module_root = module.root() if module else None
-        module_capsules = [] if module is None else [str(cap.filepath()) for cap in module.capsules()]
-        
-        io_future = self.io_pool.submit(
-            _io_load_texture_bytes,
-            name,
-            module_root,
-            module_capsules,
-            str(installation.path()),
-            installation.name,
-            installation.tsl,
-        )
-        
-        def on_io_complete(io_result_future: Future):
-            try:
-                resource_name, tpc_bytes, error = io_result_future.result()
-                if error or tpc_bytes is None:
-                    # Create a failed future
-                    failed_future: Future = Future()
-                    failed_future.set_result((resource_name, None, error))
-                    return failed_future
-                
-                # Submit to parse pool
-                return self.parse_pool.submit(_parse_texture_data, resource_name, tpc_bytes)
-            except Exception as e:  # noqa: BLE001
-                failed_future = Future()
-                failed_future.set_result((name, None, str(e)))
-                return failed_future
-        
-        # Use a manual future chain since we can't use asyncio
+        # Resolve file location in main thread
         result_future: Future = Future()
         
-        def chain_callback(fut: Future):
-            try:
-                parse_future = on_io_complete(fut)
-                
-                def parse_callback(pf: Future):
-                    try:
-                        result_future.set_result(pf.result())
-                    except Exception as e:  # noqa: BLE001
-                        result_future.set_exception(e)
-                
-                parse_future.add_done_callback(parse_callback)
+        try:
+            self.logger.debug(f"Resolving texture location in main thread: {name}")
+            location = self.texture_location_resolver(name)
+            
+            if location is None:
+                self.logger.warning(f"Texture '{name}' not found")
+                result_future.set_result((name, None, f"Texture '{name}' not found"))
+                else:
+                filepath, offset, size = location
+                # Submit IO + parsing to child process
+                self.logger.debug(f"Submitting IO+parse for texture: {name} at {filepath}:{offset}:{size}")
+                assert self.process_pool is not None
+                io_parse_future = self.process_pool.submit(_load_and_parse_texture, name, filepath, offset, size)
+                    
+                def on_complete(pf: Future):
+                        try:
+                        self.logger.debug(f"IO+parse complete for texture: {name}")
+                            result_future.set_result(pf.result())
+                        except Exception as e:  # noqa: BLE001
+                        self.logger.error(f"IO+parse exception for texture '{name}': {e!s}")
+                        result_future.set_result((name, None, f"IO+parse error: {e!s}"))
+                    
+                io_parse_future.add_done_callback(on_complete)
             except Exception as e:  # noqa: BLE001
-                result_future.set_exception(e)
+            self.logger.error(f"Resolution exception for texture '{name}': {e!s}")
+            result_future.set_result((name, None, f"Resolution error: {e!s}"))
         
-        io_future.add_done_callback(chain_callback)
-        self.pending_io[f"tex_{name}"] = io_future
-        
+        self.pending_textures[name] = result_future
         return result_future
     
     def load_model_async(
         self,
         name: str,
-        module: Module | None,
-        installation: Installation,
     ) -> Future[tuple[str, IntermediateModel | None, str | None]]:
         """Load and parse model asynchronously.
+        
+        Main thread: Resolve file locations
+        Child process: Do raw file IO + parsing
         
         Returns:
         -------
             Future that resolves to (name, intermediate_model, error)
         """
-        if self.io_pool is None or self.parse_pool is None:
+        if self.model_location_resolver is None:
+            # No resolver provided, return immediate failure
+            result: Future = Future()
+            result.set_result((name, None, "No model location resolver provided"))
+            return result
+        
+        if self.process_pool is None:
             self.start()
         
-        # Chain: IO -> Parse
-        module_root = module.root() if module else None
-        module_capsules = [] if module is None else [str(cap.filepath()) for cap in module.capsules()]
-        
-        io_future = self.io_pool.submit(
-            _io_load_model_bytes,
-            name,
-            module_root,
-            module_capsules,
-            str(installation.path()),
-            installation.name,
-            installation.tsl,
-        )
-        
-        def on_io_complete(io_result_future: Future):
-            try:
-                resource_name, mdl_bytes, mdx_bytes, error = io_result_future.result()
-                if error or mdl_bytes is None or mdx_bytes is None:
-                    failed_future: Future = Future()
-                    failed_future.set_result((resource_name, None, error))
-                    return failed_future
-                
-                # Submit to parse pool
-                return self.parse_pool.submit(_parse_model_data, resource_name, mdl_bytes, mdx_bytes)
-            except Exception as e:  # noqa: BLE001
-                failed_future = Future()
-                failed_future.set_result((name, None, str(e)))
-                return failed_future
-        
-        # Chain futures manually
+        # Resolve file locations in main thread
         result_future: Future = Future()
         
-        def chain_callback(fut: Future):
-            try:
-                parse_future = on_io_complete(fut)
-                
-                def parse_callback(pf: Future):
-                    try:
-                        result_future.set_result(pf.result())
-                    except Exception as e:  # noqa: BLE001
-                        result_future.set_exception(e)
-                
-                parse_future.add_done_callback(parse_callback)
+        try:
+            self.logger.debug(f"Resolving model locations in main thread: {name}")
+            mdl_loc, mdx_loc = self.model_location_resolver(name)
+            
+            if mdl_loc is None or mdx_loc is None:
+                self.logger.warning(f"Model '{name}' MDL or MDX not found")
+                result_future.set_result((name, None, f"Model '{name}' MDL or MDX not found"))
+                else:
+                mdl_filepath, mdl_offset, mdl_size = mdl_loc
+                mdx_filepath, mdx_offset, mdx_size = mdx_loc
+                # Submit IO + parsing to child process
+                self.logger.debug(f"Submitting IO+parse for model: {name}")
+                    assert self.process_pool is not None
+                io_parse_future = self.process_pool.submit(
+                    _load_and_parse_model,
+                    name,
+                    mdl_filepath, mdl_offset, mdl_size,
+                    mdx_filepath, mdx_offset, mdx_size,
+                )
+                    
+                def on_complete(pf: Future):
+                        try:
+                            result_future.set_result(pf.result())
+                        except Exception as e:  # noqa: BLE001
+                        self.logger.error(f"IO+parse exception for model '{name}': {e!s}")
+                        result_future.set_result((name, None, f"IO+parse error: {e!s}"))
+                    
+                io_parse_future.add_done_callback(on_complete)
             except Exception as e:  # noqa: BLE001
-                result_future.set_exception(e)
+            self.logger.error(f"Resolution exception for model '{name}': {e!s}")
+            result_future.set_result((name, None, f"Resolution error: {e!s}"))
         
-        io_future.add_done_callback(chain_callback)
-        self.pending_io[f"mdl_{name}"] = io_future
-        
+        self.pending_models[name] = result_future
         return result_future
 
 
@@ -553,7 +572,7 @@ def create_texture_from_intermediate(
     intermediate: IntermediateTexture,
 ) -> Any:  # Returns Texture but avoid circular import
     """Create OpenGL Texture from intermediate data in main process."""
-    from pykotor.gl.shader import Texture
+    from pykotor.gl.shader.texture import Texture
     
     return Texture.from_rgba(
         intermediate.width,
@@ -570,7 +589,7 @@ def create_model_from_intermediate(
     
     MUST be called in main process with active OpenGL context.
     """
-    from pykotor.gl import glm
+    import glm
     from pykotor.gl.models.mdl import Mesh, Model, Node
     
     def build_node(

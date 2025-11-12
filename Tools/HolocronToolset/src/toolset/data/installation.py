@@ -511,7 +511,7 @@ class HTInstallation(Installation):
             return True
 
         if _is_within(src_absolute, module_path):
-            relevant_resources.update(res for cap in Module.find_capsules(self, src_filepath.name, strict=True) for res in cap if res.restype() is restype)
+            relevant_resources.update(res for cap in Module.get_capsules_dict_matching(self, src_filepath.name).values() if cap is not None for res in cap if res.restype() is restype)
         elif _is_within(src_absolute, override_path):
             relevant_resources.update(res for reslist in self._modules.values() if any(r.identifier() == src_filepath.name for r in reslist) for res in reslist if res.restype() is restype)  # noqa: E501
 

@@ -471,11 +471,11 @@ class UTPEditor(Editor):
         modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
         if not modelname or not modelname.strip():
             RobustLogger().warning("Placeable '%s.%s' has no model to render!", self._resname, self._restype)
-            self.ui.previewRenderer.clearModel()
+            self.ui.previewRenderer.clear_model()
             return
         mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
         mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
         if mdl is not None and mdx is not None:
-            self.ui.previewRenderer.setModel(mdl.data, mdx.data)
+            self.ui.previewRenderer.set_model(mdl.data, mdx.data)
         else:
-            self.ui.previewRenderer.clearModel()
+            self.ui.previewRenderer.clear_model()

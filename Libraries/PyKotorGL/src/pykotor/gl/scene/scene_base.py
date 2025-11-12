@@ -8,6 +8,7 @@ from typing_extensions import Literal
 
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.gl.models.mdl import Model, Node
@@ -68,6 +69,10 @@ SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocatio
 SEARCH_ORDER: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
+# DO NOT USE INSTALLATION IN CHILD PROCESSES
+# Both IO AND parsing should be in child process(es). ONE PROCESS PER FILE!!
+
+
 class SceneBase:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
@@ -103,7 +108,65 @@ class SceneBase:
         self.clear_cache_buffer: list[ResourceIdentifier] = []
         
         # Async resource loading
-        self.async_loader: AsyncResourceLoader = AsyncResourceLoader()
+        # Main thread: Use Installation to RESOLVE file locations ONLY (no Installation in child!)
+        # Child process: Do raw file IO + parsing (one process per file)
+        
+        def _resolve_texture_location(name: str) -> tuple[str, int, int] | None:
+            """Resolve texture file location in main thread using Installation ONLY.
+            
+            Returns (filepath, offset, size) or None.
+            """
+            if self.installation is None:
+                return None
+            
+            # Installation.location() returns LocationResult which has offset/size as fields
+            # Signature: location(resname: str, restype: ResourceType, order: list[SearchLocation] | None = None, ...)
+            locations = self.installation.location(
+                name,
+                ResourceType.TPC,
+                [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN],
+            )
+            if locations:
+                loc = locations[0]
+                # LocationResult has: filepath (Path field), offset (int field), size (int field)
+                return (str(loc.filepath), loc.offset, loc.size)
+            return None
+        
+        def _resolve_model_location(name: str) -> tuple[tuple[str, int, int] | None, tuple[str, int, int] | None]:
+            """Resolve model file locations in main thread using Installation ONLY.
+            
+            Returns ((mdl_path, offset, size), (mdx_path, offset, size)) or (None, None).
+            """
+            if self.installation is None:
+                return (None, None)
+            
+            search_locs = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+            # ModulePieceResource extends Capsule, but list types are invariant - pass None if empty
+            module_capsules = self._module.capsules() if self._module is not None else []
+            capsules: list[Capsule] = list(module_capsules) if module_capsules else []
+            
+            # Installation.location() returns list[LocationResult] with offset/size fields
+            # Signature: location(resname: str, restype: ResourceType, order: list[SearchLocation] | None = None, ...)
+            mdl_locs = self.installation.location(name, ResourceType.MDL, search_locs, capsules=capsules)
+            mdx_locs = self.installation.location(name, ResourceType.MDX, search_locs, capsules=capsules)
+            
+            mdl_loc = None
+            mdx_loc = None
+            
+            if mdl_locs:
+                loc = mdl_locs[0]
+                mdl_loc = (str(loc.filepath), loc.offset, loc.size)
+            
+            if mdx_locs:
+                loc = mdx_locs[0]
+                mdx_loc = (str(loc.filepath), loc.offset, loc.size)
+            
+            return (mdl_loc, mdx_loc)
+        
+        self.async_loader: AsyncResourceLoader = AsyncResourceLoader(
+            texture_location_resolver=_resolve_texture_location,
+            model_location_resolver=_resolve_model_location,
+        )
         self.async_loader.start()
         self._pending_texture_futures: dict[str, Any] = {}  # name -> Future
         self._pending_model_futures: dict[str, Any] = {}  # name -> Future
@@ -334,6 +397,10 @@ class SceneBase:
         MUST be called from main thread with active OpenGL context.
         This is non-blocking and processes only completed futures.
         """
+        # Debug: Log polling status
+        if self._pending_texture_futures or self._pending_model_futures:
+            RobustLogger().debug(f"Polling async resources: {len(self._pending_texture_futures)} textures, {len(self._pending_model_futures)} models pending")
+        
         # Check completed texture futures
         completed_textures: list[str] = []
         for name, future in self._pending_texture_futures.items():
@@ -341,11 +408,15 @@ class SceneBase:
                 try:
                     resource_name, intermediate, error = future.result()
                     if error:
-                        RobustLogger().warning(f"Async texture load failed for '{resource_name}': {error}")
-                        self.textures[resource_name] = Texture.from_color(255, 0, 255)  # Magenta placeholder
+                        RobustLogger().warning(f"Async texture load FAILED for '{resource_name}': {error}")
+                        self.textures[resource_name] = Texture.from_color(255, 0, 255)  # Magenta placeholder for failures
                     elif intermediate:
+                        # Success! Replace the gray placeholder with the real texture
                         self.textures[resource_name] = create_texture_from_intermediate(intermediate)
-                        RobustLogger().debug(f"Async loaded texture: {resource_name}")
+                        RobustLogger().info(f"✓ Async loaded texture SUCCESS: {resource_name} (width={intermediate.width}, height={intermediate.height})")
+                    else:
+                        RobustLogger().warning(f"Async texture load returned no data and no error for '{resource_name}'")
+                        self.textures[resource_name] = Texture.from_color(255, 0, 255)  # Magenta for missing data
                     completed_textures.append(name)
                 except Exception:  # noqa: BLE001
                     RobustLogger().exception(f"Error processing completed texture future for '{name}'")
@@ -371,7 +442,9 @@ class SceneBase:
                         )
                     elif intermediate:
                         self.models[resource_name] = create_model_from_intermediate(self, intermediate)
-                        RobustLogger().debug(f"Async loaded model: {resource_name}")
+                        RobustLogger().info(f"✓ Async loaded model: {resource_name}")
+                    else:
+                        RobustLogger().warning(f"Async model load returned no data and no error for '{resource_name}'")
                     completed_models.append(name)
                 except Exception:  # noqa: BLE001
                     RobustLogger().exception(f"Error processing completed model future for '{name}'")
@@ -395,19 +468,26 @@ class SceneBase:
         if name in self.textures:
             return self.textures[name]
         
-        # Already loading?
+        # Already loading? Return cached placeholder
         if name in self._pending_texture_futures:
-            # Return placeholder while loading
+            # Texture is loading, return cached placeholder if it exists
+            if name in self.textures:
+                return self.textures[name]
+            # Shouldn't happen but create placeholder if missing
             placeholder = Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
+            self.textures[name] = placeholder
             return placeholder
         
-        # Start async loading if installation available
-        if self.installation is not None and self.async_loader.io_pool is not None:
-            future = self.async_loader.load_texture_async(name, self._module, self.installation)
+        # Start async loading if location resolver available
+        if self.async_loader.texture_location_resolver is not None:
+            RobustLogger().info(f"→ Starting async load for texture: {name}")
+            # Create and cache placeholder immediately - will be replaced when loaded
+            placeholder = Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
+            self.textures[name] = placeholder
+            future = self.async_loader.load_texture_async(name)
             self._pending_texture_futures[name] = future
-            RobustLogger().debug(f"Started async loading for texture: {name}")
-            # Return gray placeholder immediately
-            return Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
+            RobustLogger().debug(f"Started async loading for texture: {name}, future: {future}")
+            return placeholder
         
         # Fallback to synchronous loading (e.g., if process pools unavailable)
         type_name: Literal["lightmap", "texture"] = "lightmap" if lightmap else "texture"
@@ -480,11 +560,12 @@ class SceneBase:
                 self.models["empty"] = empty_model
             return self.models["empty"]
         
-        # Start async loading if installation available
-        if self.installation is not None and self.async_loader.io_pool is not None:
-            future = self.async_loader.load_model_async(name, self._module, self.installation)
+        # Start async loading if location resolver available
+        if self.async_loader.model_location_resolver is not None:
+            RobustLogger().info(f"→ Starting async load for model: {name}")
+            future = self.async_loader.load_model_async(name)
             self._pending_model_futures[name] = future
-            RobustLogger().debug(f"Started async loading for model: {name}")
+            RobustLogger().debug(f"Started async loading for model: {name}, future: {future}")
             # Return empty model immediately as placeholder
             if "empty" not in self.models:
                 empty_model = gl_load_stitched_model(
@@ -496,20 +577,20 @@ class SceneBase:
             return self.models["empty"]
         
         # Fallback to synchronous loading
-        mdl_data: bytes = EMPTY_MDL_DATA
-        mdx_data: bytes = EMPTY_MDX_DATA
+        fallback_mdl_data: bytes = EMPTY_MDL_DATA
+        fallback_mdx_data: bytes = EMPTY_MDX_DATA
         
         if self.installation is not None:
             capsules: list[ModulePieceResource] = [] if self._module is None else self.module.capsules()
             mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
             mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
             if mdl_search is not None and mdx_search is not None:
-                mdl_data = mdl_search.data
-                mdx_data = mdx_search.data
+                fallback_mdl_data = mdl_search.data
+                fallback_mdx_data = mdx_search.data
 
         try:
-            mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
-            mdx_reader = BinaryReader.from_bytes(mdx_data)
+            mdl_reader = BinaryReader.from_bytes(fallback_mdl_data, 12)
+            mdx_reader = BinaryReader.from_bytes(fallback_mdx_data)
             model = gl_load_stitched_model(self, mdl_reader, mdx_reader)  # pyright: ignore[reportArgumentType]
         except Exception:  # noqa: BLE001
             RobustLogger().warning(f"Could not load model '{name}'.")

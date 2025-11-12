@@ -1888,10 +1888,10 @@ class ModuleResource(Generic[T]):
             self._active = r_filepath
         if self._active is None:
             RobustLogger().warning(f"Cannot activate module resource '{self.identifier()}': No locations found.")
-        else:
-            other_locations_available = len(self._locations) - 1
-            other_locations_available_display = f" ({other_locations_available} other locations available)" if other_locations_available else ""
-            print(f"Activating module resource '{self.identifier()}' at filepath '{self._active}'{other_locations_available_display}")
+        #else:
+        #    other_locations_available = len(self._locations) - 1
+        #    other_locations_available_display = f" ({other_locations_available} other locations available)" if other_locations_available else ""
+        #    print(f"Activating module resource '{self.identifier()}' at filepath '{self._active}'{other_locations_available_display}")
         return self._active
 
     def unload(self):

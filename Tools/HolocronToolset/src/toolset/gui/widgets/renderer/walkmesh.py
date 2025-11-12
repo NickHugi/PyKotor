@@ -281,8 +281,9 @@ class WalkmeshRenderer(QWidget):
         self._are = are
 
         # Convert the TPC to RGB format and get the first mipmap
-        tpc_rgb_data: bytearray = tpc.convert(TPCTextureFormat.RGB).data  # pyright: ignore[reportAttributeAccessIssue]
+        tpc.convert(TPCTextureFormat.RGB)  # Modifies TPC in place, returns None
         get_result: TPCMipmap = tpc.get(0, 0)
+        tpc_rgb_data: bytearray = get_result.data
         image = QImage(bytes(tpc_rgb_data), get_result.width, get_result.height, QImage.Format.Format_RGB888)
         crop: QRect = QRect(0, 0, 435, 256)
         self._minimap_image: QImage = image.copy(crop)

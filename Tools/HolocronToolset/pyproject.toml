@@ -120,7 +120,6 @@ pyside6 = ["PySide6"]
 [tool.pyright]
 reportIncompatibleMethodOverride = false
 reportOptionalMemberAccess = false
-
 [tool.basedpyright]
 reportIncompatibleMethodOverride = false
 reportOptionalMemberAccess = false
