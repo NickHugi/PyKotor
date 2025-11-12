@@ -4,12 +4,12 @@ import os
 
 from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
+import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor, QFont, QGuiApplication
 from qtpy.QtWidgets import QApplication, QCheckBox, QDialog, QFontDialog, QHBoxLayout, QLabel, QMenu, QMessageBox, QPushButton, QSpinBox, QTableWidgetItem, QToolTip
 
-from Tools.HolocronToolset.src.toolset.gui.windows.main import qtpy
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.widgets.base import SettingsWidget
 from toolset.gui.widgets.settings.widgets.env_vars import ENV_VARS, EnvVariableDialog
