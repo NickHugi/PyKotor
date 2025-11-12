@@ -21,7 +21,7 @@ def dxt1_to_rgb(dxt1_data: bytes | bytearray, width: int, height: int) -> bytear
             block_offset = (block_y * block_count_x + block_x) * 8
 
             # Check if we have enough data for this block (8 bytes for DXT1)
-            if block_offset + 8 > data_length:
+            if block_offset >= data_length or block_offset + 8 > data_length:
                 # Fill remaining pixels with black
                 for y in range(4):
                     for x in range(4):
@@ -78,7 +78,7 @@ def dxt3_to_rgba(dxt3_data: bytes | bytearray, width: int, height: int) -> bytea
             block_offset = (block_y * block_count_x + block_x) * 16
 
             # Check if we have enough data for this block (16 bytes for DXT3)
-            if block_offset + 16 > data_length:
+            if block_offset >= data_length or block_offset + 16 > data_length:
                 # Fill remaining pixels with transparent black
                 for y in range(4):
                     for x in range(4):
@@ -154,15 +154,15 @@ def dxt5_to_rgba(
             block_offset: int = (block_y * block_count_x + block_x) * 16
 
             # Check if we have enough data for this block (16 bytes for DXT5)
-            if block_offset + 16 > data_length:
+            if block_offset >= data_length or block_offset + 16 > data_length:
                 # Fill remaining pixels with transparent black
                 for y in range(4):
                     for x in range(4):
                         pixel_x = block_x * 4 + x
                         pixel_y = block_y * 4 + y
                         if pixel_x < width and pixel_y < height:
-                            pixel_offset: int = (pixel_y * width + pixel_x) * 4
-                            rgba[pixel_offset:pixel_offset + 4] = (0, 0, 0, 0)
+                            fill_offset: int = (pixel_y * width + pixel_x) * 4
+                            rgba[fill_offset:fill_offset + 4] = (0, 0, 0, 0)
                 continue
 
             # Alpha
