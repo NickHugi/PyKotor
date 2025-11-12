@@ -14,7 +14,17 @@ if TYPE_CHECKING:
 
 
 class JRL:
-    """Stores journal (quest) data."""
+    """Stores journal (quest) data.
+    
+    JRL files are GFF-based format files that store journal/quest data including
+    quest entries, priorities, and planet associations.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/gffreader.cpp (GFF reading, JRL is GFF-based)
+        vendor/xoreos-tools/src/xml/jrldumper.cpp (JRL to XML conversion, if exists)
+        Note: JRL files are GFF format files with specific structure definitions
+    """
 
     BINARY_TYPE = ResourceType.JRL
 

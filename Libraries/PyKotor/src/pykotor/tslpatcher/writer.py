@@ -5,6 +5,12 @@ This module provides precise TSLPatcher INI format generation based on analysis 
 - TSLPatcher reader implementation for parsing logic
 - Exact section ordering and naming conventions
 - Proper handling of all modifier types and their parameters
+
+References:
+----------
+    vendor/TSLPatcher/TSLPatcher.pl - Original Perl TSLPatcher INI format
+    vendor/HoloPatcher.NET/src/TSLPatcher.Core/Writer/ - C# INI serialization
+    vendor/Kotor.NET/Kotor.NET.Patcher/ - Incomplete C# patcher
 """
 
 from __future__ import annotations

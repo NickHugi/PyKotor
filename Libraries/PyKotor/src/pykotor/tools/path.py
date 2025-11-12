@@ -602,7 +602,18 @@ def create_case_insensitive_pathlib_class(
 
 # TODO(th3w1zard1): Move to pykotor.common  # noqa: TD003
 class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc, no-redef]
-    """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
+    """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems.
+    
+    Handles case-insensitive path resolution across platforms, critical for KotOR modding
+    where Windows (case-insensitive) and Unix (case-sensitive) filesystems differ.
+    Supports FUSE-based case-insensitive filesystem mounting on POSIX systems.
+    
+    References:
+    ----------
+        vendor/HoloPatcher.NET/src/TSLPatcher.Core/Common/CaseAwarePath.cs (C# implementation)
+        vendor/TSLPatcher/lib/site/TSLPatcher/Functions.pm (Perl path handling)
+        Standard FUSE (Filesystem in Userspace) for POSIX case-insensitive mounting
+    """
 
     __slots__: tuple[str] = ("_tail_cached",)
     _original_methods: ClassVar[dict[str, Callable[..., Any]]] = {}

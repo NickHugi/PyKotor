@@ -26,7 +26,15 @@ def get_body_model(  # noqa: C901, PLR0912, PLR0915
     appearance: TwoDA | None = None,
     baseitems: TwoDA | None = None,
 ) -> tuple[str | None, str | None]:
-    """Return the body model and texture names for the given creature UTC."""
+    """Return the body model and texture names for the given creature UTC.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/game/object/creature.cpp (Creature model lookup)
+        vendor/KotOR.js/src/module/ModuleCreature.ts (Creature appearance handling)
+        vendor/kotorblender/io_scene_kotor/format/mdl/reader.py (MDL model loading)
+        Note: Appearance lookup uses appearance.2da for model associations
+    """
     log = RobustLogger()
 
     # Load appearance.2da if not provided

@@ -1,3 +1,18 @@
+"""Model manipulation utilities for MDL/MDX files.
+
+This module provides utility functions for manipulating KotOR model geometry at the binary level,
+including texture/lightmap iteration, node renaming, and geometry offset calculations.
+
+References:
+----------
+    vendor/reone/src/libs/graphics/model.cpp - Model loading and parsing
+    vendor/reone/src/libs/resource/format/mdlmdxreader.cpp - MDL/MDX binary reading
+    vendor/mdlops (MDL/MDX manipulation tool)
+    vendor/kotorblender/io_scene_kotor/format/mdl/ - Blender MDL reader/writer
+    vendor/KotOR.js/src/odyssey/OdysseyModel.ts - TypeScript model handling
+    Note: Magic float values (_MESH_FP0_K1, etc.) are game-specific floating point offsets for binary patching
+"""
+
 from __future__ import annotations
 
 import math

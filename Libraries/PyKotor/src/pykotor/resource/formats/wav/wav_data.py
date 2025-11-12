@@ -1,4 +1,17 @@
-"""This module handles classes relating to editing WAV files."""
+"""This module handles classes relating to editing WAV files.
+
+WAV files in KotOR can be voice-over (VO) or sound effects (SFX) with various encodings.
+
+References:
+----------
+    vendor/reone/src/libs/resource/format/wavreader.cpp - WAV parsing
+    vendor/SithCodec - Audio codec for KotOR WAV handling
+    vendor/SWKotOR-Audio-Encoder - Audio encoding tools
+    vendor/xoreos-tools/src/sound/audiostream.cpp - Audio stream handling
+    vendor/KotOR.js/src/audio/AudioEngine.ts - Audio playback
+    vendor/reone/src/libs/audio/ - Audio system implementation
+    Note: KotOR WAV files may have obfuscation headers requiring deobfuscation (see tools.sound)
+"""
 
 from __future__ import annotations
 

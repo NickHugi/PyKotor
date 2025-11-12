@@ -45,7 +45,17 @@ def _write_tga_rgba(writer: ResourceWriter, width: int, height: int, rgba: bytes
 
 
 class TPCTGAReader(ResourceReader):
-    """Used to read TGA binary data."""
+    """Reads TGA files and converts them to TPC format.
+    
+    Supports uncompressed and RLE-compressed TGA files, color-mapped images,
+    grayscale images, and cube map detection (6:1 aspect ratio).
+    
+    References:
+    ----------
+        vendor/tga2tpc/TGALoader.js:72-577 (TGA parsing, RLE handling)
+        vendor/reone/test/graphics/format/tgareader.cpp (TGA reading tests)
+        Standard TGA specification for header format
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -192,7 +202,16 @@ class TPCTGAReader(ResourceReader):
         return self._tpc
 
 class TPCTGAWriter(ResourceWriter):
-    """Used to write TPC instances as TGA image data."""
+    """Writes TPC textures as TGA image files.
+    
+    Converts TPC textures (including animated flipbooks and cube maps) to TGA format.
+    Supports single frame, animated flipbook, and cube map output.
+    
+    References:
+    ----------
+        vendor/tga2tpc/TGALoader.js (TGA format reference)
+        Standard TGA specification for header format
+    """
     def __init__(
         self,
         tpc: TPC,

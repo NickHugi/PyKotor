@@ -1594,6 +1594,15 @@ class MDLBinaryReader:
         size_ext: Size of the MDX data to read
         game: The game version (K1 or K2)
         fast_load: If True, skips animations and controllers for faster loading (optimized for rendering)
+    
+    References:
+    ----------
+        vendor/mdlops/MDLOpsM.pm:1649-1778 (Controller structure and bezier detection)
+        vendor/mdlops/MDLOpsM.pm:5470-5596 (Tangent space calculation)
+        vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:187-721 (Controller reading)
+        vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:703-723 (Skin bone preparation)
+        vendor/kotorblender/format/mdl/reader.py:850-868 (Quaternion decompression)
+        vendor/KotOR.js/src/loaders/MDLLoader.ts (Model loading architecture)
     """
 
     def __init__(
@@ -1891,6 +1900,16 @@ class MDLBinaryReader:
 
 
 class MDLBinaryWriter:
+    """Binary MDL/MDX file writer.
+    
+    Writes MDL (model) and MDX (model extension) files from MDL data structures.
+    
+    References:
+    ----------
+        vendor/mdlops/MDLOpsM.pm (Binary MDL writing paths)
+        vendor/reone/src/libs/graphics/format/mdlmdxwriter.cpp (MDL/MDX writing)
+        vendor/kotorblender/format/mdl/writer.py (MDL writing reference)
+    """
     def __init__(
         self,
         mdl: MDL,

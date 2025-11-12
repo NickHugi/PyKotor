@@ -23,6 +23,17 @@ class MDL(ComparableMixin):
         name: The model name.
         fog: If fog affects the model.
         supermodel: Name of another model resource to import extra data from.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/graphics/model.cpp - Model structure and rendering
+        vendor/reone/include/reone/graphics/model.h - Model header definitions
+        vendor/mdlops - MDL/MDX manipulation tool
+        vendor/kotorblender/io_scene_kotor/format/mdl/ - Blender MDL loader/exporter
+        vendor/KotOR.js/src/odyssey/OdysseyModel.ts - TypeScript model structure
+        vendor/kotor/kotor/model/nodes.py - Python model node parsing
+        vendor/xoreos-tools/src/resource/mdlmdx.cpp - MDL/MDX format parser
+        Note: MDL/MDX are binary formats with separate geometry (.mdx) and structure (.mdl) files
     """
 
     BINARY_TYPE = ResourceType.MDL
@@ -416,21 +427,97 @@ class MDLNodeFlags(IntFlag):
 
 class MDLNode(ComparableMixin):
     """A node in the MDL tree that can store additional nodes or some extra data related to the model such as geometry or lighting.
+    
+    Model nodes form a hierarchical tree structure where each node can contain geometric data
+    (mesh, skin, dangly, saber, walkmesh), light sources, particle emitters, or serve as
+    positioning dummies. Controller keyframes can animate node properties over time.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/graphics/modelnode.h:31-287 - ModelNode class definition
+        vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:182-290 - Node loading from MDL
+        vendor/xoreos/src/graphics/aurora/modelnode.h:67-252 - ModelNode class
+        vendor/xoreos/src/graphics/aurora/model_kotor.cpp:277-533 - KotOR node parsing
+        vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:406-582 - Node reading
+        vendor/kotorblender/io_scene_kotor/scene/model.py:103-297 - Node hierarchy building
+        vendor/KotOR.js/src/odyssey/OdysseyModelNode.ts:31-464 - TypeScript node implementation
+        vendor/mdlops (ASCII MDL node format specifications)
+        vendor/kotor/kotor/model/nodes.py:7-51 - Python node parsing
 
     Attributes:
     ----------
-        children: List of children linked to the node.
-        controllers: List of controllers linked to the node.
-        name: Name of the node.
-        position: The position of the node.
-        orientation: The orientation of the node.
-        light: Light data associated with the node.
-        emitter: Emitter data associated with the node.
-        mesh: Trimesh data associated with the node.
-        skin: Skin data associated with the node.
-        dangly: Danglymesh data associated with the node.
-        aabb: Walkmesh data associated with the node
-        saber: Sabermesh data associated with the node.
+        children: List of child nodes in hierarchy
+            Reference: reone:modelnode.h:219, xoreos:modelnode.h:241, KotOR.js:37
+            Child nodes inherit parent transforms and can be enumerated for rendering
+            
+        controllers: Animation controller keyframe data
+            Reference: reone:modelnode.h:34, xoreos:modelnode.h:178-196, kotorblender:reader.py:498-526
+            Controllers animate position, orientation, scale, color, alpha, and other properties
+            See MDLControllerType enum for complete list of controllable properties
+            
+        name: Node name (ASCII string, max 32 chars)
+            Reference: reone:mdlmdxreader.cpp:212, xoreos:model_kotor.cpp:311, kotorblender:reader.py:416
+            Used to reference nodes by name for attachment points, bone lookups, and parenting
+            
+        node_id: Unique node number within model for quick lookups
+            Reference: reone:mdlmdxreader.cpp:202-203, xoreos:model_kotor.cpp:305, kotorblender:reader.py:413
+            Stored as uint16 in binary format, used for parent/child relationships and bone references
+            
+        position: Local position relative to parent (x, y, z)
+            Reference: reone:modelnode.h:243, xoreos:modelnode.h:89, KotOR.js:42, kotorblender:reader.py:427
+            Combined with parent transforms to compute world-space position
+            Can be animated via position controller (type 8)
+            
+        orientation: Local rotation as quaternion (x, y, z, w)
+            Reference: reone:modelnode.h:244, xoreos:modelnode.h:92-93, KotOR.js:43, kotorblender:reader.py:428
+            Quaternion format ensures smooth interpolation for animation
+            Can be animated via orientation controller (type 20)
+            Compressed in animation keyframes using 32-bit packed format (KotOR.js:14-20)
+
+        light: Light source data (color, radius, flare properties)
+            Reference: reone:modelnode.h:116-127, xoreos:modelnode.h:204-211, kotorblender/light.py:33-124
+            Present when node type includes LIGHT flag (0x02)
+            See MDLLight class for detailed light properties
+            
+        emitter: Particle emitter data (spawn rate, velocity, textures)
+            Reference: reone:modelnode.h:129-153, xoreos:modelnode.h:213-221, kotorblender/emitter.py:39-286
+            Present when node type includes EMITTER flag (0x04)
+            See MDLEmitter class for particle system properties
+            
+        reference: Reference node (links to external model)
+            Reference: reone:modelnode.h:155-158, xoreos:modelnode.h:223-224
+            Present when node type includes REFERENCE flag (0x10)
+            Used for equippable items, attached weapons, etc.
+            
+        mesh: Triangle mesh geometry data (vertices, faces, materials)
+            Reference: reone:modelnode.h:70-91, xoreos:modelnode.h:197-202, kotorblender/trimesh.py:44-242
+            Present when node type includes MESH flag (0x20)
+            Contains vertex data in companion MDX file
+            See MDLMesh class for geometry details
+            
+        skin: Skinned mesh with bone weighting for character animation
+            Reference: reone:modelnode.h:36-41, xoreos:modelnode.h:226-232, kotorblender/skinmesh.py:33-189
+            Present when node type includes SKIN flag (0x40)
+            Vertices deform based on bone transforms using weight maps
+            See MDLSkin class for bone binding details
+            
+        dangly: Cloth/hair physics mesh with constraint simulation
+            Reference: reone:modelnode.h:47-53, xoreos:modelnode.h:234-237, kotorblender:reader.py:451-466
+            Present when node type includes DANGLY flag (0x100)
+            Vertices constrained by displacement, tightness, period values
+            See MDLDangly class for physics properties
+            
+        aabb: Axis-aligned bounding box tree for walkmesh collision
+            Reference: reone:modelnode.h:55-68, xoreos:modelnode.h:239-240, kotorblender/reader.py:469-487
+            Present when node type includes AABB flag (0x200)
+            Used for pathfinding and collision detection
+            See MDLWalkmesh class for collision geometry
+            
+        saber: Lightsaber blade mesh with special rendering
+            Reference: reone:modelnode.h:99, xoreos:modelnode.h:202, kotorblender:reader.py:446-448
+            Present when node type includes SABER flag (0x800)
+            Single plane geometry rendered with additive blending
+            See MDLSaber class for blade properties
     """
 
     COMPARABLE_FIELDS = ("name", "position", "orientation", "light", "emitter", "mesh", "skin", "dangly", "aabb", "saber")
@@ -445,20 +532,72 @@ class MDLNode(ComparableMixin):
         ----
             self: The MDLNode object being initialized
         """
+        # vendor/reone/include/reone/graphics/modelnode.h:219
+        # vendor/xoreos/src/graphics/aurora/modelnode.h:241
+        # vendor/KotOR.js/src/odyssey/OdysseyModelNode.ts:37
+        # Child nodes inherit transforms and participate in rendering hierarchy
         self.children: list[MDLNode] = []
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:34
+        # vendor/xoreos/src/graphics/aurora/modelnode.h:178-196
+        # vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:498-526
+        # Animation keyframe data for position, orientation, scale, color, etc.
         self.controllers: list[MDLController] = []
+        
+        # vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:212
+        # vendor/xoreos/src/graphics/aurora/model_kotor.cpp:311
+        # vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:416
+        # ASCII string identifier (max 32 chars in binary format)
         self.name: str = ""
+        
+        # vendor/reone/src/libs/graphics/format/mdlmdxreader.cpp:202-203
+        # vendor/xoreos/src/graphics/aurora/model_kotor.cpp:305
+        # vendor/kotorblender/io_scene_kotor/format/mdl/reader.py:413
+        # Unique node number (uint16) for quick lookups and bone references
         self.node_id: int = -1
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:243
+        # vendor/xoreos/src/graphics/aurora/modelnode.h:89
+        # vendor/KotOR.js/src/odyssey/OdysseyModelNode.ts:42
+        # Local position (x,y,z) relative to parent node
         self.position: Vector3 = Vector3.from_null()
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:244
+        # vendor/xoreos/src/graphics/aurora/modelnode.h:92-93
+        # vendor/KotOR.js/src/odyssey/OdysseyModelNode.ts:43
+        # Local rotation as quaternion (x,y,z,w) for smooth animation interpolation
         self.orientation: Vector4 = Vector4(0, 0, 0, 1)
 
+        # vendor/reone/include/reone/graphics/modelnode.h:116-127
+        # Light source with flares, shadows, dynamic properties (node type & 0x02)
         self.light: MDLLight | None = None
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:129-153
+        # Particle emitter for effects like smoke, sparks, fire (node type & 0x04)
         self.emitter: MDLEmitter | None = None
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:155-158
+        # Reference to external model for equipment/attachments (node type & 0x10)
         self.reference: MDLReference | None = None
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:70-91
+        # Triangle mesh geometry with materials (node type & 0x20)
         self.mesh: MDLMesh | None = None
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:36-41
+        # Skinned mesh with bone weights for character animation (node type & 0x40)
         self.skin: MDLSkin | None = None
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:47-53
+        # Cloth/hair physics mesh with constraints (node type & 0x100)
         self.dangly: MDLDangly | None = None
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:55-68
+        # Walkmesh AABB tree for collision/pathfinding (node type & 0x200)
         self.aabb: MDLWalkmesh | None = None
+        
+        # vendor/reone/include/reone/graphics/modelnode.h:99
+        # Lightsaber blade mesh with special rendering (node type & 0x800)
         self.saber: MDLSaber | None = None
 
     def __eq__(self, other):

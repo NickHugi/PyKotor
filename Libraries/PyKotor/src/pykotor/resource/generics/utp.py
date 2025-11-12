@@ -17,70 +17,92 @@ if TYPE_CHECKING:
 class UTP:
     """Stores placeable data.
 
+    UTP files are GFF-based format files that store placeable object definitions including
+    lock/unlock mechanics, HP, inventory, scripts, and appearance.
+
+    References:
+    ----------
+        vendor/reone/src/libs/resource/parser/gff/utp.cpp:36-103 (UTP parsing from GFF)
+        vendor/reone/include/reone/resource/parser/gff/utp.h:34-97 (UTP structure definitions)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorUTP/UTP.cs:12-75 (UTP class definition)
+        vendor/NorthernLights/Generated/AuroraUTP.cs:67-69 (KotOR 2 specific fields)
+        Note: UTP files are GFF format files with specific structure definitions
+
     Attributes:
     ----------
-        tag: "Tag" field.
-        name: "LocName" field.
-        resref: "TemplateResRef" field.
-        auto_remove_key: "AutoRemoveKey" field.
-        conversation: "Conversation" field.
-        faction_id: "Faction" field.
-        plot: "Plot" field.
-        min1_hp: "Min1HP" field.
-        key_required: "KeyRequired" field.
-        lockable: "Lockable" field.
-        locked: "Locked" field.
-        unlock_dc: "OpenLockDC" field.
-        key_name: "KeyName" field.
-        animation_state: "AnimationState" field.
-        appearance_id: "Appearance" field.
-        maximum_hp: "HP" field.
-        current_hp: "CurrentHP" field.
-        hardness: "Hardness" field.
-        fortitude: "Fort" field.
-        on_closed: "OnClosed" field.
-        on_damaged: "OnDamaged" field.
-        on_death: "OnDeath" field.
-        on_heartbeat: "OnHeartbeat" field.
-        on_lock: "OnLock" field.
-        on_melee_attack: "OnMeleeAttacked" field.
-        on_open: "OnOpen" field.
-        on_force_power: "OnSpellCastAt" field.
-        on_unlock: "OnUnlock" field.
-        on_user_defined: "OnUserDefined" field.
-        has_inventory: "HasInventory" field.
-        party_interact: "PartyInteract" field.
-        static: "Static" field.
-        useable: "Useable" field.
-        on_end_dialog: "OnEndDialogue" field.
-        on_inventory: "OnInvDisturbed" field.
-        on_used: "OnUsed" field.
-        comment: "Comment" field.
+        resref: "TemplateResRef" field. The resource reference for this placeable template.
+            Reference: reone/utp.cpp:92 (TemplateResRef field)
+            Reference: reone/utp.h:87 (TemplateResRef field)
+            Reference: Kotor.NET/UTP.cs:64 (TemplateResRef property)
 
-        not_blastable: "NotBlastable" field. KotOR 2 Only.
-        unlock_diff: "OpenLockDiff" field. KotOR 2 Only.
-        unlock_diff_mod: "OpenLockDiffMod" field. KotOR 2 Only.
-        on_open_failed: "OnFailToOpen" field. KotOR 2 Only.
-        lock_dc: "CloseLockDC" field. KotOR 2 Only.
+        tag: "Tag" field. Tag identifier for this placeable.
+            Reference: reone/utp.cpp:91 (Tag field)
+            Reference: reone/utp.h:86 (Tag field)
+            Reference: Kotor.NET/UTP.cs:63 (Tag property)
 
-        palette_id: "PaletteID" field. Used in toolset only.
+        name: "LocName" field. Localized name of the placeable.
+            Reference: reone/utp.cpp:60 (LocName field)
+            Reference: reone/utp.h:55 (LocName field)
+            Reference: Kotor.NET/UTP.cs:35 (LocName property)
 
-        description: "Description" field. Not used by the game engine.
-        interruptable: "Interruptable" field. Not used by the game engine.
-        portrait_id: "PortraitId" field. Not used by the game engine.
-        trap_detectable: "TrapDetectable" field. Not used by the game engine.
-        trap_detect_dc: "TrapDetectDC" field. Not used by the game engine.
-        trap_disarmable: "TrapDisarmable" field. Not used by the game engine.
-        trap_disarm_dc: "DisarmDC" field. Not used by the game engine.
-        trap_flag: "TrapFlag" field. Not used by the game engine.
-        trap_one_shot: "TrapOneShot" field. Not used by the game engine.
-        trap_type: "TrapType" field. Not used by the game engine.
-        will: "Will" field. Not used by the game engine.
-        on_disarm: "OnDisarm" field. Not used by the game engine.
-        on_trap_triggered: "OnTrapTriggered" field. Not used by the game engine.
-        bodybag_id: "BodyBag" field. Not used by the game engine.
-        type_id: "Type" field. Not used by the game engine.
-        lock_dc: "CloseLockDC" field. Not used by the game engine.
+        appearance_id: "Appearance" field. Placeable appearance type identifier.
+            Reference: reone/utp.cpp:39 (Appearance field)
+            Reference: reone/utp.h:36 (Appearance field)
+            Reference: Kotor.NET/UTP.cs:15 (Appearance property)
+
+        has_inventory: "HasInventory" field. Whether placeable has an inventory.
+            Reference: reone/utp.cpp:52 (HasInventory field)
+            Reference: reone/utp.h:49 (HasInventory field)
+            Reference: Kotor.NET/UTP.cs:27 (HasInventory property)
+
+        inventory: List of InventoryItem objects in this placeable's inventory.
+            Reference: reone/utp.cpp:55-57 (ItemList parsing)
+            Reference: reone/utp.h:52 (ItemList vector)
+            Reference: reone/utp.h:28-32 (UTP_ItemList struct)
+            Reference: Kotor.NET/UTP.cs:74 (Inventory property)
+
+        not_blastable: "NotBlastable" field. Whether placeable cannot be blasted. KotOR 2 Only.
+            Reference: reone/utp.cpp:64 (NotBlastable field)
+            Reference: reone/utp.h:59 (NotBlastable field)
+            Reference: Kotor.NET/UTP.cs:37 (NotBlastable property)
+            Reference: NorthernLights/AuroraUTP.cs:67 (NotBlastable field)
+
+        unlock_diff: "OpenLockDiff" field. Unlock difficulty modifier. KotOR 2 Only.
+            Reference: reone/utp.cpp:82 (OpenLockDiff field)
+            Reference: reone/utp.h:77 (OpenLockDiff field)
+            Reference: Kotor.NET/UTP.cs:55 (OpenLockDiff property)
+            Reference: NorthernLights/AuroraUTP.cs:68 (OpenLockDiff field)
+
+        unlock_diff_mod: "OpenLockDiffMod" field. Additional unlock difficulty modifier. KotOR 2 Only.
+            Reference: reone/utp.cpp:83 (OpenLockDiffMod field as int)
+            Reference: reone/utp.h:78 (OpenLockDiffMod field as char)
+            Reference: Kotor.NET/UTP.cs:56 (OpenLockDiffMod property as sbyte)
+            Reference: NorthernLights/AuroraUTP.cs:69 (OpenLockDiffMod field as Char)
+            Note: Type discrepancy - reone uses char/int, Kotor.NET uses sbyte, PyKotor uses int
+
+        on_open_failed: "OnFailToOpen" field. Script to run when placeable fails to open. KotOR 2 Only.
+            Reference: reone/utp.cpp:70 (OnFailToOpen field)
+            Reference: reone/utp.h:65 (OnFailToOpen field)
+            Reference: Kotor.NET/UTP.cs:43 (OnFailToOpen property)
+
+        lock_dc: "CloseLockDC" field. Difficulty class to lock placeable. KotOR 2 Only.
+            Reference: reone/utp.cpp:42 (CloseLockDC field)
+            Reference: reone/utp.h:39 (CloseLockDC field)
+            Reference: Kotor.NET/UTP.cs:18 (CloseLockDC property)
+
+        palette_id: "PaletteID" field. Palette identifier. Used in toolset only.
+            Reference: reone/utp.cpp:84 (PaletteID field)
+            Reference: reone/utp.h:79 (PaletteID field)
+            Reference: Kotor.NET/UTP.cs:57 (PaletteID property)
+
+        Note: UTP shares many fields with UTD (door). See UTD documentation for common fields
+        like auto_remove_key, conversation, faction_id, plot, min1_hp, key_required, lockable,
+        locked, unlock_dc, key_name, animation_state, maximum_hp, current_hp, hardness,
+        fortitude, on_closed, on_damaged, on_death, on_heartbeat, on_lock, on_melee_attack,
+        on_open, on_force_power, on_unlock, on_user_defined, static, useable, party_interact,
+        on_end_dialog, on_inventory, on_used, comment, description, interruptable, portrait_id,
+        trap_detectable, trap_detect_dc, trap_disarmable, trap_disarm_dc, trap_flag,
+        trap_one_shot, trap_type, will, on_disarm, on_trap_triggered, bodybag_id, type_id.
     """
 
     BINARY_TYPE = ResourceType.UTP

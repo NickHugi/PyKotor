@@ -20,6 +20,18 @@ from pykotor.resource.formats.ncs.compiler.classes import (
 
 
 class NssLexer:
+    """NSS (NWScript Source) lexer/tokenizer.
+    
+    Tokenizes NSS source code into tokens for parsing. Handles keywords, operators,
+    literals, identifiers, and special values (OBJECTSELF, OBJECTINVALID, etc.).
+    
+    References:
+    ----------
+        vendor/HoloLSP/server/src/nwscript-lexer.ts (TypeScript NSS lexer)
+        vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (Token handling)
+        vendor/xoreos-tools/src/nwscript/ (NSS lexer implementation)
+        PLY (Python Lex-Yacc) library for lexer generation
+    """
     def __init__(
         self,
         errorlog=lex.NullLogger(),  # noqa: B008

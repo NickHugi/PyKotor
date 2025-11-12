@@ -18,79 +18,317 @@ if TYPE_CHECKING:
 class UTC:
     """Stores creature data.
 
+    UTC files are GFF-based format files that store creature definitions including
+    stats, appearance, inventory, feats, and script hooks.
+
+    References:
+    ----------
+        vendor/KotOR-dotNET/AuroraParsers/UTCObject.cs:9 (UTC parser)
+        vendor/KotOR.js/src/module/ModuleCreature.ts:73-100 (Creature module object)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTC.cs:13-119 (UTC class definition)
+        vendor/reone/include/reone/resource/parser/gff/utc.h:66-142 (UTC structure definitions)
+        vendor/reone/src/libs/game/object/creature.cpp:1377 (Creature object loading from UTC)
+        vendor/reone/src/libs/resource/parser/gff/utc.cpp:82-178 (UTC parsing from GFF)
+        Note: UTC files are GFF format files with specific structure definitions
+
     Attributes:
     ----------
-        resref: "TemplateResRef" field.
-        tag: "Tag" field.
-        comment: "Comment" field.
-        conversation: "Conversation" field.
-        first_name: "FirstName" field.
-        last_name: "LastName" field.
-        subrace_id: "SubraceIndex" field.
-        perception_id: "PerceptionRange" field.
-        race_id: "Race" field.
-        appearance_id: "Appearance_Type" field.
-        gender_id: "Gender" field.
-        faction_id: "FactionID" field.
-        walkrate_id: "WalkRate" field.
-        soundset_id: "SoundSetFile" field.
-        portrait_id: "PortraitId" field.
-        body_variation: "BodyVariation" field.
-        texture_variation: "TextureVar" field.
-        not_reorienting: "NotReorienting" field.
-        party_interact: "PartyInteract" field.
-        no_perm_death: "NoPermDeath" field.
-        min1_hp: "Min1HP" field.
-        plot: "Plot" field.
-        interruptable: "Interruptable" field.
-        is_pc: "IsPC" field.
-        disarmable: "Disarmable" field.
-        alignment: "GoodEvil" field.
-        challenge_rating: "ChallengeRating" field.
-        blindspot: "BlindSpot" field.
-        multiplier_set: "MultiplierSet" field.
-        natural_ac: "NaturalAC" field.
-        reflex_bonus: "refbonus" field.
-        willpower_bonus: "willbonus" field.
-        fortitude_bonus: "fortbonus" field.
-        strength: "Str" field.
-        dexterity: "Dex" field.
-        constitution: "Con" field.
-        intelligence: "Int" field.
-        wisdom: "Wis" field.
-        charisma: "Cha" field.
-        current_hp: "CurrentHitPoints" field.
-        max_hp: "MaxHitPoints" field.
-        hp: "HitPoints" field.
-        fp: "CurrentForce" field.
-        max_fp: "ForcePoints" field.
-        on_end_dialog: "ScriptEndDialogu" field.
-        on_blocked: "ScriptOnBlocked" field.
-        on_heartbeat: "ScriptHeartbeat" field.
-        on_notice: "ScriptOnNotice" field.
-        on_spell: "ScriptSpellAt" field.
-        on_attacked: "ScriptAttacked" field.
-        on_damaged: "ScriptDamaged" field.
-        on_disturbed: "ScriptDisturbed" field.
-        on_end_round: "ScriptEndRound" field.
-        on_dialog: "ScriptDialogue" field.
-        on_spawn: "ScriptSpawn" field.
-        on_rested: "ScriptRested" field.
-        on_death: "ScriptDeath" field.
-        on_user_defined: "ScriptUserDefine" field.
+        resref: "TemplateResRef" field. The resource reference for this creature template.
+            Reference: reone/utc.h:134 (TemplateResRef field)
+            Reference: Kotor.NET/UTC.cs:15 (ResRef property)
+            Reference: KotOR.js/ModuleCreature.ts:73 (inherited from ModuleObject)
 
-        ignore_cre_path: "IgnoreCrePath" field. KotOR 2 Only.
-        hologram: "Hologram" field. KotOR 2 Only.
+        tag: "Tag" field. The tag identifier for this creature.
+            Reference: reone/utc.cpp:132 (Tag field)
+            Reference: Kotor.NET/UTC.cs:18 (Tag property)
 
-        palette_id: "PaletteID" field. Used in toolset only.
+        comment: "Comment" field. Developer comment for this creature.
+            Reference: reone/utc.cpp:93 (Comment field)
+            Reference: Kotor.NET/UTC.cs:19 (Comment property)
+            Reference: KotOR.js/ModuleCreature.ts:96 (comment field)
 
-        bodybag_id: "BodyBag" field. Not used by the game engine.
-        deity: "Deity" field. Not used by the game engine.
-        description: "Description" field. Not used by the game engine.
-        lawfulness: "LawfulChaotic" field. Not used by the game engine.
-        phenotype_id: "Phenotype" field. Not used by the game engine.
-        on_rested: "ScriptRested" field. Not used by the game engine.
-        subrace_name: "Subrace" field. Not used by the game engine.
+        conversation: "Conversation" field. ResRef to the dialog file for this creature.
+            Reference: reone/utc.cpp:95 (Conversation field)
+            Reference: Kotor.NET/UTC.cs:16 (Conversation property)
+
+        first_name: "FirstName" field. Localized first name of the creature.
+            Reference: reone/utc.cpp:109 (FirstName field)
+            Reference: Kotor.NET/UTC.cs:21 (FirstName property)
+
+        last_name: "LastName" field. Localized last name of the creature.
+            Reference: reone/utc.cpp:122 (LastName field)
+            Reference: Kotor.NET/UTC.cs:22 (LastName property)
+
+        subrace_id: "SubraceIndex" field. Subrace index identifier.
+            Reference: reone/utc.cpp:131 (SubraceIndex field)
+            Reference: Kotor.NET/UTC.cs:25 (SubraceID property)
+
+        perception_id: "PerceptionRange" field. Perception range value.
+            Reference: reone/utc.cpp:132 (PerceptionRange field)
+            Reference: Kotor.NET/UTC.cs:27 (PerceptionID property)
+
+        race_id: "Race" field. Race identifier.
+            Reference: reone/utc.cpp:136 (Race field)
+            Reference: Kotor.NET/UTC.cs:24 (RaceID property)
+
+        appearance_id: "Appearance_Type" field. Appearance type identifier.
+            Reference: reone/utc.cpp:84 (Appearance_Type field)
+            Reference: Kotor.NET/UTC.cs:28 (AppearanceID property)
+
+        gender_id: "Gender" field. Gender identifier.
+            Reference: reone/utc.cpp:111 (Gender field)
+            Reference: Kotor.NET/UTC.cs:29 (GenderID property)
+
+        faction_id: "FactionID" field. Faction identifier.
+            Reference: reone/utc.cpp:105 (FactionID field)
+            Reference: Kotor.NET/UTC.cs:30 (FactionID property)
+
+        walkrate_id: "WalkRate" field. Walk rate identifier.
+            Reference: reone/utc.cpp:136 (WalkRate field)
+            Reference: Kotor.NET/UTC.cs:31 (WalkRateID property)
+
+        soundset_id: "SoundSetFile" field. Soundset file identifier.
+            Reference: reone/utc.cpp:127 (SoundSetFile field)
+            Reference: Kotor.NET/UTC.cs:32 (SoundsetID property)
+
+        portrait_id: "PortraitId" field. Portrait identifier.
+            Reference: reone/utc.cpp:135 (PortraitId field)
+            Reference: Kotor.NET/UTC.cs:26 (PortraitID property)
+
+        body_variation: "BodyVariation" field. Body variation index.
+            Reference: reone/utc.cpp:87 (BodyVariation field)
+            Reference: Kotor.NET/UTC.cs:38 (BodyVariation property)
+            Reference: KotOR.js/ModuleCreature.ts:82 (bodyVariation field)
+
+        texture_variation: "TextureVar" field. Texture variation index.
+            Reference: reone/utc.cpp:135 (TextureVar field)
+            Reference: Kotor.NET/UTC.cs:39 (TextureVariation property)
+
+        not_reorienting: "NotReorienting" field. Whether creature should not reorient.
+            Reference: reone/utc.cpp:129 (NotReorienting field)
+            Reference: Kotor.NET/UTC.cs:41 (NotReorientating property)
+
+        party_interact: "PartyInteract" field. Whether party members can interact.
+            Reference: reone/utc.cpp:131 (PartyInteract field)
+            Reference: Kotor.NET/UTC.cs:42 (PartyInteract property)
+
+        no_perm_death: "NoPermDeath" field. Whether creature cannot permanently die.
+            Reference: reone/utc.cpp:128 (NoPermDeath field)
+            Reference: Kotor.NET/UTC.cs:43 (NoPermanentDeath property)
+
+        min1_hp: "Min1HP" field. Whether creature HP cannot go below 1.
+            Reference: reone/utc.cpp:125 (Min1HP field)
+            Reference: Kotor.NET/UTC.cs:44 (Min1HP property)
+
+        plot: "Plot" field. Whether creature is plot-critical.
+            Reference: reone/utc.cpp:134 (Plot field)
+            Reference: Kotor.NET/UTC.cs:45 (Plot property)
+
+        interruptable: "Interruptable" field. Whether creature can be interrupted.
+            Reference: reone/utc.cpp:117 (Interruptable field)
+            Reference: Kotor.NET/UTC.cs:46 (Interruptable property)
+
+        is_pc: "IsPC" field. Whether creature is a player character.
+            Reference: reone/utc.cpp:118 (IsPC field)
+            Reference: Kotor.NET/UTC.cs:47 (IsPC property)
+
+        disarmable: "Disarmable" field. Whether creature can be disarmed.
+            Reference: reone/utc.cpp:101 (Disarmable field)
+            Reference: Kotor.NET/UTC.cs:48 (Disarmable property)
+            Reference: KotOR.js/ModuleCreature.ts:100 (disarmable field)
+
+        alignment: "GoodEvil" field. Alignment value (good/evil axis).
+            Reference: reone/utc.cpp:112 (GoodEvil field)
+            Reference: Kotor.NET/UTC.cs:52 (Alignment property)
+
+        challenge_rating: "ChallengeRating" field. Challenge rating value.
+            Reference: reone/utc.cpp:89 (ChallengeRating field)
+            Reference: Kotor.NET/UTC.cs:54 (ChallengeRating property)
+            Reference: KotOR.js/ModuleCreature.ts:94 (challengeRating field)
+
+        blindspot: "BlindSpot" field. Blind spot value. KotOR 2 Only.
+            Reference: reone/utc.cpp:85 (BlindSpot field)
+            Reference: Kotor.NET/UTC.cs:55 (Blindspot property)
+
+        multiplier_set: "MultiplierSet" field. Multiplier set identifier. KotOR 2 Only.
+            Reference: reone/utc.cpp:126 (MultiplierSet field)
+            Reference: Kotor.NET/UTC.cs:56 (MultiplierSet property)
+
+        natural_ac: "NaturalAC" field. Natural armor class value.
+            Reference: reone/utc.cpp:127 (NaturalAC field)
+            Reference: Kotor.NET/UTC.cs:58 (NaturalAC property)
+
+        reflex_bonus: "refbonus" field. Reflex save bonus.
+            Reference: reone/utc.cpp:140 (refbonus field)
+            Reference: Kotor.NET/UTC.cs:59 (ReflexBonus property)
+            Reference: KotOR.js/ModuleCreature.ts:91 (refbonus field)
+
+        willpower_bonus: "willbonus" field. Will save bonus.
+            Reference: reone/utc.cpp:141 (willbonus field)
+            Reference: Kotor.NET/UTC.cs:60 (WillBonus property)
+            Reference: KotOR.js/ModuleCreature.ts:92 (willbonus field)
+
+        fortitude_bonus: "fortbonus" field. Fortitude save bonus.
+            Reference: reone/utc.cpp:139 (fortbonus field)
+            Reference: Kotor.NET/UTC.cs:61 (FortitudeBonus property)
+            Reference: KotOR.js/ModuleCreature.ts:90 (fortbonus field)
+
+        strength: "Str" field. Strength ability score.
+            Reference: reone/utc.cpp:129 (Str field)
+            Reference: Kotor.NET/UTC.cs:79 (Strength property)
+            Reference: KotOR.js/ModuleCreature.ts:88 (str field)
+
+        dexterity: "Dex" field. Dexterity ability score.
+            Reference: reone/utc.cpp:100 (Dex field)
+            Reference: Kotor.NET/UTC.cs:80 (Dexterity property)
+            Reference: KotOR.js/ModuleCreature.ts:86 (dex field)
+
+        constitution: "Con" field. Constitution ability score.
+            Reference: reone/utc.cpp:94 (Con field)
+            Reference: Kotor.NET/UTC.cs:81 (Constitution property)
+            Reference: KotOR.js/ModuleCreature.ts:85 (con field)
+
+        intelligence: "Int" field. Intelligence ability score.
+            Reference: reone/utc.cpp:116 (Int field)
+            Reference: Kotor.NET/UTC.cs:82 (Intelligence property)
+            Reference: KotOR.js/ModuleCreature.ts:87 (int field)
+
+        wisdom: "Wis" field. Wisdom ability score.
+            Reference: reone/utc.cpp:138 (Wis field)
+            Reference: Kotor.NET/UTC.cs:83 (Wisdom property)
+            Reference: KotOR.js/ModuleCreature.ts:89 (wis field)
+
+        charisma: "Cha" field. Charisma ability score.
+            Reference: reone/utc.cpp:88 (Cha field)
+            Reference: Kotor.NET/UTC.cs:84 (Charisma property)
+            Reference: KotOR.js/ModuleCreature.ts:84 (cha field)
+
+        current_hp: "CurrentHitPoints" field. Current hit points.
+            Reference: reone/utc.cpp:97 (CurrentHitPoints field)
+            Reference: Kotor.NET/UTC.cs:64 (CurrentHP property)
+            Reference: KotOR.js/ModuleCreature.ts:98 (currentHitPoints field)
+
+        max_hp: "MaxHitPoints" field. Maximum hit points.
+            Reference: reone/utc.cpp:124 (MaxHitPoints field)
+            Reference: Kotor.NET/UTC.cs:65 (MaxHP property)
+
+        hp: "HitPoints" field. Base hit points.
+            Reference: reone/utc.cpp:113 (HitPoints field)
+            Reference: Kotor.NET/UTC.cs:63 (HP property)
+
+        fp: "CurrentForce" field. Current force points.
+            Reference: reone/utc.cpp:96 (CurrentForce field)
+            Reference: Kotor.NET/UTC.cs:67 (FP property)
+            Reference: KotOR.js/ModuleCreature.ts:97 (currentForce field)
+
+        max_fp: "ForcePoints" field. Maximum force points.
+            Reference: reone/utc.cpp:110 (ForcePoints field)
+            Reference: Kotor.NET/UTC.cs:68 (MaxFP property)
+
+        on_end_dialog: "ScriptEndDialogu" field. Script to run when dialog ends.
+            Reference: reone/utc.cpp:142 (ScriptEndDialogu field)
+            Reference: Kotor.NET/UTC.cs:87 (OnEndDialog property)
+
+        on_blocked: "ScriptOnBlocked" field. Script to run when blocked.
+            Reference: reone/utc.cpp:145 (ScriptOnBlocked field)
+            Reference: Kotor.NET/UTC.cs:88 (OnBlocked property)
+
+        on_heartbeat: "ScriptHeartbeat" field. Script to run on heartbeat.
+            Reference: reone/utc.cpp:144 (ScriptHeartbeat field)
+            Reference: Kotor.NET/UTC.cs:89 (OnHeartbeat property)
+
+        on_notice: "ScriptOnNotice" field. Script to run when noticing something.
+            Reference: reone/utc.cpp:146 (ScriptOnNotice field)
+            Reference: Kotor.NET/UTC.cs:90 (OnNotice property)
+
+        on_spell: "ScriptSpellAt" field. Script to run when spell is cast at creature.
+            Reference: reone/utc.cpp:149 (ScriptSpellAt field)
+            Reference: Kotor.NET/UTC.cs:91 (OnSpell property)
+
+        on_attacked: "ScriptAttacked" field. Script to run when attacked.
+            Reference: reone/utc.cpp:137 (ScriptAttacked field)
+            Reference: Kotor.NET/UTC.cs:92 (OnAttack property)
+
+        on_damaged: "ScriptDamaged" field. Script to run when damaged.
+            Reference: reone/utc.cpp:138 (ScriptDamaged field)
+            Reference: Kotor.NET/UTC.cs:93 (OnDamaged property)
+
+        on_disturbed: "ScriptDisturbed" field. Script to run when disturbed.
+            Reference: reone/utc.cpp:141 (ScriptDisturbed field)
+            Reference: Kotor.NET/UTC.cs:94 (OnDisturbed property)
+
+        on_end_round: "ScriptEndRound" field. Script to run at end of combat round.
+            Reference: reone/utc.cpp:143 (ScriptEndRound field)
+            Reference: Kotor.NET/UTC.cs:95 (OnEndRound property)
+
+        on_dialog: "ScriptDialogue" field. Script to run when dialog starts.
+            Reference: reone/utc.cpp:140 (ScriptDialogue field)
+            Reference: Kotor.NET/UTC.cs:96 (OnDialog property)
+
+        on_spawn: "ScriptSpawn" field. Script to run when creature spawns.
+            Reference: reone/utc.cpp:148 (ScriptSpawn field)
+            Reference: Kotor.NET/UTC.cs:97 (OnSpawn property)
+
+        on_rested: "ScriptRested" field. Script to run when creature rests. Not used by engine.
+            Reference: reone/utc.cpp:147 (ScriptRested field)
+            Reference: Kotor.NET/UTC.cs:98 (OnRested property)
+
+        on_death: "ScriptDeath" field. Script to run when creature dies.
+            Reference: reone/utc.cpp:139 (ScriptDeath field)
+            Reference: Kotor.NET/UTC.cs:99 (OnDeath property)
+
+        on_user_defined: "ScriptUserDefine" field. Script to run on user-defined event.
+            Reference: reone/utc.cpp:150 (ScriptUserDefine field)
+            Reference: Kotor.NET/UTC.cs:100 (OnUserDefined property)
+
+        ignore_cre_path: "IgnoreCrePath" field. Whether to ignore creature pathfinding. KotOR 2 Only.
+            Reference: reone/utc.cpp:115 (IgnoreCrePath field)
+            Reference: Kotor.NET/UTC.cs:49 (IgnoreCreaturePath property)
+
+        hologram: "Hologram" field. Whether creature is a hologram. KotOR 2 Only.
+            Reference: reone/utc.cpp:114 (Hologram field)
+            Reference: Kotor.NET/UTC.cs:50 (Hologram property)
+
+        palette_id: "PaletteID" field. Palette identifier. Used in toolset only.
+            Reference: reone/utc.cpp:130 (PaletteID field)
+            Reference: Kotor.NET/UTC.cs:36 (PaletteID property)
+
+        bodybag_id: "BodyBag" field. Body bag identifier. Not used by the game engine.
+            Reference: reone/utc.cpp:86 (BodyBag field)
+            Reference: Kotor.NET/UTC.cs:81 (bodyBag field)
+
+        deity: "Deity" field. Deity name. Not used by the game engine.
+            Reference: reone/utc.cpp:98 (Deity field)
+            Reference: Kotor.NET/UTC.cs:99 (deity field)
+
+        description: "Description" field. Localized description. Not used by the game engine.
+            Reference: reone/utc.cpp:99 (Description field)
+
+        lawfulness: "LawfulChaotic" field. Lawfulness value. Not used by the game engine.
+            Reference: reone/utc.cpp:123 (LawfulChaotic field)
+
+        phenotype_id: "Phenotype" field. Phenotype identifier. Not used by the game engine.
+            Reference: reone/utc.cpp:133 (Phenotype field)
+
+        subrace_name: "Subrace" field. Subrace name. Not used by the game engine.
+            Reference: reone/utc.cpp:130 (Subrace field)
+
+        classes: List of UTCClass objects representing creature classes and levels.
+            Reference: reone/utc.cpp:90-92 (ClassList parsing)
+            Reference: reone/utc.h:73 (ClassList vector)
+            Reference: Kotor.NET/UTC.cs:101+ (Classes property)
+
+        feats: List of feat identifiers.
+            Reference: reone/utc.cpp:106-108 (FeatList parsing)
+            Reference: reone/utc.h:85 (FeatList vector)
+
+        inventory: List of InventoryItem objects in creature's inventory.
+            Reference: reone/utc.cpp:119-121 (ItemList parsing)
+            Reference: reone/utc.h:96 (ItemList vector)
+
+        equipment: Dictionary mapping EquipmentSlot to InventoryItem for equipped items.
+            Reference: reone/utc.cpp:102-104 (Equip_ItemList parsing)
+            Reference: reone/utc.h:83 (Equip_ItemList vector)
     """
 
     BINARY_TYPE = ResourceType.UTC
@@ -207,6 +445,30 @@ class UTC:
 
 
 class UTCClass:
+    """Represents a creature class with its level and known powers.
+
+    References:
+    ----------
+        vendor/reone/include/reone/resource/parser/gff/utc.h:60-64 (UTC_ClassList struct)
+        vendor/reone/src/libs/resource/parser/gff/utc.cpp:72-80 (UTC_ClassList parsing)
+        vendor/reone/src/libs/resource/parser/gff/utc.cpp:28-34 (UTC_ClassList_KnownList0 parsing)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTC.cs:101+ (Classes property)
+        vendor/KotOR.js/src/module/ModuleCreature.ts:95 (classes field)
+
+    Attributes:
+    ----------
+        class_id: The class identifier.
+            Reference: reone/utc.cpp:74 (Class field)
+            Reference: reone/utc.h:61 (Class field)
+
+        class_level: The level in this class.
+            Reference: reone/utc.cpp:75 (ClassLevel field)
+            Reference: reone/utc.h:62 (ClassLevel field)
+
+        powers: List of spell/power identifiers known by this class.
+            Reference: reone/utc.cpp:76-78 (KnownList0 parsing)
+            Reference: reone/utc.h:63 (KnownList0 vector)
+    """
     def __init__(
         self,
         class_id: int,
@@ -338,14 +600,38 @@ def construct_utc(
         skill_list.add(6).set_uint8("Rank", 0)
         skill_list.add(7).set_uint8("Rank", 0)
     skill_list: GFFList = root.acquire("SkillList", GFFList())
-    utc.computer_use = skill_list.at(0).acquire("Rank", 0)
-    utc.demolitions = skill_list.at(1).acquire("Rank", 0)
-    utc.stealth = skill_list.at(2).acquire("Rank", 0)
-    utc.awareness = skill_list.at(3).acquire("Rank", 0)
-    utc.persuade = skill_list.at(4).acquire("Rank", 0)
-    utc.repair = skill_list.at(5).acquire("Rank", 0)
-    utc.security = skill_list.at(6).acquire("Rank", 0)
-    utc.treat_injury = skill_list.at(7).acquire("Rank", 0)
+    if skill_list.at(0) is not None:
+        skill_struct = skill_list.at(0)
+        assert skill_struct is not None, "SkillList[0] struct is None"
+        utc.computer_use = skill_struct.acquire("Rank", 0)
+    if skill_list.at(1) is not None:
+        skill_struct = skill_list.at(1)
+        assert skill_struct is not None, "SkillList[1] struct is None"
+        utc.demolitions = skill_list.at(1).acquire("Rank", 0)
+    if skill_list.at(2) is not None:
+        skill_struct = skill_list.at(2)
+        assert skill_struct is not None, "SkillList[2] struct is None"
+        utc.stealth = skill_struct.acquire("Rank", 0)
+    if skill_list.at(3) is not None:
+        skill_struct = skill_list.at(3)
+        assert skill_struct is not None, "SkillList[3] struct is None"
+        utc.awareness = skill_struct.acquire("Rank", 0)
+    if skill_list.at(4) is not None:
+        skill_struct = skill_list.at(4)
+        assert skill_struct is not None, "SkillList[4] struct is None"
+        utc.persuade = skill_struct.acquire("Rank", 0)
+    if skill_list.at(5) is not None:
+        skill_struct = skill_list.at(5)
+        assert skill_struct is not None, "SkillList[5] struct is None"
+        utc.repair = skill_struct.acquire("Rank", 0)
+    if skill_list.at(6) is not None:
+        skill_struct = skill_list.at(6)
+        assert skill_struct is not None, "SkillList[6] struct is None"
+        utc.security = skill_struct.acquire("Rank", 0)
+    if skill_list.at(7) is not None:
+        skill_struct = skill_list.at(7)
+        assert skill_struct is not None, "SkillList[7] struct is None"
+        utc.treat_injury = skill_struct.acquire("Rank", 0)
 
     # Not sure why there's extras... some utc's in k1 have 20 structs in the SkillList.
     if len(skill_list._structs) > 8:

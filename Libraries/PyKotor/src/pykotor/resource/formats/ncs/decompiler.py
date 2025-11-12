@@ -2,6 +2,12 @@
 
 This module provides comprehensive decompilation of NCS bytecode back to NSS source code,
 handling all instruction types, control flow, expressions, and data structures.
+
+References:
+----------
+    vendor/xoreos-tools/src/nwscript/decompiler.cpp (NCS decompilation algorithm)
+    vendor/xoreos-docs/specs/torlack/ncs.html (NCS format specification)
+    DeNCS - Original NCS decompiler implementation
 """
 
 from __future__ import annotations
@@ -161,6 +167,12 @@ class NCSDecompiler:
 
     Based on DeNCS implementation, this decompiler reconstructs NSS source
     from NCS bytecode using control flow analysis and expression reconstruction.
+    
+    References:
+    ----------
+        vendor/xoreos-tools/src/nwscript/decompiler.cpp (NCS decompilation algorithm)
+        vendor/xoreos-docs/specs/torlack/ncs.html (NCS format specification)
+        DeNCS - Original NCS decompiler implementation
     """
 
     def __init__(self, ncs: NCS, game: Game, functions: list[ScriptFunction] | None = None, constants: list[ScriptConstant] | None = None):

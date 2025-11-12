@@ -43,6 +43,11 @@ def decode_bytes_with_fallbacks(  # noqa: C901
     -------
         str - Decoded string
 
+    References:
+    ----------
+        vendor/KotOR.js (Character encoding handling in JavaScript)
+        Note: KotOR uses multiple character encodings including ASCII, UTF-8, and language-specific encodings
+
     Processing Logic:
     ----------------
         - If charset_normalizer not installed, use built-in decoding logic.

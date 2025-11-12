@@ -41,27 +41,56 @@ def _iterate_gff_list(struct: GFFStruct, label: str) -> list[GFFStruct]:
 
 
 class GIT:
+    """Game Instance Template (GIT) file handler.
+    
+    GIT files store dynamic area information including creatures, doors, placeables,
+    triggers, waypoints, stores, encounters, sounds, and cameras. This is the runtime
+    instance data for areas, stored as a GFF file. GIT files define where objects are
+    placed in an area, their positions, orientations, and instance-specific properties.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/resource/parser/gff/git.h:162-175 - GIT struct definition
+        vendor/reone/src/libs/resource/parser/gff/git.cpp:194-229 - parseGIT() function
+        vendor/reone/src/libs/resource/parser/gff/git.cpp:180-192 - GIT_AreaProperties parsing
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:12-25 - GIT class
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:27-38 - AreaProperties class
+        vendor/KotOR_IO/KotOR_IO/File Formats/GFF FileTypes/GIT.cs:10-115 - GIT class
+        vendor/KotOR-Bioware-Libs/GFF.pm - GFF format (GIT is GFF-based)
+        Original BioWare Odyssey Engine (GIT format specification)
+    """
     BINARY_TYPE = ResourceType.GIT
 
     def __init__(
         self,
     ):
-        self.ambient_sound_id: int = 0
-        self.ambient_volume: int = 0
-        self.env_audio: int = 0
-        self.music_standard_id: int = 0
-        self.music_battle_id: int = 0
-        self.music_delay: int = 0
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:182-190
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:29-37
+        # Area audio properties (ambient sounds, music, environment audio)
+        # NOTE: PyKotor uses separate fields instead of nested AreaProperties struct
+        # Discrepancy: reone/Kotor.NET use AreaProperties struct, PyKotor flattens to top-level
+        self.ambient_sound_id: int = 0  # AmbientSndDay (day ambient sound ID)
+        self.ambient_volume: int = 0  # AmbientSndDayVol (day ambient volume)
+        self.env_audio: int = 0  # EnvAudio (environment audio index)
+        self.music_standard_id: int = 0  # MusicDay (standard/day music ID)
+        self.music_battle_id: int = 0  # MusicBattle (battle music ID)
+        self.music_delay: int = 0  # MusicDelay (music delay in seconds)
 
-        self.cameras: list[GITCamera] = []
-        self.creatures: list[GITCreature] = []
-        self.doors: list[GITDoor] = []
-        self.encounters: list[GITEncounter] = []
-        self.placeables: list[GITPlaceable] = []
-        self.sounds: list[GITSound] = []
-        self.stores: list[GITStore] = []
-        self.triggers: list[GITTrigger] = []
-        self.waypoints: list[GITWaypoint] = []
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:200-227
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:16-24
+        # vendor/KotOR_IO/KotOR_IO/File Formats/GFF FileTypes/GIT.cs:29-39
+        # Instance lists (creatures, doors, placeables, triggers, waypoints, stores, encounters, sounds, cameras)
+        # NOTE: List names in GFF use spaces: "Creature List", "Door List", "Placeable List", "Encounter List"
+        # Reference: reone/git.cpp:203-227 (list parsing with space-separated names)
+        self.cameras: list[GITCamera] = []  # CameraList (area cameras)
+        self.creatures: list[GITCreature] = []  # "Creature List" (spawned creatures)
+        self.doors: list[GITDoor] = []  # "Door List" (area doors)
+        self.encounters: list[GITEncounter] = []  # "Encounter List" (encounter spawners)
+        self.placeables: list[GITPlaceable] = []  # "Placeable List" (placeable objects)
+        self.sounds: list[GITSound] = []  # SoundList (ambient sound emitters)
+        self.stores: list[GITStore] = []  # StoreList (merchant stores)
+        self.triggers: list[GITTrigger] = []  # TriggerList (area triggers)
+        self.waypoints: list[GITWaypoint] = []  # WaypointList (waypoint markers)
 
     def __iter__(self) -> Generator[ResRef, Any, None]:
         # Iterate over creatures
@@ -111,7 +140,7 @@ class GIT:
             A list of all stored instances.
         """
         return cast(
-            "List[GITInstance]",
+            list[GITInstance],
             [
                 *self.cameras,
                 *self.creatures,
@@ -314,6 +343,18 @@ class GITInstance(ABC):
 
 
 class GITCamera(GITInstance):
+    """Represents a camera instance in a GIT file.
+    
+    Cameras define camera positions and orientations for area cutscenes and scripted
+    camera movements. Each camera has a unique ID, position, orientation (quaternion),
+    field of view, height, pitch, and microphone range.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/resource/parser/gff/git.h:140-148 - GIT_CameraList struct
+        vendor/reone/src/libs/resource/parser/gff/git.cpp:168-178 - parseGIT_CameraList function
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:40-49 - CameraInfo class
+    """
     GFF_STRUCT_ID = 14
 
     def __init__(
@@ -327,11 +368,36 @@ class GITCamera(GITInstance):
         camera_id: int = 0,
     ):
         super().__init__(x, y, z)
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:170
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:42
+        # Unique camera identifier (CameraID field)
         self.camera_id: int = camera_id
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:171
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:48
+        # Field of view angle in degrees (FieldOfView field)
         self.fov: float = 45
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:172
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:47
+        # Camera height offset (Height field)
         self.height: float = 0.0
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:173
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:45
+        # Microphone range for audio occlusion (MicRange field)
         self.mic_range: float = 0.0
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:175
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:46
+        # Camera pitch angle in radians (Pitch field)
         self.pitch: float = 0.0
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:174
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:46
+        # Camera orientation quaternion (Orientation field, glm::quat)
+        # NOTE: PyKotor converts from Euler angles, reone stores as quaternion directly
+        # Discrepancy: PyKotor uses Vector4 quaternion, reone uses glm::quat
         self.orientation: Vector4 = Vector4.from_euler(
             math.pi / 2 - yaw,
             roll,
@@ -385,6 +451,17 @@ class GITCamera(GITInstance):
 
 
 class GITCreature(GITInstance):
+    """Represents a creature instance in a GIT file.
+    
+    Creature instances define where creatures spawn in an area. Each creature references
+    a UTC template file (TemplateResRef) and has a position and bearing (rotation).
+    
+    References:
+    ----------
+        vendor/reone/include/reone/resource/parser/gff/git.h:131-138 - GIT_Creature_List struct
+        vendor/reone/src/libs/resource/parser/gff/git.cpp:157-166 - parseGIT_Creature_List function
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:51-59 - CreatureInfo class
+    """
     GFF_STRUCT_ID = 4
 
     def __init__(
@@ -394,7 +471,16 @@ class GITCreature(GITInstance):
         z: float = 0.0,
     ):
         super().__init__(x, y, z)
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:159
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:58
+        # ResRef of UTC template file (TemplateResRef field)
         self.resref: ResRef = ResRef.from_blank()
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:160-164
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:53-57
+        # Creature bearing/rotation angle (computed from XOrientation/YOrientation)
+        # NOTE: PyKotor computes bearing from XOrientation/YOrientation using Vector2.angle()
+        # Reference: git.py:977 (bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2)
         self.bearing: float = 0.0
 
     def move(
@@ -448,6 +534,17 @@ class GITModuleLink(IntEnum):
 
 
 class GITDoor(GITInstance):
+    """Represents a door instance in a GIT file.
+    
+    Door instances define where doors are placed in an area. Doors can link to other
+    areas/modules, have transition destinations, and support color tweaking.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/resource/parser/gff/git.h:116-129 - GIT_Door_List struct
+        vendor/reone/src/libs/resource/parser/gff/git.cpp:140-155 - parseGIT_Door_List function
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:61-75 - DoorInfo class
+    """
     GFF_STRUCT_ID = 8
 
     def __init__(
@@ -457,13 +554,45 @@ class GITDoor(GITInstance):
         z: float = 0.0,
     ):
         super().__init__(x, y, z)
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:147
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:63
+        # ResRef of UTD template file (TemplateResRef field)
         self.resref: ResRef = ResRef.from_blank()
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:142
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:72
+        # Door bearing/rotation angle (Bearing field)
         self.bearing: float = 0.0
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:149-150
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:73-74
+        # Color tweak for door appearance (TweakColor/UseTweakColor fields)
+        # NOTE: TODO comment indicates tweak color needs fixing in dismantle/construct
         self.tweak_color: Color | None = None  # TODO: fix tweak color in dismantle/construct
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:143
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:66
+        # Tag of linked door/waypoint (LinkedTo field)
         self.linked_to: str = ""
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:144
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:67
+        # Link type flags (LinkedToFlags field: 0=NoLink, 1=ToDoor, 2=ToWaypoint)
         self.linked_to_flags: GITModuleLink = GITModuleLink.NoLink
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:145
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:65
+        # ResRef of linked module (LinkedToModule field)
         self.linked_to_module: ResRef = ResRef.from_blank()
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:148
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:68
+        # Localized transition destination name (TransitionDestin field)
         self.transition_destination: LocalizedString = LocalizedString.from_invalid()
+        
+        # vendor/reone/src/libs/resource/parser/gff/git.cpp:146
+        # vendor/Kotor.NET/Kotor.NET/Resources/KotorGIT/GIT.cs:64
+        # Door tag identifier (Tag field)
         self.tag: str = ""
 
     def move(
@@ -975,12 +1104,13 @@ def construct_git(
 
         if encounter_struct.exists("Geometry"):
             geometry_list = encounter_struct.get_list("Geometry")
-            for geometry_struct in geometry_list:
-                x = geometry_struct.acquire("X", 0.0)
-                y = geometry_struct.acquire("Y", 0.0)
-                z = geometry_struct.acquire("Z", 0.0)
-                encounter.geometry.append(Vector3(x, y, z))
-            if not geometry_list:
+            if geometry_list is not None:
+                for geometry_struct in geometry_list:
+                    x = geometry_struct.acquire("X", 0.0)
+                    y = geometry_struct.acquire("Y", 0.0)
+                    z = geometry_struct.acquire("Z", 0.0)
+                    encounter.geometry.append(Vector3(x, y, z))
+            if geometry_list is None or not geometry_list:
                 RobustLogger().warning("Encounter geometry list is empty! Creating a default triangle at its position.")
                 encounter.geometry.create_triangle(origin=encounter.position)
         else:
@@ -1049,12 +1179,13 @@ def construct_git(
 
         if trigger_struct.exists("Geometry"):
             geometry_list = trigger_struct.get_list("Geometry")
-            for geometry_struct in geometry_list:
-                x = geometry_struct.acquire("PointX", 0.0)
-                y = geometry_struct.acquire("PointY", 0.0)
-                z = geometry_struct.acquire("PointZ", 0.0)
-                trigger.geometry.append(Vector3(x, y, z))
-            if not geometry_list:
+            if geometry_list is not None:
+                for geometry_struct in geometry_list:
+                    x = geometry_struct.acquire("PointX", 0.0)
+                    y = geometry_struct.acquire("PointY", 0.0)
+                    z = geometry_struct.acquire("PointZ", 0.0)
+                    trigger.geometry.append(Vector3(x, y, z))
+            if geometry_list is None or not geometry_list:
                 RobustLogger().warning("Trigger geometry list is empty! Creating a default triangle at its position.")
                 trigger.geometry.create_triangle(origin=trigger.position)
         else:

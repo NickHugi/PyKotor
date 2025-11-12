@@ -40,6 +40,17 @@ if TYPE_CHECKING:
 
 
 class ModInstaller:
+    """Core mod installer implementing TSLPatcher/HoloPatcher logic.
+    
+    Handles mod installation, backup creation, and applying patches from changes.ini files.
+    This is a Python rewrite of the original TSLPatcher Perl implementation.
+    
+    References:
+    ----------
+        vendor/TSLPatcher/TSLPatcher.pl - Original Perl TSLPatcher implementation
+        vendor/HoloPatcher.NET/ - C# port of HoloPatcher
+        vendor/Kotor.NET/Kotor.NET.Patcher/ - Incomplete C# patcher
+    """
     def __init__(
         self,
         mod_path: os.PathLike | str,

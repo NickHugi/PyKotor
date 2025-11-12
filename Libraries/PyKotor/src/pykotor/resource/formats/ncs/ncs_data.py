@@ -1,3 +1,53 @@
+"""This module handles NCS (NWScript Compiled Script) bytecode files for KotOR.
+
+NCS files contain compiled NWScript bytecode instructions that are executed by the game engine.
+The bytecode uses a stack-based virtual machine with instructions for arithmetic, logic, control flow,
+function calls, and stack manipulation. Each instruction consists of a bytecode opcode and a qualifier
+that specifies operand types.
+
+References:
+----------
+    vendor/reone/include/reone/script/format/ncsreader.h:29-47 - NcsReader class
+    vendor/reone/src/libs/script/format/ncsreader.cpp:28-190 - Complete NCS reading implementation
+    vendor/xoreos/src/aurora/nwscript/ncsfile.h:86-280 - NCSFile class and instruction types
+    vendor/xoreos/src/aurora/nwscript/ncsfile.cpp:49-1649 - Complete NCS execution engine
+    vendor/Kotor.NET/Kotor.NET/Formats/KotorNCS/NCS.cs:9-799 - NCS instruction classes
+    vendor/Kotor.NET/Kotor.NET/Formats/KotorNCS/NCSReader.cs:11-31 - NCS reader interface
+    https://github.com/xoreos/xoreos-docs - Torlack's NCS specification (mirrored)
+    
+Binary Format:
+-------------
+    Header (9 bytes):
+        Offset | Size | Type   | Description
+        -------|------|--------|-------------
+        0x00   | 4    | char[] | File Type ("NCS ")
+        0x04   | 4    | char[] | File Version ("V1.0")
+        0x08   | 1    | uint8  | First instruction bytecode
+        
+    Instructions (variable length):
+        Each instruction consists of:
+        - Bytecode (1 byte): Opcode identifying instruction type
+        - Qualifier (1 byte): Type qualifier for operands (e.g., INT, FLOAT, INT_INT)
+        - Arguments (variable): Instruction-specific arguments (offsets, constants, jump targets)
+        
+        Reference: reone/ncsreader.cpp:42-190, xoreos/ncsfile.cpp:194-1649
+    
+    Instruction Types:
+    -----------------
+        Stack Operations: CPDOWNSP, CPTOPSP, CPDOWNBP, CPTOPBP, MOVSP, RSADDx
+        Constants: CONSTI, CONSTF, CONSTS, CONSTO
+        Arithmetic: ADDxx, SUBxx, MULxx, DIVxx, MODxx, NEGx
+        Comparison: EQUALxx, NEQUALxx, GTxx, GEQxx, LTxx, LEQxx
+        Logic: LOGANDxx, LOGORxx, BOOLANDxx, NOTx
+        Bitwise: INCORxx, EXCORxx, SHLEFTxx, SHRIGHTxx, USHRIGHTxx, COMPx
+        Control Flow: JMP, JSR, JZ, JNZ, RETN
+        Function Calls: ACTION
+        Stack Management: SAVEBP, RESTOREBP, STORE_STATE, DESTRUCT
+        Increment/Decrement: INCxSP, DECxSP, INCxBP, DECxBP
+        
+        Reference: reone/ncsreader.cpp:52-182, Kotor.NET/NCS.cs:725-798
+"""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -192,9 +242,36 @@ class NCSInstructionType(Enum):
 
 
 class NCS(ComparableMixin):
+    """Represents a compiled NWScript bytecode program.
+    
+    NCS contains a sequence of bytecode instructions that implement NWScript logic.
+    Instructions are executed sequentially by a stack-based virtual machine, with
+    control flow instructions (JMP, JSR, JZ, JNZ) allowing jumps to other instructions.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/script/program.h - ScriptProgram class
+        vendor/reone/src/libs/script/format/ncsreader.cpp:34-40 (program creation)
+        vendor/xoreos/src/aurora/nwscript/ncsfile.h:86-280 - NCSFile class
+        vendor/Kotor.NET/Kotor.NET/Formats/KotorNCS/NCS.cs:9-17 - NCS class
+        
+    Attributes:
+    ----------
+        instructions: List of NCSInstruction objects making up the program
+            Reference: reone/script/program.h (instructions vector)
+            Reference: reone/ncsreader.cpp:187 (_program->add instruction)
+            Reference: xoreos/ncsfile.h:184 (_script stream, instructions parsed on-demand)
+            Reference: Kotor.NET/NCS.cs:11 (Instructions List property)
+            Instructions are executed sequentially, with jumps allowing control flow
+            Each instruction has an offset, type, arguments, and optional jump target
+    """
     COMPARABLE_SEQUENCE_FIELDS = ("instructions",)
 
     def __init__(self):
+        # vendor/reone/src/libs/script/format/ncsreader.cpp:34
+        # vendor/xoreos/src/aurora/nwscript/ncsfile.h:184
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorNCS/NCS.cs:11
+        # List of bytecode instructions making up the compiled script
         self.instructions: list[NCSInstruction] = []
 
     def __eq__(self, other):
@@ -440,7 +517,7 @@ class NCS(ComparableMixin):
         -------
             set[NCSInstruction]: Set of reachable instructions
         """
-        reachable = set()
+        reachable: set[NCSInstruction] = set()
         if not self.instructions:
             return reachable
 
@@ -483,7 +560,7 @@ class NCS(ComparableMixin):
         -------
             list[list[NCSInstruction]]: List of basic blocks
         """
-        blocks = []
+        blocks: list[list[NCSInstruction]] = []
         if not self.instructions:
             return blocks
 
@@ -537,18 +614,46 @@ class NCS(ComparableMixin):
 
 
 class NCSInstruction(ComparableMixin):
-    """Initialize a NCS instruction object.
-
-    Args:
-    ----
-        ins_type: NCS instruction type
-        args: List of arguments
-        jump: Jump target instruction
-
-    Initializes a NCS instruction object with provided attributes:
-        - Sets instruction type
-        - Sets jump target if provided
-        - Sets args list if provided.
+    """Represents a single NCS bytecode instruction.
+    
+    Each instruction consists of a bytecode opcode, a qualifier specifying operand types,
+    optional arguments (offsets, constants, etc.), and an optional jump target for
+    control flow instructions.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/script/program.h - Instruction struct
+        vendor/reone/src/libs/script/format/ncsreader.cpp:48-190 (instruction reading)
+        vendor/xoreos/src/aurora/nwscript/ncsfile.h:131-177 (InstructionType enum)
+        vendor/xoreos/src/aurora/nwscript/ncsfile.cpp:194-1649 (instruction execution)
+        vendor/Kotor.NET/Kotor.NET/Formats/KotorNCS/NCS.cs:19-711 - NCSInstruction classes
+        
+    Attributes:
+    ----------
+        ins_type: Instruction type (opcode + qualifier combination)
+            Reference: reone/ncsreader.cpp:50 (ins.type = R_INSTR_TYPE(byteCode, qualifier))
+            Reference: xoreos/ncsfile.cpp:194-1649 (opcode dispatch table)
+            Reference: Kotor.NET/NCS.cs:21-22 (Instruction and Qualifier properties)
+            Combines bytecode opcode (e.g., ADDxx) with qualifier (e.g., INT_INT) to form complete instruction
+            
+        args: List of instruction arguments (offsets, constants, sizes, etc.)
+            Reference: reone/ncsreader.cpp:57-105 (argument reading per instruction type)
+            Reference: xoreos/ncsfile.cpp:194-1649 (argument handling in opcode handlers)
+            Reference: Kotor.NET/NCS.cs:23 (Args property, varies by instruction type)
+            Examples: CPDOWNSP has [offset, size], CONSTI has [int_value], ACTION has [routine_id, arg_count]
+            
+        jump: Optional jump target instruction for control flow (JMP, JSR, JZ, JNZ)
+            Reference: reone/ncsreader.cpp:81-85 (jumpOffset reading for JMP/JSR/JZ/JNZ)
+            Reference: xoreos/ncsfile.cpp:252-260 (jump instruction execution)
+            Reference: Kotor.NET/NCS.cs:24 (JumpTo property, NCSInstruction?)
+            Used by JMP (unconditional), JSR (subroutine call), JZ (jump if zero), JNZ (jump if not zero)
+            Jump offset is stored as int32 in binary, converted to instruction reference in memory
+            
+        offset: Byte offset of instruction in NCS file (set during loading)
+            Reference: reone/ncsreader.cpp:49 (ins.offset = static_cast<uint32_t>(offset))
+            Reference: reone/ncsreader.cpp:185 (ins.nextOffset for following instruction)
+            Used for jump target resolution and debugging
+            Value -1 indicates offset not yet determined
     """
 
     COMPARABLE_FIELDS = ("ins_type", "args", "jump")
@@ -559,9 +664,26 @@ class NCSInstruction(ComparableMixin):
         args: list[Any] | None = None,
         jump: NCSInstruction | None = None,
     ):
+        # vendor/reone/src/libs/script/format/ncsreader.cpp:50
+        # vendor/xoreos/src/aurora/nwscript/ncsfile.cpp:194-1649
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorNCS/NCS.cs:21-22
+        # Instruction type (bytecode opcode + qualifier combination)
         self.ins_type: NCSInstructionType = ins_type
+        
+        # vendor/reone/src/libs/script/format/ncsreader.cpp:81-85
+        # vendor/xoreos/src/aurora/nwscript/ncsfile.cpp:252-260
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorNCS/NCS.cs:24
+        # Optional jump target for control flow instructions (JMP, JSR, JZ, JNZ)
         self.jump: NCSInstruction | None = jump
+        
+        # vendor/reone/src/libs/script/format/ncsreader.cpp:57-105
+        # vendor/xoreos/src/aurora/nwscript/ncsfile.cpp:194-1649
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorNCS/NCS.cs:23
+        # Instruction arguments (offsets, constants, sizes, etc., varies by instruction type)
         self.args: list[Any] = [] if args is None else args
+        
+        # vendor/reone/src/libs/script/format/ncsreader.cpp:49
+        # Byte offset of instruction in NCS file (set during loading, -1 if not determined)
         self.offset: int = -1
 
     def __str__(self):

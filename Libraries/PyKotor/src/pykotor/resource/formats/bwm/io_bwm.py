@@ -40,6 +40,15 @@ if TYPE_CHECKING:
 
 
 class BWMBinaryReader(ResourceReader):
+    """Reads BWM/WOK (Walkmesh) files.
+    
+    Walkmesh files define collision geometry for areas, including walkable surfaces,
+    adjacencies, AABB trees for spatial queries, and edge transitions.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/graphics/format/bwmreader.cpp (BWM reading)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,

@@ -14,6 +14,16 @@ if TYPE_CHECKING:
 
 
 class TwoDACSVReader(ResourceReader):
+    """Reads 2DA files from CSV format.
+    
+    CSV is a PyKotor-specific convenience format for easier editing in spreadsheet applications.
+    Format: First column is row label, remaining columns are headers.
+    
+    References:
+    ----------
+        vendor/xoreos-tools/src/xml/2dadumper.cpp (2DA to text formats)
+        Note: CSV format is PyKotor-specific, not a standard game format
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,

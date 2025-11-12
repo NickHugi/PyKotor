@@ -1,3 +1,15 @@
+"""TLK modification algorithms for TSLPatcher/HoloPatcher.
+
+This module implements TLK modification logic for applying patches from changes.ini files.
+Handles string additions, modifications, and memory token resolution.
+
+References:
+----------
+    vendor/TSLPatcher/TSLPatcher.pl - Original Perl TLK modification logic
+    vendor/HoloPatcher.NET/src/TSLPatcher.Core/Mods/TLK/ - C# TLK modification implementation
+    vendor/Kotor.NET/Kotor.NET.Patcher/ - Incomplete C# patcher
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar

@@ -40,9 +40,6 @@
 [submodule "vendor/nwscript-mode.el"]
 	path = vendor/nwscript-mode.el
 	url = https://github.com/th3w1zard1/nwscript-mode.el.git
-[submodule "vendor/nwscript-ts-mode"]
-	path = vendor/nwscript-ts-mode
-	url = https://github.com/th3w1zard1/nwscript-ts-mode.git
 [submodule "vendor/HoloLSP"]
 	path = vendor/HoloLSP
 	url = https://github.com/th3w1zard1/HoloLSP.git
@@ -55,7 +52,7 @@
 ## Engine Reimplementations
 [submodule "vendor/xoreos"]
 	path = vendor/xoreos
-	url = https://github.com/th3w1zard1/xoreos-tools.git
+	url = https://github.com/th3w1zard1/xoreos.git
 [submodule "vendor/KotOR.js"]
 	path = vendor/KotOR.js
 	url = https://github.com/th3w1zard1/KotOR.js.git
@@ -123,9 +120,6 @@
 	url = https://github.com/th3w1zard1/KOTOR_Registry_Install_Path_Editor.git
 
 # Shaders & Graphics Fixes
-[submodule "vendor/KOTR-II-ShaderOverride-Injector"]
-	path = vendor/KOTR-II-ShaderOverride-Injector
-	url = https://github.com/th3w1zard1/KOTR-II-ShaderOverride-Injector.git
 [submodule "vendor/3C-FD-Patcher"]
 	path = vendor/3C-FD-Patcher
 	url = https://github.com/th3w1zard1/3C-FD-Patcher.git
@@ -192,9 +186,6 @@
 	url = https://github.com/th3w1zard1/Vanilla_KOTOR_Script_Source
 
 ## Modding Guides/References
-[submodule "vendor/KotOR-Modding-Guide"]
-	path = vendor/KotOR-Modding-Guide
-	url = https://github.com/th3w1zard1/KotOR-Modding-Guide.git
 [submodule "vendor/xoreos-docs"]
 	path = vendor/xoreos-docs
 	url = https://github.com/xoreos/xoreos-docs
@@ -294,12 +285,6 @@
 [submodule "vendor/pazaak-KhanRayhanAli"]
 	path = vendor/pazaak-KhanRayhanAli
 	url = https://github.com/th3w1zard1/pazaak-KhanRayhanAli.git
-[submodule "vendor/cs403-final"]
-	path = vendor/cs403-final
-	url = https://github.com/th3w1zard1/cs403-final.git
-[submodule "vendor/PurePazaak"]
-	path = vendor/PurePazaak
-	url = https://github.com/th3w1zard1/PurePazaak.git
 [submodule "vendor/Pazaak-Handensaken"]
 	path = vendor/Pazaak-Handensaken
 	url = https://github.com/th3w1zard1/Pazaak-Handensaken.git

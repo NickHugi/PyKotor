@@ -12,6 +12,12 @@ for resource diffing operations. It brings together helpers for:
 Designed for both 2-way and 3-way comparisons including changes.ini generation.
 
 Handlers for individual resource formats can be added to the _HANDLERS map to extend support.
+
+References:
+----------
+    vendor/TSLPatcher/TSLPatcher.pl - Original TSLPatcher INI format and patching logic
+    vendor/HoloPatcher.NET/ - C# port of HoloPatcher with diff generation
+    vendor/Kotor.NET/Kotor.NET.Patcher/ - Incomplete C# patcher
 """
 
 from __future__ import annotations

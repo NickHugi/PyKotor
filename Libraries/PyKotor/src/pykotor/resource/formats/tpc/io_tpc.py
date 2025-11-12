@@ -82,9 +82,16 @@ def deswizzle(data: bytes | bytearray, width: int, height: int, bytes_per_pixel:
 
 
 class TPCBinaryReader(ResourceReader):
-    """Used to read TPC binary data."""
-
-    MAX_DIMENSIONS: Literal[0x8000] = 0x8000
+    """Used to read TPC binary data.
+    
+    TPC (Texture Pack Container) files store texture data with mipmaps, compression,
+    and various texture formats used throughout KotOR.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/graphics/format/tpcreader.cpp (TPC reading)
+        vendor/tga2tpc/ (TPC conversion tool)
+    """
     IMG_DATA_START_OFFSET: Literal[0x80] = 0x80
 
     def __init__(
@@ -293,6 +300,12 @@ class TPCBinaryWriter(ResourceWriter):
     Followed by:
     - Texture data
     - TXI data (optional)
+    
+    References:
+    ----------
+        vendor/reone/src/libs/graphics/format/tpcwriter.cpp (TPC writing)
+        vendor/tga2tpc/tpc.js (TPC format handling)
+        vendor/KotOR-Bioware-Libs/TPC.pm (Perl TPC implementation)
     """
 
     MAX_DIMENSIONS: Literal[0x8000] = TPCBinaryReader.MAX_DIMENSIONS

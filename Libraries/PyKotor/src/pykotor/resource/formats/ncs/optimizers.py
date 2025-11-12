@@ -14,9 +14,18 @@ logger = logging.getLogger(__name__)
 
 
 class RemoveNopOptimizer(NCSOptimizer):
-    """NCS Compiler uses NOP instructions as stubs to simplify the compilation process however as their name suggests
-    they do not perform any actual function. This optimizer removes all occurrences of NOP instructions from the
-    compiled script.
+    """Removes NOP (no-operation) instructions from compiled NCS bytecode.
+    
+    NCS Compiler uses NOP instructions as stubs to simplify the compilation process
+    however as their name suggests they do not perform any actual function. This optimizer
+    removes all occurrences of NOP instructions from the compiled script, updating jump
+    targets to skip over removed NOPs.
+    
+    References:
+    ----------
+        vendor/xoreos-tools/src/nwscript/decompiler.cpp (NCS optimization patterns)
+        Standard compiler optimization techniques (dead code elimination)
+        Note: NOP removal is a common bytecode optimization
     """  # noqa: D205
 
     def optimize(self, ncs: NCS):

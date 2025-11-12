@@ -24,6 +24,16 @@ if TYPE_CHECKING:
 
 
 class TLKXMLReader(ResourceReader):
+    """Reads TLK files from XML format.
+    
+    XML is a human-readable format for easier editing of talk tables.
+    
+    References:
+    ----------
+        vendor/xoreos-tools/src/xml/tlkdumper.cpp (TLK to XML conversion)
+        vendor/xoreos-tools/src/xml/tlkcreator.cpp (XML to TLK conversion)
+        Note: XML format structure may vary between tools
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,

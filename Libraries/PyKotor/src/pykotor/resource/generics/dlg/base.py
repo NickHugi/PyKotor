@@ -34,6 +34,20 @@ class DLGConversationType(IntEnum):
 
 class DLG:
     """Stores dialog data.
+    
+    DLG files are GFF-based format files that store dialog trees with entries, replies,
+    links, and conversation metadata.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/parser/gff/dlg.cpp (DLG parsing from GFF)
+        vendor/reone/include/reone/resource/parser/gff/dlg.h (DLG structure definitions)
+        vendor/reone/include/reone/resource/dialog.h (Dialog resource abstraction)
+        vendor/KotOR.js/src/resource/DLGObject.ts (DLG loading and dialog tree structure)
+        vendor/KotOR.js/src/resource/DLGNode.ts (DLG node structure)
+        vendor/xoreos-tools/src/xml/dlgdumper.cpp (DLG to XML conversion)
+        vendor/xoreos-tools/src/xml/dlgcreator.cpp (XML to DLG conversion)
+        Note: DLG files are GFF format files with specific structure definitions
 
     Attributes:
     ----------

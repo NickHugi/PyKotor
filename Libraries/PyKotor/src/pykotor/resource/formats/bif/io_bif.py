@@ -48,8 +48,21 @@ def _decompress_bzf_payload(payload: bytes, expected_size: int) -> bytes:
 
 
 class BIFBinaryReader(ResourceReader):
-    """Reads BIF/BZF files."""
-
+    """Reads BIF/BZF files.
+    
+    BIF (BioWare Index File) files contain game resources indexed by KEY files.
+    BZF files are compressed BIF files using LZMA compression.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/bifreader.cpp:26-30 (signature checking)
+        vendor/reone/src/libs/resource/format/bifreader.cpp:32-39 (fixed resources handling)
+        vendor/xoreos-tools/src/unkeybif.cpp (BIF extraction tool)
+    
+    Missing Features:
+    ----------------
+        - Fixed resources explicitly rejected (reone reads but doesn't use them)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -73,6 +86,7 @@ class BIFBinaryReader(ResourceReader):
 
     def _check_signature(self) -> None:
         """Check BIF/BZF signature."""
+        # vendor/reone/src/libs/resource/format/bifreader.cpp:26-30
         signature: str = self._reader.read_string(8)  # "BIFFV1  " or "BZF V1  "
 
         # Check file type
@@ -84,7 +98,8 @@ class BIFBinaryReader(ResourceReader):
             msg = f"Invalid BIF/BZF file type: {signature[:4]}"
             raise ValueError(msg)
 
-        # Check version
+        # Check version - PyKotor supports "V1  " and "V1.1", reone only checks "BIFFV1  "
+        # vendor/reone/src/libs/resource/format/bifreader.cpp:27
         if signature[4:] != "V1  " and signature[4:] != "V1.1":
             msg = f"Unsupported BIF/BZF version: {signature[4:]}"
             raise ValueError(msg)
@@ -95,6 +110,8 @@ class BIFBinaryReader(ResourceReader):
         self.fixed_res_count = self._reader.read_uint32()
         self.data_offset = self._reader.read_uint32()
 
+        # vendor/reone/src/libs/resource/format/bifreader.cpp:32-39
+        # NOTE: reone reads fixed_res_count but doesn't use it. PyKotor explicitly rejects.
         if self.fixed_res_count > 0:
             msg = "Fixed resources not supported"
             raise ValueError(msg)

@@ -1,5 +1,7 @@
-"""
-CLI utility that mirrors the behaviour of the historic ``tga2tpc`` tool.
+"""CLI utility that mirrors the behaviour of the historic ``tga2tpc`` tool.
+
+This module provides a command-line interface for converting TGA images to TPC format,
+matching the functionality of the original tga2tpc tool used in KotOR modding.
 
 Usage
 -----
@@ -11,6 +13,12 @@ Usage
 
 The implementation is intentionally self-contained and converts through the
 ``pykotor`` writers so produced files match the rest of the toolchain.
+
+References:
+----------
+    vendor/tga2tpc/ (Original tga2tpc web-based tool)
+    vendor/tga2tpc/main.js (TPC conversion logic)
+    vendor/tga2tpc/tpc.js (TPC format handling)
 """
 
 from __future__ import annotations

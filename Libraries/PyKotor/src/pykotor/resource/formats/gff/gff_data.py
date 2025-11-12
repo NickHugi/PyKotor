@@ -1,3 +1,21 @@
+"""GFF (Generic File Format) data structures and utilities.
+
+GFF is the primary structured data format used throughout KotOR for storing
+game data, including character templates, areas, dialogs, and more.
+
+References:
+----------
+    vendor/reone/src/libs/resource/gff.cpp - GFF parsing and writing
+    vendor/reone/include/reone/resource/gff.h - GFF data structures
+    vendor/xoreos-tools/src/resource/gff.cpp - GFF format parser
+    vendor/xoreos-docs/specs/gff.html - GFF format specification
+    vendor/KotOR.js/src/resource/GFFStruct.ts - TypeScript GFF handling
+    vendor/KotOR-dotNET/GFFStruct.cs - C# GFF implementation
+    vendor/KotOR-Bioware-Libs/GFF.pm - Perl GFF parser
+    vendor/sotor/core/src/formats/gff/ - Rust GFF implementation
+    Note: GFF is used for all structured game data; critical to understand for modding
+"""
+
 from __future__ import annotations
 
 import difflib
@@ -406,11 +424,50 @@ class _GFFField:
 
 
 class GFFStruct(ComparableMixin):
-    """Stores a collection of GFFFields.
-
+    """Stores a collection of GFFFields in a GFF tree node.
+    
+    GFFStruct represents a single structure (node) in the GFF tree hierarchy. Each struct
+    has a user-defined ID and contains named fields that can be primitives, other structs,
+    or lists of structs.
+    
+    References:
+    ----------
+        vendor/TSLPatcher/lib/site/Bioware/GFF.pm:87-99 - Struct constructor
+        vendor/Kotor.NET/Kotor.NET/Formats/KotorGFF/GFFBinaryStructure.cs:148-172 - Binary struct definition
+        vendor/Kotor.NET/Kotor.NET/Formats/KotorGFF/GFF.cs:72-77 - GFFStruct class
+        vendor/KotOR_IO/KotOR_IO/File Formats/GFF.cs:20-29 - STRUCT top level
+        vendor/KotOR-Bioware-Libs/GFF.pm - Perl GFF struct implementation
+        vendor/reone/include/reone/resource/gff.h:40-68 - GffStruct class
+        vendor/xoreos/src/aurora/gff3file.h:65-138 - GFF3Struct class
+        vendor/KotOR.js/src/resource/GFFStruct.ts:18-245 - TypeScript struct implementation
+        vendor/sotor/core/src/formats/gff/mod.rs:45-128 - Rust GFF struct
+    
     Attributes:
     ----------
-        struct_id: User defined id.
+        struct_id: User-defined struct type ID (uint32 in binary format)
+            Reference: TSLPatcher/GFF.pm:90 (ID field), Kotor.NET/GFFBinaryStructure.cs:150-151
+            Used to differentiate struct types (e.g., creature vs door stats)
+            Typical values: 0 for most structs, specific IDs for template types
+            
+        _fields: Dictionary mapping field labels to _GFFField instances
+            Reference: TSLPatcher/GFF.pm:94 (Main struct), Kotor.NET/GFF.cs:75 (Fields list)
+            Labels are ASCII strings (max 16 chars) that identify fields
+            Field order matters for binary compatibility (maintains insertion order in Python 3.7+)
+            Empty structs are valid (field count = 0)
+    
+    Binary Format Notes:
+    -------------------
+        Each struct in binary is 12 bytes:
+            - 4 bytes: struct_id (uint32)
+            - 4 bytes: DataOrDataOffset (int32) - field index or field indices array offset
+            - 4 bytes: FieldCount (uint32) - number of fields in struct
+        
+        Reference: Kotor.NET/GFFBinaryStructure.cs:159-164, KotOR_IO/GFF.cs:114-152
+        
+        Field count optimization (Kotor.NET/GFFBinaryWriter.cs:59-72):
+            - If FieldCount == 0: DataOrDataOffset = -1 (empty struct)
+            - If FieldCount == 1: DataOrDataOffset = field array index directly
+            - If FieldCount > 1: DataOrDataOffset = byte offset into field indices array
     """
 
     COMPARABLE_FIELDS = ("struct_id", "_fields")
@@ -419,7 +476,15 @@ class GFFStruct(ComparableMixin):
         self,
         struct_id: int = 0,
     ):
+        # vendor/TSLPatcher/lib/site/Bioware/GFF.pm:90 - 'ID'=>-1
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorGFF/GFF.cs:74 - uint ID
+        # User-defined struct type identifier (uint32 in binary)
         self.struct_id: int = struct_id
+        
+        # vendor/TSLPatcher/lib/site/Bioware/GFF.pm:94 - Main struct
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorGFF/GFF.cs:75 - List<GFFField> Fields
+        # vendor/reone/include/reone/resource/gff.h:57 - std::unordered_map<std::string, Field>
+        # Ordered dictionary of field labels to field instances
         self._fields: dict[str, _GFFField] = {}
 
     def __repr__(self) -> str:

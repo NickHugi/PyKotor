@@ -19,6 +19,13 @@ def get_model(
     genericdoors: TwoDA | SOURCE_TYPES | None = None,
 ) -> str:
     """Returns the model name for the given door.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/game/object/door.cpp (Door model lookup)
+        vendor/KotOR.js/src/module/ModuleDoor.ts (Door appearance handling)
+        Note: Door model lookup uses genericdoors.2da
+    
 
     If no value is specified for the genericdoor parameters then it will be loaded from the given installation.
 

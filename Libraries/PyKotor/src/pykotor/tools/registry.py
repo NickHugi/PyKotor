@@ -19,6 +19,16 @@ if TYPE_CHECKING:
     from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
 
 
+"""Windows registry paths and game installation detection.
+
+References:
+----------
+    vendor/KOTOR_Registry_Install_Path_Editor (Registry path detection tool)
+    vendor/HoloPatcher.NET/src/HoloPatcher/Util/RegistryHelper.cs (C# registry helper)
+    vendor/Kotor-Randomizer (Game path detection logic)
+    Note: Registry paths vary between Steam, GOG, and disc releases on different architectures
+"""
+
 KOTOR_REG_PATHS: dict[Game, dict[ProcessorArchitecture, list[tuple[str, str]]]] = {
     Game.K1: {
         ProcessorArchitecture.BIT_32: [

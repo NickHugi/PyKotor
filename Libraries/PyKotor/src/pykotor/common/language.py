@@ -14,6 +14,15 @@ class Language(IntEnum):
     """Language IDs recognized by both the games.
 
     Found in the TalkTable header, and CExoLocStrings (LocalizedStrings) within GFFs.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/resource/types.h (Language enum)
+        vendor/xoreos-tools/src/common/types.h (Language ID definitions)
+        vendor/KotOR.js/src/resource/ResourceTypes.ts (Language enum)
+        vendor/KotOR-dotNET/AuroraFile.cs (Language enum)
+        Note: Official releases support English, French, German, Italian, Spanish, Polish
+              Custom language support added for localization beyond official releases
     """
 
     # UNSET = 0x7FFFFFFF  # noqa: ERA001

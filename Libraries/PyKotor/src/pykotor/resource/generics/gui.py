@@ -18,6 +18,24 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
+"""GUI file format handling.
+
+GUI files are GFF-based format files that store user interface definitions including
+controls, panels, buttons, labels, and layout information.
+
+References:
+----------
+    vendor/reone/src/libs/resource/parser/gff/gui.cpp (GUI parsing from GFF)
+    vendor/reone/include/reone/resource/parser/gff/gui.h (GUI structure definitions)
+    vendor/reone/src/libs/gui/gui.cpp (GUI rendering and control handling)
+    vendor/KotOR.js/src/gui/GUIControl.ts (GUI control structure)
+    vendor/KotOR.js/src/gui/GUIProtoItem.ts (GUI proto item structure)
+    vendor/xoreos-tools/src/xml/guidumper.cpp (GUI to XML conversion)
+    vendor/xoreos-tools/src/xml/guicreator.cpp (XML to GUI conversion)
+    Note: GUI files are GFF format files with specific structure definitions
+"""
+
+
 class GUIControlType(IntEnum):
     """Enum representing different GUI control types."""
 

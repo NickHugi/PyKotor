@@ -32,6 +32,18 @@ class HashAlgo(Enum):
 
 
 class ArchiveResource:
+    """Represents a resource stored within a BioWare archive (ERF, RIM, BIF).
+    
+    Contains resource reference, type, and data. Used as the base resource type
+    for archive-based resource storage.
+    
+    References:
+    ----------
+        vendor/KotOR-Bioware-Libs/ERF.pm (Perl ERF resource handling)
+        vendor/KotOR-Bioware-Libs/RIM.pm (Perl RIM resource handling)
+        vendor/KotOR_IO/KotOR_IO/File Formats/ERF.cs (C# ERF implementation)
+        vendor/reone/src/libs/resource/format/erfreader.cpp (ERF reading)
+    """
     def __init__(
         self,
         resref: ResRef,
@@ -64,6 +76,18 @@ class ArchiveResource:
 
 
 class BiowareArchive(ComparableMixin, ABC):
+    """Abstract base class for BioWare archive formats (ERF, RIM, BIF).
+    
+    Provides common interface for archive operations including resource storage,
+    retrieval, and comparison. Subclasses implement format-specific reading/writing.
+    
+    References:
+    ----------
+        vendor/KotOR-Bioware-Libs/ (Perl implementations: ERF.pm, RIM.pm, BIF.pm)
+        vendor/KotOR_IO/KotOR_IO/File Formats/ (C# archive implementations)
+        vendor/reone/src/libs/resource/format/ (C++ archive readers)
+        vendor/xoreos-tools/src/ (Archive extraction tools)
+    """
     BINARY_TYPE: ClassVar[ResourceType]
     ARCHIVE_TYPE: type[ArchiveResource] = ArchiveResource
     COMPARABLE_SET_FIELDS = ("_resources",)

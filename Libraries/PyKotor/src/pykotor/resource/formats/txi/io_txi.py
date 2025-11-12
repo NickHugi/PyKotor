@@ -21,6 +21,15 @@ class TXIReaderMode(IntEnum):
 
 
 class TXIBinaryReader(ResourceReader):
+    """Reads TXI (Texture Information) files.
+    
+    TXI files contain texture metadata including blending modes, bump maps, animations,
+    and other rendering properties for TPC textures.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/graphics/format/txireader.cpp (TXI reading)
+    """
     def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
         super().__init__(source, offset, size)
         from pykotor.resource.formats.txi.txi_data import TXI

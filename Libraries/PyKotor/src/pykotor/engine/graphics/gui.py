@@ -1,4 +1,17 @@
-"""GUI management stubs for test purposes."""
+"""GUI management stubs for test purposes.
+
+This module provides minimal GUI infrastructure for testing without full rendering backend.
+
+References:
+----------
+    vendor/reone/src/libs/gui/gui.cpp - GUI system implementation
+    vendor/reone/include/reone/gui/control.h - GUI control interface
+    vendor/KotOR.js/src/gui/ - GUI control implementations
+    vendor/KotOR-Unity/Assets/Scripts/UI/ - Unity GUI implementation
+    vendor/KotOR-dotNET - C# GUI handling
+    vendor/kotorblender - GUI mesh export
+    Note: This is a minimal stub for testing; full GUI implementation would use a rendering backend
+"""
 
 from __future__ import annotations
 

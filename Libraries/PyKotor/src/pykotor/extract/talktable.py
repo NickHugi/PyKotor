@@ -31,6 +31,11 @@ class TalkTable:  # TODO(th3w1zard1): dialogf.tlk  # noqa: FIX002, TD003
 
     Files are only opened when accessing a stored string, this means that strings are always up to date at
     the time of access as opposed to TLK objects which may be out of date with its source file.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/tlkreader.cpp:26-65 (TLK reading)
+        vendor/reone/src/libs/resource/format/tlkwriter.cpp (TLK writing)
     """
 
     def __init__(
@@ -102,6 +107,8 @@ class TalkTable:  # TODO(th3w1zard1): dialogf.tlk  # noqa: FIX002, TD003
         reader: BinaryReader,
         stringref: int,
     ) -> TLKData:
+        # vendor/reone/src/libs/resource/format/tlkreader.cpp:43-64
+        # Entry offset calculation: header (20 bytes) + entry_size (40 bytes) * stringref
         reader.seek(20 + 40 * stringref)
 
         return TLKData(

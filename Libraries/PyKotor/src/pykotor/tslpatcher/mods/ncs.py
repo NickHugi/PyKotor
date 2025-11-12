@@ -1,3 +1,15 @@
+"""NCS modification algorithms for TSLPatcher/HoloPatcher.
+
+This module implements NCS bytecode modification logic for applying patches from changes.ini files.
+Handles byte-level modifications for memory tokens (StrRef, 2DAMemory) in compiled scripts.
+
+References:
+----------
+    vendor/TSLPatcher/TSLPatcher.pl - Original Perl NCS modification logic (HACKList)
+    vendor/HoloPatcher.NET/src/TSLPatcher.Core/Mods/NCS/ - C# NCS modification implementation
+    vendor/Kotor.NET/Kotor.NET.Patcher/ - Incomplete C# patcher
+"""
+
 from __future__ import annotations
 
 from enum import Enum

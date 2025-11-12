@@ -1,4 +1,15 @@
-"""This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both games."""
+"""Resource type definitions for KotOR games.
+
+This module contains the ResourceType class and initializes the static list of ResourceTypes
+that can be found in both games. Resource types are identified by numeric IDs and file extensions.
+
+References:
+----------
+    vendor/reone/src/libs/resource/type.h (Resource type definitions)
+    vendor/xoreos-tools/src/common/types.h (Resource type constants)
+    vendor/KotOR.js/src/types/ResourceType.ts (TypeScript resource type definitions)
+    Original BioWare Odyssey Engine (resource type IDs from game binaries)
+"""
 
 from __future__ import annotations
 
@@ -116,6 +127,7 @@ class ResourceType(Enum):
     """Represents a resource type that is used within either games.
 
     Stored in the class is also several static attributes, each an actual resource type used by the games.
+    Resource type IDs match the internal format used by the BioWare Odyssey Engine.
 
     Attributes:
     ----------
@@ -124,6 +136,13 @@ class ResourceType(Enum):
         category: Short description on what kind of data the resource type stores.
         contents: How the resource type stores data, ie. plaintext, binary, or gff.
 
+    References:
+    ----------
+        vendor/reone/src/libs/resource/type.h (Resource type enum definitions)
+        vendor/xoreos-tools/src/common/types.h (Resource type constants)
+        Original BioWare Odyssey Engine (resource type IDs from game binaries)
+
+    Note: Resource type IDs are consistent across all vendor implementations and match the game engine.
     """
 
     INVALID = ResourceTuple(-1, "", "Undefined", "binary", is_invalid=True)  # pyright: ignore[reportCallIssue]

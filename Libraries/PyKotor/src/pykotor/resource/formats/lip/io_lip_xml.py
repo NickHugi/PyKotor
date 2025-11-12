@@ -21,6 +21,16 @@ if TYPE_CHECKING:
 
 
 class LIPXMLReader(ResourceReader):
+    """Reads LIP files from XML format.
+    
+    XML is a human-readable format for easier editing of lip-sync animation data.
+    
+    References:
+    ----------
+        vendor/xoreos-tools/src/xml/lipdumper.cpp (LIP to XML conversion)
+        vendor/xoreos-tools/src/xml/lipcreator.cpp (XML to LIP conversion)
+        Note: XML format structure may vary between tools
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,

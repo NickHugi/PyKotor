@@ -15,19 +15,73 @@ if TYPE_CHECKING:
 class UTW:
     """Stores waypoint data.
 
-    resref: "TemplateResRef" field.
-    tag: "Tag" field.
-    name: "LocalizedName" field.
-    has_map_note: "HasMapNote" field.
-    map_note: "MapNote" field.
-    map_note_enabled: "MapNoteEnabled" field.
+    UTW files are GFF-based format files that store waypoint definitions including
+    map notes, appearance, and location data.
 
-    palette_id: "PaletteID" field. Used in toolset use only.
-    comment: "Comment" field. Used in toolset only.
-    appearance_id: "Appearance" field. Used in toolset use only.
+    References:
+    ----------
+        vendor/reone/src/libs/resource/parser/gff/utw.cpp:28-42 (UTW parsing from GFF)
+        vendor/reone/include/reone/resource/parser/gff/utw.h:28-40 (UTW structure definitions)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorUTW/UTW.cs:11-25 (UTW class definition)
+        vendor/KotOR.js/src/module/ModuleWaypoint.ts:15-80 (Waypoint module object)
+        Note: UTW files are GFF format files with specific structure definitions
 
-    linked_to: "LinkedTo" field. Not used by the game engine.
-    description: "Description" field. Not used by the game engine.
+    Attributes:
+    ----------
+        resref: "TemplateResRef" field. The resource reference for this waypoint template.
+            Reference: reone/utw.cpp:40 (TemplateResRef field)
+            Reference: reone/utw.h:39 (TemplateResRef field)
+            Reference: Kotor.NET/UTW.cs:15 (TemplateResRef property)
+
+        tag: "Tag" field. Tag identifier for this waypoint.
+            Reference: reone/utw.cpp:39 (Tag field)
+            Reference: reone/utw.h:38 (Tag field)
+            Reference: Kotor.NET/UTW.cs:16 (Tag property)
+
+        name: "LocalizedName" field. Localized name of the waypoint.
+            Reference: reone/utw.cpp:35 (LocalizedName field)
+            Reference: reone/utw.h:34 (LocalizedName field)
+            Reference: Kotor.NET/UTW.cs:17 (LocalizedName property)
+
+        has_map_note: "HasMapNote" field. Whether waypoint has a map note.
+            Reference: reone/utw.cpp:33 (HasMapNote field)
+            Reference: reone/utw.h:32 (HasMapNote field)
+            Reference: Kotor.NET/UTW.cs:19 (HasMapNote property)
+
+        map_note: "MapNote" field. Localized map note text.
+            Reference: reone/utw.cpp:36 (MapNote field)
+            Reference: reone/utw.h:35 (MapNote field)
+            Reference: Kotor.NET/UTW.cs:20 (MapNote property)
+
+        map_note_enabled: "MapNoteEnabled" field. Whether map note is enabled.
+            Reference: reone/utw.cpp:37 (MapNoteEnabled field)
+            Reference: reone/utw.h:36 (MapNoteEnabled field)
+            Reference: Kotor.NET/UTW.cs:21 (MapNoteEnabled property)
+
+        appearance_id: "Appearance" field. Appearance type identifier. Used in toolset only.
+            Reference: reone/utw.cpp:30 (Appearance field)
+            Reference: reone/utw.h:29 (Appearance field)
+            Reference: Kotor.NET/UTW.cs:13 (Appearance property)
+
+        palette_id: "PaletteID" field. Palette identifier. Used in toolset only.
+            Reference: reone/utw.cpp:38 (PaletteID field)
+            Reference: reone/utw.h:37 (PaletteID field)
+            Reference: Kotor.NET/UTW.cs:22 (PaletteID property)
+
+        comment: "Comment" field. Developer comment. Used in toolset only.
+            Reference: reone/utw.cpp:31 (Comment field)
+            Reference: reone/utw.h:30 (Comment field)
+            Reference: Kotor.NET/UTW.cs:23 (Comment property)
+
+        linked_to: "LinkedTo" field. Linked waypoint tag. Not used by the game engine.
+            Reference: reone/utw.cpp:34 (LinkedTo field)
+            Reference: reone/utw.h:33 (LinkedTo field)
+            Reference: Kotor.NET/UTW.cs:14 (LinkedTo property)
+
+        description: "Description" field. Localized description. Not used by the game engine.
+            Reference: reone/utw.cpp:32 (Description field)
+            Reference: reone/utw.h:31 (Description field)
+            Reference: Kotor.NET/UTW.cs:18 (Description property)
     """
 
     BINARY_TYPE = ResourceType.UTW

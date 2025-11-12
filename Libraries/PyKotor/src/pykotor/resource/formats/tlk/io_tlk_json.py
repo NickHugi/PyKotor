@@ -24,6 +24,14 @@ if TYPE_CHECKING:
 
 
 class TLKJSONReader(ResourceReader):
+    """Reads TLK files from JSON format.
+    
+    JSON is a PyKotor-specific convenience format for easier editing of talk tables.
+    
+    References:
+    ----------
+        Note: JSON format is PyKotor-specific, not a standard game format
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,

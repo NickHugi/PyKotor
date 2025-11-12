@@ -63,6 +63,9 @@ def clone_module(  # noqa: C901, PLR0915, PLR0912, PLR0913
 ):
     """Clones a module.
 
+    Creates a new module by copying and modifying resources from an existing module.
+    Handles resource renaming, texture/lightmap copying, and module file generation.
+
     Args:
     ----
         root: str - The path to the module root
@@ -77,6 +80,12 @@ def clone_module(  # noqa: C901, PLR0915, PLR0912, PLR0913
         2. Rename resources and change identifiers
         3. Copy textures and lightmaps if specified
         4. Write new module resources to file.
+    
+    References:
+    ----------
+        vendor/TSLPatcher/TSLPatcher.pl (Module installation/cloning logic)
+        vendor/HoloPatcher.NET/src/TSLPatcher.Core/Patcher/ModInstaller.cs (Module handling)
+        Note: Module cloning is PyKotor-specific functionality
     """
     old_module = Module(root, installation)
     new_module = ERF(ERFType.MOD)

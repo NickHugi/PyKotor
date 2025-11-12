@@ -1,10 +1,44 @@
-"""This module handles classes relating to editing LIP files."""
+"""This module handles classes relating to editing LIP files.
+
+LIP (Lip Sync) files contain animation data for synchronizing character mouth movements
+with voice-over audio. Each LIP file contains a series of keyframes that specify mouth
+shapes (visemes) at specific timestamps, allowing the game engine to animate character
+lips during dialogue playback.
+
+References:
+----------
+    vendor/reone/include/reone/graphics/format/lipreader.h:29-46 - LipReader class
+    vendor/reone/include/reone/graphics/lipanimation.h:24-47 - LipAnimation class
+    vendor/reone/src/libs/graphics/format/lipreader.cpp:24-78 - LIP loading implementation
+    vendor/KotOR_IO/KotOR_IO/File Formats/LIP.cs:14-163 - C# LIP implementation
+    vendor/KotOR.js/src/resource/LIPObject.ts:23-348 - TypeScript LIP implementation
+    vendor/KotOR.js/src/enums/resource/LIPShape.ts:11-28 - LIPShape enum definitions
+    vendor/xoreos/src/aurora/lipfile.cpp:38-142 - LIP file handling
+
+Binary Format:
+-------------
+    Header (16 bytes):
+        Offset | Size | Type   | Description
+        -------|------|--------|-------------
+        0x00   | 4    | char[] | File Type ("LIP ")
+        0x04   | 4    | char[] | File Version ("V1.0")
+        0x08   | 4    | float  | Sound Length (duration in seconds)
+        0x0C   | 4    | uint32 | Entry Count (number of keyframes)
+    
+    Keyframe Entry (5 bytes each):
+        Offset | Size | Type   | Description
+        -------|------|--------|-------------
+        0x00   | 4    | float  | Time Stamp (seconds from start)
+        0x04   | 1    | uint8  | Shape (mouth shape index, 0-15)
+        
+    Reference: reone/lipreader.cpp:24-78, KotOR_IO:42-56, KotOR.js:99-117
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING
 
 from pykotor.resource.formats._base import ComparableMixin
 from pykotor.resource.type import ResourceType
@@ -14,16 +48,108 @@ if TYPE_CHECKING:
 
 
 class LIPShape(IntEnum):
-    """Represents different mouth shapes for lip sync animation.
-
-    These shapes correspond to visemes (visual phonemes) used in lip-sync animation.
-    Each shape represents a specific mouth position for speech sounds.
-
-    The mapping is based on Preston Blair phoneme series with some modifications
-    for KotOR's specific needs.
-
-
+    """Represents different mouth shapes (visemes) for lip sync animation.
+    
+    These shapes correspond to visual phonemes used in lip-sync animation. Each shape
+    represents a specific mouth position for speech sounds, based on the Preston Blair
+    phoneme series adapted for KotOR's animation system. The game engine interpolates
+    between shapes to create smooth lip movement during dialogue.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/graphics/lipanimation.h:28 (shape field, uint8_t)
+        vendor/KotOR_IO/KotOR_IO/File Formats/LIP.cs:124-163 - LipState enum
+        vendor/KotOR.js/src/enums/resource/LIPShape.ts:11-28 - LIPShape enum
+        vendor/KotOR.js/src/apps/forge/data/LIPShapeLabels.ts - Shape label definitions
+        
+    Binary Format:
+    -------------
+        Stored as uint8 (single byte) in keyframe entries
+        Valid range: 0-15 (16 possible shapes)
+        Shape 0 is typically NEUTRAL/rest position
+        
+    Shape Definitions:
+    -----------------
+        NEUTRAL = 0: Neutral/rest position (used for pauses)
+            Reference: KotOR.js/LIPShape.ts:12 (EE = 0, but NEUTRAL typically used)
+            Default shape when no speech is occurring
+            
+        EE = 1: Teeth slightly apart, corners wide (as in "see", "teeth")
+            Reference: KotOR_IO/LIP.cs:127 (ee = 0x0)
+            Reference: KotOR.js/LIPShape.ts:12 (EE = 0)
+            Used for long 'e' sounds
+            
+        EH = 2: Mouth relaxed, slightly open (as in "get", "bet", "red")
+            Reference: KotOR_IO/LIP.cs:129 (eh = 0x1)
+            Reference: KotOR.js/LIPShape.ts:13 (EH = 1)
+            Used for short 'e' sounds
+            
+        AH = 3: Mouth open (as in "father", "bat", "cat")
+            Reference: KotOR_IO/LIP.cs:133 (ah = 0x3)
+            Reference: KotOR.js/LIPShape.ts:15 (AH = 3)
+            Used for 'a' sounds
+            
+        OH = 4: Rounded lips (as in "go", "boat", "or")
+            Reference: KotOR_IO/LIP.cs:135 (oh = 0x4)
+            Reference: KotOR.js/LIPShape.ts:16 (OH = 4)
+            Used for 'o' sounds
+            
+        OOH = 5: Pursed lips (as in "too", "blue", "wheel")
+            Reference: KotOR_IO/LIP.cs:137 (oo = 0x5)
+            Reference: KotOR.js/LIPShape.ts:17 (OOH = 5)
+            Used for 'u' and 'w' sounds
+            
+        Y = 6: Slight smile (as in "yes", "you")
+            Reference: KotOR_IO/LIP.cs:139 (y = 0x6)
+            Reference: KotOR.js/LIPShape.ts:18 (Y = 6)
+            Used for 'y' sounds
+            
+        STS = 7: Teeth together (as in "stop", "sick", "nets")
+            Reference: KotOR_IO/LIP.cs:141 (s = 0x7)
+            Reference: KotOR.js/LIPShape.ts:19 (S = 7)
+            Used for 's', 'z', 'ts' sounds
+            
+        FV = 8: Lower lip touching upper teeth (as in "five", "fish", "very")
+            Reference: KotOR_IO/LIP.cs:143 (f = 0x8)
+            Reference: KotOR.js/LIPShape.ts:20 (FV = 8)
+            Used for 'f' and 'v' sounds
+            
+        NG = 9: Back of tongue up (as in "ring", "nacho", "running")
+            Reference: KotOR_IO/LIP.cs:145 (n = 0x9)
+            Reference: KotOR.js/LIPShape.ts:21 (NNG = 9)
+            Used for 'n' and 'ng' sounds
+            
+        TH = 10: Tongue between teeth (as in "thin", "think", "that")
+            Reference: KotOR_IO/LIP.cs:147 (th = 0xA)
+            Reference: KotOR.js/LIPShape.ts:22 (TH = 10)
+            Used for 'th' sounds
+            
+        MPB = 11: Lips pressed together (as in "bump", "moose", "pop", "book")
+            Reference: KotOR_IO/LIP.cs:149 (m = 0xB)
+            Reference: KotOR.js/LIPShape.ts:23 (MBP = 11)
+            Used for 'm', 'p', 'b' sounds
+            
+        TD = 12: Tongue up (as in "top", "table", "door")
+            Reference: KotOR_IO/LIP.cs:151 (t = 0xC)
+            Reference: KotOR.js/LIPShape.ts:24 (TD = 12)
+            Used for 't' and 'd' sounds
+            
+        SH = 13: Rounded but relaxed (as in "measure", "cheese", "jee")
+            Reference: KotOR_IO/LIP.cs:153 (sh = 0xD)
+            Reference: KotOR.js/LIPShape.ts:25 (SH = 13)
+            Used for 'sh', 'ch', 'j', 'zh' sounds
+            
+        L = 14: Tongue forward (as in "lip", "read")
+            Reference: KotOR_IO/LIP.cs:155 (l = 0xE)
+            Reference: KotOR.js/LIPShape.ts:26 (LR = 14)
+            Used for 'l' and 'r' sounds
+            
+        KG = 15: Back of tongue raised (as in "kick", "green", "key", "he")
+            Reference: KotOR_IO/LIP.cs:157 (k = 0xF)
+            Reference: KotOR.js/LIPShape.ts:27 (KG = 15)
+            Used for 'k', 'g', 'h' sounds
     """
+    
     NEUTRAL = 0    # Neutral/rest position (used for pauses)
     EE = 1        # Teeth slightly apart, corners wide (as in "see")
     EH = 2        # Mouth relaxed, slightly open (as in "get")
@@ -97,18 +223,40 @@ class LIPShape(IntEnum):
 
 
 class LIP(ComparableMixin):
-    """Represents the data of a LIP file.
-
-    A LIP file contains lip-sync animation data, consisting of a series of
-    keyframes that define mouth shapes at specific times.
-
-    The animation system interpolates between keyframes to create smooth
-    transitions between mouth shapes.
-
+    """Represents a LIP (Lip Sync) file containing mouth animation data.
+    
+    LIP files synchronize character mouth movements with voice-over audio during dialogue.
+    They contain a series of keyframes that specify mouth shapes (visemes) at specific
+    timestamps. The game engine interpolates between keyframes to create smooth lip
+    animation that matches the spoken dialogue.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/graphics/lipanimation.h:24-47 - LipAnimation class
+        vendor/reone/src/libs/graphics/format/lipreader.cpp:24-78 - LIP loading
+        vendor/KotOR_IO/KotOR_IO/File Formats/LIP.cs:14-163 - Complete LIP implementation
+        vendor/KotOR.js/src/resource/LIPObject.ts:23-348 - LIPObject class
+        vendor/xoreos/src/aurora/lipfile.h:40-95 - LIPFile class
+        
     Attributes:
     ----------
-        length: The total duration of lip animation in seconds
-        frames: The keyframes for the lip animation, sorted by time
+        length: Total duration of lip animation in seconds
+            Reference: reone/lipanimation.h:40 (length() method)
+            Reference: KotOR_IO/LIP.cs:85 (SoundLength property)
+            Reference: KotOR.js/LIPObject.ts:32 (duration field)
+            Reference: KotOR.js/LIPObject.ts:106 (readSingle for duration)
+            Matches the duration of the associated voice-over WAV file
+            Stored as float32 in binary format (4 bytes)
+            Used to determine animation playback bounds
+            
+        frames: List of keyframes defining mouth shapes at specific times
+            Reference: reone/lipanimation.h:41 (keyframes() method)
+            Reference: KotOR_IO/LIP.cs:117 (Entries list)
+            Reference: KotOR.js/LIPObject.ts:29 (keyframes array)
+            Reference: KotOR.js/LIPObject.ts:112-116 (keyframe reading loop)
+            Each keyframe contains a timestamp and mouth shape
+            Keyframes must be sorted by time for proper animation playback
+            Game engine interpolates between consecutive keyframes
     """
 
     BINARY_TYPE = ResourceType.LIP
@@ -117,7 +265,16 @@ class LIP(ComparableMixin):
     COMPARABLE_SEQUENCE_FIELDS = ("frames",)
 
     def __init__(self) -> None:
+        # vendor/reone/include/reone/graphics/lipanimation.h:40
+        # vendor/KotOR_IO/KotOR_IO/File Formats/LIP.cs:85
+        # vendor/KotOR.js/src/resource/LIPObject.ts:32,106
+        # Total duration of lip animation (matches voice-over length)
         self.length: float = 0.0
+        
+        # vendor/reone/include/reone/graphics/lipanimation.h:41
+        # vendor/KotOR_IO/KotOR_IO/File Formats/LIP.cs:117
+        # vendor/KotOR.js/src/resource/LIPObject.ts:29,112-116
+        # List of keyframes (timestamp + mouth shape pairs)
         self.frames: list[LIPKeyFrame] = []
 
     def __iter__(self) -> Iterator[LIPKeyFrame]:
@@ -301,13 +458,49 @@ class LIP(ComparableMixin):
 
 @dataclass
 class LIPKeyFrame(ComparableMixin):
-    """A keyframe for a lip animation.
-
+    """A single keyframe in a LIP animation sequence.
+    
+    Each keyframe specifies a mouth shape at a specific timestamp. The game engine
+    interpolates between consecutive keyframes to create smooth lip movement during
+    dialogue playback. Keyframes are sorted by time to enable efficient lookup and
+    interpolation.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/graphics/lipanimation.h:26-29 - Keyframe struct
+        vendor/KotOR_IO/KotOR_IO/File Formats/LIP.cs:90-111 - LipEntry struct
+        vendor/KotOR.js/src/interface/resource/ILIPKeyFrame.ts - ILIPKeyFrame interface
+        vendor/KotOR.js/src/resource/LIPObject.ts:113-115 (keyframe reading)
+        
+    Binary Format (5 bytes):
+    -----------------------
+        Offset | Size | Type   | Description
+        -------|------|--------|-------------
+        0x00   | 4    | float  | Time Stamp (seconds from start of audio)
+        0x04   | 1    | uint8  | Shape (mouth shape index, 0-15)
+        
+        Reference: reone/lipreader.cpp:56-62, KotOR_IO:53-54, KotOR.js:114-115
+    
     Attributes:
     ----------
-        time: The time the keyframe animation occurs (in seconds)
-        shape: The mouth shape for this keyframe
+        time: Timestamp when this keyframe occurs (seconds from start)
+            Reference: reone/lipanimation.h:27 (time field, float)
+            Reference: KotOR_IO/LIP.cs:95 (TimeStamp property)
+            Reference: KotOR.js/LIPObject.ts:114 (readSingle for time)
+            Stored as float32 in binary format (4 bytes)
+            Must be >= 0.0 and <= animation length
+            Keyframes should be sorted by time for proper playback
+            
+        shape: Mouth shape (viseme) for this keyframe
+            Reference: reone/lipanimation.h:28 (shape field, uint8_t)
+            Reference: KotOR_IO/LIP.cs:99 (State property, LipState enum)
+            Reference: KotOR.js/LIPObject.ts:115 (readByte for shape)
+            Stored as uint8 in binary format (1 byte)
+            Valid range: 0-15 (16 possible shapes, see LIPShape enum)
+            Index into character's "talk" animation keyframes
+            Game engine uses this to select the appropriate mouth mesh pose
     """
+    
     time: float
     shape: LIPShape
     COMPARABLE_FIELDS = ("time", "shape")

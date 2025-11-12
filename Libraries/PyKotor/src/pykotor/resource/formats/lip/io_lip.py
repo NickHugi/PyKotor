@@ -10,6 +10,16 @@ if TYPE_CHECKING:
 
 
 class LIPBinaryReader(ResourceReader):
+    """Reads LIP (Lip Sync) files.
+    
+    LIP files store lip-sync animation data for character speech, mapping time points
+    to mouth shapes for synchronized lip movement during voice-over playback.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/graphics/format/lipreader.cpp:26-50 (LIP reading)
+        vendor/reone/src/libs/graphics/format/lipwriter.cpp (LIP writing)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -37,6 +47,7 @@ class LIPBinaryReader(ResourceReader):
         self._lip.length = self._reader.read_single()
         entry_count = self._reader.read_uint32()
 
+        # vendor/reone/src/libs/graphics/format/lipreader.cpp:35-45
         for _ in range(entry_count):
             time = self._reader.read_single()
             shape = LIPShape(self._reader.read_uint8())

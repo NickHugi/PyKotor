@@ -32,6 +32,12 @@ class InbuiltNCSCompiler(NCSCompiler):
     - All data types (int, float, string, object, vector, etc.)
     - #include directive support
     - Optimization passes
+    
+    References:
+    ----------
+        vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (NSS compilation reference)
+        vendor/xoreos-tools/src/nwscript/compiler.cpp (NSS compilation)
+        vendor/xoreos-docs/specs/torlack/ncs.html (NCS format specification)
     """
 
     def compile_script(  # noqa: PLR0913
@@ -59,6 +65,14 @@ class ExternalCompilerConfig(NamedTuple):
 
 
 class KnownExternalCompilers(Enum):
+    """Known external NSS compilers and their configurations.
+    
+    References:
+    ----------
+        vendor/TSLPatcher/TSLPatcher.pl - Original Perl TSLPatcher implementation
+        vendor/Kotor.NET/Kotor.NET.Patcher/ - Incomplete C# patcher
+        vendor/xoreos-tools/src/nwscript/compiler.cpp - Xoreos compiler
+    """
     TSLPATCHER = ExternalCompilerConfig(
         sha256="539EB689D2E0D3751AEED273385865278BEF6696C46BC0CAB116B40C3B2FE820",
         name="TSLPatcher",

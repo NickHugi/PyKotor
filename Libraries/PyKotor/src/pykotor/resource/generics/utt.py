@@ -16,37 +16,154 @@ if TYPE_CHECKING:
 class UTT:
     """Stores trigger data.
 
+    UTT files are GFF-based format files that store trigger definitions including
+    trap mechanics, script hooks, and activation settings.
+
+    References:
+    ----------
+        vendor/reone/src/libs/resource/parser/gff/utt.cpp:28-62 (UTT parsing from GFF)
+        vendor/reone/include/reone/resource/parser/gff/utt.h:28-60 (UTT structure definitions)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorUTT/UTT.cs:11-45 (UTT class definition)
+        vendor/KotOR.js/src/module/ModuleTrigger.ts:30-168 (Trigger module object)
+        Note: UTT files are GFF format files with specific structure definitions
+
     Attributes:
     ----------
-        tag: "Tag" field.
-        resref: "TemplateResRef" field.
-        auto_remove_key: "AutoRemoveKey" field.
-        faction_id: "Faction" field.
-        cursor_id: "Cursor" field.
-        highlight_height: "HighlightHeight" field.
-        key_name: "KeyName" field.
-        type_id: "Type" field.
-        trap_detectable: "TrapDetectable" field.
-        trap_detect_dc: "TrapDetectDC" field.
-        trap_disarmable: "TrapDisarmable" field.
-        trap_disarm_dc: "DisarmDC" field.
-        is_trap: "TrapFlag" field.
-        trap_once: "TrapOneShot" field.
-        trap_type: "TrapType" field.
-        on_disarm: "OnDisarm" field.
-        on_trap_triggered: "OnTrapTriggered" field.
-        on_click: "OnClick" field.
-        on_heartbeat: "ScriptHeartbeat" field.
-        on_enter: "ScriptOnEnter" field.
-        on_exit: "ScriptOnExit" field.
-        on_user_defined: "ScriptUserDefine" field.
-        comment: "Comment" field.
+        resref: "TemplateResRef" field. The resource reference for this trigger template.
+            Reference: reone/utt.cpp:53 (TemplateResRef field)
+            Reference: reone/utt.h:52 (TemplateResRef field)
+            Reference: Kotor.NET/UTT.cs:14 (TemplateResRef property)
 
-        palette_id: "PaletteID" field. Used in toolset only.
+        tag: "Tag" field. Tag identifier for this trigger.
+            Reference: reone/utt.cpp:52 (Tag field)
+            Reference: reone/utt.h:51 (Tag field)
+            Reference: Kotor.NET/UTT.cs:13 (Tag property)
 
-        name: "LocalizedName" field. Not used by the game engine.
-        loadscreen_id: "LoadScreenID" field. Not used by the game engine.
-        portrait_id: "PortraitId" field. Not used by the game engine.
+        auto_remove_key: "AutoRemoveKey" field. Whether key is removed after use.
+            Reference: reone/utt.cpp:30 (AutoRemoveKey field)
+            Reference: reone/utt.h:29 (AutoRemoveKey field)
+            Reference: Kotor.NET/UTT.cs:16 (AutoRemoveKey property)
+
+        faction_id: "Faction" field. Faction identifier.
+            Reference: reone/utt.cpp:34 (Faction field)
+            Reference: reone/utt.h:33 (Faction field)
+            Reference: Kotor.NET/UTT.cs:17 (Faction property)
+
+        cursor_id: "Cursor" field. Cursor type identifier.
+            Reference: reone/utt.cpp:32 (Cursor field)
+            Reference: reone/utt.h:31 (Cursor field)
+            Reference: Kotor.NET/UTT.cs:18 (Cursor property)
+
+        highlight_height: "HighlightHeight" field. Height of highlight area.
+            Reference: reone/utt.cpp:35 (HighlightHeight field)
+            Reference: reone/utt.h:34 (HighlightHeight field)
+            Reference: Kotor.NET/UTT.cs:19 (HighlightHeight property)
+
+        key_name: "KeyName" field. Tag of the key item required.
+            Reference: reone/utt.cpp:36 (KeyName field)
+            Reference: reone/utt.h:35 (KeyName field)
+            Reference: Kotor.NET/UTT.cs:20 (KeyName property)
+
+        type_id: "Type" field. Trigger type identifier.
+            Reference: reone/utt.cpp:60 (Type field)
+            Reference: reone/utt.h:59 (Type field)
+            Reference: Kotor.NET/UTT.cs:23 (Type property)
+            Reference: KotOR.js/ModuleTrigger.ts:46 (type field)
+
+        is_trap: "TrapFlag" field. Whether trigger has a trap.
+            Reference: reone/utt.cpp:57 (TrapFlag field)
+            Reference: reone/utt.h:56 (TrapFlag field)
+            Reference: Kotor.NET/UTT.cs:28 (TrapFlag property)
+
+        trap_type: "TrapType" field. Type of trap.
+            Reference: reone/utt.cpp:59 (TrapType field)
+            Reference: reone/utt.h:58 (TrapType field)
+            Reference: Kotor.NET/UTT.cs:30 (TrapType property)
+
+        trap_once: "TrapOneShot" field. Whether trap fires only once.
+            Reference: reone/utt.cpp:58 (TrapOneShot field)
+            Reference: reone/utt.h:57 (TrapOneShot field)
+            Reference: Kotor.NET/UTT.cs:29 (TrapOneShot property)
+
+        trap_detectable: "TrapDetectable" field. Whether trap is detectable.
+            Reference: reone/utt.cpp:55 (TrapDetectable field)
+            Reference: reone/utt.h:54 (TrapDetectable field)
+            Reference: Kotor.NET/UTT.cs:24 (TrapDetectable property)
+
+        trap_detect_dc: "TrapDetectDC" field. Difficulty class to detect trap.
+            Reference: reone/utt.cpp:54 (TrapDetectDC field)
+            Reference: reone/utt.h:53 (TrapDetectDC field)
+            Reference: Kotor.NET/UTT.cs:25 (TrapDetectDC property)
+
+        trap_disarmable: "TrapDisarmable" field. Whether trap is disarmable.
+            Reference: reone/utt.cpp:56 (TrapDisarmable field)
+            Reference: reone/utt.h:55 (TrapDisarmable field)
+            Reference: Kotor.NET/UTT.cs:26 (TrapDisarmable property)
+
+        trap_disarm_dc: "DisarmDC" field. Difficulty class to disarm trap.
+            Reference: reone/utt.cpp:33 (DisarmDC field)
+            Reference: reone/utt.h:32 (DisarmDC field)
+            Reference: Kotor.NET/UTT.cs:27 (DisarmDC property)
+
+        on_disarm: "OnDisarm" field. Script to run when trap is disarmed.
+            Reference: reone/utt.cpp:42 (OnDisarm field)
+            Reference: reone/utt.h:41 (OnDisarm field)
+            Reference: Kotor.NET/UTT.cs:31 (OnDisarm property)
+
+        on_trap_triggered: "OnTrapTriggered" field. Script to run when trap triggers.
+            Reference: reone/utt.cpp:43 (OnTrapTriggered field)
+            Reference: reone/utt.h:42 (OnTrapTriggered field)
+            Reference: Kotor.NET/UTT.cs:32 (OnTrapTriggered property)
+
+        on_click: "OnClick" field. Script to run when trigger is clicked.
+            Reference: reone/utt.cpp:41 (OnClick field)
+            Reference: reone/utt.h:40 (OnClick field)
+            Reference: Kotor.NET/UTT.cs:33 (OnClick property)
+
+        on_heartbeat: "ScriptHeartbeat" field. Script to run on heartbeat.
+            Reference: reone/utt.cpp:48 (ScriptHeartbeat field)
+            Reference: reone/utt.h:47 (ScriptHeartbeat field)
+            Reference: Kotor.NET/UTT.cs:34 (ScriptHeartbeat property)
+
+        on_enter: "ScriptOnEnter" field. Script to run when area is entered.
+            Reference: reone/utt.cpp:49 (ScriptOnEnter field)
+            Reference: reone/utt.h:48 (ScriptOnEnter field)
+            Reference: Kotor.NET/UTT.cs:35 (ScriptOnEnter property)
+
+        on_exit: "ScriptOnExit" field. Script to run when area is exited.
+            Reference: reone/utt.cpp:50 (ScriptOnExit field)
+            Reference: reone/utt.h:49 (ScriptOnExit field)
+            Reference: Kotor.NET/UTT.cs:36 (ScriptOnExit property)
+
+        on_user_defined: "ScriptUserDefine" field. Script to run on user-defined event.
+            Reference: reone/utt.cpp:51 (ScriptUserDefine field)
+            Reference: reone/utt.h:50 (ScriptUserDefine field)
+            Reference: Kotor.NET/UTT.cs:37 (ScriptUserDefine property)
+
+        comment: "Comment" field. Developer comment.
+            Reference: reone/utt.cpp:31 (Comment field)
+            Reference: reone/utt.h:30 (Comment field)
+            Reference: Kotor.NET/UTT.cs:39 (Comment property)
+
+        palette_id: "PaletteID" field. Palette identifier. Used in toolset only.
+            Reference: reone/utt.cpp:44 (PaletteID field)
+            Reference: reone/utt.h:43 (PaletteID field)
+            Reference: Kotor.NET/UTT.cs:38 (PaletteID property)
+
+        name: "LocalizedName" field. Localized name. Not used by the game engine.
+            Reference: reone/utt.cpp:40 (LocalizedName field)
+            Reference: reone/utt.h:39 (LocalizedName field)
+            Reference: Kotor.NET/UTT.cs:15 (LocalizedName property)
+
+        loadscreen_id: "LoadScreenID" field. Load screen identifier. Not used by the game engine.
+            Reference: reone/utt.cpp:39 (LoadScreenID field)
+            Reference: reone/utt.h:38 (LoadScreenID field)
+            Reference: Kotor.NET/UTT.cs:21 (LoadScreenID property)
+
+        portrait_id: "PortraitId" field. Portrait identifier. Not used by the game engine.
+            Reference: reone/utt.cpp:47 (PortraitId field)
+            Reference: reone/utt.h:46 (PortraitId field)
+            Reference: Kotor.NET/UTT.cs:22 (PortraitId property)
     """
 
     BINARY_TYPE = ResourceType.UTT

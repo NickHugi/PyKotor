@@ -22,6 +22,12 @@ def determine_game(
     -------
         Game: Game enum or None
 
+    References:
+    ----------
+        vendor/KOTOR_Registry_Install_Path_Editor (Registry path detection)
+        vendor/HoloPatcher.NET/src/HoloPatcher/Utils (Game detection logic)
+        Note: File and folder heuristics vary between Steam, GOG, and disc releases
+
     Processing Logic:
     ----------------
         1. Normalize the path and check for existence of game files

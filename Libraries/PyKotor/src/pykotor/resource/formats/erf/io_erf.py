@@ -10,6 +10,22 @@ if TYPE_CHECKING:
 
 
 class ERFBinaryReader(ResourceReader):
+    """Reads ERF (Encapsulated Resource File) files.
+    
+    ERF files are container formats that store multiple game resources. Used for MOD files,
+    save games, and other resource collections.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/erfreader.cpp:26-72 (ERF reading)
+        vendor/reone/src/libs/resource/format/erfwriter.cpp (ERF writing)
+        vendor/xoreos-tools/src/unerf.cpp:108-145 (password/decryption support)
+    
+    Missing Features:
+    ----------------
+        - ResRef lowercasing (reone lowercases at erfreader.cpp:63)
+        - ERF password/decryption support (xoreos-tools supports at unerf.cpp:108-145)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -71,6 +87,8 @@ class ERFBinaryReader(ResourceReader):
         restypes: list[int] = []
         self._reader.seek(offset_to_keys)
         for _ in range(entry_count):
+            # vendor/reone/src/libs/resource/format/erfreader.cpp:62-72
+            # NOTE: reone lowercases resrefs at line 63, PyKotor does not
             resrefs.append(self._reader.read_string(16))
             resids.append(self._reader.read_uint32())
             restypes.append(self._reader.read_uint16())

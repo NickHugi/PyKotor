@@ -14,6 +14,18 @@ NCS_HEADER_SIZE = 13  # "NCS " (4) + "V1.0" (4) + magic_byte (1) + size (4)
 
 
 class NCSBinaryReader(ResourceReader):
+    """Reads NCS (NWScript Compiled Script) files.
+    
+    NCS files contain compiled bytecode for NWScript, the scripting language used in KotOR.
+    Instructions include operations, constants, function calls, jumps, and control flow.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/script/format/ncsreader.cpp:28-40 (NCS header reading)
+        vendor/reone/src/libs/script/format/ncsreader.cpp:42-195 (instruction reading)
+        vendor/xoreos-tools/src/nwscript/decompiler.cpp (NCS decompilation)
+        vendor/xoreos-docs/specs/torlack/ncs.html (NCS format specification)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -62,6 +74,7 @@ class NCSBinaryReader(ResourceReader):
         self._jumps = []
 
         # Read the header fields
+        # vendor/reone/src/libs/script/format/ncsreader.cpp:31-32
         magic_byte = self._reader.read_uint8()  # Position 8
         total_size = self._reader.read_uint32(big=True)  # Positions 9-12: Total file size
 

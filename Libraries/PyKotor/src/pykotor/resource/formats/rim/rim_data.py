@@ -1,4 +1,48 @@
-"""This module handles classes relating to editing RIM files."""
+"""This module handles classes relating to editing RIM files.
+
+RIM (Resource Information Module) files store template resources used as module blueprints.
+RIM files are similar to ERF files but are read-only from the game's perspective. The game
+loads RIM files as templates for modules and exports them to ERF format for runtime mutation.
+RIM files store all resources inline with metadata, making them self-contained archives.
+
+References:
+----------
+    vendor/reone/include/reone/resource/format/rimreader.h:29-57 - RimReader class
+    vendor/reone/src/libs/resource/format/rimreader.cpp:24-100 - RIM loading implementation
+    vendor/Kotor.NET/Kotor.NET/Formats/KotorRIM/RIMBinaryStructure.cs:11-121 - Binary structure
+    vendor/KotOR_IO/KotOR_IO/File Formats/RIM.cs:20-260 - C# RIM implementation
+    vendor/xoreos/src/aurora/rimfile.cpp:40-160 - RIM file handling
+    vendor/KotOR-Bioware-Libs/RIM.pm:1-280 - Perl RIM library
+
+Binary Format:
+-------------
+    Header (20 bytes):
+        Offset | Size | Type   | Description
+        -------|------|--------|-------------
+        0x00   | 4    | char[] | File Type ("RIM ")
+        0x04   | 4    | char[] | File Version ("V1.0")
+        0x08   | 4    | uint32 | Unknown (typically 0x00000000)
+        0x0C   | 4    | uint32 | Resource Count
+        0x10   | 4    | uint32 | Offset to Resource Table
+    
+    Resource Entry (32 bytes each):
+        Offset | Size | Type   | Description
+        -------|------|--------|-------------
+        0x00   | 16   | char[] | ResRef (filename, null-padded, max 16 chars)
+        0x10   | 4    | uint32 | Resource Type ID
+        0x14   | 4    | uint32 | Resource ID (index, usually sequential)
+        0x18   | 4    | uint32 | Offset to Resource Data
+        0x1C   | 4    | uint32 | Resource Size
+    
+    Resource Data:
+        Raw binary data for each resource at specified offsets
+        
+    Extended Header (104 bytes total after standard 20-byte header):
+        Contains IsExtension flag (byte 0x14) and 99 reserved bytes
+        Extension RIMs have filenames ending in 'x' (e.g., module001x.rim)
+        
+    Reference: reone/rimreader.cpp:24-100, Kotor.NET:23-38, KotOR_IO:42-85
+"""
 
 from __future__ import annotations
 
@@ -13,14 +57,53 @@ if TYPE_CHECKING:
 
 
 class RIMResource(ArchiveResource):
-    """A resource stored inside a RIM archive."""
+    """A resource stored inside a RIM archive.
+    
+    RIM resources are similar to ERF resources - they include the ResRef (filename) and
+    resource type within the archive metadata. RIM resources are typically read-only from
+    the game's perspective, as RIM files serve as module templates.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/resource/format/rimreader.h:31-35 - ResourceEntry struct
+        vendor/Kotor.NET/Kotor.NET/Formats/KotorRIM/RIMBinaryStructure.cs:88-119 - ResourceEntry
+        vendor/KotOR_IO/KotOR_IO/File Formats/RIM.cs:147-185 - rFile class
+        
+    Attributes:
+    ----------
+        All inherited from ArchiveResource (resref, restype, data, size)
+        RIM resources have no additional attributes beyond ArchiveResource
+    """
 
     def __init__(self, resref: ResRef, restype: ResourceType, data: bytes):
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorRIM/RIMBinaryStructure.cs:104-108
+        # vendor/KotOR_IO/KotOR_IO/File Formats/RIM.cs:63-64
+        # ResRef stored in Resource Entry (16 bytes, null-padded)
+        # ResourceType stored in Resource Entry (4 bytes, uint32)
+        # Resource data referenced via offset and size fields
         super().__init__(resref=resref, restype=restype, data=data)
 
 
 class RIM(BiowareArchive):
-    """Represents the data of a RIM file."""
+    """Represents a RIM (Resource Information Module) file.
+    
+    RIM files are template archives used to initialize game modules. They are similar to ERF
+    files but serve a different purpose - providing immutable resource templates that the game
+    engine reads and exports to ERF format for runtime use. RIM files can also be extensions
+    to other RIM files (marked with 'x' in filename).
+    
+    References:
+    ----------
+        vendor/reone/include/reone/resource/format/rimreader.h:29-57 - RimReader class
+        vendor/Kotor.NET/Kotor.NET/Formats/KotorRIM/RIMBinaryStructure.cs:13-53 - FileRoot
+        vendor/KotOR_IO/KotOR_IO/File Formats/RIM.cs:20-260 - Complete RIM implementation
+        vendor/xoreos/src/aurora/rimfile.h:40-100 - RIMFile class
+        
+    Attributes:
+    ----------
+        Inherits from BiowareArchive: _resources, _resource_dict, etc.
+        RIM-specific attributes managed by underlying BiowareArchive
+    """
 
     BINARY_TYPE = ResourceType.RIM
     ARCHIVE_TYPE: type[ArchiveResource] = RIMResource

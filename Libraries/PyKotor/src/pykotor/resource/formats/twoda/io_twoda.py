@@ -10,6 +10,21 @@ if TYPE_CHECKING:
 
 
 class TwoDABinaryReader(ResourceReader):
+    """Reads 2DA (Two-Dimensional Array) files.
+    
+    2DA files store tabular data used throughout KotOR for game configuration, item stats,
+    spell data, and other structured information.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/2dareader.cpp:26-80 (2DA reading)
+        vendor/reone/src/libs/resource/format/2dawriter.cpp (2DA writing)
+    
+    Algorithm Differences:
+    ---------------------
+        - Cell reading: PyKotor uses read_terminated_string, reone uses readCStringAt with limit
+        - Token reading approaches differ between implementations
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -82,6 +97,9 @@ class TwoDABinaryReader(ResourceReader):
             row_id: int = i // column_count
             column_header: str = columns[column_id]
             self._reader.seek(cell_data_offset + cell_offsets[i])
+            # vendor/reone/src/libs/resource/format/2dareader.cpp:65-70
+            # NOTE: reone uses readCStringAt with limit, PyKotor uses read_terminated_string
+            # Should verify buffer limits match vendor behavior
             cell_value: str = self._reader.read_terminated_string("\0")
             self._twoda.set_cell(row_id, column_header, cell_value)
 

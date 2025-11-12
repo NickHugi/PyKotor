@@ -30,6 +30,21 @@ class Resource:
 
 
 class BZFFile:
+    """Reads BZF (compressed BIF) files.
+    
+    BZF files are LZMA-compressed BIF archives used in KotOR. This class handles
+    decompression and resource indexing for compressed BIF files.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/bifreader.cpp (BIF/BZF reading)
+        vendor/xoreos-tools/src/unkeybif.cpp (BIF/BZF extraction)
+        vendor/KotOR-Bioware-Libs/BIF.pm (Perl BIF/BZF implementation)
+    
+    Missing Features:
+    ----------------
+        - Fixed resources not yet supported (see line 67)
+    """
     def __init__(self, bzf: BinaryIO):
         self._bzf: BinaryIO = bzf
         self._resources: list[Resource] = []

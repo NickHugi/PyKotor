@@ -152,7 +152,21 @@ HARDCODED_MODULE_NAMES: dict[str, str] = {
 
 
 class Installation:
-    """Installation provides a centralized location for loading resources stored in the game through its various folders and formats."""  # noqa: E501
+    """Installation provides a centralized location for loading resources stored in the game through its various folders and formats.
+    
+    Handles resource loading from game installation directories including override folders,
+    modules, chitin.key/BIF files, texture packs, RIM files, and stream directories.
+    Provides lazy loading and caching for performance.
+    
+    References:
+    ----------
+        vendor/KOTOR_Registry_Install_Path_Editor/ (Windows registry path detection)
+        vendor/reone/src/libs/resource/provider/ (Resource provider architecture)
+        vendor/KotOR.js/src/loaders/ (Resource loading patterns)
+        vendor/xoreos-tools/src/ (Resource extraction tools)
+    
+    Note: Installation path detection may differ between platforms (Windows registry vs manual path)
+    """  # noqa: E501
 
     TEXTURES_TYPES: ClassVar[list[ResourceType]] = [
         ResourceType.TPC,

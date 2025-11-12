@@ -15,6 +15,15 @@ if TYPE_CHECKING:
 
 
 class LYTAsciiReader(ResourceReader):
+    """Reads LYT (Layout) files.
+    
+    LYT files define the layout of rooms, tracks, obstacles, and door hooks in KotOR modules.
+    Used for area loading and spatial organization.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/lytreader.cpp (LYT reading)
+    """
     ROOM_COUNT_KEY: str = "roomcount"
     TRACK_COUNT_KEY: str = "trackcount"
     OBSTACLE_COUNT_KEY: str = "obstaclecount"

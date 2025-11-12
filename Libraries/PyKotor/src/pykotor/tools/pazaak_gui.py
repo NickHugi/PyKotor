@@ -1,3 +1,18 @@
+"""Pazaak GUI implementation using PyQt.
+
+Provides a graphical interface for playing Pazaak (the card game minigame from KotOR).
+
+References:
+----------
+    vendor/pazaak-eggborne - Pazaak game implementation (JavaScript)
+    vendor/pazaak-iron-ginger - Pazaak game implementation (Python)
+    vendor/Java_Pazaak - Pazaak game implementation (Java)
+    vendor/PazaakApp - Pazaak web application
+    vendor/react-pazaak - React Pazaak component
+    vendor/vue-pazaak - Vue Pazaak component
+    Note: PyQt GUI is custom implementation; game logic from playpazaak module
+"""
+
 from __future__ import annotations
 
 import sys

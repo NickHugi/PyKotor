@@ -1,3 +1,15 @@
+"""GFF modification algorithms for TSLPatcher/HoloPatcher.
+
+This module implements GFF field modification logic for applying patches from changes.ini files.
+Handles field additions, modifications, list operations, and struct manipulations.
+
+References:
+----------
+    vendor/TSLPatcher/TSLPatcher.pl - Original Perl GFF modification logic
+    vendor/HoloPatcher.NET/src/TSLPatcher.Core/Mods/GFF/ - C# GFF modification implementation
+    vendor/Kotor.NET/Kotor.NET.Patcher/ - Incomplete C# patcher
+"""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

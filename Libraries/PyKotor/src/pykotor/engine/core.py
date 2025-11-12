@@ -1,4 +1,16 @@
-"""Core engine stubs used by tests."""
+"""Core engine stubs used by tests.
+
+This module provides minimal game engine infrastructure for testing purposes.
+
+References:
+----------
+    vendor/reone/src/libs/scene/graph.cpp - Scene graph implementation
+    vendor/reone/include/reone/game/game.h - Game engine interface
+    vendor/KotOR.js/src/engine/Engine.ts - TypeScript engine architecture
+    vendor/KotOR-Unity/Assets/Scripts/GameManager.cs - Unity game manager
+    vendor/Engines (WIP Panda3D engine in PyKotor)
+    Note: This is a minimal stub; full engine is in ./Engines directory
+"""
 
 from __future__ import annotations
 

@@ -1,3 +1,15 @@
+"""2DA modification algorithms for TSLPatcher/HoloPatcher.
+
+This module implements 2DA modification logic for applying patches from changes.ini files.
+Handles row/column additions, cell modifications, and memory token resolution.
+
+References:
+----------
+    vendor/TSLPatcher/TSLPatcher.pl - Original Perl 2DA modification logic
+    vendor/HoloPatcher.NET/src/TSLPatcher.Core/Mods/2DA/ - C# 2DA modification implementation
+    vendor/Kotor.NET/Kotor.NET.Patcher/ - Incomplete C# patcher
+"""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

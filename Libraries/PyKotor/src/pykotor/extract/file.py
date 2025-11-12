@@ -41,7 +41,18 @@ def get_file_data_cache_stats() -> dict[str, int]:
 
 
 class FileResource:
-    """Stores information for a resource regarding its name, type and where the data can be loaded from."""
+    """Stores information for a resource regarding its name, type and where the data can be loaded from.
+    
+    Represents a resource entry with metadata (name, type, size, offset) and file location.
+    Used throughout PyKotor for resource abstraction and lazy loading.
+    
+    References:
+    ----------
+        vendor/KotOR_IO/KotOR_IO/File Formats/KFile.cs (Resource file abstraction)
+        vendor/KotOR-dotNET/AuroraFile.cs (Aurora file format abstraction)
+        vendor/reone/src/libs/resource/resource.h (Resource abstraction)
+        vendor/xoreos-tools/src/common/types.h (Resource type definitions)
+    """
 
     def __init__(
         self,

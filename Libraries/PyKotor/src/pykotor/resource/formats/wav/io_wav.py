@@ -10,8 +10,21 @@ if TYPE_CHECKING:
 
 
 class WAVBinaryReader(ResourceReader):
-    """Handles reading WAV binary data."""
-
+    """Handles reading WAV binary data.
+    
+    WAV files store audio data. KotOR uses both standard RIFF/WAVE format (VO) and
+    Bioware-encrypted format (SFX) with a 470-byte header.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/audio/format/wavreader.cpp (WAV reading)
+        vendor/SithCodec/src/codec.cpp (Audio codec implementation)
+        vendor/SWKotOR-Audio-Encoder/ (Full audio encoder with GUI)
+    
+    Missing Features:
+    ----------------
+        - Full audio codec support (SithCodec/SWKotOR-Audio-Encoder provide encoding/decoding)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -44,6 +57,8 @@ class WAVBinaryReader(ResourceReader):
             wav_type = WAVType.VO
         else:
             # Skip Bioware header
+            # vendor/reone/src/libs/audio/format/wavreader.cpp
+            # Bioware SFX files have 470-byte header before RIFF data
             self._reader.seek(470)  # SFX header size
             riff_tag: bytes = self._reader.read_bytes(4)
             wav_type = WAVType.SFX

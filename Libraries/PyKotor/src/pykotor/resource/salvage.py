@@ -1,4 +1,14 @@
-"""Handles resource data validation/salvage strategies."""
+"""Handles resource data validation/salvage strategies.
+
+This module provides recovery mechanisms for damaged or corrupted GFF resource files,
+attempting to parse and reconstruct valid data structures.
+
+References:
+----------
+    vendor/reone/src/libs/resource/gff.cpp (GFF parsing error handling)
+    vendor/xoreos-tools/src/resource/gff.cpp (GFF recovery logic)
+    Note: Salvage operations try to recover data when primary parsing fails
+"""
 
 from __future__ import annotations
 

@@ -7,6 +7,21 @@ from dataclasses import dataclass, field
 from typing import ClassVar
 
 
+"""Pazaak card game implementation and rules.
+
+References:
+----------
+    vendor/pazaak-eggborne (Pazaak game in JavaScript)
+    vendor/pazaak-iron-ginger (Pazaak game in Python)
+    vendor/Java_Pazaak (Pazaak game in Java)
+    vendor/PazaakApp (Pazaak web app)
+    vendor/react-pazaak (React Pazaak component)
+    vendor/vue-pazaak (Vue Pazaak component)
+    vendor/GetLucky33 (Pazaak-related tool)
+    Note: Pazaak is a card game minigame in KotOR with specific card types and scoring rules
+"""
+
+
 class CardType:
     POSITIVE = "+"
     NEGATIVE = "-"

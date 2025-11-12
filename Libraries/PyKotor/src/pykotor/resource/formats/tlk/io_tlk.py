@@ -17,6 +17,20 @@ _ENTRY_SIZE = 40
 
 
 class TLKBinaryReader(ResourceReader):
+    """Reads TLK (Talk Table) files.
+    
+    TLK files store localized strings used throughout the game for dialog, item descriptions,
+    and other text content. Each entry can have text, sound references, and flags.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/tlkreader.cpp:26-65 (TLK reading)
+        vendor/reone/src/libs/resource/format/tlkwriter.cpp (TLK writing)
+    
+    Missing Features:
+    ----------------
+        - ResRef lowercasing (reone lowercases sound resrefs)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -69,15 +83,19 @@ class TLKBinaryReader(ResourceReader):
         self,
         stringref: int,
     ):
+        # vendor/reone/src/libs/resource/format/tlkreader.cpp:40-60
         entry: TLKEntry = self._tlk.entries[stringref]
 
         entry_flags = self._reader.read_uint32()
+        # vendor/reone/src/libs/resource/format/tlkreader.cpp:45-46
+        # NOTE: reone lowercases sound_resref, PyKotor does not
         sound_resref = self._reader.read_string(16)
         _volume_variance = self._reader.read_uint32()  # unused
         _pitch_variance = self._reader.read_uint32()  # unused
         text_offset = self._reader.read_uint32()
         text_length = self._reader.read_uint32()
         entry.sound_length = self._reader.read_single()  # unused
+        # vendor/reone/src/libs/resource/format/tlkreader.cpp:50-52
         entry.text_present = (entry_flags & 0x0001) != 0  # Check if the TEXT_PRESENT flag is set
         entry.sound_present = (entry_flags & 0x0002) != 0  # Check if the SND_PRESENT flag is set
         entry.soundlength_present = (entry_flags & 0x0004) != 0  # Check if the SND_LENGTH flag is set

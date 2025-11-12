@@ -1,5 +1,13 @@
-"""
-Compact TGA reader/writer inspired by the vendor implementations.
+"""Compact TGA reader/writer.
+
+TGA (Targa) file format support for reading and writing uncompressed and RLE-compressed
+true-color and grayscale images. Used for texture conversion to/from TPC format.
+
+References:
+----------
+    vendor/tga2tpc/TGALoader.js:72-577 (TGA parsing implementation)
+    vendor/reone/test/graphics/format/tgareader.cpp (TGA reading tests)
+    Standard TGA specification (Truevision TGA File Format Specification)
 """
 
 from __future__ import annotations

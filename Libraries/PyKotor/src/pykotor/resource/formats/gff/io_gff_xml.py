@@ -29,6 +29,17 @@ if TYPE_CHECKING:
 
 
 class GFFXMLReader(ResourceReader):
+    """Reads GFF files from XML format.
+    
+    XML is a human-readable format used by xoreos-tools and other modding tools.
+    Provides easier editing than binary GFF format.
+    
+    References:
+    ----------
+        vendor/xoreos-tools/src/xml/gffdumper.cpp (GFF to XML conversion)
+        vendor/xoreos-tools/src/xml/gffcreator.cpp (XML to GFF conversion)
+        vendor/xoreos-docs/specs/aurora/gff.xml (GFF XML format specification)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,

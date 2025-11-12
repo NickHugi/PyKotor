@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 
 class UTM:
     """Stores merchant data.
+    
+    UTM (User Template Merchant) files define merchant/store blueprints. Stored as GFF format
+    with inventory, pricing, and script references.
 
     Attributes:
     ----------
@@ -27,6 +30,12 @@ class UTM:
         comment: "Comment" field.
 
         id: "ID" field. Not used by the game engine.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/gffreader.cpp (GFF reading, UTM is GFF-based)
+        vendor/KotOR-Bioware-Libs/GFF.pm (GFF format implementation)
+        Original BioWare Odyssey Engine (UTM GFF structure)
     """
 
     BINARY_TYPE = ResourceType.UTM

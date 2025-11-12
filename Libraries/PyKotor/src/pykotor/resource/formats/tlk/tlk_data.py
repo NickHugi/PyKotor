@@ -1,4 +1,43 @@
-"""This module handles classes relating to working with TLK files."""
+"""This module handles classes relating to working with TLK files.
+
+Talk Table (TLK) files contain all text strings used in the game, both written and spoken.
+They enable easy localization by providing a lookup table from string reference numbers (StrRef)
+to localized text and associated voice-over audio files.
+
+References:
+----------
+    vendor/TSLPatcher/lib/site/Bioware/TLK.pm:1-533 - Complete TLK implementation
+    vendor/Kotor.NET/Kotor.NET/Formats/KotorTLK/TLKBinaryStructure.cs:11-132 - Binary format
+    vendor/KotOR_IO/KotOR_IO/File Formats/TLK.cs:10-227 - C# TLK reader/writer
+    vendor/KotOR-Bioware-Libs/TLK.pm - Perl TLK library
+    vendor/reone/src/libs/resource/format/tlkreader.cpp:31-84 - TLK parsing
+    vendor/xoreos/src/aurora/talktable.cpp:42-176 - Talk table implementation
+    vendor/KotOR.js/src/resource/TalkTable.ts:13-195 - TypeScript implementation
+    vendor/sotor/core/src/formats/tlk/read.rs:11-89 - Rust TLK reader
+
+Binary Format:
+-------------
+    Header (20 bytes):
+        - 4 bytes: File Type ("TLK ")
+        - 4 bytes: File Version ("V3.0" for KotOR, "V4.0" for Jade Empire)
+        - 4 bytes: Language ID (int32)
+        - 4 bytes: String Count (int32)
+        - 4 bytes: String Entries Offset (int32)
+    
+    String Data Table (40 bytes per entry):
+        - 4 bytes: Flags (bit 0=text present, bit 1=sound present, bit 2=sound length present)
+        - 16 bytes: Sound ResRef (null-terminated ASCII, max 16 chars)
+        - 4 bytes: Volume Variance (unused in KotOR)
+        - 4 bytes: Pitch Variance (unused in KotOR)
+        - 4 bytes: Offset to String (from String Entries Offset)
+        - 4 bytes: String Size (length in bytes)
+        - 4 bytes: Sound Length (float, seconds)
+    
+    String Entries:
+        - Variable length null-terminated strings
+        
+    Reference: TSLPatcher/TLK.pm:42-79, Kotor.NET:57-90, KotOR_IO:46-76
+"""
 
 from __future__ import annotations
 
@@ -15,6 +54,36 @@ if TYPE_CHECKING:
 
 
 class TLK(ComparableMixin):
+    """Talk Table containing localized strings and voice-over references.
+    
+    The TLK file is the central localization mechanism for KotOR, mapping string reference
+    numbers (StrRef) to localized text and optional voice-over audio files. The game loads
+    dialog.tlk at startup and references strings throughout the game using StrRef numbers.
+    
+    References:
+    ----------
+        vendor/TSLPatcher/lib/site/Bioware/TLK.pm:31-123 - string_from_resref() lookup function
+        vendor/Kotor.NET/Kotor.NET/Formats/KotorTLK/TLKBinaryStructure.cs:13-55 - FileRoot class
+        vendor/KotOR_IO/KotOR_IO/File Formats/TLK.cs:19-93 - TLK class with indexer
+        vendor/reone/src/libs/resource/format/tlkreader.cpp:31-46 - TalkTable loading
+        
+    Attributes:
+    ----------
+        entries: List of TLKEntry objects indexed by StrRef
+            Reference: TSLPatcher/TLK.pm:63-79 (string lookup by index)
+            Reference: Kotor.NET/TLKBinaryStructure.cs:16 (StringData list)
+            Reference: KotOR_IO/TLK.cs:93 (String_Data_Table)
+            StrRef numbers are array indices (0-based)
+            Game uses StrRef -1 to indicate no string reference
+            
+        language: Language identifier for this talk table
+            Reference: Kotor.NET/TLKBinaryStructure.cs:63 (LanguageID field)
+            Reference: KotOR_IO/TLK.cs:84 (LanguageID property)
+            Reference: TSLPatcher/TLK.pm:42-44 (version check for V4.0)
+            NOTE: Game ignores this field in KotOR, always uses dialog.tlk
+            Used primarily for modding tools to identify language
+    """
+    
     BINARY_TYPE = ResourceType.TLK
     COMPARABLE_FIELDS = ("language",)
     COMPARABLE_SEQUENCE_FIELDS = ("entries",)
@@ -23,7 +92,14 @@ class TLK(ComparableMixin):
         self,
         language: Language = Language.ENGLISH,
     ):
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorTLK/TLKBinaryStructure.cs:16
+        # vendor/KotOR_IO/KotOR_IO/File Formats/TLK.cs:93
+        # List of string entries indexed by StrRef (0-based array index)
         self.entries: list[TLKEntry] = []
+        
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorTLK/TLKBinaryStructure.cs:63
+        # vendor/KotOR_IO/KotOR_IO/File Formats/TLK.cs:84
+        # Language ID field - unused by game but present in file format
         self.language: Language = language  # game does not use this field
 
     def __len__(
@@ -215,17 +291,79 @@ class TLK(ComparableMixin):
 
 
 class TLKEntry(ComparableMixin):
+    """A single string entry in a Talk Table.
+    
+    Each entry represents one localized string that can be referenced by its StrRef (array index).
+    Entries contain the text content and an optional reference to a voice-over audio file.
+    
+    References:
+    ----------
+        vendor/TSLPatcher/lib/site/Bioware/TLK.pm:76-79 - String reading from offset
+        vendor/Kotor.NET/Kotor.NET/Formats/KotorTLK/TLKBinaryStructure.cs:92-130 - StringData class
+        vendor/KotOR_IO/KotOR_IO/File Formats/TLK.cs:165-227 - String_Data class
+        vendor/reone/src/libs/resource/format/tlkreader.cpp:48-82 - Entry parsing
+        
+    Binary Format (40 bytes):
+    ------------------------
+        Offset | Size | Type   | Description
+        -------|------|--------|-------------
+        0x00   | 4    | uint32 | Flags (bit 0=text, bit 1=sound, bit 2=sound length)
+        0x04   | 16   | char[] | Sound ResRef (null-terminated, max 16 chars)
+        0x14   | 4    | uint32 | Volume Variance (unused in KotOR)
+        0x18   | 4    | uint32 | Pitch Variance (unused in KotOR)
+        0x1C   | 4    | int32  | Offset to String (from String Entries Offset)
+        0x20   | 4    | int32  | String Size (length in bytes)
+        0x24   | 4    | float  | Sound Length (seconds)
+        
+        Reference: Kotor.NET/TLKBinaryStructure.cs:92-130, KotOR_IO/TLK.cs:194-200
+    
+    Attributes:
+    ----------
+        text: The localized text string
+            Reference: TSLPatcher/TLK.pm:76-79 (string reading from offset)
+            Reference: Kotor.NET/TLKBinaryStructure.cs:36-37 (StringEntries list)
+            Reference: KotOR_IO/TLK.cs:191 (StringText property)
+            Reference: reone/tlkreader.cpp:78-79 (text reading)
+            Encoding: ASCII for English, language-specific for others
+            Can contain special tokens like <CUSTOM0>, <FullName>, etc.
+            
+        voiceover: Reference to voice-over WAV file (ResRef)
+            Reference: Kotor.NET/TLKBinaryStructure.cs:97 (SoundResRef property)
+            Reference: KotOR_IO/TLK.cs:197 (SoundResRef field, 16 chars)
+            Reference: reone/tlkreader.cpp:68-69 (soundResRef reading)
+            Max 16 characters, stored as null-terminated string in binary
+            If empty/blank, no voice-over is associated with this entry
+            Game looks for WAV files in StreamVoice/ or StreamWaves/ folders
+            
+        sound_length: Duration of voice-over audio in seconds
+            Reference: Kotor.NET/TLKBinaryStructure.cs:102 (Length property, float)
+            Reference: KotOR_IO/TLK.cs:206 (SoundLength field)
+            Reference: reone/tlkreader.cpp:80-81 (soundLength reading)
+            NOTE: Unused by KotOR game engine, but present in file format
+            Primarily used by modding tools for audio synchronization
+    """
+    
     COMPARABLE_FIELDS = ("text", "voiceover")
     def __init__(
         self,
         text: str,
         voiceover: ResRef,
     ):
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorTLK/TLKBinaryStructure.cs:36-37
+        # vendor/KotOR_IO/KotOR_IO/File Formats/TLK.cs:191
+        # vendor/TSLPatcher/lib/site/Bioware/TLK.pm:76-79
+        # Localized text string (encoding depends on language)
         self.text: str = text
+        
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorTLK/TLKBinaryStructure.cs:97
+        # vendor/KotOR_IO/KotOR_IO/File Formats/TLK.cs:197
+        # vendor/reone/src/libs/resource/format/tlkreader.cpp:68-69
+        # Voice-over WAV file reference (max 16 chars)
         self.voiceover: ResRef = voiceover
 
-        # The following fields exist in TLK format, but do not perform any function in KOTOR. The game ignores these.
-        # entry flags. These are set in both game's TLKs
+        # vendor/Kotor.NET/Kotor.NET/Formats/KotorTLK/TLKBinaryStructure.cs:102
+        # vendor/KotOR_IO/KotOR_IO/File Formats/TLK.cs:206
+        # Duration of voice-over in seconds (unused by game, but present in format)
         self.sound_length: int = 0  # This remains a regular attribute
 
     # The following fields exist in TLK format, but do not perform any function in KOTOR. The game ignores these.

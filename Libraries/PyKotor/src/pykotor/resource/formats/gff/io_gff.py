@@ -24,6 +24,25 @@ _COMPLEX_FIELD: set[GFFFieldType] = {
 
 
 class GFFBinaryReader(ResourceReader):
+    """Binary GFF file reader.
+    
+    Reads binary GFF (Generic File Format) files used throughout KotOR for structured data storage.
+    Supports GFF V3.2 format. Note: V3.3, V4.0, and V4.1 are not currently supported.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/gffreader.cpp:26-65 (GffReader::load)
+        vendor/reone/src/libs/resource/format/gffreader.cpp:67-149 (GffReader::readField)
+        vendor/reone/src/libs/resource/format/gffreader.cpp:151-154 (label reading)
+        vendor/reone/src/libs/resource/format/gffreader.cpp:180-196 (LocalizedString reading)
+        vendor/xoreos-tools/src/xml/gffdumper.cpp:100-103 (version detection)
+        vendor/HoloPatcher.NET/src/TSLPatcher.Core/Formats/GFF/GFFBinaryReader.cs (C# port)
+    
+    Missing Features:
+    ----------------
+        - GFF V3.3, V4.0, V4.1 support (xoreos-tools supports these)
+        - StrRef field type (reone supports this at gffreader.cpp:141-142, 199-204)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -42,8 +61,10 @@ class GFFBinaryReader(ResourceReader):
 
     @autoclose
     def load(self, *, auto_close: bool = True) -> GFF:  # noqa: FBT001, FBT002, ARG002
+        # vendor/reone/src/libs/resource/format/gffreader.cpp:26-65
         self._gff = GFF()
 
+        # vendor/reone/src/libs/resource/format/gffreader.cpp:30-32
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
 
@@ -51,12 +72,16 @@ class GFFBinaryReader(ResourceReader):
             msg = "Not a valid binary GFF file."
             raise ValueError(msg)
 
+        # NOTE: Only V3.2 supported. xoreos-tools supports V3.2, V3.3, V4.0, V4.1
+        # vendor/xoreos-tools/src/xml/gffdumper.cpp:100-103
         if file_version != "V3.2":
             msg = "The GFF version of the file is unsupported."
             raise ValueError(msg)
 
         self._gff.content = GFFContent(file_type)
 
+        # vendor/reone/src/libs/resource/format/gffreader.cpp:34-44
+        # Read GFF header offsets and counts
         self._struct_offset = self._reader.read_uint32()
         self._reader.read_uint32()  # struct count
         self._field_offset = self._reader.read_uint32()
@@ -70,6 +95,8 @@ class GFFBinaryReader(ResourceReader):
         self._list_indices_offset = self._reader.read_uint32()
         self._reader.read_uint32()  # list indices count
 
+        # vendor/reone/src/libs/resource/format/gffreader.cpp:151-154
+        # Read label array (16-byte null-terminated strings)
         self._labels = []
         self._reader.seek(label_offset)
         self._labels.extend(self._reader.read_string(16) for _ in range(label_count))
@@ -82,6 +109,8 @@ class GFFBinaryReader(ResourceReader):
         gff_struct: GFFStruct,
         struct_index: int,
     ):
+        # vendor/reone/src/libs/resource/format/gffreader.cpp:40-62
+        # Read struct header (12 bytes: struct_id, data/offset, field_count)
         self._reader.seek(self._struct_offset + struct_index * 12)
         struct_id, data, field_count = (
             self._reader.read_int32(),
@@ -91,9 +120,13 @@ class GFFBinaryReader(ResourceReader):
 
         gff_struct.struct_id = struct_id
 
+        # vendor/reone/src/libs/resource/format/gffreader.cpp:55-62
+        # Handle empty structs (field_count == 0), single field (field_count == 1), or multiple fields
         if field_count == 1:
             self._load_field(gff_struct, data)
         elif field_count > 1:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:58
+            # Read field indices array
             self._reader.seek(self._field_indices_offset + data)
             indices: list[int] = [self._reader.read_uint32() for _ in range(field_count)]
             for index in indices:
@@ -104,6 +137,8 @@ class GFFBinaryReader(ResourceReader):
         gff_struct: GFFStruct,
         field_index: int,
     ):
+        # vendor/reone/src/libs/resource/format/gffreader.cpp:67-76
+        # Read field header (12 bytes: field_type, label_index, data/offset)
         self._reader.seek(self._field_offset + field_index * 12)
         field_type_id = self._reader.read_uint32()
         label_id = self._reader.read_uint32()
@@ -111,25 +146,34 @@ class GFFBinaryReader(ResourceReader):
         field_type = GFFFieldType(field_type_id)
         label = self._labels[label_id]
 
+        # vendor/reone/src/libs/resource/format/gffreader.cpp:78-146
+        # Handle complex fields (stored in field data section) vs simple fields (inline)
         if field_type in _COMPLEX_FIELD:
             offset = self._reader.read_uint32()  # relative to field data
             self._reader.seek(self._field_data_offset + offset)
             if field_type is GFFFieldType.UInt64:
+                # vendor/reone/src/libs/resource/format/gffreader.cpp:89-90
                 gff_struct.set_uint64(label, self._reader.read_uint64())
             elif field_type is GFFFieldType.Int64:
+                # vendor/reone/src/libs/resource/format/gffreader.cpp:92-95
                 gff_struct.set_int64(label, self._reader.read_int64())
             elif field_type is GFFFieldType.Double:
                 gff_struct.set_double(label, self._reader.read_double())
             elif field_type is GFFFieldType.String:
+                # vendor/reone/src/libs/resource/format/gffreader.cpp:166-170
                 length = self._reader.read_uint32()
                 gff_struct.set_string(label, self._reader.read_string(length))
             elif field_type is GFFFieldType.ResRef:
+                # vendor/reone/src/libs/resource/format/gffreader.cpp:173-177
                 length = self._reader.read_uint8()
                 resref = ResRef(self._reader.read_string(length).strip())
                 gff_struct.set_resref(label, resref)
             elif field_type is GFFFieldType.LocalizedString:
+                # vendor/reone/src/libs/resource/format/gffreader.cpp:180-196
+                # NOTE: reone warns if count > 1, but PyKotor reads all substrings
                 gff_struct.set_locstring(label, self._reader.read_locstring())
             elif field_type is GFFFieldType.Binary:
+                # vendor/reone/src/libs/resource/format/gffreader.cpp:207-211
                 length = self._reader.read_uint32()
                 gff_struct.set_binary(label, self._reader.read_bytes(length))
             elif field_type is GFFFieldType.Vector3:
@@ -137,28 +181,39 @@ class GFFBinaryReader(ResourceReader):
             elif field_type is GFFFieldType.Vector4:
                 gff_struct.set_vector4(label, self._reader.read_vector4())
         elif field_type is GFFFieldType.Struct:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:108-110
             struct_index = self._reader.read_uint32()
             new_struct = GFFStruct()
             self._load_struct(new_struct, struct_index)
             gff_struct.set_struct(label, new_struct)
         elif field_type is GFFFieldType.List:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:112-114
             self._load_list(gff_struct, label)
         elif field_type is GFFFieldType.UInt8:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:79-82
             gff_struct.set_uint8(label, self._reader.read_uint8())
         elif field_type is GFFFieldType.Int8:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:84-87
             gff_struct.set_int8(label, self._reader.read_int8())
         elif field_type is GFFFieldType.UInt16:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:79-82
             gff_struct.set_uint16(label, self._reader.read_uint16())
         elif field_type is GFFFieldType.Int16:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:84-87
             gff_struct.set_int16(label, self._reader.read_int16())
         elif field_type is GFFFieldType.UInt32:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:79-82
             gff_struct.set_uint32(label, self._reader.read_uint32())
         elif field_type is GFFFieldType.Int32:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:84-87
             gff_struct.set_int32(label, self._reader.read_int32())
         elif field_type is GFFFieldType.Single:
+            # vendor/reone/src/libs/resource/format/gffreader.cpp:97-98
             gff_struct.set_single(label, self._reader.read_single())
+        # NOTE: StrRef field type not supported (reone supports at gffreader.cpp:141-142, 199-204)
 
     def _load_list(self, gff_struct: GFFStruct, label: str):
+        # vendor/reone/src/libs/resource/format/gffreader.cpp:218-223
         offset = self._reader.read_uint32()  # relative to list indices
         self._reader.seek(self._list_indices_offset + offset)
         value = GFFList()
@@ -172,6 +227,16 @@ class GFFBinaryReader(ResourceReader):
 
 
 class GFFBinaryWriter(ResourceWriter):
+    """Binary GFF file writer.
+    
+    Writes binary GFF (Generic File Format) files. Currently only supports V3.2 format.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/gffwriter.cpp:271 (header offset calculation)
+        vendor/reone/src/libs/resource/format/gffwriter.cpp:294-317 (struct/field/label array writing)
+        vendor/HoloPatcher.NET/src/TSLPatcher.Core/Formats/GFF/GFFBinaryWriter.cs (C# port)
+    """
     def __init__(
         self,
         gff: GFF,
@@ -195,6 +260,8 @@ class GFFBinaryWriter(ResourceWriter):
     def write(self, *, auto_close: bool = True):  # noqa: FBT001, FBT002, ARG002  # pyright: ignore[reportUnusedParameters]
         self._build_struct(self._gff.root)
 
+        # vendor/reone/src/libs/resource/format/gffwriter.cpp:271
+        # Header offset is 0x38 (56 bytes) - GFF signature (8) + offsets/counts (48)
         struct_offset = 56
         struct_count = self._struct_writer.size() // 12
         field_offset = struct_offset + self._struct_writer.size()
@@ -241,6 +308,8 @@ class GFFBinaryWriter(ResourceWriter):
 
         self._struct_writer.write_uint32(struct_id, max_neg1=True)
 
+        # vendor/reone/src/libs/resource/format/gffwriter.cpp:294-300
+        # Handle empty structs (0xFFFFFFFF), single field (inline), or multiple fields (indices array)
         if field_count == 0:
             self._struct_writer.write_uint32(0xFFFFFFFF)
             self._struct_writer.write_uint32(0)

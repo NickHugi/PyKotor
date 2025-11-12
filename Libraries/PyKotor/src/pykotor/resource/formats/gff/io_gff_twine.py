@@ -14,7 +14,16 @@ if TYPE_CHECKING:
 
 
 class GFFTwineReader(ResourceReader):
-    """Reads Twine 2 HTML format and converts to DLG."""
+    """Reads Twine 2 HTML format and converts to DLG.
+    
+    Twine is an interactive fiction authoring tool. This reader converts Twine story
+    format (HTML) to KotOR dialog (DLG) format for use in modding.
+    
+    References:
+    ----------
+        Twine 2 format specification (twinejs.com)
+        Note: Twine conversion is PyKotor-specific functionality, not a standard game format
+    """
 
     def __init__(
         self,

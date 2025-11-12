@@ -15,7 +15,20 @@ if TYPE_CHECKING:
 
 
 class PTH:
-    """Stores the path data for a module."""
+    """Stores the path data for a module.
+    
+    PTH files are GFF-based format files that store pathfinding data including
+    waypoints and connections for NPC navigation.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/parser/gff/pth.cpp (PTH parsing from GFF)
+        vendor/reone/include/reone/resource/parser/gff/pth.h (PTH structure definitions)
+        vendor/reone/src/libs/game/pathfinder.cpp (Pathfinding algorithm using PTH data)
+        vendor/xoreos-tools/src/xml/pthdumper.cpp (PTH to XML conversion)
+        vendor/xoreos-tools/src/xml/pthcreator.cpp (XML to PTH conversion)
+        Note: PTH files are GFF format files with specific structure definitions
+    """
 
     BINARY_TYPE = ResourceType.PTH
 

@@ -13,8 +13,21 @@ if TYPE_CHECKING:
 
 
 class KEYBinaryReader(ResourceReader):
-    """Reads KEY files."""
-
+    """Reads KEY files.
+    
+    KEY files index game resources stored in BIF files. They contain references to BIF files
+    and resource entries that map ResRefs to locations within those BIF files.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/keyreader.cpp:26-65 (KEY reading)
+        vendor/xoreos-tools/src/unkeybif.cpp (KEY/BIF extraction tool)
+    
+    Missing Features:
+    ----------------
+        - ResRef lowercasing (reone lowercases resrefs)
+        - Resource ID decomposition (reone decomposes resource_id into bif_index/resource_index)
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -27,6 +40,7 @@ class KEYBinaryReader(ResourceReader):
     @autoclose
     def load(self, *, auto_close: bool = True) -> KEY:  # noqa: FBT001, FBT002, ARG002
         """Load KEY data from source."""
+        # vendor/reone/src/libs/resource/format/keyreader.cpp:26-65
         # Read signature
         self.key.file_type = self._reader.read_string(4)
         self.key.file_version = self._reader.read_string(4)
@@ -75,8 +89,12 @@ class KEYBinaryReader(ResourceReader):
         self._reader.seek(key_table_offset)
         for _ in range(key_count):
             entry: KeyEntry = KeyEntry()
+            # vendor/reone/src/libs/resource/format/keyreader.cpp:45-50
+            # NOTE: reone lowercases resref at line 46, PyKotor does not
             entry.resref = ResRef(self._reader.read_string(16).rstrip("\0"))
             entry.restype = ResourceType.from_id(self._reader.read_uint16())
+            # vendor/reone/src/libs/resource/format/keyreader.cpp:51-52
+            # NOTE: reone decomposes resource_id into bif_index/resource_index, PyKotor stores as-is
             entry.resource_id = self._reader.read_uint32()
             self.key.key_entries.append(entry)
 

@@ -39,6 +39,15 @@ class ResRef(str):
         - ResRefs cannot exceed 16 characters in length.
         - Usable in case-insensitive applications. This is because KOTOR was created for Windows, which uses a case-insensitive filesystem.
         - (recommended) Stored as case-sensitive text.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/resource/resref.h (ResRef structure)
+        vendor/xoreos-tools/src/common/util.cpp (ResRef handling)
+        vendor/KotOR.js/src/resource/ResourceTypes.ts (Resource type definitions)
+        vendor/KotOR-dotNET/AuroraFile.cs (ResRef in C#)
+        vendor/kotor/kotor/resref.py (ResRef handling in Python)
+        Note: ResRef case-insensitivity is critical for cross-platform compatibility
     """
 
     __slots__: ClassVar[tuple[str, ...]] = ("_value",)

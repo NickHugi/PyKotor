@@ -65,6 +65,19 @@ if TYPE_CHECKING:
 
 
 class NssParser:
+    """NSS (NWScript Source) parser.
+    
+    Parses tokenized NSS source code into an abstract syntax tree (AST) using
+    recursive descent parsing. Handles includes, function definitions, statements,
+    expressions, and control flow constructs.
+    
+    References:
+    ----------
+        vendor/HoloLSP/server/src/nwscript-parser.ts (TypeScript NSS parser)
+        vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (Parser integration)
+        vendor/xoreos-tools/src/nwscript/ (NSS parser implementation)
+        PLY (Python Lex-Yacc) library for parser generation
+    """
     def __init__(
         self,
         functions: list[ScriptFunction],

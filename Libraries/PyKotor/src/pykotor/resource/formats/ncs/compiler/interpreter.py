@@ -28,7 +28,19 @@ else:
 
 
 class Interpreter:
-    """This class is not used in the compiling process. This is only partially implemented, mostly for testing purposes."""
+    """NCS bytecode interpreter for testing and debugging.
+    
+    Executes NCS bytecode instructions to test script behavior. Partially implemented
+    for testing purposes, not used in the compilation process. Supports stack-based
+    execution, function calls, and instruction limit protection.
+    
+    References:
+    ----------
+        vendor/KotOR.js/src/odyssey/controllers/ (Runtime script execution)
+        vendor/reone/src/libs/script/format/ncsreader.cpp (NCS instruction reading)
+        vendor/xoreos-tools/src/nwscript/decompiler.cpp (NCS instruction semantics)
+        Note: Interpreter is PyKotor-specific for testing, not a full runtime implementation
+    """
 
     # Default maximum instructions to prevent infinite loops
     # This is set to a high value to accommodate complex scripts while still providing protection

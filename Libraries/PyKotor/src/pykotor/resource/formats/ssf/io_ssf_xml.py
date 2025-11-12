@@ -24,6 +24,16 @@ if TYPE_CHECKING:
 
 
 class SSFXMLReader(ResourceReader):
+    """Reads SSF files from XML format.
+    
+    XML is a human-readable format for easier editing of sound set files.
+    
+    References:
+    ----------
+        vendor/xoreos-tools/src/xml/ssfdumper.cpp (SSF to XML conversion)
+        vendor/xoreos-tools/src/xml/ssfcreator.cpp (XML to SSF conversion)
+        Note: XML format structure may vary between tools
+    """
     def __init__(
         self,
         source: SOURCE_TYPES,

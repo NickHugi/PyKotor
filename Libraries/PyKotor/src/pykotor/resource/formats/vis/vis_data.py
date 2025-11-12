@@ -1,4 +1,41 @@
-"""This module handles classes relating to editing VIS files."""
+"""This module handles classes relating to editing VIS files.
+
+VIS (Visibility) files define which rooms are visible from other rooms in a module.
+This is used for occlusion culling optimization - the game engine only renders rooms
+that are marked as visible from the player's current room. VIS files are ASCII text
+files with a simple format: parent room names followed by indented child room names.
+
+References:
+----------
+    vendor/reone/include/reone/resource/format/visreader.h:28-39 - VisReader class
+    vendor/reone/src/libs/resource/format/visreader.cpp:27-51 - VIS loading implementation
+    vendor/KotOR.js/src/resource/VISObject.ts:33-276 - TypeScript VIS implementation
+    vendor/KotOR.js/src/interface/module/IVISRoom.ts - IVISRoom interface
+    vendor/xoreos/src/aurora/visfile.cpp:38-142 - VIS file handling
+
+ASCII Format:
+------------
+    Parent Room Line:
+        room_name number_of_child_rooms
+        Example: "room001 3"
+        
+    Child Room Lines (indented with 2 spaces):
+          child_room_name
+          child_room_name
+        Example:
+          room002
+          room003
+          room004
+    
+    Format Rules:
+        - Parent rooms start at column 0
+        - Child rooms are indented with exactly 2 spaces
+        - Room names are case-insensitive (stored lowercase)
+        - Empty lines are ignored
+        - Whitespace is trimmed from room names
+        
+    Reference: reone/visreader.cpp:41-51, KotOR.js/VISObject.ts:71-126
+"""
 
 from __future__ import annotations
 
@@ -13,7 +50,37 @@ if TYPE_CHECKING:
 
 
 class VIS(ComparableMixin):
-    """Represents a VIS file."""
+    """Represents a VIS (Visibility) file defining room visibility relationships.
+    
+    VIS files optimize rendering by specifying which rooms are visible from each
+    parent room. When the player is in a room, only rooms marked as visible in
+    the VIS file are rendered. This prevents rendering rooms that are occluded
+    by walls or geometry, improving performance.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/resource/format/visreader.h:32 (visibility() method)
+        vendor/reone/src/libs/resource/format/visreader.cpp:35 (_visibility map)
+        vendor/KotOR.js/src/resource/VISObject.ts:34 (rooms Map)
+        vendor/xoreos/src/aurora/visfile.h:40-95 - VISFile class
+        
+    Attributes:
+    ----------
+        _rooms: Set of all room names defined in this VIS file
+            Reference: reone/visreader.cpp:46-49 (room name processing)
+            Reference: KotOR.js/VISObject.ts:34,118 (rooms Map, room.name)
+            Room names are stored lowercase for case-insensitive comparison
+            Each room name corresponds to a room model/area in the module
+            Used to validate room existence before setting visibility
+            
+        _visibility: Dictionary mapping observer rooms to sets of visible rooms
+            Reference: reone/visreader.cpp:49 (_visibility.insert)
+            Reference: KotOR.js/VISObject.ts:99 (currentRoom.rooms array)
+            Key: Observer room name (room player is currently in)
+            Value: Set of room names visible from the observer room
+            If room A is in _visibility[room B], then room A is visible from room B
+            Used by game engine for occlusion culling optimization
+    """
 
     BINARY_TYPE = ResourceType.VIS
     COMPARABLE_SET_FIELDS = ("_rooms",)
@@ -22,7 +89,15 @@ class VIS(ComparableMixin):
     def __init__(
         self,
     ):
+        # vendor/reone/src/libs/resource/format/visreader.cpp:46-49
+        # vendor/KotOR.js/src/resource/VISObject.ts:34,118
+        # Set of all room names (stored lowercase for case-insensitive comparison)
         self._rooms: set[str] = set()
+        
+        # vendor/reone/src/libs/resource/format/visreader.cpp:49
+        # vendor/KotOR.js/src/resource/VISObject.ts:99
+        # Dictionary: observer room -> set of visible rooms
+        # Used for occlusion culling (only render visible rooms)
         self._visibility: dict[str, set[str]] = {}
 
     def __eq__(self, other):

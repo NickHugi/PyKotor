@@ -29,6 +29,12 @@ class CompileError(Exception):
     """Base exception for NSS compilation errors.
 
     Provides detailed error messages to help debug script issues.
+    
+    References:
+    ----------
+        vendor/HoloLSP/server/src/nwscript-parser.ts (NSS parser error handling)
+        vendor/xoreos-tools/src/nwscript/compiler.cpp (NSS compiler error handling)
+        vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (TypeScript compiler errors)
     """
 
     def __init__(self, message: str, line_num: int | None = None, context: str | None = None):
@@ -315,6 +321,19 @@ class StructMember:
 
 
 class CodeRoot:
+    """Root compilation context for NSS compilation.
+    
+    Manages global scope, function definitions, constants, and compilation state.
+    Provides symbol resolution and type checking during NSS to NCS compilation.
+    
+    References:
+    ----------
+        vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (TypeScript compiler architecture)
+        vendor/xoreos-tools/src/nwscript/decompiler.cpp (NCS decompiler, reverse reference for compilation)
+        vendor/HoloLSP/server/src/nwscript-parser.ts (NSS parser and AST generation)
+        vendor/HoloLSP/server/src/nwscript-lexer.ts (NSS lexer/tokenizer)
+        vendor/DeNCS/ (NCS decompiler, reverse reference for compilation)
+    """
     def __init__(
         self,
         constants: list[ScriptConstant],
@@ -862,6 +881,16 @@ class StructDefinition(TopLevelObject):
 
 
 class Expression(ABC):
+    """Abstract base class for NSS expressions.
+    
+    Expressions compile to NCS bytecode instructions that evaluate to values.
+    All expression types (literals, operators, function calls, etc.) inherit from this.
+    
+    References:
+    ----------
+        vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (Expression compilation)
+        vendor/HoloLSP/server/src/nwscript-ast.ts (Expression AST nodes)
+    """
     @abstractmethod
     def compile(
         self,
@@ -872,6 +901,16 @@ class Expression(ABC):
 
 
 class Statement(ABC):
+    """Abstract base class for NSS statements.
+    
+    Statements compile to NCS bytecode instructions that perform actions (control flow,
+    assignments, declarations, etc.). All statement types inherit from this.
+    
+    References:
+    ----------
+        vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (Statement compilation)
+        vendor/HoloLSP/server/src/nwscript-ast.ts (Statement AST nodes)
+    """
     def __init__(self):
         self.line_num: None = None
 
