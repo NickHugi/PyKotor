@@ -500,27 +500,59 @@ class UTCClass:
 def construct_utc(
     gff: GFF,
 ) -> UTC:
+    """Constructs a UTC object from a GFF structure.
+    
+    Parses UTC (creature template) data from a GFF file, reading all fields
+    including stats, skills, classes, feats, inventory, and equipment.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/parser/gff/utc.cpp:82-171 (parseUTC function)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTCCompiler.cs:1-200 (UTC compilation from GFF)
+        vendor/KotOR.js/src/module/ModuleCreature.ts:3231 (UTC loading via ResourceLoader)
+        vendor/xoreos-tools/src/xml/utcdumper.cpp (UTC to XML conversion)
+        Original BioWare Odyssey Engine (UTC GFF structure specification)
+    """
     utc = UTC()
 
     root = gff.root
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:162 (TemplateResRef field)
+    # vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTC.cs:15 (ResRef property)
     utc.resref = root.acquire("TemplateResRef", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:132 (Tag field)
     utc.tag = root.acquire("Tag", "", str)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:93 (Comment field)
     utc.comment = root.acquire("Comment", "", str)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:95 (Conversation field)
     utc.conversation = root.acquire("Conversation", ResRef.from_blank())
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:109 (FirstName field as pair<int, string>)
+    # vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTC.cs:21 (FirstName property)
     utc.first_name = root.acquire("FirstName", LocalizedString.from_invalid())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:122 (LastName field as pair<int, string>)
     utc.last_name = root.acquire("LastName", LocalizedString.from_invalid())
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:131 (SubraceIndex field)
     utc.subrace_id = root.acquire("SubraceIndex", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:132 (PerceptionRange field)
     utc.perception_id = root.acquire("PerceptionRange", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:136 (Race field)
     utc.race_id = root.acquire("Race", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:84 (Appearance_Type field)
     utc.appearance_id = root.acquire("Appearance_Type", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:111 (Gender field)
     utc.gender_id = root.acquire("Gender", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:105 (FactionID field)
     utc.faction_id = root.acquire("FactionID", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:136 (WalkRate field as int)
     utc.walkrate_id = root.acquire("WalkRate", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:154 (SoundSetFile field)
     utc.soundset_id = root.acquire("SoundSetFile", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:135 (PortraitId field)
     utc.portrait_id = root.acquire("PortraitId", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:130 (PaletteID field, toolset-only)
     utc.palette_id = root.acquire("PaletteID", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:86 (BodyBag field, deprecated)
     utc.bodybag_id = root.acquire("BodyBag", 0)
 
     # TODO(th3w1zard1): Add these seemingly missing fields into UTCEditor?
@@ -531,143 +563,232 @@ def construct_utc(
     utc.morale_recovery = root.acquire("MoraleRecovery", 0)
     utc.morale_breakpoint = root.acquire("MoraleBreakpoint", 0)
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:87 (BodyVariation field)
     utc.body_variation = root.acquire("BodyVariation", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:135 (TextureVar field)
     utc.texture_variation = root.acquire("TextureVar", 0)
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:129 (NotReorienting field)
     utc.not_reorienting = bool(root.acquire("NotReorienting", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:131 (PartyInteract field)
     utc.party_interact = bool(root.acquire("PartyInteract", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:128 (NoPermDeath field)
     utc.no_perm_death = bool(root.acquire("NoPermDeath", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:125 (Min1HP field)
     utc.min1_hp = bool(root.acquire("Min1HP", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:134 (Plot field)
     utc.plot = bool(root.acquire("Plot", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:117 (Interruptable field)
     utc.interruptable = bool(root.acquire("Interruptable", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:118 (IsPC field)
     utc.is_pc = bool(root.acquire("IsPC", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:101 (Disarmable field)
     utc.disarmable = bool(root.acquire("Disarmable", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:115 (IgnoreCrePath field, KotOR 2 only)
     utc.ignore_cre_path = bool(root.acquire("IgnoreCrePath", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:114 (Hologram field, KotOR 2 only)
     utc.hologram = bool(root.acquire("Hologram", 0))
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:137 (WillNotRender field, KotOR 2 only)
     utc.will_not_render = bool(root.acquire("WillNotRender", 0))
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:112 (GoodEvil field, alignment)
     utc.alignment = root.acquire("GoodEvil", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:89 (ChallengeRating field as float)
     utc.challenge_rating = root.acquire("ChallengeRating", 0.0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:85 (BlindSpot field as float, KotOR 2 only)
     utc.blindspot = root.acquire("BlindSpot", 0.0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:126 (MultiplierSet field, KotOR 2 only)
     utc.multiplier_set = root.acquire("MultiplierSet", 0)
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:127 (NaturalAC field)
     utc.natural_ac = root.acquire("NaturalAC", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:140 (refbonus field as int16)
     utc.reflex_bonus = root.acquire("refbonus", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:141 (willbonus field as int16)
     utc.willpower_bonus = root.acquire("willbonus", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:139 (fortbonus field as int16)
     utc.fortitude_bonus = root.acquire("fortbonus", 0)
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:129 (Str field)
     utc.strength = root.acquire("Str", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:100 (Dex field)
     utc.dexterity = root.acquire("Dex", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:94 (Con field)
     utc.constitution = root.acquire("Con", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:116 (Int field)
     utc.intelligence = root.acquire("Int", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:138 (Wis field)
     utc.wisdom = root.acquire("Wis", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:88 (Cha field)
     utc.charisma = root.acquire("Cha", 0)
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:97 (CurrentHitPoints field as int16)
     utc.current_hp = root.acquire("CurrentHitPoints", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:124 (MaxHitPoints field as int16)
     utc.max_hp = root.acquire("MaxHitPoints", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:113 (HitPoints field as int16, base HP)
     utc.hp = root.acquire("HitPoints", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:110 (ForcePoints field as int16, max FP)
     utc.max_fp = root.acquire("ForcePoints", 0)
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:96 (CurrentForce field as int16)
     utc.fp = root.acquire("CurrentForce", 0)
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:142 (ScriptEndDialogu field)
+    # Script hooks: ResRefs to NCS scripts executed on specific events
     utc.on_end_dialog = root.acquire("ScriptEndDialogu", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:145 (ScriptOnBlocked field)
     utc.on_blocked = root.acquire("ScriptOnBlocked", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:144 (ScriptHeartbeat field)
     utc.on_heartbeat = root.acquire("ScriptHeartbeat", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:146 (ScriptOnNotice field)
     utc.on_notice = root.acquire("ScriptOnNotice", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:149 (ScriptSpellAt field)
     utc.on_spell = root.acquire("ScriptSpellAt", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:137 (ScriptAttacked field)
     utc.on_attacked = root.acquire("ScriptAttacked", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:138 (ScriptDamaged field)
     utc.on_damaged = root.acquire("ScriptDamaged", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:141 (ScriptDisturbed field)
     utc.on_disturbed = root.acquire("ScriptDisturbed", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:143 (ScriptEndRound field)
     utc.on_end_round = root.acquire("ScriptEndRound", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:140 (ScriptDialogue field)
     utc.on_dialog = root.acquire("ScriptDialogue", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:148 (ScriptSpawn field)
     utc.on_spawn = root.acquire("ScriptSpawn", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:147 (ScriptRested field, not used by engine)
     utc.on_rested = root.acquire("ScriptRested", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:139 (ScriptDeath field)
     utc.on_death = root.acquire("ScriptDeath", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:150 (ScriptUserDefine field)
     utc.on_user_defined = root.acquire("ScriptUserDefine", ResRef.from_blank())
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:151-153 (SkillList parsing)
+    # vendor/reone/include/reone/resource/parser/gff/utc.h:40-42 (UTC_SkillList struct with Rank field)
+    # vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTCCompiler.cs:95-103 (SkillList parsing with index-based access)
+    # SkillList is a GFF List containing 8 structs, each with a "Rank" uint8 field
+    # Skill order: [0] Computer Use, [1] Demolitions, [2] Stealth, [3] Awareness,
+    #              [4] Persuade, [5] Repair, [6] Security, [7] Treat Injury
     if not root.exists("SkillList") or root.what_type("SkillList") is not GFFFieldType.List:
         if root.exists("SkillList"):
             RobustLogger().error("SkillList in UTC's must be a GFFList, recreating now...")
             del root._fields["SkillList"]
         else:
             RobustLogger().error("SkillList must exist in UTC's, creating now...")
+        # vendor/reone/include/reone/resource/parser/gff/utc.h:40-42 (UTC_SkillList struct definition)
+        # Create default SkillList with 8 empty skill entries (Rank = 0)
         skill_list = root.set_list("SkillList", GFFList())
-        skill_list.add(0).set_uint8("Rank", 0)
-        skill_list.add(1).set_uint8("Rank", 0)
-        skill_list.add(2).set_uint8("Rank", 0)
-        skill_list.add(3).set_uint8("Rank", 0)
-        skill_list.add(4).set_uint8("Rank", 0)
-        skill_list.add(5).set_uint8("Rank", 0)
-        skill_list.add(6).set_uint8("Rank", 0)
-        skill_list.add(7).set_uint8("Rank", 0)
-    skill_list: GFFList = root.acquire("SkillList", GFFList())
-    if skill_list.at(0) is not None:
-        skill_struct = skill_list.at(0)
+        skill_list.add(0).set_uint8("Rank", 0)  # Computer Use
+        skill_list.add(1).set_uint8("Rank", 0)  # Demolitions
+        skill_list.add(2).set_uint8("Rank", 0)  # Stealth
+        skill_list.add(3).set_uint8("Rank", 0)  # Awareness
+        skill_list.add(4).set_uint8("Rank", 0)  # Persuade
+        skill_list.add(5).set_uint8("Rank", 0)  # Repair
+        skill_list.add(6).set_uint8("Rank", 0)  # Security
+        skill_list.add(7).set_uint8("Rank", 0)  # Treat Injury
+    skill_list_acquired: GFFList = root.acquire("SkillList", GFFList())
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:151-153 (iterates SkillList)
+    # vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTCCompiler.cs:96 (skillList.Get(0).Get("Rank"))
+    # Parse each skill from SkillList array by index
+    if skill_list_acquired.at(0) is not None:
+        skill_struct = skill_list_acquired.at(0)
         assert skill_struct is not None, "SkillList[0] struct is None"
-        utc.computer_use = skill_struct.acquire("Rank", 0)
-    if skill_list.at(1) is not None:
-        skill_struct = skill_list.at(1)
+        # vendor/reone/src/libs/resource/parser/gff/utc.cpp:44-46 (parseUTC_SkillList reads Rank field)
+        utc.computer_use = skill_struct.acquire("Rank", 0)  # Skill index 0: Computer Use
+    if skill_list_acquired.at(1) is not None:
+        skill_struct = skill_list_acquired.at(1)
         assert skill_struct is not None, "SkillList[1] struct is None"
-        utc.demolitions = skill_list.at(1).acquire("Rank", 0)
-    if skill_list.at(2) is not None:
-        skill_struct = skill_list.at(2)
+        utc.demolitions = skill_struct.acquire("Rank", 0)  # Skill index 1: Demolitions
+    if skill_list_acquired.at(2) is not None:
+        skill_struct = skill_list_acquired.at(2)
         assert skill_struct is not None, "SkillList[2] struct is None"
-        utc.stealth = skill_struct.acquire("Rank", 0)
-    if skill_list.at(3) is not None:
-        skill_struct = skill_list.at(3)
+        utc.stealth = skill_struct.acquire("Rank", 0)  # Skill index 2: Stealth
+    if skill_list_acquired.at(3) is not None:
+        skill_struct = skill_list_acquired.at(3)
         assert skill_struct is not None, "SkillList[3] struct is None"
-        utc.awareness = skill_struct.acquire("Rank", 0)
-    if skill_list.at(4) is not None:
-        skill_struct = skill_list.at(4)
+        utc.awareness = skill_struct.acquire("Rank", 0)  # Skill index 3: Awareness
+    if skill_list_acquired.at(4) is not None:
+        skill_struct = skill_list_acquired.at(4)
         assert skill_struct is not None, "SkillList[4] struct is None"
-        utc.persuade = skill_struct.acquire("Rank", 0)
-    if skill_list.at(5) is not None:
-        skill_struct = skill_list.at(5)
+        utc.persuade = skill_struct.acquire("Rank", 0)  # Skill index 4: Persuade
+    if skill_list_acquired.at(5) is not None:
+        skill_struct = skill_list_acquired.at(5)
         assert skill_struct is not None, "SkillList[5] struct is None"
-        utc.repair = skill_struct.acquire("Rank", 0)
-    if skill_list.at(6) is not None:
-        skill_struct = skill_list.at(6)
+        utc.repair = skill_struct.acquire("Rank", 0)  # Skill index 5: Repair
+    if skill_list_acquired.at(6) is not None:
+        skill_struct = skill_list_acquired.at(6)
         assert skill_struct is not None, "SkillList[6] struct is None"
-        utc.security = skill_struct.acquire("Rank", 0)
-    if skill_list.at(7) is not None:
-        skill_struct = skill_list.at(7)
+        utc.security = skill_struct.acquire("Rank", 0)  # Skill index 6: Security
+    if skill_list_acquired.at(7) is not None:
+        skill_struct = skill_list_acquired.at(7)
         assert skill_struct is not None, "SkillList[7] struct is None"
-        utc.treat_injury = skill_struct.acquire("Rank", 0)
+        utc.treat_injury = skill_struct.acquire("Rank", 0)  # Skill index 7: Treat Injury
 
-    # Not sure why there's extras... some utc's in k1 have 20 structs in the SkillList.
-    if len(skill_list._structs) > 8:
-        utc._extra_unimplemented_skills = [skill_struct.acquire("Rank", 0) for skill_struct in skill_list._structs[8:]]
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:151-153 (only parses SkillList items, doesn't limit count)
+    # Discrepancy: Some KotOR 1 UTC files contain more than 8 skill entries (up to 20)
+    # PyKotor preserves extra skills in _extra_unimplemented_skills for round-trip compatibility
+    # Note: reone and Kotor.NET only parse the first 8 skills, ignoring extras
+    if len(skill_list_acquired._structs) > 8:
+        utc._extra_unimplemented_skills = [skill_struct.acquire("Rank", 0) for skill_struct in skill_list_acquired._structs[8:]]
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:90-92 (ClassList parsing)
+    # vendor/reone/include/reone/resource/parser/gff/utc.h:60-64 (UTC_ClassList struct)
+    # vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTCCompiler.cs:105-120 (ClassList parsing)
+    # ClassList contains creature classes (e.g., Soldier, Scout, Scoundrel, Jedi Consular, etc.)
     class_list: GFFList = root.acquire("ClassList", GFFList())
     for class_struct in class_list:
-        class_id = class_struct.acquire("Class", 0)
-        class_level = class_struct.acquire("ClassLevel", 0)
+        # vendor/reone/src/libs/resource/parser/gff/utc.cpp:90-92 (parseUTC_ClassList reads Class and ClassLevel)
+        class_id = class_struct.acquire("Class", 0)  # Class type identifier (e.g., 0=Soldier, 1=Scout)
+        class_level = class_struct.acquire("ClassLevel", 0)  # Level in this class
         utc_class = UTCClass(class_id, class_level)
 
+        # vendor/reone/include/reone/resource/parser/gff/utc.h:28-32 (UTC_ClassList_KnownList0 struct)
+        # vendor/reone/src/libs/resource/parser/gff/utc.cpp:90-92 (KnownList0 parsing)
+        # KnownList0 contains spells/powers known by this class level
         power_list: GFFList = class_struct.acquire("KnownList0", GFFList())
         for index, power_struct in enumerate(power_list):
-            spell_thing = power_struct.acquire("Spell", 0)
+            # vendor/reone/include/reone/resource/parser/gff/utc.h:29 (Spell field in KnownList0)
+            spell_thing = power_struct.acquire("Spell", 0)  # Spell/power ID
             utc_class.powers.append(spell_thing)
+            # PyKotor-specific: Preserve original order for round-trip compatibility
             utc_class._original_powers_mapping[spell_thing] = index
 
         utc.classes.append(utc_class)
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:106-108 (FeatList parsing)
+    # vendor/reone/include/reone/resource/parser/gff/utc.h:51-53 (UTC_FeatList struct)
+    # vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTCCompiler.cs:122-125 (FeatList parsing)
+    # FeatList contains feat identifiers that the creature has
     feat_list: GFFList = root.acquire("FeatList", GFFList())
     for index, feat_struct in enumerate(feat_list):
-        feat_id_thing: int = feat_struct.acquire("Feat", 0)
+        # vendor/reone/include/reone/resource/parser/gff/utc.h:52 (Feat field)
+        feat_id_thing: int = feat_struct.acquire("Feat", 0)  # Feat identifier
         utc.feats.append(feat_id_thing)
+        # PyKotor-specific: Preserve original order for round-trip compatibility
         utc._original_feat_mapping[feat_id_thing] = index
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:102-104 (Equip_ItemList parsing)
+    # vendor/reone/include/reone/resource/parser/gff/utc.h:55-58 (UTC_Equip_ItemList struct)
+    # vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTCCompiler.cs:127-140 (Equip_ItemList parsing)
+    # Equip_ItemList contains equipped items, struct_id indicates equipment slot
     equipment_list: GFFList = root.acquire("Equip_ItemList", GFFList())
     for equipment_struct in equipment_list:
-        slot = EquipmentSlot(equipment_struct.struct_id)
-        resref = equipment_struct.acquire("EquippedRes", ResRef.from_blank())
-        droppable = bool(equipment_struct.acquire("Dropable", 0))
+        # vendor/reone/include/reone/resource/parser/gff/utc.h:57 (EquippedRes field)
+        # struct_id maps to EquipmentSlot enum (e.g., 0=Right Hand, 1=Left Hand, 2=Armor)
+        slot = EquipmentSlot(equipment_struct.struct_id)  # Equipment slot from struct_id
+        resref = equipment_struct.acquire("EquippedRes", ResRef.from_blank())  # Item ResRef
+        droppable = bool(equipment_struct.acquire("Dropable", 0))  # Whether item can be dropped
         utc.equipment[slot] = InventoryItem(resref, droppable)
 
+    # vendor/reone/src/libs/resource/parser/gff/utc.cpp:119-121 (ItemList parsing)
+    # vendor/reone/include/reone/resource/parser/gff/utc.h:44-49 (UTC_ItemList struct)
+    # vendor/Kotor.NET/Kotor.NET/Resources/KotorUTC/UTCCompiler.cs:142-150 (ItemList parsing)
+    # ItemList contains items in creature's inventory (not equipped)
     item_list: GFFList = root.acquire("ItemList", GFFList())
     for item_struct in item_list:
-        resref = item_struct.acquire("InventoryRes", ResRef.from_blank())
-        droppable = bool(item_struct.acquire("Dropable", 0))
+        # vendor/reone/include/reone/resource/parser/gff/utc.h:46 (InventoryRes field)
+        resref = item_struct.acquire("InventoryRes", ResRef.from_blank())  # Item ResRef
+        droppable = bool(item_struct.acquire("Dropable", 0))  # Whether item can be dropped
         utc.inventory.append(InventoryItem(resref, droppable))
 
     return utc

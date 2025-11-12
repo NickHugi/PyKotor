@@ -22,30 +22,74 @@ T_co = TypeVar("T_co", bound=DLGNode, covariant=True)
 class DLGLink(Generic[T_co]):
     """Represents a directed edge from a source node to a target node (DLGNode).
 
-    Links are stored either in other nodes or in the starting list of the DLG. By design, all
-    DLGLink objects must be unique.
+    DLG links connect dialog nodes together, forming the conversation tree. Links contain
+    conditional logic (Active scripts) that determine whether the link is available. Links
+    are stored in EntriesList (for entries) or RepliesList (for replies) within nodes,
+    or in the StartingList at the root level.
+
+    References:
+    ----------
+        vendor/reone/include/reone/resource/parser/gff/dlg.h:28-49 (DLG_EntryReplyList_EntriesRepliesList struct)
+        vendor/reone/src/libs/resource/parser/gff/dlg.cpp:28-51 (EntriesRepliesList parsing)
+        vendor/KotOR.js/src/resource/DLGLink.ts (DLG link structure)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorDLG/DLG.cs (DLG link structure)
+        Note: Links are GFF structs within EntriesList or RepliesList arrays
 
     Attributes:
     ----------
-        active1: "Active" field.
-        comment: "LinkComment" field. Only used in links stored in nodes.
-        is_child: "IsChild" field. Only used in links stored in nodes.
-        active2: "Active2" field. KotOR 2 Only.
-        logic: "Logic" field. KotOR 2 Only.
-        active1_not: "Not" field. KotOR 2 Only.
-        active2_not: "Not2" field. KotOR 2 Only.
-        active1_param1: "Param1" field. KotOR 2 Only.
-        active1_param2: "Param2" field. KotOR 2 Only.
-        active1_param3: "Param3" field. KotOR 2 Only.
-        active1_param4: "Param4" field. KotOR 2 Only.
-        active1_param5: "Param5" field. KotOR 2 Only.
-        active1_param6: "ParamStrA" field. KotOR 2 Only.
-        active2_param1: "Param1b" field. KotOR 2 Only.
-        active2_param2: "Param2b" field. KotOR 2 Only.
-        active2_param3: "Param3b" field. KotOR 2 Only.
-        active2_param4: "Param4b" field. KotOR 2 Only.
-        active2_param5: "Param5b" field. KotOR 2 Only.
-        active2_param6: "ParamStrB" field. KotOR 2 Only.
+        node: Target DLGNode this link connects to.
+            Reference: reone/dlg.cpp:95-96,102-103 (list iteration creates nodes)
+            The destination node in the dialog graph.
+        
+        list_index: "Index" field. Index of this link in its parent's link list.
+            Reference: reone/dlg.h:31 (Index field)
+            Reference: reone/dlg.cpp:32 (Index parsing)
+            Used for GFF path resolution (e.g., "RepliesList\\0").
+        
+        active1: "Active" field. Primary conditional script ResRef.
+            Reference: reone/dlg.h:29 (Active field)
+            Reference: reone/dlg.cpp:30 (Active parsing)
+            Script that must return true for this link to be available.
+        
+        active2: "Active2" field. Secondary conditional script (KotOR 2).
+            Reference: reone/dlg.h:30 (Active2 field)
+            Reference: reone/dlg.cpp:31 (Active2 parsing)
+            Additional conditional script for KotOR 2.
+        
+        logic: "Logic" field. Logic operator for Active1 and Active2 (KotOR 2).
+            Reference: reone/dlg.h:34 (Logic field)
+            Reference: reone/dlg.cpp:35 (Logic parsing)
+            Values: 0=AND, 1=OR (determines how Active1 and Active2 are combined).
+        
+        active1_not: "Not" field. Negate Active1 result (KotOR 2).
+            Reference: reone/dlg.h:35 (Not field)
+            Reference: reone/dlg.cpp:36 (Not parsing)
+            If true, Active1 result is negated.
+        
+        active2_not: "Not2" field. Negate Active2 result (KotOR 2).
+            Reference: reone/dlg.h:36 (Not2 field)
+            Reference: reone/dlg.cpp:37 (Not2 parsing)
+            If true, Active2 result is negated.
+        
+        active1_param1-6: "Param1-5" and "ParamStrA" fields. Parameters for Active1 script.
+            Reference: reone/dlg.h:37-48 (Param1-5, ParamStrA fields)
+            Reference: reone/dlg.cpp:38-49 (Param parsing)
+            Parameters passed to the Active1 script.
+        
+        active2_param1-6: "Param1b-5b" and "ParamStrB" fields. Parameters for Active2 script.
+            Reference: reone/dlg.h:38-48 (Param1b-5b, ParamStrB fields)
+            Reference: reone/dlg.cpp:38-49 (Param parsing)
+            Parameters passed to the Active2 script.
+        
+        is_child: "IsChild" field. Whether this is a child link (not in StartingList).
+            Reference: reone/dlg.h:32 (IsChild field)
+            Reference: reone/dlg.cpp:33 (IsChild parsing)
+            Distinguishes links in nodes from links in StartingList.
+        
+        comment: "LinkComment" field. Comment string for this link.
+            Reference: reone/dlg.h:33 (LinkComment field)
+            Reference: reone/dlg.cpp:34 (LinkComment parsing)
+            Developer comment, not used by game engine.
     """
 
     def __init__(

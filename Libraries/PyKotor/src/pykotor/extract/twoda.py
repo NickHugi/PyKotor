@@ -434,7 +434,22 @@ class K2Columns2DA:
 
 
 class TwoDARegistry:
-    """Central registry for 2DA metadata, GFF mappings, and helpers."""
+    """Central registry for 2DA metadata, GFF mappings, and helpers.
+    
+    This registry provides metadata about 2DA files, including which columns contain
+    string references (StrRefs) or resource references (ResRefs). It also maps GFF fields
+    to their corresponding 2DA lookup tables.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/2dareader.cpp (2DA reading)
+        vendor/reone/include/reone/resource/format/2dareader.h (2DA structure)
+        vendor/xoreos-tools/src/xml/2dadumper.cpp (2DA to XML conversion)
+        vendor/Kotor.NET/Kotor.NET/Formats/Kotor2DA/Kotor2DA.cs (2DA structure)
+        vendor/KotOR.js/src/resource/TwoDAObject.ts (2DA loading)
+        Note: This registry is PyKotor-specific for tooling and modding purposes.
+        Vendor implementations typically read 2DA files directly without such metadata.
+    """
 
     # Canonical 2DA file names (single source of truth)
     PORTRAITS: ClassVar[str] = "portraits"
@@ -595,6 +610,17 @@ class TwoDARegistry:
         return files
 
 class TwoDAManager:
+    """Manager for 2DA file lookups within an installation.
+    
+    Provides methods to search for string references or resource references across
+    all known 2DA files in a game installation.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/format/2dareader.cpp (2DA reading)
+        vendor/xoreos-tools/src/xml/2dadumper.cpp (2DA extraction)
+        Note: This manager is PyKotor-specific for tooling and modding purposes.
+    """
     def __init__(self, installation: Installation):
         TwoDARegistry.init_metadata()
         self._installation: Installation = installation

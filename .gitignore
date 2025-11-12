@@ -121,3 +121,6 @@ notes/plot_investigation.txt
 /Libraries/Utility/src/utility/ui_libraries/qt/adapters/filesystem/relevant_qt_src
 docs/ASYNC_LOADING_COMPLETE.md
 /Libraries/Utility/src/utility/ui_libraries/qt/adapters/filesystem/relevant_qt_src
+vendor/vendor_submodule_analysis.md
+vendor/REVIEW_STATUS.md
+vendor/PYKOTOR_VENDOR_REFERENCE_ANALYSIS.md

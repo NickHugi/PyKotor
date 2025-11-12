@@ -43,6 +43,9 @@ class ModuleManager:
         self.installation: Installation = installation
         self.resources_info: dict[ResourceIdentifier, ResourceInfo] = {}
         self.conflicting_resources: dict[ResourceIdentifier, set[str]] = defaultdict(set)
+        self.missing_resources: dict[str, list[ResourceIdentifier]] = defaultdict(list)
+        self.unused_resources: dict[str, list[ResourceIdentifier]] = defaultdict(list)
+        self.resource_to_modules: dict[str, set[str]] = defaultdict(set)
 
     def analyze_modules(self, modules: list[Module]) -> None:
         """Analyzes a list of Module objects and stores relevant information.

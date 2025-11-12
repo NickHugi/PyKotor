@@ -17,25 +17,77 @@ class UTM:
     """Stores merchant data.
     
     UTM (User Template Merchant) files define merchant/store blueprints. Stored as GFF format
-    with inventory, pricing, and script references.
+    with inventory, pricing, and script references. Merchants use UTM templates to define
+    their inventory, buy/sell capabilities, and markup/down rates.
+
+    References:
+    ----------
+        vendor/reone/include/reone/resource/parser/gff/utm.h:35-46 (UTM struct definition)
+        vendor/reone/src/libs/resource/parser/gff/utm.cpp:37-52 (UTM parsing from GFF)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorUTM/UTM.cs (UTM structure)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorUTM/UTMDecompiler.cs (UTM parsing)
+        vendor/NorthernLights/Generated/AuroraUTM.cs (UTM structure)
+        vendor/KotOR-Bioware-Libs/GFF.pm (GFF format implementation)
+        Original BioWare Odyssey Engine (UTM GFF structure)
 
     Attributes:
     ----------
-        resref: "ResRef" field.
-        name: "LocName" field.
-        tag: "Tag" field.
-        mark_up: "MarkUp" field.
-        mark_down: "MarkDown" field.
-        on_open: "OnOpenStore" field.
-        comment: "Comment" field.
+        resref: "ResRef" field. Merchant template ResRef.
+            Reference: reone/utm.h:44 (ResRef field)
+            Reference: reone/utm.cpp:49 (ResRef parsing)
+            Unique identifier for this merchant template.
+        
+        name: "LocName" field. Localized merchant name.
+            Reference: reone/utm.h:40 (LocName field as pair<int, string>)
+            Reference: reone/utm.cpp:45 (LocName parsing)
+            Display name shown in merchant interface.
+        
+        tag: "Tag" field. Merchant tag identifier.
+            Reference: reone/utm.h:45 (Tag field)
+            Reference: reone/utm.cpp:50 (Tag parsing)
+            Used for script references and identification.
+        
+        mark_up: "MarkUp" field. Markup percentage for selling to player.
+            Reference: reone/utm.h:42 (MarkUp field)
+            Reference: reone/utm.cpp:47 (MarkUp parsing)
+            Percentage added to base item price when player buys.
+            Reference: merchants.2da for predefined markup values.
+        
+        mark_down: "MarkDown" field. Markdown percentage for buying from player.
+            Reference: reone/utm.h:41 (MarkDown field)
+            Reference: reone/utm.cpp:46 (MarkDown parsing)
+            Percentage subtracted from base item price when player sells.
+            Reference: merchants.2da for predefined markdown values.
+        
+        on_open: "OnOpenStore" field. Script executed when store opens.
+            Reference: reone/utm.h:43 (OnOpenStore field)
+            Reference: reone/utm.cpp:48 (OnOpenStore parsing)
+            Script ResRef called when merchant interface is opened.
+        
+        comment: "Comment" field. Developer comment string.
+            Reference: reone/utm.h:37 (Comment field)
+            Reference: reone/utm.cpp:40 (Comment parsing)
+            Not used by game engine.
+        
+        can_buy: Derived from "BuySellFlag" bit 0. Whether merchant can buy items.
+            Reference: reone/utm.h:36 (BuySellFlag field)
+            Reference: reone/utm.cpp:39 (BuySellFlag parsing)
+            Bit 0: 1 = can buy, 0 = cannot buy.
+        
+        can_sell: Derived from "BuySellFlag" bit 1. Whether merchant can sell items.
+            Reference: reone/utm.h:36 (BuySellFlag field)
+            Reference: reone/utm.cpp:39 (BuySellFlag parsing)
+            Bit 1: 1 = can sell, 0 = cannot sell.
+        
+        inventory: "ItemList" field. List of items in merchant inventory.
+            Reference: reone/utm.h:28-33 (UTM_ItemList struct)
+            Reference: reone/utm.cpp:28-35,42-44 (ItemList parsing)
+            Items available for purchase from this merchant.
+            Each item has InventoryRes (ResRef), Infinite flag, and position.
 
         id: "ID" field. Not used by the game engine.
-    
-    References:
-    ----------
-        vendor/reone/src/libs/resource/format/gffreader.cpp (GFF reading, UTM is GFF-based)
-        vendor/KotOR-Bioware-Libs/GFF.pm (GFF format implementation)
-        Original BioWare Odyssey Engine (UTM GFF structure)
+            Reference: reone/utm.h:38 (ID field, deprecated)
+            Reference: reone/utm.cpp:41 (ID parsing)
     """
 
     BINARY_TYPE = ResourceType.UTM

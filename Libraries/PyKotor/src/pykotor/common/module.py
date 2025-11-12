@@ -76,10 +76,62 @@ SEARCH_ORDER: list[SearchLocation] = [
 
 
 class KModuleType(Enum):
+    """Module file type enumeration.
+    
+    KotOR modules are split across multiple archive files. The module system
+    uses different file extensions to organize resources by type and priority.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/provider.cpp (module resource loading)
+        vendor/KotOR.js/src/module/Module.ts:63 (archives array: RIMObject|ERFObject[])
+        vendor/KotOR.js/src/module/Module.ts:150-200 (module loading from archives)
+        vendor/xoreos/src/aurora/modfile.cpp (module file handling)
+        Original BioWare Odyssey Engine (module archive structure)
+        Note: Module file organization varies between KotOR 1 and KotOR 2
+    
+    File Organization:
+    -----------------
+        - MAIN (.rim): Contains core module files (IFO, ARE, GIT)
+        - DATA (_s.rim): Contains module data (creatures, items, placeables, etc.)
+        - K2_DLG (_dlg.erf): KotOR 2 only - contains dialog files
+        - MOD (.mod): Community override format, replaces all above files
+    """
     MAIN = ".rim"  # Contains the IFO/ARE/GIT
+    """Main module archive containing core module files.
+    
+    Reference: Original BioWare Odyssey Engine module structure
+    Contains: IFO (module info), ARE (area data), GIT (dynamic area info)
+    File naming: <modulename>.rim
+    """
+    
     DATA = "_s.rim"  # Contains everything else
+    """Data module archive containing module resources.
+    
+    Reference: Original BioWare Odyssey Engine module structure
+    Contains: UTC, UTD, UTE, UTI, UTM, UTP, UTS, UTT, UTW, FAC, LYT, NCS, PTH
+    File naming: <modulename>_s.rim
+    Note: In KotOR 2, DLG files are NOT in _s.rim (see K2_DLG)
+    """
+    
     K2_DLG = "_dlg.erf"  # In TSL, DLGs are here instead of _s.rim.
+    """KotOR 2 dialog archive containing dialog files.
+    
+    Reference: Original BioWare Odyssey Engine (KotOR 2 only)
+    Contains: DLG (dialog) files
+    File naming: <modulename>_dlg.erf
+    Note: KotOR 1 stores DLG files in _s.rim, KotOR 2 uses separate _dlg.erf
+    """
+    
     MOD = ".mod"  # Community-standard override, takes priority over the above 3 files. This extension overrides all 3 of the above, while the other 3 are complementary to each other.
+    """Community override module archive (single-file format).
+    
+    Reference: TSLPatcher modding community standard
+    Contains: All module resources in a single ERF archive
+    File naming: <modulename>.mod
+    Priority: Takes precedence over .rim/_s.rim/_dlg.erf files
+    Note: This is a modding convention, not used by the original game engine
+    """
 
     def contains(  # noqa: PLR0911
         self,
@@ -277,6 +329,53 @@ class _CapsuleDictTypes(TypedDict, total=False):
 
 
 class Module:  # noqa: PLR0904
+    """Represents a KotOR game module with its resources and archives.
+    
+    A Module aggregates resources from multiple archive files (.rim, _s.rim, _dlg.erf)
+    or a single override archive (.mod). It manages resource loading, activation,
+    and provides access to module-specific resources like areas, creatures, items, etc.
+    
+    References:
+    ----------
+        vendor/reone/include/reone/game/object/module.h:51-106 (Module class)
+        vendor/reone/src/libs/game/object/module.cpp (Module loading and management)
+        vendor/KotOR.js/src/module/Module.ts:42-999 (Module class implementation)
+        vendor/KotOR.js/src/module/Module.ts:63 (archives: RIMObject|ERFObject[])
+        vendor/KotOR.js/src/module/Module.ts:46-49 (ifo, areaName, area, areas properties)
+        vendor/xoreos/src/aurora/modfile.cpp (module file handling)
+        Original BioWare Odyssey Engine (module resource management)
+    
+    Attributes:
+    ----------
+        resources: Dictionary mapping ResourceIdentifier to ModuleResource.
+            Reference: KotOR.js/Module.ts:150-200 (resource loading from archives)
+            All resources available in this module, keyed by identifier for uniqueness.
+        
+        dot_mod: Whether this module uses .mod override format.
+            Reference: TSLPatcher modding convention
+            If True, uses <root>.mod archive; if False, uses .rim/_s.rim/_dlg.erf archives.
+        
+        _installation: Cached Installation instance for resource lookups.
+            Reference: reone/module.h:65 (load method with resource provider)
+            Used to resolve resources from chitin, override, and other locations.
+        
+        _root: Root module name (without extensions).
+            Reference: KotOR.js/Module.ts:150 (module name extraction)
+            Extracted from filename, used to construct archive filenames.
+        
+        _cached_mod_id: Cached module ResRef identifier.
+            Reference: reone/module.h:73 (_name field)
+            Reference: KotOR.js/Module.ts:46 (ifo property)
+            Module identifier extracted from IFO or archive filenames.
+        
+        _cached_sort_id: Cached sort identifier for module ordering.
+            PyKotor-specific: Used for module sorting/ordering in tools.
+        
+        _capsules: Dictionary of module archive capsules.
+            Reference: KotOR.js/Module.ts:63 (archives array)
+            Contains ModuleLinkPiece, ModuleDataPiece, ModuleDLGPiece, or ModuleFullOverridePiece
+            depending on module type and available files.
+    """
     def __init__(
         self,
         filename_or_root: str,  # The root name of the module.
@@ -1497,6 +1596,52 @@ class Module:  # noqa: PLR0904
 
 
 class ModuleResource(Generic[T]):
+    """Represents a single resource within a module with multiple possible locations.
+    
+    ModuleResource manages a resource that may exist in multiple locations (override,
+    module archives, chitin). It tracks all locations and allows activation of a
+    specific location, with lazy loading of the actual resource object.
+    
+    References:
+    ----------
+        vendor/reone/src/libs/resource/provider.cpp (resource location resolution)
+        vendor/KotOR.js/src/resource/ResourceLoader.ts (resource loading)
+        vendor/xoreos/src/aurora/resman.cpp (resource manager with location priority)
+        Original BioWare Odyssey Engine (resource search order: Override > Module > Chitin)
+    
+    Attributes:
+    ----------
+        _resname: Resource name (ResRef) without extension.
+            Reference: reone/resref.h (ResRef structure)
+            The name of the resource (e.g., "module", "danm13").
+        
+        _restype: Resource type identifier.
+            Reference: reone/resource/types.h (ResourceType enum)
+            The type of resource (e.g., ResourceType.IFO, ResourceType.ARE).
+        
+        _installation: Installation instance for resource lookups.
+            Reference: reone/resource/provider.cpp (resource provider)
+            Used to resolve resources from chitin and other locations.
+        
+        _active: Currently active file path for this resource.
+            Reference: xoreos/resman.cpp (active resource location)
+            The file path currently being used to load this resource.
+            None if no location has been activated yet.
+        
+        _resource_obj: Cached loaded resource object.
+            Reference: KotOR.js/ResourceLoader.ts (resource caching)
+            The parsed resource object (e.g., IFO, ARE, UTC).
+            None until resource() is called for the first time.
+        
+        _locations: List of all file paths where this resource exists.
+            Reference: xoreos/resman.cpp (resource location tracking)
+            All known locations for this resource, ordered by priority.
+            Search order: Override > Custom Modules > Chitin
+        
+        _identifier: ResourceIdentifier for this resource.
+            Reference: PyKotor-specific abstraction
+            Combines resname and restype for unique identification.
+    """
     def __init__(
         self,
         resname: str,

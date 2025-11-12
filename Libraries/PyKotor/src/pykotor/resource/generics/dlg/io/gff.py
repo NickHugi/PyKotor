@@ -32,6 +32,17 @@ def construct_dlg(  # noqa: C901, PLR0915
 ) -> DLG:
     """Constructs a DLG from a GFF file.
 
+    Parses DLG (dialog) data from a GFF file, reading all fields including
+    entries, replies, links, stunts, and conversation metadata.
+
+    References:
+    ----------
+        vendor/reone/src/libs/resource/parser/gff/dlg.cpp:129-165 (parseDLG function)
+        vendor/reone/include/reone/resource/parser/gff/dlg.h:115-141 (DLG struct definition)
+        vendor/KotOR.js/src/resource/DLGObject.ts:77-493 (DLG initialization from GFF)
+        vendor/xoreos-tools/src/xml/dlgdumper.cpp (DLG to XML conversion)
+        Original BioWare Odyssey Engine (DLG GFF structure specification)
+
     Args:
     ----
         gff: GFF - The GFF file to construct the DLG from
@@ -56,29 +67,53 @@ def construct_dlg(  # noqa: C901, PLR0915
         -------
             None - Populates the node in-place
         """
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:122 (Text field as pair<int, string>)
+        # vendor/reone/include/reone/resource/parser/gff/dlg.h:109 (Text field)
         node.text = gff_struct.acquire("Text", LocalizedString.from_invalid())
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:103 (Listener field)
         node.listener = gff_struct.acquire("Listener", "")
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:124 (VO_ResRef field)
         node.vo_resref = gff_struct.acquire("VO_ResRef", ResRef.from_blank())
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:116 (Script field)
         node.script1 = gff_struct.acquire("Script", ResRef.from_blank())
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:94 (Delay field as uint32)
+        # Discrepancy: PyKotor converts 0xFFFFFFFF to -1, reone stores as-is
         delay: int = gff_struct.acquire("Delay", 0)
         node.delay = -1 if delay == 0xFFFFFFFF else delay  # noqa: PLR2004
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:83 (Comment field)
         node.comment = gff_struct.acquire("Comment", "")
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:118 (Sound field)
         node.sound = gff_struct.acquire("Sound", ResRef.from_blank())
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:98 (Quest field)
         node.quest = gff_struct.acquire("Quest", "")
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:95 (PlotIndex field)
         node.plot_index = gff_struct.acquire("PlotIndex", -1)
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:96 (PlotXPPercentage field as float)
         node.plot_xp_percentage = gff_struct.acquire("PlotXPPercentage", 0.0)
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:125 (WaitFlags field as uint32)
         node.wait_flags = gff_struct.acquire("WaitFlags", 0)
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:79 (CameraAngle field)
         node.camera_angle = gff_struct.acquire("CameraAngle", 0)
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:91 (FadeType field as uint8)
         node.fade_type = gff_struct.acquire("FadeType", 0)
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:106 (SoundExists field as uint8)
         node.sound_exists = gff_struct.acquire("SoundExists", 0)
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:110 (VOTextChanged field as uint8)
         node.vo_text_changed = gff_struct.acquire("VOTextChanged", default=False)
 
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:82-84 (AnimList parsing)
+        # vendor/reone/include/reone/resource/parser/gff/dlg.h:75 (AnimList vector)
+        # AnimList contains participant animations for this dialog node
         anim_list: GFFList = gff_struct.acquire("AnimList", GFFList())
         for anim_struct in anim_list:
             anim = DLGAnimation()
+            # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:55 (Animation field)
             anim.animation_id = anim_struct.acquire("Animation", 0)
+            # PyKotor-specific hack: Some animation IDs are offset by 10000
+            # Discrepancy: reone doesn't apply this offset, may be KotOR-specific quirk
             if anim.animation_id > 10000:  # HACK(th3w1zard1): can't remember why this was needed.  # noqa: PLR2004
                 anim.animation_id -= 10000
+            # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:56 (Participant field)
             anim.participant = anim_struct.acquire("Participant", "")
             node.animations.append(anim)
 
@@ -166,14 +201,23 @@ def construct_dlg(  # noqa: C901, PLR0915
     all_entries: list[DLGEntry] = [DLGEntry() for _ in range(len(root.acquire("EntryList", GFFList())))]
     all_replies: list[DLGReply] = [DLGReply() for _ in range(len(root.acquire("ReplyList", GFFList())))]
 
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:147 (NumWords field)
     dlg.word_count = root.acquire("NumWords", 0)
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:141 (EndConverAbort field)
     dlg.on_abort = root.acquire("EndConverAbort", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:142 (EndConversation field)
     dlg.on_end = root.acquire("EndConversation", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:154 (Skippable field)
     dlg.skippable = root.acquire("Skippable", default=False)
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:132 (AmbientTrack field)
     dlg.ambient_track = root.acquire("AmbientTrack", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:133 (AnimatedCut field)
     dlg.animated_cut = root.acquire("AnimatedCut", 0)
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:134 (CameraModel field)
     dlg.camera_model = root.acquire("CameraModel", ResRef.from_blank())
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:135 (ComputerType field)
     dlg.computer_type = DLGComputerType(root.acquire("ComputerType", 0))
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:136 (ConversationType field)
     dlg.conversation_type = DLGConversationType(root.acquire("ConversationType", 0))
 
     dlg.old_hit_check = root.acquire("OldHitCheck", default=False)
@@ -187,11 +231,16 @@ def construct_dlg(  # noqa: C901, PLR0915
     dlg.delay_entry = root.acquire("DelayEntry", 0)
     dlg.delay_reply = root.acquire("DelayReply", 0)
 
+    # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:158-160 (StuntList parsing)
+    # vendor/reone/include/reone/resource/parser/gff/dlg.h:137 (StuntList vector)
+    # StuntList contains stunt model references for special dialog animations
     stunt_list: GFFList = root.acquire("StuntList", GFFList())
     for stunt_struct in stunt_list:
         stunt = DLGStunt()
         dlg.stunts.append(stunt)
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:62 (Participant field)
         stunt.participant = stunt_struct.acquire("Participant", "")
+        # vendor/reone/src/libs/resource/parser/gff/dlg.cpp:63 (StuntModel field)
         stunt.stunt_model = stunt_struct.acquire("StuntModel", ResRef.from_blank())
 
     starting_list: GFFList = root.acquire("StartingList", GFFList())

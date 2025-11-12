@@ -20,9 +20,191 @@ if TYPE_CHECKING:
 
 
 class DLGNode:
-    """Represents a node in the graph (either DLGEntry or DLGReply).
+    """Represents a node in the dialog graph (either DLGEntry or DLGReply).
 
-    Contains a list of DLGLink objects to indicate outgoing edges.
+    DLG nodes represent individual dialog lines (either NPC entries or player replies)
+    in the conversation tree. Each node contains text, scripts, animations, camera settings,
+    and links to other nodes. Nodes are stored in EntryList or ReplyList arrays in the GFF.
+
+    References:
+    ----------
+        vendor/reone/include/reone/resource/parser/gff/dlg.h:61-113 (DLG_EntryReplyList struct)
+        vendor/reone/src/libs/resource/parser/gff/dlg.cpp:67-172 (DLG_EntryReplyList parsing)
+        vendor/KotOR.js/src/resource/DLGNode.ts (DLG node structure)
+        vendor/Kotor.NET/Kotor.NET/Resources/KotorDLG/DLG.cs (DLG node structure)
+        Note: DLG nodes are GFF structs within EntryList or ReplyList arrays
+
+    Attributes:
+    ----------
+        links: List of DLGLink objects connecting to other nodes.
+            Reference: reone/dlg.h:86,102 (EntriesList/RepliesList vectors)
+            Reference: reone/dlg.cpp:95-96,102-103 (EntriesList/RepliesList parsing)
+            Outgoing edges in the dialog graph.
+        
+        list_index: Index of this node in EntryList or ReplyList.
+            Reference: reone/dlg.cpp:95-96,102-103 (list iteration)
+            Used for GFF path resolution (e.g., "EntryList\\0").
+        
+        text: "Text" field. Localized string for the dialog line.
+            Reference: reone/dlg.h:109 (Text field as pair<int, string>)
+            Reference: reone/dlg.cpp:147 (Text parsing)
+            The actual dialog text displayed to the player.
+        
+        speaker: "Speaker" field. Speaker identifier (DLGEntry only).
+            Reference: reone/dlg.h:107 (Speaker field)
+            Reference: reone/dlg.cpp:146 (Speaker parsing)
+            Identifies who is speaking this line.
+        
+        script1: "Script" field. Primary script to execute.
+            Reference: reone/dlg.h:103 (Script field)
+            Reference: reone/dlg.cpp:144 (Script parsing)
+            Script ResRef executed when this node is reached.
+        
+        script2: "Script2" field. Secondary script (KotOR 2).
+            Reference: reone/dlg.h:104 (Script2 field)
+            Reference: reone/dlg.cpp:145 (Script2 parsing)
+            Additional script ResRef for KotOR 2.
+        
+        sound: "Sound" field. Sound effect ResRef.
+            Reference: reone/dlg.h:105 (Sound field)
+            Reference: reone/dlg.cpp:148 (Sound parsing)
+            Sound effect played with this dialog line.
+        
+        vo_resref: "VO_ResRef" field. Voice-over ResRef.
+            Reference: reone/dlg.h:111 (VO_ResRef field)
+            Reference: reone/dlg.cpp:149 (VO_ResRef parsing)
+            Voice-over audio file for this line.
+        
+        animations: "AnimList" field. List of dialog animations.
+            Reference: reone/dlg.h:51-54 (DLG_EntryReplyList_AnimList struct)
+            Reference: reone/dlg.cpp:53-58,82-84 (AnimList parsing)
+            Animation references for this dialog line.
+        
+        camera_angle: "CameraAngle" field. Camera angle setting.
+            Reference: reone/dlg.h:79 (CameraAngle field)
+            Reference: reone/dlg.cpp:88 (CameraAngle parsing)
+        
+        camera_id: "CameraID" field. Camera ID reference.
+            Reference: reone/dlg.h:81 (CameraID field)
+            Reference: reone/dlg.cpp:90 (CameraID parsing)
+        
+        camera_anim: "CameraAnimation" field. Camera animation ID.
+            Reference: reone/dlg.h:80 (CameraAnimation field)
+            Reference: reone/dlg.cpp:89 (CameraAnimation parsing)
+        
+        camera_fov: "CamFieldOfView" field. Camera field of view.
+            Reference: reone/dlg.h:76 (CamFieldOfView field)
+            Reference: reone/dlg.cpp:85 (CamFieldOfView parsing)
+        
+        camera_height: "CamHeightOffset" field. Camera height offset.
+            Reference: reone/dlg.h:77 (CamHeightOffset field)
+            Reference: reone/dlg.cpp:86 (CamHeightOffset parsing)
+        
+        camera_effect: "CamVidEffect" field. Camera video effect ID.
+            Reference: reone/dlg.h:78 (CamVidEffect field)
+            Reference: reone/dlg.cpp:87 (CamVidEffect parsing)
+        
+        target_height: "TarHeightOffset" field. Target height offset.
+            Reference: reone/dlg.h:108 (TarHeightOffset field)
+            Reference: reone/dlg.cpp:150 (TarHeightOffset parsing)
+        
+        fade_type: "FadeType" field. Fade effect type.
+            Reference: reone/dlg.h:91 (FadeType field)
+            Reference: reone/dlg.cpp:92 (FadeType parsing)
+        
+        fade_color: "FadeColor" field. Fade color (vec3).
+            Reference: reone/dlg.h:88 (FadeColor field)
+            Reference: reone/dlg.cpp:99 (FadeColor parsing)
+        
+        fade_delay: "FadeDelay" field. Fade delay in seconds.
+            Reference: reone/dlg.h:89 (FadeDelay field)
+            Reference: reone/dlg.cpp:100 (FadeDelay parsing)
+        
+        fade_length: "FadeLength" field. Fade duration in seconds.
+            Reference: reone/dlg.h:90 (FadeLength field)
+            Reference: reone/dlg.cpp:101 (FadeLength parsing)
+        
+        delay: "Delay" field. Dialog delay in milliseconds.
+            Reference: reone/dlg.h:84 (Delay field)
+            Reference: reone/dlg.cpp:93 (Delay parsing)
+        
+        listener: "Listener" field. Listener identifier.
+            Reference: reone/dlg.h:92 (Listener field)
+            Reference: reone/dlg.cpp:94 (Listener parsing)
+        
+        quest: "Quest" field. Quest identifier string.
+            Reference: reone/dlg.h:98 (Quest field)
+            Reference: reone/dlg.cpp:140 (Quest parsing)
+        
+        quest_entry: "QuestEntry" field. Quest entry index.
+            Reference: reone/dlg.h:99 (QuestEntry field)
+            Reference: reone/dlg.cpp:141 (QuestEntry parsing)
+        
+        plot_index: "PlotIndex" field. Plot flag index.
+            Reference: reone/dlg.h:95 (PlotIndex field)
+            Reference: reone/dlg.cpp:138 (PlotIndex parsing)
+        
+        plot_xp_percentage: "PlotXPPercentage" field. XP percentage for plot.
+            Reference: reone/dlg.h:96 (PlotXPPercentage field)
+            Reference: reone/dlg.cpp:139 (PlotXPPercentage parsing)
+        
+        emotion_id: "Emotion" field. Emotion animation ID.
+            Reference: reone/dlg.h:85 (Emotion field)
+            Reference: reone/dlg.cpp:94 (Emotion parsing)
+            Reference: emotion.2da for valid IDs.
+        
+        facial_id: "FacialAnim" field. Facial animation ID.
+            Reference: reone/dlg.h:87 (FacialAnim field)
+            Reference: reone/dlg.cpp:98 (FacialAnim parsing)
+            Reference: facialanim.2da for valid IDs.
+        
+        alien_race_node: "AlienRaceNode" field. KotOR 2 alien race ID.
+            Reference: reone/dlg.h:74 (AlienRaceNode field)
+            Reference: reone/dlg.cpp:81 (AlienRaceNode parsing)
+            Reference: racialtypes.2da for valid IDs.
+        
+        node_id: "NodeID" field. KotOR 2 node identifier.
+            Reference: reone/dlg.h:93 (NodeID field)
+            Reference: reone/dlg.cpp:135 (NodeID parsing)
+            Unique identifier for this node.
+        
+        post_proc_node: "PostProcNode" field. KotOR 2 post-processing node ID.
+            Reference: reone/dlg.h:97 (PostProcNode field)
+            Reference: reone/dlg.cpp:137 (PostProcNode parsing)
+        
+        unskippable: "NodeUnskippable" field. KotOR 2 unskippable flag.
+            Reference: reone/dlg.h:94 (NodeUnskippable field)
+            Reference: reone/dlg.cpp:136 (NodeUnskippable parsing)
+        
+        record_vo: "RecordVO" field. KotOR 2 record VO flag.
+            Reference: reone/dlg.h:101 (RecordVO field)
+            Reference: reone/dlg.cpp:142 (RecordVO parsing)
+        
+        record_no_vo_override: "RecordNoVOOverri" field. KotOR 2 override flag.
+            Reference: reone/dlg.h:100 (RecordNoVOOverri field)
+            Reference: reone/dlg.cpp:143 (RecordNoVOOverri parsing)
+        
+        vo_text_changed: "VOTextChanged" field. KotOR 2 VO text changed flag.
+            Reference: reone/dlg.h:110 (VOTextChanged field)
+            Reference: reone/dlg.cpp:151 (VOTextChanged parsing)
+        
+        wait_flags: "WaitFlags" field. Wait flags bitmask.
+            Reference: reone/dlg.h:112 (WaitFlags field)
+            Reference: reone/dlg.cpp:152 (WaitFlags parsing)
+        
+        sound_exists: "SoundExists" field. Sound existence flag.
+            Reference: reone/dlg.h:106 (SoundExists field)
+            Reference: reone/dlg.cpp:148 (SoundExists parsing)
+        
+        script1_param1-6: "ActionParam1-5" and "ActionParamStrA" fields. KotOR 2 script parameters.
+            Reference: reone/dlg.h:62-73 (ActionParam fields)
+            Reference: reone/dlg.cpp:69-80 (ActionParam parsing)
+            Parameters passed to script1.
+        
+        script2_param1-6: "ActionParam1b-5b" and "ActionParamStrB" fields. KotOR 2 script parameters.
+            Reference: reone/dlg.h:63-73 (ActionParam fields)
+            Reference: reone/dlg.cpp:69-80 (ActionParam parsing)
+            Parameters passed to script2.
     """
 
     def __init__(  # noqa: PLR0915

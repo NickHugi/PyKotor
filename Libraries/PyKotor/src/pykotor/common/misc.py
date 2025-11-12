@@ -26,35 +26,70 @@ class ResRef(str):
     """A string reference to a game resource.
 
     ResRefs are the names of resources without the extension (the file stem).
+    They serve as identifiers for game resources stored in archives (BIF, ERF, RIM)
+    or as standalone files in the Override folder.
 
     Used in:
     -------
         - Encapsulated Resource Files (ERF/MOD/SAV)
         - RIM/BIF archives
         - Filenames in the Override folder
-
-    Restrictions:
-    ------------
-        - ResRefs must be in ASCII format
-        - ResRefs cannot exceed 16 characters in length.
-        - Usable in case-insensitive applications. This is because KOTOR was created for Windows, which uses a case-insensitive filesystem.
-        - (recommended) Stored as case-sensitive text.
+        - GFF field values (ResRef field type)
+        - Resource lookups and references throughout the engine
     
     References:
     ----------
-        vendor/reone/include/reone/resource/resref.h (ResRef structure)
-        vendor/xoreos-tools/src/common/util.cpp (ResRef handling)
+        vendor/reone/include/reone/resource/resref.h:26-66 (ResRef class definition)
+        vendor/reone/include/reone/resource/resref.h:26 (kMaxResRefLength constant = 16)
+        vendor/reone/include/reone/resource/resref.h:32-38 (ResRef constructor with truncation and lowercasing)
+        vendor/Kotor.NET/Kotor.NET/Common/Data/ResRef.cs:9-72 (ResRef class, max length 16)
+        vendor/HoloPatcher.NET/src/TSLPatcher.Core/Common/ResRef.cs:12-132 (ResRef class with validation)
+        vendor/HoloPatcher.NET/src/TSLPatcher.Core/Common/ResRef.cs:15 (MaxLength constant = 16)
+        vendor/HoloPatcher.NET/src/TSLPatcher.Core/Common/ResRef.cs:15 (InvalidCharacters constant)
+        vendor/KotOR_IO/KotOR_IO/File Formats/GFF FieldTypes/B_ResRef.cs (ResRef GFF field type)
+        vendor/xoreos-tools/src/common/util.cpp (ResRef handling utilities)
         vendor/KotOR.js/src/resource/ResourceTypes.ts (Resource type definitions)
         vendor/KotOR-dotNET/AuroraFile.cs (ResRef in C#)
         vendor/kotor/kotor/resref.py (ResRef handling in Python)
+        Original BioWare Odyssey Engine (ResRef format specification)
         Note: ResRef case-insensitivity is critical for cross-platform compatibility
+
+    Restrictions:
+    ------------
+        - ResRefs must be in ASCII format (non-ASCII characters are invalid)
+        - ResRefs cannot exceed 16 characters in length (MAX_LENGTH = 16)
+        - ResRefs cannot contain Windows filename invalid characters: '<>:"/\\|?*'
+        - Usable in case-insensitive applications (KOTOR was created for Windows case-insensitive filesystem)
+        - (recommended) Stored as case-sensitive text for cross-platform compatibility
+        - ResRefs are trimmed of whitespace (leading/trailing spaces removed)
+    
+    Discrepancies:
+    -------------
+        - reone lowercases ResRefs automatically (resref.h:37: boost::to_lower(_value))
+        - PyKotor preserves case but uses casefold() for comparisons (case-insensitive equality)
+        - HoloPatcher.NET preserves case but uses case-insensitive comparison (StringComparison.OrdinalIgnoreCase)
+        - Kotor.NET preserves case without automatic lowercasing
+        - Original engine: Windows case-insensitive filesystem, ResRefs stored as-is but matched case-insensitively
     """
 
     __slots__: ClassVar[tuple[str, ...]] = ("_value",)
 
     MAX_LENGTH: ClassVar[int] = 16
+    """Maximum length of a ResRef in characters.
+    
+    Reference: reone/resref.h:26 (kMaxResRefLength = 16)
+    Reference: HoloPatcher.NET/ResRef.cs:14 (MaxLength = 16)
+    Reference: Kotor.NET/ResRef.cs:30 (Length check > 16)
+    This is a hard limit enforced by the BioWare Odyssey Engine.
+    """
 
     INVALID_CHARACTERS: ClassVar[str] = '<>:"/\\|?*'
+    """Characters that are invalid in ResRefs (Windows filename restrictions).
+    
+    Reference: HoloPatcher.NET/ResRef.cs:15 (InvalidCharacters constant)
+    These characters cannot appear in Windows filenames and are therefore
+    invalid for ResRefs which are used as filenames.
+    """
 
     class InvalidFormatError(ValueError):
         """ResRefs must conform to Windows filename requirements."""
@@ -404,26 +439,27 @@ class Color:
         instance: Self = cls(0, 0, 0)
 
         # Handle different hex color formats
+        # All values are normalized to 0.0-1.0 range by dividing by 255.0
         if len(color_str) == 3:  # Short hex format (RGB)  # noqa: PLR2004
-            instance.r = int(color_str[0] * 2, 16)
-            instance.g = int(color_str[1] * 2, 16)
-            instance.b = int(color_str[2] * 2, 16)
-            instance.a = 255
+            instance.r = int(color_str[0] * 2, 16) / 255.0
+            instance.g = int(color_str[1] * 2, 16) / 255.0
+            instance.b = int(color_str[2] * 2, 16) / 255.0
+            instance.a = 1.0
         elif len(color_str) == 4:  # Short hex format with alpha (RGBA)  # noqa: PLR2004
-            instance.r = int(color_str[0] * 2, 16)
-            instance.g = int(color_str[1] * 2, 16)
-            instance.b = int(color_str[2] * 2, 16)
-            instance.a = int(color_str[3] * 2, 16)
+            instance.r = int(color_str[0] * 2, 16) / 255.0
+            instance.g = int(color_str[1] * 2, 16) / 255.0
+            instance.b = int(color_str[2] * 2, 16) / 255.0
+            instance.a = int(color_str[3] * 2, 16) / 255.0
         elif len(color_str) == 6:  # Full hex format (RGB)  # noqa: PLR2004
-            instance.r = int(color_str[0:2], 16)
-            instance.g = int(color_str[2:4], 16)
-            instance.b = int(color_str[4:6], 16)
-            instance.a = 255
+            instance.r = int(color_str[0:2], 16) / 255.0
+            instance.g = int(color_str[2:4], 16) / 255.0
+            instance.b = int(color_str[4:6], 16) / 255.0
+            instance.a = 1.0
         elif len(color_str) == 8:  # Full hex format with alpha (RGBA)  # noqa: PLR2004
-            instance.r = int(color_str[0:2], 16)
-            instance.g = int(color_str[2:4], 16)
-            instance.b = int(color_str[4:6], 16)
-            instance.a = int(color_str[6:8], 16)
+            instance.r = int(color_str[0:2], 16) / 255.0
+            instance.g = int(color_str[2:4], 16) / 255.0
+            instance.b = int(color_str[4:6], 16) / 255.0
+            instance.a = int(color_str[6:8], 16) / 255.0
         else:
             raise ValueError(f"Invalid hex color format: {color_str}")
         return instance
