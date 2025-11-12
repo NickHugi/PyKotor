@@ -483,7 +483,7 @@ class AsyncResourceLoader:
             if location is None:
                 self.logger.warning(f"Texture '{name}' not found")
                 result_future.set_result((name, None, f"Texture '{name}' not found"))
-                else:
+            else:
                 filepath, offset, size = location
                 # Submit IO + parsing to child process
                 self.logger.debug(f"Submitting IO+parse for texture: {name} at {filepath}:{offset}:{size}")
@@ -491,15 +491,15 @@ class AsyncResourceLoader:
                 io_parse_future = self.process_pool.submit(_load_and_parse_texture, name, filepath, offset, size)
                     
                 def on_complete(pf: Future):
-                        try:
+                    try:
                         self.logger.debug(f"IO+parse complete for texture: {name}")
-                            result_future.set_result(pf.result())
-                        except Exception as e:  # noqa: BLE001
+                        result_future.set_result(pf.result())
+                    except Exception as e:  # noqa: BLE001
                         self.logger.error(f"IO+parse exception for texture '{name}': {e!s}")
                         result_future.set_result((name, None, f"IO+parse error: {e!s}"))
                     
                 io_parse_future.add_done_callback(on_complete)
-            except Exception as e:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             self.logger.error(f"Resolution exception for texture '{name}': {e!s}")
             result_future.set_result((name, None, f"Resolution error: {e!s}"))
         
@@ -538,12 +538,12 @@ class AsyncResourceLoader:
             if mdl_loc is None or mdx_loc is None:
                 self.logger.warning(f"Model '{name}' MDL or MDX not found")
                 result_future.set_result((name, None, f"Model '{name}' MDL or MDX not found"))
-                else:
+            else:
                 mdl_filepath, mdl_offset, mdl_size = mdl_loc
                 mdx_filepath, mdx_offset, mdx_size = mdx_loc
                 # Submit IO + parsing to child process
                 self.logger.debug(f"Submitting IO+parse for model: {name}")
-                    assert self.process_pool is not None
+                assert self.process_pool is not None
                 io_parse_future = self.process_pool.submit(
                     _load_and_parse_model,
                     name,
@@ -555,11 +555,10 @@ class AsyncResourceLoader:
                         try:
                             result_future.set_result(pf.result())
                         except Exception as e:  # noqa: BLE001
-                        self.logger.error(f"IO+parse exception for model '{name}': {e!s}")
-                        result_future.set_result((name, None, f"IO+parse error: {e!s}"))
-                    
+                            self.logger.error(f"IO+parse exception for model '{name}': {e!s}")
+                            result_future.set_result((name, None, f"IO+parse error: {e!s}"))                    
                 io_parse_future.add_done_callback(on_complete)
-            except Exception as e:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             self.logger.error(f"Resolution exception for model '{name}': {e!s}")
             result_future.set_result((name, None, f"Resolution error: {e!s}"))
         

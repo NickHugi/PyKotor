@@ -408,15 +408,13 @@ class SceneBase:
                 try:
                     resource_name, intermediate, error = future.result()
                     if error:
-                        RobustLogger().warning(f"Async texture load FAILED for '{resource_name}': {error}")
-                        self.textures[resource_name] = Texture.from_color(255, 0, 255)  # Magenta placeholder for failures
+                        RobustLogger().warning(f"Async texture load failed for '{resource_name}': {error}")
+                        self.textures[resource_name] = Texture.from_color(255, 0, 255)  # Magenta placeholder
                     elif intermediate:
-                        # Success! Replace the gray placeholder with the real texture
                         self.textures[resource_name] = create_texture_from_intermediate(intermediate)
-                        RobustLogger().info(f"✓ Async loaded texture SUCCESS: {resource_name} (width={intermediate.width}, height={intermediate.height})")
+                        RobustLogger().info(f"✓ Async loaded texture: {resource_name}")
                     else:
                         RobustLogger().warning(f"Async texture load returned no data and no error for '{resource_name}'")
-                        self.textures[resource_name] = Texture.from_color(255, 0, 255)  # Magenta for missing data
                     completed_textures.append(name)
                 except Exception:  # noqa: BLE001
                     RobustLogger().exception(f"Error processing completed texture future for '{name}'")
@@ -468,26 +466,20 @@ class SceneBase:
         if name in self.textures:
             return self.textures[name]
         
-        # Already loading? Return cached placeholder
+        # Already loading?
         if name in self._pending_texture_futures:
-            # Texture is loading, return cached placeholder if it exists
-            if name in self.textures:
-                return self.textures[name]
-            # Shouldn't happen but create placeholder if missing
+            # Return placeholder while loading
             placeholder = Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
-            self.textures[name] = placeholder
             return placeholder
         
         # Start async loading if location resolver available
         if self.async_loader.texture_location_resolver is not None:
             RobustLogger().info(f"→ Starting async load for texture: {name}")
-            # Create and cache placeholder immediately - will be replaced when loaded
-            placeholder = Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
-            self.textures[name] = placeholder
             future = self.async_loader.load_texture_async(name)
             self._pending_texture_futures[name] = future
             RobustLogger().debug(f"Started async loading for texture: {name}, future: {future}")
-            return placeholder
+            # Return gray placeholder immediately
+            return Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
         
         # Fallback to synchronous loading (e.g., if process pools unavailable)
         type_name: Literal["lightmap", "texture"] = "lightmap" if lightmap else "texture"
