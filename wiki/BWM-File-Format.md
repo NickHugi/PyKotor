@@ -19,6 +19,10 @@ This document provides a detailed description of the BWM (Binary WalkMesh) file 
     - [Edges](#edges)
     - [Perimeters](#perimeters)
   - [Runtime Model](#runtime-model)
+    - [BWM Class](#bwm-class)
+    - [BWMFace Class](#bwmface-class)
+    - [BWMEdge Class](#bwmedge-class)
+    - [BWMNodeAABB Class](#bwmnodeaabb-class)
   - [Implementation Details](#implementation-details)
 
 ---
@@ -50,6 +54,31 @@ BWM files define walkable surfaces using triangular faces. Each face has materia
 | Hook Vectors      | float[3]| 12   | Position hooks used by the engine                               |
 | Absolute/Relative Positions | varies | varies | Position data based on type                                    |
 
+**Walkmesh Types:**
+
+KotOR uses different walkmesh types for different purposes:
+
+- **WOK (0x00)**: Area walkmesh - defines walkable regions in game areas
+  - Stored as `<area_name>.wok` files
+  - Large planar surfaces for player movement and NPC pathfinding
+  - Often split across multiple rooms in complex areas
+  
+- **PWK (0x01)**: Placeable walkmesh - collision for placeable objects
+  - Stored as `<model_name>.pwk` files
+  - Compact collision geometry for containers, furniture, etc.
+  - Prevents player from walking through solid objects
+  
+- **DWK (0x02)**: Door walkmesh - collision for door models
+  - Stored as `<door_model>.dwk` files (often `<name>0.dwk`, `<name>1.dwk`, `<name>2.dwk` for animation states)
+  - Separate meshes for open/closed/opening states
+  - Updates dynamically as doors open and close
+
+**Hook Vectors** are reference points used by the engine for:
+
+- Spawning creatures at designated locations
+- Positioning triggers and encounters
+- Aligning objects to the walkable surface
+
 ### Vertices
 
 | Name     | Type      | Size | Description                                                      |
@@ -68,6 +97,30 @@ BWM files define walkable surfaces using triangular faces. Each face has materia
 | --------- | ------ | ---- | ---------------------------------------------------------------- |
 | Materials | uint32  | 4×N  | Surface material index per face (determines walkability)         |
 
+**Surface Materials:**
+
+Each face is assigned a material type that determines its physical properties and interaction behavior:
+
+**Common Material Types:**
+
+- **Walkable** (`0x01`): Standard walkable surface - characters can path across
+- **Non-Walkable** (`0x00`): Impassable surface - blocks character movement
+- **Grass** (`0x02`): Walkable with grass sound effects
+- **Stone** (`0x03`): Walkable with stone sound effects
+- **Wood** (`0x04`): Walkable with wood sound effects
+- **Carpet** (`0x05`): Walkable with muffled footstep sounds
+- **Metal** (`0x06`): Walkable with metallic sound effects
+- **Water** (`0x08`): Shallow water - walkable with water sounds
+- **Deep Water** (`0x10`): Deep water - typically non-walkable or swim areas
+- **Lava** (`0x20`): Damage-dealing surface
+
+Materials control not just walkability but also:
+
+- Footstep sound effects during movement
+- Visual effects (ripples on water, dust on dirt)
+- Damage-over-time mechanics (lava, acid)
+- AI pathfinding cost (creatures prefer some surfaces over others)
+
 ### Derived Data
 
 | Name           | Type    | Size | Description                                                      |
@@ -82,10 +135,33 @@ BWM files define walkable surfaces using triangular faces. Each face has materia
 | AABB Nodes    | varies  | varies | Bounding box tree nodes for spatial acceleration                |
 
 Each AABB node contains:
+
 - Bounds (min/max coordinates)
 - Face index (or `0xFFFFFFFF` for internal nodes)
 - Significant plane
 - Left/right child indices (1-based, or `0xFFFFFFFF` for leaf nodes)
+
+**AABB Tree Purpose:**
+
+The Axis-Aligned Bounding Box (AABB) tree is a spatial acceleration structure that dramatically improves performance for common operations:
+
+- **Ray Casting**: Finding where a ray intersects the walkmesh (for mouse clicks, projectiles)
+- **Point Queries**: Determining which face a character is standing on
+- **Pathfinding**: Quickly rejecting faces that aren't near the path
+- **Collision Detection**: Testing object-walkmesh intersections
+
+Without the AABB tree, the engine would need to test every face individually (O(N) complexity). The tree reduces this to O(log N) by:
+
+1. Testing the ray/point against the root bounding box
+2. Recursing only into child nodes that intersect
+3. Stopping at leaf nodes to test individual faces
+
+**Tree Structure:**
+
+- Internal nodes split space along one axis and point to child nodes
+- Leaf nodes contain a single face index
+- The tree is typically balanced for optimal search performance
+- A `0xFFFFFFFF` child index indicates no child (leaf or edge of tree)
 
 ### Walkable Adjacencies
 
@@ -124,6 +200,7 @@ The `BWM` class represents a walkmesh in memory:
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/formats/bwm/bwm_data.py:497-534`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/bwm/bwm_data.py#L497-L534)
 
 Each face contains:
+
 - `v1`, `v2`, `v3`: Vertex objects (`Vector3` instances)
 - `material`: `SurfaceMaterial` enum determining walkability
 - `trans1`, `trans2`, `trans3`: Optional per-edge transition indices (not unique identifiers, do not encode adjacency)
@@ -135,6 +212,7 @@ Each face contains:
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/formats/bwm/bwm_data.py:624-650`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/bwm/bwm_data.py#L624-L650)
 
 Boundary edges (edges with no walkable neighbor) computed from adjacency:
+
 - Face reference
 - Edge index (0-2)
 - Optional transition value
@@ -155,6 +233,7 @@ Broad-phase acceleration structure for fast intersection checks (ray casts, poin
 **Binary Writing**: [`Libraries/PyKotor/src/pykotor/resource/formats/bwm/io_bwm.py:177-350`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/bwm/io_bwm.py#L177-L350)
 
 **Important Notes**:
+
 - Use identity-based searches (`is`) when mapping faces back to indices
 - Value-based equality can collide
 - `trans1`/`trans2`/`trans3` are optional metadata only, not adjacency definitions

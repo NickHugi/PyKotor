@@ -14,12 +14,17 @@ This document provides a detailed description of the 2DA (Two-Dimensional Array)
     - [Row Labels](#row-labels)
     - [Cell Data Offsets](#cell-data-offsets)
     - [Cell Data String Table](#cell-data-string-table)
-  - [ASCII Format](#ascii-format)
   - [Data Structure](#data-structure)
     - [TwoDA Class](#twoda-class)
     - [TwoDARow Class](#twodarow-class)
   - [Cell Value Types](#cell-value-types)
   - [Common 2DA Files](#common-2da-files)
+    - [Character \& Combat](#character--combat)
+    - [Items \& Properties](#items--properties)
+    - [Objects \& Area](#objects--area)
+    - [Visual Effects \& Animations](#visual-effects--animations)
+    - [Progression Tables](#progression-tables)
+    - [Name Generation](#name-generation)
   - [Implementation Details](#implementation-details)
 
 ---
@@ -29,9 +34,6 @@ This document provides a detailed description of the 2DA (Two-Dimensional Array)
 2DA files can be stored in two formats:
 
 - **Binary Format** (`.2da`): Compact binary representation used by the game engine
-- **ASCII Format** (`.2da`): Human-readable text format used for editing
-
-The game engine reads binary format files, while modding tools typically work with ASCII format for easier editing.
 
 **Implementation:** [`Libraries/PyKotor/src/pykotor/resource/formats/twoda/`](https://github.com/th3w1zard1/PyKotor/tree/master/Libraries/PyKotor/src/pykotor/resource/formats/twoda/)
 
@@ -78,7 +80,9 @@ Row labels immediately follow the row count:
 | ---------- | ------- | ---------------------------------------------------------------- |
 | Row Labels | char[]  | Tab-separated row labels (one per row, typically numeric)       |
 
-Each row label is read as a tab-terminated string. Row labels are usually numeric ("0", "1", "2"...) but can be arbitrary strings.
+Each row label is read as a tab-terminated string (tab character `0x09`). Row labels are usually numeric ("0", "1", "2"...) but can be arbitrary strings.
+
+**Important**: The row label list is **not** terminated by a null byte (`0x00`). The reader must consume exactly `row_count` labels based on the count field. This differs from the column headers which do have a null terminator.
 
 ### Cell Data Offsets
 
@@ -102,32 +106,6 @@ The cell data string table contains all cell values as null-terminated strings:
 | Cell Strings | char[] | Null-terminated strings, deduplicated (same value shares offset) |
 
 Blank cells are typically stored as empty strings (`""`) or the string `"****"`. The string table is deduplicated - multiple cells with the same value share the same offset.
-
----
-
-## ASCII Format
-
-The ASCII format (version "V2.0") is human-readable and used for editing:
-
-```plaintext
-2DA V2.0
-
-DEFAULT: ****
-label	name	description
-0	item001	Basic Item	An item description
-1	item002	Advanced Item	Another description
-```
-
-**Format Rules:**
-
-- Line 1: `"2DA V2.0"` (file type and version)
-- Line 2: Blank line or `"DEFAULT: <value>"` (default value for blank cells)
-- Line 3: Tab-separated column headers
-- Lines 4+: `<row_label>\t<cell1>\t<cell2>...` (tab-separated row data)
-
-Blank cells are represented as `"****"` in ASCII format.
-
-**Reference**: [`vendor/TSLPatcher/lib/site/Bioware/TwoDA.pm:48-71`](https://github.com/th3w1zard1/TSLPatcher/blob/master/lib/site/Bioware/TwoDA.pm#L48-L71)
 
 ---
 
@@ -170,13 +148,14 @@ The `TwoDARow` class provides a convenient interface for accessing row data:
 
 All cell values are stored as strings in the 2DA file, but are interpreted as different types by the game engine:
 
-- **Integers**: Numeric strings parsed as `int32`
-- **Floats**: Decimal strings parsed as `float`
-- **ResRefs**: Resource references (max 16 characters, no extension)
-- **StrRefs**: String references into `dialog.tlk` (typically negative values like `-1`)
-- **Boolean**: `"0"` or `"1"` (sometimes `"TRUE"`/`"FALSE"`)
+- **Integers**: Numeric strings parsed as `int32` - used for numeric identifiers, counts, and enumerated values
+- **Floats**: Decimal strings parsed as `float` - used for calculations like damage multipliers, timers, and percentages
+- **ResRefs**: Resource references (max 16 characters, no extension) - point to other game resources like models, textures, or scripts
+- **StrRefs**: String references into `dialog.tlk` (typically negative values like `-1` indicate no reference) - used for localized text display
+- **Boolean**: `"0"` or `"1"` (sometimes `"TRUE"`/`"FALSE"`) - control feature flags and settings
+- **Empty Cells**: Represented as `"****"` in both ASCII and binary formats - treated as null/undefined by the engine
 
-The game engine parses cell values based on context and expected data type for each column.
+The game engine parses cell values based on context and expected data type for each column. For example, the `appearance.2da` file uses integers for model indices, ResRefs for texture names, and StrRefs for race names.
 
 ---
 
@@ -184,15 +163,47 @@ The game engine parses cell values based on context and expected data type for e
 
 Some commonly used 2DA files in KotOR:
 
-- `appearance.2da`: Character appearance definitions
-- `baseitems.2da`: Base item type definitions
-- `classes.2da`: Character class definitions
-- `feat.2da`: Feat definitions
-- `iprp_feats.2da`: Item property feat definitions
-- `iprp_spells.2da`: Item property spell definitions
-- `placeables.2da`: Placeable object definitions
-- `skills.2da`: Skill definitions
-- `spells.2da`: Spell definitions
+### Character & Combat
+
+- `appearance.2da`: Character appearance definitions - maps appearance IDs to model ResRefs, textures, and race associations
+- `baseitems.2da`: Base item type definitions - defines weapon types, damage, item categories, and equipment slots
+- `classes.2da`: Character class definitions - specifies class names, hit dice, skill point progression, and feat tables
+- `feat.2da`: Feat definitions - lists all feats with names, descriptions, prerequisites, and icon references
+- `skills.2da`: Skill definitions - skill names, descriptions, and which classes can use them
+- `spells.2da`: Spell/Force power definitions - power costs, targeting modes, icons, and visual effects
+
+### Items & Properties
+
+- `iprp_feats.2da`: Item property feat definitions - maps item property values to feat bonuses
+- `iprp_spells.2da`: Item property spell definitions - defines on-use and on-hit spell effects for items
+- `iprp_ammocost.2da`: Ammunition cost per shot
+- `iprp_damagecost.2da`: Damage bonus cost calculations
+- `itemprops.2da`: Master item property type table
+
+### Objects & Area
+
+- `placeables.2da`: Placeable object definitions - container models, usable objects, and their properties
+- `doortypes.2da`: Door models and animations
+- `soundset.2da`: Character voice set assignments
+
+### Visual Effects & Animations
+
+- `visualeffects.2da`: Visual effect definitions - particle effects, impact effects, and durations
+- `portraits.2da`: Character portrait assignments for selection screens
+- `heads.2da`: Player and NPC head model definitions
+
+### Progression Tables
+
+- `classpowergain.2da`: Force power progression by class and level
+- `cls_atk_*.2da`: Base attack bonus tables for each class
+- `cls_savthr_*.2da`: Saving throw progression tables
+
+### Name Generation
+
+- `humanfirst.2da`, `humanlast.2da`: Random name tables for character creation
+- Other `*first.2da` and `*last.2da` files for alien species
+
+2DA files are the primary configuration mechanism for KotOR's game rules and content. Nearly every game system references at least one 2DA file for its behavior.
 
 ---
 

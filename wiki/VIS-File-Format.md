@@ -62,7 +62,27 @@ room012 3
 
 - When the player stands in room `A`, the engine renders any room listed under `A` and recursively any linked lights or effects.  
 - VIS files only control visibility; collision and pathfinding still rely on walkmeshes and module GFF data.  
-- Editing VIS entries is a common optimization: removing unnecessary pairs prevents the renderer from drawing walls behind closed doors, while adding entries can fix disappearing geometry when doorways are wide open.  
+- Editing VIS entries is a common optimization: removing unnecessary pairs prevents the renderer from drawing walls behind closed doors, while adding entries can fix disappearing geometry when doorways are wide open.
+
+**NOTE**: VIS are NOT required by the game. Most modern hardware can run kotor significantly well even without these defined. The game however does not implement frustrum culling, so you may want to regardless.
+
+**Performance Impact:**
+
+VIS files are crucial for performance in large areas:
+
+- **Without VIS**: Engine renders all rooms, even those behind walls/doors (thousands of unnecessary polygons)
+- **With VIS**: Only visible rooms are submitted to the renderer (10-50x fewer draw calls)
+- **Overly Restrictive VIS**: Causes pop-in where rooms suddenly appear when entering adjacent areas
+- **Too Permissive VIS**: Wastes GPU resources rendering unseen geometry
+
+**Common Issues:**
+
+- **Missing Room**: Room not in any VIS list → never renders → appears invisible
+- **One-way Visibility**: Room A lists B, but B doesn't list A → asymmetric rendering
+- **Performance Problems**: All rooms list each other → defeats purpose of VIS optimization
+- **Doorway Artifacts**: Door rooms not mutually visible → walls clip during door animations
+
+Module designers balance between performance (fewer visible rooms) and visual quality (no pop-in/clipping). Testing VIS changes in-game is essential.  
 
 PyKotor’s `VIS` class stores the data as a `dict[str, set[str]]`, exposing helpers like `set_visible()` and `set_all_visible()` for tooling (see [`vis_data.py:52-294`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/vis/vis_data.py#L52-L294)).
 
@@ -80,4 +100,3 @@ PyKotor’s `VIS` class stores the data as a `dict[str, set[str]]`, exposing hel
 These sources agree on the ASCII layout above, so VIS files authored with PyKotor behave identically across the other toolchains.
 
 ---
-

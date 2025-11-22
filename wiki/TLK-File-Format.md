@@ -13,6 +13,7 @@ This document provides a detailed description of the TLK (Talk Table) file forma
     - [String Entries](#string-entries)
   - [TLKEntry Structure](#tlkentry-structure)
   - [String References (StrRef)](#string-references-strref)
+    - [Custom TLK Files](#custom-tlk-files)
   - [Localization](#localization)
   - [Implementation Details](#implementation-details)
 
@@ -66,6 +67,25 @@ The string data table contains metadata for each string entry. Each entry is 40 
 - **Bit 1 (0x0002)**: Sound present - string has associated voice-over audio
 - **Bit 2 (0x0004)**: Sound length present - sound length field is valid
 
+**Flag Combinations:**
+
+Common flag patterns in KotOR TLK files:
+
+| Flags | Hex | Description | Usage |
+| ----- | --- | ----------- | ----- |
+| `0x0001` | `0x01` | Text only | Menu options, item descriptions, non-voiced dialog |
+| `0x0003` | `0x03` | Text + Sound | Voiced dialog lines (most common for party/NPC speech) |
+| `0x0007` | `0x07` | Text + Sound + Length | Fully voiced with duration data (cutscenes, important dialog) |
+| `0x0000` | `0x00` | Empty entry | Unused StrRef slots |
+
+The engine uses these flags to decide:
+
+- Whether to display subtitles (Text present flag)
+- Whether to play voice-over audio (Sound present flag)
+- How long to wait before auto-advancing dialog (Sound length present flag)
+
+Missing flags are treated as `false` - if Text present is not set, the string is treated as empty even if text data exists.
+
 ### String Entries
 
 String entries follow the string data table:
@@ -104,6 +124,41 @@ String references (StrRef) are integer indices into the TLK file's entry array:
 - **StrRef N**: Nth entry (0-based indexing)
 
 The game uses StrRef values throughout GFF files, scripts, and other resources to reference localized text. When displaying text, the game looks up the StrRef in `dialog.tlk` and displays the corresponding text.
+
+### Custom TLK Files
+
+Mods can add custom TLK files to extend available strings:
+
+**Dialog.tlk Structure:**
+
+- Base game: `dialog.tlk` (read-only, ~50,000-100,000 entries)
+- Custom content: `dialogf.tlk` or custom TLK files placed in override
+
+**StrRef Ranges:**
+
+- `0` to `~50,000`: Base game strings (varies by language)
+- `16,777,216` (`0x01000000`) and above: Custom TLK range (TSLPatcher convention)
+- Negative values: Invalid/missing references
+
+**Mod Tools Approach:**
+
+TSLPatcher and similar tools use high StrRef ranges for custom strings:
+
+```plaintext
+Base StrRef:   0 - 50,000 (dialog.tlk)
+Custom Range:  16777216+ (custom TLK files)
+```
+
+This avoids conflicts with base game strings and allows mods to add thousands of custom text entries without overwriting existing content.
+
+**Multiple TLK Files:**
+
+The game can load multiple TLK files:
+
+1. `dialog.tlk` - Primary game text
+2. `dialogf.tlk` - Female-specific variants (polish K1 only)
+
+Priority: Custom TLKs → dialogf.tlk → dialog.tlk
 
 **Reference**: [`vendor/TSLPatcher/lib/site/Bioware/TLK.pm:31-123`](https://github.com/th3w1zard1/TSLPatcher/blob/master/lib/site/Bioware/TLK.pm#L31-L123)
 

@@ -7,6 +7,7 @@ This document provides a detailed description of the KEY (Key Table) file format
 - [KotOR KEY File Format Documentation](#kotor-key-file-format-documentation)
   - [Table of Contents](#table-of-contents)
   - [File Structure Overview](#file-structure-overview)
+    - [KEY File Purpose](#key-file-purpose)
   - [Binary Format](#binary-format)
     - [File Header](#file-header)
     - [File Table](#file-table)
@@ -20,6 +21,27 @@ This document provides a detailed description of the KEY (Key Table) file format
 ## File Structure Overview
 
 KEY files map resource names (ResRefs) and types to specific locations within BIF archives. KotOR uses `chitin.key` as the main KEY file which references all game BIF files.
+
+### KEY File Purpose
+
+The KEY file serves as the master index for the game's resource system:
+
+1. **Resource Lookup**: Maps ResRef + ResourceType → BIF location
+2. **BIF Registration**: Tracks all BIF files and their install paths
+3. **Resource Naming**: Provides the filename (ResRef) missing from BIF files
+4. **Drive Mapping**: Historical feature indicating which media (CD/HD) contained each BIF
+
+**Resource Resolution Order:**
+
+When the game needs a resource, it searches in this order:
+
+1. Override folder (`override/`)
+2. Currently loaded MOD/ERF files
+3. Currently loaded SAV file (if in-game)
+4. BIF files via KEY lookup
+5. Hardcoded defaults (if no resource found)
+
+The KEY file only manages BIF resources (step 4). Higher-priority locations can override KEY-indexed resources without modifying the KEY file.
 
 **Implementation:** [`Libraries/PyKotor/src/pykotor/resource/formats/key/`](https://github.com/th3w1zard1/PyKotor/tree/master/Libraries/PyKotor/src/pykotor/resource/formats/key/)
 
@@ -58,6 +80,33 @@ Each file entry is 12 bytes:
 | Filename Length | uint16 | 8      | 2    | Length of filename in bytes                                      |
 | Drives          | uint16 | 10     | 2    | Drive flags (0x0001=HD0, 0x0002=CD1, etc.)                      |
 
+**Drive Flags Explained:**
+
+Drive flags are a legacy feature from the multi-CD distribution era:
+
+| Flag Value | Meaning | Description |
+| ---------- | ------- | ----------- |
+| `0x0001` | HD (Hard Drive) | BIF is installed on the hard drive |
+| `0x0002` | CD1 | BIF is on the first game disc |
+| `0x0004` | CD2 | BIF is on the second game disc |
+| `0x0008` | CD3 | BIF is on the third game disc |
+| `0x0010` | CD4 | BIF is on the fourth game disc |
+
+**Modern Usage:**
+
+In contemporary distributions (Steam, GOG, digital):
+
+- All BIF files use `0x0001` (HD flag) since everything is installed locally
+- The engine doesn't prompt for disc swapping
+- Multiple flags can be combined (bitwise OR) if a BIF could be on multiple sources
+- Mod tools typically set this to `0x0001` for all files
+
+The drive system was originally designed so the engine could:
+
+- Prompt users to insert specific CDs when needed resources weren't on the hard drive
+- Optimize installation by allowing users to choose what to install vs. run from CD
+- Support partial installs to save disk space (common in the early 2000s)
+
 **Reference**: [`vendor/reone/src/libs/resource/format/keyreader.cpp:55-70`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/keyreader.cpp#L55-L70)
 
 ### Filename Table
@@ -90,10 +139,40 @@ The Resource ID field encodes both the BIF index and resource index within that 
 - **Bits 19-0**: Resource Index (bottom 20 bits) - index within the BIF file
 
 **Decoding:**
+
 ```python
-bif_index = (resource_id >> 20) & 0xFFF
-resource_index = resource_id & 0xFFFFF
+bif_index = (resource_id >> 20) & 0xFFF  # Extract top 12 bits
+resource_index = resource_id & 0xFFFFF   # Extract bottom 20 bits
 ```
+
+**Encoding:**
+
+```python
+resource_id = (bif_index << 20) | resource_index
+```
+
+**Practical Limits:**
+
+- Maximum BIF files: 4,096 (12-bit BIF index)
+- Maximum resources per BIF: 1,048,576 (20-bit resource index)
+
+These limits are more than sufficient for KotOR, which typically has:
+
+- ~50-100 BIF files in a full installation
+- ~100-10,000 resources per BIF (largest BIFs are texture packs)
+
+**Example:**
+
+Given Resource ID `0x00123456`:
+
+```
+Binary: 0000 0000 0001 0010 0011 0100 0101 0110
+        |---- 12 bits -----|------ 20 bits ------|
+BIF Index:     0x001 (BIF #1)
+Resource Index: 0x23456 (Resource #144,470 within that BIF)
+```
+
+The encoding allows a single 32-bit integer to precisely locate any resource in the entire BIF system.
 
 **Reference**: [`vendor/reone/src/libs/resource/format/keyreader.cpp:95-100`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/keyreader.cpp#L95-L100)
 

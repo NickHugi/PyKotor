@@ -14,6 +14,10 @@ This document provides a detailed description of the ERF (Encapsulated Resource 
     - [Resource List](#resource-list)
     - [Resource Data](#resource-data)
   - [ERF Variants](#erf-variants)
+    - [MOD Files (Module Archives)](#mod-files-module-archives)
+    - [SAV Files (Save Game Archives)](#sav-files-save-game-archives)
+    - [HAK Files (Override Paks)](#hak-files-override-paks)
+    - [ERF Files (Generic Archives)](#erf-files-generic-archives)
   - [Implementation Details](#implementation-details)
 
 ---
@@ -49,6 +53,24 @@ The file header is 160 bytes in size:
 | Description StrRef        | uint32  | 40     | 4    | TLK string reference for description           |
 | Reserved                  | byte[116] | 44  | 116  | Padding (usually zeros)                         |
 
+**Build Date Fields:**
+
+The Build Year and Build Day fields timestamp when the ERF file was created:
+
+- **Build Year**: Years since 1900 (e.g., `103` = year 2003)
+- **Build Day**: Day of year (1-365/366, with January 1 = day 1)
+
+These timestamps are primarily informational and used by development tools to track module versions. The game engine doesn't rely on them for functionality.
+
+**Example Calculation:**
+
+```
+Build Year: 103 → 1900 + 103 = 2003
+Build Day: 247 → September 4th (the 247th day of 2003)
+```
+
+Most mod tools either zero out these fields or set them to the current date when creating/modifying ERF files.
+
 **Reference**: [`vendor/Kotor.NET/Kotor.NET/Formats/KotorERF/ERFBinaryStructure.cs:11-46`](https://github.com/th3w1zard1/Kotor.NET/blob/master/Kotor.NET/Formats/KotorERF/ERFBinaryStructure.cs#L11-L46)
 
 ### Localized String List
@@ -60,6 +82,27 @@ Localized strings provide descriptions in multiple languages:
 | Language ID  | uint32  | 4    | Language identifier (see Language enum)                          |
 | String Size  | uint32  | 4    | Length of string in bytes                                       |
 | String Data  | char[]  | N    | UTF-8 encoded text                                               |
+
+**Localized String Usage:**
+
+ERF localized strings provide multi-language descriptions for the archive itself. These are primarily used in MOD files to display module names and descriptions in the game's module selection screen.
+
+**Language IDs:**
+
+- `0` = English
+- `1` = French  
+- `2` = German
+- `3` = Italian
+- `4` = Spanish
+- `5` = Polish
+- Additional languages for Asian releases
+
+**Important Notes:**
+
+- Most ERF files have zero localized strings (Language Count = 0)
+- MOD files may include localized module names for the load screen
+- Localized strings are optional metadata and don't affect resource access
+- The Description StrRef field (in header) provides an alternative via TLK reference
 
 **Reference**: [`vendor/reone/src/libs/resource/format/erfreader.cpp:47-65`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/erfreader.cpp#L47-L65)
 
@@ -109,6 +152,63 @@ ERF files come in several variants based on file type:
 | HAK       | `.hak`    | Hak pak file (contains override resources)                      |
 
 All variants use the same binary format structure, differing only in the file type signature.
+
+### MOD Files (Module Archives)
+
+MOD files package all resources needed for a game module (level/area):
+
+**Typical Contents:**
+
+- Area layouts (`.are`, `.git`)
+- Module information (`.ifo`)
+- Dialogs and scripts (`.dlg`, `.ncs`)
+- Module-specific 2DA overrides
+- Character templates (`.utc`, `.utp`, `.utd`)
+- Waypoints and triggers (`.utw`, `.utt`)
+
+The game loads MOD files from the `modules/` directory. When entering a module, the engine mounts the MOD archive and prioritizes its resources over BIF files but below the `override/` folder.
+
+### SAV Files (Save Game Archives)
+
+SAV files store complete game state:
+
+**Contents:**
+
+- Party member data (inventory, stats, equipped items)
+- Module state (spawned creatures, opened containers)
+- Global variables and plot flags
+- Area layouts with modifications
+- Quick bar configurations
+- Portrait images
+
+Save files preserve the state of all modified resources. When a placeable is looted or a door opened, the updated `.git` resource is stored in the SAV file.
+
+### HAK Files (Override Paks)
+
+HAK files provide mod content that overrides base game resources:
+
+**Usage:**
+
+- High-priority resource overrides (above base game, below saves)
+- Total conversion mods
+- Large content packs
+- Shareable mod packages
+
+Unlike the `override/` directory, HAK files:
+
+- Are self-contained and portable
+- Can be enabled/disabled per-module
+- Support multiple HAKs with defined load order
+- Are referenced by module `.ifo` files
+
+### ERF Files (Generic Archives)
+
+Generic ERF files serve miscellaneous purposes:
+
+- Texture packs
+- Audio replacement packs
+- Campaign-specific resources
+- Developer test archives
 
 **Reference**: [`vendor/reone/src/libs/resource/format/erfreader.cpp:27-34`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/erfreader.cpp#L27-L34)
 
