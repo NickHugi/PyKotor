@@ -37,6 +37,12 @@ This document provides a detailed description of the GFF (Generic File Format) u
       - [Rooms \& Minimap](#rooms--minimap)
       - [Implementation Notes](#implementation-notes)
     - [DLG (Dialogue)](#dlg-dialogue)
+      - [Conversation Properties](#conversation-properties)
+      - [Script Hooks](#script-hooks-1)
+      - [Node Lists](#node-lists)
+      - [DLGNode Structure (Entries \& Replies)](#dlgnode-structure-entries--replies)
+      - [DLGLink Structure](#dlglink-structure)
+      - [Implementation Notes](#implementation-notes-1)
     - [GIT (Game Instance Template)](#git-game-instance-template)
       - [Area Properties](#area-properties)
       - [Instance Lists](#instance-lists)
@@ -49,8 +55,14 @@ This document provides a detailed description of the GFF (Generic File Format) u
       - [GITStore Instances](#gitstore-instances)
       - [GITSound Instances](#gitsound-instances)
       - [GITCamera Instances](#gitcamera-instances)
-      - [Implementation Notes](#implementation-notes-1)
+      - [Implementation Notes](#implementation-notes-2)
     - [GUI](#gui)
+      - [Core Identity Fields](#core-identity-fields-1)
+      - [Control Structure](#control-structure)
+      - [Layout \& Positioning](#layout--positioning)
+      - [Appearance \& Input](#appearance--input)
+      - [Control-Specific Fields](#control-specific-fields)
+      - [Implementation Notes](#implementation-notes-3)
     - [IFO (Module Info)](#ifo-module-info)
       - [Core Module Identity](#core-module-identity)
       - [Entry Configuration](#entry-configuration)
@@ -60,33 +72,45 @@ This document provides a detailed description of the GFF (Generic File Format) u
       - [Cache \& XP Settings](#cache--xp-settings)
       - [DawnStar Property (Unused)](#dawnstar-property-unused)
       - [Module Script Hooks](#module-script-hooks)
-      - [Implementation Notes](#implementation-notes-2)
+      - [Implementation Notes](#implementation-notes-4)
     - [JRL (Journal)](#jrl-journal)
+      - [Quest Structure](#quest-structure)
+      - [Quest Category (JRLQuest)](#quest-category-jrlquest)
+      - [Quest Entry (JRLEntry)](#quest-entry-jrlentry)
+      - [Implementation Notes](#implementation-notes-5)
     - [PTH (Path)](#pth-path)
+      - [Path Points](#path-points)
+      - [Path Connections](#path-connections)
+      - [Usage](#usage)
     - [UTC (Creature)](#utc-creature)
-      - [Core Identity Fields](#core-identity-fields-1)
+      - [Core Identity Fields](#core-identity-fields-2)
       - [Appearance \& Visuals](#appearance--visuals)
       - [Core Stats \& Attributes](#core-stats--attributes)
       - [Character Progression](#character-progression)
       - [Combat \& Behavior](#combat--behavior)
       - [Equipment \& Inventory](#equipment--inventory)
-      - [Script Hooks](#script-hooks-1)
+      - [Script Hooks](#script-hooks-2)
       - [KotOR-Specific Features](#kotor-specific-features)
-      - [Implementation Notes](#implementation-notes-3)
+      - [Implementation Notes](#implementation-notes-6)
     - [UTD (Door)](#utd-door)
-      - [Core Identity Fields](#core-identity-fields-2)
+      - [Core Identity Fields](#core-identity-fields-3)
       - [Door Appearance \& Type](#door-appearance--type)
       - [Locking \& Security](#locking--security)
       - [Hit Points \& Durability](#hit-points--durability)
       - [Interaction \& Behavior](#interaction--behavior)
-      - [Script Hooks](#script-hooks-2)
+      - [Script Hooks](#script-hooks-3)
       - [Trap System](#trap-system)
       - [Load-Bearing Doors (KotOR2)](#load-bearing-doors-kotor2)
       - [Appearance Customization](#appearance-customization)
-      - [Implementation Notes](#implementation-notes-4)
+      - [Implementation Notes](#implementation-notes-7)
     - [UTE (Encounter)](#ute-encounter)
+      - [Core Identity Fields](#core-identity-fields-4)
+      - [Spawn Configuration](#spawn-configuration)
+      - [Respawn Logic](#respawn-logic)
+      - [Creature List](#creature-list)
+      - [Trigger Logic](#trigger-logic)
     - [UTI (Item)](#uti-item)
-      - [Core Identity Fields](#core-identity-fields-3)
+      - [Core Identity Fields](#core-identity-fields-5)
       - [Base Item Configuration](#base-item-configuration)
       - [Item Properties](#item-properties)
       - [Weapon-Specific Fields](#weapon-specific-fields)
@@ -96,22 +120,35 @@ This document provides a detailed description of the GFF (Generic File Format) u
       - [Upgrade System (KotOR2 Enhanced)](#upgrade-system-kotor2-enhanced)
       - [Visual \& Audio](#visual--audio)
       - [Palette \& Editor](#palette--editor)
-      - [Implementation Notes](#implementation-notes-5)
+      - [Implementation Notes](#implementation-notes-8)
     - [UTM (Merchant)](#utm-merchant)
     - [UTP (Placeable)](#utp-placeable)
-      - [Core Identity Fields](#core-identity-fields-4)
+      - [Core Identity Fields](#core-identity-fields-6)
       - [Appearance \& Type](#appearance--type)
       - [Inventory System](#inventory-system)
       - [Locking \& Security](#locking--security-1)
       - [Hit Points \& Durability](#hit-points--durability-1)
       - [Interaction \& Behavior](#interaction--behavior-1)
-      - [Script Hooks](#script-hooks-3)
+      - [Script Hooks](#script-hooks-4)
       - [Trap System](#trap-system-1)
       - [Visual Customization](#visual-customization)
-      - [Implementation Notes](#implementation-notes-6)
+      - [Implementation Notes](#implementation-notes-9)
     - [UTS (Sound)](#uts-sound)
+      - [Core Identity Fields](#core-identity-fields-7)
+      - [Playback Control](#playback-control)
+      - [Timing \& Interval](#timing--interval)
+      - [Positioning](#positioning)
+      - [Sound List](#sound-list)
     - [UTT (Trigger)](#utt-trigger)
+      - [Core Identity Fields](#core-identity-fields-8)
+      - [Trigger Configuration](#trigger-configuration)
+      - [Transition Settings](#transition-settings)
+      - [Trap System](#trap-system-2)
+      - [Script Hooks](#script-hooks-5)
     - [UTW (Waypoint)](#utw-waypoint)
+      - [Core Identity Fields](#core-identity-fields-9)
+      - [Map Note Functionality](#map-note-functionality)
+      - [Linking \& Appearance](#linking--appearance)
   - [Implementation Details](#implementation-details)
 
 ---
@@ -633,11 +670,147 @@ ARE files define static area properties including lighting, weather, ambient aud
 
 ### DLG (Dialogue)
 
-DLG files define conversation trees with nodes, entries, replies, and script triggers.
+DLG files store conversation trees, forming the core of KotOR's narrative interaction. A dialogue consists of a hierarchy of Entry nodes (NPC lines) and Reply nodes (Player options), connected by Links.
 
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/dlg/`](https://github.com/th3w1zard1/PyKotor/tree/master/Libraries/PyKotor/src/pykotor/resource/generics/dlg/)
 
-*This section will document the DLG (Dialogue) generic type structure and fields in detail.*
+#### Conversation Properties
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `DelayEntry` | Int | Delay before conversation starts |
+| `DelayReply` | Int | Delay before player reply options appear |
+| `NumWords` | Int | Total word count (unused) |
+| `PreventSkipping` | Byte | Prevents skipping dialogue lines |
+| `Skippable` | Byte | Allows skipping dialogue |
+| `Sound` | ResRef | Background sound loop |
+| `AmbientTrack` | Int | Background music track ID |
+| `CameraModel` | ResRef | Camera model for cutscenes |
+| `ComputerType` | Byte | Interface style (0=Modern, 1=Ancient) |
+| `ConversationType` | Byte | 0=Human, 1=Computer, 2=Other |
+| `OldHitCheck` | Byte | Legacy hit check flag (unused) |
+
+**Conversation Types:**
+
+- **Human**: Cinematic camera, VO support, standard UI
+- **Computer**: Full-screen terminal interface, no VO, green text
+- **Other**: Overhead text bubbles (bark strings)
+
+#### Script Hooks
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `EndConversation` | ResRef | Fires when conversation ends normally |
+| `EndConverAbort` | ResRef | Fires when conversation is aborted |
+
+#### Node Lists
+
+DLG files use two main lists for nodes and one for starting points:
+
+| List Field | Contains | Description |
+| ---------- | -------- | ----------- |
+| `EntryList` | DLGEntry | NPC dialogue lines |
+| `ReplyList` | DLGReply | Player response options |
+| `StartingList` | DLGLink | Entry points into the dialogue tree |
+
+**Graph Structure:**
+
+- **StartingList** links to **EntryList** nodes (NPC starts)
+- **EntryList** nodes link to **ReplyList** nodes (Player responds)
+- **ReplyList** nodes link to **EntryList** nodes (NPC responds)
+- Links can be conditional (Script checks)
+
+#### DLGNode Structure (Entries & Replies)
+
+Both Entry and Reply nodes share common fields:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Text` | CExoLocString | Dialogue text |
+| `VO_ResRef` | ResRef | Voice-over audio file |
+| `Sound` | ResRef | Sound effect ResRef |
+| `Script` | ResRef | Script to execute (Action) |
+| `Delay` | Int | Delay before text appears |
+| `Comment` | CExoString | Developer comment |
+| `Speaker` | CExoString | Speaker tag (Entry only) |
+| `Listener` | CExoString | Listener tag (unused) |
+| `Quest` | CExoString | Journal tag to update |
+| `QuestEntry` | Int | Journal entry ID |
+| `PlotIndex` | Int | Plot index (legacy) |
+| `PlotXPPercentage` | Float | XP reward percentage |
+
+**Cinematic Fields:**
+
+- `CameraAngle`: Camera angle ID
+- `CameraID`: Specific camera ID
+- `CameraAnimation`: Animation to play
+- `CamFieldOfView`: Camera FOV
+- `CamHeightOffset`: Camera height
+- `CamVidEffect`: Video effect ID
+
+**Animation List:**
+
+- List of animations to play on participants
+- `Participant`: Tag of object to animate
+- `Animation`: Animation ID
+
+#### DLGLink Structure
+
+Links connect nodes and define flow control:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Index` | Int | Index of target node in Entry/Reply list |
+| `Active` | ResRef | Conditional script (returns TRUE/FALSE) |
+| `Script` | ResRef | Action script (executed on transition) |
+| `IsChild` | Byte | 1 if linking to node in list, 0 if logic link |
+| `LinkComment` | CExoString | Developer comment |
+
+**Conditional Logic:**
+
+- **Active** script determines if link is available
+- If script returns FALSE, link is skipped
+- Engine evaluates links top-to-bottom
+- First valid link is taken (for NPC lines)
+- All valid links displayed (for Player replies)
+
+**KotOR 2 Logic Extensions:**
+
+- `Logic`: 0=AND, 1=OR (combines Active conditions)
+- `Not`: Negates condition result
+
+#### Implementation Notes
+
+**Flow Evaluation:**
+
+1. Conversation starts
+2. Engine evaluates `StartingList` links
+3. First link with valid `Active` condition is chosen
+4. Transition to target `EntryList` node
+5. Execute Entry `Script`, play `VO`, show `Text`
+6. Evaluate Entry's links to `ReplyList`
+7. Display all valid Replies to player
+8. Player selects Reply
+9. Transition to target `ReplyList` node
+10. Evaluate Reply's links to `EntryList`
+11. Loop until no links remain or `EndConversation` called
+
+**Computer Dialogues:**
+
+- `ComputerType=1` (Ancient) changes font/background
+- No cinematic cameras
+- Used for terminals and datapads
+
+**Bark Strings:**
+
+- `ConversationType=2`
+- No cinematic mode, text floats over head
+- Non-blocking interaction
+
+**Journal Integration:**
+
+- `Quest` and `QuestEntry` fields update JRL directly
+- Eliminates need for scripts to update quests
 
 ### GIT (Game Instance Template)
 
@@ -953,9 +1126,98 @@ Each instance type has common fields plus type-specific data:
 
 ### GUI
 
-GUI files define user interface layouts. See the [GUI File Format](GUI-File-Format) documentation for complete details.
+GUI files define the layout and behavior of the user interface. They are GFF files describing hierarchies of panels, buttons, labels, and other controls.
 
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/gui.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/gui.py)
+
+#### Core Identity Fields
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Tag` | CExoString | Unique GUI identifier |
+| `ObjName` | CExoString | Object name (unused) |
+| `Comment` | CExoString | Developer comment |
+
+#### Control Structure
+
+GUI files contain a `Controls` list, which holds the top-level UI elements. Each control can contain child controls, forming a tree structure.
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Controls` | List | List of child controls |
+| `Type` | Byte | Control type identifier |
+| `ID` | Int | Unique Control ID |
+| `Tag` | CExoString | Control tag |
+
+**Control Types:**
+
+- **0 (Control)**: Base container
+- **2 (Panel)**: Background panel
+- **4 (ProtoItem)**: Prototype item slot
+- **5 (Label)**: Text label
+- **6 (Button)**: Clickable button
+- **7 (CheckBox)**: Toggle button
+- **8 (Slider)**: Sliding bar
+- **9 (ScrollBar)**: Scroll bar
+- **10 (Progress)**: Progress bar
+- **11 (ListBox)**: List of items
+
+#### Layout & Positioning
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Extent` | Struct | Position and size |
+| `Order` | Int | Z-order / Rendering order |
+| `Anchors` | Struct | Anchor configuration (unused) |
+
+**Extent Struct:**
+
+- `Left`, `Top`: Position relative to parent
+- `Width`, `Height`: Size dimensions
+
+#### Appearance & Input
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Border` | Struct | Border rendering properties |
+| `Color` | Struct | Color modulation |
+| `Enabled` | Byte | Control accepts input |
+| `Visible` | Byte | Control is rendered |
+| `Alpha` | Byte | Transparency (0-255) |
+
+**Border Struct:**
+
+- `Fill`: Background texture
+- `Edge`: Edge texture
+- `Corner`: Corner texture
+- `FillStyle`: Tiling mode
+
+#### Control-Specific Fields
+
+**Text (Label, Button):**
+
+- `Text`: CExoLocString (Display text)
+- `Font`: ResRef (Font definition file)
+- `TxtAlign`: Byte (Alignment flags)
+
+**Button:**
+
+- `DownState`: ResRef (Texture when pressed)
+- `UpState`: ResRef (Texture when normal)
+- `HiliteState`: ResRef (Texture when hovered)
+- `ClickSound`: ResRef (Audio on click)
+
+**ListBox:**
+
+- `Scrollbar`: Struct (Scrollbar configuration)
+- `Rows`: Int (Number of visible rows)
+
+#### Implementation Notes
+
+- **Hardcoded IDs**: Many GUI behaviors are hardcoded to specific Control IDs in the engine. Modifying IDs often breaks functionality.
+- **Resolution**: GUIs are designed for 640x480 base resolution and scaled.
+- **Texture formats**: GUI textures (TPC/TGA) often use alpha channels for transparency.
+- **Hierarchy**: Parent visibility affects children. Relative positioning simplifies moving groups of controls.
 
 ### IFO (Module Info)
 
@@ -1231,19 +1493,98 @@ IFO files define module-level metadata including entry configuration, expansion 
 
 ### JRL (Journal)
 
-JRL files define journal quest entries and categories.
+JRL files define the structure of the player's quest journal. They organize quests into categories and track progress through individual entries.
 
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/jrl.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/jrl.py)
 
-*This section will document the JRL (Journal) generic type structure and fields in detail.*
+#### Quest Structure
+
+JRL files contain a list of `Categories` (Quests), each containing a list of `EntryList` (States).
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Categories` | List | List of quests |
+
+#### Quest Category (JRLQuest)
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Tag` | CExoString | Unique quest identifier |
+| `Name` | CExoLocString | Quest title |
+| `Comment` | CExoString | Developer comment |
+| `Priority` | Int | Sorting priority (0=Highest, 4=Lowest) |
+| `PlotIndex` | Int | Legacy plot index |
+| `PlanetID` | Int | Planet association (unused) |
+| `EntryList` | List | List of quest states |
+
+**Priority Levels:**
+
+- **0 (Highest)**: Main quest line
+- **1 (High)**: Important side quests
+- **2 (Medium)**: Standard side quests
+- **3 (Low)**: Minor tasks
+- **4 (Lowest)**: Completed/Archived
+
+#### Quest Entry (JRLEntry)
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `ID` | Int | State identifier (referenced by scripts/dialogue) |
+| `Text` | CExoLocString | Journal text displayed for this state |
+| `End` | Byte | 1 if this state completes the quest |
+| `XP_Percentage` | Float | XP reward multiplier for reaching this state |
+
+**Quest Updates:**
+
+- Scripts use `AddJournalQuestEntry("Tag", ID)` to update quests.
+- Dialogues use `Quest` and `QuestEntry` fields.
+- Only the highest ID reached is typically displayed (unless `AllowOverrideHigher` is set in `global.jrl` logic).
+- `End=1` moves the quest to the "Completed" tab.
+
+#### Implementation Notes
+
+- **global.jrl**: The master journal file for the entire game.
+- **Module JRLs**: Not typically used; most quests are global.
+- **XP Rewards**: `XP_Percentage` scales the `journal.2da` XP value for the quest.
+
+---
 
 ### PTH (Path)
 
-PTH files define pathfinding waypoint networks for NPC movement.
+PTH files define pathfinding data for modules, distinct from the navigation mesh (walkmesh). They store a network of waypoints and connections used for high-level AI navigation planning.
 
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/pth.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/pth.py)
 
-*This section will document the PTH (Path) generic type structure and fields in detail.*
+#### Path Points
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Path_Points` | List | List of navigation nodes |
+
+**Path_Points Struct Fields:**
+
+- `X` (Float): X Coordinate
+- `Y` (Float): Y Coordinate
+- `Z` (Float): Z Coordinate (unused/flat)
+
+#### Path Connections
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Path_Connections` | List | List of edges between nodes |
+
+**Path_Connections Struct Fields:**
+
+- `Path_Source` (Int): Index of source point
+- `Path_Dest` (Int): Index of destination point
+
+#### Usage
+
+- **AI Navigation**: Used by NPCs to plot paths across large distances or complex areas where straight-line walkmesh navigation fails.
+- **Legacy Support**: Often redundant in modern engines with navigation meshes, but used in Aurora/Odyssey for optimization.
+- **Editor**: Visualized as a web of lines connecting nodes.
+
+---
 
 ### UTC (Creature)
 
@@ -1636,11 +1977,86 @@ Doors maintain runtime state:
 
 ### UTE (Encounter)
 
-UTE files define encounter templates that spawn creatures dynamically.
+UTE files define encounter templates which spawn creatures when triggered by the player. Encounters handle spawning logic, difficulty scaling, respawning, and faction settings for groups of enemies or neutral creatures.
 
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/ute.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/ute.py)
 
-*This section will document the UTE (Encounter) generic type structure and fields in detail.*
+#### Core Identity Fields
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `TemplateResRef` | ResRef | Template identifier for this encounter |
+| `Tag` | CExoString | Unique tag for script references |
+| `LocalizedName` | CExoLocString | Encounter name (unused in game) |
+| `Comment` | CExoString | Developer comment/notes |
+
+#### Spawn Configuration
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Active` | Byte | Encounter is currently active |
+| `Difficulty` | Int | Difficulty setting (unused) |
+| `DifficultyIndex` | Int | Difficulty scaling index |
+| `Faction` | Word | Faction of spawned creatures |
+| `MaxCreatures` | Int | Maximum concurrent creatures |
+| `RecCreatures` | Int | Recommended number of creatures |
+| `SpawnOption` | Int | Spawn behavior (0=Continuous, 1=Single Shot) |
+
+**Spawn Behavior:**
+
+- **Active**: If 0, encounter won't trigger until activated by script
+- **MaxCreatures**: Hard limit on spawned entities to prevent overcrowding
+- **RecCreatures**: Target number to maintain
+- **SpawnOption**: Single Shot encounters fire once and disable
+
+#### Respawn Logic
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Reset` | Byte | Encounter resets after being cleared |
+| `ResetTime` | Int | Time in seconds before reset |
+| `Respawns` | Int | Number of times it can respawn (-1 = infinite) |
+
+**Respawn System:**
+
+- Allows for renewable enemy sources
+- **ResetTime**: Cooldown period after players leave area
+- **Respawns**: Limits farming/grinding
+
+#### Creature List
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `CreatureList` | List | List of creatures to spawn |
+
+**CreatureList Struct Fields:**
+
+- `ResRef` (ResRef): UTC template to spawn
+- `Appearance` (Int): Appearance type (optional override)
+- `CR` (Float): Challenge Rating
+- `SingleSpawn` (Byte): Unique spawn flag
+
+**Spawn Selection:**
+
+- Engine selects from CreatureList based on CR and difficulty
+- Random selection weighted by difficulty settings
+
+#### Trigger Logic
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `PlayerOnly` | Byte | Only triggers for player (not NPCs) |
+| `OnEntered` | ResRef | Script fires when trigger entered |
+| `OnExit` | ResRef | Script fires when trigger exited |
+| `OnExhausted` | ResRef | Script fires when spawns depleted |
+| `OnHeartbeat` | ResRef | Script fires periodically |
+| `OnUserDefined` | ResRef | Script fires on user events |
+
+**Implementation Notes:**
+
+- Encounters are volumes (geometry defined in GIT)
+- Spawning happens when volume is entered
+- Creatures spawn at specific spawn points (UTW) or random locations
 
 ### UTI (Item)
 
@@ -2152,27 +2568,206 @@ UTP files define placeable object templates including containers, furniture, swi
 
 ### UTS (Sound)
 
-UTS files define sound object templates for ambient sounds and sound effects.
+UTS files define sound object templates for ambient and environmental audio. These can be positional 3D sounds or global stereo sounds, with looping, randomization, and volume control.
 
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/uts.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/uts.py)
 
-*This section will document the UTS (Sound) generic type structure and fields in detail.*
+#### Core Identity Fields
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `TemplateResRef` | ResRef | Template identifier for this sound |
+| `Tag` | CExoString | Unique tag for script references |
+| `LocName` | CExoLocString | Sound name (unused) |
+| `Comment` | CExoString | Developer comment/notes |
+
+#### Playback Control
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Active` | Byte | Sound is currently active |
+| `Continuous` | Byte | Sound plays continuously |
+| `Looping` | Byte | Individual samples loop |
+| `Positional` | Byte | Sound is 3D positional |
+| `Random` | Byte | Randomly select from Sounds list |
+| `Volume` | Byte | Volume level (0-127) |
+| `VolumeVary` | Byte | Random volume variation |
+| `PitchVary` | Byte | Random pitch variation |
+
+#### Timing & Interval
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Interval` | Int | Delay between plays (seconds) |
+| `IntervalVary` | Int | Random interval variation |
+| `Times` | Int | Times to play (unused) |
+
+**Playback Modes:**
+
+- **Continuous**: Loops one sample indefinitely (machinery, hum)
+- **Interval**: Plays samples with delays (birds, random creaks)
+- **Random**: Picks different sample each time
+
+#### Positioning
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Elevation` | Float | Height offset from ground |
+| `MaxDistance` | Float | Distance where sound becomes inaudible |
+| `MinDistance` | Float | Distance where sound is at full volume |
+| `RandomPosition` | Byte | Randomize emitter position |
+| `RandomRangeX` | Float | X-axis random range |
+| `RandomRangeY` | Float | Y-axis random range |
+
+**3D Audio:**
+
+- **Positional=1**: Sound attenuates with distance and pans
+- **Positional=0**: Global stereo sound (music, voiceover)
+- **Min/Max Distance**: Controls falloff curve
+
+#### Sound List
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Sounds` | List | List of WAV/MP3 files to play |
+
+**Sounds Struct Fields:**
+
+- `Sound` (ResRef): Audio file resource
+
+**Randomization:**
+
+- If `Random=1`, engine picks one sound from list each interval
+- Allows for varied ambience (e.g., 5 different bird calls)
 
 ### UTT (Trigger)
 
-UTT files define trigger templates for area transitions and script activation.
+UTT files define trigger templates for invisible volumes that fire scripts when entered, exited, or used. Triggers are essential for area transitions, cutscenes, traps, and game logic.
 
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/utt.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/utt.py)
 
-*This section will document the UTT (Trigger) generic type structure and fields in detail.*
+#### Core Identity Fields
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `TemplateResRef` | ResRef | Template identifier for this trigger |
+| `Tag` | CExoString | Unique tag for script references |
+| `LocName` | CExoLocString | Trigger name (localized) |
+| `Comment` | CExoString | Developer comment/notes |
+
+#### Trigger Configuration
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `Type` | Int | Trigger type (0=Generic, 1=Transition, 2=Trap) |
+| `Faction` | Word | Faction identifier |
+| `Cursor` | Int | Cursor icon when hovered (0=None, 1=Door, etc) |
+| `HighlightHeight` | Float | Height of selection highlight |
+
+**Trigger Types:**
+
+- **Generic**: Script execution volume
+- **Transition**: Loads new module or moves to waypoint
+- **Trap**: Damages/effects entering object
+
+#### Transition Settings
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `LinkedTo` | CExoString | Destination waypoint tag |
+| `LinkedToModule` | ResRef | Destination module ResRef |
+| `LinkedToFlags` | Byte | Transition behavior flags |
+| `LoadScreenID` | Word | Loading screen ID |
+| `PortraitId` | Word | Portrait ID (unused) |
+
+**Area Transitions:**
+
+- **LinkedToModule**: Target module to load
+- **LinkedTo**: Waypoint where player spawns
+- **LoadScreenID**: Image displayed during load
+
+#### Trap System
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `TrapFlag` | Byte | Trigger is a trap |
+| `TrapType` | Byte | Index into `traps.2da` |
+| `TrapDetectable` | Byte | Can be detected |
+| `TrapDetectDC` | Byte | Awareness DC to detect |
+| `TrapDisarmable` | Byte | Can be disarmed |
+| `DisarmDC` | Byte | Security DC to disarm |
+| `TrapOneShot` | Byte | Fires once then disables |
+| `AutoRemoveKey` | Byte | Key removed on use |
+| `KeyName` | CExoString | Key tag required to disarm/bypass |
+
+**Trap Mechanics:**
+
+- Floor traps (mines, pressure plates) are triggers
+- Detection makes trap visible and clickable
+- Entering without disarm triggers trap effect
+
+#### Script Hooks
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `OnClick` | ResRef | Fires when clicked |
+| `OnDisarm` | ResRef | Fires when disarmed |
+| `OnHeartbeat` | ResRef | Fires periodically |
+| `OnScriptEnter` | ResRef | Fires when object enters |
+| `OnScriptExit` | ResRef | Fires when object exits |
+| `OnTrapTriggered` | ResRef | Fires when trap activates |
+| `OnUserDefined` | ResRef | Fires on user event |
+
+**Scripting:**
+
+- **OnScriptEnter**: Most common hook (cutscenes, spawns)
+- **OnHeartbeat**: Area-of-effect damage/buffs
+- **OnClick**: Used for interactive transitions
 
 ### UTW (Waypoint)
 
-UTW files define waypoint templates for NPC pathfinding and player fast travel.
+UTW files define waypoint templates. Waypoints are invisible markers used for spawn points, navigation targets, map notes, and reference points for scripts.
 
 **Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/utw.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/utw.py)
 
-*This section will document the UTW (Waypoint) generic type structure and fields in detail.*
+#### Core Identity Fields
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `TemplateResRef` | ResRef | Template identifier for this waypoint |
+| `Tag` | CExoString | Unique tag for script/linking references |
+| `LocalizedName` | CExoLocString | Waypoint name |
+| `Description` | CExoLocString | Description (unused) |
+| `Comment` | CExoString | Developer comment/notes |
+
+#### Map Note Functionality
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `HasMapNote` | Byte | Waypoint has a map note |
+| `MapNoteEnabled` | Byte | Map note is initially visible |
+| `MapNote` | CExoLocString | Text displayed on map |
+
+**Map Notes:**
+
+- If enabled, shows text on the in-game map
+- Can be enabled/disabled via script (`SetMapPinEnabled`)
+- Used for quest objectives and locations
+
+#### Linking & Appearance
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `LinkedTo` | CExoString | Tag of linked object (unused) |
+| `Appearance` | Byte | Appearance type (1=Waypoint) |
+| `PaletteID` | Byte | Toolset palette category |
+
+**Usage:**
+
+- **Spawn Points**: `CreateObject` uses waypoint location
+- **Patrols**: AI walks between waypoints
+- **Teleport**: `JumpToLocation` targets waypoints
+- **Transitions**: Doors/Triggers link to waypoint tags
 
 ---
 

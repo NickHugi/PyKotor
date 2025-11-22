@@ -66,8 +66,6 @@ The GUI system is implemented in [`Libraries/PyKotor/src/pykotor/resource/generi
 ## Main GUI Class
 
 The main [`GUI`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L153) class represents a GUI resource in KotOR games.
->>>>>>> Incoming (Background Agent changes)
-
 ## Common Properties
 
 All controls share these base properties:
