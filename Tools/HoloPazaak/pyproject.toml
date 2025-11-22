@@ -1,0 +1,138 @@
+[build-system]
+requires = ["setuptools>=67.8.0,<70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "HoloPazaak"
+description = "A PyQt5 Pazaak card game implementation for Knights of the Old Republic"
+version = "1.0.0"
+requires-python = ">= 3.8"
+dependencies = [
+  "qtpy>=2.4.3",
+  "PyQt5-Qt5>=5.15; python_implementation == 'CPython'",
+  "PyQt5-sip>=12.10; python_implementation == 'CPython'",
+  "PyQt5>=5.15; python_implementation == 'CPython'",
+  "PySide6; python_implementation == 'PyPy'",
+]
+authors = [{ name = "th3w1zard1", email = "halomastar@gmail.com" }]
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { text = "LGPL-3.0-or-later License" }
+keywords = [
+  "card-game",
+  "game",
+  "kotor",
+  "kotor1",
+  "kotor2",
+  "tsl",
+  "star-wars",
+  "starwars",
+  "star-wars-knights-of-the-old-republic",
+  "knights-of-the-old-republic",
+  "sith-lords",
+  "pyqt5",
+  "pyqt6",
+  "pyside2",
+  "pyside6",
+  "qt",
+  "qtpy",
+  "pazaak",
+  "pazaak-game",
+  "pazaak-table",
+  "minigame",
+  "card",
+  "cards",
+  "casino",
+  "remake",
+  "reimplementation",
+  "open-source",
+  "python",
+  "python3",
+  "pc-game",
+  "pykotor",
+  "jedi",
+  "sith",
+  "lucasarts",
+  "bioware",
+  "video-game",
+  "windows",
+  "cross-platform",
+  "turn-based",
+  "strategy",
+  "AI-opponent",
+  "singleplayer",
+  "offline",
+]
+
+[project.urls]
+Homepage = "https://github.com/NickHugi/PyKotor"
+Repository = "https://github.com/NickHugi/PyKotor.git"
+Issues = "https://github.com/NickHugi/PyKotor/issues"
+
+########################################################
+## define only linter configurations below this point ##
+########################################################
+
+[tool.pyright]
+reportIncompatibleMethodOverride = false
+reportOptionalMemberAccess = false
+[tool.basedpyright]
+reportIncompatibleMethodOverride = false
+reportOptionalMemberAccess = false
+
+[tool.pyright.defineConstant]
+PYQT5 = false
+PYSIDE2 = false
+PYQT6 = true
+PYSIDE6 = false
+[tool.basedpyright.defineConstant]
+PYQT5 = false
+PYSIDE2 = false
+PYQT6 = true
+PYSIDE6 = false
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint]
+ignore = [
+  "N",       # disable snake_case vs PascalCase/camelCase checks for pyqt5
+  "SLF001",  # private member access
+  "PLR0913", # too many arguments in function definition
+  "FBT001",  # boolean-typed positional argument in function definition
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["I001", "F401"]
+"./src/holopazaak/*.py" = [
+  "FBT003",
+  "N802",
+  "N803",
+  "N806",
+  "A001",
+  "D100",
+  "D101",
+  "D102",
+]
+"./src/holopazaak/ui/*.py" = [
+  "D100",
+  "D101",
+  "D102",
+]
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.mccabe]
+max-complexity = 25
+
+[tool.style]
+based_on_style = "pep8"
+split_before_named_assigns = true
+split_complex_comprehension = true
+split_arguments_when_comma_terminated = true
+
+[tool.pylintrc]
+max-line-length = 175

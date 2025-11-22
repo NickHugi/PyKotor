@@ -90,8 +90,9 @@ class KEYBinaryReader(ResourceReader):
         for _ in range(key_count):
             entry: KeyEntry = KeyEntry()
             # vendor/reone/src/libs/resource/format/keyreader.cpp:45-50
-            # NOTE: reone lowercases resref at line 46, PyKotor does not
-            entry.resref = ResRef(self._reader.read_string(16).rstrip("\0"))
+            # reone lowercases resref at line 46
+            resref_str = self._reader.read_string(16).rstrip("\0").lower()
+            entry.resref = ResRef(resref_str)
             entry.restype = ResourceType.from_id(self._reader.read_uint16())
             # vendor/reone/src/libs/resource/format/keyreader.cpp:51-52
             # NOTE: reone decomposes resource_id into bif_index/resource_index, PyKotor stores as-is

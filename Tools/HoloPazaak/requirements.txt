@@ -1,0 +1,6 @@
+qtpy>=2.4.3
+PyQt5>=5.15; python_implementation == 'CPython'
+PyQt5-Qt5>=5.15; python_implementation == 'CPython'
+PyQt5-sip>=12.10; python_implementation == 'CPython'
+PySide6>=6.0; python_implementation == 'PyPy'
+

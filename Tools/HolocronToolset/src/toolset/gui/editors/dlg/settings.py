@@ -4,22 +4,21 @@ from typing import Any
 
 import qtpy
 
-from qtpy.QtCore import QSettings
+from toolset.gui.common.widgets.tree import TreeSettings
 
 
-class DLGSettings:
+class DLGSettings(TreeSettings):
     def __init__(
         self,
-        settings_name: str = "RobustTreeView",
+        settings_name: str = "DLGEditor",
     ):
-        self.settings: QSettings = QSettings("HolocronToolsetV3", settings_name)
+        super().__init__(settings_name)
 
     def get(
         self,
         key: str,
         default: Any,
     ) -> Any:
-        # sourcery skip: assign-if-exp, reintroduce-else
         if qtpy.QT5:
             result = self.settings.value(key, default, default.__class__)
         else:
@@ -37,14 +36,20 @@ class DLGSettings:
     ):
         self.settings.setValue(key, value)
 
-    def tsl_widget_handling(
+    def tsl_widget_preference(
         self,
         default: str,
     ) -> str:
-        return self.get("tsl_widget_handling", default)
+        return self.get("tsl_widget_preference", default)
 
-    def set_tsl_widget_handling(
+    def set_tsl_widget_preference(
         self,
         value: str,
     ):
-        self.set("tsl_widget_handling", value)
+        self.set("tsl_widget_preference", value)
+
+    def show_verbose_hover_hints(self, default: bool) -> bool:
+        return self.get("show_verbose_hover_hints", default)
+
+    def set_show_verbose_hover_hints(self, value: bool):
+        self.set("show_verbose_hover_hints", value)

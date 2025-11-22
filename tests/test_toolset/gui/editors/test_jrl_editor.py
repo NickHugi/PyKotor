@@ -129,3 +129,87 @@ class JRLEditorTest(TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# Pytest-based UI tests (merged from test_ui_jrl.py)
+# ============================================================================
+
+import pytest
+from toolset.gui.editors.jrl import JRLEditor
+from toolset.data.installation import HTInstallation
+from pykotor.resource.generics.jrl import JRLQuest, JRLEntry
+from pykotor.resource.type import ResourceType
+
+def test_jrl_editor_init(qtbot, installation: HTInstallation):
+    """Test JRL Editor initialization."""
+    from qtpy.QtWidgets import QWidget
+    parent = QWidget()
+    
+    editor = JRLEditor(parent, installation)
+    qtbot.addWidget(editor)
+    editor.show()
+    
+    assert editor.isVisible()
+    assert "Journal Editor" in editor.windowTitle()
+
+def test_jrl_add_quest_and_entry(qtbot, installation: HTInstallation):
+    """Test adding quests and entries."""
+    editor = JRLEditor(None, installation)
+    qtbot.addWidget(editor)
+    editor.show()
+    
+    # Add Quest
+    quest = JRLQuest()
+    quest.name.set_string(0, "Test Quest")
+    editor.add_quest(quest)
+    
+    assert editor._model.rowCount() == 1
+    quest_item = editor._model.item(0)
+    assert "Test Quest" in quest_item.text()
+    
+    # Select Quest
+    editor.ui.journalTree.setCurrentIndex(quest_item.index())
+    
+    # Check Quest fields
+    assert editor.ui.questPages.currentIndex() == 0
+    
+    # Modify Quest
+    editor.ui.categoryTag.setText("quest_tag")
+    editor.on_value_updated()
+    assert quest.tag == "quest_tag"
+    
+    # Add Entry
+    entry = JRLEntry()
+    entry.text.set_string(0, "Test Entry")
+    entry.entry_id = 10
+    editor.add_entry(quest_item, entry)
+    
+    assert quest_item.rowCount() == 1
+    entry_item = quest_item.child(0)
+    assert "10" in entry_item.text()
+    
+    # Select Entry
+    editor.ui.journalTree.setCurrentIndex(entry_item.index())
+    
+    # Check Entry fields
+    assert editor.ui.questPages.currentIndex() == 1
+    
+    # Modify Entry
+    editor.ui.entryXpSpin.setValue(50)
+    editor.on_value_updated()
+    assert entry.xp_percentage == 50
+
+def test_jrl_load(qtbot, installation: HTInstallation, test_files_dir):
+    """Test loading a JRL file."""
+    editor = JRLEditor(None, installation)
+    qtbot.addWidget(editor)
+    
+    jrl_file = test_files_dir / "global.jrl"
+    if not jrl_file.exists():
+        pytest.skip("global.jrl not found")
+        
+    editor.load(jrl_file, "global", ResourceType.JRL, jrl_file.read_bytes())
+    
+    assert editor._model.rowCount() > 0
+    # Verify tree populated

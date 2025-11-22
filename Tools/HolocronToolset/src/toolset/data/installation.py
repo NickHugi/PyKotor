@@ -23,6 +23,7 @@ from qtpy.QtWidgets import (
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.savedata import SaveFolderEntry
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.extract.twoda import TwoDARegistry
@@ -675,3 +676,37 @@ class HTInstallation(Installation):
         if self._tsl is None:
             self._tsl = self.game().is_k2()
         return self._tsl
+
+    def is_save_corrupted(self, save_path: Path) -> bool:
+        """Check if a save game is corrupted.
+        
+        Args:
+        ----
+            save_path: Path to the save game folder
+            
+        Returns:
+        -------
+            True if the save is corrupted, False otherwise
+            
+        Processing Logic:
+        ----------------
+            - Try to use cached SaveFolderEntry if available from parent class
+            - Otherwise create and load a new SaveFolderEntry
+            - Check if it's corrupted using the is_corrupted() method
+            - Return the result
+        """
+        try:
+            # Try to use cached SaveFolderEntry from parent Installation class if available
+            if hasattr(self, "save_folders") and save_path in self.save_folders:
+                save_folder = self.save_folders[save_path]
+            else:
+                # Fallback: create a new SaveFolderEntry
+                save_folder = SaveFolderEntry(str(save_path))
+            
+            # Load the save folder (required before checking corruption)
+            save_folder.load()
+            return save_folder.sav.is_corrupted()
+        except Exception:  # noqa: BLE001  # pylint: disable=broad-exception-caught
+            # If we can't load the save, assume it's not corrupted (safer than false positives)
+            RobustLogger().warning(f"Failed to check corruption for save at '{save_path}'")
+            return False

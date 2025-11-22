@@ -15,9 +15,9 @@ dependencies = [
   "Markdown>=3.4.4; python_version>=\"3.9\"",
   "numpy>=1.19.0,<1.25.0; python_version<\"3.9\"",
   "numpy>=1.19.0,<2; python_version>=\"3.9\"",
-  "PyQt5-Qt5~=5.15; python_implementation == 'CPython'",
-  "PyQt5-sip~=12.10; python_implementation == 'CPython'",
-  "PyQt5~=5.15; python_implementation == 'CPython'",
+  "PyQt5-Qt5>=5.15; python_implementation == 'CPython'",
+  "PyQt5-sip>=12.10; python_implementation == 'CPython'",
+  "PyQt5>=5.15; python_implementation == 'CPython'",
   "PySide6; python_implementation == 'PyPy'",
   "qtpy>=2.4.3",
   "requests>=2.25.0,<2.32.0; python_version<\"3.9\"",
@@ -59,10 +59,6 @@ dev = [
   "types-Pillow",
   "types-Send2Trash",
 ]
-qt5 = ["PyQt5>=5.15", "PyQt5-Qt5>=5.15", "PyQt5-sip>=12.10"]
-qt6 = ["PyQt6>=6.6.1"]
-pyside2 = ["PySide2>=5.15.2"]
-pyside6 = ["PySide6>=6.6.3.1"]
 
 [project.urls]
 Homepage = "https://github.com/NickHugi/PyKotor"

@@ -7,9 +7,9 @@ import unittest
 from glm import lookAt, perspective, radians, vec3
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "PyKotor", "src")
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "Utility", "src")
-GL_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "PyKotorGL", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+GL_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotorGL", "src")
 
 
 def add_sys_path(p: pathlib.Path):

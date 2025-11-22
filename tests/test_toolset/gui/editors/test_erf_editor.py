@@ -209,3 +209,27 @@ class ERFEditorTest(TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# Additional UI tests (merged from test_ui_other_editors.py)
+# ============================================================================
+
+import pytest
+from toolset.gui.editors.erf import ERFEditor
+from toolset.data.installation import HTInstallation
+from pykotor.resource.type import ResourceType
+
+def test_erf_editor(qtbot, installation: HTInstallation, test_files_dir):
+    """Test ERF Editor."""
+    editor = ERFEditor(None, installation)
+    qtbot.addWidget(editor)
+    editor.show()
+    
+    assert editor.isVisible()
+    
+    # Load ERF if available
+    erf_file = test_files_dir / "001EBO_dlg.erf"
+    if erf_file.exists():
+        editor.load(erf_file, "001EBO_dlg", ResourceType.ERF, erf_file.read_bytes())
+        assert editor.ui.tableWidget.rowCount() > 0

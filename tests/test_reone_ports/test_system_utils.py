@@ -98,11 +98,10 @@ class TestTextWriter(unittest.TestCase):
                                ord('l'), ord('d'), ord('!')])
 
         bytes_data = bytearray()
-        stream = BytesIO(bytes_data)
-        stream.write("Hello, world!\n".encode('ascii'))
-        stream.write("Hello, world!".encode('ascii'))
+        bytes_data.extend("Hello, world!\n".encode('ascii'))
+        bytes_data.extend("Hello, world!".encode('ascii'))
 
-        output = bytes_data
+        output = bytes(bytes_data)
         self.assertEqual(expected_bytes, output)
 
 

@@ -794,9 +794,17 @@ class RawBinaryReader:
             return string
 
         # If a length is specified and not all bytes were read, skip the remaining bytes
+        # Only skip if we haven't exceeded the stream boundaries
         remaining_length: int = length - bytes_read
         if remaining_length > 0:
-            self.skip(remaining_length)
+            # Check if we can skip without exceeding boundaries
+            if self._position + remaining_length <= self._size:
+                self.skip(remaining_length)
+            else:
+                # Skip only what's available
+                available = self._size - self._position
+                if available > 0:
+                    self.skip(available)
         return string
 
     def read_locstring(
@@ -2159,6 +2167,9 @@ class RawBinaryWriterBytearray(RawBinaryWriter):
         """Writes the specified string to the stream with a terminating null character.
         """
         encoded: bytes = value.encode(encoding or "windows-1252", errors=errors)
+        required_size = self._position + len(encoded) + 1
+        if len(self._ba) < required_size:
+            self._ba.extend(b'\x00' * (required_size - len(self._ba)))
         self._ba[self._position : self._position + len(encoded)] = encoded
         self._ba[self._position + len(encoded)] = 0
         self._position += len(encoded) + 1

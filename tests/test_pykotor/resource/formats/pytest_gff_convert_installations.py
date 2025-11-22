@@ -1,10 +1,31 @@
 from __future__ import annotations
 
 import cProfile
+import sys
+import os
+import pathlib
 from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pytest
-from pathlib import Path
+
+THIS_SCRIPT_PATH = pathlib.Path(__file__)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
+
+def add_sys_path(p: pathlib.Path):
+    working_dir = str(p)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+
+
+if PYKOTOR_PATH.joinpath("pykotor").is_dir():
+    add_sys_path(PYKOTOR_PATH)
+    if __name__ == "__main__":
+        os.chdir(PYKOTOR_PATH.parent)
+if UTILITY_PATH.joinpath("utility").is_dir():
+    add_sys_path(UTILITY_PATH)
 
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff.gff_auto import read_gff, write_gff
@@ -23,12 +44,99 @@ from pykotor.resource.generics.uts import read_uts, write_uts
 from pykotor.resource.generics.utt import read_utt, write_utt
 from pykotor.resource.generics.utw import read_utw, write_utw
 from pykotor.resource.type import ResourceType
-from pathlib import Path
+from pykotor.extract.installation import Installation
+from pykotor.extract.file import FileResource, ResourceIdentifier
+from typing_extensions import Literal
 
 if TYPE_CHECKING:
-    import os
-
     from pykotor.extract.file import FileResource
+
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
+
+ALL_INSTALLATIONS: dict[Game, Installation] | None = None
+ALL_GFFS: dict[Game, list[tuple[FileResource, Path]]] = {Game.K1: [], Game.K2: []}
+TEMP_GFF_DIRS: dict[Game, TemporaryDirectory[str]] = {
+    Game.K1: TemporaryDirectory(),
+    Game.K2: TemporaryDirectory(),
+}
+
+
+def _setup_and_profile_installation() -> dict[Game, Installation]:
+    all_installations = {}
+    if K1_PATH and Path(K1_PATH).joinpath("chitin.key").is_file():
+        all_installations[Game.K1] = Installation(K1_PATH)
+    if K2_PATH and Path(K2_PATH).joinpath("chitin.key").is_file():
+        all_installations[Game.K2] = Installation(K2_PATH)
+    return all_installations
+
+def collect_all_gffs(
+    restype: ResourceType = ResourceType.NSS,
+) -> dict[Game, list[tuple[FileResource, Path]]]:
+    global ALL_INSTALLATIONS
+    global ALL_GFFS
+    if ALL_INSTALLATIONS is None:
+        ALL_INSTALLATIONS = _setup_and_profile_installation()
+
+    all_gffs: dict[Game, list[tuple[FileResource, Path]]] = {Game.K1: [], Game.K2: []}
+    for game, installation in ALL_INSTALLATIONS.items():
+        gff_convert_dir = Path(TEMP_GFF_DIRS[game].name)
+        for resource in installation:
+            if resource.restype().contents != "gff":
+                continue
+            res_ident: ResourceIdentifier = resource.identifier()
+            filename: str = str(res_ident)
+            filepath: Path = resource.filepath()
+
+            if resource.inside_capsule:
+                subfolder: str = Installation.get_module_root(filepath)
+            elif resource.inside_bif:
+                subfolder = filepath.name
+            else:
+                subfolder = filepath.parent.name
+
+            subfolder_path: Path = gff_convert_dir / subfolder
+            gff_convert_filepath: Path = subfolder_path / filename
+            all_gffs[game].append((resource, gff_convert_filepath))
+
+    ALL_GFFS = all_gffs
+    return all_gffs
+
+
+def extract_all_gffs():
+    """Performs the actual disk extraction (directory creation) for GFFs."""
+    global ALL_GFFS
+    for game, gff_list in ALL_GFFS.items():
+        for resource, gff_convert_filepath in gff_list:
+            # Create directory
+            gff_convert_filepath.parent.mkdir(parents=True, exist_ok=True)
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc):
+    if "gff_data" in metafunc.fixturenames:
+        print("Generating GFF conversion tests...")
+        
+        if not ALL_GFFS[Game.K1] and not ALL_GFFS[Game.K2]:
+            collect_all_gffs()
+
+        combined_data: list[tuple[str, tuple[Game, FileResource, Path]]] = [(f"{game}_{resource._path_ident_obj}", (game, resource, conversion_path)) for game, gff_info in ALL_GFFS.items() for resource, conversion_path in gff_info]
+
+        sorted_combined_data: list[tuple[str, tuple[Game, FileResource, Path]]] = sorted(combined_data, key=lambda x: x[0])
+
+        sorted_ids: list[str] = [item[0] for item in sorted_combined_data]
+        sorted_test_gff_data: list[tuple[Game, FileResource, Path]] = [item[1] for item in sorted_combined_data]
+        metafunc.parametrize("gff_data", sorted_test_gff_data, ids=sorted_ids, indirect=True)
+
+
+@pytest.fixture(scope="session")
+def ensure_gffs_ready():
+    if not ALL_GFFS[Game.K1] and not ALL_GFFS[Game.K2]:
+        collect_all_gffs()
+    extract_all_gffs()
+
+@pytest.fixture
+def gff_data(request: pytest.FixtureRequest, ensure_gffs_ready):
+    return request.param
 
 
 def test_gff_conversions(

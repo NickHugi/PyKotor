@@ -48,7 +48,26 @@
             "module": "toolset",
             "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
             "env": {
-                "PYTHONPATH": "${workspaceFolder};${workspaceFolder}/Libraries/Utility/src;${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/PyKotorGL/src;${env:PYTHONPATH}"
+                "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder};${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/PyKotorGL/src;${workspaceFolder}/Libraries/Utility/src;${workspaceFolder}/Tools/HoloPazaak/src;${workspaceFolder}/Tools/MDLDecompile/src;${workspaceFolder}/Tools/HolocronToolset/src"
+            },
+            "pythonArgs": [
+                "-Xfrozen_modules=off",
+                "-Xdev"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "autoReload": {
+                "enable": true,
+            },
+        },
+        {
+            "name": "Run HoloPazaak",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "holopazaak",
+            "cwd": "${workspaceFolder}/Tools/HoloPazaak/src/",
+            "env": {
+                "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder};${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/PyKotorGL/src;${workspaceFolder}/Libraries/Utility/src;${workspaceFolder}/Tools/HoloPazaak/src;${workspaceFolder}/Tools/MDLDecompile/src;${workspaceFolder}/Tools/HolocronToolset/src"
             },
             "pythonArgs": [
                 "-Xfrozen_modules=off",

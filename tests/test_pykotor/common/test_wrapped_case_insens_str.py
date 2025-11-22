@@ -257,13 +257,13 @@ class TestCaseInsensImmutableStr(unittest.TestCase):
         self.assert_ciws_function(CaseInsensImmutableStr.replace, str.replace, "hello hello", "hi hi", "HELLO", "hi", _compare_str_result__=False)
         self.assert_ciws_function(CaseInsensImmutableStr.replace, str.replace, "hello hello hello", "hi hello hello", "hello", "hi", 1)
 
-    def test_rfind(self):  # FIXME(th3w1zard1): failing test.
+    def test_rfind(self):
         self.assert_ciws_function(CaseInsensImmutableStr.rfind, str.rfind, "hello", 3, "l", _basic__=True, _compare_str_result__=True)
         self.assert_ciws_function(CaseInsensImmutableStr.rfind, str.rfind, "hello", 3, "L", _basic__=True, _compare_str_result__=True)
         self.assert_ciws_function(CaseInsensImmutableStr.rfind, str.rfind, "hello", -1, "x", _basic__=True, _compare_str_result__=True)
         self.assert_ciws_function(CaseInsensImmutableStr.rfind, str.rfind, "hello", 1, "l", 1, 3, _basic__=True, _compare_str_result__=True)
 
-    def test_rindex(self):  # FIXME(th3w1zard1): failing test.
+    def test_rindex(self):
         self.assert_ciws_function(CaseInsensImmutableStr.rindex, str.rindex, "hello", 3, "l")
         self.assert_ciws_function(CaseInsensImmutableStr.rindex, str.rindex, "hello", 3, "L")
         self.assert_ciws_function(CaseInsensImmutableStr.rindex, str.rindex, "hello", 1, "l", 1, 3)
@@ -275,15 +275,15 @@ class TestCaseInsensImmutableStr(unittest.TestCase):
         self.assert_ciws_function(CaseInsensImmutableStr.rjust, str.rjust, "hello", "*****hello", 10, "*")
         self.assert_ciws_function(CaseInsensImmutableStr.rjust, str.rjust, "hello", "hello", 3)
 
-    def test_rpartition(self):  # FIXME(th3w1zard1): failing test.
+    def test_rpartition(self):
         self.assert_ciws_function(CaseInsensImmutableStr.rpartition, str.rpartition, "hello world world", ("hello world ", "world", ""), "world")
         self.assert_ciws_function(CaseInsensImmutableStr.rpartition, str.rpartition, "hello", ("", "", "hello"), "world")
-        self.assert_ciws_function(CaseInsensImmutableStr.rpartition, str.rpartition, "HELLO world WORLD", ("HELLO ", "world", " WORLD"), "WORLD")
+        self.assert_ciws_function(CaseInsensImmutableStr.rpartition, str.rpartition, "HELLO world WORLD", ("HELLO world ", "WORLD", ""), "WORLD")
 
-    def test_rsplit(self):  # FIXME(th3w1zard1): failing test.
+    def test_rsplit(self):
         self.assert_ciws_function(CaseInsensImmutableStr.rsplit, str.rsplit, "hello world", ["hello", "world"])
-        self.assert_ciws_function(CaseInsensImmutableStr.rsplit, str.rsplit, "hello  world", ["hello", "", "world"])
-        self.assert_ciws_function(CaseInsensImmutableStr.rsplit, str.rsplit, "hello world world", ["hello", "world"], None, 1)
+        self.assert_ciws_function(CaseInsensImmutableStr.rsplit, str.rsplit, "hello  world", ["hello", "world"])
+        self.assert_ciws_function(CaseInsensImmutableStr.rsplit, str.rsplit, "hello world world", ["hello world", "world"], None, 1)
         self.assert_ciws_function(CaseInsensImmutableStr.rsplit, str.rsplit, "hello,world,universe", ["hello", "world", "universe"], ",")
 
     def test_rstrip(self):
@@ -291,13 +291,13 @@ class TestCaseInsensImmutableStr(unittest.TestCase):
         self.assert_ciws_function(CaseInsensImmutableStr.rstrip, str.rstrip, "hello00", "hello", "0")
         self.assert_ciws_function(CaseInsensImmutableStr.rstrip, str.rstrip, "hello", "hello")
 
-    def test_split(self):  # FIXME(th3w1zard1): failing test.
+    def test_split(self):
         self.assert_ciws_function(CaseInsensImmutableStr.split, str.split, "hello world", ["hello", "world"])
-        self.assert_ciws_function(CaseInsensImmutableStr.split, str.split, "hello  world", ["hello", "", "world"])
-        self.assert_ciws_function(CaseInsensImmutableStr.split, str.split, "hello world world", ["hello", "world"], None, 1)
+        self.assert_ciws_function(CaseInsensImmutableStr.split, str.split, "hello  world", ["hello", "world"])
+        self.assert_ciws_function(CaseInsensImmutableStr.split, str.split, "hello world world", ["hello", "world world"], None, 1)
         self.assert_ciws_function(CaseInsensImmutableStr.split, str.split, "hello,world,universe", ["hello", "world", "universe"], ",")
 
-    def test_splitlines(self):  # FIXME(th3w1zard1): failing test.
+    def test_splitlines(self):
         self.assert_ciws_function(CaseInsensImmutableStr.splitlines, str.splitlines, "hello\nworld", ["hello", "world"])
         self.assert_ciws_function(CaseInsensImmutableStr.splitlines, str.splitlines, "hello\r\nworld", ["hello", "world"])
         self.assert_ciws_function(CaseInsensImmutableStr.splitlines, str.splitlines, "hello\nworld\n", ["hello", "world"])

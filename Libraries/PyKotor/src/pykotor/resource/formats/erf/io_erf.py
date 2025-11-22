@@ -88,8 +88,9 @@ class ERFBinaryReader(ResourceReader):
         self._reader.seek(offset_to_keys)
         for _ in range(entry_count):
             # vendor/reone/src/libs/resource/format/erfreader.cpp:62-72
-            # NOTE: reone lowercases resrefs at line 63, PyKotor does not
-            resrefs.append(self._reader.read_string(16))
+            # reone lowercases resrefs at line 63
+            resref_str = self._reader.read_string(16).rstrip("\0")
+            resrefs.append(resref_str.lower())
             resids.append(self._reader.read_uint32())
             restypes.append(self._reader.read_uint16())
             self._reader.skip(2)

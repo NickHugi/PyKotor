@@ -159,3 +159,27 @@ class SSFEditorTest(TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# Additional UI tests (merged from test_ui_other_editors.py)
+# ============================================================================
+
+import pytest
+from toolset.gui.editors.ssf import SSFEditor
+from toolset.data.installation import HTInstallation
+from pykotor.resource.type import ResourceType
+
+def test_ssf_editor(qtbot, installation: HTInstallation, test_files_dir):
+    """Test SSF Editor."""
+    editor = SSFEditor(None, installation)
+    qtbot.addWidget(editor)
+    editor.show()
+    
+    assert editor.isVisible()
+    
+    ssf_file = test_files_dir / "n_ithorian.ssf"
+    if ssf_file.exists():
+        editor.load(ssf_file, "n_ithorian", ResourceType.SSF, ssf_file.read_bytes())
+        # Check widgets
+        # Likely combo boxes for sound refs

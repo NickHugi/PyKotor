@@ -1,12 +1,37 @@
-# GUI Format Documentation
+# KotOR GUI File Format Documentation
+
+This document provides a detailed description of the GUI (Graphical User Interface) file format used in Knights of the Old Republic (KotOR) games. GUI files are GFF format files that define the user interface elements in KotOR 1 and 2.
+
+## Table of Contents
+
+- [KotOR GUI File Format Documentation](#kotor-gui-file-format-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [File Structure](#file-structure)
+  - [Control Types](#control-types)
+  - [Special Values](#special-values)
+  - [Implementation Details](#implementation-details)
+
+---
 
 ## Overview
 
 GUI files (.gui) are GFF format files that define the user interface elements in KotOR 1 and 2. They use a hierarchical structure with a root panel containing child controls.
 
+## File Structure
+
+GUI files use the standard GFF format structure. See the [GFF File Format](GFF-File-Format) documentation for details on the GFF structure.
+
+GUI-specific data is stored in GFF structs with the following organization:
+- Root struct contains GUI metadata and root control references
+- Control structs contain position, size, properties, and child control references
+- Each control type has specific fields defined in its struct
+
+**Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/gui.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/gui.py)
+
 ## Implementation Details
 
-The GUI system is implemented in [`Libraries/PyKotor/src/pykotor/resource/generics/gui.py`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py) with the following key components:
+The GUI system is implemented in [`Libraries/PyKotor/src/pykotor/resource/generics/gui.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/gui.py) with the following key components:
 
 - Rendering: Uses Three.js for WebGL-based rendering
 - Textures: Supports texture mapping with configurable UV coordinates
@@ -25,28 +50,18 @@ The GUI system is implemented in [`Libraries/PyKotor/src/pykotor/resource/generi
 
 | Type ID | Name | Description |
 |---------|------|-------------|
-<<<<<<< Current (Your changes)
-| 0 | [CONTROL](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Base control type |
-| 2 | [PANEL](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L237) | Container control that can hold other controls |
-| 4 | [LABEL](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L211) | Static text display |
-| 5 | [PROTOITEM](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L317) | Template for list items |
-| 6 | [BUTTON](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L199) | Clickable button control |
-| 7 | [CHECKBOX](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L306) | Toggle control |
-| 8 | [SLIDER](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L223) | Value slider control |
-| 9 | [SCROLLBAR](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L185) | Scrolling control |
-| 10 | [PROGRESSBAR](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L327) | Progress indicator |
-| 11 | [LISTBOX](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L248) | Scrollable list of items |
-=======
-| 0 | [`GUIControlType.CONTROL`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Base control type |
-| 2 | [`GUIControlType.PANEL`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Container control that can hold other controls |
-| 4 | [`GUIControlType.LABEL`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Static text display |
-| 5 | [`GUIControlType.PROTOITEM`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Template for list items |
-| 6 | [`GUIControlType.BUTTON`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Clickable button control |
-| 7 | [`GUIControlType.CHECKBOX`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Toggle control |
-| 8 | [`GUIControlType.SLIDER`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Value slider control |
-| 9 | [`GUIControlType.SCROLLBAR`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Scrolling control |
-| 10 | [`GUIControlType.PROGRESSBAR`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Progress indicator |
-| 11 | [`GUIControlType.LISTBOX`](Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21) | Scrollable list of items |
+| 0 | CONTROL | Base control type |
+| 2 | PANEL | Container control that can hold other controls |
+| 4 | LABEL | Static text display |
+| 5 | PROTOITEM | Template for list items |
+| 6 | BUTTON | Clickable button control |
+| 7 | CHECKBOX | Toggle control |
+| 8 | SLIDER | Value slider control |
+| 9 | SCROLLBAR | Scrolling control |
+| 10 | PROGRESSBAR | Progress indicator |
+| 11 | LISTBOX | Scrollable list of items |
+
+**Reference**: [`Libraries/PyKotor/src/pykotor/resource/generics/gui.py:21`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/generics/gui.py#L21)
 
 ## Main GUI Class
 

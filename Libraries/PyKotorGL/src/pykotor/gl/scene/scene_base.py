@@ -92,6 +92,11 @@ class SceneBase:
         self.installation: Installation | None = installation
         if installation is not None:
             self.set_installation(installation)
+
+        self._missing_texture = Texture.from_color(255, 0, 255)
+        self._missing_lightmap = Texture.from_color(0, 0, 0)
+        self._loading_texture = Texture.from_color(128, 128, 128)
+
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
         self.textures["NULL"] = Texture.from_color()
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
@@ -409,7 +414,7 @@ class SceneBase:
                     resource_name, intermediate, error = future.result()
                     if error:
                         RobustLogger().warning(f"Async texture load failed for '{resource_name}': {error}")
-                        self.textures[resource_name] = Texture.from_color(255, 0, 255)  # Magenta placeholder
+                        self.textures[resource_name] = self._missing_texture  # Magenta placeholder
                     elif intermediate:
                         self.textures[resource_name] = create_texture_from_intermediate(intermediate)
                         RobustLogger().info(f"✓ Async loaded texture: {resource_name}")
@@ -418,7 +423,7 @@ class SceneBase:
                     completed_textures.append(name)
                 except Exception:  # noqa: BLE001
                     RobustLogger().exception(f"Error processing completed texture future for '{name}'")
-                    self.textures[name] = Texture.from_color(255, 0, 255)
+                    self.textures[name] = self._missing_texture
                     completed_textures.append(name)
         
         for name in completed_textures:
@@ -464,13 +469,15 @@ class SceneBase:
     ) -> Texture:
         # Already cached?
         if name in self.textures:
-            return self.textures[name]
+            tex = self.textures[name]
+            if tex is self._missing_texture and lightmap:
+                return self._missing_lightmap
+            return tex
         
         # Already loading?
         if name in self._pending_texture_futures:
             # Return placeholder while loading
-            placeholder = Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
-            return placeholder
+            return self._loading_texture
         
         # Start async loading if location resolver available
         if self.async_loader.texture_location_resolver is not None:
@@ -479,7 +486,7 @@ class SceneBase:
             self._pending_texture_futures[name] = future
             RobustLogger().debug(f"Started async loading for texture: {name}, future: {future}")
             # Return gray placeholder immediately
-            return Texture.from_color(128, 128, 128) if lightmap else Texture.from_color(128, 128, 128)
+            return self._loading_texture
         
         # Fallback to synchronous loading (e.g., if process pools unavailable)
         type_name: Literal["lightmap", "texture"] = "lightmap" if lightmap else "texture"
@@ -502,8 +509,11 @@ class SceneBase:
         except Exception:  # noqa: BLE001
             RobustLogger().warning(f"Could not load {type_name} '{name}'.")
 
-        blank: Texture = Texture.from_color(0, 0, 0) if lightmap else Texture.from_color(255, 0, 255)
-        self.textures[name] = blank if tpc is None else Texture.from_tpc(tpc)
+        if tpc is None:
+            self.textures[name] = self._missing_texture
+            return self._missing_lightmap if lightmap else self._missing_texture
+        
+        self.textures[name] = Texture.from_tpc(tpc)
         return self.textures[name]
 
     def model(  # noqa: C901, PLR0912

@@ -234,7 +234,7 @@ class AREEditor(Editor):
 
         data = bytearray()
         write_gff(dismantle_are(self._are, self._installation.game()), data)
-        return data, b""
+        return bytes(data), b""
 
     def _buildARE(self) -> ARE:
         are = ARE()

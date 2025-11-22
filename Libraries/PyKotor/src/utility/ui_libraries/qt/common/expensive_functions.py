@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from win32com.client.dynamic import CDispatch  # pyright: ignore[reportMissingImports, reportMissingModuleSource]
 
 
-logger: RobustLogger = RobustLogger(__name__)
+logger: RobustLogger = RobustLogger()
 
 
 T = TypeVar("T")

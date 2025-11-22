@@ -317,7 +317,7 @@ class DLGEditor(Editor):
         self.vo_id_edit_timer.setInterval(500)
         self.vo_id_edit_timer.timeout.connect(self.populate_combobox_on_void_edit_finished)
 
-        self.tip_label.mouseDoubleClickEvent = self.show_all_tips  # pyright: ignore[reportAttributeAccessIssue]
+        self.tip_label.mouseDoubleClickEvent = self.show_all_tips  # pyright: ignore[reportAttributeAccessIssue]  # type: ignore[method-assign]
         self.tip_label.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tip_label.customContextMenuRequested.connect(self.show_all_tips)
         self.status_bar_anim_timer.timeout.connect(self.show_scrolling_tip)
@@ -530,7 +530,7 @@ Should return 1 or 0, representing a boolean.
         while i < len(normalized_tokens):
             token = normalized_tokens[i].upper()
             if token in ("AND", "OR"):
-                operator = token
+                operator = cast('Literal["AND", "OR", None]', token)
                 i += 1
                 continue
 
@@ -797,7 +797,7 @@ Should return 1 or 0, representing a boolean.
         old_link_to_current_orphan: DLGLink = selected_orphan_item.link
         if isinstance(old_link_to_current_orphan.node, type(selected_tree_item.link.node)):  # pyright: ignore[reportOptionalMemberAccess]
             target_parent: DLGStandardItem | None = selected_tree_item.parent()
-            intended_link_list_index_row = selected_tree_item.row()
+            intended_link_list_index_row: int = selected_tree_item.row()
         else:
             target_parent = selected_tree_item
             intended_link_list_index_row = 0
@@ -822,7 +822,7 @@ Should return 1 or 0, representing a boolean.
             )
             self.model.load_dlg_item_rec(item)
 
-            intended_link_list_index_row: int = self.orphaned_nodes_list.row(selected_orphan_item)
+            intended_link_list_index_row = self.orphaned_nodes_list.row(selected_orphan_item)
             self.orphaned_nodes_list.takeItem(intended_link_list_index_row)
 
     def delete_orphaned_node_permanently(
@@ -999,7 +999,7 @@ Should return 1 or 0, representing a boolean.
                 "Hide": "Hide",
                 "Default": "Default",
             },
-            settings_key="tsl_widget_handling",
+            settings_key="tsl_widget_preference",
         )
 
         # FIXME(th3w1zard1):  # noqa: TD005, FIX001, TD003
@@ -1124,7 +1124,7 @@ Should return 1 or 0, representing a boolean.
         filepath: os.PathLike | str,
         resref: str,
         restype: ResourceType,
-        data: bytes,
+        data: bytes | bytearray,
     ):
         """Loads a dialogue file."""
         super().load(filepath, resref, restype, data)
@@ -1232,8 +1232,8 @@ Should return 1 or 0, representing a boolean.
 
         data = bytearray()
         game_to_use: Game = self._installation.game()
-        tsl_widget_handling_setting: str = DLGSettings().tsl_widget_handling("Default")
-        if game_to_use.is_k1() and tsl_widget_handling_setting == "Enable":
+        tsl_widget_preference_setting: str = DLGSettings().tsl_widget_preference("Default")
+        if game_to_use.is_k1() and tsl_widget_preference_setting == "Enable":
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Icon.Information)
             msg_box.setWindowTitle("Save TSL Fields?")
@@ -1376,11 +1376,11 @@ Should return 1 or 0, representing a boolean.
             return
 
         if len(paths) == 1:
-            path = str(paths[0])
+            path: str = str(paths[0])
             print("<SDM> [copyPath scope] path: ", path)
 
         else:
-            path: str = "\n".join(f"  {i + 1}. {p}" for i, p in enumerate(paths))
+            path = "\n".join(f"  {i + 1}. {p}" for i, p in enumerate(paths))
 
         cb: QClipboard | None = QApplication.clipboard()
         if cb is None:
@@ -1506,9 +1506,9 @@ Should return 1 or 0, representing a boolean.
 
     def restore_selected_items(
         self,
-        selected_index: QModelIndex,
+        selected_index: QModelIndex | None,
     ):
-        if not selected_index.isValid():
+        if selected_index is None or not selected_index.isValid():
             return
         self.ui.dialogTree.setCurrentIndex(selected_index)
         self.ui.dialogTree.scrollTo(selected_index)
@@ -1521,7 +1521,7 @@ Should return 1 or 0, representing a boolean.
 
         self.restore_expanded_items(expanded_items)
         self.restore_scroll_position(scroll_position)
-        self.restore_selected_items(selected_index)  # pyright: ignore[reportArgumentType]
+        self.restore_selected_items(selected_index)
 
     def on_list_context_menu(
         self,
@@ -1929,7 +1929,7 @@ Should return 1 or 0, representing a boolean.
             {Qt.Key.Key_Shift, Qt.Key.Key_Down},
             {Qt.Key.Key_Shift, Qt.Key.Key_Down, Qt.Key.Key_Alt},
         ):
-            below_index: QModelIndex = self.ui.dialogTree.indexBelow(selected_index)
+            below_index = self.ui.dialogTree.indexBelow(selected_index)
 
             if below_index.isValid():
                 self.ui.dialogTree.setCurrentIndex(below_index)

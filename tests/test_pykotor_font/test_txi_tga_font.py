@@ -14,10 +14,11 @@ from pykotor.font.draw import write_bitmap_font, write_bitmap_fonts
 
 if __name__ == "__main__":
     os.chdir("./Libraries/PyKotorFont")
+
+
 FONT_PATH_FILE = Path("tests/test_pykotor_font/test_files/roboto/Roboto-Black.ttf")
 CHINESE_FONT_PATH_FILE = Path("tests/test_pykotor_font/test_files/chinese_simplified_ttf/Unifontexmono-AL3RA.ttf")
 THAI_FONT_PATH_FILE = Path("tests/test_pykotor_font/test_files/TH Sarabun New Regular/TH Sarabun New Regular.ttf").resolve()
-print(THAI_FONT_PATH_FILE)
 
 
 class TestWriteBitmapFont(unittest.TestCase):

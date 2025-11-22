@@ -1,58 +1,17 @@
-
-
-
-
-
-
-
-
-
-
-__pycache__
 __pycache__/
+.*
 !.cursorrules
 !.cursorrules.txt
 !.gitignore
 !.gitmodules
-!tslpatchdata/*.ini
-!tslpatchdata/generated_ini_output.log
-!tslpatchdata/test_kotordiff_profile_summary.txt
-!tslpatchdata/test_kotordiff_profile.prof
-!tslpatchdata/test_step1_generate_patch_profile_summary.txt
-!tslpatchdata/test_step1_generate_patch_profile.prof
-!tslpatchdata/test_step2_install_patch_profile_summary.txt
-!tslpatchdata/test_step2_install_patch_profile.prof
-.*
-./vendor
-.aider.chat.history.md
-.aider.input.history
-.aiderignore
-.cursor/
-.cursorignore
-.env
-.flake8
-.git
-.github/
-.history/
-.idea/
-.mypy_cache
-.pre-commit-config.yaml
-.python-version
-.secrets
-.venv*
-.vscode/
-.vscode/PythonImportHelper-v2-Completion.json
-.vscode/PythonImportHelper*.json
+!.vscode
 *.cpuprofile
 *.egg-info*
-*.egg-info/
 *.exe.manifest
 *.heapsnapshot
-*.log
 *.pkg
 *.prof
 *.pstat
-*.pyc
 *.pyc
 *.spec
 *.tar.gz
@@ -62,28 +21,9 @@ __pycache__/
 /__main__.build/
 /__main__.dist/
 /__main__.onefile-build/
-/.aider.tags.cache.v3
-/.qtcreator
 /Libraries/Utility/src/utility/ui_libraries/qt/filesystem/common/deprecated
 /Libraries/Utility/src/utility/ui_libraries/qt/filesystem/common/untested
-/pykotor/gl/window.py
-/Tools/HolocronToolset/toolset/kits/
-/toolset/help/
-/toolset/kits/
-/vendor
-# .cursorignore contents
-# Ignore all dotfiles and dotdirs except specific ones
-# Ignore build, compile, and packaging artifacts
-# Ignore CI/CD, workflows, and testing configs
-# Ignore documentation (inaccurate per rules; AI should avoid referencing)
-# Ignore engine examples and tests (non-core)
-# Ignore IDE and editor configs
-# Ignore install scripts (helper/utils, not core code)
-# Ignore library manifests and setups (packaging, not code)
-# Ignore tool-specific non-core files (e.g., web srcs, UIs, tests in tools)
-```
-```
-Analysis-*.toc
+*.toc
 base_library.zip
 build
 build-windows.ps1
@@ -94,7 +34,6 @@ dist-lin
 dist-mac
 dist-win
 dist/
-docs/
 Engines/*/examples/
 Engines/*/requirements.txt
 Engines/*/setup.py
@@ -105,7 +44,6 @@ ignore
 install_*.ps1
 install_*.sh
 installlog.txt
-Libraries/*/.vscode/
 Libraries/*/LICENSE
 Libraries/*/MANIFEST.in
 Libraries/*/PyKotor.code-workspace
@@ -127,37 +65,18 @@ tests/tmp/*
 tests/tslpatcher/tmp/*
 tests/Vanilla_KOTOR_Script_Source
 this file has no permissions.txt
-Tools/*/demo.sh
-Tools/*/HoloPatcher.code-workspace
-Tools/*/integration_test.py
-Tools/*/KotorDiff.code-workspace
-Tools/*/LICENSE*
-Tools/*/pyproject.toml
-Tools/*/README.md
-Tools/*/recommended.txt
-Tools/*/requirements.txt
-Tools/*/run_tests.sh
-Tools/*/setup_dev.py
-Tools/*/setup.py
-Tools/*/src/*/__tests__/
-Tools/*/src/*/help/
-Tools/*/src/*/tests/
-Tools/*/src/spyder-plugin/
-Tools/*/src/ui/
-Tools/*/web/
-Tools/HolocronToolset/src/toolset/32d802b_extract
-Tools/HolocronToolset/src/toolset/kits
-Tools/HolocronToolset/src/toolset/kits/*/*
-Tools/HolocronToolset/src/toolset/kits/*/door0_k1.utd
-Tools/HolocronToolset/src/toolset/uic
-Tools/HoloPatcher/src/holopatcher/node_modules
-Tools/HoloPatcher/src/holopatcher/package-lock.json
-Tools/HoloPatcher/src/holopatcher/package.json
-Tools/KotorDiff/INI_GENERATOR_README.md
-Tools/KotorDiff/WINDOWS_PATH_GUIDE.md
+LICENSE
+LICENSE.txt
 tox.ini
 Tree-*.toc
-tslpatchdata/*
+tslpatchdata/
+!tslpatchdata/changes.ini
+!tslpatchdata/generated_ini_output.log
+!tslpatchdata/test_kotordiff_profile_summary.txt
+!tslpatchdata/test_kotordiff_profile.prof
+!tslpatchdata/test_step1_generate_patch_profile_summary.txt
+!tslpatchdata/test_step1_generate_patch_profile.prof
+!tslpatchdata/test_step2_install_patch_profile_summary.txt
+!tslpatchdata/test_step2_install_patch_profile.prof
 typings/*
 venv
-wiki/

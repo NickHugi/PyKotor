@@ -53,3 +53,25 @@ class TXTEditorTest(TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# Additional UI tests (merged from test_ui_other_editors.py and test_ui_editors.py)
+# ============================================================================
+
+import pytest
+from toolset.gui.editors.txt import TXTEditor
+from toolset.data.installation import HTInstallation
+
+def test_txt_editor(qtbot, installation: HTInstallation):
+    """Test TXT Editor."""
+    editor = TXTEditor(None, installation)
+    qtbot.addWidget(editor)
+    editor.show()
+    
+    assert editor.isVisible()
+    assert hasattr(editor.ui, "textEdit")
+    
+    editor.ui.textEdit.setPlainText("Hello World")
+    data, _ = editor.build()
+    assert b"Hello World" in data

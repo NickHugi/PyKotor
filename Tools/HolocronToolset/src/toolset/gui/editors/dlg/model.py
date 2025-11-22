@@ -5,9 +5,9 @@ import uuid
 import weakref
 
 from collections import deque
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, Iterable, List, Literal, Sequence, cast
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, List, Literal, Mapping, Sequence, cast
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # type: ignore[import-untyped]  # pyright: ignore[reportMissingModuleSource]
 from qtpy.QtCore import (
     QByteArray,
     QDataStream,
@@ -22,11 +22,11 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import QApplication, QStyle
 
-from pykotor.extract.installation import SearchLocation
-from pykotor.resource.generics.dlg import DLGEntry, DLGLink, DLGNode, DLGReply
-from toolset.gui.editors.dlg.constants import QT_STANDARD_ITEM_FORMAT, _COPY_ROLE, _DLG_MIME_DATA_ROLE, _DUMMY_ITEM, _LINK_PARENT_NODE_PATH_ROLE, _MODEL_INSTANCE_ID_ROLE
-from toolset.gui.editors.dlg.list_widget_base import DLGListWidgetItem
-from utility.ui_libraries.qt.widgets.itemviews.html_delegate import ICONS_DATA_ROLE
+from pykotor.extract.installation import SearchLocation  # type: ignore[import-untyped]  # pyright: ignore[reportMissingModuleSource]
+from pykotor.resource.generics.dlg import DLGEntry, DLGLink, DLGNode, DLGReply  # type: ignore[import-untyped]  # pyright: ignore[reportMissingModuleSource]
+from toolset.gui.editors.dlg.constants import QT_STANDARD_ITEM_FORMAT, _COPY_ROLE, _DLG_MIME_DATA_ROLE, _DUMMY_ITEM, _LINK_PARENT_NODE_PATH_ROLE, _MODEL_INSTANCE_ID_ROLE  # type: ignore[import-untyped]  # pyright: ignore[reportMissingModuleSource]
+from toolset.gui.editors.dlg.list_widget_base import DLGListWidgetItem  # type: ignore[import-untyped]  # pyright: ignore[reportMissingModuleSource]
+from utility.ui_libraries.qt.widgets.itemviews.html_delegate import ICONS_DATA_ROLE  # type: ignore[import-untyped]  # pyright: ignore[reportMissingModuleSource]
 
 if TYPE_CHECKING:
     from typing import Callable, Literal
@@ -37,8 +37,8 @@ if TYPE_CHECKING:
     from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.resource.generics.dlg import DLGNode
-    from toolset.gui.editors.dlg.editor import DLGEditor
-    from toolset.gui.editors.dlg.tree_view import DLGTreeView
+    from toolset.gui.editors.dlg.editor import DLGEditor  # type: ignore[import-untyped]  # pyright: ignore[reportMissingModuleSource]
+    from toolset.gui.editors.dlg.tree_view import DLGTreeView  # type: ignore[import-untyped]  # pyright: ignore[reportMissingModuleSource]
 
 
 class DLGStandardItem(QStandardItem):
@@ -103,7 +103,7 @@ class DLGStandardItem(QStandardItem):
         else:
             return False
 
-    def model(self) -> DLGStandardItemModel | None:
+    def model(self) -> DLGStandardItemModel | None:  # type: ignore[override]
         model: QStandardItemModel | None = super().model()
         if model is None:
             return None
@@ -112,7 +112,8 @@ class DLGStandardItem(QStandardItem):
 
     def is_copy(self) -> bool:
         result: Any = self.data(_COPY_ROLE)
-        assert result is not None
+        if result is None:
+            return False
         return result
 
     def is_loaded(self) -> bool:
@@ -129,10 +130,10 @@ class DLGStandardItem(QStandardItem):
         assert dummy is True
         return False
 
-    def appendRow(
+    def appendRow(  # type: ignore[override, misc]
         self,
-        item: DLGStandardItem,
-    ):  # type: ignore[override, misc]
+        item: QStandardItem | DLGStandardItem,
+    ):
         assert isinstance(item, DLGStandardItem) or cast(QStandardItem, item).data(_DUMMY_ITEM)
         super().appendRow(item)
         model: DLGStandardItemModel | None = self.model()
@@ -143,18 +144,18 @@ class DLGStandardItem(QStandardItem):
         ):
             model._process_link(self, item)  # noqa: SLF001
 
-    def appendRows(
+    def appendRows(  # type: ignore[override]
         self,
         items: Iterable[DLGStandardItem],
-    ):  # type: ignore[override]
+    ):
         for item in items:
             self.appendRow(item)
 
-    def insertRow(
+    def insertRow(  # type: ignore[override, misc]
         self,
         row: int,
         item: DLGStandardItem,
-    ):  # type: ignore[override, misc]
+    ):
         assert isinstance(item, DLGStandardItem) or cast(QStandardItem, item).data(_DUMMY_ITEM)
         super().insertRow(row, item)
         model: DLGStandardItemModel | None = self.model()
@@ -165,19 +166,19 @@ class DLGStandardItem(QStandardItem):
         ):
             model._process_link(self, item, row)  # noqa: SLF001
 
-    def insertRows(
+    def insertRows(  # type: ignore[override]
         self,
         row: int,
         items: Iterable[Self],
-    ):  # type: ignore[override]
+    ):
         assert not isinstance(items, int), "Second arg cannot be a `count` in this implementation."
         for i, item in enumerate(items):
             self.insertRow(row + i, item)
 
-    def removeRow(
+    def removeRow(  # type: ignore[override]
         self,
         row: int,
-    ) -> list[DLGStandardItem] | None:  # type: ignore[override]
+    ) -> list[DLGStandardItem] | None:
         items: list[QStandardItem] = super().takeRow(row)
         model: DLGStandardItemModel | None = self.model()
         if (
@@ -199,7 +200,7 @@ class DLGStandardItem(QStandardItem):
         for _ in range(count):
             self.removeRow(row)
 
-    def setChild(
+    def setChild(  # type: ignore[override]
         self,
         row: int,
         *args,
@@ -215,11 +216,11 @@ class DLGStandardItem(QStandardItem):
         ):
             model._process_link(self, item)  # noqa: SLF001
 
-    def takeChild(
+    def takeChild(  # type: ignore[override]
         self,
         row: int,
         column: int = 0,
-    ) -> Self | None:  # type: ignore[override]
+    ) -> Self | None:
         item: QStandardItem | None = super().takeChild(row, column)
         if item is None:
             return None
@@ -231,12 +232,12 @@ class DLGStandardItem(QStandardItem):
             and not model.ignoring_updates
         ):
             model._remove_link_from_parent(self, item.link)  # noqa: SLF001
-        return item  # pyright: ignore[reportReturnType]
+        return cast("Self | None", item)
 
-    def takeRow(
+    def takeRow(  # type: ignore[override]
         self,
         row: int,
-    ) -> list[DLGStandardItem]:  # type: ignore[override]
+    ) -> list[DLGStandardItem]:
         items: list[QStandardItem] = super().takeRow(row)
         model: DLGStandardItemModel | None = self.model()
         if (
@@ -273,7 +274,7 @@ class DLGStandardItem(QStandardItem):
 
 class DLGStandardItemModel(QStandardItemModel):
     # Custom for this model.
-    sig_core_dlg_item_data_changed: ClassVar[Signal] = Signal(QStandardItem)  # pyright: ignore[reportPrivateImportUsage]
+    sig_core_dlg_item_data_changed: ClassVar[Signal] = Signal(QStandardItem)  # pyright: ignore[reportMissingModuleSource]
 
     def __init__(
         self,
@@ -366,7 +367,7 @@ class DLGStandardItemModel(QStandardItemModel):
         for item in items:
             self.appendRow(item, parent_index)  # type: ignore[call-overload]
 
-    def removeRow(
+    def removeRow(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         row: int,
         parent_index: QModelIndex | None = None,
@@ -375,11 +376,11 @@ class DLGStandardItemModel(QStandardItemModel):
             return super().removeRow(row, parent_index)
         return super().removeRow(row)
 
-    def item(
+    def item(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         row: int,
         column: int,
-    ) -> DLGStandardItem | QStandardItem:  # type: ignore[override]
+    ) -> DLGStandardItem | QStandardItem:
         ret: QStandardItem | None = super().item(row, column)
         assert ret is not None
         return ret
@@ -392,6 +393,7 @@ class DLGStandardItemModel(QStandardItemModel):
         result: None | bool = super().insertRow(row, to_insert)
         if self.ignoring_updates:
             return result
+        item_to_insert: QStandardItem | DLGStandardItem | None = None
         if isinstance(to_insert, Iterable):
             for item_to_insert in to_insert:
                 if not isinstance(item_to_insert, DLGStandardItem):
@@ -401,7 +403,7 @@ class DLGStandardItemModel(QStandardItemModel):
                 parent_item: DLGStandardItem | None = item_to_insert.parent()
                 self._insert_link_to_parent(parent_item, item_to_insert, row)
         elif isinstance(to_insert, (QModelIndex, QStandardItem)):
-            item_to_insert: QStandardItem | DLGStandardItem | None = to_insert if isinstance(to_insert, QStandardItem) else self.itemFromIndex(to_insert)
+            item_to_insert = to_insert if isinstance(to_insert, QStandardItem) else self.itemFromIndex(to_insert)
             if not isinstance(item_to_insert, DLGStandardItem):
                 return result
             if item_to_insert.link is None:
@@ -412,20 +414,20 @@ class DLGStandardItemModel(QStandardItemModel):
             raise TypeError("Incorrect args passed to insertRow")
         return result
 
-    def takeItem(
+    def takeItem(  # type: ignore[override]
         self,
         row: int,
-        column: int,
-    ) -> DLGStandardItem:  # type: ignore[override]
+        column: int = 0,
+    ) -> DLGStandardItem:
         item: DLGStandardItem = cast(DLGStandardItem, super().takeItem(row, column))
         if not self.ignoring_updates:
             self._remove_link_from_parent(None, item.link)
         return item
 
-    def takeRow(
+    def takeRow(  # type: ignore[override]
         self,
         row: int,
-    ) -> list[DLGStandardItem]:  # type: ignore[override]
+    ) -> list[DLGStandardItem]:
         items: list[DLGStandardItem] = cast(List[DLGStandardItem], super().takeRow(row))
         if not items:
             return items
@@ -440,9 +442,9 @@ class DLGStandardItemModel(QStandardItemModel):
             )
         return items
 
-    def appendRow(
+    def appendRow(  # type: ignore[override, misc]
         self,
-        *args,  # type: ignore[override, misc]
+        *args,
     ):
         item_to_append: DLGStandardItem = args[0]
         super().appendRow(item_to_append)
@@ -452,20 +454,20 @@ class DLGStandardItemModel(QStandardItemModel):
     # endregion
 
     # region drag&drop
-    def supportedDropActions(self) -> Qt.DropAction:
+    def supportedDropActions(self):  # type: ignore[override]
         return Qt.DropAction.CopyAction | Qt.DropAction.MoveAction
 
-    def supportedDragActions(self) -> Qt.DropAction:
+    def supportedDragActions(self):  # type: ignore[override]
         return Qt.DropAction.CopyAction | Qt.DropAction.MoveAction
 
-    def flags(
+    def flags(  # type: ignore[override]
         self,
         index: QModelIndex,
     ) -> Qt.ItemFlag:
-        default_flags: Qt.ItemFlag = super().flags(index)
+        default_flags: Qt.ItemFlag = super().flags(index)  # type: ignore[assignment]
         if index.isValid():
-            return Qt.ItemFlag.ItemIsDragEnabled | Qt.ItemFlag.ItemIsDropEnabled | default_flags
-        return Qt.ItemFlag.ItemIsDropEnabled | default_flags
+            return Qt.ItemFlag.ItemIsDragEnabled | Qt.ItemFlag.ItemIsDropEnabled | default_flags  # type: ignore[return-value]
+        return Qt.ItemFlag.ItemIsDropEnabled | default_flags  # type: ignore[return-value]
 
     def mimeTypes(self) -> list[str]:
         return [QT_STANDARD_ITEM_FORMAT]
@@ -498,7 +500,7 @@ class DLGStandardItemModel(QStandardItemModel):
         mime_data.setData(QT_STANDARD_ITEM_FORMAT, data)
         return mime_data
 
-    def dropMimeData(  # noqa: PLR0913
+    def dropMimeData(  # type: ignore[override]
         self,
         data: QMimeData,
         action: Qt.DropAction,
@@ -596,10 +598,15 @@ class DLGStandardItemModel(QStandardItemModel):
         row: int | None = -1,
     ) -> DLGStandardItem:
         item = DLGStandardItem(link=link)
+        item.setData(False, _COPY_ROLE)
         if parent is None:
-            self.insertRow(self.rowCount() if row in (-1, None) else row, item)
+            row = self.rowCount() if row in (-1, None) else row
+            assert row is not None, "row cannot be None in insert_link_to_parent_as_item"
+            self.insertRow(row, item)
         else:
-            parent.insertRow(self.rowCount() if row in (-1, None) else row, item)
+            row = self.rowCount() if row in (-1, None) else row
+            assert row is not None, "row cannot be None in insert_link_to_parent_as_item"
+            parent.insertRow(row, item)
         return item
 
     def remove_link(
@@ -640,8 +647,9 @@ class DLGStandardItemModel(QStandardItemModel):
     ):
         assert item.link is not None, "item.link cannot be None in _process_link"
         assert self.editor is not None, "self.editor cannot be None in _process_link"
-        item_row: int = (parent_item or self).rowCount() if row in (-1, None) else row
-        links_list: list[DLGLink] = self.editor.core_dlg.starters if parent_item is None else parent_item.link.node.links  # pyright: ignore[reportOptionalMemberAccess]
+        item_row: int | None = (parent_item or self).rowCount() if row in (-1, None) else row
+        assert item_row is not None, "item_row cannot be None in _process_link"
+        links_list: list[DLGLink] = self.editor.core_dlg.starters if parent_item is None else parent_item.link.node.links  # pyright: ignore[reportOptionalMemberAccess]  # type: ignore[union-attr]
         node_to_items: list[DLGStandardItem] = self.node_to_items.setdefault(item.link.node, [])
         if item not in node_to_items:
             node_to_items.append(item)
@@ -649,11 +657,15 @@ class DLGStandardItemModel(QStandardItemModel):
         if item not in link_to_items:
             link_to_items.append(item)
         item_cur_row: int | None = {link: idx for idx, link in enumerate(links_list)}.get(item.link)
-        if item_cur_row != item_row:
-            if item_cur_row is not None:
+        if item_cur_row is not None:
+            # Link already exists in the list, move it if needed
+            if item_cur_row != item_row:
                 links_list.pop(item_cur_row)
                 if item_cur_row < item_row:
                     item_row -= 1
+                links_list.insert(item_row, item.link)
+        else:
+            # Link is new, insert it at the specified position
             links_list.insert(item_row, item.link)
         for i, link in enumerate(links_list):
             link.list_index = i
@@ -678,7 +690,7 @@ class DLGStandardItemModel(QStandardItemModel):
         links_list: list[DLGLink[DLGEntry]] = (
             self.editor.core_dlg.starters  # The items could be deleted by qt at this point, so we only use the python object.
             if parent_item is None
-            else parent_item.link.node.links  # pyright: ignore[reportAssignmentType, reportOptionalMemberAccess]
+            else parent_item.link.node.links  # pyright: ignore[reportAssignmentType, reportOptionalMemberAccess]  # type: ignore[attr-defined, union-attr]
         )
         index: int = links_list.index(link)
         links_list.remove(link)
@@ -745,7 +757,7 @@ class DLGStandardItemModel(QStandardItemModel):
 
         assert item_to_load.link is not copied_link  # new copies should be made before load_dlg_item_rec to reduce complexity.
         parent_path: str = item_to_load.data(_LINK_PARENT_NODE_PATH_ROLE)
-        if all(info.weakref() is not item_to_load.link.node for info in weakref.finalize._registry.values()):  # noqa: SLF001  # type: ignore[]
+        if all(info.weakref() is not item_to_load.link.node for info in weakref.finalize._registry.values()):  # type: ignore[attr-defined]  # noqa: SLF001
             weakref.finalize(item_to_load.link.node, self.on_orphaned_node, copied_link, parent_path)
 
         already_listed: bool = item_to_load.link in self.link_to_items
@@ -765,6 +777,7 @@ class DLGStandardItemModel(QStandardItemModel):
             item_to_load.setData(False, _COPY_ROLE)
             for child_link, child_link_copy in zip(item_to_load.link.node.links, child_links_copy):
                 child_item = DLGStandardItem(link=child_link)
+                child_item.setData(False, _COPY_ROLE)
                 child_item.setData(item_to_load.link.node.path(), _LINK_PARENT_NODE_PATH_ROLE)
                 item_to_load.appendRow(child_item)
                 self.load_dlg_item_rec(child_item, child_link_copy)
@@ -813,7 +826,7 @@ class DLGStandardItemModel(QStandardItemModel):
         """
         dummy_child: QStandardItem = QStandardItem("Click this text to load.")
         dummy_child.setData(True, _DUMMY_ITEM)
-        item.appendRow(dummy_child)  # pyright: ignore[reportArgumentType]
+        item.appendRow(dummy_child)
         item.setData(True, _COPY_ROLE)
         index: QModelIndex = item.index()
         self.tree_view.collapse(index)
@@ -826,6 +839,7 @@ class DLGStandardItemModel(QStandardItemModel):
         new_link: DLGLink = DLGLink(new_node)
         new_link.node.list_index = self._get_new_node_list_index(new_link.node)
         new_item = DLGStandardItem(link=new_link)
+        new_item.setData(False, _COPY_ROLE)
         self.appendRow(new_item)
         self.update_item_display_text(new_item)
 
@@ -842,6 +856,7 @@ class DLGStandardItemModel(QStandardItemModel):
             new_node.list_index = self._get_new_node_list_index(new_node)
             link = DLGLink(new_node)
         new_item = DLGStandardItem(link=link)
+        new_item.setData(False, _COPY_ROLE)
         parent_item.appendRow(new_item)
         self.update_item_display_text(new_item)
         self.update_item_display_text(parent_item)
@@ -920,8 +935,9 @@ class DLGStandardItemModel(QStandardItemModel):
         if parent_item is None:
             parent_item = self
         new_item = DLGStandardItem(link=pasted_link)
+        new_item.setData(False, _COPY_ROLE)
         if row not in (-1, None, parent_item.rowCount()):
-            parent_item.insertRow(row, new_item)
+            parent_item.insertRow(row, new_item)  # type: ignore[arg-type]
         else:
             parent_item.appendRow(new_item)
         self.ignoring_updates = True
@@ -963,11 +979,11 @@ class DLGStandardItemModel(QStandardItemModel):
         indices.add(new_index)
         return new_index
 
-    def itemFromIndex(
+    def itemFromIndex(  # type: ignore[override]
         self,
         index: QModelIndex | QPersistentModelIndex,
     ) -> DLGStandardItem | None:
-        item: QStandardItem | None = super().itemFromIndex(index)  # pyright: ignore[reportArgumentType]
+        item: QStandardItem | None = super().itemFromIndex(index)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
         if item is None:
             return None
         if not isinstance(item, DLGStandardItem):
@@ -978,7 +994,7 @@ class DLGStandardItemModel(QStandardItemModel):
             assert parent_index.isValid()
             self.tree_view.collapse(parent_index)
             self.tree_view.expand(parent_index)
-        item = super().itemFromIndex(index)  # pyright: ignore[reportArgumentType]
+        item = super().itemFromIndex(index)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
         assert isinstance(item, DLGStandardItem), f"item is {item.__class__.__name__}, {item} for index {index} ({index.row()}, {index.column()}) expected DLGStandardItem"
         return item
 
@@ -1048,10 +1064,10 @@ class DLGStandardItemModel(QStandardItemModel):
         assert self.editor is not None
         color: QColor = QColor("#646464")
         prefix: Literal["E", "R", "N"] = "N"
+        extra_node_info: str = ""
         if isinstance(item.link.node, DLGEntry):
             color = QColor("#FF0000") if not item.is_copy() else QColor("#D25A5A")
             prefix = "E"
-            extra_node_info: str = ""
         elif isinstance(item.link.node, DLGReply):
             color = QColor("#0000FF") if not item.is_copy() else QColor("#5A5AD2")
             prefix = "R"
@@ -1222,13 +1238,18 @@ class DLGStandardItemModel(QStandardItemModel):
     ):
         """Shifts an item in the tree by a given amount."""
         old_row: int = item.row()
-        item_parent = item.parent()
+        item_parent: DLGStandardItem | None = item.parent()
         new_row: int = old_row + amount
         if new_row >= (item_parent or self).rowCount() or new_row < 0:
             return
-        assert self.editor is not None
+        assert self.editor is not None, "self.editor is None in shift_item"
+        assert item_parent is not None, "item_parent is None in shift_item"
+        assert item_parent.link is not None, "item_parent.link is None in shift_item"
+        assert item_parent.link.node is not None, "item_parent.link.node is None in shift_item"
         _temp_link: DLGLink = (
-            self.editor.core_dlg.starters[old_row] if item_parent is None else item_parent.link.node.links[old_row]  # pyright: ignore[reportOptionalMemberAccess]
+            self.editor.core_dlg.starters[old_row]
+            if item_parent is None
+            else item_parent.link.node.links[old_row]  # pyright: ignore[reportOptionalMemberAccess]
         )
         item_to_move: DLGStandardItem = (item_parent or self).takeRow(old_row)[0]
         (item_parent or self).insertRow(new_row, item_to_move)
@@ -1239,7 +1260,7 @@ class DLGStandardItemModel(QStandardItemModel):
                 QItemSelectionModel.SelectionFlag.ClearAndSelect,
             )
 
-        item_parent: DLGStandardItem | None = item_to_move.parent()
+        item_parent = item_to_move.parent()
         if isinstance(item_parent, DLGStandardItem):
             assert item_parent.link is not None
             self.update_item_display_text(item_parent)
@@ -1279,6 +1300,10 @@ class DLGStandardItemModel(QStandardItemModel):
         old_row: int = item.row()
         if source_parent_item is target_parent_item and new_index > old_row:
             new_index -= 1
+        assert self.editor is not None, "self.editor is None in move_item_to_index"
+        assert source_parent_item is not None, "source_parent_item is None in move_item_to_index"
+        assert source_parent_item.link is not None, "source_parent_item.link is None in move_item_to_index"
+        assert source_parent_item.link.node is not None, "source_parent_item.link.node is None in move_item_to_index"
         _temp_link: DLGLink = (
             self.editor.core_dlg.starters[old_row] if source_parent_item is None else source_parent_item.link.node.links[old_row]  # pyright: ignore[reportOptionalMemberAccess]
         )
@@ -1315,10 +1340,135 @@ class DLGStandardItemModel(QStandardItemModel):
                     link_to_cur_item[child_item.link] = child_item
 
             for iterated_link in item.link.node.links:
-                child_item: DLGStandardItem | None = link_to_cur_item[iterated_link]
+                child_item = link_to_cur_item[iterated_link]
                 if child_item is None:
                     child_item = DLGStandardItem(link=iterated_link)
+                    child_item.setData(False, _COPY_ROLE)
                     self.load_dlg_item_rec(child_item)
                 item.appendRow(child_item)
 
             self.ignoring_updates = False
+
+
+class DLGLinkSync(DLGLink):
+    """Keeps a DLGLink object in sync with a copy just in case we devs forgot to call another endless required 'update' function somewhere.
+
+    Not perfect, e.g. if you store `node = link.node`, this class's __setattr__ won't be called for that node on the copied link.
+    """
+    def __init__(self, *args, **kwargs):
+        self._syncer: CopySyncDict  # purely here for type hinting purposes.
+        raise RuntimeError("__init__ is not supported, __class__ must be set directly.")
+
+    def __getattr__(self, attr: str):
+        if attr == "_syncer":
+            return object.__getattribute__(self, "_syncer")
+        other = self._syncer.get(self)
+        if other is None:
+            return object.__getattribute__(self, "_syncer")
+        return getattr(other, attr)
+
+    def __setattr__(self, attr: str, value: Any):
+        object.__setattr__(self, attr, value)
+        if attr == "_syncer":
+            return
+        other = self._syncer.get(self)
+        if other is None:
+            return
+        object.__setattr__(other, attr, value)
+
+    def __delattr__(self, attr):
+        other = self._syncer.get(self)
+        delattr(other, attr)
+
+
+class CopySyncDict(weakref.WeakKeyDictionary):
+    """Implements weakkeydictionary in order to keep the keys and their values in sync, as perfect copies, treating them like the same object and providing more hash usability.
+
+    If someone is reading this, to save you some time, this class is wildly unnecessary.
+    It was added simply as a fallback in case we forgot to call an update function somewhere. This makes certain our copies have the same data.
+    Feel free to replace origToOrphanCopies with a regular dict.
+    """
+    def __init__(
+        self,
+        init_dict: Mapping[weakref.ref[DLGLink], DLGLink] | Iterable[tuple[weakref.ref[DLGLink], DLGLink]] | None = None,
+        *args,
+    ):
+        self._storage: dict[int, tuple[weakref.ref[DLGLink], DLGLink]] = {}
+        self._weak_key_map: dict[int, weakref.ref[DLGLink]] = {}
+        if init_dict is None:
+            super().__init__(None)
+            return
+        if isinstance(init_dict, Mapping):
+            for k, v in init_dict.items():
+                if isinstance(k, tuple):
+                    k, v = k
+                self[k] = v
+        else:
+            for k, v in init_dict:
+                self[k] = v
+        super().__init__(None)
+
+    def __setitem__(self, key: DLGLink | weakref.ref[DLGLink], value: DLGLinkSync | DLGLink):
+        if isinstance(key, weakref.ref):
+            ref = key
+            key = key()  # pyright: ignore[reportAssignmentType]
+            if key is None:
+                raise ValueError("Ref passed to CopySyncDict is already garbage collected.")
+            key_hash = hash(key)
+        else:
+            key_hash = hash(key)
+            ref = weakref.ref(key, self._remove_key(key_hash))
+        self._storage[key_hash] = (ref, value)
+        self._weak_key_map[key_hash] = ref
+
+    def __getitem__(self, key: DLGLink) -> DLGLink[Any]:
+        key_hash = hash(key)
+        if key_hash in self._storage:
+            return self._storage[key_hash][1]
+        raise KeyError(key)
+
+    def __delitem__(self, key: DLGLink):  # type: ignore[reportIncompatibleMethodOverride]
+        key_hash = hash(key)
+        del super()[self._storage[key_hash][0]]
+        del self._storage[key_hash]
+        del self._weak_key_map[key_hash]
+
+    def get(self, key: DLGLink, default: DLGLink = None) -> DLGLink:  # type: ignore[override]
+        lookupOrig, lookupCopy = self._storage.get(hash(key), (None, None))
+        return default if lookupCopy is None else lookupCopy
+
+    def _remove_key(self, key_hash: int):
+        def remove(_):
+            del self[self._storage[key_hash][1]]
+        return remove
+
+    def values(self) -> Generator[DLGLink, None, None]:  # type: ignore[override]
+        return (item for _, item in self._storage.values())
+
+    def items(self) -> Generator[tuple[weakref.ref[DLGLink], DLGLink], None, None]:  # type: ignore[override]
+        yield from self._storage.values()
+
+    def replaceCopy(self, link: DLGLink):
+        linkHash = link._hash_cache  # noqa: SLF001
+        self._storage[linkHash] = (self._weak_key_map[linkHash], link)
+
+    def get_original(self, key: DLGLink) -> weakref.ref[DLGLink]:
+        return self._storage[hash(key)][0]
+
+    def get_link_ref(self, link: DLGLink) -> weakref.ref[DLGLink]:
+        """Takes a DLGLink object and returns the weak reference for it from the CopySyncDict.
+
+        Args:
+        ----
+            sync_dict (CopySyncDict): The instance of CopySyncDict.
+            link (DLGLink): The DLGLink object to find the weak reference for.
+
+        Returns:
+        -------
+            weakref.ref[DLGLink]: The weak reference of the DLGLink object.
+        """
+        link_hash = hash(link)
+        if link_hash not in self._weak_key_map:
+            RobustLogger().info(f"Creating deepcopy of {link!r}")
+            self[link] = DLGLink.from_dict(link.to_dict())
+        return self._weak_key_map[link_hash]

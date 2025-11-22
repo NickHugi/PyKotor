@@ -63,9 +63,10 @@ class RIMBinaryReader(ResourceReader):
         self._reader.seek(offset_to_keys)
         for _ in range(entry_count):
             # vendor/reone/src/libs/resource/format/rimreader.cpp:46-58
-            # NOTE: reone lowercases resref at line 47, PyKotor does not
+            # reone lowercases resref at line 47
             # NOTE: Field order differs - PyKotor reads restype before resids, reone reads differently
-            resrefs.append(self._reader.read_string(16))
+            resref_str = self._reader.read_string(16).rstrip("\0")
+            resrefs.append(resref_str.lower())
             restypes.append(self._reader.read_uint32())
             resids.append(self._reader.read_uint32())
             resoffsets.append(self._reader.read_uint32())

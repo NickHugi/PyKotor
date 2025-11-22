@@ -1,0 +1,48 @@
+{
+	"folders": [
+		{
+			"name": "KOTORNasher",
+			"path": "."
+		},
+		{
+			"name": "PyKotor",
+			"path": "../../Libraries/PyKotor"
+		},
+		{
+			"name": "Utility",
+			"path": "../../Libraries/Utility"
+		}
+	],
+	"settings": {
+		"python.analysis.extraPaths": [
+			"./src",
+			"../../Libraries/PyKotor/src",
+			"../../Libraries/Utility/src"
+		],
+		"python.autoComplete.extraPaths": [
+			"./src",
+			"../../Libraries/PyKotor/src",
+			"../../Libraries/Utility/src"
+		],
+		"files.exclude": {
+			"**/__pycache__": true,
+			"**/*.pyc": true,
+			"**/.pytest_cache": true,
+			"**/.ruff_cache": true
+		},
+		"python.testing.pytestEnabled": true,
+		"python.testing.unittestEnabled": false,
+		"python.linting.enabled": true,
+		"python.linting.ruffEnabled": true,
+		"editor.formatOnSave": true,
+		"[python]": {
+			"editor.defaultFormatter": "charliermarsh.ruff",
+			"editor.codeActionsOnSave": {
+				"source.organizeImports": "explicit"
+			}
+		}
+	}
+}
+
+
+

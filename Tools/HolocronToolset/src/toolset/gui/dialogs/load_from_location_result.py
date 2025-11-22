@@ -20,7 +20,7 @@ import qtpy
 import send2trash
 
 from qtpy.QtCore import QUrl, Qt
-from qtpy.QtGui import QDesktopServices, QKeySequence
+from qtpy.QtGui import QDesktopServices, QKeySequence, QScreen
 from qtpy.QtWidgets import (
     QAction,
     QApplication,
@@ -814,7 +814,10 @@ class ResourceItems(FileItems):
                 action_sort_order.append((5, action))
 
         action_sort_order.sort(key=lambda x: x[0])
-        menu.clear()
+        # Remove actions from menu without deleting them by keeping references
+        # Then re-add them in sorted order
+        for action in actions:
+            menu.removeAction(action)
         for _, action in action_sort_order:
             menu.addAction(action)
 
@@ -824,13 +827,14 @@ class ResourceItems(FileItems):
         installation: HTInstallation | None = None,
         *,
         menu: QMenu | None = None,
-    ) -> QAction | None:
+    ) -> QAction:
         resources: set[FileResource] = {tableItem.resource for tableItem in self.selectedItems()}
         menu = self.build_menu(menu)
         self.reorder_menu_items(menu)
         executed_action: QAction | None = menu.exec(self.viewport().mapToGlobal(position))  # pyright: ignore[reportAssignmentType]
         if executed_action is None:
-            return executed_action
+            # Return a dummy action to match base class signature, though menu.exec() can return None
+            return QAction()  # pyright: ignore[reportReturnType]
         self.handle_post_run_actions(executed_action, resources)
         executed_action_text = executed_action.text()
         if executed_action_text in ("Delete PERMANENTLY", "Send to Recycle Bin"):
@@ -859,7 +863,8 @@ class ResourceItems(FileItems):
                             rim: RIM = read_rim(filepath)
                             rim.remove(resource.resname(), resource.restype())
                             write_rim(rim, filepath)
-        return executed_action  # noqa: RET504
+        # After None check above, executed_action is guaranteed to be QAction
+        return cast(QAction, executed_action)
 
     def handle_post_run_actions(
         self,
@@ -1251,7 +1256,7 @@ if __name__ == "__main__":
     resname, restype = ResourceIdentifier.from_path("dan14_juhani.utc").unpack()
     found_kotors: dict[Game, list[CaseAwarePath]] = find_kotor_paths_from_default()
     installation = Installation(found_kotors[Game.K1][0])
-    search: Sequence[FileResource | ResourceResult | LocationResult] = installation.location(resname, restype)
+    search: list[FileResource | ResourceResult | LocationResult] = cast(list[FileResource | ResourceResult | LocationResult], list(installation.location(resname, restype)))
     if not search:
         raise ValueError("No files found")
     res_result = installation.resource("m02ab", ResourceType.GIT)
@@ -1260,8 +1265,8 @@ if __name__ == "__main__":
     search.append(res_result)
     search.append(installation._modules["danm13.mod"][3])
 
-    window = FileSelectionWindow(search, installation)
-    HTInstallation.from_base_instance(installation)
+    ht_installation = HTInstallation.from_base_instance(installation)
+    window = FileSelectionWindow(search, ht_installation)
     window.show()
     window.activateWindow()
     app.exec()

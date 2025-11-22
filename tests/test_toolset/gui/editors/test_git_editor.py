@@ -135,3 +135,39 @@ class GITEditorTest(TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# Additional UI tests (merged from test_ui_gff_editors.py)
+# ============================================================================
+
+import pytest
+from toolset.gui.editors.git import GITEditor
+from toolset.data.installation import HTInstallation
+from pykotor.resource.type import ResourceType
+
+def test_git_editor_specifics(qtbot, installation: HTInstallation, test_files_dir: pathlib.Path):
+    """Specific granular tests for GIT Editor (common enough to warrant specific attention)."""
+    editor = GITEditor(None, installation)
+    qtbot.addWidget(editor)
+    
+    git_file = test_files_dir / "zio001.git"
+    if not git_file.exists():
+        pytest.skip("zio001.git not found")
+        
+    editor.load(git_file, "zio001", ResourceType.GIT, git_file.read_bytes())
+    
+    # Test Geometry/Environment/etc tabs if they exist
+    # Check specific widget: Tag
+    # GIT doesn't strictly have a "Tag" field in the root struct like UTI, but usually has one?
+    # Actually GIT is Area Properties mostly.
+    
+    # Let's test the lists (Creatures, Placeables, etc.)
+    # Assuming ui.creatureList, ui.placeableList, etc.
+    if hasattr(editor.ui, "creatureList"):
+        assert editor.ui.creatureList.count() >= 0
+        
+    # Check generic properties if any
+    if hasattr(editor.ui, "environmentPage"):
+        # navigate to environment page
+        pass

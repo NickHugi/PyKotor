@@ -10,7 +10,7 @@ try:
     from qtpy.QtTest import QTest
     from qtpy.QtWidgets import QApplication
 except (ImportError, ModuleNotFoundError):
-    QTest, QApplication = None, None  # type: ignore[misc, assignment]
+    QTest, QApplication = object, object  # type: ignore[misc, assignment]
 
 absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "test_toolset/test_files"
@@ -65,10 +65,11 @@ class BWMEditorTest(TestCase):
         from toolset.data.installation import HTInstallation
 
         # cls.INSTALLATION = HTInstallation(K1_PATH, "", tsl=False)
+        assert K2_PATH is not None, "K2_PATH environment variable is not set"
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
 
     def setUp(self):
-        self.app: QApplication = QApplication(sys.argv)
+        self.app: QApplication = QApplication(sys.argv)  # type: ignore[assignment]
         self.editor = self.BWMEditor(None, self.K2_INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
 
@@ -145,3 +146,21 @@ class BWMEditorTest(TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# Additional UI tests (merged from test_ui_other_editors.py)
+# ============================================================================
+
+import pytest
+from toolset.gui.editors.bwm import BWMEditor
+from toolset.data.installation import HTInstallation
+
+def test_bwm_editor(qtbot, installation: HTInstallation):
+    """Test BWM Editor."""
+    editor = BWMEditor(None, installation)
+    qtbot.addWidget(editor)
+    editor.show()
+    
+    assert editor.isVisible()
+    # Walkmesh editor might have GL view or property lists

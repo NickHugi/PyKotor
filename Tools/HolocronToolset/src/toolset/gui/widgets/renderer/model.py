@@ -6,14 +6,11 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from glm import vec3
 from loggerplus import RobustLogger
 from qtpy.QtCore import QPoint, QTimer
-from qtpy.QtGui import QCursor
-from qtpy.QtWidgets import QOpenGLWidget
+from qtpy.QtGui import QCloseEvent, QCursor
+from qtpy.QtWidgets import QOpenGLWidget  # pyright: ignore[reportPrivateImportUsage]
 
-from utility.common.geometry import Vector2
-from pykotor.common.stream import BinaryReader
 from pykotor.gl import vec3
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
@@ -27,7 +24,6 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
-    from pykotor.common.stream import BinaryReader
     from pykotor.extract.installation import Installation
     from pykotor.resource.generics.utc import UTC
 
@@ -38,7 +34,7 @@ class ModelRenderer(QOpenGLWidget):
 
         self._scene: Scene | None = None
         self.installation: Installation | None = None
-        self._model_to_load: tuple[BinaryReader, BinaryReader] | None = None
+        self._model_to_load: tuple[bytes, bytes] | None = None
         self._creature_to_load: UTC | None = None
 
         self._keys_down: set[int] = set()
@@ -46,9 +42,15 @@ class ModelRenderer(QOpenGLWidget):
         self._mouse_prev: Vector2 = Vector2(0, 0)
         self._controls = ModelRendererControls()
 
-    def loop(self):
-        self.repaint()
-        QTimer.singleShot(33, self.loop)
+        self._loop_timer: QTimer = QTimer(self)
+        self._loop_timer.setInterval(33)
+        self._loop_timer.setSingleShot(False)
+        self._loop_timer.timeout.connect(self._render_loop)
+
+    def _render_loop(self):
+        if not self.isVisible() or self._scene is None:
+            return
+        self.update()
 
     @property
     def scene(self) -> Scene:
@@ -74,23 +76,41 @@ class ModelRenderer(QOpenGLWidget):
 
         self.scene.git = GIT()
 
-        QTimer.singleShot(33, self.loop)
+        self._loop_timer.start()
 
     def paintGL(self):
         if self._scene is None:
+            return
+
+        ctx = self.context()
+        if ctx is None or not ctx.isValid():
             return
 
         if self._model_to_load is not None:
             self.scene.models["model"] = gl_load_mdl(self.scene, *self._model_to_load)
             self.scene.objects["model"] = RenderObject("model")
             self._model_to_load = None
+            self.reset_camera()
 
         elif self._creature_to_load is not None:
             self.scene.objects["model"] = self.scene.get_creature_render_object(None, self._creature_to_load)
             self._creature_to_load = None
+            self.reset_camera()
 
-        self.reset_camera()
         self.scene.render()
+
+    def closeEvent(self, event: QCloseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
+        self.shutdown_renderer()
+        super().closeEvent(event)
+
+    def shutdown_renderer(self):
+        if self._loop_timer.isActive():
+            self._loop_timer.stop()
+
+        if self._scene is not None:
+            scene = self._scene
+            self._scene = None
+            del scene
 
     def clear_model(self):
         if self._scene is not None and "model" in self.scene.objects:
@@ -119,20 +139,20 @@ class ModelRenderer(QOpenGLWidget):
             scene.camera.distance = model.radius(scene) + 2
 
     # region Events
-    def focusOutEvent(self, e: QFocusEvent):
+    def focusOutEvent(self, e: QFocusEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         self._mouse_down.clear()  # Clears the set when focus is lost
         self._keys_down.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
         RobustLogger().debug("ModelRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
-    def resizeEvent(self, e: QResizeEvent):
+    def resizeEvent(self, e: QResizeEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         super().resizeEvent(e)
 
         if self._scene is not None:
             self.scene.camera.width = e.size().width()
             self.scene.camera.height = e.size().height()
 
-    def wheelEvent(self, e: QWheelEvent):
+    def wheelEvent(self, e: QWheelEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         if self._controls.moveZCameraControl.satisfied(self._mouse_down, self._keys_down):
             strength: float = self._controls.moveCameraSensitivity3d / 20000
             self.scene.camera.z -= -e.angleDelta().y() * strength
@@ -153,7 +173,7 @@ class ModelRenderer(QOpenGLWidget):
         mut_scr.x = local_old_pos.x()
         mut_scr.y = local_old_pos.y()
 
-    def mouseMoveEvent(self, e: QMouseEvent):  # sourcery skip: extract-method
+    def mouseMoveEvent(self, e: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         screen = Vector2(e.x(), e.y()) if qtpy.QT5 else Vector2(e.position().toPoint().x(), e.position().toPoint().y())
         screen_delta = Vector2(screen.x - self._mouse_prev.x, screen.y - self._mouse_prev.y)
 
@@ -172,12 +192,12 @@ class ModelRenderer(QOpenGLWidget):
 
         self._mouse_prev = screen  # Always assign mouse_prev after emitting, in order to do cursor lock properly.
 
-    def mousePressEvent(self, e: QMouseEvent):
+    def mousePressEvent(self, e: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         button = e.button()
         self._mouse_down.add(button)
         # RobustLogger().debug(f"ModelRenderer.mousePressEvent: {self._mouse_down}, e.button() '{button}'")
 
-    def mouseReleaseEvent(self, e: QMouseEvent):
+    def mouseReleaseEvent(self, e: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         button = e.button()
         self._mouse_down.discard(button)
         # RobustLogger().debug(f"ModelRenderer.mouseReleaseEvent: {self._mouse_down}, e.button() '{button}'")
@@ -222,7 +242,7 @@ class ModelRenderer(QOpenGLWidget):
         new_rotation = vec3(current_rotation.x + pitch, current_rotation.y + roll, current_rotation.z + yaw)
         obj.set_rotation(new_rotation.x, new_rotation.y, new_rotation.z)
 
-    def keyPressEvent(self, e: QKeyEvent):
+    def keyPressEvent(self, e: QKeyEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         key: int = e.key()
         self._keys_down.add(key)
 
@@ -258,7 +278,7 @@ class ModelRenderer(QOpenGLWidget):
         # key_name = get_qt_key_string_localized(key)
         # RobustLogger().debug(f"ModelRenderer.keyPressEvent: {self._keys_down}, e.key() '{key_name}'")
 
-    def keyReleaseEvent(self, e: QKeyEvent):
+    def keyReleaseEvent(self, e: QKeyEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         key: int = e.key()
         self._keys_down.discard(key)
         # key_name = get_qt_key_string_localized(key)

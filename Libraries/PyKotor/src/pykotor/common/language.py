@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any, Generator, overload
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -537,20 +537,41 @@ class LocalizedString:
         locstring.set_data(Language.ENGLISH, Gender.MALE, text)
         return locstring
 
+    @overload
     @staticmethod
-    def substring_id(language: Language, gender: Gender) -> int:
+    def substring_id(language: Language, gender: Gender) -> int: ...
+
+    @overload
+    @staticmethod
+    def substring_id(language: int, gender: int) -> int: ...
+
+    @staticmethod
+    def substring_id(language: Language | int, gender: Gender | int) -> int:
         """Returns the ID for the language gender pair.
+
+        Supports both enum and integer arguments for backward compatibility.
 
         Args:
         ----
-            language: The language.
-            gender: The gender.
+            language: The language (Language enum or int).
+            gender: The gender (Gender enum or int).
 
         Returns:
         -------
             The substring ID.
         """
-        return (language * 2) + gender
+        # Handle integer arguments by converting to enums
+        if isinstance(language, int):
+            language_enum = Language(language)
+        else:
+            language_enum = language
+
+        if isinstance(gender, int):
+            gender_enum = Gender(gender)
+        else:
+            gender_enum = gender
+
+        return (language_enum * 2) + gender_enum
 
     @staticmethod
     def substring_pair(substring_id: int | str) -> tuple[Language, Gender]:
@@ -576,78 +597,217 @@ class LocalizedString:
         gender = Gender(substring_id % 2)
         return language, gender
 
+    @overload
     def set_data(
         self,
         language: Language,
         gender: Gender,
         string: str,
-    ):
+    ) -> None: ...
+
+    @overload
+    def set_data(
+        self,
+        language: int,
+        gender: int,
+        string: str,
+    ) -> None: ...
+
+    def set_data(
+        self,
+        language: Language | int,
+        gender: Gender | int,
+        string: str,
+    ) -> None:
         """Sets the text of the substring with the corresponding language/gender pair.
+
+        Supports both enum and integer arguments for backward compatibility.
+        Can be called as:
+        - set_data(Language.ENGLISH, Gender.MALE, "text") - enum arguments
+        - set_data(0, 0, "text") - integer arguments
 
         Note: The substring is created if it does not exist.
 
         Args:
         ----
-            language: The language.
-            gender: The gender.
+            language: The language (Language enum or int).
+            gender: The gender (Gender enum or int).
             string: The new text for the new substring.
         """
-        substring_id: int = LocalizedString.substring_id(language, gender)
+        # Handle integer arguments by converting to enums
+        if isinstance(language, int):
+            language_enum = Language(language)
+        else:
+            language_enum = language
+
+        if isinstance(gender, int):
+            gender_enum = Gender(gender)
+        else:
+            gender_enum = gender
+
+        substring_id: int = LocalizedString.substring_id(language_enum, gender_enum)
         self._substrings[substring_id] = string
 
+    @overload
     def get(
         self,
         language: Language,
         gender: Gender,
         *,
         use_fallback: bool = False,
+    ) -> str | None: ...
+
+    @overload
+    def get(
+        self,
+        language: int,
+        gender: int,
+        *,
+        use_fallback: bool = False,
+    ) -> str | None: ...
+
+    @overload
+    def get(
+        self,
+        language: int,
+        *,
+        use_fallback: bool = False,
+    ) -> str | None: ...
+
+    def get(
+        self,
+        language: Language | int,
+        gender: Gender | int | None = None,
+        *,
+        use_fallback: bool = False,
     ) -> str | None:
         """Gets the substring text with the corresponding language/gender pair.
 
+        Supports both enum and integer arguments for backward compatibility.
+        Can be called as:
+        - get(Language.ENGLISH, Gender.MALE) - enum arguments
+        - get(0, 0) - integer arguments  
+        - get(0) - single integer (gender defaults to 0/MALE)
+
         Args:
         ----
-            language: The language.
-            gender: The gender.
+            language: The language (Language enum or int).
+            gender: The gender (Gender enum or int). 
+                If None and language is int, defaults to Gender.MALE (0) for backward compatibility with get(0).
 
         Returns:
         -------
             The text of the substring if a matching pair is found, otherwise returns None.
         """
-        substring_id: int = LocalizedString.substring_id(language, gender)
+        # Handle integer arguments by converting to enums
+        if isinstance(language, int):
+            language_enum = Language(language)
+        else:
+            language_enum = language
+
+        if gender is None:
+            # Default to MALE if gender not provided (for backward compatibility with get(0))
+            gender_enum = Gender.MALE
+        elif isinstance(gender, int):
+            gender_enum = Gender(gender)
+        else:
+            gender_enum = gender
+
+        substring_id: int = LocalizedString.substring_id(language_enum, gender_enum)
         return self._substrings.get(substring_id, next(iter(self._substrings.values()), None) if use_fallback else None)
 
+    @overload
     def remove(
         self,
         language: Language,
         gender: Gender,
-    ):
+    ) -> None: ...
+
+    @overload
+    def remove(
+        self,
+        language: int,
+        gender: int,
+    ) -> None: ...
+
+    def remove(
+        self,
+        language: Language | int,
+        gender: Gender | int,
+    ) -> None:
         """Removes the existing substring with the respective language/gender pair if it exists.
+
+        Supports both enum and integer arguments for backward compatibility.
+        Can be called as:
+        - remove(Language.ENGLISH, Gender.MALE) - enum arguments
+        - remove(0, 0) - integer arguments
 
         Note: No error is thrown if it does not find a corresponding pair.
 
         Args:
         ----
-            language: The language.
-            gender: The gender.
+            language: The language (Language enum or int).
+            gender: The gender (Gender enum or int).
         """
-        substring_id: int = LocalizedString.substring_id(language, gender)
+        # Handle integer arguments by converting to enums
+        if isinstance(language, int):
+            language_enum = Language(language)
+        else:
+            language_enum = language
+
+        if isinstance(gender, int):
+            gender_enum = Gender(gender)
+        else:
+            gender_enum = gender
+
+        substring_id: int = LocalizedString.substring_id(language_enum, gender_enum)
         self._substrings.pop(substring_id)
 
+    @overload
     def exists(
         self,
         language: Language,
         gender: Gender,
+    ) -> bool: ...
+
+    @overload
+    def exists(
+        self,
+        language: int,
+        gender: int,
+    ) -> bool: ...
+
+    def exists(
+        self,
+        language: Language | int,
+        gender: Gender | int,
     ) -> bool:
         """Returns whether or not a substring exists with the respective language/gender pair.
 
+        Supports both enum and integer arguments for backward compatibility.
+        Can be called as:
+        - exists(Language.ENGLISH, Gender.MALE) - enum arguments
+        - exists(0, 0) - integer arguments
+
         Args:
         ----
-            language: The language.
-            gender: The gender.
+            language: The language (Language enum or int).
+            gender: The gender (Gender enum or int).
 
         Returns:
         -------
             True if the corresponding substring exists.
         """
-        substring_id: int = LocalizedString.substring_id(language, gender)
+        # Handle integer arguments by converting to enums
+        if isinstance(language, int):
+            language_enum = Language(language)
+        else:
+            language_enum = language
+
+        if isinstance(gender, int):
+            gender_enum = Gender(gender)
+        else:
+            gender_enum = gender
+
+        substring_id: int = LocalizedString.substring_id(language_enum, gender_enum)
         return substring_id in self._substrings

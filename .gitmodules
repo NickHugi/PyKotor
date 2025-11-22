@@ -303,6 +303,3 @@
 [submodule "vendor/ds-kotor-modding-wiki"]
 	path = vendor/ds-kotor-modding-wiki
 	url = https://github.com/th3w1zard1/ds-kotor-modding-wiki.git
-[submodule "vendor/KotOR-dotNET"]
-	path = vendor/KotOR-dotNET
-	url = https://github.com/th3w1zard1/KotOR-dotNET.git

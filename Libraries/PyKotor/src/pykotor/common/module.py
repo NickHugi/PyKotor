@@ -780,9 +780,9 @@ class Module:  # noqa: PLR0904
         for ident, module_resource in self.resources.items():
             if module_resource.isActive():
                 continue
-            if ident.restype is ResourceType.TPC and f"{ident.lower_resname}.tga" in self.resources:
+            if ident.restype is ResourceType.TPC and ResourceIdentifier(ident.resname, ResourceType.TGA) in self.resources:
                 continue  # Skip TPC resources if the TGA equivalent resource is already found and activated.
-            if ident.restype is ResourceType.TGA and f"{ident.lower_resname}.tpc" in self.resources:
+            if ident.restype is ResourceType.TGA and ResourceIdentifier(ident.resname, ResourceType.TPC) in self.resources:
                 continue  # Skip TGA resources if the TPC equivalent resource is already found and activated.
             module_resource.activate()
 

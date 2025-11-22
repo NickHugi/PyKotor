@@ -32,6 +32,7 @@ from pykotor.common.module import Module, ModuleResource
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.gl.scene import Camera
 from pykotor.resource.formats.bwm import BWM
+from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
 from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITEncounter, GITInstance, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.generics.utt import read_utt
@@ -44,6 +45,7 @@ from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
 from toolset.gui.editors.git import DeleteCommand, MoveCommand, RotateCommand, _GeometryMode, _InstanceMode, _SpawnMode, open_instance_dialog
+from toolset.gui.widgets.renderer.lyt_renderer import LYTRenderer
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.settings.widgets.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.designer_controls import ModuleDesignerControls2d, ModuleDesignerControls3d, ModuleDesignerControlsFreeCam
@@ -203,6 +205,9 @@ class ModuleDesigner(QMainWindow):
         # self._controls3d: ModuleDesignerControls3d | ModuleDesignerControlsFreeCam = ModuleDesignerControlsFreeCam(self, self.ui.mainRenderer)  # Doesn't work when set in __init__, trigger this in onMousePressed
         self._controls2d: ModuleDesignerControls2d = ModuleDesignerControls2d(self, self.ui.flatRenderer)
 
+        # LYT renderer for layout tab
+        self._lyt_renderer: LYTRenderer | None = None
+
         if mod_filepath is None:  # Use singleShot timer so the ui window opens while the loading is happening.
             QTimer().singleShot(33, self.open_module_with_dialog)
         else:
@@ -234,6 +239,14 @@ class ModuleDesigner(QMainWindow):
 
         self.ui.actionUndo.triggered.connect(lambda: print("Undo signal") or self.undo_stack.undo())
         self.ui.actionRedo.triggered.connect(lambda: print("Redo signal") or self.undo_stack.redo())
+
+        # Layout tab actions
+        self.ui.actionAddRoom.triggered.connect(self.on_add_room)
+        self.ui.actionAddDoorHook.triggered.connect(self.on_add_door_hook)
+        self.ui.actionAddTrack.triggered.connect(self.on_add_track)
+        self.ui.actionAddObstacle.triggered.connect(self.on_add_obstacle)
+        self.ui.actionImportTexture.triggered.connect(self.on_import_texture)
+        self.ui.actionGenerateWalkmesh.triggered.connect(self.on_generate_walkmesh)
 
         # Connect LYT editor signals to update UI
         self.ui.mainRenderer.sig_lyt_updated.connect(self.on_lyt_updated)
@@ -285,6 +298,26 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.sig_key_pressed.connect(self.on_2d_keyboard_pressed)
         self.ui.flatRenderer.sig_mouse_released.connect(self.on_2d_mouse_released)
         self.ui.flatRenderer.sig_key_released.connect(self.on_2d_keyboard_released)
+
+        # Layout tree signals
+        self.ui.lytTree.itemSelectionChanged.connect(self.on_lyt_tree_selection_changed)
+        self.ui.lytTree.customContextMenuRequested.connect(self.on_lyt_tree_context_menu)
+
+        # Position/rotation spinbox signals
+        self.ui.posXSpin.valueChanged.connect(self.on_room_position_changed)
+        self.ui.posYSpin.valueChanged.connect(self.on_room_position_changed)
+        self.ui.posZSpin.valueChanged.connect(self.on_room_position_changed)
+        self.ui.rotXSpin.valueChanged.connect(self.on_room_rotation_changed)
+        self.ui.rotYSpin.valueChanged.connect(self.on_room_rotation_changed)
+        self.ui.rotZSpin.valueChanged.connect(self.on_room_rotation_changed)
+
+        # Model edit signals
+        self.ui.modelEdit.textChanged.connect(self.on_room_model_changed)
+        self.ui.browseModelButton.clicked.connect(self.on_browse_model)
+
+        # Door hook signals
+        self.ui.roomNameCombo.currentTextChanged.connect(self.on_doorhook_room_changed)
+        self.ui.doorNameEdit.textChanged.connect(self.on_doorhook_name_changed)
 
     def _init_ui(self):
         self.custom_status_bar = QStatusBar(self)
@@ -509,6 +542,11 @@ class ModuleDesigner(QMainWindow):
         git_module = self._module.git()
         assert git_module is not None
         git_module.save()
+        
+        # Also save the layout if it has been modified
+        layout_module = self._module.layout()
+        if layout_module is not None:
+            layout_module.save()
 
     def rebuild_resource_tree(self):
         """Rebuilds the resource tree widget.
@@ -1369,6 +1407,7 @@ class ModuleDesigner(QMainWindow):
         self.log.debug("Building resource tree and instance list...")
         self.rebuild_resource_tree()
         self.rebuild_instance_list()
+        self.rebuild_layout_tree()
         self.enter_instance_mode()
         self.log.info("Module designer ready")
 
@@ -1403,6 +1442,505 @@ class ModuleDesigner(QMainWindow):
         # self.log.debug("on2dMousePressed, screen: %s, buttons: %s, keys: %s", screen, buttons, keys)
         self._controls2d.on_mouse_pressed(screen, buttons, keys)
         self.update_status_bar(screen, buttons, keys, self.ui.flatRenderer)
+
+    # endregion
+
+    # region Layout Tab Handlers
+    def on_add_room(self):
+        """Add a new room to the layout."""
+        if self._module is None:
+            return
+
+        layout_module = self._module.layout()
+        if layout_module is None:
+            self.log.warning("No layout resource found in module")
+            return
+
+        lyt: LYT | None = layout_module.resource()
+        if lyt is None:
+            lyt = LYT()
+            layout_module._resource = lyt  # noqa: SLF001
+
+        # Create a new room at origin
+        room = LYTRoom(
+            model="newroom",
+            position=Vector3(0, 0, 0)
+        )
+        lyt.rooms.append(room)
+
+        self.rebuild_layout_tree()
+        self.log.info(f"Added room '{room.model}' to layout")
+
+    def on_add_door_hook(self):
+        """Add a new door hook to the layout."""
+        if self._module is None:
+            return
+
+        layout_module = self._module.layout()
+        if layout_module is None:
+            self.log.warning("No layout resource found in module")
+            return
+
+        lyt: LYT | None = layout_module.resource()
+        if lyt is None or not lyt.rooms:
+            self.log.warning("Cannot add door hook: no rooms in layout")
+            return
+
+        # Create a new door hook
+        doorhook = LYTDoorHook(
+            room=lyt.rooms[0].model,
+            door=f"door{len(lyt.doorhooks)}",
+            position=Vector3(0, 0, 0),
+            orientation=Vector4(0, 0, 0, 1)
+        )
+        lyt.doorhooks.append(doorhook)
+
+        self.rebuild_layout_tree()
+        self.log.info(f"Added door hook '{doorhook.door}' to layout")
+
+    def on_add_track(self):
+        """Add a new track to the layout."""
+        if self._module is None:
+            return
+
+        layout_module = self._module.layout()
+        if layout_module is None:
+            self.log.warning("No layout resource found in module")
+            return
+
+        lyt: LYT | None = layout_module.resource()
+        if lyt is None:
+            lyt = LYT()
+            layout_module._resource = lyt  # noqa: SLF001
+
+        # Create a new track
+        track = LYTTrack(
+            model="newtrack",
+            position=Vector3(0, 0, 0)
+        )
+        lyt.tracks.append(track)
+
+        self.rebuild_layout_tree()
+        self.log.info(f"Added track '{track.model}' to layout")
+
+    def on_add_obstacle(self):
+        """Add a new obstacle to the layout."""
+        if self._module is None:
+            return
+
+        layout_module = self._module.layout()
+        if layout_module is None:
+            self.log.warning("No layout resource found in module")
+            return
+
+        lyt: LYT | None = layout_module.resource()
+        if lyt is None:
+            lyt = LYT()
+            layout_module._resource = lyt  # noqa: SLF001
+
+        # Create a new obstacle
+        obstacle = LYTObstacle(
+            model="newobstacle",
+            position=Vector3(0, 0, 0)
+        )
+        lyt.obstacles.append(obstacle)
+
+        self.rebuild_layout_tree()
+        self.log.info(f"Added obstacle '{obstacle.model}' to layout")
+
+    def on_import_texture(self):
+        """Import a texture for use in the layout."""
+        from qtpy.QtWidgets import QFileDialog
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Import Texture",
+            "",
+            "Image Files (*.tga *.tpc *.dds *.png *.jpg)"
+        )
+
+        if file_path:
+            self.log.info(f"Importing texture from {file_path}")
+            # TODO: Implement texture import logic
+
+    def on_generate_walkmesh(self):
+        """Generate walkmesh from the current layout."""
+        if self._module is None:
+            return
+
+        layout_module = self._module.layout()
+        if layout_module is None:
+            self.log.warning("No layout resource found in module")
+            return
+
+        lyt: LYT | None = layout_module.resource()
+        if lyt is None or not lyt.rooms:
+            self.log.warning("Cannot generate walkmesh: no rooms in layout")
+            return
+
+        self.log.info("Generating walkmesh from layout...")
+        # TODO: Implement walkmesh generation logic
+
+    def rebuild_layout_tree(self):
+        """Rebuild the layout tree widget to show current LYT structure."""
+        if self._module is None:
+            return
+
+        layout_module = self._module.layout()
+        if layout_module is None:
+            return
+
+        lyt: LYT | None = layout_module.resource()
+        if lyt is None:
+            return
+
+        self.ui.lytTree.blockSignals(True)
+        self.ui.lytTree.clear()
+
+        # Add rooms
+        if lyt.rooms:
+            rooms_item = QTreeWidgetItem(["Rooms"])
+            self.ui.lytTree.addTopLevelItem(rooms_item)
+            for room in lyt.rooms:
+                room_item = QTreeWidgetItem([room.model])
+                room_item.setData(0, Qt.ItemDataRole.UserRole, room)
+                rooms_item.addChild(room_item)
+            rooms_item.setExpanded(True)
+
+        # Add door hooks
+        if lyt.doorhooks:
+            doors_item = QTreeWidgetItem(["Door Hooks"])
+            self.ui.lytTree.addTopLevelItem(doors_item)
+            for doorhook in lyt.doorhooks:
+                door_item = QTreeWidgetItem([doorhook.door])
+                door_item.setData(0, Qt.ItemDataRole.UserRole, doorhook)
+                doors_item.addChild(door_item)
+            doors_item.setExpanded(True)
+
+        # Add tracks
+        if lyt.tracks:
+            tracks_item = QTreeWidgetItem(["Tracks"])
+            self.ui.lytTree.addTopLevelItem(tracks_item)
+            for track in lyt.tracks:
+                track_item = QTreeWidgetItem([track.model])
+                track_item.setData(0, Qt.ItemDataRole.UserRole, track)
+                tracks_item.addChild(track_item)
+            tracks_item.setExpanded(True)
+
+        # Add obstacles
+        if lyt.obstacles:
+            obstacles_item = QTreeWidgetItem(["Obstacles"])
+            self.ui.lytTree.addTopLevelItem(obstacles_item)
+            for obstacle in lyt.obstacles:
+                obstacle_item = QTreeWidgetItem([obstacle.model])
+                obstacle_item.setData(0, Qt.ItemDataRole.UserRole, obstacle)
+                obstacles_item.addChild(obstacle_item)
+            obstacles_item.setExpanded(True)
+
+        self.ui.lytTree.blockSignals(False)
+
+        # Update LYT renderer if it exists
+        if self._lyt_renderer:
+            self._lyt_renderer.set_lyt(lyt)
+
+    def on_lyt_tree_selection_changed(self):
+        """Handle selection change in the layout tree."""
+        selected_items: list[QTreeWidgetItem] = self.ui.lytTree.selectedItems()
+        if not selected_items:
+            return
+
+        item = selected_items[0]
+        data = item.data(0, Qt.ItemDataRole.UserRole)
+
+        if isinstance(data, LYTRoom):
+            self.ui.lytElementTabs.setCurrentIndex(0)  # Room tab
+            self.update_room_properties(data)
+        elif isinstance(data, LYTDoorHook):
+            self.ui.lytElementTabs.setCurrentIndex(1)  # Door Hook tab
+            self.update_doorhook_properties(data)
+
+    def update_room_properties(self, room: LYTRoom):
+        """Update the room property editors with the selected room's data."""
+        self.ui.modelEdit.blockSignals(True)
+        self.ui.posXSpin.blockSignals(True)
+        self.ui.posYSpin.blockSignals(True)
+        self.ui.posZSpin.blockSignals(True)
+        self.ui.rotXSpin.blockSignals(True)
+        self.ui.rotYSpin.blockSignals(True)
+        self.ui.rotZSpin.blockSignals(True)
+
+        self.ui.modelEdit.setText(room.model)
+        self.ui.posXSpin.setValue(room.position.x)
+        self.ui.posYSpin.setValue(room.position.y)
+        self.ui.posZSpin.setValue(room.position.z)
+
+        # LYTRoom doesn't have orientation - reset rotation spinboxes
+        self.ui.rotXSpin.setValue(0)
+        self.ui.rotYSpin.setValue(0)
+        self.ui.rotZSpin.setValue(0)
+
+        self.ui.modelEdit.blockSignals(False)
+        self.ui.posXSpin.blockSignals(False)
+        self.ui.posYSpin.blockSignals(False)
+        self.ui.posZSpin.blockSignals(False)
+        self.ui.rotXSpin.blockSignals(False)
+        self.ui.rotYSpin.blockSignals(False)
+        self.ui.rotZSpin.blockSignals(False)
+
+    def update_doorhook_properties(self, doorhook: LYTDoorHook):
+        """Update the door hook property editors with the selected door hook's data."""
+        if self._module is None:
+            return
+
+        layout_module = self._module.layout()
+        if layout_module is None:
+            return
+
+        lyt: LYT | None = layout_module.resource()
+        if lyt is None:
+            return
+
+        self.ui.roomNameCombo.blockSignals(True)
+        self.ui.doorNameEdit.blockSignals(True)
+
+        # Populate room combo
+        self.ui.roomNameCombo.clear()
+        for room in lyt.rooms:
+            self.ui.roomNameCombo.addItem(room.model)
+
+        # Set current values
+        self.ui.roomNameCombo.setCurrentText(doorhook.room)
+        self.ui.doorNameEdit.setText(doorhook.door)
+
+        self.ui.roomNameCombo.blockSignals(False)
+        self.ui.doorNameEdit.blockSignals(False)
+
+    def get_selected_lyt_element(self) -> LYTRoom | LYTDoorHook | LYTTrack | LYTObstacle | None:
+        """Get the currently selected LYT element from the tree."""
+        selected_items = self.ui.lytTree.selectedItems()
+        if not selected_items:
+            return None
+        return selected_items[0].data(0, Qt.ItemDataRole.UserRole)
+
+    def on_room_position_changed(self):
+        """Handle room position change from spinboxes."""
+        element = self.get_selected_lyt_element()
+        if not isinstance(element, LYTRoom):
+            return
+
+        element.position.x = self.ui.posXSpin.value()
+        element.position.y = self.ui.posYSpin.value()
+        element.position.z = self.ui.posZSpin.value()
+
+    def on_room_rotation_changed(self):
+        """Handle room rotation change from spinboxes."""
+        element = self.get_selected_lyt_element()
+        if not isinstance(element, LYTRoom):
+            return
+
+        # LYTRoom doesn't have orientation property - this is a no-op
+        # Rotation is handled at the model level, not the room level
+
+    def on_room_model_changed(self):
+        """Handle room model name change."""
+        element = self.get_selected_lyt_element()
+        if not isinstance(element, LYTRoom):
+            return
+
+        element.model = self.ui.modelEdit.text()
+        self.rebuild_layout_tree()
+
+    def on_browse_model(self):
+        """Browse for a model file to assign to the room."""
+        from qtpy.QtWidgets import QFileDialog
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Model",
+            "",
+            "Model Files (*.mdl)"
+        )
+
+        if file_path:
+            model_name = Path(file_path).stem
+            self.ui.modelEdit.setText(model_name)
+
+    def on_doorhook_room_changed(self):
+        """Handle door hook room change."""
+        element = self.get_selected_lyt_element()
+        if not isinstance(element, LYTDoorHook):
+            return
+
+        element.room = self.ui.roomNameCombo.currentText()
+
+    def on_doorhook_name_changed(self):
+        """Handle door hook name change."""
+        element = self.get_selected_lyt_element()
+        if not isinstance(element, LYTDoorHook):
+            return
+
+        element.door = self.ui.doorNameEdit.text()
+        self.rebuild_layout_tree()
+
+    def on_lyt_tree_context_menu(self, point: QPoint):
+        """Show context menu for layout tree items."""
+        item = self.ui.lytTree.itemAt(point)
+        if not item:
+            return
+
+        element = item.data(0, Qt.ItemDataRole.UserRole)
+        if not element:
+            return
+
+        menu = QMenu(self)
+
+        # Common operations
+        edit_action = QAction("Edit Properties", self)
+        edit_action.triggered.connect(lambda: self.edit_lyt_element(element))
+        menu.addAction(edit_action)
+
+        duplicate_action = QAction("Duplicate", self)
+        duplicate_action.triggered.connect(lambda: self.duplicate_lyt_element(element))
+        menu.addAction(duplicate_action)
+
+        delete_action = QAction("Delete", self)
+        delete_action.triggered.connect(lambda: self.delete_lyt_element(element))
+        menu.addAction(delete_action)
+
+        menu.addSeparator()
+
+        # Type-specific operations
+        if isinstance(element, LYTRoom):
+            load_model_action = QAction("Load Room Model", self)
+            load_model_action.triggered.connect(lambda: self.load_room_model(element))
+            menu.addAction(load_model_action)
+
+        elif isinstance(element, LYTDoorHook):
+            place_action = QAction("Place in 3D View", self)
+            place_action.triggered.connect(lambda: self.place_doorhook_in_view(element))
+            menu.addAction(place_action)
+
+        menu.exec(self.ui.lytTree.mapToGlobal(point))
+
+    def edit_lyt_element(self, element: LYTRoom | LYTDoorHook | LYTTrack | LYTObstacle):
+        """Open editor dialog for LYT element."""
+        # Select the element in the tree
+        for i in range(self.ui.lytTree.topLevelItemCount()):
+            parent = self.ui.lytTree.topLevelItem(i)
+            if parent:
+                for j in range(parent.childCount()):
+                    child = parent.child(j)
+                    if child and child.data(0, Qt.ItemDataRole.UserRole) == element:
+                        self.ui.lytTree.setCurrentItem(child)
+                        break
+
+    def duplicate_lyt_element(self, element: LYTRoom | LYTDoorHook | LYTTrack | LYTObstacle):
+        """Duplicate the selected LYT element."""
+        if self._module is None:
+            return
+
+        layout_module = self._module.layout()
+        if layout_module is None:
+            return
+
+        lyt: LYT | None = layout_module.resource()
+        if lyt is None:
+            return
+
+        # Create duplicate with offset
+        offset = Vector3(10, 10, 0)
+
+        if isinstance(element, LYTRoom):
+            new_element = LYTRoom(f"{element.model}_copy", element.position + offset)
+            lyt.rooms.append(new_element)
+        elif isinstance(element, LYTDoorHook):
+            new_element = LYTDoorHook(
+                element.room,
+                f"{element.door}_copy",
+                element.position + offset,
+                element.orientation
+            )
+            lyt.doorhooks.append(new_element)
+        elif isinstance(element, LYTTrack):
+            new_element = LYTTrack(f"{element.model}_copy", element.position + offset)
+            lyt.tracks.append(new_element)
+        elif isinstance(element, LYTObstacle):
+            new_element = LYTObstacle(f"{element.model}_copy", element.position + offset)
+            lyt.obstacles.append(new_element)
+
+        self.rebuild_layout_tree()
+        self.log.info(f"Duplicated {type(element).__name__}")
+
+    def delete_lyt_element(self, element: LYTRoom | LYTDoorHook | LYTTrack | LYTObstacle):
+        """Delete the selected LYT element."""
+        if self._module is None:
+            return
+
+        layout_module = self._module.layout()
+        if layout_module is None:
+            return
+
+        lyt: LYT | None = layout_module.resource()
+        if lyt is None:
+            return
+
+        # Confirm deletion
+        element_type = type(element).__name__
+        element_name = element.model if hasattr(element, 'model') else element.door if hasattr(element, 'door') else "element"
+
+        reply = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            f"Delete {element_type} '{element_name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        # Remove element
+        if isinstance(element, LYTRoom):
+            lyt.rooms.remove(element)
+        elif isinstance(element, LYTDoorHook):
+            lyt.doorhooks.remove(element)
+        elif isinstance(element, LYTTrack):
+            lyt.tracks.remove(element)
+        elif isinstance(element, LYTObstacle):
+            lyt.obstacles.remove(element)
+
+        self.rebuild_layout_tree()
+        self.log.info(f"Deleted {element_type} '{element_name}'")
+
+    def load_room_model(self, room: LYTRoom):
+        """Load and display a room model in the 3D view."""
+        if self._module is None:
+            return
+
+        # Try to load the MDL file
+        mdl_resource = self._module.resource(room.model, ResourceType.MDL)
+        if mdl_resource:
+            self.log.info(f"Loading room model: {room.model}")
+            # The model will be loaded and positioned at room.position
+            # This would integrate with the 3D renderer's model loading system
+        else:
+            self.log.warning(f"Room model not found: {room.model}")
+            QMessageBox.warning(
+                self,
+                "Model Not Found",
+                f"Could not find model '{room.model}.mdl' in the module."
+            )
+
+    def place_doorhook_in_view(self, doorhook: LYTDoorHook):
+        """Place the door hook at the current 3D view position."""
+        # Get the cursor position from the 3D view
+        scene = self.ui.mainRenderer.scene
+        if scene:
+            doorhook.position.x = scene.cursor.position().x
+            doorhook.position.y = scene.cursor.position().y
+            doorhook.position.z = scene.cursor.position().z
+            self.rebuild_layout_tree()
+            self.log.info(f"Placed door hook '{doorhook.door}' in 3D view")
 
     # endregion
 

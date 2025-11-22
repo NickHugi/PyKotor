@@ -4,14 +4,14 @@ import json
 
 from collections import deque
 from enum import Enum
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, cast
 
 import qtpy
 
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy.QtCore import QDataStream, QIODevice, QItemSelectionModel, QMimeData, QModelIndex, QPoint, QPointF, QRect, QTimer, Qt
 from qtpy.QtGui import QBrush, QColor, QCursor, QDrag, QFont, QPainter, QPen, QPixmap, QRadialGradient, QStandardItemModel, QTextDocument
-from qtpy.QtWidgets import QAbstractItemDelegate, QAbstractItemView, QStyledItemDelegate, QWidget
+from qtpy.QtWidgets import QAbstractItemDelegate, QAbstractItemView, QStyledItemDelegate, QToolTip, QWidget
 
 from pykotor.resource.generics.dlg import DLGEntry, DLGLink, DLGNode, DLGReply
 from toolset.gui.editors.dlg.constants import QT_STANDARD_ITEM_FORMAT, _DLG_MIME_DATA_ROLE, _LINK_PARENT_NODE_PATH_ROLE, _MODEL_INSTANCE_ID_ROLE
@@ -21,7 +21,7 @@ from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QAbstractItemModel, QByteArray, QMimeData
-    from qtpy.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QKeyEvent, QMouseEvent, QPaintEvent
+    from qtpy.QtGui import QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QHoverEvent, QKeyEvent, QMouseEvent, QPaintEvent
     from qtpy.QtWidgets import QAbstractItemDelegate, QStyleOptionViewItem, QStyledItemDelegate, QWidget
     from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
@@ -665,3 +665,9 @@ class DLGTreeView(RobustTreeView):
             Qt.DropAction.MoveAction if self.is_item_from_current_model(event) else Qt.DropAction.CopyAction
         )  # DropAction's are unused currently: the view is handling the drop.
         self.setCursor(Qt.CursorShape.ArrowCursor)
+
+
+def install_immediate_tooltip(widget: QWidget, tooltip_text: str):
+    widget.setToolTip(tooltip_text)
+    widget.setMouseTracking(True)
+    widget.event = lambda event: QToolTip.showText(cast("QHoverEvent", event).pos(), widget.toolTip(), widget)  # type: ignore[method-assign]

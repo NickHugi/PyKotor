@@ -502,12 +502,14 @@ class Editor(QMainWindow):
         filepath: os.PathLike | str,
         resref: str,
         restype: ResourceType,
-        data: bytes,
+        data: bytes | bytearray,
     ):
         self._filepath = Path(filepath)
         self._resname = resref
         self._restype = restype
-        self._revert = data
+        # Convert bytearray to bytes if needed
+        data_bytes = bytes(data) if isinstance(data, bytearray) else data
+        self._revert = data_bytes
         menu_bar: QMenuBar | None = cast(Optional[QMenuBar], self.menuBar())
         assert menu_bar is not None, "Menu bar is None somehow? This should be impossible."
         menu_bar_actions: Sequence[_QAction] = menu_bar.actions()  # pyright: ignore[reportAssignmentType]
@@ -519,7 +521,7 @@ class Editor(QMainWindow):
                     action.setEnabled(True)
                     break
         self.refresh_window_title()
-        self.sig_loaded_file.emit(str(self._filepath), self._resname, self._restype, data)
+        self.sig_loaded_file.emit(str(self._filepath), self._resname, self._restype, data_bytes)
 
     def new(self):
         self._revert = b""

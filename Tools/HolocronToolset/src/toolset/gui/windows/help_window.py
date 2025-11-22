@@ -10,7 +10,6 @@ from qtpy.QtWidgets import QMainWindow, QMessageBox
 
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.gui.windows.help_content import HelpContent
-from toolset.gui.windows.help_updater import HelpUpdater
 from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
@@ -26,7 +25,9 @@ class HelpWindow(QMainWindow):
     def __init__(self, parent: QWidget | None, startingPage: str | None = None):
         super().__init__(parent)
 
+        from toolset.gui.windows.help_updater import HelpUpdater
         from toolset.uic.qtpy.windows import help as toolset_help
+
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -37,8 +38,8 @@ class HelpWindow(QMainWindow):
         self.help_content.setup_contents()
         self.starting_page: str | None = startingPage
 
-    def showEvent(self, a0: QShowEvent):
-        super().showEvent(a0)
+    def showEvent(self, event: QShowEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
+        super().showEvent(event)
         self.ui.textDisplay.setSearchPaths(["./help"])
 
         if self.ENABLE_UPDATES:

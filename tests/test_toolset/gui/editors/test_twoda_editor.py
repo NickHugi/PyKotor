@@ -147,3 +147,31 @@ class TwoDAEditorTest(TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# Additional UI tests (merged from test_ui_other_editors.py)
+# ============================================================================
+
+import pytest
+from toolset.gui.editors.twoda import TwoDAEditor
+from toolset.data.installation import HTInstallation
+from pykotor.resource.type import ResourceType
+
+def test_twoda_editor(qtbot, installation: HTInstallation, test_files_dir):
+    """Test TwoDA Editor."""
+    editor = TwoDAEditor(None, installation)
+    qtbot.addWidget(editor)
+    editor.show()
+    
+    assert editor.isVisible()
+    
+    # Load 2DA
+    twoda_file = test_files_dir / "appearance.2da"
+    if twoda_file.exists():
+        editor.load(twoda_file, "appearance", ResourceType.TwoDA, twoda_file.read_bytes())
+        assert editor.ui.table.rowCount() > 0
+        
+        # Interact
+        editor.ui.filterEdit.setText("test")
+        # Check filter logic if immediate

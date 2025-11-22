@@ -205,12 +205,14 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
     elif restype is ResourceType.NSS:
         editor = NSSEditor(None, installation)
     elif restype is ResourceType.NCS:
-        QMessageBox.warning(
-            parent_window_widget,
-            "Cannot decompile NCS without an installation active",
-            "Please select an installation from the dropdown before loading an NCS.",
-        )
-        return None, None
+        if installation is None:
+            QMessageBox.warning(
+                parent_window_widget,
+                "Cannot decompile NCS without an installation active",
+                "Please select an installation from the dropdown before loading an NCS.",
+            )
+            return None, None
+        editor = NSSEditor(None, installation)
 
     elif restype.target_type() is ResourceType.DLG:
         if installation is None or not gff_specialized:  # noqa: SIM108

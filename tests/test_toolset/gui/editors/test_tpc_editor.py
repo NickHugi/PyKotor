@@ -80,3 +80,21 @@ class TPCEditorTest(TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# Additional UI tests (merged from test_ui_other_editors.py)
+# ============================================================================
+
+import pytest
+from toolset.gui.editors.tpc import TPCEditor
+from toolset.data.installation import HTInstallation
+
+def test_tpc_editor(qtbot, installation: HTInstallation):
+    """Test TPC Editor."""
+    editor = TPCEditor(None, installation)
+    qtbot.addWidget(editor)
+    editor.show()
+    
+    assert editor.isVisible()
+    # TPC editor is mostly viewer + convert buttons

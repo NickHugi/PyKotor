@@ -156,7 +156,7 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
             default_value = self._determine_default_value(column_data)
 
             # Create AddColumn2DA modifier with index-based identifier
-            add_column_id = f"add_column_{col_idx}"
+            add_column_id = f"{modifications.sourcefile}_{col_name}_addcol_{col_idx}"
             add_column = AddColumn2DA(
                 identifier=add_column_id,
                 header=col_name,
@@ -206,7 +206,7 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
 
             if changed_cells:
                 # Use simple index-based identifier
-                change_row_id = f"change_row_{change_row_counter}"
+                change_row_id = f"{modifications.sourcefile}_changerow_{change_row_counter}"
                 change_row_counter += 1
 
                 left_label: str | None = None
@@ -243,7 +243,7 @@ class TwoDADiffAnalyzer(DiffAnalyzer):
                         cells[header] = RowValueConstant(cell_value)
 
                 # Use simple index-based identifier
-                add_row_id = f"add_row_{add_row_counter}"
+                add_row_id = f"{modifications.sourcefile}_addrow_{add_row_counter}"
 
                 add_row = AddRow2DA(
                     identifier=add_row_id,
@@ -618,10 +618,11 @@ class GFFDiffAnalyzer(DiffAnalyzer):
         value = self._get_field_value(struct, field_label, field_type)
 
         # Determine parent path
-        has_parent = bool(field_path.parent.parts)
+        has_parent: bool = bool(field_path.parent.parts)
         parent_path = str(field_path.parent).replace("/", "\\") if has_parent else ""
 
-        add_field_id = f"add_{field_label}"
+        sourcefile_normalized = modifications.sourcefile.replace(".", "_")
+        add_field_id = f"{sourcefile_normalized}_add_{field_label}"
         add_field = AddFieldGFF(
             identifier=add_field_id,
             label=field_label,

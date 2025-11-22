@@ -5,9 +5,12 @@ import logging
 import os
 import pathlib
 import sys
+import shutil
 from io import StringIO
 from logging.handlers import RotatingFileHandler
 from typing import TYPE_CHECKING
+from contextlib import suppress
+from tempfile import TemporaryDirectory
 
 import pytest
 
@@ -38,7 +41,9 @@ from utility.error_handling import (  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 from pykotor.common.misc import Game  # noqa: E402
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.file import ResourceIdentifier, FileResource
+from pykotor.resource.type import ResourceType
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.ncs.compiler.classes import (  # noqa: E402
     CompileError,
     EntryPointError,
@@ -57,6 +62,7 @@ from utility.error_handling import format_exception_with_variables, universal_si
 from pathlib import Path  # noqa: E402
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
     from _pytest.reports import TestReport
     from ply import yacc  # pyright: ignore[reportMissingTypeStubs]
 
@@ -81,6 +87,146 @@ TSLPATCHER_NWNNSSCOMP_PATH: str | None = r"C:\Users\boden\Documents\k1 mods\Kill
 K_SCRIPT_TOOL_NWNNSSCOMP_PATH: str | None = r"C:/Program Files (x86)/KotOR Scripting Tool/nwnnsscomp.exe"
 V1_NWNNSSCOMP_PATH: str | None = r"C:\Users\boden\Desktop\kotorcomp (1)\nwnnsscomp.exe"
 LOG_FILENAME = "test_ncs_compilers_install"
+
+ALL_INSTALLATIONS: dict[Game, Installation] | None = None
+ALL_SCRIPTS: dict[Game, list[tuple[FileResource, Path, Path]]] = {Game.K1: [], Game.K2: []}
+SYMLINK_MAP: dict[Path, FileResource] = {}
+TEMP_NSS_DIRS: dict[Game, TemporaryDirectory[str]] = {Game.K1: TemporaryDirectory(), Game.K2: TemporaryDirectory()}
+TEMP_NCS_DIRS: dict[Game, TemporaryDirectory[str]] = {Game.K1: TemporaryDirectory(), Game.K2: TemporaryDirectory()}
+CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
+    Game.K1: set(),
+    Game.K2: set(),
+}
+
+
+def _setup_and_profile_installation() -> dict[Game, Installation]:
+    all_installations = {}
+    if K1_PATH and Path(K1_PATH).joinpath("chitin.key").is_file():
+        all_installations[Game.K1] = Installation(K1_PATH)
+    if K2_PATH and Path(K2_PATH).joinpath("chitin.key").is_file():
+        all_installations[Game.K2] = Installation(K2_PATH)
+    return all_installations
+
+def collect_all_scripts(
+    restype: ResourceType = ResourceType.NSS,
+) -> dict[Game, list[tuple[FileResource, Path, Path]]]:
+    global ALL_INSTALLATIONS
+    global ALL_SCRIPTS
+    global SYMLINK_MAP
+    if ALL_INSTALLATIONS is None:
+        ALL_INSTALLATIONS = _setup_and_profile_installation()
+
+    all_scripts: dict[Game, list[tuple[FileResource, Path, Path]]] = {Game.K1: [], Game.K2: []}
+    symlink_map: dict[Path, FileResource] = {}
+
+    for game, installation in ALL_INSTALLATIONS.items():
+        game_name: Literal["K1", "TSL"] = "K1" if game.is_k1() else "TSL"
+        print(f"Collecting all {game_name} scripts...")
+        for resource in installation:
+            res_ident: ResourceIdentifier = resource.identifier()
+            if res_ident.restype != restype:
+                continue
+            res_ident = resource.identifier()
+            filename = str(res_ident)
+            filepath: Path = resource.filepath()
+
+            if resource.inside_capsule:
+                subfolder: str = Installation.get_module_root(filepath)
+            elif resource.inside_bif:
+                subfolder = filepath.name
+            else:
+                subfolder = filepath.parent.name
+
+            if res_ident in CANNOT_COMPILE_EXT[game]:
+                continue
+
+            nss_dir = Path(TEMP_NSS_DIRS[game].name)
+            nss_path: Path = nss_dir.joinpath(subfolder, filename)
+            
+            ncs_dir = Path(TEMP_NCS_DIRS[game].name)
+            ncs_path: Path = ncs_dir.joinpath(subfolder, filename).with_suffix(".ncs")
+            
+            if resource.inside_bif and "_inc_" in filename.lower():
+                if nss_path not in symlink_map:
+                    symlink_map[nss_path] = resource
+
+            entry: tuple[FileResource, Path, Path] = (resource, nss_path, ncs_path)
+            
+            if entry in all_scripts[game]:
+                continue
+            
+            all_scripts[game].append(entry)
+
+    ALL_SCRIPTS = all_scripts
+    SYMLINK_MAP = symlink_map
+    return all_scripts
+
+
+def extract_all_scripts():
+    global ALL_SCRIPTS
+    global SYMLINK_MAP
+    
+    for game, scripts in ALL_SCRIPTS.items():
+        game_name: Literal["K1", "TSL"] = "K1" if game.is_k1() else "TSL"
+        print(f"Extracting {len(scripts)} {game_name} scripts...")
+        
+        for resource, nss_path, ncs_path in scripts:
+            nss_path.parent.mkdir(exist_ok=True, parents=True)
+            ncs_path.parent.mkdir(exist_ok=True, parents=True)
+
+            if not nss_path.is_file():
+                resdata: bytes = resource.data()
+                with nss_path.open("wb") as f:
+                    f.write(resdata)
+
+        print(f"Symlinking {len(SYMLINK_MAP)} scripts.bif scripts into subfolders... this may take a while...")
+        seen_paths = set()
+        for resource, nss_path, ncs_path in scripts:
+            if nss_path in SYMLINK_MAP:
+                continue
+            working_folder = nss_path.parent
+            if working_folder in seen_paths:
+                continue
+            if working_folder.name == "scripts.bif":
+                continue
+
+            for bif_nss_path in SYMLINK_MAP:
+                link_path: Path = working_folder.joinpath(bif_nss_path.name)
+                if link_path.exists():
+                    continue
+                link_path.symlink_to(bif_nss_path, target_is_directory=False)
+            seen_paths.add(working_folder)
+
+    print("Finished extraction and symlinking.")
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc):
+    if "script_data" in metafunc.fixturenames:
+        print("Generating NSS compile tests...")
+        
+        if not ALL_SCRIPTS[Game.K1] and not ALL_SCRIPTS[Game.K2]:
+            collect_all_scripts()
+
+        test_script_data: list[tuple[Game, tuple[FileResource, Path, Path]]] = [
+            (game, script)
+            for game, scripts in ALL_SCRIPTS.items()
+            for script in scripts
+            if not script[1].is_symlink()
+        ]
+        print(f"Test data collected. Total tests: {len(test_script_data)}")
+        ids: list[str] = sorted([f"{game}_{script[0].identifier()}" for game, script in test_script_data])
+        metafunc.parametrize("script_data", test_script_data, ids=ids, indirect=True)
+
+
+@pytest.fixture(scope="session")
+def ensure_scripts_ready():
+    if not ALL_SCRIPTS[Game.K1] and not ALL_SCRIPTS[Game.K2]:
+        collect_all_scripts()
+    extract_all_scripts()
+
+@pytest.fixture
+def script_data(request: pytest.FixtureRequest, ensure_scripts_ready):
+    return request.param
 
 
 def setup_logger():
@@ -276,33 +422,6 @@ def compare_external_results(
         print("\n".join(matches))
 
 
-# def test_ktool_nwnnsscomp(
-#    script_data: tuple[Game, tuple[FileResource, Path, Path]],
-# ):
-#    compilers: dict[str | None, ExternalNCSCompiler | None] = {
-#        KTOOL_NWNNSSCOMP_PATH: ExternalNCSCompiler(KTOOL_NWNNSSCOMP_PATH) if KTOOL_NWNNSSCOMP_PATH and Path(KTOOL_NWNNSSCOMP_PATH).is_file() else None,
-#    }
-
-#    compiler_result: dict[str | None, bytes | None] = {
-#        KTOOL_NWNNSSCOMP_PATH: None,
-#    }
-
-#    game, script_info = script_data
-#    file_res, nss_path, ncs_path = script_info
-#    for compiler_path, compiler in compilers.items():
-#        if compiler is None or compiler_path is None:
-#            continue  # don't test nonexistent compilers
-#        if nss_path.name == "nwscript.nss":
-#            continue
-#        if os.path.islink(nss_path):
-#            continue
-
-#        unique_ncs_path = ncs_path.with_stem(f"{ncs_path.stem}_{Path(compiler_path).stem}_(ktool)")
-#        compile_with_abstract_compatible(compiler, file_res, nss_path, unique_ncs_path, game, "ktool")
-#        with unique_ncs_path.open("rb") as f:
-#            compiler_result[compiler_path] = f.read()
-
-
 def test_tslpatcher_nwnnsscomp(
     script_data: tuple[Game, tuple[FileResource, Path, Path]],
 ):
@@ -346,51 +465,6 @@ def test_tslpatcher_nwnnsscomp(
         compile_with_abstract_compatible(compiler, file_res, nss_path, unique_ncs_path, game, "tslpatcher_nwnnsscomp")
         with unique_ncs_path.open("rb") as f:
             compiler_result[compiler_path] = f.read()
-
-
-# def test_kscript_tool_nwnnsscomp(
-#    script_data: tuple[Game, tuple[FileResource, Path, Path]],
-# ):
-#    compilers: dict[str | None, ExternalNCSCompiler | None] = {
-#        K_SCRIPT_TOOL_NWNNSSCOMP_PATH: ExternalNCSCompiler(K_SCRIPT_TOOL_NWNNSSCOMP_PATH) if K_SCRIPT_TOOL_NWNNSSCOMP_PATH and Path(K_SCRIPT_TOOL_NWNNSSCOMP_PATH).is_file() else None,
-#    }
-
-#    compiler_result: dict[str | None, bytes | None] = {
-#        K_SCRIPT_TOOL_NWNNSSCOMP_PATH: None,
-#    }
-
-#    game, script_info = script_data
-#    file_res, nss_path, ncs_path = script_info
-#    for i, (compiler_path, compiler) in enumerate(compilers.items()):
-#        if compiler is None or compiler_path is None:
-#            continue  # don't test nonexistent compilers
-
-#        unique_ncs_path = ncs_path.with_stem(f"{ncs_path.stem}_{Path(compiler_path).stem}_(kscript_tool)")
-#        compile_with_abstract_compatible(compiler, file_res, nss_path, unique_ncs_path, game, "kscript_tool")
-#        with unique_ncs_path.open("rb") as f:
-#            compiler_result[compiler_path] = f.read()
-
-# def test_v1_nwnnsscomp(
-#    script_data: tuple[Game, tuple[FileResource, Path, Path]],
-# ):
-#    compilers: dict[str | None, ExternalNCSCompiler | None] = {
-#        V1_NWNNSSCOMP_PATH: ExternalNCSCompiler(V1_NWNNSSCOMP_PATH) if V1_NWNNSSCOMP_PATH and Path(V1_NWNNSSCOMP_PATH).is_file() else None,
-#    }
-
-#    compiler_result: dict[str | None, bytes | None] = {
-#        V1_NWNNSSCOMP_PATH: None,
-#    }
-
-#    game, script_info = script_data
-#    file_res, nss_path, ncs_path = script_info
-#    for i, (compiler_path, compiler) in enumerate(compilers.items()):
-#        if compiler is None or compiler_path is None:
-#            continue  # don't test nonexistent compilers
-
-#        unique_ncs_path = ncs_path.with_stem(f"{ncs_path.stem}_{Path(compiler_path).stem}_(v1)")
-#        compile_with_abstract_compatible(compiler, file_res, nss_path, unique_ncs_path, game, "v1")
-#        with unique_ncs_path.open("rb") as f:
-#            compiler_result[compiler_path] = f.read()
 
 
 def test_inbuilt_compiler(script_data: tuple[Game, tuple[FileResource, Path, Path]]):
@@ -499,29 +573,5 @@ if __name__ == "__main__":
 
     if profiler:
         save_profiler_output(profiler, "profiler_output.pstat")
-        # Generate reports from the profile stats
-        # stats = pstats.Stats(profiler_output_file_str).sort_stats('cumulative')
-        # stats.print_stats()
-
-        # Generate some line-execution graphs for flame graphs
-        # profiler.create_stats()
-        # stats_text = pstats.Stats(profiler).sort_stats('cumulative')
-        # stats_text.print_stats()
-        # stats_text.dump_stats(f"{LOG_FILENAME}.pstats")
-        # stats_text.print_callers()
-        # stats_text.print_callees()
-        # Cumulative list of the calls
-        # stats_text.print_stats(100)
-        # Cumulative list of calls per function
-        # stats_text.print_callers(100, 'cumulative')
-        # stats_text.print_callees(100, 'cumulative')
-
-        # Generate some flat line graphs
-        # profiler.print_stats(sort='time')  # (Switch to sort='cumulative' then scroll up to see where time was spent!)
-        # profiler.print_stats(sort='name')  # (toString of OBJ is called the most often, followed by compiler drivers)
-        # profiler.print_stats(sort='cinit') # (A constructor for NCS is where most (<2%) of time is spent)
 
     sys.exit(result)
-    # Cleanup temporary directories after use
-    # for temp_dir in temp_dirs.values():
-    #    temp_dir.cleanup()  # noqa: ERA001

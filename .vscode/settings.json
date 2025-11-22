@@ -1,52 +1,30 @@
 {
-    "python.analysis.inlayHints.callArgumentNames": "off",
-    "python.analysis.inlayHints.functionReturnTypes": true,
-    "python.analysis.inlayHints.variableTypes": false,
-    "python.analysis.typeCheckingMode": "basic",
-    "python.analysis.enablePytestSupport": true,
-    "python.analysis.extraPaths": [
-        "./tests",
-        "./Libraries/PyKotor/src",
-        "./Libraries/PyKotorFont/src",
-        "./Libraries/PyKotorGL/src",
-        "./Libraries/Utility/src",
-        "./Tools/BatchPatcher/src",
-        "./Tools/GuiConverter/src",
-        "./Tools/HolocronToolset/src",
-        "./Tools/HoloPatcher/src",
-        "./Tools/KotorDiff/src",
-        "./Tools/MDLDecompile/src"
-    ],
-    "python.envFile": "${workspaceFolder}/.env",
-    "python.missingPackage.severity": "Information",
-
-    "python.terminal.launchArgs": [
-        "-i",
-        "-m",
-        "debugpy",
-        "--listen",
-        "5678",
-        "--wait-for-client"
-    ],
-    "python.testing.unittestEnabled": true,
-    "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        "./tests",
-        "-p",
-        "*test*.py"
-    ],
-
-    "launch": {
-        "compounds": [],
-        "justMyCode": false,
-        "debugStdLib": true
+    "debugpy.debugJustMyCode": true,
+    "editor.inlineSuggest.enabled": true,
+    "editor.quickSuggestions": {
+        "comments": true,
+        "other": "inline",
+        "strings": true
     },
-
+    "editor.quickSuggestionsDelay": 100,
+    "files.watcherExclude": {
+        "**/.git/**": true
+    },
     "github-actions.workflows.pinned.workflows": [
         ".github/workflows/publish_and_test_pykotor.yml"
     ],
-
+    "launch": {
+        "compounds": [],
+        "debugStdLib": true,
+        "justMyCode": false
+    },
+    "mypy-type-checker.args": [
+        "--check-untyped-defs",
+        "--explicit-package-bases"
+    ],
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+    "mypy-type-checker.preferDaemon": true,
+    "mypy-type-checker.reportingScope": "file",
     "mypy.extraArguments": [
         "--exclude=./.venv",
         "--exclude=tests/results",
@@ -55,27 +33,23 @@
         "--explicit-package-bases"
     ],
     "mypy.runUsingActiveInterpreter": true,
-    "mypy-type-checker.args": [
-        "--check-untyped-defs",
-        "--explicit-package-bases"
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.missingPackage.severity": "Information",
+    "python.terminal.launchArgs": [
+        "-i",
+        "-m",
+        "debugpy",
+        "--listen",
+        "5678",
+        "--wait-for-client"
     ],
-    "mypy-type-checker.preferDaemon": true,
-    "mypy-type-checker.reportingScope": "file",
-    "mypy-type-checker.importStrategy": "fromEnvironment",
-
-    "remote.WSL.fileWatcher.polling": true,
-
-    "files.watcherExclude": {
-        "**/.git/**": true
-    },
-    "editor.inlineSuggest.enabled": true,
-    "editor.quickSuggestions": {
-        "other": "inline",
-        "comments": true,
-        "strings": true
-    },
-    "editor.quickSuggestionsDelay": 100,
-    "debugpy.debugJustMyCode": true,
+    "python.testing.pytestArgs": [
+        "tests",
+        "-vv"
+    ],
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
     "pythonTestExplorer.outputs.showOutputsOnRun": true,
-    "pythonTestExplorer.testFramework": "unittest"
+    "pythonTestExplorer.testFramework": "pytest",
+    "remote.WSL.fileWatcher.polling": true
 }
