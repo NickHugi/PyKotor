@@ -67,6 +67,7 @@ class UTPEditor(Editor):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setup_installation(installation)
@@ -348,7 +349,8 @@ class UTPEditor(Editor):
         self._loadUTP(UTP())
 
     def update_item_count(self):
-        self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utp.inventory)}")
+        from toolset.gui.common.localization import translate as tr, trf
+        self.ui.inventoryCountLabel.setText(trf("Total Items: {count}", count=len(self._utp.inventory)))
 
     def change_name(self):
         if self._installation is None:

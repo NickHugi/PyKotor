@@ -65,6 +65,12 @@ class InsertInstanceDialog(QDialog):
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
         self.ui.previewRenderer.installation = installation
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
+        
         self._setup_signals()
         self._setup_location_select()
         self._setup_resource_list()
@@ -122,7 +128,8 @@ class InsertInstanceDialog(QDialog):
 
         new = True
         if not self.ui.resourceList.selectedItems():
-            BetterMessageBox("Choose an instance", "You must choose an instance, use the radial buttons to determine where/how to create the GIT instance.", icon=QMessageBox.Critical).exec()
+            from toolset.gui.common.localization import translate as tr
+            BetterMessageBox(tr("Choose an instance"), tr("You must choose an instance, use the radial buttons to determine where/how to create the GIT instance."), icon=QMessageBox.Critical).exec()
             return
         resource: FileResource = self.ui.resourceList.selectedItems()[0].data(Qt.ItemDataRole.UserRole)
 

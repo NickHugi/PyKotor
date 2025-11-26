@@ -153,7 +153,8 @@ class WalkmeshEditor(QWidget):
 
     def add_track(self):
         if len(self.lyt.rooms) < 2:  # noqa: PLR2004
-            QMessageBox.warning(self, "Add Track", "At least two rooms are required to add a track.")
+            from toolset.gui.common.localization import translate as tr
+            QMessageBox.warning(self, tr("Add Track"), tr("At least two rooms are required to add a track."))
             return
         dialog = TrackPropertiesDialog(self, self.lyt.rooms)
         if dialog.exec():
@@ -216,7 +217,8 @@ class WalkmeshEditor(QWidget):
 
     def add_door_hook(self):
         if not self.lyt.rooms:
-            QMessageBox.warning(self, "Add Door Hook", "At least one room is required to add a door hook.")
+            from toolset.gui.common.localization import translate as tr
+            QMessageBox.warning(self, tr("Add Door Hook"), tr("At least one room is required to add a door hook."))
             return
         dialog = DoorHookPropertiesDialog(self, self.lyt.rooms)
         if dialog.exec():
@@ -503,7 +505,8 @@ class RoomPropertiesDialog(QDialog):
         room: LYTRoom | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Room Properties")
+        from toolset.gui.common.localization import translate as tr
+        self.setWindowTitle(tr("Room Properties"))
         self.room: LYTRoom | None = room
 
         layout = QFormLayout()
@@ -549,6 +552,11 @@ class RoomPropertiesDialog(QDialog):
         main_layout.addLayout(buttons)
 
         self.setLayout(main_layout)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def accept(self):
         self.model: str = self.model_edit.text()
@@ -599,6 +607,11 @@ class TrackPropertiesDialog(QDialog):
         main_layout.addLayout(buttons)
 
         self.setLayout(main_layout)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def accept(self):
         self.start_room: LYTRoom = self.start_room_combo.currentData()
@@ -649,6 +662,11 @@ class ObstaclePropertiesDialog(QDialog):
         main_layout.addLayout(buttons)
 
         self.setLayout(main_layout)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def accept(self):
         self.position: Vector3 = Vector3(self.pos_x.value(), self.pos_y.value(), self.pos_z.value())
@@ -711,6 +729,11 @@ class DoorHookPropertiesDialog(QDialog):
         main_layout.addLayout(buttons)
 
         self.setLayout(main_layout)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def accept(self):
         self.room: LYTRoom = self.room_combo.currentData()

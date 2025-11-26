@@ -9,6 +9,7 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.ifo import IFO, dismantle_ifo, read_ifo
 from pykotor.resource.type import ResourceType
+from toolset.gui.common.filters import NoScrollEventFilter
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
@@ -28,6 +29,12 @@ class IFOEditor(Editor):
 
         self.ifo: IFO | None = None
         self.setup_ui()
+        self._setup_menus()
+        self._add_help_action()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def setup_ui(self):
         """Set up the UI elements."""

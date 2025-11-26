@@ -620,10 +620,11 @@ class FileItems(CustomItem):
         self,
         missing_files: list[Path],
     ):
+        from toolset.gui.common.localization import translate as tr, trf
         missing_msg_box: QMessageBox = QMessageBox(
             QMessageBox.Icon.Warning,
-            "Nonexistent files found." + (" "*1000),
-            f"The following {len(missing_files)} files no longer exist:" + (" "*1000) + ("<br>"*4),
+            tr("Nonexistent files found.") + (" "*1000),
+            trf("The following {count} files no longer exist:", count=len(missing_files)) + (" "*1000) + ("<br>"*4),
             flags=Qt.WindowType.Dialog | Qt.WindowType.WindowDoesNotAcceptFocus | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint,
         )
         separator = "-"*80
@@ -634,10 +635,11 @@ class FileItems(CustomItem):
         self,
         error_files: dict[Path, Exception],
     ):
+        from toolset.gui.common.localization import translate as tr, trf
         error_msg_box: QMessageBox = QMessageBox(
             QMessageBox.Icon.Critical,
-            "Errors occurred." + (" "*1000),
-            f"The following {len(error_files)} files threw errors:" + (" "*1000) + ("<br>"*4),
+            tr("Errors occurred.") + (" "*1000),
+            trf("The following {count} files threw errors:", count=len(error_files)) + (" "*1000) + ("<br>"*4),
             flags=Qt.WindowType.Dialog
             | Qt.WindowType.WindowDoesNotAcceptFocus
             | Qt.WindowType.WindowStaysOnTopHint
@@ -1014,21 +1016,27 @@ class FileSelectionWindow(QMainWindow):
         self.editor: Editor | None = editor
         self.detailed_stat_attributes: list[str] = []
         self.init_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     @property
     def installation(self) -> HTInstallation:
         return self._installation
 
     def init_ui(self):
-        self.setWindowTitle("File Selection")  # Set a window title
+        from toolset.gui.common.localization import translate as tr
+        self.setWindowTitle(tr("File Selection"))  # Set a window title
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
-        self.detailed_checkbox = QCheckBox("Show detailed")
+        self.detailed_checkbox = QCheckBox(tr("Show detailed"))
         self.detailed_checkbox.stateChanged.connect(self.toggle_detailed_info)
         layout.addWidget(self.detailed_checkbox)
 
-        open_button = QPushButton("Open")
+        open_button = QPushButton(tr("Open"))
         open_button.clicked.connect(lambda: self.resource_table.on_double_click(installation=self.installation))
         self.resource_table.doubleClicked.connect(lambda: self.resource_table.on_double_click(installation=self.installation))
 
@@ -1206,7 +1214,8 @@ class FileSelectionWindow(QMainWindow):
                 self.resource_table.setItem(rowIndex, column_index, self.create_table_item(value, resource))
             except Exception as e:  # noqa: BLE001
                 RobustLogger().exception("Failed to parse stat_result attribute %s (%s): %s", column_name, stat_attr, value)
-                QMessageBox.critical(self, "Stat attribute not expected format", f"Failed to parse {column_name} ({stat_attr}): {value}<br><br>{e}")
+                from toolset.gui.common.localization import translate as tr, trf
+                QMessageBox.critical(self, tr("Stat attribute not expected format"), trf("Failed to parse {column} ({attr}): {val}<br><br>{error}", column=column_name, attr=stat_attr, val=str(value), error=str(e)))
 
 
     def toggle_detailed_info(self):
@@ -1221,7 +1230,8 @@ class FileSelectionWindow(QMainWindow):
                 self.detailed_stat_attributes = []
             self._init_table()
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, "Exception", f"An error occurred: {e}")
+            from toolset.gui.common.localization import translate as tr, trf
+            QMessageBox.critical(self, tr("Exception"), trf("An error occurred: {error}", error=str(e)))
             self.detailed_checkbox.setChecked(False)
 
     def _init_table(self):

@@ -35,7 +35,8 @@ class ComboBox2DA(QComboBox):
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.on_context_menu)
         self.currentIndexChanged.connect(self.on_current_index_changed)
-        self.setToolTip("<i>Right click for more options</i>")
+        from toolset.gui.common.localization import translate as tr
+        self.setToolTip(tr("<i>Right click for more options</i>"))
 
         self._sort_alphabetically: bool = False
         self._this2DA: TwoDA | None = None
@@ -207,11 +208,13 @@ class ComboBox2DA(QComboBox):
             editor._load_main(bytes_data)  # noqa: SLF001
         except (ValueError, OSError) as e:
             error_msg: str = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec()
+            from toolset.gui.common.localization import translate as tr, trf
+            QMessageBox(QMessageBox.Icon.Critical, tr("Failed to load file."), trf("Failed to open or load file data.<br>{error}", error=error_msg)).exec()
             return
         else:
             editor.jump_to_row(self.currentIndex())
-        editor.setWindowTitle(f"{self._resname}.2da - 2DAEditor({self._installation.name})")
+        from toolset.gui.common.localization import translate as tr, trf
+        editor.setWindowTitle(trf("{resname}.2da - 2DAEditor({name})", resname=self._resname, name=self._installation.name))
         add_window(editor)
         editor.show()
         editor.activateWindow()

@@ -45,8 +45,8 @@ from loggerplus import Any
 from qtpy.QtTest import QTest
 from qtpy.QtWidgets import QApplication
 
-K1_PATH: str | None = os.environ.get("K1_PATH")
-K2_PATH: str | None = os.environ.get("K2_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH: str | None = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.resource.type import ResourceType

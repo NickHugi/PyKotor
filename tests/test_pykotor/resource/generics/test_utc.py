@@ -35,8 +35,8 @@ if TYPE_CHECKING:
     from pykotor.resource.generics.utc import UTC
 
 TEST_FILE = "tests/test_pykotor/test_files/test.utc"
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 
 class TestUTC(TestCase):

@@ -37,6 +37,11 @@ class HelpWindow(QMainWindow):
         self._setup_signals()
         self.help_content.setup_contents()
         self.starting_page: str | None = startingPage
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def showEvent(self, event: QShowEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         super().showEvent(event)
@@ -59,10 +64,11 @@ class HelpWindow(QMainWindow):
             html: str = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.suffix.lower() == ".md" else text
             self.ui.textDisplay.setHtml(html)
         except OSError as e:
+            from toolset.gui.common.localization import translate as tr, trf
             QMessageBox(
                 QMessageBox.Icon.Critical,
-                "Failed to open help file",
-                f"Could not access '{filepath}'.\n{universal_simplify_exception(e)}",
+                tr("Failed to open help file"),
+                trf("Could not access '{filepath}'.\n{error}", filepath=str(filepath), error=str(universal_simplify_exception(e))),
             ).exec()
 
     def on_contents_clicked(self):

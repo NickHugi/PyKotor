@@ -32,20 +32,22 @@ class HelpUpdater:
                 raise remote_info  # noqa: TRY301
 
             new_version = str(remote_info["help"]["version"])
+            from toolset.gui.common.localization import translate as tr
             if self.help_window.help_content.version is None:
-                title = "Help book missing"
-                text = "You do not seem to have a valid help booklet downloaded, would you like to download it?"
+                title = tr("Help book missing")
+                text = tr("You do not seem to have a valid help booklet downloaded, would you like to download it?")
             elif is_remote_version_newer(self.help_window.help_content.version, new_version):
-                title = "Update available"
-                text = "A newer version of the help book is available for download, would you like to download it?"
+                title = tr("Update available")
+                text = tr("A newer version of the help book is available for download, would you like to download it?")
             else:
                 RobustLogger().debug("No help booklet updates available, using version %s (latest version: %s)", self.help_window.help_content.version, new_version)
                 return
         except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            from toolset.gui.common.localization import translate as tr
             err_msg_box = QMessageBox(
                 QMessageBox.Icon.Information,
-                "An unexpected error occurred while parsing the help booklet.",
+                tr("An unexpected error occurred while parsing the help booklet."),
                 error_msg,
                 QMessageBox.StandardButton.Ok,
                 parent=None,

@@ -34,6 +34,7 @@ class MDLEditor(Editor):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
 
         self.ui.modelRenderer.installation = installation

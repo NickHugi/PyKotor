@@ -16,14 +16,17 @@ import qtpy
 from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
 from qtpy import QtCore
 from qtpy.QtCore import (
+    QAbstractItemModel,
     QCoreApplication,
+    QModelIndex,
+    QSortFilterProxyModel,
     QThread,
     QTimer,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
     Slot,  # pyright: ignore[reportPrivateImportUsage]
 )
-from qtpy.QtGui import QIcon, QPixmap, QStandardItem
+from qtpy.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import (
     QAction,  # pyright: ignore[reportPrivateImportUsage]
     QApplication,
@@ -48,7 +51,15 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
+from pykotor.tools.path import CaseAwarePath
+from toolset.config import get_remote_toolset_update_info
 from toolset.data.installation import HTInstallation
+from toolset.gui.common.localization import (
+    ToolsetLanguage,
+    set_language,
+    translate as tr,
+    trf,
+)
 from toolset.gui.common.style.theme_manager import ThemeManager
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -73,7 +84,7 @@ from toolset.gui.editors.utp import UTPEditor
 from toolset.gui.editors.uts import UTSEditor
 from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
-from toolset.gui.widgets.main_widgets import ResourceList, ResourceStandardItem
+from toolset.gui.widgets.main_widgets import ResourceList, ResourceModel, ResourceStandardItem
 from toolset.gui.widgets.settings.widgets.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
@@ -84,6 +95,7 @@ from toolset.utils.window import add_window, open_resource_editor
 from utility.error_handling import universal_simplify_exception
 from utility.misc import is_debug_mode
 from utility.tricks import debug_reload_pymodules
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
     from qtpy import QtGui
@@ -94,10 +106,10 @@ if TYPE_CHECKING:
 
     from pykotor.extract.file import LocationResult, ResourceResult
     from pykotor.resource.formats.mdl import MDL
+    from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import TextureList
-    from pykotor.resource.formats.mdl.mdl_data import MDL
 
 def run_module_designer(
     active_path: str,
@@ -139,28 +151,28 @@ def run_module_designer(
         cast("QApplication", QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
     else:
         print(f"Failed to load HT main window icon from {icon_path}")
-    addWindow(designerUi, show=False)
-    sys.exit(app.exec_())
+    add_window(designerUi, show=False)
+    sys.exit(app.exec())
 
 
 class UpdateCheckThread(QThread):
     update_info_fetched = QtCore.Signal(dict, dict, bool)  # pyright: ignore[reportPrivateImportUsage]
-    def __init__(self, toolWindow: ToolWindow, *, silent: bool = False):
+    def __init__(self, tool_window: ToolWindow, *, silent: bool = False):
         super().__init__()
-        self.toolWindow: ToolWindow = toolWindow
+        self.toolWindow: ToolWindow = tool_window
         self.silent: bool = silent
 
     def get_latest_version_info(self) -> tuple[dict[str, Any], dict[str, Any]]:
         edge_info = {}
         if self.toolWindow.settings.useBetaChannel:
-            edge_info = self._get_remote_toolset_update_info(useBetaChannel=True)
+            edge_info = self._get_remote_toolset_update_info(use_beta_channel=True)
 
-        master_info = self._get_remote_toolset_update_info(useBetaChannel=False)
+        master_info = self._get_remote_toolset_update_info(use_beta_channel=False)
         return master_info, edge_info
 
-    def _get_remote_toolset_update_info(self, *, useBetaChannel: bool) -> dict[str, Any]:
-        result = getRemoteToolsetUpdateInfo(useBetaChannel=useBetaChannel, silent=self.silent)
-        print(f"<SDM> [get_latest_version_info scope] {'edge_info' if useBetaChannel else 'master_info'}: ", result)
+    def _get_remote_toolset_update_info(self, *, use_beta_channel: bool) -> dict[str, Any]:
+        result = get_remote_toolset_update_info(use_beta_channel=use_beta_channel, silent=self.silent)
+        print(f"<SDM> [get_latest_version_info scope] {'edge_info' if use_beta_channel else 'master_info'}: ", result)
 
         if not isinstance(result, dict):
             if self.silent:
@@ -207,13 +219,19 @@ class ToolWindow(QMainWindow):
         self.original_style: str = q_style.objectName()
         self.original_palette: QPalette = self.palette()
         self.theme_manager: ThemeManager = ThemeManager(self.original_style)
-        self.theme_manager.change_theme(self.settings.selectedTheme)  # Ensure it comes to the front
+        # Apply both theme and style on initialization
+        self.theme_manager._apply_theme_and_style(self.settings.selectedTheme, self.settings.selectedStyle)
 
         self.previous_game_combo_index: int = 0
         self._mouse_move_pos: QPoint | None = None
+        # Initialize theme menu action dictionaries
+        self._theme_actions: dict[str, _QAction] = {}
+        self._style_actions: dict[str, _QAction] = {}
+        # Initialize language menu action dictionary
+        self._language_actions: dict[int, _QAction] = {}
         self._initUi()
         self._setup_signals()
-        self.setWindowTitle(f"Holocron Toolset ({qtpy.API_NAME})")
+        # Language system will set the title in apply_translations()
         self.reload_settings()
         self.unset_installation()
 
@@ -258,7 +276,7 @@ class ToolWindow(QMainWindow):
         self.setup_modules_tab()
 
     def setup_modules_tab(self):
-        self.erf_editor_button = QPushButton("ERF Editor", self)
+        self.erf_editor_button = QPushButton(tr("ERF Editor"), self)
         self.erf_editor_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.erf_editor_button.clicked.connect(self._open_module_tab_erf_editor)  # Connect to the ERF Editor functionality
         self.ui.verticalLayoutRightPanel.insertWidget(2, self.erf_editor_button)  # pyright: ignore[reportArgumentType]
@@ -311,7 +329,9 @@ class ToolWindow(QMainWindow):
         self.ui.fixCorruptionButton.clicked.connect(self.on_fix_all_corruption)
         
         # Enable/disable Open Save Editor button based on selection
-        self.ui.savesWidget.ui.resourceTree.selectionModel().selectionChanged.connect(self.on_save_selection_changed)
+        selectionModel = self.ui.savesWidget.ui.resourceTree.selectionModel()
+        assert selectionModel is not None, "Selection model not found in saves widget"
+        selectionModel.selectionChanged.connect(self.on_save_selection_changed)
         self.ui.resourceTabs.currentChanged.connect(self.on_tab_changed)
 
         def open_module_designer(*args) -> ModuleDesigner | None:
@@ -364,21 +384,20 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewTLK.triggered.connect(lambda: add_window(TLKEditor(self, self.active)))
         self.ui.actionNewDLG.triggered.connect(lambda: add_window(DLGEditor(self, self.active)))
         self.ui.actionNewNSS.triggered.connect(lambda: add_window(NSSEditor(self, self.active)))
-        self.ui.actionNewUTC.triggered.connect(lambda: add_window(UTCEditor(self, self.active)))
-        self.ui.actionNewUTP.triggered.connect(lambda: add_window(UTPEditor(self, self.active)))
-        self.ui.actionNewUTD.triggered.connect(lambda: add_window(UTDEditor(self, self.active)))
-        self.ui.actionNewUTI.triggered.connect(lambda: add_window(UTIEditor(self, self.active)))
+        self.ui.actionNewUTC.triggered.connect(lambda: add_window(UTCEditor(self, self.active)))  # type: ignore[arg-type]
+        self.ui.actionNewUTP.triggered.connect(lambda: add_window(UTPEditor(self, self.active)))  # type: ignore[arg-type]
+        self.ui.actionNewUTD.triggered.connect(lambda: add_window(UTDEditor(self, self.active)))  # type: ignore[arg-type]
+        self.ui.actionNewUTI.triggered.connect(lambda: add_window(UTIEditor(self, self.active)))  # type: ignore[arg-type]
         self.ui.actionNewUTT.triggered.connect(lambda: add_window(UTTEditor(self, self.active)))
         self.ui.actionNewUTM.triggered.connect(lambda: add_window(UTMEditor(self, self.active)))
         self.ui.actionNewUTW.triggered.connect(lambda: add_window(UTWEditor(self, self.active)))
         self.ui.actionNewUTE.triggered.connect(lambda: add_window(UTEEditor(self, self.active)))
-        self.ui.actionNewUTS.triggered.connect(lambda: add_window(UTSEditor(self, self.active)))
+        self.ui.actionNewUTS.triggered.connect(lambda: add_window(UTSEditor(self, self.active)))  # type: ignore[arg-type]
         self.ui.actionNewGFF.triggered.connect(lambda: add_window(GFFEditor(self, self.active)))
         self.ui.actionNewERF.triggered.connect(lambda: add_window(ERFEditor(self, self.active)))
         self.ui.actionNewTXT.triggered.connect(lambda: add_window(TXTEditor(self, self.active)))
         self.ui.actionNewSSF.triggered.connect(lambda: add_window(SSFEditor(self, self.active)))
-        self.ui.actionCloneModule.triggered.connect(lambda: add_window(CloneModuleDialog(self, self.active, self.installations)))
-
+        self.ui.actionCloneModule.triggered.connect(lambda: add_window(CloneModuleDialog(self, self.active, self.installations)))  # type: ignore[arg-type]
 
         self.ui.actionModuleDesigner.triggered.connect(self.open_module_designer)
         self.ui.actionEditTLK.triggered.connect(self.open_active_talktable)
@@ -393,14 +412,221 @@ class ToolWindow(QMainWindow):
         self.ui.actionDiscordKotOR.triggered.connect(lambda: open_link("http://discord.gg/kotor"))
         self.ui.actionDiscordHolocronToolset.triggered.connect(lambda: open_link("https://discord.gg/3ME278a9tQ"))
 
-        for theme_name in tuple(set(self.theme_manager.get_default_styles() + self.theme_manager.get_available_themes())):  # noqa: PLW2901
-            def change_theme(*args, theme=theme_name):
-                self.theme_manager.change_theme(theme)
+        # Setup Theme menu with both stylesheet themes and application styles in the same menu
+        current_theme = self.settings.selectedTheme or "fusion (light)"
+        current_style = self.settings.selectedStyle or ""
+        
+        # Add stylesheet themes directly to Theme menu
+        available_themes = sorted(set(self.theme_manager.get_available_themes()))
+        for theme_name in available_themes:
+            def make_theme_handler(theme=theme_name):
+                def change_theme(*args):
+                    self._update_theme_menu_checkmarks(theme, None)
+                    self.theme_manager.change_theme(theme)
+                return change_theme
             theme_action: _QAction | None = self.ui.menuTheme.addAction(theme_name)
             assert theme_action is not None
-            theme_action.triggered.connect(change_theme)
+            theme_action.setCheckable(True)
+            theme_action.triggered.connect(make_theme_handler())
+            self._theme_actions[theme_name.lower()] = theme_action
+            # Mark current theme as checked
+            if theme_name.lower() == current_theme.lower():
+                theme_action.setChecked(True)
+        
+        # Add separator between stylesheet themes and application styles
+        self.ui.menuTheme.addSeparator()
+        
+        # Add "Native" option for application style (system default)
+        def change_to_native(*args):
+            self._update_theme_menu_checkmarks(None, "")
+            self.theme_manager.change_style("")  # Empty string means use theme default / native
+        native_action: _QAction | None = self.ui.menuTheme.addAction(tr("Native (System Default)"))
+        assert native_action is not None
+        native_action.setCheckable(True)
+        native_action.triggered.connect(change_to_native)
+        self._style_actions[""] = native_action
+        if current_style == "":
+            native_action.setChecked(True)
+        
+        # Add all available Qt application styles
+        available_styles = self.theme_manager.get_default_styles()
+        for style_name in available_styles:
+            def make_style_handler(style=style_name):
+                def change_style(*args):
+                    self._update_theme_menu_checkmarks(None, style)
+                    self.theme_manager.change_style(style)
+                return change_style
+            style_action: _QAction | None = self.ui.menuTheme.addAction(style_name)
+            assert style_action is not None
+            style_action.setCheckable(True)
+            style_action.triggered.connect(make_style_handler())
+            self._style_actions[style_name] = style_action
+            # Mark current style as checked
+            if style_name == current_style:
+                style_action.setChecked(True)
 
         self.ui.menuRecentFiles.aboutToShow.connect(self.populate_recent_files_menu)
+        
+        # Setup Language menu
+        self._setup_language_menu()
+
+    def _update_theme_menu_checkmarks(
+        self,
+        theme_name: str | None = None,
+        style_name: str | None = None,
+    ):
+        """Update checkmarks in the theme menu based on current selection.
+        
+        Args:
+        ----
+            theme_name: The selected theme name (if changing theme)
+            style_name: The selected style name (if changing style)
+        """
+        # Uncheck all theme actions
+        for action in self._theme_actions.values():
+            action.setChecked(False)
+        
+        # Uncheck all style actions
+        for action in self._style_actions.values():
+            action.setChecked(False)
+        
+        # Check the appropriate theme or style
+        if theme_name is not None:
+            theme_key = theme_name.lower()
+            if theme_key in self._theme_actions:
+                self._theme_actions[theme_key].setChecked(True)
+        elif style_name is not None:
+            if style_name in self._style_actions:
+                self._style_actions[style_name].setChecked(True)
+
+    def _setup_language_menu(self):
+        """Set up the Language menu with all available languages."""
+        from toolset.gui.common.localization import ToolsetLanguage
+        
+        # Initialize language system from settings
+        current_language_id = self.settings.selectedLanguage
+        try:
+            current_language = ToolsetLanguage(current_language_id)
+        except ValueError:
+            current_language = ToolsetLanguage.ENGLISH
+        
+        # Set the global language
+        set_language(current_language)
+        
+        # Add language actions to the menu
+        for language in ToolsetLanguage:
+            def make_language_handler(lang=language):
+                def change_language(*args):
+                    self.settings.selectedLanguage = lang.value
+                    set_language(lang)
+                    self._update_language_menu_checkmarks(lang)
+                    self.apply_translations()
+                return change_language
+            
+            display_name = language.get_display_name()
+            language_action: _QAction | None = self.ui.menuLanguage.addAction(display_name)
+            assert language_action is not None
+            language_action.setCheckable(True)
+            language_action.triggered.connect(make_language_handler())
+            self._language_actions[language.value] = language_action
+            
+            # Mark current language as checked
+            if language == current_language:
+                language_action.setChecked(True)
+        
+        # Apply translations after setting up menu
+        self.apply_translations()
+
+    def _update_language_menu_checkmarks(self, language: ToolsetLanguage):
+        """Update checkmarks in the language menu based on current selection."""
+        # Uncheck all language actions
+        for action in self._language_actions.values():
+            action.setChecked(False)
+        
+        # Check the selected language
+        if language.value in self._language_actions:
+            self._language_actions[language.value].setChecked(True)
+
+    def apply_translations(self):
+        """Apply translations to all UI strings in the main window."""
+        # Translate menu titles
+        self.ui.menuFile.setTitle(tr("File"))
+        self.ui.menuEdit.setTitle(tr("Edit"))
+        self.ui.menuTools.setTitle(tr("Tools"))
+        self.ui.menuTheme.setTitle(tr("Theme"))
+        self.ui.menuLanguage.setTitle(tr("Language"))
+        self.ui.menuHelp.setTitle(tr("Help"))
+        self.ui.menuNew.setTitle(tr("New"))
+        self.ui.menuRecentFiles.setTitle(tr("Recent Files"))
+        self.ui.menuDiscord.setTitle(tr("Discord"))
+        
+        # Translate menu actions
+        self.ui.actionExit.setText(tr("Exit"))
+        self.ui.actionSettings.setText(tr("Settings"))
+        self.ui.actionHelpAbout.setText(tr("About"))
+        self.ui.actionInstructions.setText(tr("Instructions"))
+        self.ui.actionHelpUpdates.setText(tr("Check For Updates"))
+        self.ui.actionEditTLK.setText(tr("Edit Talk Table"))
+        self.ui.actionEditJRL.setText(tr("Edit Journal"))
+        self.ui.actionModuleDesigner.setText(tr("Module Designer"))
+        self.ui.actionIndoorMapBuilder.setText(tr("Indoor Map Builder"))
+        self.ui.actionKotorDiff.setText(tr("KotorDiff"))
+        self.ui.actionTSLPatchDataEditor.setText(tr("TSLPatchData Editor"))
+        self.ui.actionFileSearch.setText(tr("File Search"))
+        self.ui.actionCloneModule.setText(tr("Clone Module"))
+        self.ui.actionDiscordHolocronToolset.setText(tr("Holocron Toolset"))
+        self.ui.actionDiscordKotOR.setText(tr("KOTOR Community Portal"))
+        self.ui.actionDiscordDeadlyStream.setText(tr("Deadly Stream"))
+        
+        # Translate new resource actions
+        self.ui.actionNewDLG.setText(tr("Dialog"))
+        self.ui.actionNewUTC.setText(tr("Creature"))
+        self.ui.actionNewUTI.setText(tr("Item"))
+        self.ui.actionNewUTD.setText(tr("Door"))
+        self.ui.actionNewUTP.setText(tr("Placeable"))
+        self.ui.actionNewUTM.setText(tr("Merchant"))
+        self.ui.actionNewUTE.setText(tr("Encounter"))
+        self.ui.actionNewUTT.setText(tr("Trigger"))
+        self.ui.actionNewUTW.setText(tr("Waypoint"))
+        self.ui.actionNewUTS.setText(tr("Sound"))
+        self.ui.actionNewNSS.setText(tr("Script"))
+        self.ui.actionNewTLK.setText(tr("TalkTable"))
+        self.ui.actionNewGFF.setText(tr("GFF"))
+        self.ui.actionNewERF.setText(tr("ERF"))
+        self.ui.actionNewTXT.setText(tr("TXT"))
+        self.ui.actionNewSSF.setText(tr("SSF"))
+        
+        # Translate tab titles
+        self.ui.resourceTabs.setTabText(0, tr("Core"))
+        self.ui.resourceTabs.setTabText(1, tr("Saves"))
+        self.ui.resourceTabs.setTabText(2, tr("Modules"))
+        self.ui.resourceTabs.setTabText(3, tr("Override"))
+        self.ui.resourceTabs.setTabText(4, tr("Textures"))
+        
+        # Translate buttons
+        self.ui.openButton.setText(tr("Open Selected"))
+        self.ui.extractButton.setText(tr("Extract Selected"))
+        self.ui.openSaveEditorButton.setText(tr("Open Save Editor"))
+        self.ui.fixCorruptionButton.setText(tr("Fix Corruption"))
+        self.ui.specialActionButton.setText(tr("Designer"))
+        
+        # Translate tooltips
+        self.ui.openSaveEditorButton.setToolTip(tr("Open the selected save in the Save Editor"))
+        self.ui.fixCorruptionButton.setToolTip(tr("Fixes all possible save corruption in all saves"))
+        
+        # Translate group boxes
+        self.ui.tpcGroup_2.setTitle(tr("TPC"))
+        self.ui.mdlGroup_2.setTitle(tr("MDL"))
+        
+        # Translate checkboxes
+        self.ui.tpcDecompileCheckbox.setText(tr("Decompile"))
+        self.ui.tpcTxiCheckbox.setText(tr("Extract TXI"))
+        self.ui.mdlDecompileCheckbox.setText(tr("Decompile"))
+        self.ui.mdlDecompileCheckbox.setToolTip(tr("Decompile feature is not available."))
+        self.ui.mdlTexturesCheckbox.setText(tr("Extract Textures"))
+        
+        # Update window title
+        self.setWindowTitle(f"{tr('Holocron Toolset')} ({qtpy.API_NAME})")
 
     def on_open_resources(
         self,
@@ -524,8 +750,8 @@ class ToolWindow(QMainWindow):
                 save_path_item.setForeground(QBrush(QColor(139, 0, 0)))  # Dark red text
                 # Add tooltip
                 save_path_item.setToolTip(
-                    "This save is corrupted.\n"
-                    "Right click and press <i>'Fix savegame corruption'</i> to fix this."
+                    tr("This save is corrupted.\n"
+                    "Right click and press <i>'Fix savegame corruption'</i> to fix this.")
                 )
             
             self.ui.savesWidget.modules_model.invisibleRootItem().appendRow(save_path_item)  # pyright: ignore[reportOptionalMemberAccess]
@@ -576,35 +802,73 @@ class ToolWindow(QMainWindow):
     @Slot()
     def on_open_save_editor(self):
         """Open the Save Editor for the selected save."""
-        if self.active is None:
-            return
-        
-        # Get selected save folder
-        selected_indexes = self.ui.savesWidget.ui.resourceTree.selectedIndexes()
-        if not selected_indexes:
-            return
-        
-        # Get the top-level save folder item
-        model = self.ui.savesWidget.modules_model
-        proxy_model = self.ui.savesWidget.ui.resourceTree.model()
-        
-        for index in selected_indexes:
-            source_index = proxy_model.mapToSource(index)
-            item = model.itemFromIndex(source_index)
+        try:
+            if self.active is None:
+                RobustLogger().warning("Cannot open save editor: no active installation")
+                return
             
-            # Navigate up to find the save folder item (top-level item)
-            while item and item.parent():
-                item = item.parent()
+            # Safely get the saves widget and tree
+            saves_widget: ResourceList = self.ui.savesWidget
+            if saves_widget is None:
+                RobustLogger().warning("Saves widget not found")
+                return
             
-            if item:
-                save_name = item.text()
-                # Find the save path
-                current_save_location = Path(self.ui.savesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
-                for save_path in self.active.saves.get(current_save_location, {}):
-                    if save_name in str(save_path):
-                        self.open_save_editor_for_path(save_path)
-                        break
-                break
+            tree_view: RobustTreeView = saves_widget.ui.resourceTree
+            if tree_view is None:
+                RobustLogger().warning("Resource tree not found in saves widget")
+                return
+            
+            # Get selected save folder
+            selected_indexes: list[QModelIndex] = tree_view.selectedIndexes()
+            if not selected_indexes:
+                RobustLogger().debug("No selected indexes in saves tree")
+                return
+            
+            # Get the top-level save folder item
+            model: ResourceModel = saves_widget.modules_model            
+            proxy_model: QStandardItemModel | QAbstractItemModel | None = tree_view.model()
+            if proxy_model is None or not isinstance(proxy_model, QSortFilterProxyModel):
+                RobustLogger().error(f"Proxy model not found or not a QSortFilterProxyModel: {proxy_model.__class__.__name__}")
+                return
+            
+            for index in selected_indexes:
+                source_index: QModelIndex = proxy_model.mapToSource(index)
+                item: QStandardItem | None = None
+                if source_index.isValid():
+                    item = model.itemFromIndex(source_index)
+                
+                if not item:
+                    continue
+                
+                # Navigate up to find the save folder item (top-level item)
+                while item and item.parent():
+                    item = item.parent()
+                
+                if item:
+                    save_name = item.text()
+                    RobustLogger().debug(f"Looking for save folder: {save_name}")
+                    
+                    # Get current save location from combo box
+                    current_save_location_str = saves_widget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
+                    if not current_save_location_str:
+                        RobustLogger().warning("No save location selected")
+                        continue
+                        
+                    current_save_location = Path(current_save_location_str)
+                    
+                    # Find the save path
+                    save_paths = self.active.saves.get(current_save_location, {})
+                    for save_path in save_paths:
+                        # Match on the folder name (last part of path)
+                        if save_path.name == save_name or save_name in str(save_path):
+                            RobustLogger().info(f"Opening save editor for: {save_path}")
+                            self.open_save_editor_for_path(save_path)
+                            return  # Exit after opening
+                    
+                    RobustLogger().warning(f"Could not find save path for: {save_name}")
+                    break
+        except Exception as e:
+            RobustLogger().exception(f"Error opening save editor: {e}")
     
     def open_save_editor_for_path(self, save_path: Path):
         """Open the Save Editor for a specific save path."""
@@ -629,8 +893,8 @@ class ToolWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(
                 self,
-                "Error Opening Save Editor",
-                f"Failed to open save editor:\n{e}",
+                tr("Error Opening Save Editor"),
+                trf("Failed to open save editor:\n{error}", error=str(e)),
             )
             RobustLogger().exception(f"Failed to open save editor for '{save_path}'")
     
@@ -655,12 +919,12 @@ class ToolWindow(QMainWindow):
         
         # Show results
         if fixed_count > 0 or failed_count > 0:
-            msg = f"Fixed corruption in {fixed_count} save(s)."
+            msg = trf("Fixed corruption in {count} save(s).", count=fixed_count)
             if failed_count > 0:
-                msg += f"\nFailed to fix {failed_count} save(s)."
-            QMessageBox.information(self, "Fix Corruption Complete", msg)
+                msg += "\n" + trf("Failed to fix {count} save(s).", count=failed_count)
+            QMessageBox.information(self, tr("Fix Corruption Complete"), msg)
         else:
-            QMessageBox.information(self, "No Corruption Found", "No corrupted saves were found.")
+            QMessageBox.information(self, tr("No Corruption Found"), tr("No corrupted saves were found."))
         
         # Refresh the saves list to update corruption indicators
         self.refresh_saves_list()
@@ -674,22 +938,22 @@ class ToolWindow(QMainWindow):
             if self.active.fix_save_corruption(save_path):
                 QMessageBox.information(
                     self,
-                    "Corruption Fixed",
-                    f"Successfully fixed corruption in save:\n{save_path.name}",
+                    tr("Corruption Fixed"),
+                    trf("Successfully fixed corruption in save:\n{name}", name=save_path.name),
                 )
                 # Refresh the saves list to update corruption indicators
                 self.refresh_saves_list()
             else:
                 QMessageBox.warning(
                     self,
-                    "Fix Failed",
-                    f"Failed to fix corruption in save:\n{save_path.name}",
+                    tr("Fix Failed"),
+                    trf("Failed to fix corruption in save:\n{name}", name=save_path.name),
                 )
         except Exception as e:
             QMessageBox.critical(
                 self,
-                "Error",
-                f"An error occurred while fixing corruption:\n{e}",
+                tr("Error"),
+                trf("An error occurred while fixing corruption:\n{error}", error=str(e)),
             )
             RobustLogger().exception(f"Failed to fix corruption for '{save_path}'")
 
@@ -757,7 +1021,7 @@ class ToolWindow(QMainWindow):
         if not path or not path.strip() or not Path(path).is_dir():
             if path and path.strip():
                 QMessageBox(QMessageBox.Icon.Warning, f"Installation '{path}' not found", "Select another path now.").exec()
-            path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}", "Knights of the Old Republic II" if tsl else "swkotor")
+            path = QFileDialog.getExistingDirectory(self, trf("Select the game directory for {name}", name=name), "Knights of the Old Republic II" if tsl else "swkotor")
 
         # If the user still has not set a path, then return them to the [None] option.
         if not path or not path.strip():
@@ -1281,7 +1545,7 @@ class ToolWindow(QMainWindow):
                 RobustLogger().exception("Failed to reload the list of modules (load_modules function)")
 
         try:
-            area_names: dict[str, str] = self.active.module_names()
+            area_names: dict[str, str | None] = self.active.module_names()
         except Exception:  # noqa: BLE001  # pylint: disable=broad-exception-caught
             RobustLogger().exception("Failed to get the list of area names from the modules!")
             area_names = {k: (str(v[0].filepath()) if v else "unknown filepath") for k, v in self.active._modules.items()}
@@ -1296,7 +1560,7 @@ class ToolWindow(QMainWindow):
                 elif self.settings.moduleSortOption == 0:  # "Sort by filename":
                     sort_str = ""
                 elif self.settings.moduleSortOption == 1:  # "Sort by humanized area name":
-                    sort_str = area_names.get(module_file_name, "y").lower()
+                    sort_str = (area_names.get(module_file_name, "y") or "unknown_area_name").lower()
                 else:  # alternate mod id that attempts to match to filename.
                     assert self.active is not None, "self.active is None"
                     sort_str = self.active.module_id(module_file_name, use_alternate=True)
@@ -1321,8 +1585,8 @@ class ToolWindow(QMainWindow):
                     if self.active.game().is_k2() and lower_module_name.endswith("_dlg.erf"):
                         continue
 
-                area_text: str = area_names.get(module_name, "<Missing ARE>")
-                item = QStandardItem(f"{area_text} [{module_name}]")
+                area_text: str = area_names.get(module_name) or "<Missing ARE>"
+                item: QStandardItem = QStandardItem(f"{area_text} [{module_name}]")
                 item.setData(f"{area_text}\n{module_name}", Qt.ItemDataRole.DisplayRole)
                 item.setData(module_name, Qt.ItemDataRole.UserRole)  # Set area name
                 item.setData(module_name, Qt.ItemDataRole.UserRole + 11)  # Set module name
@@ -1419,7 +1683,7 @@ class ToolWindow(QMainWindow):
         }
         filepath_str, _filter = QFileDialog.getSaveFileName(
             self,
-            f"Save extracted {capsule_type} '{c_filepath.stem}' as...",
+            trf("Save extracted {type} '{name}' as...", type=capsule_type, name=c_filepath.stem),
             str(Path.cwd().resolve()),
             capsule_filter,
             extension_to_filter[c_filepath.suffix.lower()],  # defaults to the original extension.
@@ -1462,7 +1726,7 @@ class ToolWindow(QMainWindow):
         # TODO(th3w1zard1): currently doesn't handle same filenames existing for extra extracts e.g. tpcTxiCheckbox.isChecked() or mdlTexturesCheckbox.isChecked()
         paths_to_write: dict[FileResource, Path] = {}
 
-        folder_path_str: str = QFileDialog.getExistingDirectory(self, "Extract to folder")
+        folder_path_str: str = QFileDialog.getExistingDirectory(self, tr("Extract to folder"))
         if not folder_path_str or not folder_path_str.strip():
             RobustLogger().debug("User cancelled folderpath extraction.")
             return None, None
@@ -1515,8 +1779,8 @@ class ToolWindow(QMainWindow):
             if loader.errors:
                 msg_box = QMessageBox(
                     QMessageBox.Icon.Information,
-                    "Failed to extract some items.",
-                    f"Failed to save {len(loader.errors)} files!",
+                    tr("Failed to extract some items."),
+                    trf("Failed to save {count} files!", count=len(loader.errors)),
                     flags=Qt.WindowType.Dialog | Qt.WindowType.WindowTitleHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint,
                 )
 
@@ -1525,8 +1789,8 @@ class ToolWindow(QMainWindow):
             else:
                 msg_box = QMessageBox(
                     QMessageBox.Icon.Information,
-                    "Extraction successful.",
-                    f"Successfully saved {len(paths_to_write)} files to {folder_path}",
+                    tr("Extraction successful."),
+                    trf("Successfully saved {count} files to {path}", count=len(paths_to_write), path=folder_path),
                     flags=Qt.WindowType.Dialog | Qt.WindowType.WindowTitleHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint,
                 )
 

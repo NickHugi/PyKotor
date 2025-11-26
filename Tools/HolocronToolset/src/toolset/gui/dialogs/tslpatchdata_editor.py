@@ -42,7 +42,8 @@ class TSLPatchDataEditor(QDialog):
         tslpatchdata_path: Path | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("TSLPatchData Editor - Create HoloPatcher Mod")
+        from toolset.gui.common.localization import translate as tr
+        self.setWindowTitle(tr("TSLPatchData Editor - Create HoloPatcher Mod"))
         self.resize(1400, 900)
 
         self.installation = installation
@@ -50,6 +51,12 @@ class TSLPatchDataEditor(QDialog):
         self.ini_config = configparser.ConfigParser(delimiters=("="), allow_no_value=True, strict=False, interpolation=None, inline_comment_prefixes=(";", "#"))
 
         self._setup_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
+        
         if tslpatchdata_path and tslpatchdata_path.exists():
             self._load_existing_config()
 
@@ -59,13 +66,14 @@ class TSLPatchDataEditor(QDialog):
 
         # Header with path selection
         header_layout = QHBoxLayout()
-        header_layout.addWidget(QLabel("<b>TSLPatchData Folder:</b>"))
+        from toolset.gui.common.localization import translate as tr
+        header_layout.addWidget(QLabel(tr("<b>TSLPatchData Folder:</b>")))
         self.path_edit = QLineEdit(str(self.tslpatchdata_path))
         header_layout.addWidget(self.path_edit)
-        browse_btn = QPushButton("Browse...")
+        browse_btn = QPushButton(tr("Browse..."))
         browse_btn.clicked.connect(self._browse_tslpatchdata_path)
         header_layout.addWidget(browse_btn)
-        create_btn = QPushButton("Create New")
+        create_btn = QPushButton(tr("Create New"))
         create_btn.clicked.connect(self._create_new_tslpatchdata)
         header_layout.addWidget(create_btn)
         layout.addLayout(header_layout)
@@ -76,22 +84,24 @@ class TSLPatchDataEditor(QDialog):
         # Left side: File tree
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
-        left_layout.addWidget(QLabel("<b>Files to Package:</b>"))
+        from toolset.gui.common.localization import translate as tr
+        left_layout.addWidget(QLabel(tr("<b>Files to Package:</b>")))
         self.file_tree = QTreeWidget()
-        self.file_tree.setHeaderLabels(["File", "Type", "Status"])
+        self.file_tree.setHeaderLabels([tr("File"), tr("Type"), tr("Status")])
         self.file_tree.setColumnWidth(0, 300)
         self.file_tree.itemClicked.connect(self._on_file_selected)
         left_layout.addWidget(self.file_tree)
 
         # File operation buttons
         file_btn_layout = QHBoxLayout()
-        add_file_btn = QPushButton("Add File")
+        from toolset.gui.common.localization import translate as tr
+        add_file_btn = QPushButton(tr("Add File"))
         add_file_btn.clicked.connect(self._add_file)
         file_btn_layout.addWidget(add_file_btn)
-        remove_file_btn = QPushButton("Remove")
+        remove_file_btn = QPushButton(tr("Remove"))
         remove_file_btn.clicked.connect(self._remove_file)
         file_btn_layout.addWidget(remove_file_btn)
-        scan_diff_btn = QPushButton("Scan from Diff")
+        scan_diff_btn = QPushButton(tr("Scan from Diff"))
         scan_diff_btn.clicked.connect(self._scan_from_diff)
         file_btn_layout.addWidget(scan_diff_btn)
         left_layout.addLayout(file_btn_layout)
@@ -402,10 +412,11 @@ class TSLPatchDataEditor(QDialog):
         self.tslpatchdata_path.mkdir(exist_ok=True)
         self.path_edit.setText(str(self.tslpatchdata_path))
 
+        from toolset.gui.common.localization import translate as tr, trf
         QMessageBox.information(
             self,
-            "Created",
-            f"New tslpatchdata folder created at:\n{self.tslpatchdata_path}",
+            tr("Created"),
+            trf("New tslpatchdata folder created at:\n{path}", path=str(self.tslpatchdata_path)),
         )
 
     def _load_existing_config(self):
@@ -420,9 +431,11 @@ class TSLPatchDataEditor(QDialog):
 
     def _add_file(self):
         """Add a file to the package."""
-        files = QFileDialog.getOpenFileNames(self, "Select Files to Add")[0]
+        from toolset.gui.common.localization import translate as tr
+        files = QFileDialog.getOpenFileNames(self, tr("Select Files to Add"))[0]
         for file_path in files:
-            item = QTreeWidgetItem([Path(file_path).name, "Added", "New"])
+            from toolset.gui.common.localization import translate as tr
+            item = QTreeWidgetItem([Path(file_path).name, tr("Added"), tr("New")])
             self.file_tree.addTopLevelItem(item)
 
     def _remove_file(self):
@@ -433,10 +446,11 @@ class TSLPatchDataEditor(QDialog):
 
     def _scan_from_diff(self):
         """Scan files from KotorDiff results."""
+        from toolset.gui.common.localization import translate as tr
         QMessageBox.information(
             self,
-            "Scan from Diff",
-            "This will scan a KotorDiff results file and automatically populate files.\n\nNot yet implemented.",
+            tr("Scan from Diff"),
+            tr("This will scan a KotorDiff results file and automatically populate files.\n\nNot yet implemented."),
         )
 
     def _on_file_selected(self, item):
@@ -499,9 +513,10 @@ class TSLPatchDataEditor(QDialog):
                     self,
                 )
             else:
-                QMessageBox.warning(self, "Not Found", "dialog.tlk not found in installation.")
+                from toolset.gui.common.localization import translate as tr
+                QMessageBox.warning(self, tr("Not Found"), tr("dialog.tlk not found in installation."))
         else:
-            QMessageBox.warning(self, "No Installation", "No installation loaded.")
+            QMessageBox.warning(self, tr("No Installation"), tr("No installation loaded."))
 
     def _on_gff_file_selected(self, item):
         """Handle GFF file selection."""
@@ -513,7 +528,8 @@ class TSLPatchDataEditor(QDialog):
 
     def _add_script(self):
         """Add a compiled script."""
-        files = QFileDialog.getOpenFileNames(self, "Select Scripts (.ncs)", "", "Scripts (*.ncs)")[0]
+        from toolset.gui.common.localization import translate as tr
+        files = QFileDialog.getOpenFileNames(self, tr("Select Scripts (.ncs)"), "", "Scripts (*.ncs)")[0]
         for file_path in files:
             self.script_list.addItem(Path(file_path).name)
 
@@ -564,10 +580,11 @@ class TSLPatchDataEditor(QDialog):
         with open(ini_path, "w") as f:
             f.write(self.ini_preview_text.toPlainText())
 
+        from toolset.gui.common.localization import translate as tr, trf
         QMessageBox.information(
             self,
-            "Saved",
-            f"Configuration saved to:\n{ini_path}",
+            tr("Saved"),
+            trf("Configuration saved to:\n{path}", path=str(ini_path)),
         )
 
     def _generate_tslpatchdata(self):
@@ -582,9 +599,10 @@ class TSLPatchDataEditor(QDialog):
         # TODO: Generate namespaces.ini
         # TODO: Create installer executable
 
+        from toolset.gui.common.localization import translate as tr, trf
         QMessageBox.information(
             self,
-            "Generated",
-            f"TSLPatchData generated at:\n{self.tslpatchdata_path}\n\nYou can now distribute this folder with HoloPatcher/TSLPatcher.",
+            tr("Generated"),
+            trf("TSLPatchData generated at:\n{path}\n\nYou can now distribute this folder with HoloPatcher/TSLPatcher.", path=str(self.tslpatchdata_path)),
         )
 

@@ -93,6 +93,11 @@ class LIPEditor(Editor):
 
         self.central_widget: QWidget = QWidget()
         self.setCentralWidget(self.central_widget)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         # Preview playback
         self.player = QMediaPlayer()
@@ -110,6 +115,8 @@ class LIPEditor(Editor):
         self.preview_label: Optional[QLabel] = None
 
         self.setup_ui()
+        self._setup_menus()
+        self._add_help_action()
         self.setup_shortcuts()
         self.lip: Optional[LIP] = None
         self.duration: float = 0.0
@@ -133,15 +140,16 @@ class LIPEditor(Editor):
 
         # Duration display
         duration_layout = QHBoxLayout()
-        duration_layout.addWidget(QLabel("Duration:"))
+        from toolset.gui.common.localization import translate as tr
+        duration_layout.addWidget(QLabel(tr("Duration:")))
         self.duration_label: QLabel = QLabel("0.000s")
-        self.duration_label.setToolTip("Duration of the loaded audio file")
+        self.duration_label.setToolTip(tr("Duration of the loaded audio file"))
         duration_layout.addWidget(self.duration_label)
         layout.addLayout(duration_layout)
 
         # Preview list
         self.preview_list: QListWidget = QListWidget()
-        self.preview_list.setToolTip("List of keyframes (right-click for options)")
+        self.preview_list.setToolTip(tr("List of keyframes (right-click for options)"))
         self.preview_list.itemSelectionChanged.connect(self.on_keyframe_selected)
         self.preview_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.preview_list.customContextMenuRequested.connect(self.show_preview_context_menu)

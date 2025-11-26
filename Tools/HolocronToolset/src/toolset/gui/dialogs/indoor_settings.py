@@ -50,6 +50,11 @@ class IndoorMapSettings(QDialog):
         from toolset.uic.qtpy.dialogs.indoor_settings import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
         self.ui.nameEdit.set_installation(installation)
 
         self._indoorMap: IndoorMap = indoor_map
@@ -59,7 +64,8 @@ class IndoorMapSettings(QDialog):
         self.ui.colorEdit.set_color(indoor_map.lighting)
         self.ui.warpCodeEdit.setText(indoor_map.module_id)
 
-        self.ui.skyboxSelect.addItem("[None]", "")
+        from toolset.gui.common.localization import translate as tr
+        self.ui.skyboxSelect.addItem(tr("[None]"), "")
         for kit in kits:
             for skybox in kit.skyboxes:
                 self.ui.skyboxSelect.addItem(skybox, skybox)

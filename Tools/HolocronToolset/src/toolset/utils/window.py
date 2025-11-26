@@ -5,17 +5,17 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from functools import singledispatch
-from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # type: ignore[import-untyped]
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox, QWidget
 
-from pykotor.extract.file import FileResource
-from pykotor.resource.type import ResourceType
-from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import universal_simplify_exception
+from pykotor.extract.file import FileResource  # type: ignore[import-not-found]
+from pykotor.resource.type import ResourceType  # type: ignore[import-not-found]
+from toolset.gui.common.localization import translate as tr, trf  # type: ignore[import-not-found]
+from toolset.gui.widgets.settings.installations import GlobalSettings  # type: ignore[import-not-found]
+from utility.error_handling import universal_simplify_exception  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QCloseEvent
@@ -25,17 +25,20 @@ if TYPE_CHECKING:
     from toolset.gui.editor import Editor
 
 TOOLSET_WINDOWS: list[QDialog | QMainWindow] = []
-"""TODO: Remove this implementation, there's better ways to keep windows from being garbage collected."""
-
+"""List of windows that are currently open."""
 _UNIQUE_SENTINEL = object()
 
 
-def add_window(window: QDialog | QMainWindow):
+def add_window(
+    window: QDialog | QMainWindow,
+    *,
+    show: bool = True,
+):
     """Prevents Qt's garbage collection by keeping a reference to the window."""
     original_closeEvent = window.closeEvent
 
     def new_close_event(
-        event: QCloseEvent | None = _UNIQUE_SENTINEL,  # pyright: ignore[reportArgumentType]
+        event: QCloseEvent | None = _UNIQUE_SENTINEL,  # type: ignore[assignment]  # pyright: ignore[reportArgumentType]
         *args,
         **kwargs,
     ):
@@ -44,15 +47,19 @@ def add_window(window: QDialog | QMainWindow):
         if isinstance(window, Editor) and window._filepath is not None:  # noqa: SLF001
             add_recent_file(window._filepath)  # noqa: SLF001
         if window in TOOLSET_WINDOWS:
-            print(f"Removing window: {window}")
+            RobustLogger().debug(f"Removing window (normal): {window.__class__.__name__} ({window})")
             TOOLSET_WINDOWS.remove(window)
         if event is _UNIQUE_SENTINEL:  # Make event arg optional just in case the class has the wrong definition.
+            RobustLogger().debug(f"Closing window (sentinel): {window.__class__.__name__} ({window})")
             original_closeEvent(*args, **kwargs)
         else:
-            original_closeEvent(event, *args, **kwargs)  # pyright: ignore[reportArgumentType]
+            RobustLogger().debug(f"Closing window (event): {window.__class__.__name__} ({window})")
+            original_closeEvent(event, *args, **kwargs)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
 
-    window.closeEvent = new_close_event  # pyright: ignore[reportAttributeAccessIssue]
-    print(f"Adding window: {window}")
+    window.closeEvent = new_close_event  # type: ignore[assignment]  # pyright: ignore[reportAttributeAccessIssue]
+    RobustLogger().debug(f"Adding window (normal): {window.__class__.__name__} ({window})")
+    if show:
+        window.show()
     TOOLSET_WINDOWS.append(window)
 
 
@@ -129,39 +136,39 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
     gff_specialized: bool | None = None,
 ) -> tuple[os.PathLike | str | None, Editor | QMainWindow | None]:
     # To avoid circular imports, these need to be placed within the function
-    from toolset.gui.editors.are import AREEditor  # noqa: PLC0415
-    from toolset.gui.editors.bwm import BWMEditor  # noqa: PLC0415
-    from toolset.gui.editors.dlg import DLGEditor  # noqa: PLC0415
-    from toolset.gui.editors.erf import ERFEditor  # noqa: PLC0415
-    from toolset.gui.editors.gff import GFFEditor  # noqa: PLC0415
-    from toolset.gui.editors.git import GITEditor  # noqa: PLC0415
-    from toolset.gui.editors.ifo import IFOEditor  # noqa: PLC0415
-    from toolset.gui.editors.jrl import JRLEditor  # noqa: PLC0415
-    from toolset.gui.editors.lip import LIPEditor  # noqa: PLC0415
-    from toolset.gui.editors.ltr import LTREditor  # noqa: PLC0415
-    from toolset.gui.editors.mdl import MDLEditor  # noqa: PLC0415
-    from toolset.gui.editors.nss import NSSEditor  # noqa: PLC0415
-    from toolset.gui.editors.pth import PTHEditor  # noqa: PLC0415
-    from toolset.gui.editors.ssf import SSFEditor  # noqa: PLC0415
-    from toolset.gui.editors.tlk import TLKEditor  # noqa: PLC0415
-    from toolset.gui.editors.tpc import TPCEditor  # noqa: PLC0415
-    from toolset.gui.editors.twoda import TwoDAEditor  # noqa: PLC0415
-    from toolset.gui.editors.txt import TXTEditor  # noqa: PLC0415
-    from toolset.gui.editors.utc import UTCEditor  # noqa: PLC0415
-    from toolset.gui.editors.utd import UTDEditor  # noqa: PLC0415
-    from toolset.gui.editors.ute import UTEEditor  # noqa: PLC0415
-    from toolset.gui.editors.uti import UTIEditor  # noqa: PLC0415
-    from toolset.gui.editors.utm import UTMEditor  # noqa: PLC0415
-    from toolset.gui.editors.utp import UTPEditor  # noqa: PLC0415
-    from toolset.gui.editors.uts import UTSEditor  # noqa: PLC0415
-    from toolset.gui.editors.utt import UTTEditor  # noqa: PLC0415
-    from toolset.gui.editors.utw import UTWEditor  # noqa: PLC0415
-    from toolset.gui.windows.audio_player import AudioPlayer  # noqa: PLC0415
+    from toolset.gui.editors.are import AREEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.bwm import BWMEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.dlg import DLGEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.erf import ERFEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.gff import GFFEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.git import GITEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.ifo import IFOEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.jrl import JRLEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.lip import LIPEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.ltr import LTREditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.mdl import MDLEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.nss import NSSEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.pth import PTHEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.ssf import SSFEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.tlk import TLKEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.tpc import TPCEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.twoda import TwoDAEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.txt import TXTEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.utc import UTCEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.utd import UTDEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.ute import UTEEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.uti import UTIEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.utm import UTMEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.utp import UTPEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.uts import UTSEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.utt import UTTEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.editors.utw import UTWEditor  # type: ignore[import-not-found] # noqa: PLC0415
+    from toolset.gui.windows.audio_player import AudioPlayer  # type: ignore[import-not-found] # noqa: PLC0415
 
     if gff_specialized is None:
         gff_specialized = GlobalSettings().gffSpecializedEditors
 
-    editor: Editor | QMainWindow | None = None
+    editor: Editor | None = None
     parent_window_widget: QWidget | None = parent_window if isinstance(parent_window, QWidget) else None
 
     if resource:
@@ -169,7 +176,7 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
             data = resource.data()
         except Exception:  # noqa: BLE001
             RobustLogger().exception("Exception occurred in open_selected_resource")
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "An error occurred while attempting to read the data of the file.").exec()
+            QMessageBox(QMessageBox.Icon.Critical, tr("Failed to get the file data."), tr("An error occurred while attempting to read the data of the file.")).exec()
             return None, None
         restype = resource.restype()
         resname = resource.resname()
@@ -208,8 +215,8 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
         if installation is None:
             QMessageBox.warning(
                 parent_window_widget,
-                "Cannot decompile NCS without an installation active",
-                "Please select an installation from the dropdown before loading an NCS.",
+                tr("Cannot decompile NCS without an installation active"),
+                tr("Please select an installation from the dropdown before loading an NCS."),
             )
             return None, None
         editor = NSSEditor(None, installation)
@@ -320,8 +327,8 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
     if editor is None:
         QMessageBox(
             QMessageBox.Icon.Critical,
-            "Failed to open file",
-            f"The selected file format '{restype}' is not yet supported.",
+            tr("Failed to open file"),
+            trf("The selected file format '{format}' is not yet supported.", format=str(restype)),
             QMessageBox.StandardButton.Ok,
             parent_window_widget,
             flags=Qt.WindowType.Window
@@ -339,7 +346,7 @@ def _open_resource_editor_impl(  # noqa: C901, PLR0913, PLR0912, PLR0915
     except Exception as e:
         QMessageBox(
             QMessageBox.Icon.Critical,
-            "An unexpected error has occurred",
+            tr("An unexpected error has occurred"),
             str(universal_simplify_exception(e)),
             QMessageBox.StandardButton.Ok,
             parent_window_widget,

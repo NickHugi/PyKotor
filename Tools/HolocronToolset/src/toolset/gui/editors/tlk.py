@@ -65,6 +65,7 @@ class TLKEditor(Editor):
         self.ui: Ui_MainWindow = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
 
         self.ui.searchBox.setVisible(False)
@@ -76,6 +77,11 @@ class TLKEditor(Editor):
         self.proxy_model: QSortFilterProxyModel = QSortFilterProxyModel(self)
         self.proxy_model.setSourceModel(self.source_model)
         self.ui.talkTable.setModel(self.proxy_model)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         # Make the bottom panel take as little space possible
         self.ui.splitter.setSizes([99999999, 1])
@@ -236,8 +242,8 @@ class TLKEditor(Editor):
             if not results_list:
                 QMessageBox(
                     QMessageBox.Icon.Information,
-                    "No resources found",
-                    f"There are no GFFs that reference this tlk entry (stringref {stringref})",
+                    tr("No resources found"),
+                    trf("There are no GFFs that reference this tlk entry (stringref {stringref})", stringref=stringref),
                     parent=self,
                 ).exec()
                 return
@@ -245,7 +251,7 @@ class TLKEditor(Editor):
             results_dialog = FileResults(self, results_list, self._installation)
             results_dialog.show()
             results_dialog.activateWindow()
-            results_dialog.setWindowTitle(f"{len(results_list)} results for stringref '{stringref}' in {self._installation.path()}")
+            results_dialog.setWindowTitle(trf("{count} results for stringref '{stringref}' in {path}", count=len(results_list), stringref=stringref, path=str(self._installation.path())))
             add_window(results_dialog)
             results_dialog.sig_searchresults_selected.connect(self.handle_results_selection)
 
@@ -383,7 +389,7 @@ class LoaderDialog(QDialog):
         layout.addWidget(self._progress_bar)
         self.setLayout(layout)
 
-        self.setWindowTitle("Loading...")
+        self.setWindowTitle(tr("Loading..."))
         self.setFixedSize(200, 40)
 
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)

@@ -83,7 +83,7 @@ class ModuleRenderer(QOpenGLWidget):
 
         self.loop_timer: QTimer = QTimer(self)
         self.loop_timer.timeout.connect(self.loop)
-        self.loop_interval: int = 33  # ms, approx 30 FPS
+        self.loop_interval: int = 16  # ms, approx 60 FPS (improved from 30)
 
         self._render_time: int = 0
         self._keys_down: set[Qt.Key] = set()
@@ -93,7 +93,19 @@ class ModuleRenderer(QOpenGLWidget):
 
         self.do_select: bool = False  # Set to true to select object at mouse pointer
         self.free_cam: bool = False  # Changes how screenDelta is calculated in mouseMoveEvent
-        self.delta: float = 0.0333
+        self.delta: float = 0.0166  # Target 60 FPS
+        
+        # Frame rate management for adaptive quality
+        self._frame_times: list[float] = []
+        self._max_frame_samples: int = 30
+        self._target_fps: float = 60.0
+        self._min_fps: float = 30.0
+        self._last_frame_time: float = 0.0
+        
+        # Dirty flags for optimization
+        self._needs_redraw: bool = True
+        self._camera_dirty: bool = True
+        self._last_camera_state: tuple[float, ...] = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
     @property
     def scene(self) -> Scene:
@@ -109,7 +121,8 @@ class ModuleRenderer(QOpenGLWidget):
         return self._scene
 
     def show_scene_not_ready_message(self):
-        QMessageBox.warning(self, "Scene Not Ready", "The scene is not ready yet.")
+        from toolset.gui.common.localization import translate as tr
+        QMessageBox.warning(self, tr("Scene Not Ready"), tr("The scene is not ready yet."))
 
     def isReady(self) -> bool:
         return bool(self._module and self._installation)
@@ -326,20 +339,69 @@ class ModuleRenderer(QOpenGLWidget):
     def loop(self):
         """Repaints and checks for keyboard input on mouse press.
 
-        Args:
-        ----
-            self: The object instance
-
         Processing Logic:
         ----------------
+            - Checks if a repaint is needed using dirty flags
             - Calls repaint() to redraw the canvas
             - Checks if mouse is over object and keyboard keys are pressed
             - Emits keyboardPressed signal with mouse/key info
-            - Schedules next loop call after delay to maintain ~30fps
+            - Tracks frame time for adaptive quality
         """
-        self.repaint()
+        import time
+        frame_start = time.time()
+        
+        # Check if camera has changed
+        if self._scene is not None:
+            camera = self._scene.camera
+            current_state = (
+                camera.x, camera.y, camera.z,
+                camera.yaw, camera.pitch, camera.distance
+            )
+            if current_state != self._last_camera_state:
+                self._camera_dirty = True
+                self._needs_redraw = True
+                self._last_camera_state = current_state
+        
+        # Only repaint if needed or if there are inputs
+        if self._needs_redraw or self._keys_down or self._mouse_down or self.free_cam:
+            self.repaint()
+            self._needs_redraw = False
+        
         if self.underMouse() and self.free_cam and len(self._keys_down) > 0:
             self.sig_keyboard_pressed.emit(self._mouse_down, self._keys_down)
+        
+        # Track frame time for performance monitoring
+        frame_end = time.time()
+        frame_time = frame_end - frame_start
+        self._frame_times.append(frame_time)
+        if len(self._frame_times) > self._max_frame_samples:
+            self._frame_times.pop(0)
+        
+        # Calculate average FPS
+        if self._frame_times:
+            avg_frame_time = sum(self._frame_times) / len(self._frame_times)
+            self.delta = avg_frame_time if avg_frame_time > 0 else 0.0166
+    
+    def mark_dirty(self):
+        """Mark the renderer as needing a redraw.
+        
+        Call this when something in the scene has changed.
+        """
+        self._needs_redraw = True
+        self._camera_dirty = True
+    
+    def get_fps(self) -> float:
+        """Get the current frames per second.
+        
+        Returns:
+            Current FPS based on recent frame times.
+        """
+        if not self._frame_times:
+            return 0.0
+        avg_frame_time = sum(self._frame_times) / len(self._frame_times)
+        if avg_frame_time <= 0:
+            return 0.0
+        return 1.0 / avg_frame_time
 
     def walkmesh_point(
         self,

@@ -111,10 +111,11 @@ class IndoorMapBuilder(QMainWindow):
         self._kits = load_kits("./kits")
 
         if len(self._kits) == 0:
+            from toolset.gui.common.localization import translate as tr
             noKitPrompt = QMessageBox(
                 QMessageBox.Icon.Warning,
-                "No Kits Available",
-                "No kits were detected, would you like to open the Kit downloader?",
+                tr("No Kits Available"),
+                tr("No kits were detected, would you like to open the Kit downloader?"),
             )
             noKitPrompt.addButton(QMessageBox.StandardButton.Yes)
             noKitPrompt.addButton(QMessageBox.StandardButton.No)
@@ -127,12 +128,13 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.kitSelect.addItem(kit.name, kit)
 
     def _refresh_window_title(self):
+        from toolset.gui.common.localization import translate as tr, trf
         if not self._installation:
-            self.setWindowTitle("No installation - Map Builder")
+            self.setWindowTitle(tr("No installation - Map Builder"))
         elif not self._filepath:
-            self.setWindowTitle(f"{self._installation.name} - Map Builder")
+            self.setWindowTitle(trf("{name} - Map Builder", name=self._installation.name))
         else:
-            self.setWindowTitle(f"{self._filepath} - {self._installation.name} - Map Builder")
+            self.setWindowTitle(trf("{path} - {name} - Map Builder", path=self._filepath, name=self._installation.name))
 
     def _refresh_status_bar(self):
         screen: QPoint = self.ui.mapRenderer.mapFromGlobal(self.cursor().pos())
@@ -192,7 +194,8 @@ class IndoorMapBuilder(QMainWindow):
                 self._filepath = filepath
                 self._refresh_window_title()
             except OSError as e:
-                QMessageBox(QMessageBox.Icon.Critical, "Failed to load file", str(universal_simplify_exception(e))).exec()
+                from toolset.gui.common.localization import translate as tr, trf
+                QMessageBox(QMessageBox.Icon.Critical, tr("Failed to load file"), trf("{error}", error=str(universal_simplify_exception(e)))).exec()
 
     def open_kit_downloader(self):
         KitDownloader(self).exec()
@@ -1111,6 +1114,12 @@ class KitDownloader(QDialog):
         from toolset.uic.qtpy.dialogs.indoor_downloader import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
+        
         self._setup_downloads()
 
     def _setup_downloads(self):

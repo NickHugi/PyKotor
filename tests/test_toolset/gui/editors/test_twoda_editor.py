@@ -39,8 +39,8 @@ if (
         add_sys_path(toolset_path.parent)
 
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
@@ -171,6 +171,10 @@ def test_twoda_editor(qtbot, installation: HTInstallation, test_files_dir):
     if twoda_file.exists():
         editor.load(twoda_file, "appearance", ResourceType.TwoDA, twoda_file.read_bytes())
         assert editor.ui.table.rowCount() > 0
+        
+        # Build and verify it works
+        data, _ = editor.build()
+        assert len(data) > 0
         
         # Interact
         editor.ui.filterEdit.setText("test")

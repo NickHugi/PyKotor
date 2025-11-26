@@ -87,9 +87,9 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
         - Populates KitComponent hooks from JSON
         - Adds loaded Kit to return list.
     """
-    kits = []
+    kits: list[Kit] = []
 
-    kits_path = Path(path)
+    kits_path: Path = Path(path)
     if not kits_path.is_dir():
         kits_path.mkdir(parents=True)
     for file in (file for file in kits_path.iterdir() if file.suffix.lower() == ".json"):
@@ -97,26 +97,30 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
         kit = Kit(kit_json["name"])
         kit_identifier = kit_json["id"]
 
-        always_path = kits_path / file.stem / "always"
+        # Use kit_identifier instead of file.stem to ensure consistency
+        # The kit directory name should match the kit ID from JSON, not the JSON filename
+        always_path = kits_path / kit_identifier / "always"
         if always_path.is_dir():
             for always_file in always_path.iterdir():
                 kit.always[always_file] = BinaryReader.load_file(always_file)
 
-        textures_path = kits_path / file.stem / "textures"
-        for texture_file in (file for file in textures_path.iterdir() if file.suffix.lower() == ".tga"):
-            texture = texture_file.stem.upper()
-            kit.textures[texture] = BinaryReader.load_file(textures_path / f"{texture}.tga")
-            txi_path = textures_path / f"{texture}.txi"
-            kit.txis[texture] = BinaryReader.load_file(txi_path) if txi_path.is_file() else b""
+        textures_path = kits_path / kit_identifier / "textures"
+        if textures_path.is_dir():
+            for texture_file in (file for file in textures_path.iterdir() if file.suffix.lower() == ".tga"):
+                texture = texture_file.stem.upper()
+                kit.textures[texture] = BinaryReader.load_file(textures_path / f"{texture}.tga")
+                txi_path = textures_path / f"{texture}.txi"
+                kit.txis[texture] = BinaryReader.load_file(txi_path) if txi_path.is_file() else b""
 
-        lightmaps_path = kits_path / file.stem / "lightmaps"
-        for lightmap_file in (file for file in lightmaps_path.iterdir() if file.suffix.lower() == ".tga"):
-            lightmap = lightmap_file.stem.upper()
-            kit.lightmaps[lightmap] = BinaryReader.load_file(lightmaps_path / f"{lightmap}.tga")
-            txi_path = lightmaps_path / f"{lightmap_file.stem}.txi"
-            kit.txis[lightmap] = BinaryReader.load_file(txi_path) if txi_path.is_file() else b""
+        lightmaps_path = kits_path / kit_identifier / "lightmaps"
+        if lightmaps_path.is_dir():
+            for lightmap_file in (file for file in lightmaps_path.iterdir() if file.suffix.lower() == ".tga"):
+                lightmap = lightmap_file.stem.upper()
+                kit.lightmaps[lightmap] = BinaryReader.load_file(lightmaps_path / f"{lightmap}.tga")
+                txi_path = lightmaps_path / f"{lightmap_file.stem}.txi"
+                kit.txis[lightmap] = BinaryReader.load_file(txi_path) if txi_path.is_file() else b""
 
-        skyboxes_path = kits_path / file.stem / "skyboxes"
+        skyboxes_path = kits_path / kit_identifier / "skyboxes"
         if skyboxes_path.is_dir():
             for skybox_resref_str in (file.stem.upper() for file in skyboxes_path.iterdir() if file.suffix.lower() == ".mdl"):
                 mdl_path = skyboxes_path / f"{skybox_resref_str}.mdl"
@@ -124,7 +128,7 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
                 mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)
                 kit.skyboxes[skybox_resref_str] = MDLMDXTuple(mdl, mdx)
 
-        doorway_path = kits_path / file.stem / "doorway"
+        doorway_path = kits_path / kit_identifier / "doorway"
         if doorway_path.is_dir():
             for padding_id in (file.stem for file in doorway_path.iterdir() if file.suffix.lower() == ".mdl"):
                 mdl_path = doorway_path / f"{padding_id}.mdl"

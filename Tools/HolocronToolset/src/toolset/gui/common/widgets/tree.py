@@ -465,10 +465,11 @@ class RobustTreeView(QTreeView):
         self._add_simple_action(self.tools_menu, "Reset", self.reset)
 
         # Help or Miscellaneous actions
-        self.help_menu: _QMenu | None = self.header_menu.addMenu("Help")  # pyright: ignore[reportAttributeAccessIssue]
-        whats_this_action = QAction(self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarContextHelpButton), "What's This?", self)  # pyright: ignore[reportOptionalMemberAccess]
+        from toolset.gui.common.localization import translate as tr
+        self.help_menu: _QMenu | None = self.header_menu.addMenu(tr("Help"))  # pyright: ignore[reportAttributeAccessIssue]
+        whats_this_action = QAction(self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarContextHelpButton), tr("What's This?"), self)  # pyright: ignore[reportOptionalMemberAccess]
         whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
-        whats_this_action.setToolTip("Enter 'What's This?' mode.")
+        whats_this_action.setToolTip(tr("Enter 'What's This?' mode."))
         self.help_menu.addAction(whats_this_action)  # pyright: ignore[reportOptionalMemberAccess]
 
         # Add the horizontal scrollbar toggle to the view menu

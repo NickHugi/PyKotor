@@ -43,6 +43,11 @@ class UpdateDialog(QDialog):
         self.setFixedSize(800, 600)
         self.init_ui()
         self.init_config()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def include_prerelease(self) -> bool:
         return self.preReleaseCheckBox.isChecked()
@@ -106,7 +111,8 @@ class UpdateDialog(QDialog):
         current_version: str = LOCAL_PROGRAM_INFO["currentVersion"]
         version_color: str = "#FFA500" if is_remote_version_newer(current_version, toolset_tag_to_version(self.get_selected_tag())) else "#00FF00"
         version_text: str = f"<span style='font-size:16px; font-weight:bold; color:{version_color};'>{current_version}</span>"
-        current_version_label: QLabel = QLabel(f"Holocron Toolset Current Version: {version_text}")
+        from toolset.gui.common.localization import translate as tr, trf
+        current_version_label: QLabel = QLabel(trf("Holocron Toolset Current Version: {version}", version=version_text))
         current_version_label.setFont(QFont("Arial", 12))
         current_version_layout.addWidget(current_version_label)
         current_version_layout.addStretch(1)
@@ -193,7 +199,8 @@ class UpdateDialog(QDialog):
     def on_install_selected(self):
         release = self.release_combo_box.currentData()
         if not release:
-            QMessageBox(QMessageBox.Icon.Information, "Select a release", "No release selected, select one first.").exec()
+            from toolset.gui.common.localization import translate as tr
+            QMessageBox(QMessageBox.Icon.Information, tr("Select a release"), tr("No release selected, select one first.")).exec()
             return
         self.start_update(release)
 
@@ -205,8 +212,8 @@ class UpdateDialog(QDialog):
         if not asset:
             QMessageBox(
                 QMessageBox.Icon.Information,
-                "No asset found",
-                f"There are no binaries available for download for release '{release.tag_name}'.",
+                tr("No asset found"),
+                trf("There are no binaries available for download for release '{tag}'.", tag=release.tag_name),
             ).exec()
             return
 

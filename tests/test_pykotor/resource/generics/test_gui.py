@@ -41,8 +41,8 @@ TEST_FILE_1 = r"tests\test_pykotor\test_files\name_x.gui"
 TEST_FILE_2 = r"tests\test_pykotor\test_files\pazaakgame_p.gui"
 TEST_FILE_3 = r"tests\test_pykotor\test_files\component_p.gui"
 TEST_FILE_4 = r"tests\test_pykotor\test_files\inventory_x.gui"
-K1_PATH: str | None = os.environ.get("K1_PATH")
-K2_PATH: str | None = os.environ.get("K2_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH: str | None = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 
 class TestGUI(TestCase):

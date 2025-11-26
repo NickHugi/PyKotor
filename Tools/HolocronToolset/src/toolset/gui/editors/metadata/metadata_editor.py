@@ -30,6 +30,12 @@ class MetadataEditor(Editor):
         super().__init__(parent, "Module Metadata Editor", "metadata", supported, supported, installation)
 
         self.setup_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
+        
         self.git_editor: GITEditor | None = None
         self.are_editor: AREEditor | None = None
         self.ifo_editor: IFOEditor | None = None

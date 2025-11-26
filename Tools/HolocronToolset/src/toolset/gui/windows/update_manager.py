@@ -152,17 +152,19 @@ class UpdateManager:
         if is_up_to_date:
             if self.silent:
                 return
+            from toolset.gui.common.localization import translate as tr, trf
             up_to_date_msg_box = QMessageBox(
                 QMessageBox.Icon.Information,
-                "Version is up to date",
-                f"You are running the latest {cur_version_str}version ({CURRENT_VERSION}).",
+                tr("Version is up to date"),
+                trf("You are running the latest {version_str}version ({version}).", version_str=cur_version_str, version=CURRENT_VERSION),
                 QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Close,
                 parent=None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
 
-            up_to_date_msg_box.button(QMessageBox.StandardButton.Ok).setText("Auto-Update")  # pyright: ignore[reportOptionalMemberAccess]
-            up_to_date_msg_box.button(QMessageBox.StandardButton.Yes).setText("Choose Update")  # pyright: ignore[reportOptionalMemberAccess]
+            from toolset.gui.common.localization import translate as tr
+            up_to_date_msg_box.button(QMessageBox.StandardButton.Ok).setText(tr("Auto-Update"))  # pyright: ignore[reportOptionalMemberAccess]
+            up_to_date_msg_box.button(QMessageBox.StandardButton.Yes).setText(tr("Choose Update"))  # pyright: ignore[reportOptionalMemberAccess]
             result = up_to_date_msg_box.exec()
 
             if result == QMessageBox.StandardButton.Ok:
@@ -173,19 +175,21 @@ class UpdateManager:
             return
 
         beta_string: Literal["release ", "beta "] = "release " if release_version_checked else "beta "
+        from toolset.gui.common.localization import translate as tr, trf
         new_version_msg_box = QMessageBox(
             QMessageBox.Icon.Information,
-            f"Your toolset version {CURRENT_VERSION} is outdated.",
-            f"A new toolset {beta_string}version ({greatest_version}) is available for <a href='{download_link}'>download</a>.<br><br>{notes}",
+            trf("Your toolset version {version} is outdated.", version=CURRENT_VERSION),
+            trf("A new toolset {beta_str}version ({new_version}) is available for <a href='{link}'>download</a>.<br><br>{notes}", beta_str=beta_string, new_version=greatest_version, link=download_link, notes=notes),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Abort,
             parent=None,
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         )
 
         new_version_msg_box.setDefaultButton(QMessageBox.StandardButton.Abort)
-        new_version_msg_box.button(QMessageBox.StandardButton.Ok).setText("Auto-Update")  # pyright: ignore[reportOptionalMemberAccess]
-        new_version_msg_box.button(QMessageBox.StandardButton.Yes).setText("Details")  # pyright: ignore[reportOptionalMemberAccess]
-        new_version_msg_box.button(QMessageBox.StandardButton.Abort).setText("Ignore")  # pyright: ignore[reportOptionalMemberAccess]
+        from toolset.gui.common.localization import translate as tr
+        new_version_msg_box.button(QMessageBox.StandardButton.Ok).setText(tr("Auto-Update"))  # pyright: ignore[reportOptionalMemberAccess]
+        new_version_msg_box.button(QMessageBox.StandardButton.Yes).setText(tr("Details"))  # pyright: ignore[reportOptionalMemberAccess]
+        new_version_msg_box.button(QMessageBox.StandardButton.Abort).setText(tr("Ignore"))  # pyright: ignore[reportOptionalMemberAccess]
         response = new_version_msg_box.exec()
 
         if response == QMessageBox.StandardButton.Ok:

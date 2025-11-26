@@ -80,8 +80,8 @@ else:
     from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
     from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 
-K1_PATH: str | None = os.environ.get("K1_PATH")
-K2_PATH: str | None = os.environ.get("K2_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH: str | None = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 KTOOL_NWNNSSCOMP_PATH: str | None = r"C:\Program Files (x86)\Kotor Tool\nwnnsscomp.exe"
 TSLPATCHER_NWNNSSCOMP_PATH: str | None = r"C:\Users\boden\Documents\k1 mods\KillCzerkaJerk\tslpatchdata\nwnnsscomp.exe"
 K_SCRIPT_TOOL_NWNNSSCOMP_PATH: str | None = r"C:/Program Files (x86)/KotOR Scripting Tool/nwnnsscomp.exe"

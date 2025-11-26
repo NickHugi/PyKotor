@@ -62,9 +62,15 @@ class JRLEditor(Editor):
         self.ui.journalTree.setModel(self._model)
         self.ui.journalTree.setSelectionMode(QTreeView.SelectionMode.SingleSelection)
         self.ui.splitter.setSizes([99999999, 1])
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
         self.resize(400, 250)
 
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setup_installation(installation)
@@ -87,7 +93,8 @@ class JRLEditor(Editor):
         self.ui.categoryCommentEdit.sig_key_released.connect(self.on_value_updated)
         self.ui.entryIdSpin.editingFinished.connect(self.on_value_updated)
         self.ui.entryXpSpin.editingFinished.connect(self.on_value_updated)
-        self.ui.entryXpSpin.setToolTip("The game multiplies the value set here by 1000 to calculate actual XP to award.")
+        from toolset.gui.common.localization import translate as tr
+        self.ui.entryXpSpin.setToolTip(tr("The game multiplies the value set here by 1000 to calculate actual XP to award."))
         self.ui.entryEndCheck.clicked.connect(self.on_value_updated)
 
         QShortcut("Del", self).activated.connect(self.on_delete_shortcut)
@@ -98,7 +105,8 @@ class JRLEditor(Editor):
 
         planets: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLANETS)
         if planets is None:
-            QMessageBox(QMessageBox.Icon.Warning, "Missing 2DA", f"'{HTInstallation.TwoDA_PLANETS}.2da' is missing from your installation. Please reinstall your game, this should be in the read-only bifs.").exec()
+            from toolset.gui.common.localization import translate as tr, trf
+            QMessageBox(QMessageBox.Icon.Warning, tr("Missing 2DA"), trf("'{file}.2da' is missing from your installation. Please reinstall your game, this should be in the read-only bifs.", file=HTInstallation.TwoDA_PLANETS)).exec()
             return
 
         plot2DA: TwoDA | None = installation.ht_get_cache_2da(HTInstallation.TwoDA_PLOT)

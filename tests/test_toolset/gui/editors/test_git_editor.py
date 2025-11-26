@@ -45,8 +45,8 @@ if (
         sys.path.append(working_dir)
 
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
@@ -145,6 +145,44 @@ import pytest
 from toolset.gui.editors.git import GITEditor
 from toolset.data.installation import HTInstallation
 from pykotor.resource.type import ResourceType
+
+def test_git_editor_headless_ui_load_build(qtbot, installation: HTInstallation, test_files_dir: pathlib.Path):
+    """Test GIT Editor in headless UI - loads real file and builds data."""
+    editor = GITEditor(None, installation)
+    qtbot.addWidget(editor)
+    
+    # Try to find a GIT file
+    git_file = test_files_dir / "zio001.git"
+    if not git_file.exists():
+        # Try to get one from installation
+        git_resources = list(installation.resources(ResourceType.GIT))
+        if not git_resources:
+            pytest.skip("No GIT files available for testing")
+        git_resource = git_resources[0]
+        git_data = installation.resource(git_resource.identifier)
+        if not git_data:
+            pytest.skip(f"Could not load GIT data for {git_resource.identifier}")
+        editor.load(
+            git_resource.filepath if hasattr(git_resource, 'filepath') else pathlib.Path("module.git"),
+            git_resource.resname,
+            ResourceType.GIT,
+            git_data
+        )
+    else:
+        original_data = git_file.read_bytes()
+        editor.load(git_file, "zio001", ResourceType.GIT, original_data)
+    
+    # Verify editor loaded the data
+    assert editor is not None
+    
+    # Build and verify it works
+    data, _ = editor.build()
+    assert len(data) > 0
+    
+    # Verify we can read it back
+    from pykotor.resource.formats.gff.gff_auto import read_gff
+    loaded_git = read_gff(data)
+    assert loaded_git is not None
 
 def test_git_editor_specifics(qtbot, installation: HTInstallation, test_files_dir: pathlib.Path):
     """Specific granular tests for GIT Editor (common enough to warrant specific attention)."""

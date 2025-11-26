@@ -8,6 +8,11 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+# Set Qt API to PyQt5 (default) before any Qt imports
+# qtpy will use this to select the appropriate bindings
+if "QT_API" not in os.environ:
+    os.environ["QT_API"] = "PyQt5"
+
 # Force offscreen (headless) mode for Qt
 # This ensures tests don't fail if no display is available (e.g. CI/CD)
 # Must be set before any QApplication is instantiated.
@@ -48,7 +53,7 @@ _installation_prewarmed = False
 
 @pytest.fixture(scope="session")
 def k1_path():
-    path = os.environ.get("K1_PATH")
+    path = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
     if not path:
         pytest.skip("K1_PATH environment variable not set")
     return path
@@ -137,7 +142,7 @@ def pytest_configure(config):
     start_time = time.time()
     
     try:
-        k1_path = os.environ.get("K1_PATH")
+        k1_path = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
         if k1_path and os.path.exists(k1_path):
             _shared_k1_installation = HTInstallation(k1_path, "Shared Test Installation", tsl=False)
             _prewarm_installation(_shared_k1_installation)

@@ -100,6 +100,11 @@ class KotorDiffWindow(QMainWindow):
         self._settings = QSettings("HolocronToolset", "KotorDiff")
         self._setup_ui()
         self._load_settings()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def _setup_ui(self):
         """Set up the user interface."""
@@ -144,7 +149,8 @@ class KotorDiffWindow(QMainWindow):
         self.tslpatchdata_check = QCheckBox("Generate TSLPatchData")
         tslpatch_layout.addWidget(self.tslpatchdata_check)
         self.tslpatchdata_edit = QLineEdit()
-        self.tslpatchdata_edit.setPlaceholderText("Path to tslpatchdata folder")
+        from toolset.gui.common.localization import translate as tr
+        self.tslpatchdata_edit.setPlaceholderText(tr("Path to tslpatchdata folder"))
         self.tslpatchdata_edit.setEnabled(False)
         tslpatch_layout.addWidget(self.tslpatchdata_edit)
         self.tslpatchdata_browse_btn = QPushButton("Browse...")

@@ -310,6 +310,7 @@ class GITEditor(Editor):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
         self._setup_hotkeys()
 
@@ -514,10 +515,11 @@ class GITEditor(Editor):
         super().new()
 
     def closeEvent(self, event: QCloseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
+        from toolset.gui.common.localization import translate as tr
         reply = QMessageBox.question(
             self,
-            "Confirm Exit",
-            "Really quit the GIT editor? You may lose unsaved changes.",
+            tr("Confirm Exit"),
+            tr("Really quit the GIT editor? You may lose unsaved changes."),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )

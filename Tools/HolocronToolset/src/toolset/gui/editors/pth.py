@@ -133,6 +133,7 @@ class PTHEditor(Editor):
         self.ui: Ui_MainWindow = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
 
         self._pth: PTH = PTH()
@@ -261,7 +262,9 @@ class PTHEditor(Editor):
         if result:
             self.loadLayout(read_lyt(result.data))
         else:
-            BetterMessageBox("Layout not found", f"PTHEditor requires {resref}.lyt in order to load '{resref}.{restype}', but it could not be found.", icon=QMessageBox.Icon.Critical).exec()
+            from toolset.gui.common.localization import translate as tr, trf
+            from toolset.gui.helpers.callback import BetterMessageBox
+            BetterMessageBox(tr("Layout not found"), trf("PTHEditor requires {resref}.lyt in order to load '{resref}.{restype}', but it could not be found.", resref=str(resref), restype=str(restype)), icon=QMessageBox.Icon.Critical).exec()
 
         pth: PTH = read_pth(data)
         self._loadPTH(pth)
@@ -512,10 +515,11 @@ class PTHControlScheme:
         )
 
         menu = QMenu(self.editor)
-        menu.addAction("Add Node").triggered.connect(lambda _=None: self.editor.addNode(world.x, world.y))
-        menu.addAction("Copy XY coords").triggered.connect(lambda: QApplication.clipboard().setText(str(self.editor.status_out.mouse_pos)))  # pyright: ignore[reportOptionalMemberAccess]
+        from toolset.gui.common.localization import translate as tr
+        menu.addAction(tr("Add Node")).triggered.connect(lambda _=None: self.editor.addNode(world.x, world.y))
+        menu.addAction(tr("Copy XY coords")).triggered.connect(lambda: QApplication.clipboard().setText(str(self.editor.status_out.mouse_pos)))  # pyright: ignore[reportOptionalMemberAccess]
         if under_mouse_index is not None:
-            menu.addAction("Remove Node").triggered.connect(lambda _=None: self.editor.remove_node(under_mouse_index))
+            menu.addAction(tr("Remove Node")).triggered.connect(lambda _=None: self.editor.remove_node(under_mouse_index))
 
         menu.addSeparator()
 

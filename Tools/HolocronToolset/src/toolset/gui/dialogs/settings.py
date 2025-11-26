@@ -6,6 +6,7 @@ from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QDialog, QMessageBox, QPushButton
 
 from toolset.gui.common.filters import NoScrollEventFilter
+from toolset.gui.common.localization import translate as tr
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
@@ -59,7 +60,7 @@ class SettingsDialog(QDialog):
     def _setup_signals(self):
         self.ui.installationsWidget.sig_settings_edited.connect(self.on_installation_edited)
         self.ui.settingsTree.itemClicked.connect(self.on_page_change)
-        self.reset_button = QPushButton("Reset All Settings", self)
+        self.reset_button = QPushButton(tr("Reset All Settings"), self)
         self.reset_button.setObjectName("resetButton")
         self.reset_button.clicked.connect(self.on_reset_all_settings)
         self.ui.verticalLayout.addWidget(self.reset_button)  # pyright: ignore[reportCallIssue, reportArgumentType]
@@ -93,8 +94,8 @@ class SettingsDialog(QDialog):
     def on_reset_all_settings(self):
         reply: QMessageBox.StandardButton = QMessageBox.question(
             self,
-            "Reset All Settings",
-            "Are you sure you want to reset all settings to their default values? This action cannot be undone.",
+            tr("Reset All Settings"),
+            tr("Are you sure you want to reset all settings to their default values? This action cannot be undone."),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
@@ -103,8 +104,8 @@ class SettingsDialog(QDialog):
             GlobalSettings().settings.clear()
             QMessageBox.information(
                 self,
-                "Settings Reset",
-                "All settings have been cleared and reset to their default values."
+                tr("Settings Reset"),
+                tr("All settings have been cleared and reset to their default values.")
             )
             self._is_resetting = True
             self.close()

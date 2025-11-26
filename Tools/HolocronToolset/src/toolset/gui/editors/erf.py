@@ -28,6 +28,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import FileResource, ResourceIdentifier
+from toolset.gui.common.localization import translate as tr
 from pykotor.resource.formats.bif import read_bif
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
@@ -108,6 +109,7 @@ class ERFEditor(Editor):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
         self._is_capsule_editor: bool = True
         self._has_changes: bool = False
@@ -118,6 +120,11 @@ class ERFEditor(Editor):
         self.ui.tableView.setModel(self._proxy_model)
 
         self.ui.tableView.setSortingEnabled(False)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
         header: QHeaderView | None = self.ui.tableView.horizontalHeader()
         if header is not None:
             header.setSectionsClickable(True)
@@ -183,7 +190,7 @@ class ERFEditor(Editor):
         result = QMessageBox.question(
             None,
             "Changes detected.",
-            "The action you attempted would discard your changes. Continue?",
+            tr("The action you attempted would discard your changes. Continue?"),
             buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             defaultButton=QMessageBox.StandardButton.No,
         )
@@ -238,10 +245,11 @@ class ERFEditor(Editor):
                 self.source_model.appendRow([resref_item, restype_item, size_item, offset_item])
 
         else:
+            from toolset.gui.common.localization import translate as tr
             QMessageBox(
                 QMessageBox.Icon.Critical,
-                "Unable to load file",
-                "The file specified is not a MOD/ERF type file.",
+                tr("Unable to load file"),
+                tr("The file specified is not a MOD/ERF type file."),
                 parent=self,
                 flags=Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint,
             ).show()
@@ -307,10 +315,11 @@ class ERFEditor(Editor):
             except ValueError as e:
                 msg: str = str(e)
                 if msg.startswith("You must save the ERFEditor"):  # HACK(th3w1zard1): fix later.
+                    from toolset.gui.common.localization import translate as tr
                     QMessageBox(
                         QMessageBox.Icon.Information,
-                        "New resource added to parent ERF/RIM",
-                        "You've added a new ERF/RIM and tried to save inside that new ERF/RIM's editor. You must save the ERFEditor you added the nested to first. Do so and try again.",  # noqa: E501
+                        tr("New resource added to parent ERF/RIM"),
+                        tr("You've added a new ERF/RIM and tried to save inside that new ERF/RIM's editor. You must save the ERFEditor you added the nested to first. Do so and try again."),  # noqa: E501
                     ).exec()
                 else:
                     raise

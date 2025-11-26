@@ -33,6 +33,11 @@ class RimSaveDialog(QDialog):
         from toolset.uic.qtpy.dialogs.save_in_rim import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         self.ui.cancelButton.clicked.connect(self.reject)
         self.ui.modSaveButton.clicked.connect(self.save_as_mod)

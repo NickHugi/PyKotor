@@ -87,7 +87,8 @@ class InstallationsWidget(QWidget):
         self.settings.settings.setValue("installations", installations)
 
     def add_new_installation(self):
-        item: QStandardItem = QStandardItem("New")
+        from toolset.gui.common.localization import translate as tr
+        item: QStandardItem = QStandardItem(tr("New"))
         item.setData({"path": "", "tsl": False})
         self.installations_model.appendRow(item)
         self.sig_settings_edited.emit()
@@ -271,7 +272,15 @@ class GlobalSettings(Settings):
     )
     selectedTheme: SettingsProperty[str] = Settings.addSetting(
         "selectedTheme",
-        "Fusion (Light)",  # Default theme
+        "fusion (light)",  # Default theme
+    )
+    selectedStyle: SettingsProperty[str] = Settings.addSetting(
+        "selectedStyle",
+        "",  # Empty means use theme's default style
+    )
+    selectedLanguage: SettingsProperty[int] = Settings.addSetting(
+        "selectedLanguage",
+        0,  # Default to English (ToolsetLanguage.ENGLISH)
     )
     # endregion
 

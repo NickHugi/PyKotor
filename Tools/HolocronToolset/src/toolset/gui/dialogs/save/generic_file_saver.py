@@ -78,7 +78,8 @@ class FileSaveHandler(Generic[T]):
         if len(self.resources) == 1:
             resource: T = self.resources[0]
             identifier = self.get_resource_ident(resource)
-            dialog = QFileDialog(self.parent, "Save File", str(identifier), "Files (*.*)")
+            from toolset.gui.common.localization import translate as tr
+            dialog = QFileDialog(self.parent, tr("Save File"), str(identifier), "Files (*.*)")
             dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)  # pyright: ignore[reportArgumentType]
             dialog.setOption(QFileDialog.Option.DontConfirmOverwrite)  # pyright: ignore[reportArgumentType]
             response: int = dialog.exec()
@@ -201,17 +202,18 @@ class FileSaveHandler(Generic[T]):
         self,
         existing_files_and_folders: list[str],
     ) -> int:
+        from toolset.gui.common.localization import translate as tr, trf
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Icon.Warning)
-        msg_box.setWindowTitle("Existing files/folders found.")
-        msg_box.setText(f"The following {len(existing_files_and_folders)} files and folders already exist in the selected folder.<br><br>How would you like to handle this?")
+        msg_box.setWindowTitle(tr("Existing files/folders found."))
+        msg_box.setText(trf("The following {count} files and folders already exist in the selected folder.<br><br>How would you like to handle this?", count=len(existing_files_and_folders)))
         msg_box.setDetailedText("\n".join(existing_files_and_folders))
         msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Abort)  # pyright: ignore[reportArgumentType]
         yes_button, no_button = msg_box.button(QMessageBox.StandardButton.Yes), msg_box.button(QMessageBox.StandardButton.No)
         assert yes_button is not None, "Did not call setStandardButtons with the QMessageBox yes button."
         assert no_button is not None, "Did not call setStandardButtons with the QMessageBox yes button."
-        yes_button.setText("Overwrite")
-        no_button.setText("Auto-Rename")
+        yes_button.setText(tr("Overwrite"))
+        no_button.setText(tr("Auto-Rename"))
         msg_box.setDefaultButton(QMessageBox.StandardButton.Abort)
         msg_box.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
         return msg_box.exec()
@@ -220,10 +222,11 @@ class FileSaveHandler(Generic[T]):
         self,
         failed_extractions: dict[Path, Exception],
     ):
+        from toolset.gui.common.localization import translate as tr, trf
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Icon.Critical)
-        msg_box.setWindowTitle("Failed to extract files to disk.")
-        msg_box.setText(f"{len(failed_extractions)} files FAILED to to be saved<br><br>Press 'show details' for information.")
+        msg_box.setWindowTitle(tr("Failed to extract files to disk."))
+        msg_box.setText(trf("{count} files FAILED to to be saved<br><br>Press 'show details' for information.", count=len(failed_extractions)))
         detailed_info = "\n".join(f"{file}: {universal_simplify_exception(exc)}" for file, exc in failed_extractions.items())
         msg_box.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
         msg_box.setDetailedText(detailed_info)

@@ -65,6 +65,7 @@ class UTIEditor(Editor):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
         self._installation: HTInstallation
 
@@ -72,6 +73,11 @@ class UTIEditor(Editor):
         self.ui.descEdit.set_installation(installation)
 
         self.setMinimumSize(700, 350)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         QShortcut("Del", self).activated.connect(self.on_del_shortcut)
 
@@ -83,7 +89,8 @@ class UTIEditor(Editor):
     def _setup_signals(self):
         """Set up signal connections for UI elements."""
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
-        self.ui.tagGenerateButton.setToolTip("Reset this custom tag so it matches the resref")
+        from toolset.gui.common.localization import translate as tr
+        self.ui.tagGenerateButton.setToolTip(tr("Reset this custom tag so it matches the resref"))
         self.ui.resrefGenerateButton.clicked.connect(self.generate_resref)
         self.ui.editPropertyButton.clicked.connect(self.edit_selected_property)
         self.ui.removePropertyButton.clicked.connect(self.remove_selected_property)
@@ -575,6 +582,11 @@ class PropertyEditor(QDialog):
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         self.ui.costSelectButton.clicked.connect(self.select_cost)
         self.ui.parameterSelectButton.clicked.connect(self.select_param)

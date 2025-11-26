@@ -43,8 +43,8 @@ if TYPE_CHECKING:
 
     from pykotor.extract.file import FileResource
 
-K1_PATH: str | None = os.environ.get("K1_PATH")
-K2_PATH: str | None = os.environ.get("K2_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH: str | None = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 LOG_FILENAME = "test_ncs_compilers_install"
 
 

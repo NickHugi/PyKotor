@@ -45,6 +45,11 @@ class LoadFromModuleDialog(QDialog):
         from toolset.uic.qtpy.dialogs.load_from_module import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         for resource in capsule:
             if resource.restype() not in supported:

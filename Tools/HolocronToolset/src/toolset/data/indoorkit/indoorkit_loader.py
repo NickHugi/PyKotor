@@ -51,7 +51,21 @@ def load_kits(  # noqa: C901, PLR0912, PLR0915
         for file in kits_path.iterdir()
         if file.suffix.lower() == ".json"
     ):
-        kit_json: dict[str, Any] = json.loads(file.read_bytes())
+        try:
+            kit_json_raw: Any = json.loads(file.read_bytes())
+        except json.JSONDecodeError:
+            # Skip invalid JSON files
+            continue
+        
+        # Skip files that aren't dicts (e.g., available_kits.json which is a list)
+        if not isinstance(kit_json_raw, dict):
+            continue
+        
+        # Skip dicts that don't have required kit fields
+        if "name" not in kit_json_raw or "id" not in kit_json_raw:
+            continue
+        
+        kit_json: dict[str, Any] = kit_json_raw
         kit = Kit(kit_json["name"])
         kit_identifier: str = kit_json["id"]
 

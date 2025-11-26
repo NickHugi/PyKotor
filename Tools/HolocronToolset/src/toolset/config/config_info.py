@@ -4,7 +4,7 @@ from typing import Any
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "3.1.1",
+    "currentVersion": "3.1.2",
     "toolsetLatestVersion": "3.1.1",
     "toolsetLatestBetaVersion": "3.1.1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
@@ -39,8 +39,8 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
             "64bit": ["https://mega.nz/file/0ex33YTJ#RlBxTx3AOdxj8tBmgFg8SsCMSdO5i9SYu2FNsktrtzc", "https://github.com/NickHugi/PyKotor/releases/download/v{tag}-toolset/HolocronToolset_Windows_PyQt5_x64.zip"]
         }
     },
-    "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "A new major Release version is available.",
+    "toolsetLatestNotes": "Path editor now creates bidirectional links automatically, eliminating manual reciprocal edges and preventing zero-connection points.",
+    "toolsetLatestBetaNotes": "Path editor now creates bidirectional links automatically, eliminating manual reciprocal edges and preventing zero-connection points.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},

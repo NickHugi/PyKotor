@@ -55,19 +55,20 @@ class ApplicationSettingsWidget(SettingsWidget):
 
     def update_font_label(self):
         """Update the label to show the current font."""
+        from toolset.gui.common.localization import translate as tr, trf
         font_string = self.settings.settings.value("GlobalFont", "")
         if font_string:
             font = QFont()
             font.fromString(str(font_string))
             QApplication.setFont(font)
-            self.ui.currentFontLabel.setText(f"Current Font: {font.family()}, {font.pointSize()} pt")
+            self.ui.currentFontLabel.setText(trf("Current Font: {family}, {size} pt", family=font.family(), size=font.pointSize()))
         else:
-            self.ui.currentFontLabel.setText("Current Font: Default")
+            self.ui.currentFontLabel.setText(tr("Current Font: Default"))
 
     def select_font(self):
         """Open QFontDialog to select a font."""
         current_font = QApplication.font()
-        font, ok = QFontDialog.getFont(current_font, self)
+        font, ok = QFontDialog.getFont(current_font, self)  # type: ignore[reportCallIssue]
         assert isinstance(font, QFont), f"expected {type(font).__name__} to be QFont"
         if ok:
             QApplication.setFont(font)
@@ -81,7 +82,8 @@ class ApplicationSettingsWidget(SettingsWidget):
             if attr.startswith("AA_") and hasattr(Qt.ApplicationAttribute, attr):
                 if attr in self.settings.REQUIRES_RESTART:
                     checkbox = QCheckBox(attr.replace("AA_", "").replace("_", " ") + " *")
-                    checkbox.setToolTip("Requires app restart!")
+                    from toolset.gui.common.localization import translate as tr
+                    checkbox.setToolTip(tr("Requires app restart!"))
                 else:
                     checkbox = QCheckBox(attr.replace("AA_", "").replace("_", " "))
                 checkBoxName = f"{attr}CheckBox"
@@ -242,7 +244,8 @@ class ApplicationSettingsWidget(SettingsWidget):
         """Remove the selected environment variable."""
         selected_row = self.ui.tableWidget.currentRow()
         if selected_row < 0:
-            QMessageBox.warning(self, "Remove Variable", "Please select a variable to remove.")
+            from toolset.gui.common.localization import translate as tr
+            QMessageBox.warning(self, tr("Remove Variable"), tr("Please select a variable to remove."))
             return
 
         key_item = self.ui.tableWidget.item(selected_row, 0)

@@ -30,7 +30,10 @@ from qtpy.QtWidgets import (
     QMenuBar,
     QMessageBox,
     QPlainTextEdit,  # pyright: ignore[reportPrivateImportUsage]  # pyright: ignore[reportPrivateImportUsage]
+    QShortcut,
+    QStyle,
 )
+from qtpy.QtGui import QAction
 
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
@@ -42,7 +45,7 @@ from pykotor.resource.formats.gff import GFFStruct, bytes_gff, read_gff
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
-from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file, is_sav_file
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
@@ -99,6 +102,7 @@ class Editor(QMainWindow):
         self._resname: str = f"untitled_{uuid.uuid4().hex[:8]}"
         self._filepath: Path = self.setup_extract_path() / f"{self._resname}.{self._restype.extension}"
         self._revert: bytes = b""
+        self._is_save_game_resource: bool = False  # Flag to track if resource is from a save game
         self._global_settings: GlobalSettings = GlobalSettings()
 
         self.media_player: MediaPlayerWidget = MediaPlayerWidget(self)
@@ -113,28 +117,136 @@ class Editor(QMainWindow):
     def _setup_menus(self):
         menubar: QMenuBar | None = self.menuBar()
         assert menubar is not None, "menubar is somehow None"
-        menubar_menu = menubar.actions()[0].menu()
-        if not isinstance(menubar_menu, QMenu):
-            raise TypeError(f"self.menuBar().actions()[0].menu() returned a {type(menubar_menu).__name__} object, expected QMenu.")
-        for action in menubar_menu.actions():
-            if action.text() == "New":
-                action.triggered.connect(self.new)
-                action.setShortcut("Ctrl+N")
-            if action.text() == "Open":
-                action.triggered.connect(self.open)
-                action.setShortcut("Ctrl+O")
-            if action.text() == "Save":
-                action.triggered.connect(self.save)
-                action.setShortcut("Ctrl+S")
-            if action.text() == "Save As":
-                action.triggered.connect(self.save_as)
-                action.setShortcut("Ctrl+Shift+S")
-            if action.text() == "Revert":
-                action.triggered.connect(self.revert)
-                action.setShortcut("Ctrl+R")
-            if action.text() == "Exit":
-                action.triggered.connect(self.close)
-                action.setShortcut("Ctrl+Q")
+        
+        # If menubar is empty, create a File menu with standard actions
+        if not menubar.actions():
+            file_menu = QMenu("File", self)
+            menubar.addMenu(file_menu)
+            
+            # Create standard file menu actions
+            new_action = QAction("New", self)
+            new_action.setShortcut("Ctrl+N")
+            new_action.triggered.connect(self.new)
+            file_menu.addAction(new_action)
+            
+            open_action = QAction("Open", self)
+            open_action.setShortcut("Ctrl+O")
+            open_action.triggered.connect(self.open)
+            file_menu.addAction(open_action)
+            
+            save_action = QAction("Save", self)
+            save_action.setShortcut("Ctrl+S")
+            save_action.triggered.connect(self.save)
+            file_menu.addAction(save_action)
+            
+            save_as_action = QAction("Save As", self)
+            save_as_action.setShortcut("Ctrl+Shift+S")
+            save_as_action.triggered.connect(self.save_as)
+            file_menu.addAction(save_as_action)
+            
+            file_menu.addSeparator()
+            
+            revert_action = QAction("Revert", self)
+            revert_action.setShortcut("Ctrl+R")
+            revert_action.triggered.connect(self.revert)
+            file_menu.addAction(revert_action)
+            
+            file_menu.addSeparator()
+            
+            exit_action = QAction("Exit", self)
+            exit_action.setShortcut("Ctrl+Q")
+            exit_action.triggered.connect(self.close)
+            file_menu.addAction(exit_action)
+        else:
+            # Menubar already has menus (from UI file), connect to existing actions
+            menubar_menu = menubar.actions()[0].menu()
+            if not isinstance(menubar_menu, QMenu):
+                raise TypeError(f"self.menuBar().actions()[0].menu() returned a {type(menubar_menu).__name__} object, expected QMenu.")
+            for action in menubar_menu.actions():
+                if action.text() == "New":
+                    action.triggered.connect(self.new)
+                    action.setShortcut("Ctrl+N")
+                if action.text() == "Open":
+                    action.triggered.connect(self.open)
+                    action.setShortcut("Ctrl+O")
+                if action.text() == "Save":
+                    action.triggered.connect(self.save)
+                    action.setShortcut("Ctrl+S")
+                if action.text() == "Save As":
+                    action.triggered.connect(self.save_as)
+                    action.setShortcut("Ctrl+Shift+S")
+                if action.text() == "Revert":
+                    action.triggered.connect(self.revert)
+                    action.setShortcut("Ctrl+R")
+                if action.text() == "Exit":
+                    action.triggered.connect(self.close)
+                    action.setShortcut("Ctrl+Q")
+
+    def _add_help_action(self, wiki_filename: str | None = None):
+        """Add a help action to the menu bar with question mark icon.
+        
+        Args:
+            wiki_filename: Name of the markdown file in the wiki directory (e.g., "GFF-File-Format.md").
+                          If None, will try to auto-detect from editor class name.
+        """
+        from toolset.gui.editors.editor_wiki_mapping import EDITOR_WIKI_MAP
+        
+        # Auto-detect wiki file if not provided
+        if wiki_filename is None:
+            editor_class_name = self.__class__.__name__
+            wiki_filename = EDITOR_WIKI_MAP.get(editor_class_name)
+            if wiki_filename is None:
+                # No wiki file for this editor, skip adding help
+                return
+        
+        menubar: QMenuBar | None = self.menuBar()
+        assert menubar is not None, "menubar is somehow None"
+        help_menu: QMenu | None = None
+        
+        # Check if Help menu already exists
+        for action in menubar.actions():
+            if action.text() == "Help":
+                help_menu = action.menu()
+                break
+        
+        # Create Help menu if it doesn't exist
+        if help_menu is None:
+            help_menu = QMenu("Help", self)
+            menubar.addMenu(help_menu)
+        
+        # Check if Documentation action already exists (idempotent)
+        doc_action = None
+        for action in help_menu.actions():
+            if action.text() == "Documentation":
+                doc_action = action
+                break
+        
+        # Only add if it doesn't exist
+        if doc_action is None:
+            # Add help action with question mark icon
+            style: QStyle | None = self.style()
+            if style is not None:
+                help_icon = style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxQuestion)
+            else:
+                help_icon = QIcon()
+            
+            help_action = help_menu.addAction(help_icon, "Documentation")
+            help_action.setShortcut("F1")
+            help_action.triggered.connect(lambda: self._show_help_dialog(wiki_filename))
+            
+            QShortcut("F1", self).activated.connect(lambda: self._show_help_dialog(wiki_filename))
+    
+    def _show_help_dialog(self, wiki_filename: str):
+        """Show the help dialog for this editor.
+        
+        Args:
+            wiki_filename: Name of the markdown file in the wiki directory
+        """
+        from toolset.gui.dialogs.editor_help import EditorHelpDialog
+        
+        # Create non-blocking dialog
+        dialog = EditorHelpDialog(self, wiki_filename)
+        dialog.show()  # Non-blocking show
 
     def _setup_icon(
         self,
@@ -261,13 +373,22 @@ class Editor(QMainWindow):
                 return
             from toolset.gui.editors.gff import GFFEditor
 
+            # CRITICAL: For save game resources, ALWAYS preserve extra fields
+            # Save game GFF files contain undocumented fields that must be preserved
+            # to prevent save corruption. This is more important than the user setting.
+            should_preserve_fields = (
+                self._is_save_game_resource or self._global_settings.attemptKeepOldGFFFields
+            )
+            
             if (
-                self._global_settings.attemptKeepOldGFFFields
+                should_preserve_fields
                 and self._restype is not None
                 and self._restype.is_gff()
                 and not isinstance(self, GFFEditor)
                 and self._revert is not None
             ):  # noqa: E501
+                if self._is_save_game_resource:
+                    print("Save game resource detected: Preserving all extra GFF fields to prevent save corruption.")
                 old_gff: GFF = read_gff(self._revert)
                 new_gff: GFF = read_gff(data)
                 GFFStruct._add_missing(new_gff.root, old_gff.root)
@@ -510,6 +631,11 @@ class Editor(QMainWindow):
         # Convert bytearray to bytes if needed
         data_bytes = bytes(data) if isinstance(data, bytearray) else data
         self._revert = data_bytes
+        
+        # Detect if this resource is from a save game
+        # Check if any parent in the filepath is a .sav file
+        self._is_save_game_resource = self._detect_save_game_resource(self._filepath)
+        
         menu_bar: QMenuBar | None = cast(Optional[QMenuBar], self.menuBar())
         assert menu_bar is not None, "Menu bar is None somehow? This should be impossible."
         menu_bar_actions: Sequence[_QAction] = menu_bar.actions()  # pyright: ignore[reportAssignmentType]
@@ -522,9 +648,38 @@ class Editor(QMainWindow):
                     break
         self.refresh_window_title()
         self.sig_loaded_file.emit(str(self._filepath), self._resname, self._restype, data_bytes)
+    
+    def _detect_save_game_resource(self, filepath: Path) -> bool:
+        """Detect if a resource is from a save game by checking the filepath.
+        
+        Save game resources are nested inside SAVEGAME.sav or cached module .sav files.
+        This method checks if any parent in the path is a .sav file.
+        
+        Args:
+        ----
+            filepath: Path to check
+            
+        Returns:
+        -------
+            bool: True if resource is from a save game, False otherwise
+        """
+        current_path = filepath
+        while current_path != current_path.parent:
+            # Check if current path component is a .sav file
+            if is_sav_file(current_path):
+                return True
+            # Check if parent is a .sav file (for nested resources)
+            if is_sav_file(current_path.parent):
+                return True
+            current_path = current_path.parent
+            # Stop if we've reached the root
+            if not current_path.parts:
+                break
+        return False
 
     def new(self):
         self._revert = b""
+        self._is_save_game_resource = False
         self._filepath = self.setup_extract_path() / f"{self._resname}.{self._restype.extension}"
         menu_bar: QMenuBar | None = cast(Optional[QMenuBar], self.menuBar())
         assert menu_bar is not None, "Menu bar is None somehow? This should be impossible."

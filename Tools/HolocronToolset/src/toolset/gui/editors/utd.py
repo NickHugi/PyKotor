@@ -65,6 +65,7 @@ class UTDEditor(Editor):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setup_installation(installation)
@@ -154,7 +155,8 @@ class UTDEditor(Editor):
     ):
         widget.setEnabled(installation.tsl)
         if not installation.tsl:
-            widget.setToolTip("This widget is only available in KOTOR II.")
+            from toolset.gui.common.localization import translate as tr
+            widget.setToolTip(tr("This widget is only available in KOTOR II."))
 
     def load(
         self,

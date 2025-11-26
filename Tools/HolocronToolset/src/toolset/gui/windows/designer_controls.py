@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import time
 
 from copy import deepcopy
@@ -10,6 +11,7 @@ from qtpy import QtCore
 from qtpy.QtCore import QPoint, Qt
 
 from pykotor.gl.scene import Scene
+from pykotor.gl.scene.camera_controller import CameraController, CameraControllerSettings, CameraMode, InputState
 from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITInstance, GITPlaceable, GITStore, GITWaypoint
 from toolset.data.misc import ControlItem
 from toolset.gui.editors.git import DuplicateCommand, _GeometryMode, _InstanceMode, calculate_zoom_strength
@@ -26,7 +28,117 @@ if TYPE_CHECKING:
     from toolset.gui.windows.module_designer import ModuleDesigner
 
 
+class InputSmoother:
+    """Provides input smoothing for mouse movements.
+    
+    Uses exponential moving average to smooth out jerky mouse input
+    while maintaining responsiveness.
+    """
+    
+    def __init__(self, smoothing_factor: float = 0.3):
+        """Initialize the smoother.
+        
+        Args:
+            smoothing_factor: Value between 0 and 1. Higher = more smoothing.
+        """
+        self.smoothing_factor = smoothing_factor
+        self._prev_x: float = 0.0
+        self._prev_y: float = 0.0
+        self._initialized: bool = False
+    
+    def smooth(self, x: float, y: float) -> tuple[float, float]:
+        """Apply smoothing to input values.
+        
+        Args:
+            x: Raw X input.
+            y: Raw Y input.
+            
+        Returns:
+            Smoothed (x, y) tuple.
+        """
+        if not self._initialized:
+            self._prev_x = x
+            self._prev_y = y
+            self._initialized = True
+            return (x, y)
+        
+        # Exponential moving average
+        smoothed_x = self._prev_x * self.smoothing_factor + x * (1.0 - self.smoothing_factor)
+        smoothed_y = self._prev_y * self.smoothing_factor + y * (1.0 - self.smoothing_factor)
+        
+        self._prev_x = smoothed_x
+        self._prev_y = smoothed_y
+        
+        return (smoothed_x, smoothed_y)
+    
+    def reset(self) -> None:
+        """Reset the smoother state."""
+        self._initialized = False
+
+
+class InputAccelerator:
+    """Provides acceleration curves for input.
+    
+    Makes precise movements easier while allowing fast movements
+    when needed. Uses a power curve.
+    """
+    
+    def __init__(self, power: float = 1.5, threshold: float = 2.0):
+        """Initialize the accelerator.
+        
+        Args:
+            power: Power for the acceleration curve. >1 = acceleration.
+            threshold: Input values below this use linear response.
+        """
+        self.power = power
+        self.threshold = threshold
+    
+    def accelerate(self, value: float) -> float:
+        """Apply acceleration to an input value.
+        
+        Args:
+            value: Raw input value.
+            
+        Returns:
+            Accelerated value.
+        """
+        sign = 1.0 if value >= 0 else -1.0
+        magnitude = abs(value)
+        
+        # Below threshold: linear response for precise control
+        if magnitude < self.threshold:
+            return value
+        
+        # Above threshold: power curve for fast movements
+        excess = magnitude - self.threshold
+        accelerated_excess = math.pow(excess, self.power)
+        
+        return sign * (self.threshold + accelerated_excess)
+
+
 class ModuleDesignerControls3d:
+    """Enhanced 3D camera controls for the Module Designer.
+    
+    Provides intuitive camera controls inspired by professional 3D software:
+    
+    Camera Controls:
+    - **Middle Mouse + Drag**: Pan camera parallel to view plane
+    - **Right Mouse + Drag**: Zoom in/out (forward/back)
+    - **Left Mouse + Drag**: Rotate camera (orbit mode)
+    - **Scroll Wheel**: Zoom in/out
+    - **Ctrl + Left Mouse + Drag**: Pan camera (alternative)
+    
+    Instance Controls:
+    - **Left Mouse Click**: Select instance
+    - **Left Mouse + Drag on Instance**: Move instance
+    - **Shift + Left Mouse + Drag**: Move instance on Z axis
+    - **Middle Mouse + Drag on Instance**: Rotate instance
+    
+    The controls feature input smoothing and acceleration for a more
+    professional feel. Small movements are precise, while fast movements
+    cover more ground.
+    """
+    
     def __init__(
         self,
         editor: ModuleDesigner,
@@ -37,6 +149,50 @@ class ModuleDesignerControls3d:
         self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
         if self.renderer._scene is not None:  # noqa: SLF001
             self.renderer._scene.show_cursor = True  # noqa: SLF001
+        
+        # Input processing
+        self._input_smoother = InputSmoother(smoothing_factor=0.2)
+        self._input_accelerator = InputAccelerator(power=1.3, threshold=3.0)
+        
+        # Initialize camera controller with settings
+        self._camera_controller: CameraController | None = None
+        self._last_input_state: InputState = InputState()
+        
+    def _get_camera_controller(self) -> CameraController:
+        """Get or create the camera controller."""
+        if self._camera_controller is None:
+            settings = CameraControllerSettings(
+                orbit_sensitivity=self.settings.rotateCameraSensitivity3d / 100.0,
+                pan_sensitivity=self.settings.moveCameraSensitivity3d / 100.0,
+                zoom_sensitivity=self.settings.zoomCameraSensitivity3d / 100.0,
+                enable_smoothing=True,
+                smoothing_factor=0.1,
+                enable_acceleration=True,
+                speed_boost_multiplier=self.settings.boostedMoveCameraSensitivity3d / self.settings.moveCameraSensitivity3d,
+            )
+            self._camera_controller = CameraController(
+                self.renderer.scene.camera,
+                settings,
+            )
+        return self._camera_controller
+    
+    def _process_input(self, screen_delta: Vector2) -> tuple[float, float]:
+        """Process raw input through smoothing and acceleration.
+        
+        Args:
+            screen_delta: Raw mouse delta.
+            
+        Returns:
+            Processed (dx, dy) tuple.
+        """
+        # Apply smoothing
+        dx, dy = self._input_smoother.smooth(screen_delta.x, screen_delta.y)
+        
+        # Apply acceleration
+        dx = self._input_accelerator.accelerate(dx)
+        dy = self._input_accelerator.accelerate(dy)
+        
+        return (dx, dy)
 
     def on_mouse_scrolled(
         self,
@@ -45,8 +201,19 @@ class ModuleDesignerControls3d:
         keys: set[Qt.Key],
     ):
         if self.zoom_camera.satisfied(buttons, keys):
-            strength: float = self.settings.zoomCameraSensitivity3d / 10000
-            self.renderer.scene.camera.distance += -delta.y * strength
+            # Use exponential zoom for consistent feel at all distances
+            sensitivity: float = self.settings.zoomCameraSensitivity3d / 5000.0
+            zoom_factor = 1.0 + delta.y * sensitivity
+            
+            # Clamp zoom factor to prevent extreme changes
+            zoom_factor = max(0.5, min(2.0, zoom_factor))
+            
+            camera = self.renderer.scene.camera
+            new_distance = camera.distance / zoom_factor
+            
+            # Clamp distance
+            camera.distance = max(0.5, min(500.0, new_distance))
+            
         elif self.move_z_camera.satisfied(buttons, keys):
             strength: float = self.settings.moveCameraSensitivity3d / 10000
             self.renderer.scene.camera.z -= -delta.y * strength
@@ -59,11 +226,16 @@ class ModuleDesignerControls3d:
         buttons: set[Qt.MouseButton],
         keys: set[Qt.Key],
     ):
+        # Process input through smoothing and acceleration
+        processed_dx, processed_dy = self._process_input(screen_delta)
+        processed_delta = Vector2(processed_dx, processed_dy)
+        
         # Handle mouse-specific cursor lock and plane movement
         move_xy_camera_satisfied = self.move_xy_camera.satisfied(buttons, keys)
         move_camera_plane_satisfied = self.move_camera_plane.satisfied(buttons, keys)
         rotate_camera_satisfied = self.rotate_camera.satisfied(buttons, keys)
         zoom_camera_satisfied = self.zoom_camera_mm.satisfied(buttons, keys)
+        
         if (
             move_xy_camera_satisfied
             or move_camera_plane_satisfied
@@ -71,23 +243,42 @@ class ModuleDesignerControls3d:
             or zoom_camera_satisfied
         ):
             self.editor.do_cursor_lock(screen, center_mouse=False, do_rotations=False)
-            move_strength = self.settings.moveCameraSensitivity3d / 1000
+            
+            # Scale movement based on distance for consistent feel
+            distance_scale = max(0.5, self.renderer.scene.camera.distance * 0.05)
+            base_move_strength = self.settings.moveCameraSensitivity3d / 1000.0
+            move_strength = base_move_strength * distance_scale
+            
             if move_xy_camera_satisfied:
-                forward = -screen_delta.y * self.renderer.scene.camera.forward()
-                sideward = screen_delta.x * self.renderer.scene.camera.sideward()
+                # Pan: Move camera parallel to view plane
+                forward = -processed_dy * self.renderer.scene.camera.forward()
+                sideward = processed_dx * self.renderer.scene.camera.sideward()
                 self.renderer.scene.camera.x -= (forward.x + sideward.x) * move_strength
                 self.renderer.scene.camera.y -= (forward.y + sideward.y) * move_strength
+                
             if move_camera_plane_satisfied:
-                upward = screen_delta.y * self.renderer.scene.camera.upward(ignore_xy=False)
-                sideward = screen_delta.x * self.renderer.scene.camera.sideward()
+                # Pan in camera-local up/right plane (middle mouse default)
+                upward = processed_dy * self.renderer.scene.camera.upward(ignore_xy=False)
+                sideward = processed_dx * self.renderer.scene.camera.sideward()
                 self.renderer.scene.camera.z -= (upward.z + sideward.z) * move_strength
                 self.renderer.scene.camera.y -= (upward.y + sideward.y) * move_strength
                 self.renderer.scene.camera.x -= (upward.x + sideward.x) * move_strength
-            rotate_strength = self.settings.moveCameraSensitivity3d / 10000
+                
             if rotate_camera_satisfied:
-                self.renderer.rotate_camera(-screen_delta.x * rotate_strength, screen_delta.y * rotate_strength, clamp_rotations=True)
+                # Rotate: Orbit camera around focal point
+                rotate_strength = self.settings.rotateCameraSensitivity3d / 5000.0
+                self.renderer.rotate_camera(
+                    -processed_dx * rotate_strength,
+                    processed_dy * rotate_strength,
+                    clamp_rotations=True
+                )
+                
             if zoom_camera_satisfied:
-                self.renderer.scene.camera.distance -= screen_delta.y * rotate_strength
+                # Zoom: Move closer/farther (right mouse drag)
+                zoom_strength = self.settings.zoomCameraSensitivity3d / 2000.0
+                distance_factor = max(0.1, self.renderer.scene.camera.distance * 0.1)
+                self.renderer.scene.camera.distance -= processed_dy * zoom_strength * distance_factor
+                self.renderer.scene.camera.distance = max(0.5, min(500.0, self.renderer.scene.camera.distance))
 
         # Handle movement of selected instances.
         if self.editor.ui.lockInstancesCheck.isChecked():
@@ -112,7 +303,7 @@ class ModuleDesignerControls3d:
                 self.editor.initial_positions = {instance: instance.position for instance in self.editor.selected_instances}
                 self.editor.is_drag_moving = True
             for instance in self.editor.selected_instances:
-                instance.position.z -= screen_delta.y / 40
+                instance.position.z -= processed_dy / 40
 
         if self.rotate_selected.satisfied(buttons, keys):
             if self.editor.ui.lockInstancesCheck.isChecked():
@@ -123,7 +314,7 @@ class ModuleDesignerControls3d:
                     if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                         continue  # doesn't support rotations.
                     self.editor.initial_rotations[instance] = Vector4(*instance.orientation) if isinstance(instance, GITCamera) else instance.bearing
-            self.editor.rotate_selected(screen_delta.x, screen_delta.y)
+            self.editor.rotate_selected(processed_dx, processed_dy)
 
     def on_mouse_pressed(
         self,

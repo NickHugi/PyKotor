@@ -23,6 +23,16 @@ if ($this_noprompt) {
 Write-Host "----------------------------------------"
 
 $iconExtension = if ((Get-OS) -eq 'Mac') {'icns'} else {'ico'}
+# Add wiki files to be bundled
+$wikiPath = (Resolve-Path -LiteralPath "$repoRootPath/wiki").Path
+$addDataArgs = @()
+if (Test-Path -LiteralPath $wikiPath -ErrorAction SilentlyContinue) {
+    # PyInstaller uses semicolon on Windows, colon on Unix
+    $dataSeparator = if (Get-OS -eq "Windows") { ";" } else { ":" }
+    $addDataArgs += "--add-data=$wikiPath$dataSeparator`wiki"
+    Write-Host "Including wiki directory: $wikiPath"
+}
+
 $pyInstallerArgs = @{
     'exclude-module' = @(
         'dl_translate',
@@ -101,6 +111,9 @@ $argumentsArray = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
         else { "--$($_.Key)=$($_.Value)" }
     }
 }
+
+# Add wiki data files
+$argumentsArray += $addDataArgs
 
 
 # Remove old compile/build files/folders if clean is set.

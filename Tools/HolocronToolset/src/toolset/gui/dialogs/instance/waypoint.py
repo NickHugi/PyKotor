@@ -39,6 +39,11 @@ class WaypointDialog(QDialog):
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         self.ui.nameEdit.setInstallation(installation)
         self.ui.mapNoteEdit.setInstallation(installation)

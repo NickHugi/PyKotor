@@ -121,6 +121,46 @@
          </widget>
         </item>
         <item>
+         <widget class="QGroupBox" name="groupScreenshot">
+          <property name="title">
+           <string>Screenshot Preview</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayoutScreenshot">
+           <item>
+            <widget class="QLabel" name="labelScreenshotPreview">
+             <property name="minimumSize">
+              <size>
+               <width>400</width>
+               <height>300</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>No screenshot available</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+             <property name="scaledContents">
+              <bool>false</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacerSaveInfo">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -208,7 +248,11 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayoutPartyMembers">
            <item>
-            <widget class="QListWidget" name="listWidgetPartyMembers"/>
+            <widget class="QListWidget" name="listWidgetPartyMembers">
+             <property name="toolTip">
+              <string>Hover over a party member to see detailed information</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -465,6 +509,23 @@
             <string>Skills</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayoutCharSkills">
+            <item>
+             <widget class="QLabel" name="labelSkillsCharacter">
+              <property name="text">
+               <string>Skills</string>
+              </property>
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+                <pointsize>10</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string>color: #2a82da;</string>
+              </property>
+             </widget>
+            </item>
             <item>
              <widget class="QTableWidget" name="tableWidgetSkills">
               <property name="columnCount">

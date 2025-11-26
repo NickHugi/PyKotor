@@ -38,12 +38,19 @@ class LTREditor(Editor):
         self.ui.tableDoubles.setSortingEnabled(True)
         self.ui.tableTriples.setSortingEnabled(True)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
         self.auto_resize_enabled = True
 
         self.ltr = LTR()
 
         self.populateComboBoxes()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
+        
         self.new()
 
     def _setup_signals(self):

@@ -40,8 +40,8 @@ if (
         add_sys_path(toolset_path.parent)
 
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 from pykotor.common.module import read_rim
 from pykotor.common.stream import BinaryReader
@@ -219,6 +219,46 @@ import pytest
 from toolset.gui.editors.erf import ERFEditor
 from toolset.data.installation import HTInstallation
 from pykotor.resource.type import ResourceType
+
+def test_erf_editor_headless_ui_load_build(qtbot, installation: HTInstallation, test_files_dir: pathlib.Path):
+    """Test ERF Editor in headless UI - loads real file and builds data."""
+    editor = ERFEditor(None, installation)
+    qtbot.addWidget(editor)
+    
+    # Try to find an ERF file
+    erf_file = test_files_dir / "001EBO_dlg.erf"
+    if not erf_file.exists():
+        # Try to get one from installation
+        erf_resources = list(installation.resources(ResourceType.ERF))[:1]
+        if not erf_resources:
+            erf_resources = list(installation.resources(ResourceType.MOD))[:1]
+        if not erf_resources:
+            pytest.skip("No ERF files available for testing")
+        erf_resource = erf_resources[0]
+        erf_data = installation.resource(erf_resource.identifier)
+        if not erf_data:
+            pytest.skip(f"Could not load ERF data for {erf_resource.identifier}")
+        editor.load(
+            erf_resource.filepath if hasattr(erf_resource, 'filepath') else pathlib.Path("module.erf"),
+            erf_resource.resname,
+            erf_resource.restype,
+            erf_data
+        )
+    else:
+        original_data = erf_file.read_bytes()
+        editor.load(erf_file, "001EBO_dlg", ResourceType.ERF, original_data)
+    
+    # Verify editor loaded the data
+    assert editor is not None
+    
+    # Build and verify it works
+    data, _ = editor.build()
+    assert len(data) > 0
+    
+    # Verify we can read it back
+    from pykotor.resource.formats.erf import read_erf
+    loaded_erf = read_erf(data)
+    assert loaded_erf is not None
 
 def test_erf_editor(qtbot, installation: HTInstallation, test_files_dir):
     """Test ERF Editor."""

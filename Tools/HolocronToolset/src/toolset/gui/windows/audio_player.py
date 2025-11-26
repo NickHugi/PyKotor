@@ -8,26 +8,25 @@ from typing import TYPE_CHECKING, Any, cast
 
 import qtpy
 
-from loggerplus import RobustLogger  # pyright: ignore[reportMissingTypeStubs]
+from loggerplus import RobustLogger  # type: ignore[import-untyped] # pyright: ignore[reportMissingTypeStubs]
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QTimer
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QFileDialog, QMainWindow
 
-from pykotor.extract.file import ResourceIdentifier
-from pykotor.tools import sound
-from utility.system.os_helper import remove_any
+from pykotor.extract.file import ResourceIdentifier  # type: ignore[import-not-found] # pyright: ignore[reportMissingImports]
+from utility.system.os_helper import remove_any  # type: ignore[import-not-found] # pyright: ignore[reportMissingImports]
 
 if TYPE_CHECKING:
 
     import os
 
     from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
-    from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
+    from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
     from qtpy.QtGui import QCloseEvent
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtWidgets import QFile, QWidget
 
-    from pykotor.resource.type import ResourceType
+    from pykotor.resource.type import ResourceType  # type: ignore[import-not-found] # pyright: ignore[reportMissingImports]
 
 
 class AudioPlayer(QMainWindow):
@@ -53,9 +52,9 @@ class AudioPlayer(QMainWindow):
         if qtpy.QT5:
             self.player.error.connect(lambda _=None: self.handle_error())
         else:
-            self.player.errorOccurred.connect(lambda *args, **kwargs: self.handle_error(*args, **kwargs))  # noqa: FBT001  # pyright: ignore[reportAttributeAccessIssue]
+            self.player.errorOccurred.connect(lambda *args, **kwargs: self.handle_error(*args, **kwargs))  # type: ignore[attr-defined] # noqa: FBT001  # pyright: ignore[reportAttributeAccessIssue]
 
-        self.temp_file = None  # Reference to the temporary file for PyQt6/Pyside6
+        self.temp_file: QFile | None = None  # Reference to the temporary file for PyQt6/Pyside6
 
     def handle_error(self, *args, **kwargs):
         print("Error:", *args, **kwargs)
@@ -64,7 +63,11 @@ class AudioPlayer(QMainWindow):
     def set_media(self, data: bytes, restype: ResourceType):
         # sourcery skip: extract-method
         self.player.stop()
-        data = sound.deobfuscate_audio(data)
+        from io import BytesIO
+        from pykotor.resource.formats.wav.wav_auto import bytes_wav, read_wav  # type: ignore[import-not-found] # pyright: ignore[reportMissingImports]
+        from pykotor.resource.type import ResourceType
+        wav = read_wav(BytesIO(data))
+        data = bytes_wav(wav, ResourceType.INVALID)
         # Clear any existing temporary file
         if self.temp_file and Path(self.temp_file.name).is_file():
             self.temp_file.delete = True
@@ -92,12 +95,12 @@ class AudioPlayer(QMainWindow):
 
             # Set up player
             player: PyQt6MediaPlayer | PySide6MediaPlayer = cast(Any, self.player)
-            audio_output = QAudioOutput(self)
+            audio_output = QAudioOutput(self)  # type: ignore[call-overload]
             audio_output.setVolume(1)
             player.setAudioOutput(audio_output)
 
             # Use the buffer directly instead of a file
-            player.setSourceDevice(buffer)
+            player.setSourceDevice(buffer)  # type: ignore[arg-type]
             player.play()
         QtCore.QTimer.singleShot(0, self.player.play)
 
@@ -120,7 +123,8 @@ class AudioPlayer(QMainWindow):
         restype: ResourceType,
         data: bytes,
     ):
-        self.setWindowTitle(f"{resname}.{restype.extension} - Audio Player")
+        from toolset.gui.common.localization import translate as tr, trf
+        self.setWindowTitle(trf("{name}.{ext} - Audio Player", name=resname, ext=restype.extension))
         self.set_media(data, restype)  # Use the refined set_media method
 
     def open(self):

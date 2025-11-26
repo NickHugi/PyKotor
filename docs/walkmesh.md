@@ -6,13 +6,8 @@ BioWare’s Aurora / Neverwinter Nights engine and is used by both KotOR games.
 
 ## Runtime Model ([`pykotor.resource.formats.bwm`](Libraries/PyKotor/src/pykotor/resource/formats/bwm/))
 
-<<<<<<< Current (Your changes)
-
-- **[`BWM`](Libraries/PyKotor/src/pykotor/resource/formats/bwm/bwm_data.py)** – In-memory walkmesh model. Holds the ordered `faces` list plus
-=======
 - **[`BWM`](Libraries/PyKotor/src/pykotor/resource/formats/bwm/bwm_data.py#L25)** – In-memory walkmesh model. Holds the ordered `faces` list plus
 
->>>>>>> Incoming (Background Agent changes)
   positional hooks used by the engine. Helper methods expose geometry,
   adjacency, perimeters, and AABB (bounding volume) construction.
 

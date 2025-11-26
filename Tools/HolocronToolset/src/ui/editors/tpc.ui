@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <ui version="4.0">
     <class>MainWindow</class>
     <widget class="QMainWindow" name="MainWindow">
@@ -6,41 +6,73 @@
             <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>800</width>
-                <height>600</height>
+                <width>1000</width>
+                <height>700</height>
             </rect>
         </property>
         <property name="windowTitle">
-            <string>TPC Editor</string>
+            <string>TPC Texture Editor</string>
         </property>
         <widget class="QWidget" name="centralwidget">
-            <layout class="QVBoxLayout" name="verticalLayout">
+            <layout class="QVBoxLayout" name="mainLayout">
+                <property name="spacing">
+                    <number>4</number>
+                </property>
+                <property name="leftMargin">
+                    <number>4</number>
+                </property>
+                <property name="topMargin">
+                    <number>4</number>
+                </property>
+                <property name="rightMargin">
+                    <number>4</number>
+                </property>
+                <property name="bottomMargin">
+                    <number>4</number>
+                </property>
                 <item>
-                    <widget class="QScrollArea" name="scrollArea">
+                    <widget class="QScrollArea" name="textureScrollArea">
                         <property name="widgetResizable">
                             <bool>true</bool>
                         </property>
+                        <property name="alignment">
+                            <set>Qt::AlignCenter</set>
+                        </property>
                         <widget class="QWidget" name="scrollAreaWidgetContents">
+                            <property name="geometry">
+                                <rect>
+                                    <x>0</x>
+                                    <y>0</y>
+                                    <width>98</width>
+                                    <height>27</height>
+                                </rect>
+                            </property>
                             <layout class="QVBoxLayout" name="scrollAreaLayout">
+                                <property name="spacing">
+                                    <number>0</number>
+                                </property>
+                                <property name="leftMargin">
+                                    <number>0</number>
+                                </property>
+                                <property name="topMargin">
+                                    <number>0</number>
+                                </property>
+                                <property name="rightMargin">
+                                    <number>0</number>
+                                </property>
+                                <property name="bottomMargin">
+                                    <number>0</number>
+                                </property>
                                 <item>
-                                    <widget class="QLabel" name="textureImage">
-                                        <property name="frameShape">
-                                            <enum>QFrame::Box</enum>
-                                        </property>
-                                        <property name="frameShadow">
-                                            <enum>QFrame::Sunken</enum>
-                                        </property>
+                                    <widget class="QLabel" name="textureLabel">
                                         <property name="text">
                                             <string />
                                         </property>
                                         <property name="alignment">
                                             <set>Qt::AlignCenter</set>
                                         </property>
-                                        <property name="sizePolicy">
-                                            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                                                <horstretch>0</horstretch>
-                                                <verstretch>0</verstretch>
-                                            </sizepolicy>
+                                        <property name="scaledContents">
+                                            <bool>false</bool>
                                         </property>
                                     </widget>
                                 </item>
@@ -49,19 +81,129 @@
                     </widget>
                 </item>
                 <item>
-                    <widget class="QSlider" name="zoomSlider">
-                        <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
+                    <widget class="QWidget" name="controlsWidget">
+                        <property name="maximumHeight">
+                            <number>60</number>
                         </property>
-                        <property name="minimum">
-                            <number>100</number>
-                        </property>
-                        <property name="maximum">
-                            <number>1000</number>
-                        </property>
-                        <property name="value">
-                            <number>100</number>
-                        </property>
+                        <layout class="QHBoxLayout" name="controlsLayout">
+                            <property name="spacing">
+                                <number>8</number>
+                            </property>
+                            <property name="leftMargin">
+                                <number>0</number>
+                            </property>
+                            <property name="topMargin">
+                                <number>0</number>
+                            </property>
+                            <property name="rightMargin">
+                                <number>0</number>
+                            </property>
+                            <property name="bottomMargin">
+                                <number>0</number>
+                            </property>
+                            <item>
+                                <widget class="QLabel" name="zoomLabel">
+                                    <property name="text">
+                                        <string>Zoom:</string>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QPushButton" name="zoomOutButton">
+                                    <property name="text">
+                                        <string>−</string>
+                                    </property>
+                                    <property name="maximumWidth">
+                                        <number>30</number>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QSlider" name="zoomSlider">
+                                    <property name="orientation">
+                                        <enum>Qt::Horizontal</enum>
+                                    </property>
+                                    <property name="minimum">
+                                        <number>10</number>
+                                    </property>
+                                    <property name="maximum">
+                                        <number>500</number>
+                                    </property>
+                                    <property name="value">
+                                        <number>100</number>
+                                    </property>
+                                    <property name="tickPosition">
+                                        <enum>QSlider::NoTicks</enum>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QPushButton" name="zoomInButton">
+                                    <property name="text">
+                                        <string>+</string>
+                                    </property>
+                                    <property name="maximumWidth">
+                                        <number>30</number>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QLabel" name="zoomPercentLabel">
+                                    <property name="text">
+                                        <string>100%</string>
+                                    </property>
+                                    <property name="minimumWidth">
+                                        <number>50</number>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <spacer name="horizontalSpacer">
+                                    <property name="orientation">
+                                        <enum>Qt::Horizontal</enum>
+                                    </property>
+                                    <property name="sizeHint" stdset="0">
+                                        <size>
+                                            <width>40</width>
+                                            <height>20</height>
+                                        </size>
+                                    </property>
+                                </spacer>
+                            </item>
+                            <item>
+                                <widget class="QPushButton" name="framePrevButton">
+                                    <property name="text">
+                                        <string>◄ Previous</string>
+                                    </property>
+                                    <property name="enabled">
+                                        <bool>false</bool>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QLabel" name="frameInfoLabel">
+                                    <property name="text">
+                                        <string>Frame: 1/1</string>
+                                    </property>
+                                    <property name="alignment">
+                                        <set>Qt::AlignCenter</set>
+                                    </property>
+                                    <property name="minimumWidth">
+                                        <number>80</number>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QPushButton" name="frameNextButton">
+                                    <property name="text">
+                                        <string>Next ►</string>
+                                    </property>
+                                    <property name="enabled">
+                                        <bool>false</bool>
+                                    </property>
+                                </widget>
+                            </item>
+                        </layout>
                     </widget>
                 </item>
             </layout>
@@ -71,29 +213,71 @@
                 <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>800</width>
+                    <width>1000</width>
                     <height>22</height>
                 </rect>
             </property>
             <widget class="QMenu" name="menuFile">
                 <property name="title">
-                    <string>File</string>
+                    <string>&amp;File</string>
                 </property>
                 <addaction name="actionNew" />
                 <addaction name="actionOpen" />
                 <addaction name="actionSave" />
                 <addaction name="actionSaveAs" />
                 <addaction name="separator" />
+                <addaction name="actionExport" />
+                <addaction name="separator" />
                 <addaction name="actionRevert" />
                 <addaction name="separator" />
                 <addaction name="actionExit" />
             </widget>
+            <widget class="QMenu" name="menuEdit">
+                <property name="title">
+                    <string>&amp;Edit</string>
+                </property>
+                <addaction name="actionRotateLeft" />
+                <addaction name="actionRotateRight" />
+                <addaction name="separator" />
+                <addaction name="actionFlipHorizontal" />
+                <addaction name="actionFlipVertical" />
+            </widget>
+            <widget class="QMenu" name="menuView">
+                <property name="title">
+                    <string>&amp;View</string>
+                </property>
+                <addaction name="actionZoomIn" />
+                <addaction name="actionZoomOut" />
+                <addaction name="actionZoomFit" />
+                <addaction name="actionZoom100" />
+                <addaction name="separator" />
+                <addaction name="actionToggleTXIEditor" />
+            <addaction name="actionToggleProperties" /></widget>
+            <widget class="QMenu" name="menuFormat">
+                <property name="title">
+                    <string>&amp;Format</string>
+                </property>
+                <addaction name="actionConvertFormat" />
+            </widget>
             <addaction name="menuFile" />
+            <addaction name="menuEdit" />
+            <addaction name="menuView" />
+            <addaction name="menuFormat" />
         </widget>
-        <widget class="QStatusBar" name="statusbar" />
-        <widget class="QToolBar" name="toolBar">
+        <widget class="QStatusBar" name="statusbar">
+            <property name="sizeGripEnabled">
+                <bool>true</bool>
+            </property>
+        </widget>
+        <widget class="QToolBar" name="mainToolBar">
             <property name="windowTitle">
-                <string>toolBar</string>
+                <string>Main Toolbar</string>
+            </property>
+            <property name="movable">
+                <bool>true</bool>
+            </property>
+            <property name="floatable">
+                <bool>true</bool>
             </property>
             <attribute name="toolBarArea">
                 <enum>TopToolBarArea</enum>
@@ -101,104 +285,247 @@
             <attribute name="toolBarBreak">
                 <bool>false</bool>
             </attribute>
-            <addaction name="actionResetZoom" />
+            <addaction name="actionNew" />
+            <addaction name="actionOpen" />
+            <addaction name="actionSave" />
+            <addaction name="separator" />
+            <addaction name="actionZoomIn" />
+            <addaction name="actionZoomOut" />
+            <addaction name="actionZoomFit" />
+            <addaction name="actionZoom100" />
             <addaction name="separator" />
             <addaction name="actionRotateLeft" />
             <addaction name="actionRotateRight" />
             <addaction name="actionFlipHorizontal" />
             <addaction name="actionFlipVertical" />
             <addaction name="separator" />
-            <addaction name="actionToggleTXIEditor" />
-            <addaction name="separator" />
             <addaction name="actionExport" />
             <addaction name="actionConvertFormat" />
-        </widget>
-        <widget class="QDockWidget" name="txiDockWidget">
+            <addaction name="separator" />
+            <addaction name="actionToggleTXIEditor" />
+        <addaction name="actionToggleProperties" /></widget>
+        <widget class="QDockWidget" name="propertiesDockWidget"><property name="windowTitle"><string>Properties</string></property><property name="features"><set>QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetClosable</set></property><attribute name="dockWidgetArea"><number>1</number></attribute><widget class="QWidget" name="propertiesDockWidgetContents"><layout class="QVBoxLayout" name="propertiesLayout"><property name="spacing"><number>4</number></property><property name="leftMargin"><number>4</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>4</number></property><property name="bottomMargin"><number>4</number></property><item><widget class="QFormLayout" name="propertiesFormLayout"><item row="0" column="0"><widget class="QLabel" name="dimensionsLabel"><property name="text"><string>Dimensions:</string></property></widget></item><item row="0" column="1"><widget class="QLabel" name="dimensionsValue"><property name="text"><string>—</string></property></widget></item><item row="1" column="0"><widget class="QLabel" name="formatLabel"><property name="text"><string>Format:</string></property></widget></item><item row="1" column="1"><widget class="QLabel" name="formatValue"><property name="text"><string>—</string></property></widget></item><item row="2" column="0"><widget class="QLabel" name="layersLabel"><property name="text"><string>Layers:</string></property></widget></item><item row="2" column="1"><widget class="QLabel" name="layersValue"><property name="text"><string>—</string></property></widget></item><item row="3" column="0"><widget class="QLabel" name="mipmapsLabel"><property name="text"><string>Mipmaps:</string></property></widget></item><item row="3" column="1"><widget class="QLabel" name="mipmapsValue"><property name="text"><string>—</string></property></widget></item><item row="4" column="0"><widget class="QLabel" name="compressedLabel"><property name="text"><string>Compressed:</string></property></widget></item><item row="4" column="1"><widget class="QLabel" name="compressedValue"><property name="text"><string>—</string></property></widget></item><item row="5" column="0"><widget class="QLabel" name="animatedLabel"><property name="text"><string>Animated:</string></property></widget></item><item row="5" column="1"><widget class="QLabel" name="animatedValue"><property name="text"><string>—</string></property></widget></item><item row="6" column="0"><widget class="QLabel" name="cubeMapLabel"><property name="text"><string>Cube Map:</string></property></widget></item><item row="6" column="1"><widget class="QLabel" name="cubeMapValue"><property name="text"><string>—</string></property></widget></item><item row="7" column="0"><widget class="QLabel" name="alphaTestLabel"><property name="text"><string>Alpha Test:</string></property></widget></item><item row="7" column="1"><widget class="QDoubleSpinBox" name="alphaTestSpinBox"><property name="decimals"><number>2</number></property><property name="minimum"><double>0.000000000000000</double></property><property name="maximum"><double>1.000000000000000</double></property><property name="singleStep"><double>0.010000000000000</double></property><property name="value"><double>0.500000000000000</double></property></widget></item></widget></item><item><spacer name="propertiesVerticalSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item></layout></widget></widget><widget class="QDockWidget" name="txiDockWidget">
             <property name="windowTitle">
-                <string>TXI Editor</string>
+                <string>TXI Properties</string>
+            </property>
+            <property name="features">
+                <set>QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetClosable</set>
             </property>
             <attribute name="dockWidgetArea">
                 <number>2</number>
             </attribute>
             <widget class="QWidget" name="dockWidgetContents">
-                <layout class="QVBoxLayout" name="verticalLayout_2">
+                <layout class="QVBoxLayout" name="txiLayout">
+                    <property name="spacing">
+                        <number>4</number>
+                    </property>
+                    <property name="leftMargin">
+                        <number>4</number>
+                    </property>
+                    <property name="topMargin">
+                        <number>4</number>
+                    </property>
+                    <property name="rightMargin">
+                        <number>4</number>
+                    </property>
+                    <property name="bottomMargin">
+                        <number>4</number>
+                    </property>
                     <item>
-                        <widget class="QPlainTextEdit" name="txiEdit" />
+                        <widget class="QLabel" name="txiInfoLabel">
+                            <property name="text">
+                                <string>Texture Information (TXI):</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPlainTextEdit" name="txiEdit">
+                            <property name="font">
+                                <font>
+                                    <family>Consolas</family>
+                                    <family>Courier New</family>
+                                    <family>monospace</family>
+                                    <pointsize>9</pointsize>
+                                </font>
+                            </property>
+                        </widget>
                     </item>
                 </layout>
             </widget>
         </widget>
         <action name="actionNew">
             <property name="text">
-                <string>New</string>
+                <string>&amp;New</string>
+            </property>
+            <property name="toolTip">
+                <string>Create a new texture (Ctrl+N)</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+N</string>
             </property>
         </action>
         <action name="actionOpen">
             <property name="text">
-                <string>Open</string>
+                <string>&amp;Open...</string>
+            </property>
+            <property name="toolTip">
+                <string>Open a texture file (Ctrl+O)</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+O</string>
             </property>
         </action>
         <action name="actionSave">
             <property name="text">
-                <string>Save</string>
+                <string>&amp;Save</string>
+            </property>
+            <property name="toolTip">
+                <string>Save the texture (Ctrl+S)</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+S</string>
             </property>
         </action>
         <action name="actionSaveAs">
             <property name="text">
-                <string>Save As</string>
+                <string>Save &amp;As...</string>
             </property>
-        </action>
-        <action name="actionExit">
-            <property name="text">
-                <string>Exit</string>
+            <property name="toolTip">
+                <string>Save the texture with a new name (Ctrl+Shift+S)</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Shift+S</string>
             </property>
         </action>
         <action name="actionRevert">
             <property name="text">
-                <string>Revert</string>
+                <string>&amp;Revert</string>
+            </property>
+            <property name="toolTip">
+                <string>Revert to the last saved version (Ctrl+R)</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+R</string>
+            </property>
+            <property name="enabled">
+                <bool>false</bool>
             </property>
         </action>
-        <action name="actionResetZoom">
+        <action name="actionExit">
             <property name="text">
-                <string>Reset Zoom</string>
+                <string>E&amp;xit</string>
+            </property>
+            <property name="toolTip">
+                <string>Close the editor (Ctrl+Q)</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Q</string>
+            </property>
+        </action>
+        <action name="actionZoomIn">
+            <property name="text">
+                <string>Zoom &amp;In</string>
+            </property>
+            <property name="toolTip">
+                <string>Zoom in (Ctrl+=)</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+=</string>
+            </property>
+        </action>
+        <action name="actionZoomOut">
+            <property name="text">
+                <string>Zoom &amp;Out</string>
+            </property>
+            <property name="toolTip">
+                <string>Zoom out (Ctrl+-)</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+-</string>
+            </property>
+        </action>
+        <action name="actionZoomFit">
+            <property name="text">
+                <string>Fit to &amp;Window</string>
+            </property>
+            <property name="toolTip">
+                <string>Fit texture to window (Ctrl+0)</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+0</string>
+            </property>
+        </action>
+        <action name="actionZoom100">
+            <property name="text">
+                <string>Zoom &amp;100%</string>
+            </property>
+            <property name="toolTip">
+                <string>Reset zoom to 100%</string>
             </property>
         </action>
         <action name="actionRotateLeft">
             <property name="text">
-                <string>Rotate Left</string>
+                <string>Rotate &amp;Left (90°)</string>
+            </property>
+            <property name="toolTip">
+                <string>Rotate texture 90° counter-clockwise</string>
             </property>
         </action>
         <action name="actionRotateRight">
             <property name="text">
-                <string>Rotate Right</string>
+                <string>Rotate &amp;Right (90°)</string>
+            </property>
+            <property name="toolTip">
+                <string>Rotate texture 90° clockwise</string>
             </property>
         </action>
         <action name="actionFlipHorizontal">
             <property name="text">
-                <string>Flip Horizontal</string>
+                <string>Flip &amp;Horizontal</string>
+            </property>
+            <property name="toolTip">
+                <string>Flip texture horizontally</string>
             </property>
         </action>
         <action name="actionFlipVertical">
             <property name="text">
-                <string>Flip Vertical</string>
+                <string>Flip &amp;Vertical</string>
             </property>
-        </action>
-        <action name="actionToggleTXIEditor">
-            <property name="text">
-                <string>Toggle TXI Editor</string>
+            <property name="toolTip">
+                <string>Flip texture vertically</string>
             </property>
         </action>
         <action name="actionExport">
             <property name="text">
-                <string>Export</string>
+                <string>&amp;Export...</string>
+            </property>
+            <property name="toolTip">
+                <string>Export texture to PNG, JPEG, BMP, or TGA</string>
             </property>
         </action>
         <action name="actionConvertFormat">
             <property name="text">
-                <string>Convert Format</string>
+                <string>&amp;Convert Format...</string>
+            </property>
+            <property name="toolTip">
+                <string>Convert texture to a different format</string>
             </property>
         </action>
-    </widget>
+        <action name="actionToggleTXIEditor">
+            <property name="text">
+                <string>Toggle &amp;TXI Editor</string>
+            </property>
+            <property name="toolTip">
+                <string>Show/hide TXI properties editor</string>
+            </property>
+            <property name="checkable">
+                <bool>true</bool>
+            </property>
+            <property name="checked">
+                <bool>true</bool>
+            </property>
+        </action>
+    <action name="actionToggleProperties"><property name="text"><string>Toggle &amp;amp;Properties</string></property><property name="toolTip"><string>Show/hide properties panel</string></property><property name="checkable"><bool>true</bool></property><property name="checked"><bool>true</bool></property></action></widget>
     <resources />
     <connections />
 </ui>

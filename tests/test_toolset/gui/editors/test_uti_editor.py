@@ -39,8 +39,8 @@ if (
         add_sys_path(toolset_path.parent)
 
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
@@ -416,6 +416,15 @@ def test_uti_editor_load_real_file(qtbot, installation: HTInstallation, test_fil
     assert editor.ui.baseSelect.currentIndex() >= 0
     assert editor.ui.costSpin.value() >= 0
     assert len(editor.ui.assignedPropertiesList) >= 0  # May be empty
+    
+    # Build and verify it works
+    data, _ = editor.build()
+    assert len(data) > 0
+    
+    # Verify we can read it back
+    from pykotor.resource.generics.uti import read_uti
+    loaded_uti = read_uti(data)
+    assert loaded_uti is not None
 
 def test_uti_editor_context_menu(qtbot, installation: HTInstallation):
     """Test icon label context menu."""

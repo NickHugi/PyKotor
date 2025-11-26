@@ -219,10 +219,11 @@ class ModuleDesigner(QMainWindow):
         super().showEvent(a0)
 
     def closeEvent(self, event: QCloseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
+        from toolset.gui.common.localization import translate as tr
         reply = QMessageBox.question(
             self,
-            "Confirm Exit",
-            "Really quit the module designer? You may lose unsaved changes.",
+            tr("Confirm Exit"),
+            tr("Really quit the module designer? You may lose unsaved changes."),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )

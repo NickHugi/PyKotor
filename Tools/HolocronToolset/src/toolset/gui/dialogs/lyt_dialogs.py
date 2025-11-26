@@ -16,15 +16,22 @@ class RoomPropertiesDialog(QDialog):
     def __init__(self, room: LYTRoom, parent=None):
         super().__init__(parent)
         self.room = room
-        self.setWindowTitle("Room Properties")
+        from toolset.gui.common.localization import translate as tr
+        self.setWindowTitle(tr("Room Properties"))
         self.setup_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
 
         # Model Name
         model_layout = QHBoxLayout()
-        model_label = QLabel("Model:")
+        from toolset.gui.common.localization import translate as tr
+        model_label = QLabel(tr("Model:"))
         self.model_input = QLineEdit(self.room.model)
         model_layout.addWidget(model_label)
         model_layout.addWidget(self.model_input)
@@ -32,7 +39,7 @@ class RoomPropertiesDialog(QDialog):
 
         # Position
         pos_layout = QHBoxLayout()
-        pos_label = QLabel("Position:")
+        pos_label = QLabel(tr("Position:"))
         self.x_spin = QDoubleSpinBox()
         self.y_spin = QDoubleSpinBox()
         self.z_spin = QDoubleSpinBox()
@@ -68,8 +75,9 @@ class RoomPropertiesDialog(QDialog):
         try:
             # Validate inputs
             model = self.model_input.text().strip()
+            from toolset.gui.common.localization import translate as tr, trf
             if not model:
-                QMessageBox.warning(self, "Invalid Input", "Model name cannot be empty.")
+                QMessageBox.warning(self, tr("Invalid Input"), tr("Model name cannot be empty."))
                 return
 
             # Update room properties
@@ -77,7 +85,7 @@ class RoomPropertiesDialog(QDialog):
             self.room.position = Vector3(self.x_spin.value(), self.y_spin.value(), self.z_spin.value())
             super().accept()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to update room properties: {e!s}")
+            QMessageBox.critical(self, tr("Error"), trf("Failed to update room properties: {error}", error=str(e)))
 
 
 class TrackPropertiesDialog(QDialog):
@@ -85,8 +93,14 @@ class TrackPropertiesDialog(QDialog):
         super().__init__(parent)
         self.track = track
         self.rooms = rooms
-        self.setWindowTitle("Track Properties")
+        from toolset.gui.common.localization import translate as tr
+        self.setWindowTitle(tr("Track Properties"))
         self.setup_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -155,6 +169,11 @@ class ObstaclePropertiesDialog(QDialog):
         self.obstacle = obstacle
         self.setWindowTitle("Obstacle Properties")
         self.setup_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -223,6 +242,11 @@ class DoorHookPropertiesDialog(QDialog):
         self.doorhook: LYTDoorHook = doorhook
         self.setWindowTitle("Door Hook Properties")
         self.setup_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -301,6 +325,11 @@ class AddRoomDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._setup_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def _setup_ui(self):
         """Initialize the UI."""
@@ -313,6 +342,11 @@ class AddDoorHookDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._setup_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def _setup_ui(self):
         """Initialize the UI."""

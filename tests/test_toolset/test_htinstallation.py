@@ -35,7 +35,7 @@ from pykotor.tools.path import CaseAwarePath
 
 from toolset.data.installation import HTInstallation
 
-K1_PATH: str | None = os.environ.get("K1_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
 
 
 @unittest.skipIf(

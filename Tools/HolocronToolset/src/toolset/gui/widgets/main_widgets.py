@@ -40,9 +40,10 @@ from toolset.gui.dialogs.load_from_location_result import ResourceItems
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 try:
-    from toolset.gui.widgets.texture_loader import TextureLoaderProcess
+    from toolset.gui.widgets.texture_loader import TextureLoaderProcess, deserialize_mipmap
 except Exception:  # noqa: BLE001
     TextureLoaderProcess = None
+    deserialize_mipmap = None
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -251,28 +252,64 @@ class ResourceList(MainWindowList):
         resources: list[FileResource] = self.selected_resources()
         if not resources:
             return
+        
+        # Capture the tree view reference before creating menu
+        tree_view = self.ui.resourceTree
+        if tree_view is None:
+            return
+        
         menu = QMenu(self)
-        menu.addAction("Open").triggered.connect(lambda: self.sig_request_open_resource.emit(resources, True))
+        
+        # Store resources in a local variable to avoid closure issues
+        local_resources = list(resources)
+        
+        open_action = menu.addAction("Open")
+        open_action.triggered.connect(lambda checked=False, res=local_resources: self.sig_request_open_resource.emit(res, True))
+        
         if all(resource.restype().contents == "gff" for resource in resources):
-            menu.addAction("Open with GFF Editor").triggered.connect(lambda: self.sig_request_open_resource.emit(resources, False))
+            gff_action = menu.addAction("Open with GFF Editor")
+            gff_action.triggered.connect(lambda checked=False, res=local_resources: self.sig_request_open_resource.emit(res, False))
         
         # Add save-specific context menu items if this is a save resource
         # Check if this resource list is from the saves widget by checking parent
-        parent_widget = self.parent()
-        while parent_widget:
-            parent_name = parent_widget.objectName() if hasattr(parent_widget, 'objectName') else ''
-            if 'saves' in parent_name.lower() or (hasattr(parent_widget, 'ui') and hasattr(parent_widget.ui, 'savesWidget')):
-                # This is the saves tab - add save-specific menu items
-                menu.addSeparator()
-                menu.addAction("Open Save Editor").triggered.connect(self.on_open_save_editor_from_context)
-                menu.addAction("Fix savegame corruption").triggered.connect(self.on_fix_save_corruption_from_context)
-                break
-            parent_widget = parent_widget.parent() if hasattr(parent_widget, 'parent') else None
+        is_saves_widget = self._is_saves_widget()
+        if is_saves_widget:
+            menu.addSeparator()
+            save_editor_action = menu.addAction("Open Save Editor")
+            save_editor_action.triggered.connect(self.on_open_save_editor_from_context)
+            fix_corruption_action = menu.addAction("Fix savegame corruption")
+            fix_corruption_action.triggered.connect(self.on_fix_save_corruption_from_context)
         
         menu.addSeparator()
-        builder = ResourceItems(resources=resources)
-        builder.viewport = lambda: self.ui.resourceTree
-        builder.run_context_menu(point, menu=menu)
+        builder = ResourceItems(resources=local_resources)
+        
+        # Use a safer approach - store tree view reference and use method
+        def get_viewport():
+            return tree_view
+        builder.viewport = get_viewport
+        
+        try:
+            builder.run_context_menu(point, menu=menu)
+        except Exception as e:
+            RobustLogger().exception(f"Error showing context menu: {e}")
+    
+    def _is_saves_widget(self) -> bool:
+        """Check if this widget is the saves widget."""
+        try:
+            parent_widget = self.parent()
+            depth = 0
+            max_depth = 10  # Prevent infinite loops
+            while parent_widget and depth < max_depth:
+                parent_name = parent_widget.objectName() if hasattr(parent_widget, 'objectName') else ''
+                if 'saves' in parent_name.lower():
+                    return True
+                if hasattr(parent_widget, 'ui') and hasattr(parent_widget.ui, 'savesWidget'):
+                    return True
+                parent_widget = parent_widget.parent() if hasattr(parent_widget, 'parent') and callable(parent_widget.parent) else None
+                depth += 1
+            return False
+        except Exception:
+            return False
     
     def on_open_save_editor_from_context(self):
         """Signal the main window to open the save editor."""
@@ -283,36 +320,50 @@ class ResourceList(MainWindowList):
     
     def on_fix_save_corruption_from_context(self):
         """Signal the main window to fix save corruption."""
-        # Get the main window and call its fix_save_corruption_for_path method
-        main_window = self.window()
-        if not hasattr(main_window, 'active') or not main_window.active:
-            return
-        
-        # Get the selected save path from the tree
-        selected_indexes = self.ui.resourceTree.selectedIndexes()
-        if not selected_indexes:
-            return
-        
-        proxy_model = self.ui.resourceTree.model()
-        
-        for index in selected_indexes:
-            source_index = proxy_model.mapToSource(index)
-            item = self.modules_model.itemFromIndex(source_index)
+        try:
+            # Get the main window and call its fix_save_corruption_for_path method
+            main_window = self.window()
+            if not hasattr(main_window, 'active') or not main_window.active:
+                return
             
-            # Navigate up to find the save folder item (top-level item)
-            while item and item.parent():
-                item = item.parent()
+            # Get the selected save path from the tree
+            tree_view = self.ui.resourceTree
+            if tree_view is None:
+                return
             
-            if item:
-                save_name = item.text()
-                # Find the save path
-                current_save_location = Path(self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole))
-                for save_path in main_window.active.saves.get(current_save_location, {}):
-                    if save_name in str(save_path):
-                        if hasattr(main_window, 'fix_save_corruption_for_path'):
-                            main_window.fix_save_corruption_for_path(save_path)
-                        break
-                break
+            selected_indexes = tree_view.selectedIndexes()
+            if not selected_indexes:
+                return
+            
+            proxy_model: QAbstractItemModel | None = tree_view.model()
+            if proxy_model is None or not isinstance(proxy_model, QSortFilterProxyModel):
+                return
+            
+            for index in selected_indexes:
+                source_index: QModelIndex = proxy_model.mapToSource(index)
+                if self.modules_model is None:
+                    continue
+                item = self.modules_model.itemFromIndex(source_index)
+                
+                # Navigate up to find the save folder item (top-level item)
+                while item and item.parent():
+                    item = item.parent()
+                
+                if item:
+                    save_name = item.text()
+                    # Find the save path
+                    combo_data = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
+                    if combo_data is None:
+                        continue
+                    current_save_location = Path(combo_data)
+                    for save_path in main_window.active.saves.get(current_save_location, {}):
+                        if save_name in str(save_path):
+                            if hasattr(main_window, 'fix_save_corruption_for_path'):
+                                main_window.fix_save_corruption_for_path(save_path)
+                            break
+                    break
+        except Exception as e:
+            RobustLogger().exception(f"Error fixing save corruption: {e}")
 
     @Slot()
     def on_resource_double_clicked(self):
@@ -498,14 +549,29 @@ class TextureList(MainWindowList):
         self._loading_resources: set[FileResource] = set()
         self._loadRequestQueue: multiprocessing.Queue[Any] = multiprocessing.Queue()
         self._loadedTextureQueue: multiprocessing.Queue[Any] = multiprocessing.Queue()
+        
+        # Timer for polling the result queue from TextureLoaderProcess
+        self._poll_timer: QTimer = QTimer(self)
+        self._poll_timer.timeout.connect(self._poll_result_queue)
+        # Map of (section_name, row) -> FileResource for pending process loads
+        self._pending_process_loads: dict[tuple[str, int], FileResource] = {}
 
     def __del__(self):
         """Shutdown the executor when the texture list is deleted."""
         print("Shutting down executor in TextureList destructor")
+        
+        # Stop the poll timer
+        poll_timer: QTimer | None = getattr(self, "_poll_timer", None)
+        if poll_timer is not None:
+            with contextlib.suppress(Exception):
+                poll_timer.stop()
+        
         self._executor.shutdown(wait=False)
         loader: multiprocessing.Process | None = getattr(self, "_loader", None)
         if loader is not None:
             try:
+                if hasattr(loader, "request_shutdown"):
+                    loader.request_shutdown()
                 loader.terminate()
             except Exception:  # noqa: BLE001
                 RobustLogger().exception("Failed to terminate texture loader process during cleanup")
@@ -536,14 +602,23 @@ class TextureList(MainWindowList):
     def set_installation(self, installation: HTInstallation):
         """Set the installation for the resource list."""
         self._installation = installation
-        # Terminate old loader if exists
+        
+        # Stop poll timer and terminate old loader if exists
+        self._poll_timer.stop()
         loader: multiprocessing.Process | None = getattr(self, "_loader", None)
         if loader is not None:
+            if hasattr(loader, "request_shutdown"):
+                loader.request_shutdown()
             loader.terminate()
             self._loader = None
+        
+        # Clear pending loads when switching installations
+        self._pending_process_loads.clear()
+        
         if TextureLoaderProcess is None:
-            RobustLogger().warning("TextureLoaderProcess is unavailable; texture loading will run on the main process")
+            RobustLogger().warning("TextureLoaderProcess is unavailable; texture loading will run on the main process via ProcessPoolExecutor")
             return
+            
         # Start new loader process with installation path
         if installation is not None:
             try:
@@ -554,6 +629,8 @@ class TextureList(MainWindowList):
                     self._loadedTextureQueue
                 )
                 self._loader.start()
+                # Start polling for results at 60Hz (every ~16ms)
+                self._poll_timer.start(16)
                 RobustLogger().info(f"Started TextureLoader process for installation: {installation.path()}")
             except PermissionError as perm_exc:
                 RobustLogger().exception(f"Permission error starting TextureLoader process: {perm_exc}")
@@ -799,13 +876,82 @@ class TextureList(MainWindowList):
 
         section_name: str = self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
         row: int = item.row()
+        context = (section_name, row)
+        
+        # Use TextureLoaderProcess if available and running
+        if self._loader is not None and self._loader.is_alive():
+            try:
+                # Send request to the loader process
+                resref = item.resource.resname()
+                restype = item.resource.restype()
+                self._loadRequestQueue.put_nowait((resref, restype, context, icon_size))
+                self._pending_process_loads[context] = item.resource
+                return
+            except Exception as e:
+                RobustLogger().warning(f"Failed to queue texture load request: {e}, falling back to executor")
+        
+        # Fall back to ProcessPoolExecutor
         try:
-            future: Future[tuple[tuple[str, int], TPCMipmap]] = self._executor.submit(get_image_from_resource, (section_name, row), item.resource, icon_size)
+            future: Future[tuple[tuple[str, int], TPCMipmap]] = self._executor.submit(get_image_from_resource, context, item.resource, icon_size)
         except BrokenProcessPool as e:
             RobustLogger().error("Broken process pool, recreating...", exc_info=e)
             self._executor = ProcessPoolExecutor(max_workers=multiprocessing.cpu_count())
-            future = self._executor.submit(get_image_from_resource, (section_name, row), item.resource, icon_size)
+            future = self._executor.submit(get_image_from_resource, context, item.resource, icon_size)
         future.add_done_callback(self.sig_icon_loaded.emit)
+
+    def _poll_result_queue(self):
+        """Poll the result queue for completed texture loads from TextureLoaderProcess."""
+        if deserialize_mipmap is None:
+            return
+            
+        # Process up to 10 results per poll to avoid blocking the UI
+        for _ in range(10):
+            try:
+                result = self._loadedTextureQueue.get_nowait()
+                context, mipmap_data, error = result
+                
+                # Remove from pending loads
+                resource = self._pending_process_loads.pop(context, None)
+                if resource is not None:
+                    self._loading_resources.discard(resource)
+                
+                if error is not None:
+                    # Only log non-None errors (None means texture simply not found, which is expected)
+                    RobustLogger().warning(f"Texture load error: {error}")
+                    continue
+                    
+                if mipmap_data is None:
+                    continue
+                
+                # Deserialize the mipmap
+                try:
+                    mipmap = deserialize_mipmap(mipmap_data)
+                except Exception as e:
+                    RobustLogger().warning(f"Failed to deserialize mipmap: {e}")
+                    continue
+                
+                # Update the icon
+                section_name, row = context
+                src_index: QModelIndex = self.texture_source_models[section_name].index(row, 0)
+                if not src_index.isValid():
+                    continue
+                    
+                item: QStandardItem | None = self.texture_source_models[section_name].itemFromIndex(src_index)
+                if item is None:
+                    continue
+                
+                image: QImage = mipmap.to_qimage()
+                y_flipped_image: QPixmap = QPixmap.fromImage(image.mirrored(False, True))
+                pixmap: QPixmap = y_flipped_image.scaled(
+                    self.ui.resourceList.iconSize(),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+                item.setIcon(QIcon(pixmap))
+                
+            except Exception:
+                # Queue is empty or other error, stop polling this cycle
+                break
 
     def on_reload_clicked(self):
         """Handle the reload button click."""

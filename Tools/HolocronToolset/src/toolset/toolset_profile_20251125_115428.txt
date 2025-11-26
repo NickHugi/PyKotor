@@ -1,0 +1,915 @@
+         1800609 function calls (1650000 primitive calls) in 9.563 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   150/94    0.006    0.000   15.916    0.169 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\queue.py:180(get)
+        4    0.000    0.000    5.466    1.366 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\_base.py:646(__exit__)
+      5/4    0.001    0.000    5.442    1.361 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:1104(__call__)
+      5/4    0.000    0.000    5.441    1.360 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1000(_bootstrap)
+      5/4    0.000    0.000    5.440    1.360 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1027(_bootstrap_inner)
+        1    0.000    0.000    5.437    5.437 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:837(shutdown)
+        1    0.000    0.000    5.435    5.435 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:330(run)
+        1    0.000    0.000    5.435    5.435 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:549(join_executor_internals)
+        1    0.000    0.000    4.774    4.774 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:145(join_thread)
+        2    0.000    0.000    4.774    2.387 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\util.py:197(__call__)
+        1    0.000    0.000    4.774    4.774 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:212(_finalize_join)
+        4    0.001    0.000    4.762    1.191 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:405(wait_result_broken_or_wakeup)
+   212/92    0.023    0.000    3.850    0.042 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:327(wait)
+       10    0.000    0.000    1.627    0.163 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\fsnotify\__init__.py:164(_check)
+  1835/10    0.182    0.000    1.266    0.127 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\fsnotify\__init__.py:115(_check_dir)
+     2145    0.034    0.000    1.251    0.001 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:828(accept_directory)
+    14050    0.057    0.000    1.217    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_filtering.py:60(glob_matches_path)
+161625/14050    0.376    0.000    1.116    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_filtering.py:28(_check_matches)
+        1    0.000    0.000    0.661    0.661 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:553(_join_executor_internals)
+    45450    0.059    0.000    0.401    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\fnmatch.py:19(fnmatch)
+        6    0.351    0.059    0.352    0.059 {built-in method show}
+    90908    0.125    0.000    0.272    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:50(normcase)
+        1    0.000    0.000    0.269    0.269 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:188(__init__)
+   161625    0.122    0.000    0.265    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\glob.py:233(has_magic)
+        1    0.015    0.015    0.257    0.257 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:244(_initUi)
+        1    0.003    0.003    0.242    0.242 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\windows\main.py:15(setupUi)
+        4    0.213    0.053    0.222    0.056 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:93(__init__)
+   161641    0.113    0.000    0.113    0.000 {method 'search' of 're.Pattern' objects}
+     1830    0.087    0.000    0.087    0.000 {built-in method nt.scandir}
+    86618    0.076    0.000    0.076    0.000 {built-in method _winapi.LCMapStringEx}
+    45450    0.037    0.000    0.070    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\fnmatch.py:64(fnmatchcase)
+   323250    0.067    0.000    0.067    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd_file_utils.py:342(normcase)
+        9    0.000    0.000    0.060    0.007 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:1044(wait)
+        9    0.000    0.000    0.060    0.007 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:1010(_exhaustive_wait)
+       10    0.060    0.006    0.060    0.006 {built-in method _winapi.WaitForMultipleObjects}
+       42    0.053    0.001    0.053    0.001 {built-in method time.sleep}
+   114738    0.052    0.000    0.052    0.000 {method 'replace' of 'str' objects}
+   251014    0.047    0.000    0.047    0.000 {built-in method builtins.isinstance}
+        2    0.000    0.000    0.034    0.017 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:749(_adjust_process_count)
+        2    0.000    0.000    0.033    0.016 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:772(_spawn_process)
+        2    0.000    0.000    0.033    0.016 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:110(start)
+        2    0.000    0.000    0.033    0.016 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:334(_Popen)
+    45454    0.033    0.000    0.033    0.000 {method 'match' of 're.Pattern' objects}
+    28112    0.025    0.000    0.025    0.000 {method 'split' of 'str' objects}
+        2    0.000    0.000    0.022    0.011 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\popen_spawn_win32.py:46(__init__)
+        2    0.000    0.000    0.021    0.010 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:901(new_CreateProcess)
+        2    0.021    0.010    0.021    0.010 {built-in method _winapi.CreateProcess}
+    43940    0.020    0.000    0.020    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:853(accept_file)
+    46085    0.019    0.000    0.019    0.000 {method 'is_dir' of 'nt.DirEntry' objects}
+     14/8    0.000    0.000    0.017    0.002 <frozen importlib._bootstrap>:1349(_find_and_load)
+    91007    0.017    0.000    0.017    0.000 {built-in method nt.fspath}
+     14/8    0.000    0.000    0.016    0.002 <frozen importlib._bootstrap>:1304(_find_and_load_unlocked)
+57750/57744    0.013    0.000    0.013    0.000 {built-in method builtins.len}
+        2    0.000    0.000    0.013    0.006 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:783(submit)
+        3    0.000    0.000    0.011    0.004 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1512(info)
+       14    0.000    0.000    0.010    0.001 <frozen importlib._bootstrap>:1240(_find_spec)
+       14    0.000    0.000    0.009    0.001 <frozen importlib._bootstrap_external>:1551(find_spec)
+        1    0.001    0.001    0.008    0.008 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:285(_setup_signals)
+        3    0.000    0.000    0.008    0.003 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\loggerplus\__init__.py:636(_log)
+       50    0.001    0.000    0.007    0.000 <frozen importlib._bootstrap_external>:1624(find_spec)
+        1    0.000    0.000    0.007    0.007 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:523(__init__)
+   882/37    7.162    0.008    0.006    0.000 {method 'acquire' of '_thread.lock' objects}
+       14    0.000    0.000    0.006    0.000 <frozen importlib._bootstrap_external>:1522(_get_spec)
+        5    0.006    0.001    0.006    0.001 {built-in method addTab}
+     11/9    0.000    0.000    0.006    0.001 <frozen importlib._bootstrap>:911(_load_unlocked)
+    29/15    0.000    0.000    0.006    0.000 <frozen importlib._bootstrap>:480(_call_with_frames_removed)
+        4    0.001    0.000    0.006    0.001 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\widgets\resource_list.py:17(setupUi)
+     10/8    0.000    0.000    0.006    0.001 <frozen importlib._bootstrap_external>:1020(exec_module)
+        3    0.000    0.000    0.005    0.002 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_comm.py:217(_read_line)
+        1    0.005    0.005    0.005    0.005 {method 'recv' of '_socket.socket' objects}
+       45    0.002    0.000    0.005    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:1768(process_internal_commands)
+        4    0.000    0.000    0.005    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:983(run)
+        3    0.000    0.000    0.005    0.002 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\thread.py:220(shutdown)
+        3    0.000    0.000    0.005    0.002 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\thread.py:70(_worker)
+        3    0.000    0.000    0.004    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\thread.py:54(run)
+        3    0.000    0.000    0.004    0.001 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\loggerplus\__init__.py:649(logging_task)
+        3    0.000    0.000    0.004    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1643(_log)
+      5/3    0.000    0.000    0.004    0.001 {built-in method builtins.__import__}
+        6    0.004    0.001    0.004    0.001 {connectSlotsByName}
+       61    0.003    0.000    0.004    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\qtpy\_utils.py:105(add_action)
+      259    0.002    0.000    0.004    0.000 <frozen importlib._bootstrap_external>:101(_path_join)
+       10    0.000    0.000    0.004    0.000 <frozen importlib._bootstrap_external>:1093(get_code)
+        1    0.000    0.000    0.003    0.003 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\common\style\theme_manager.py:46(get_available_themes)
+     1395    0.003    0.000    0.003    0.000 {method 'stat' of 'nt.DirEntry' objects}
+       28    0.003    0.000    0.003    0.000 {built-in method builtins.print}
+        3    0.000    0.000    0.003    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1669(handle)
+        9    0.000    0.000    0.003    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1011(handle)
+        3    0.000    0.000    0.003    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1728(callHandlers)
+     10/8    0.000    0.000    0.003    0.000 {built-in method builtins.exec}
+        6    0.000    0.000    0.003    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\handlers.py:71(emit)
+        6    0.000    0.000    0.002    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1251(emit)
+        4    0.001    0.000    0.002    0.001 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\treeview.py:26(__init__)
+        2    0.000    0.000    0.002    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:631(__init__)
+        2    0.000    0.000    0.002    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:142(join)
+        7    0.000    0.000    0.002    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\popen_spawn_win32.py:105(wait)
+       90    0.000    0.000    0.002    0.000 <frozen importlib._bootstrap_external>:145(_path_stat)
+        7    0.002    0.000    0.002    0.000 {built-in method _winapi.WaitForSingleObject}
+        9    0.000    0.000    0.002    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1139(emit)
+       90    0.002    0.000    0.002    0.000 {built-in method nt.stat}
+        5    0.000    0.000    0.002    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\abstractview.py:22(__init__)
+       45    0.000    0.000    0.002    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:314(can_exit)
+        8    0.000    0.000    0.002    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\abstractview.py:60(_fix_drawer_button)
+        2    0.000    0.000    0.002    0.001 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:675(patch_arg_str_win)
+        1    0.000    0.000    0.002    0.002 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\widgets\texture_list.py:15(setupUi)
+        9    0.000    0.000    0.002    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1131(flush)
+        9    0.002    0.000    0.002    0.000 {method 'flush' of '_io.TextIOWrapper' objects}
+      137    0.002    0.000    0.002    0.000 {method 'connect' of 'PyQt5.QtCore.pyqtBoundSignal' objects}
+        5    0.000    0.000    0.002    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\abstractview.py:32(_create_drawer_button)
+       92    0.001    0.000    0.002    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_daemon_thread.py:108(new_threading_enumerate)
+       10    0.000    0.000    0.002    0.000 <frozen importlib._bootstrap_external>:1214(get_data)
+        2    0.000    0.000    0.002    0.001 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:366(patch_args)
+        5    0.000    0.000    0.002    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\baseview.py:108(_create_drawer_button)
+       45    0.000    0.000    0.001    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:1469(has_user_threads_alive)
+        7    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:253(poll)
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\widgets\texture_list.py:1(<module>)
+     1436    0.001    0.000    0.001    0.000 {method 'pop' of 'dict' objects}
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\main_init.py:119(is_running_from_temp)
+        1    0.000    0.000    0.001    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\popen_spawn_win32.py:1(<module>)
+        7    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:182(send_bytes)
+        5    0.001    0.000    0.001    0.000 {built-in method standardIcon}
+       10    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap_external>:782(_compile_bytecode)
+      105    0.000    0.000    0.001    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:1712(notify_thread_created)
+        2    0.000    0.000    0.001    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:579(_check_system_limits)
+     1881    0.001    0.000    0.001    0.000 {method 'add' of 'set' objects}
+    16/13    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap>:1390(_handle_fromlist)
+        2    0.000    0.000    0.001    0.001 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:359(quote_args)
+        1    0.000    0.000    0.001    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\tempfile.py:313(gettempdir)
+        1    0.000    0.000    0.001    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\tempfile.py:301(_gettempdir)
+       16    0.000    0.000    0.001    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:326(quote_arg_win32)
+        1    0.000    0.000    0.001    0.001 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\tempfile.py:183(_get_default_tempdir)
+       10    0.001    0.000    0.001    0.000 {built-in method marshal.loads}
+        3    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\thread.py:165(submit)
+        4    0.000    0.000    0.001    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:436(__init__)
+       47    0.000    0.000    0.001    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_utils.py:139(get_non_pydevd_threads)
+        4    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\__init__.py:183(sub)
+       10    0.001    0.000    0.001    0.000 {built-in method _io.open_code}
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\main_settings.py:40(setup_post_init_settings)
+        8    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:552(Pipe)
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:1257(unset_installation)
+       17    0.001    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\_collections_abc.py:808(get)
+        7    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:284(_send_bytes)
+        3    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\thread.py:184(_adjust_thread_count)
+        3    0.000    0.000    0.001    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\treeview.py:364(resizeEvent)
+       26    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap_external>:155(_path_is_mode_type)
+        2    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\os.py:751(copy)
+        7    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:382(add_call_item_to_queue)
+       21    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap_external>:164(_path_isfile)
+        4    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\reduction.py:58(dump)
+       13    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\os.py:811(getenv)
+        8    0.000    0.000    0.001    0.000 {method 'dump' of '_pickle.Pickler' objects}
+     1136    0.001    0.000    0.001    0.000 {built-in method builtins.getattr}
+        4    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\__init__.py:330(_compile)
+      351    0.001    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:306(__exit__)
+        4    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:35(__init__)
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\listview.py:22(__init__)
+      5/4    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:955(start)
+       12    0.000    0.000    0.001    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_net_command.py:58(__init__)
+       61    0.001    0.000    0.001    0.000 {addAction}
+      209    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:315(_acquire_restore)
+        2    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:743(compile)
+       20    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap_external>:513(cache_from_source)
+        2    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\_base.py:408(add_done_callback)
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\common\style\theme_manager.py:192(change_theme)
+       14    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap>:416(__enter__)
+        7    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:342(_poll)
+        5    0.000    0.000    0.001    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\misc.py:172(is_debug_mode)
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\update_manager.py:42(check_for_updates)
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\update_manager.py:63(on_edge_future_fetched)
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\update_manager.py:71(_on_update_info_fetched)
+    111/4    0.002    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:641(wait)
+      253    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:318(_is_owned)
+        1    0.000    0.000    0.001    0.001 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\listview.py:1(<module>)
+    23/11    0.001    0.000    0.001    0.000 {method 'sendall' of '_socket.socket' objects}
+       11    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap>:806(module_from_spec)
+        3    0.000    0.000    0.001    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\abstractview.py:98(resizeEvent)
+      186    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\os.py:712(__getitem__)
+       13    0.001    0.000    0.001    0.000 {built-in method builtins.__build_class__}
+        5    0.000    0.000    0.001    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:1737(notify_thread_not_alive)
+       10    0.001    0.000    0.001    0.000 {method 'read' of '_io.BufferedReader' objects}
+      351    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:303(__enter__)
+        3    0.001    0.000    0.001    0.000 {built-in method sys.getwindowsversion}
+        4    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:91(clear)
+       11    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap>:733(_init_module_attrs)
+        4    0.001    0.000    0.001    0.000 {built-in method setSourceModel}
+        2    0.000    0.000    0.001    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:739(_start_executor_manager_thread)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_process_net_command_json.py:150(process_net_command_json)
+      287    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\queue.py:267(_qsize)
+        5    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\config\config_update.py:71(is_remote_version_newer)
+        6    0.000    0.000    0.000    0.000 {built-in method value}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\update_manager.py:120(_determine_version_info)
+     11/5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_net_command.py:107(send)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:576(_code)
+        6    0.000    0.000    0.000    0.000 {built-in method contains}
+       15    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:699(format)
+        1    0.000    0.000    0.000    0.000 {built-in method nt.open}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\main_settings.py:78(setup_toolset_default_env)
+      5/4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1058(join)
+        4    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1675(_fill_cache)
+        8    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:70(arbitrary_address)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:304(acquire)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:69(__init__)
+       20    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:632(cached)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\common\style\theme_manager.py:60(get_default_styles)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:60(Pipe)
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:988(format)
+       14    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_comm.py:377(add_command)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:174(__init__)
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:642(_get_cached)
+       16    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\queue.py:140(put)
+        1    0.000    0.000    0.000    0.000 {method 'sort' of 'list' objects}
+      6/2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:37(_compile)
+        8    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\tempfile.py:400(mktemp)
+       39    0.000    0.000    0.000    0.000 {built-in method builtins.next}
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\update_manager.py:135(<lambda>)
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:1211(pydev_start_joinable_thread)
+       68    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1500(_path_importer_cache)
+       10    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\packaging\version.py:47(parse)
+       10    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\packaging\version.py:188(__init__)
+        6    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\abstractview.py:36(debounce_layout_changed)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\handlers.py:189(shouldRollover)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:1182(reload_settings)
+      190    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\os.py:786(encodekey)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:1247(reload_installations)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:84(put)
+      826    0.000    0.000    0.000    0.000 {method 'rstrip' of 'str' objects}
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_net_command_factory_json.py:139(make_thread_created_message)
+        5    0.000    0.000    0.000    0.000 {built-in method _thread.start_joinable_thread}
+       29    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:254(basename)
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_net_command_factory_json.py:158(make_thread_killed_message)
+       45    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_comm.py:438(empty)
+      328    0.000    0.000    0.000    0.000 {method 'join' of 'str' objects}
+      851    0.000    0.000    0.000    0.000 {method 'endswith' of 'str' objects}
+      163    0.000    0.000    0.000    0.000 {built-in method builtins.hasattr}
+        3    0.000    0.000    0.000    0.000 {function RobustTreeView.resizeEvent at 0x0000023AEC0A9B50}
+        4    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1487(_path_hooks)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:586(setup_signals)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:993(update_menus)
+      576    0.000    0.000    0.000    0.000 {method '__exit__' of '_thread.lock' objects}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\windows\main.py:384(retranslateUi)
+      145    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_is_thread_alive.py:14(is_thread_alive)
+       29    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:222(split)
+       19    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\tempfile.py:153(__next__)
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\json\__init__.py:183(dumps)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:100(Queue)
+       49    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:398(notify)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_process_net_command_json.py:295(on_threads_request)
+       24    0.000    0.000    0.000    0.000 {built-in method header}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_api.py:173(list_threads)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:592(str_to_args_windows)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_net_command_factory_json.py:167(make_list_threads_message)
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\json\encoder.py:183(encode)
+      534    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\theme\theme_dialog.py:115(apply_style)
+      209    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:312(_release_save)
+      193    0.000    0.000    0.000    0.000 {built-in method time.time}
+        4    0.000    0.000    0.000    0.000 {built-in method nt.listdir}
+      650    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:631(formatTime)
+      209    0.000    0.000    0.000    0.000 {method 'remove' of 'collections.deque' objects}
+       23    0.000    0.000    0.000    0.000 {built-in method next}
+       10    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:50(__init__)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\settings\installations.py:206(installations)
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\data\settings.py:46(getter)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:110(SimpleQueue)
+        4    0.000    0.000    0.000    0.000 {method 'sub' of 're.Pattern' objects}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:359(__init__)
+      357    0.000    0.000    0.000    0.000 {method '__enter__' of '_thread.lock' objects}
+       12    0.000    0.000    0.000    0.000 {method '__exit__' of '_io._IOBase' objects}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:65(Lock)
+       45    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\queue.py:115(empty)
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1233(path_stats)
+      5/4    0.000    0.000    0.000    0.000 {method 'join' of '_thread._ThreadHandle' objects}
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\widgets\resource_list.py:70(retranslateUi)
+       61    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\functools.py:407(__get__)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1628(makeRecord)
+        1    0.000    0.000    0.000    0.000 {built-in method nt.unlink}
+      233    0.000    0.000    0.000    0.000 {method 'release' of '_thread.lock' objects}
+        8    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\tempfile.py:76(_exists)
+      274    0.000    0.000    0.000    0.000 {built-in method time.monotonic}
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\reduction.py:48(dumps)
+        1    0.000    0.000    0.000    0.000 {built-in method selectionModel}
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\json\encoder.py:205(iterencode)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:162(__enter__)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\tempfile.py:156(_candidate_tempdir_list)
+        8    0.000    0.000    0.000    0.000 {built-in method nt.lstat}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:168(__init__)
+      149    0.000    0.000    0.000    0.000 {built-in method setObjectName}
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\os.py:720(__setitem__)
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\treeview.py:230(set_horizontal_scrollbar)
+        8    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:1173(reduce_pipe_connection)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:298(__init__)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:426(_get_module_lock)
+       45    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:1587(get_internal_queue_and_event)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:260(setup_modules_tab)
+      195    0.000    0.000    0.000    0.000 {method 'values' of 'dict' objects}
+       45    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:631(clear)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:970(parse)
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1619(_get_spec)
+        1    0.000    0.000    0.000    0.000 {built-in method setStyle}
+       25    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:243(splitext)
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:128(setup_signals)
+        8    0.000    0.000    0.000    0.000 {built-in method _winapi.CreateNamedPipe}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:246(recv)
+        3    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\loggerplus\__init__.py:221(format)
+        4    0.000    0.000    0.000    0.000 {built-in method nt.putenv}
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:869(__init__)
+      223    0.000    0.000    0.000    0.000 {built-in method _thread.allocate_lock}
+       62    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\qtpy\QtGui.py:45(__getattr__)
+       97    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        4    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1716(path_hook_for_FileFinder)
+        4    0.000    0.000    0.000    0.000 {built-in method setModel}
+        1    0.000    0.000    0.000    0.000 {font}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:1(<module>)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:186(_get_python_c_args)
+       57    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1429(current_thread)
+      4/2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:451(_parse_sub)
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:393(__init__)
+       10    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:121(_make_name)
+      168    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\_collections_abc.py:873(__iter__)
+        5    0.000    0.000    0.000    0.000 {built-in method stop}
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:124(setdefault)
+       50    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:648(get_current_thread_id)
+        8    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\reduction.py:38(__init__)
+       19    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\random.py:458(choices)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:229(_feed)
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:833(spec_from_file_location)
+       10    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_additional_thread_info_regular.py:219(set_additional_thread_info)
+       20    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:137(_path_split)
+        2    0.000    0.000    0.000    0.000 {built-in method setValue}
+       25    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:281(__init__)
+       54    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:249(_get_str_type_compatible)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:420(__exit__)
+      4/2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:511(_parse)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:86(wakeup)
+        6    0.000    0.000    0.000    0.000 {built-in method start}
+       17    0.000    0.000    0.000    0.000 {built-in method _winapi.ReadFile}
+       10    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:937(to_dict)
+      230    0.000    0.000    0.000    0.000 {method 'append' of 'collections.deque' objects}
+      194    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\os.py:780(check_str)
+        8    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\reduction.py:106(__init__)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_comm.py:167(_from_json)
+        6    0.000    0.000    0.000    0.000 {built-in method addSeparator}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:294(remove_quotes_from_args)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:173(_start_thread)
+       25    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\genericpath.py:157(_splitext)
+        4    0.000    0.000    0.000    0.000 <frozen zipimport>:68(__init__)
+        4    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:277(is_python)
+        9    0.000    0.000    0.000    0.000 {built-in method verticalScrollBar}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\spawn.py:83(get_command_line)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:372(release)
+       19    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\tempfile.py:142(rng)
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\data\settings.py:161(__init__)
+       10    0.000    0.000    0.000    0.000 {method 'cancel' of '_winapi.Overlapped' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method time.localtime}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_base_schema.py:112(from_json)
+      107    0.000    0.000    0.000    0.000 {translate}
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:190(_path_abspath)
+       15    0.000    0.000    0.000    0.000 {built-in method addLayout}
+        3    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\settings\installations.py:203(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method nt.write}
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:85(BoundedSemaphore)
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:629(_get_or_compute_thread_id_with_lock)
+      145    0.000    0.000    0.000    0.000 {method 'is_done' of '_thread._ThreadHandle' objects}
+        5    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\baseview.py:90(__init__)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\_base.py:537(set_result)
+       51    0.000    0.000    0.000    0.000 {built-in method builtins.max}
+       63    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\qtpy\_utils.py:32(getattr_missing_optional_dep)
+        9    0.000    0.000    0.000    0.000 {method 'write' of '_io.TextIOWrapper' objects}
+       61    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_daemon_thread.py:36(py_db)
+       12    0.000    0.000    0.000    0.000 {built-in method time.strftime}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\spawn.py:1(<module>)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:310(_recv_bytes)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:177(_path_isabs)
+       10    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:15278(to_dict)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1594(findCaller)
+      190    0.000    0.000    0.000    0.000 {method 'upper' of 'str' objects}
+        4    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1598(__init__)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:976(send_process_created_message)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\main_app.py:140(cleanup_with_profiling)
+    32/31    0.000    0.000    0.000    0.000 {method 'GetOverlappedResult' of '_winapi.Overlapped' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method palette}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:100(__getstate__)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:227(__str__)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:536(sorted_dict_repr)
+      138    0.000    0.000    0.000    0.000 {method 'rpartition' of 'str' objects}
+        5    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:169(_path_isdir)
+      112    0.000    0.000    0.000    0.000 {method 'get' of 'dict' objects}
+        7    0.000    0.000    0.000    0.000 {built-in method _winapi.WriteFile}
+       10    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:428(notify_all)
+      168    0.000    0.000    0.000    0.000 {method '__exit__' of '_thread.RLock' objects}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\spawn.py:160(get_preparation_data)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:472(acquire)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:620(set)
+       15    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:683(formatMessage)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:535(shutdown_workers)
+        4    0.000    0.000    0.000    0.000 {built-in method setColumnCount}
+        8    0.000    0.000    0.000    0.000 {built-in method move}
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:151(__init__)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:2020(send_process_created_message)
+      168    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\os.py:735(__iter__)
+        6    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\loggerplus\__init__.py:69(logging_context)
+        8    0.000    0.000    0.000    0.000 {built-in method _winapi.CreateFile}
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\contextlib.py:136(__enter__)
+        7    0.000    0.000    0.000    0.000 {built-in method _winapi.PeekNamedPipe}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:80(__init__)
+      253    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:491(_verbose_message)
+      105    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:668(get_thread_id)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\thread.py:127(__init__)
+       45    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:645(parent)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\random.py:119(__init__)
+       14    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\_distutils_hack\__init__.py:82(find_spec)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\data\settings.py:67(setter)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\__init__.py:374(_compile_template)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:697(_classify_pyc)
+        1    0.000    0.000    0.000    0.000 {built-in method thread}
+        6    0.000    0.000    0.000    0.000 {method 'tell' of '_io.TextIOWrapper' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method _io.open}
+        2    0.000    0.000    0.000    0.000 {built-in method _winapi.CreatePipe}
+       18    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_utils.py:248(notify_about_gevent_if_needed)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:982(find_spec)
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:1171(disable_tracing)
+        8    0.000    0.000    0.000    0.000 {built-in method _winapi.ConnectNamedPipe}
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\random.py:128(seed)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:174(close)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\_base.py:328(__init__)
+        3    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\loggerplus\__init__.py:194(format)
+       16    0.000    0.000    0.000    0.000 {built-in method _winapi.CloseHandle}
+        8    0.000    0.000    0.000    0.000 {built-in method menuAction}
+       15    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:470(format)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\widgets\resource_list.py:1(<module>)
+        1    0.000    0.000    0.000    0.000 {built-in method style}
+       30    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:89(_unpack_uint32)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:197(_is_internal_frame)
+       76    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1222(__enter__)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\json\__init__.py:299(loads)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:601(__init__)
+       10    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\packaging\version.py:523(_cmpkey)
+       28    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:327(<lambda>)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:289(drive)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:284(__init__)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:997(parse_template)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\subprocess.py:306(_args_from_interpreter_flags)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:348(_get_more_data)
+       98    0.000    0.000    0.000    0.000 {built-in method _thread.get_ident}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:277(_close)
+       54    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+       86    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\qtpy\_utils.py:117(<genexpr>)
+        1    0.000    0.000    0.000    0.000 {built-in method nt.close}
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:730(_validate_timestamp_pyc)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\widgets\texture_list.py:62(retranslateUi)
+       43    0.000    0.000    0.000    0.000 {built-in method setEnabled}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\windows\main.py:1(<module>)
+       90    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:1622(check_output_redirect)
+       76    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1226(__exit__)
+        7    0.000    0.000    0.000    0.000 {built-in method setWindowTitle}
+       14    0.000    0.000    0.000    0.000 {built-in method _imp.is_builtin}
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_additional_thread_info_regular.py:313(remove_additional_info)
+        4    0.000    0.000    0.000    0.000 {built-in method sortByColumn}
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:347(__reduce__)
+       18    0.000    0.000    0.000    0.000 {built-in method setToolTip}
+       10    0.000    0.000    0.000    0.000 {built-in method setMinimumSize}
+       49    0.000    0.000    0.000    0.000 {built-in method setText}
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:74(__new__)
+       15    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:463(_format)
+       14    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_base_schema.py:17(_translate_id_to_dap)
+       76    0.000    0.000    0.000    0.000 {method 'lower' of 'str' objects}
+       60    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:139(<genexpr>)
+        9    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:129(full)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:570(get_n_children_alive)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:445(cb)
+      100    0.000    0.000    0.000    0.000 {method 'group' of 're.Match' objects}
+        4    0.000    0.000    0.000    0.000 {built-in method horizontalScrollBar}
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_sys_monitoring\_pydevd_sys_monitoring.py:1801(stop_monitoring)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:461(__init__)
+        6    0.000    0.000    0.000    0.000 {built-in method addAction}
+       38    0.000    0.000    0.000    0.000 {method 'update' of 'dict' objects}
+      115    0.000    0.000    0.000    0.000 {method 'rfind' of 'str' objects}
+       50    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:67(_relax_case)
+       24    0.000    0.000    0.000    0.000 {built-in method setIcon}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:458(validate)
+       50    0.000    0.000    0.000    0.000 {built-in method nt._path_splitroot_ex}
+        8    0.000    0.000    0.000    0.000 {built-in method _winapi.OpenProcess}
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:232(__init__)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:368(close)
+        3    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:160(set_resources)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:46(_get_setup_updated_with_protocol_and_ppid)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\json\decoder.py:340(decode)
+        4    0.000    0.000    0.000    0.000 {built-in method setHorizontalHeaderLabels}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\popen_spawn_win32.py:101(duplicate_for_child)
+        5    0.000    0.000    0.000    0.000 {built-in method hide}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:257(_parse_path)
+       27    0.000    0.000    0.000    0.000 {method 'encode' of 'str' objects}
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1128(find_spec)
+        9    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:99(join)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\util.py:178(__init__)
+        3    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\loggerplus\__init__.py:461(__getattribute__)
+        3    0.000    0.000    0.000    0.000 {function Random.seed at 0x0000023AE8EC34D0}
+       24    0.000    0.000    0.000    0.000 {method 'extend' of 'list' objects}
+       29    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:34(_get_bothseps)
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.sum}
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\popen_spawn_win32.py:123(poll)
+       15    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:677(usesTime)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:61(_cleanup)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:82(remove)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:592(__init__)
+       54    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1147(daemon)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:69(_reset)
+       32    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x00007FFC9B2DF8A0}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:572(<genexpr>)
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:840(filter)
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_additional_thread_info_regular.py:301(add_additional_info)
+        6    0.000    0.000    0.000    0.000 {built-in method viewport}
+        1    0.000    0.000    0.000    0.000 {built-in method setFont}
+        6    0.000    0.000    0.000    0.000 {built-in method resize}
+        8    0.000    0.000    0.000    0.000 {built-in method _winapi.SetNamedPipeHandleState}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:8318(to_dict)
+       20    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:481(__enter__)
+       36    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\qtpy\_utils.py:142(<genexpr>)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:435(process_result_item)
+        4    0.000    0.000    0.000    0.000 {built-in method addItem}
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\contextlib.py:303(helper)
+       67    0.000    0.000    0.000    0.000 {built-in method nt.getpid}
+       14    0.000    0.000    0.000    0.000 {built-in method _winapi.DuplicateHandle}
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:153(is_alive)
+       16    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\queue.py:271(_put)
+       16    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\queue.py:275(_get)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:173(__exit__)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:208(recv_bytes)
+        2    0.000    0.000    0.000    0.000 {built-in method addWidget}
+        9    0.000    0.000    0.000    0.000 {built-in method setFilterCaseSensitivity}
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\contextlib.py:145(__exit__)
+       22    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:538(<genexpr>)
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:79(__init__)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:514(_compile_info)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1826(_is_disabled)
+        9    0.000    0.000    0.000    0.000 {method 'update' of 'set' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method setTitle}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:403(expandvars)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\reduction.py:71(duplicate)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\_base.py:497(set_running_or_notify_cancel)
+       21    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:169(fileno)
+        9    0.000    0.000    0.000    0.000 {method '_is_zero' of '_multiprocessing.SemLock' objects}
+       15    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:455(usesTime)
+      104    0.000    0.000    0.000    0.000 {built-in method _imp.acquire_lock}
+      104    0.000    0.000    0.000    0.000 {built-in method _imp.release_lock}
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\treeview.py:388(model)
+        1    0.000    0.000    0.000    0.000 {built-in method setPalette}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.sorted}
+        4    0.000    0.000    0.000    0.000 {built-in method setSortingEnabled}
+        2    0.000    0.000    0.000    0.000 {built-in method setProperty}
+       20    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:484(__exit__)
+        1    0.000    0.000    0.000    0.000 {built-in method insertWidget}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\queue.py:46(__init__)
+       14    0.000    0.000    0.000    0.000 {built-in method nt._path_splitroot}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:16689(to_dict)
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:674(_check_name_wrapper)
+        7    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\_weakrefset.py:85(add)
+        1    0.000    0.000    0.000    0.000 {keys}
+       26    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:366(get_spawning_popen)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\copyreg.py:107(_slotnames)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:135(put_nowait)
+        8    0.000    0.000    0.000    0.000 {built-in method setMaximumSize}
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1049(_delete)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:498(__init__)
+       12    0.000    0.000    0.000    0.000 {built-in method addPixmap}
+       14    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\_virtualenv.py:50(find_spec)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\common\style\theme_manager.py:81(_get_theme_config)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1772(isEnabledFor)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_base_schema.py:84(from_dict)
+       40    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\packaging\version.py:207(<genexpr>)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:74(close)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\settings\widgets\application.py:304(__init__)
+       12    0.000    0.000    0.000    0.000 {method 'copy' of 'dict' objects}
+       11    0.000    0.000    0.000    0.000 {built-in method builtins.setattr}
+        1    0.000    0.000    0.000    0.000 {built-in method setApplicationDisplayName}
+      152    0.000    0.000    0.000    0.000 {method 'random' of '_random.Random' objects}
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\fsnotify\__init__.py:67(__init__)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:927(closeEvent)
+        2    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:187(set_sections)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\popen_spawn_win32.py:24(_path_eq)
+        1    0.000    0.000    0.000    0.000 {method 'strftime' of 'datetime.date' objects}
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\contextlib.py:108(__init__)
+       13    0.000    0.000    0.000    0.000 {built-in method setContextMenuPolicy}
+        6    0.000    0.000    0.000    0.000 {built-in method nt.getcwd}
+      152    0.000    0.000    0.000    0.000 {built-in method math.floor}
+       29    0.000    0.000    0.000    0.000 {method 'partition' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:343(expanduser)
+       28    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:818(get_protocol)
+        1    0.000    0.000    0.000    0.000 {built-in method insertLayout}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:41(cpu_count)
+       11    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:48(_new_module)
+        1    0.000    0.000    0.000    0.000 {built-in method setApplicationName}
+        1    0.000    0.000    0.000    0.000 {method 'disconnect' of 'PyQt5.QtCore.pyqtBoundSignal' objects}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:138(close)
+       10    0.000    0.000    0.000    0.000 <string>:1(<lambda>)
+        2    0.000    0.000    0.000    0.000 {built-in method setSizeConstraint}
+        9    0.000    0.000    0.000    0.000 {built-in method sizePolicy}
+       96    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:702(__enter__)
+        4    0.000    0.000    0.000    0.000 {built-in method setSectionResizeMode}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:1168(get_active_resource_widget)
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\data\settings.py:124(deserialize_value)
+        6    0.000    0.000    0.000    0.000 {built-in method objectName}
+       96    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:705(__exit__)
+       16    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:260(get)
+        3    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:500(remove_unused_categories)
+        2    0.000    0.000    0.000    0.000 {built-in method nt.cpu_count}
+        2    0.000    0.000    0.000    0.000 {built-in method clear}
+        1    0.000    0.000    0.000    0.000 {built-in method standardPalette}
+       25    0.000    0.000    0.000    0.000 {method 'pop' of 'list' objects}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:141(hide_section)
+      8/4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:177(getwidth)
+       10    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:372(assert_spawning)
+       24    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:167(__getitem__)
+        4    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\treeview.py:22(__new__)
+        5    0.000    0.000    0.000    0.000 {built-in method setContentsMargins}
+       18    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\popen_spawn_win32.py:71(<genexpr>)
+       11    0.000    0.000    0.000    0.000 {built-in method setStretch}
+       16    0.000    0.000    0.000    0.000 {method 'remove' of 'list' objects}
+       16    0.000    0.000    0.000    0.000 {built-in method width}
+       40    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:135(_check_closed)
+        1    0.000    0.000    0.000    0.000 {built-in method setViewMode}
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:599(get_pid)
+        5    0.000    0.000    0.000    0.000 {built-in method setPlaceholderText}
+       25    0.000    0.000    0.000    0.000 {method 'strip' of 'str' objects}
+       16    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:118(__init__)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:97(closegroup)
+        2    0.000    0.000    0.000    0.000 {built-in method setFrameShape}
+        3    0.000    0.000    0.000    0.000 {built-in method builtins.locals}
+       30    0.000    0.000    0.000    0.000 {built-in method from_bytes}
+       16    0.000    0.000    0.000    0.000 {method 'intersection' of 'set' objects}
+        5    0.000    0.000    0.000    0.000 {built-in method setTabText}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:42(_get_apply_arg_patching)
+       12    0.000    0.000    0.000    0.000 {built-in method setSizePolicy}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:117(__init__)
+        8    0.000    0.000    0.000    0.000 {built-in method isVisible}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:216(_get_host_port)
+       22    0.000    0.000    0.000    0.000 {method 'popleft' of 'collections.deque' objects}
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:1013(addgroup)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\_base.py:428(result)
+        3    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\settings\installations.py:136(__init__)
+       22    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:239(__next)
+       10    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:921(__init__)
+       19    0.000    0.000    0.000    0.000 {method 'find' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1398(__iter__)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\main.py:1165(get_active_resource_tab)
+        3    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:496(all_resources_items)
+        1    0.000    0.000    0.000    0.000 {built-in method setAcceptDrops}
+        3    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\loggerplus\__init__.py:431(__call__)
+        9    0.000    0.000    0.000    0.000 {built-in method setHorizontalStretch}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\update_manager.py:55(on_master_future_fetched)
+       14    0.000    0.000    0.000    0.000 {built-in method _imp.find_frozen}
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:122(RLock)
+        2    0.000    0.000    0.000    0.000 {built-in method removeWidget}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\json\decoder.py:351(raw_decode)
+       15    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:391(getMessage)
+        3    0.000    0.000    0.000    0.000 {built-in method setVisible}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:519(release)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1380(_get_parent_path)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:55(__getstate__)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:371(_escape)
+        4    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:11694(update_dict_ids_to_dap)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1267(_make_invoke_excepthook)
+        3    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\loggerplus\__init__.py:494(__getattr__)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:247(sentinel)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:1005(addliteral)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1020(_set_ident)
+        5    0.000    0.000    0.000    0.000 {built-in method styleSheet}
+        1    0.000    0.000    0.000    0.000 {built-in method setDesktopFileName}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1363(__init__)
+        8    0.000    0.000    0.000    0.000 {built-in method setSortIndicatorShown}
+        1    0.000    0.000    0.000    0.000 {built-in method setEditTriggers}
+        6    0.000    0.000    0.000    0.000 {built-in method update}
+        4    0.000    0.000    0.000    0.000 {instance}
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\weakref.py:427(__setitem__)
+        7    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:834(get_global_debugger)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:505(__new__)
+       30    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\packaging\version.py:471(_parse_letter_version)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:46(SemLock)
+       14    0.000    0.000    0.000    0.000 {method '__enter__' of '_thread.RLock' objects}
+        6    0.000    0.000    0.000    0.000 {method 'getbuffer' of '_io.BytesIO' objects}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\spawn.py:92(<genexpr>)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:370(Barrier)
+        1    0.000    0.000    0.000    0.000 {built-in method setCentralWidget}
+       32    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1604(<genexpr>)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\_collections_abc.py:823(keys)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\spawn.py:138(_check_not_importing_main)
+       14    0.000    0.000    0.000    0.000 {built-in method _weakref._remove_dead_weakref}
+        5    0.000    0.000    0.000    0.000 {method '_is_owned' of '_thread.RLock' objects}
+        3    0.000    0.000    0.000    0.000 {method 'format' of 'str' objects}
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1024(_set_native_id)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:369(set_spawning_popen)
+        1    0.000    0.000    0.000    0.000 {built-in method setWindowIcon}
+        1    0.000    0.000    0.000    0.000 {built-in method setPriority}
+       12    0.000    0.000    0.000    0.000 {method 'items' of 'dict' objects}
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:167(<lambda>)
+        4    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_sys_monitoring\_pydevd_sys_monitoring.py:433(_get_thread_info)
+        1    0.000    0.000    0.000    0.000 {built-in method setStyleSheet}
+       12    0.000    0.000    0.000    0.000 {method 'discard' of 'set' objects}
+       15    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:599(__init__)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\os.py:856(fsdecode)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:230(__init__)
+        4    0.000    0.000    0.000    0.000 {built-in method setAlternatingRowColors}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\contextlib.py:450(__exit__)
+       14    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:1529(dap_messages_listeners)
+       10    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:90(_make_methods)
+        1    0.000    0.000    0.000    0.000 {built-in method isNull}
+        4    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:11681(to_dict)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:573(abspath)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:237(_format_parsed_parts)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\spawn.py:36(set_executable)
+        2    0.000    0.000    0.000    0.000 {built-in method setFrameShadow}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:375(__getstate__)
+        6    0.000    0.000    0.000    0.000 {built-in method sys.intern}
+      2/1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:439(_get_literal_prefix)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\popen_spawn_win32.py:40(Popen)
+        2    0.000    0.000    0.000    0.000 {built-in method msvcrt.open_osfhandle}
+        5    0.000    0.000    0.000    0.000 {built-in method indexOf}
+        4    0.000    0.000    0.000    0.000 {function RobustTreeView.model at 0x0000023AEC0A9E50}
+        2    0.000    0.000    0.000    0.000 {built-in method _winapi.GetExitCodeProcess}
+       20    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_constants.py:537(<lambda>)
+        1    0.000    0.000    0.000    0.000 {built-in method currentWidget}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1384(_recalculate)
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_additional_thread_info_regular.py:70(__init__)
+        5    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\packaging\version.py:102(__gt__)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_comm.py:170(_on_dict_loaded)
+        4    0.000    0.000    0.000    0.000 {built-in method setRecursiveFilteringEnabled}
+        6    0.000    0.000    0.000    0.000 {built-in method isActive}
+        9    0.000    0.000    0.000    0.000 {method 'put' of '_queue.SimpleQueue' objects}
+        4    0.000    0.000    0.000    0.000 {built-in method setMaxVisibleItems}
+        1    0.000    0.000    0.000    0.000 {built-in method setMovement}
+        4    0.000    0.000    0.000    0.000 {method 'acquire' of '_multiprocessing.SemLock' objects}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:3302(dispatch)
+        1    0.000    0.000    0.000    0.000 {built-in method removeItem}
+        4    0.000    0.000    0.000    0.000 {built-in method setSectionsClickable}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\queues.py:222(_finalize_close)
+        6    0.000    0.000    0.000    0.000 {built-in method setSelectionMode}
+        1    0.000    0.000    0.000    0.000 {built-in method setApplicationVersion}
+       10    0.000    0.000    0.000    0.000 {built-in method _imp._fix_co_filename}
+        3    0.000    0.000    0.000    0.000 {built-in method rowCount}
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:129(getLevelName)
+        1    0.000    0.000    0.000    0.000 {built-in method quit}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:85(opengroup)
+        1    0.000    0.000    0.000    0.000 {built-in method windowIcon}
+        6    0.000    0.000    0.000    0.000 {method 'find' of 'bytes' objects}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\update_manager.py:36(__init__)
+        2    0.000    0.000    0.000    0.000 {built-in method setResizeMode}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\subprocess.py:199(__init__)
+        5    0.000    0.000    0.000    0.000 {method 'decode' of 'bytes' objects}
+        7    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:1096(name)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:448(is_shutting_down)
+        3    0.000    0.000    0.000    0.000 {built-in method _asyncio.current_task}
+       10    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:15261(__init__)
+       17    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:37(current_process)
+       16    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:99(_check_closed)
+        9    0.000    0.000    0.000    0.000 {built-in method setHeightForWidth}
+       19    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\util.py:48(debug)
+        8    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:82(groups)
+        4    0.000    0.000    0.000    0.000 {built-in method isHidden}
+       16    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:159(readable)
+        8    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:292(tell)
+        2    0.000    0.000    0.000    0.000 {built-in method setUniformItemSizes}
+        6    0.000    0.000    0.000    0.000 {method 'get_nowait' of '_queue.SimpleQueue' objects}
+        9    0.000    0.000    0.000    0.000 {built-in method setVerticalStretch}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:277(_raw_path)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:234(ident)
+       10    0.000    0.000    0.000    0.000 {built-in method builtins.id}
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1370(_find_parent_path_names)
+       14    0.000    0.000    0.000    0.000 {built-in method _winapi.GetCurrentProcess}
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:412(__init__)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\data\settings.py:105(serialize_value)
+       10    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:163(__len__)
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:1099(__init__)
+        8    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\tempfile.py:229(_get_candidate_names)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:175(append)
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_additional_thread_info_regular.py:155(_is_stepping)
+        4    0.000    0.000    0.000    0.000 {built-in method setAllColumnsShowFocus}
+        9    0.000    0.000    0.000    0.000 {built-in method hasHeightForWidth}
+        3    0.000    0.000    0.000    0.000 {method 'get' of 'mappingproxy' objects}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:843(_newname)
+        1    0.000    0.000    0.000    0.000 {built-in method setCurrentIndex}
+        2    0.000    0.000    0.000    0.000 {method 'split' of 'bytes' objects}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:401(_simple)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:94(<genexpr>)
+       13    0.000    0.000    0.000    0.000 {built-in method builtins.min}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\_collections_abc.py:815(__contains__)
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:255(match)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:509(flag_executor_shutting_down)
+        4    0.000    0.000    0.000    0.000 {built-in method setStretchLastSection}
+        3    0.000    0.000    0.000    0.000 {built-in method time.time_ns}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\typing.py:3794(__getattr__)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\subprocess.py:296(_optim_args_from_interpreter_flags)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\thread.py:48(__init__)
+       11    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:1119(<genexpr>)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:328(Event)
+        4    0.000    0.000    0.000    0.000 {method 'write' of '_io.BytesIO' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method setIconSize}
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\_base.py:337(_invoke_callbacks)
+       18    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\packaging\version.py:537(<lambda>)
+        1    0.000    0.000    0.000    0.000 {built-in method now}
+        3    0.000    0.000    0.000    0.000 {built-in method sys._getframe}
+        8    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:446(proxy_model)
+        1    0.000    0.000    0.000    0.000 {built-in method setMenuBar}
+        1    0.000    0.000    0.000    0.000 {built-in method nt._getfullpathname}
+        4    0.000    0.000    0.000    0.000 {method 'startswith' of 'bytes' objects}
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1184(__init__)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:253(get_start_method)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:151(__init__)
+        2    0.000    0.000    0.000    0.000 {built-in method setSpacing}
+        5    0.000    0.000    0.000    0.000 {built-in method _thread.get_native_id}
+        2    0.000    0.000    0.000    0.000 {method 'copy' of 'list' objects}
+       14    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:158(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method setGridSize}
+        4    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_log.py:217(debug)
+        3    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\loggerplus\__init__.py:256(filter)
+       15    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py:605(is_set)
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:139(_check_readable)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\listview.py:18(__new__)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:130(Semaphore)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:237(get_context)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\process.py:165(__init__)
+       13    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:653(has_location)
+        5    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydev_bundle\pydev_monkey.py:243(_on_set_trace_for_new_thread)
+       16    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:164(writable)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Libraries\PyKotor\src\utility\ui_libraries\qt\widgets\itemviews\listview.py:15(RobustListView)
+        2    0.000    0.000    0.000    0.000 {built-in method _sre.compile}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\queue.py:264(_init)
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:197(get_start_method)
+        1    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\qtpy\QtWidgets.py:26(__getattr__)
+        3    0.000    0.000    0.000    0.000 {method 'getvalue' of '_io.BytesIO' objects}
+       12    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\context.py:187(get_context)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:217(Condition)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:470(_get_charset_prefix)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_comm.py:196(_read)
+       10    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\packaging\version.py:511(_parse_local_version)
+        3    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\urllib3\packages\six.py:190(find_spec)
+        7    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\connection.py:143(_check_writable)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\_collections_abc.py:850(__init__)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:573(isstring)
+        2    0.000    0.000    0.000    0.000 {method 'index' of 'list' objects}
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1209(get_filename)
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1017(create_module)
+        1    0.000    0.000    0.000    0.000 {built-in method setOrganizationDomain}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:954(fix_flags)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\widgets\resource_list.py:16(Ui_Form)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\_base.py:398(__get_result)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:213(authkey)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:137(hide_reload_button)
+        1    0.000    0.000    0.000    0.000 {built-in method setOrganizationName}
+        4    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        2    0.000    0.000    0.000    0.000 {method 'strip' of 'bytes' objects}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:8290(__init__)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\widgets\texture_list.py:14(Ui_Form)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:31(_combine_flags)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:451(__init__)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\windows\main.py:14(Ui_MainWindow)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:112(__init__)
+        4    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:11664(__init__)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_net_command_factory_json.py:459(make_process_created_message)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\main_init.py:19(is_frozen)
+        2    0.000    0.000    0.000    0.000 {method 'setter' of 'property' objects}
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\contextlib.py:444(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method setGeometry}
+        2    0.000    0.000    0.000    0.000 {built-in method _sre.template}
+        4    0.000    0.000    0.000    0.000 {method 'getbuffer' of '_winapi.Overlapped' objects}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:76(__init__)
+        6    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\contextlib.py:447(__enter__)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\ntpath.py:146(splitdrive)
+        3    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\_distutils_hack\__init__.py:89(<lambda>)
+        5    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\process.py:189(name)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\common\style\theme_manager.py:39(__init__)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\spawn.py:45(get_executable)
+        1    0.000    0.000    0.000    0.000 {built-in method setStatusBar}
+        1    0.000    0.000    0.000    0.000 {built-in method nt._path_normpath}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:8224(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method _thread.daemon_threads_allowed}
+        3    0.000    0.000    0.000    0.000 g:\GitHub\PyKotor\.venv_3.13\Lib\site-packages\importlib_metadata\_compat.py:44(find_spec)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:149(BoundedSemaphore)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:166(Lock)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\synchronize.py:191(RLock)
+        1    0.000    0.000    0.000    0.000 {built-in method setLayoutMode}
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\windows\update_manager.py:141(_display_version_message)
+        3    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\settings\installations.py:143(name)
+        3    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\gui\widgets\main_widgets.py:497(<genexpr>)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\multiprocessing\util.py:44(sub_debug)
+        1    0.000    0.000    0.000    0.000 {method 'index' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_parser.py:171(__setitem__)
+        3    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\re\_compiler.py:431(_get_iscased)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\pydevd.py:538(is_authenticated)
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\_debug_adapter\pydevd_schema.py:16679(__init__)
+        4    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\concurrent\futures\_base.py:643(__enter__)
+        1    0.000    0.000    0.000    0.000 {method 'clear' of 'collections.deque' objects}
+        2    0.000    0.000    0.000    0.000 c:\Users\boden\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\libs\debugpy\_vendored\pydevd\_pydevd_bundle\pydevd_net_command.py:21(send)
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.callable}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.issubclass}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1439(exec_module)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.chr}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:298(root)
+        2    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\pathlib\_local.py:307(_tail)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1758(getEffectiveLevel)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.ord}
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\typing.py:2371(cast)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\__init__.py:1(<module>)
+        1    0.000    0.000    0.000    0.000 C:\Users\boden\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\logging\__init__.py:1354(disable)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\windows\__init__.py:1(<module>)
+        1    0.000    0.000    0.000    0.000 G:\GitHub\PyKotor\Tools\HolocronToolset\src\toolset\uic\qtpy\widgets\__init__.py:1(<module>)
+
+

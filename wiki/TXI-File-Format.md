@@ -128,7 +128,32 @@ KotOR.js exposes identical structures in [`src/resource/TXI.ts`](https://github.
 
 - A TXI modifies the rendering pipeline for its paired TPC: mipmap flags alter sampler state, animation directives convert a single texture into multiple layers, and material directives attach bump/shine maps.  
 - When embedded inside a `.tpc`, the TXI text starts immediately after the binary payload; PyKotor reads it by seeking past the texture data and consuming the remaining bytes as ASCII (`io_tpc.py:158-188`).  
-- Exported `.txi` files are plain UTF-8 text and can be edited with any text editor; tools like `tga2tpc` and KotORBlender reserialize them alongside TPC assets.  
+- Exported `.txi` files are plain UTF-8 text and can be edited with any text editor; tools like `tga2tpc` and KotORBlender reserialize them alongside TPC assets.
+
+### Empty TXI Files
+
+Many TXI files in the game installation are **empty** (0 bytes). These empty TXI files serve as placeholders and indicate that the texture should use default rendering settings. When a TXI file is empty or missing, the engine falls back to default texture parameters.
+
+**Examples of textures with empty TXI files:**
+- `lda_bark04.txi` (0 bytes)
+- `lda_flr11.txi` (0 bytes)
+- `lda_grass07.txi` (0 bytes)
+- `lda_grate01.txi` (0 bytes)
+- `lda_ivy01.txi` (0 bytes)
+- `lda_leaf02.txi` (0 bytes)
+- `lda_lite01.txi` (0 bytes)
+- `lda_rock06.txi` (0 bytes)
+- `lda_sky0001.txi` through `lda_sky0005.txi` (0 bytes)
+- `lda_trim02.txi`, `lda_trim03.txi`, `lda_trim04.txi` (0 bytes)
+- `lda_unwal07.txi` (0 bytes)
+- `lda_wall02.txi`, `lda_wall03.txi`, `lda_wall04.txi` (0 bytes)
+
+**Examples of textures with non-empty TXI files:**
+- `lda_ehawk01.txi` - Contains `envmaptexture CM_jedcom`
+- `lda_ehawk01a.txi` - Contains `envmaptexture CM_jedcom`
+- `lda_flr07.txi` - Contains `bumpyshinytexture CM_dantii` and `bumpmaptexture LDA_flr01B`
+
+**Kit Generation Note:** When generating kits from module RIM files, empty TXI files should still be created as placeholders even if they don't exist in the installation. This ensures kit completeness and matches the expected kit structure where many textures have corresponding (empty) TXI files.  
 
 ---
 

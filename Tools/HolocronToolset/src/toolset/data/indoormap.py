@@ -8,33 +8,33 @@ from copy import copy, deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from loggerplus import RobustLogger
+from loggerplus import RobustLogger  # type: ignore[import-untyped]
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Color, ResRef
-from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats.bwm import bytes_bwm
-from pykotor.resource.formats.erf import ERF, ERFType, write_erf
-from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTRoom, bytes_lyt
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, bytes_tpc
-from pykotor.resource.formats.vis import VIS, bytes_vis
-from pykotor.resource.generics.are import ARE, ARENorthAxis, bytes_are
-from pykotor.resource.generics.git import GIT, GITDoor, bytes_git
-from pykotor.resource.generics.ifo import IFO, bytes_ifo
-from pykotor.resource.generics.utd import bytes_utd
-from pykotor.resource.type import ResourceType
-from pykotor.tools import model
-from utility.common.geometry import Vector2, Vector3, Vector4
+from pykotor.common.language import LocalizedString  # type: ignore[import-not-found]
+from pykotor.common.misc import Color, ResRef  # type: ignore[import-not-found]
+from pykotor.extract.file import ResourceIdentifier  # type: ignore[import-not-found]
+from pykotor.resource.formats.bwm import bytes_bwm  # type: ignore[import-not-found]
+from pykotor.resource.formats.erf import ERF, ERFType, write_erf  # type: ignore[import-not-found]
+from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTRoom, bytes_lyt  # type: ignore[import-not-found]
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, bytes_tpc  # type: ignore[import-not-found]
+from pykotor.resource.formats.vis import VIS, bytes_vis  # type: ignore[import-not-found]
+from pykotor.resource.generics.are import ARE, ARENorthAxis, bytes_are  # type: ignore[import-not-found]
+from pykotor.resource.generics.git import GIT, GITDoor, bytes_git  # type: ignore[import-not-found]
+from pykotor.resource.generics.ifo import IFO, bytes_ifo  # type: ignore[import-not-found]
+from pykotor.resource.generics.utd import bytes_utd  # type: ignore[import-not-found]
+from pykotor.resource.type import ResourceType  # type: ignore[import-not-found]
+from pykotor.tools import model  # type: ignore[import-not-found]
+from utility.common.geometry import Vector2, Vector3, Vector4  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
     import os
 
     from pykotor.resource.formats.bwm import BWM
     from pykotor.resource.generics.utd import UTD
-    from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook, KitDoor
-    from toolset.data.installation import HTInstallation
+    from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook, KitDoor  # type: ignore[import-not-found]
+    from toolset.data.installation import HTInstallation  # type: ignore[import-not-found]
 
 
 class DoorInsertion(NamedTuple):
@@ -345,7 +345,7 @@ class IndoorMap:
         bwm.rotate(room.rotation)
         bwm.translate(room.position.x, room.position.y, room.position.z)
         for hook_index, connection in enumerate(room.hooks):
-            dummy_index: int = room.component.hooks[hook_index].edge
+            dummy_index: int = int(room.component.hooks[hook_index].edge)
             actual_index: int | None = None if connection is None else self.rooms.index(connection)
             self.remap_transitions(bwm, dummy_index, actual_index)
         return bwm
@@ -426,6 +426,7 @@ class IndoorMap:
                 if insert.hook1.door.height != insert.hook2.door.height:
                     c_room: IndoorMapRoom | None = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
                     if c_room is None:
+                        RobustLogger().warning(f"No room found for door insertion {i}")
                         continue
                     c_hook: KitComponentHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
                     alt_hook: KitComponentHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
@@ -441,8 +442,10 @@ class IndoorMap:
                         if door_index in kit.top_padding
                         else None
                     )
-                    if padding_key is not None:
-                        padding_name = f"{self.module_id}_tpad{padding_count}"
+                    if padding_key is None:
+                        RobustLogger().info(f"No padding key found for door insertion {i}")
+                    else:
+                        padding_name: str = f"{self.module_id}_tpad{padding_count}"
                         padding_count += 1
                         pad_mdl: bytes = model.transform(
                             kit.top_padding[door_index][padding_key].mdl,
@@ -465,13 +468,15 @@ class IndoorMap:
                         self.vis.add_room(padding_name)
                 if insert.hook1.door.width != insert.hook2.door.width:
                     c_room = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
-                    c_hook: KitComponentHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
-                    alt_hook: KitComponentHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
-
-                    kit: Kit = c_room.component.kit
-                    door_index: int = kit.doors.index(c_hook.door)
+                    c_hook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
+                    alt_hook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
+                    if c_room is None:
+                        RobustLogger().warning(f"No room found for door insertion {i}")
+                        continue
+                    kit = c_room.component.kit
+                    door_index = kit.doors.index(c_hook.door)
                     width: float = alt_hook.door.width * 100
-                    padding_key: int | None = (
+                    padding_key = (
                         min(
                             (i for i in kit.side_padding[door_index] if i > width),
                             default=None,
@@ -480,16 +485,16 @@ class IndoorMap:
                         else None
                     )
                     if padding_key is not None:
-                        padding_name: str = f"{self.module_id}_tpad{padding_count}"
+                        padding_name = f"{self.module_id}_tpad{padding_count}"
                         padding_count += 1
-                        pad_mdl: bytes = model.transform(
+                        pad_mdl = model.transform(
                             kit.side_padding[door_index][padding_key].mdl,
                             Vector3.from_null(),
                             insert.rotation,
                         )
                         pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
                         pad_mdl = model.change_textures(pad_mdl, self.tex_renames)
-                        lmRenames: dict[str, str] = {}
+                        lmRenames = {}
                         for lightmap in model.iterate_lightmaps(pad_mdl):
                             renamed = f"{self.module_id}_lm{self.total_lm}"
                             self.total_lm += 1
@@ -528,8 +533,8 @@ class IndoorMap:
                 continue
             mdl, mdx = kit.skyboxes[self.skybox].mdl, kit.skyboxes[self.skybox].mdx
             model_name: str = f"{self.module_id}_sky"
-            mdl: bytes = model.change_textures(mdl, self.tex_renames)
-            self.mod.set_data(model_name, ResourceType.MDL, mdl)
+            mdl_converted: bytes = model.change_textures(mdl, self.tex_renames)
+            self.mod.set_data(model_name, ResourceType.MDL, mdl_converted)
             self.mod.set_data(model_name, ResourceType.MDX, mdx)
             self.lyt.rooms.append(LYTRoom(model_name, Vector3.from_null()))
             self.vis.add_room(model_name)
@@ -868,6 +873,7 @@ class IndoorMap:
         walkmeshes: list[BWM] = []
         for room in self.rooms:
             bwm: BWM = deepcopy(room.component.bwm)
+            bwm.flip(room.flip_x, room.flip_y)
             bwm.rotate(room.rotation)
             bwm.translate(room.position.x, room.position.y, room.position.z)
             walkmeshes.append(bwm)
@@ -884,7 +890,7 @@ class IndoorMap:
 
         width: float = bbmax.x * 10 - bbmin.x * 10
         height: float = bbmax.y * 10 - bbmin.y * 10
-        pixmap = QPixmap(int(width), int(height))
+        pixmap: QPixmap = QPixmap(int(width), int(height))
         pixmap.fill(QColor(0))
 
         # Draw the actual minimap
@@ -907,14 +913,14 @@ class IndoorMap:
         del painter
 
         # Minimaps are 512x256 so we need to appropriately scale down our image
-        pixmap: QPixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)  # type: ignore[attr-defined]
+        pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)  # type: ignore[attr-defined]
 
         pixmap2 = QPixmap(512, 256)
         pixmap2.fill(QColor(0))
         painter2 = QPainter(pixmap2)
         painter2.drawPixmap(0, int(128 - pixmap.height() / 2), pixmap)
 
-        image: QImage = pixmap2.transformed(QTransform().scale(1, -1)).toImage()
+        image = pixmap2.transformed(QTransform().scale(1, -1)).toImage()
         image.convertTo(QImage.Format.Format_RGB888)
         image_point_min: Vector2 = Vector2(0 / 435, (128 - pixmap.height() / 2) / 256)  # +512-435
         image_point_max: Vector2 = Vector2((image_point_min.x + pixmap.width()) / 435, (image_point_min.y + pixmap.height()) / 256)
@@ -1026,7 +1032,7 @@ class IndoorMapRoom:
             - Checks if the distance between the two hook positions is close
             - Assigns the other room to the current hook's slot in the hooks list if close.
         """
-        self.hooks: list[IndoorMapRoom | None] = [None] * len(self.component.hooks)
+        self.hooks = [None] * len(self.component.hooks)
 
         for hook in self.component.hooks:
             hook_index: int = self.component.hooks.index(hook)
@@ -1051,11 +1057,11 @@ class IndoorMapRoom:
         Processing Logic:
         ----------------
             - A deep copy of the component's BWM is made to avoid modifying the original.
-            - The copy is rotated by the component's rotation value.
-            - The copy is translated to the component's position.
-            - The translated and rotated copy is returned.
+            - The copy is flipped, rotated, and translated to match the room's transformation.
+            - The transformed copy is returned.
         """
         bwm: BWM = deepcopy(self.component.bwm)
+        bwm.flip(self.flip_x, self.flip_y)
         bwm.rotate(self.rotation)
         bwm.translate(self.position.x, self.position.y, self.position.z)
         return bwm

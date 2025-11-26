@@ -42,8 +42,8 @@ if (
         add_sys_path(toolset_path.parent)
 
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
@@ -205,3 +205,53 @@ class GFFEditorTest(TestCase):
 
 if __name__ == "__main__":
     unittest.main(testRunner=CustomTextTestRunner)
+
+
+# ============================================================================
+# Pytest-based headless UI tests
+# ============================================================================
+
+import pytest
+from toolset.gui.editors.gff import GFFEditor
+from toolset.data.installation import HTInstallation
+from pykotor.resource.type import ResourceType
+
+def test_gff_editor_headless_ui_load_build(qtbot, installation: HTInstallation, test_files_dir: pathlib.Path):
+    """Test GFF Editor in headless UI - loads real file and builds data."""
+    editor = GFFEditor(None, installation)
+    qtbot.addWidget(editor)
+    
+    # Try to find a GFF file
+    gff_file = test_files_dir / "zio001.git"  # GIT files are GFF format
+    if not gff_file.exists():
+        # Try to get one from installation
+        gff_resources = [r for r in installation.resources(ResourceType.GIT)][:1]
+        if not gff_resources:
+            # Try any GFF-based resource
+            gff_resources = [r for r in installation.resources(ResourceType.ARE)][:1]
+        if not gff_resources:
+            pytest.skip("No GFF files available for testing")
+        gff_resource = gff_resources[0]
+        gff_data = installation.resource(gff_resource.identifier)
+        if not gff_data:
+            pytest.skip(f"Could not load GFF data for {gff_resource.identifier}")
+        editor.load(
+            gff_resource.filepath if hasattr(gff_resource, 'filepath') else pathlib.Path("module.gff"),
+            gff_resource.resname,
+            gff_resource.restype,
+            gff_data
+        )
+    else:
+        original_data = gff_file.read_bytes()
+        editor.load(gff_file, "zio001", ResourceType.GIT, original_data)
+    
+    # Verify editor loaded the data
+    assert editor is not None
+    
+    # Build and verify it works
+    data, _ = editor.build()
+    assert len(data) > 0
+    
+    # Verify we can read it back
+    loaded_gff = read_gff(data)
+    assert loaded_gff is not None

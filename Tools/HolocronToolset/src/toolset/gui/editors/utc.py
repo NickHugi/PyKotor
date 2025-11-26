@@ -21,6 +21,7 @@ from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_sav_file
 from toolset.data.installation import HTInstallation
+from toolset.gui.common.localization import translate as tr
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
@@ -86,6 +87,7 @@ class UTCEditor(Editor):
         self.ui.setupUi(self)
         self.resize(798, 553)
         self._setup_menus()
+        self._add_help_action()
         self._setup_installation(installation)
         self._setup_signals()
         self._installation: HTInstallation
@@ -186,9 +188,9 @@ class UTCEditor(Editor):
             - Connects menu action triggers to toggle settings.
         """
         self.ui.firstnameRandomButton.clicked.connect(self.randomize_first_name)
-        self.ui.firstnameRandomButton.setToolTip("Utilize the game's LTR randomizers to generate a unique name.")
+        self.ui.firstnameRandomButton.setToolTip(tr("Utilize the game's LTR randomizers to generate a unique name."))
         self.ui.lastnameRandomButton.clicked.connect(self.randomize_last_name)
-        self.ui.lastnameRandomButton.setToolTip("Utilize the game's LTR randomizers to generate a unique name.")
+        self.ui.lastnameRandomButton.setToolTip(tr("Utilize the game's LTR randomizers to generate a unique name."))
         self.ui.tagGenerateButton.clicked.connect(self.generate_tag)
         self.ui.alignmentSlider.valueChanged.connect(lambda: self.portrait_changed(self.ui.portraitSelect.currentIndex()))
         self.ui.portraitSelect.currentIndexChanged.connect(self.portrait_changed)
@@ -196,8 +198,8 @@ class UTCEditor(Editor):
         self.ui.inventoryButton.clicked.connect(self.open_inventory)
         self.ui.featList.itemChanged.connect(self.update_feat_summary)
         self.ui.powerList.itemChanged.connect(self.update_power_summary)
-        self.ui.class1LevelSpin.setToolTip("Class Level")
-        self.ui.class2LevelSpin.setToolTip("Class Level")
+        self.ui.class1LevelSpin.setToolTip(tr("Class Level"))
+        self.ui.class2LevelSpin.setToolTip(tr("Class Level"))
 
         self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
         self.ui.alignmentSlider.valueChanged.connect(self.update3dPreview)
@@ -294,7 +296,7 @@ class UTCEditor(Editor):
 
             self.ui.class2Select.set_context(classes, self._installation, HTInstallation.TwoDA_CLASSES)
             self.ui.class2Select.clear()
-            self.ui.class2Select.setPlaceholderText("[Unset]")
+            self.ui.class2Select.setPlaceholderText(tr("[Unset]"))
             for label in classes.get_column("label"):  # pyright: ignore[reportArgumentType]
                 self.ui.class2Select.addItem(label)
         self.ui.raceSelect.set_context(races, self._installation, HTInstallation.TwoDA_RACES)

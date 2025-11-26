@@ -35,13 +35,20 @@ class ResourceComparisonDialog(QDialog):
         resource2: FileResource | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle(f"Compare: {resource1.resname()}.{resource1.restype().extension}")
+        from toolset.gui.common.localization import translate as tr, trf
+        self.setWindowTitle(trf("Compare: {name}.{ext}", name=resource1.resname(), ext=resource1.restype().extension))
         self.resize(1200, 700)
 
         self.resource1 = resource1
         self.resource2 = resource2
 
         self._setup_ui()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
+        
         self._load_resources()
 
     def _setup_ui(self):
@@ -55,7 +62,8 @@ class ResourceComparisonDialog(QDialog):
         left_header = QVBoxLayout()
         self.left_path_label: QLabel = QLabel()
         self.left_path_label.setWordWrap(True)
-        left_header.addWidget(QLabel("<b>Left:</b>"))
+        from toolset.gui.common.localization import translate as tr
+        left_header.addWidget(QLabel(tr("<b>Left:</b>")))
         left_header.addWidget(self.left_path_label)
         header_layout.addLayout(left_header, 1)
 
@@ -63,7 +71,7 @@ class ResourceComparisonDialog(QDialog):
         right_header = QVBoxLayout()
         self.right_path_label: QLabel = QLabel()
         self.right_path_label.setWordWrap(True)
-        right_header.addWidget(QLabel("<b>Right:</b>"))
+        right_header.addWidget(QLabel(tr("<b>Right:</b>")))
         right_header.addWidget(self.right_path_label)
         header_layout.addLayout(right_header, 1)
 
@@ -117,7 +125,8 @@ class ResourceComparisonDialog(QDialog):
         if self.resource2:
             self.right_path_label.setText(str(self.resource2.filepath()))
         else:
-            self.right_path_label.setText("[Not selected]")
+            from toolset.gui.common.localization import translate as tr
+            self.right_path_label.setText(tr("[Not selected]"))
 
         # Load left resource
         try:

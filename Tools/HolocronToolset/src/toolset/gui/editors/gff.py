@@ -23,6 +23,7 @@ from pykotor.common.misc import ResRef
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.type import ResourceType
+from toolset.gui.common.localization import translate as tr
 from toolset.gui.editor import Editor
 from utility.common.geometry import Vector3, Vector4
 
@@ -61,12 +62,18 @@ class GFFEditor(Editor):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
 
         self.ui.treeView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
 
         self.ui.treeView.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         self.ui.treeView.setSortingEnabled(True)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         # Make the right panel take as little space possible
         self.ui.splitter.setSizes([99999999, 1])
@@ -624,7 +631,7 @@ class GFFEditor(Editor):
     ):
         parent_item: QStandardItem | None = item.parent()
         if parent_item is None:
-            QMessageBox(QMessageBox.Icon.Critical, "Invalid action attempted", "Cannot remove the top-level [ROOT] item.").exec()
+            QMessageBox(QMessageBox.Icon.Critical, tr("Invalid action attempted"), tr("Cannot remove the top-level [ROOT] item.")).exec()
             return
         parent_item.removeRow(item.row())
         self.refresh_item_text(item)
@@ -691,7 +698,7 @@ class GFFEditor(Editor):
         menu.addSeparator()
 
     def select_talk_table(self):
-        filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
+        filepath, filter = QFileDialog.getOpenFileName(self, tr("Select a TLK file"), "", "TalkTable (*.tlk)")
         if not filepath:
             return
         self._talktable = TalkTable(filepath)

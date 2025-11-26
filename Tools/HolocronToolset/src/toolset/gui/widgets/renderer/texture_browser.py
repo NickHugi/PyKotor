@@ -35,7 +35,8 @@ class TextureBrowser(QWidget):
         layout = QVBoxLayout(self)
 
         # Add import button
-        import_button = QPushButton("Import Texture", self)
+        from toolset.gui.common.localization import translate as tr
+        import_button = QPushButton(tr("Import Texture"), self)
         import_button.clicked.connect(self.import_texture_dialog)
         layout.addWidget(import_button)
 
@@ -65,7 +66,7 @@ class TextureBrowser(QWidget):
         """Open file dialog to import textures."""
         file_paths, _ = QFileDialog.getOpenFileNames(
             self,
-            "Import Textures",
+            tr("Import Textures"),
             "",
             "Image Files (*.tga *.dds *.jpg *.png *.bmp)",
         )

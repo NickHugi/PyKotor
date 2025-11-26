@@ -38,8 +38,8 @@ if (
     if toolset_path.exists():
         add_sys_path(toolset_path.parent)
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
@@ -199,6 +199,45 @@ def test_jrl_add_quest_and_entry(qtbot, installation: HTInstallation):
     editor.ui.entryXpSpin.setValue(50)
     editor.on_value_updated()
     assert entry.xp_percentage == 50
+
+def test_jrl_editor_headless_ui_load_build(qtbot, installation: HTInstallation, test_files_dir: pathlib.Path):
+    """Test JRL Editor in headless UI - loads real file and builds data."""
+    editor = JRLEditor(None, installation)
+    qtbot.addWidget(editor)
+    
+    # Try to find a JRL file
+    jrl_file = test_files_dir / "global.jrl"
+    if not jrl_file.exists():
+        # Try to get one from installation
+        jrl_resources = list(installation.resources(ResourceType.JRL))[:1]
+        if not jrl_resources:
+            pytest.skip("No JRL files available for testing")
+        jrl_resource = jrl_resources[0]
+        jrl_data = installation.resource(jrl_resource.identifier)
+        if not jrl_data:
+            pytest.skip(f"Could not load JRL data for {jrl_resource.identifier}")
+        editor.load(
+            jrl_resource.filepath if hasattr(jrl_resource, 'filepath') else pathlib.Path("module.jrl"),
+            jrl_resource.resname,
+            ResourceType.JRL,
+            jrl_data
+        )
+    else:
+        original_data = jrl_file.read_bytes()
+        editor.load(jrl_file, "global", ResourceType.JRL, original_data)
+    
+    # Verify editor loaded the data
+    assert editor is not None
+    assert editor._model.rowCount() > 0
+    
+    # Build and verify it works
+    data, _ = editor.build()
+    assert len(data) > 0
+    
+    # Verify we can read it back
+    from pykotor.resource.formats.gff.gff_auto import read_gff
+    loaded_jrl = read_gff(data)
+    assert loaded_jrl is not None
 
 def test_jrl_load(qtbot, installation: HTInstallation, test_files_dir):
     """Test loading a JRL file."""

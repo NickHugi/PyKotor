@@ -36,6 +36,7 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
+from toolset.gui.common.localization import translate as tr, trf  # type: ignore[import-not-found]
 from utility.updater.github import CompleteRepoData, TreeInfoData, extract_owner_repo, get_api_url, get_forks_url, get_main_url
 
 if TYPE_CHECKING:
@@ -86,9 +87,14 @@ class GitHubFileSelector(QDialog):
             & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
             & ~QtCore.Qt.WindowType.WindowMinMaxButtonsHint
         )
-        self.setWindowTitle("Select a GitHub Repository File")
+        self.setWindowTitle(tr("Select a GitHub Repository File"))
         self.setMinimumSize(600, 400)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         if len(args) == 1:
             owner, repo = extract_owner_repo(args[0])
@@ -118,27 +124,27 @@ class GitHubFileSelector(QDialog):
         main_layout = QVBoxLayout(self)
         self.setLayout(main_layout)
 
-        self.label: QLabel = QLabel("Please select the correct script path or enter manually:")
+        self.label: QLabel = QLabel(tr("Please select the correct script path or enter manually:"))
         main_layout.addWidget(self.label)
 
         self.fork_combo_box: QComboBox = QComboBox(self)
         self.fork_combo_box.setFixedWidth(300)
         self.fork_combo_box.currentIndexChanged.connect(self.on_fork_changed)
-        main_layout.addWidget(QLabel("Select Fork:"))
+        main_layout.addWidget(QLabel(tr("Select Fork:")))
         main_layout.addWidget(self.fork_combo_box)
 
         filter_layout = QHBoxLayout()
         self.filter_edit: QLineEdit = QLineEdit(self)
-        self.filter_edit.setPlaceholderText("Type to filter paths...")
+        self.filter_edit.setPlaceholderText(tr("Type to filter paths..."))
         self.filter_edit.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # pyright: ignore[reportArgumentType]
         self.filter_edit.textChanged.connect(self.on_filter_edit_changed)
         filter_layout.addWidget(self.filter_edit)
 
-        self.search_button: QPushButton = QPushButton("Search", self)
+        self.search_button: QPushButton = QPushButton(tr("Search"), self)
         self.search_button.clicked.connect(self.search_files)
         filter_layout.addWidget(self.search_button)
 
-        self.refresh_button: QPushButton = QPushButton("Refresh", self)
+        self.refresh_button: QPushButton = QPushButton(tr("Refresh"), self)
         self.refresh_button.clicked.connect(self.refresh_data)
         filter_layout.addWidget(self.refresh_button)
 
@@ -146,7 +152,7 @@ class GitHubFileSelector(QDialog):
 
         self.repo_tree_widget: QTreeWidget = QTreeWidget(self)
         self.repo_tree_widget.setColumnCount(1)
-        self.repo_tree_widget.setHeaderLabel("GitHub Repository")
+        self.repo_tree_widget.setHeaderLabel(tr("GitHub Repository"))
         self.repo_tree_widget.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)  # pyright: ignore[reportArgumentType]
         self.repo_tree_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
         self.repo_tree_widget.customContextMenuRequested.connect(self.show_context_menu)
@@ -158,7 +164,7 @@ class GitHubFileSelector(QDialog):
         self.button_box.rejected.connect(self.reject)
         main_layout.addWidget(self.button_box)
 
-        self.cloneButton: QPushButton = QPushButton("Clone Repository", self)
+        self.cloneButton: QPushButton = QPushButton(tr("Clone Repository"), self)
         self.cloneButton.clicked.connect(self.clone_repository)
         main_layout.addWidget(self.cloneButton)
 
@@ -182,11 +188,11 @@ class GitHubFileSelector(QDialog):
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 403 and "X-RateLimit-Reset" in e.response.headers:  # noqa: PLR2004
                 if not self.timer.isActive():
-                    QMessageBox.critical(self, "You are rate limited.", "You have submitted too many requests to github's api, check the status bar at the bottom.")
+                    QMessageBox.critical(self, tr("You are rate limited."), tr("You have submitted too many requests to github's api, check the status bar at the bottom."))
                     self.start_rate_limit_timer(e)
                 return None
 
-            QMessageBox.critical(self, "Repository Not Found", f"The repository '{self.owner}/{self.repo}' had an unexpected error:<br><br>{e}")
+            QMessageBox.critical(self, tr("Repository Not Found"), trf("The repository '{owner}/{repo}' had an unexpected error:<br><br>{error}", owner=self.owner, repo=self.repo, error=str(e)))
             forks_url = f"https://api.github.com/repos/{self.owner}/{self.repo}/forks"
             try:
                 response: requests.Response = requests.get(forks_url, timeout=15)
@@ -194,7 +200,7 @@ class GitHubFileSelector(QDialog):
                 forks_data: list[dict[str, Any]] = response.json()
                 if forks_data:
                     first_fork = forks_data[0]["full_name"]
-                    QMessageBox.information(self, "Using Fork", f"The main repository is not available. Using the fork: {first_fork}")
+                    QMessageBox.information(self, tr("Using Fork"), trf("The main repository is not available. Using the fork: {fork}", fork=first_fork))
                     fork_owner, fork_repo = first_fork.split("/")
                     fork_repo_data: CompleteRepoData | None = CompleteRepoData.load_repo(fork_owner, fork_repo)
                     if fork_repo_data is None:
@@ -202,9 +208,9 @@ class GitHubFileSelector(QDialog):
                     self.fork_combo_box.addItem(first_fork)
                     self._load_repo_data(fork_repo_data, do_fork_combo_update=False)
                     return fork_repo_data
-                QMessageBox.critical(self, "No Forks Available", "No forks are available to load.")
+                QMessageBox.critical(self, tr("No Forks Available"), tr("No forks are available to load."))
             except requests.exceptions.RequestException as fork_e:
-                QMessageBox.critical(self, "Forks Load Error", f"Failed to load forks: {fork_e}")
+                QMessageBox.critical(self, tr("Forks Load Error"), trf("Failed to load forks: {error}", error=str(fork_e)))
         else:
             self._load_repo_data(repo_data)
             self.stop_rate_limit_timer()
@@ -412,7 +418,7 @@ class GitHubFileSelector(QDialog):
     def accept(self) -> None:
         self.selected_path = self.get_selected_path()
         if not self.selected_path:
-            QMessageBox.warning(self, "No Selection", "You must select a file.")
+            QMessageBox.warning(self, tr("No Selection"), tr("You must select a file."))
             return
         RobustLogger().info(f"{self.__class__.__name__}: User selected '{self.selected_path}'")
         super().accept()
@@ -514,7 +520,7 @@ class GitHubFileSelector(QDialog):
     def clone_repository(self) -> None:
         selected_fork = self.fork_combo_box.currentText().replace(" (main)", "")
         if not selected_fork:
-            QMessageBox.warning(self, "No Fork Selected", "Please select a fork to clone.")
+            QMessageBox.warning(self, tr("No Fork Selected"), tr("Please select a fork to clone."))
             return
 
         url = f"https://github.com/{selected_fork}.git"
@@ -523,9 +529,9 @@ class GitHubFileSelector(QDialog):
 
             command: list[str] = shlex.split(f"git clone {url}")
             subprocess.run(command, check=True)  # noqa: S603
-            QMessageBox.information(self, "Clone Successful", f"Repository {selected_fork} cloned successfully.")
+            QMessageBox.information(self, tr("Clone Successful"), trf("Repository {fork} cloned successfully.", fork=selected_fork))
         except subprocess.CalledProcessError as e:
-            QMessageBox.critical(self, "Clone Failed", f"Failed to clone repository: {e!s}")
+            QMessageBox.critical(self, tr("Clone Failed"), trf("Failed to clone repository: {error}", error=str(e)))
 
     def show_context_menu(
         self,
@@ -535,9 +541,9 @@ class GitHubFileSelector(QDialog):
         if item is None:
             return
         context_menu = QMenu(self)
-        context_menu.addAction("Open in Web Browser").triggered.connect(lambda: self.open_in_web_browser(item))
-        context_menu.addAction("Copy URL").triggered.connect(lambda: self.copy_url(item))
-        context_menu.addAction("Download").triggered.connect(lambda: self.download(item))
+        context_menu.addAction(tr("Open in Web Browser")).triggered.connect(lambda: self.open_in_web_browser(item))
+        context_menu.addAction(tr("Copy URL")).triggered.connect(lambda: self.copy_url(item))
+        context_menu.addAction(tr("Download")).triggered.connect(lambda: self.download(item))
         viewport: QWidget | None = self.repo_tree_widget.viewport()
         if viewport is None:
             return
@@ -598,11 +604,11 @@ class GitHubFileSelector(QDialog):
                     filename: str = self.convert_item_to_web_url(item).split("/")[-1]
                     with open(filename, "wb") as file:  # noqa: PTH123
                         file.write(content)
-                    QMessageBox.information(self, "Download Successful", f"Downloaded {filename} to {os.path.join(os.path.curdir, filename)}")  # noqa: PTH118
+                    QMessageBox.information(self, tr("Download Successful"), trf("Downloaded {filename} to {path}", filename=filename, path=os.path.join(os.path.curdir, filename)))  # noqa: PTH118
                 else:
-                    QMessageBox.critical(self, "Download Failed", "Failed to download the file content.")
+                    QMessageBox.critical(self, tr("Download Failed"), tr("Failed to download the file content."))
             except requests.exceptions.RequestException as e:  # noqa: PERF203
-                QMessageBox.critical(self, "Download Failed", f"Failed to download {url.split('/')[-1]}: {e!s}")
+                QMessageBox.critical(self, tr("Download Failed"), trf("Failed to download {name}: {error}", name=url.split('/')[-1], error=str(e)))
 
     def collect_urls(
         self,

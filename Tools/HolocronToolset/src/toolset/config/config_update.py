@@ -16,6 +16,28 @@ from toolset.config.config_info import LOCAL_PROGRAM_INFO
 from utility.error_handling import universal_simplify_exception
 
 
+def _clean_json_trailing_commas(json_str: str) -> str:
+    """Remove trailing commas from JSON strings to make parsing more robust.
+    
+    This function handles trailing commas in JSON arrays and objects,
+    which are not allowed by the standard JSON parser but are common
+    in hand-edited JSON files.
+    
+    Args:
+    ----
+        json_str: The JSON string that may contain trailing commas
+        
+    Returns:
+    -------
+        A cleaned JSON string without trailing commas
+    """
+    # Remove trailing commas before closing brackets/braces
+    # This regex matches: comma, optional whitespace, closing bracket/brace
+    # Pattern: ,\s*([}\]])
+    cleaned = re.sub(r',\s*([}\]])', r'\1', json_str)
+    return cleaned
+
+
 def fetch_update_info(
     update_link: str,
     timeout: int = 15,
@@ -50,7 +72,9 @@ def get_remote_toolset_update_info(
         if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
         json_str: str = json_data_match[1]
-        remote_info: dict[str, Any] = json.loads(json_str)
+        # Clean trailing commas before parsing to handle malformed JSON
+        cleaned_json_str: str = _clean_json_trailing_commas(json_str)
+        remote_info: dict[str, Any] = json.loads(cleaned_json_str)
         if not isinstance(remote_info, dict):
             raise TypeError(f"Expected remote_info to be a dict, instead got type {remote_info.__class__.__name__}")  # noqa: TRY301
     except Exception as e:  # noqa: BLE001

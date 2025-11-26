@@ -42,6 +42,7 @@ class TwoDAEditor(Editor):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
 
         self.ui.filterBox.setVisible(False)
@@ -53,6 +54,11 @@ class TwoDAEditor(Editor):
         self.vertical_header_option: VerticalHeaderOption = VerticalHeaderOption.NONE
         self.vertical_header_column: str = ""
         vert_header: QHeaderView | None = self.ui.twodaTable.verticalHeader()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
         self.source_model.itemChanged.connect(self.reset_vertical_headers)
 
         self.new()
@@ -136,7 +142,8 @@ class TwoDAEditor(Editor):
             self._load_main(data)
         except ValueError as e:
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec()
+            from toolset.gui.common.localization import translate as tr, trf
+            QMessageBox(QMessageBox.Icon.Critical, tr("Failed to load file."), trf("Failed to open or load file data.<br>{error}", error=error_msg)).exec()
             self.proxy_model.setSourceModel(self.source_model)
             self.new()
 
@@ -221,7 +228,8 @@ class TwoDAEditor(Editor):
         row: int,
     ):
         if row < 0 or row >= self.source_model.rowCount():
-            QMessageBox.warning(self, "Invalid Row", f"Row {row} is out of range.")
+            from toolset.gui.common.localization import translate as tr, trf
+            QMessageBox.warning(self, tr("Invalid Row"), trf("Row {row} is out of range.", row=row))
             return
         index: QModelIndex = self.proxy_model.mapFromSource(self.source_model.index(row, 0))
         self.ui.twodaTable.setCurrentIndex(index)

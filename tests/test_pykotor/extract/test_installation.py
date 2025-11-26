@@ -31,7 +31,7 @@ from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
 
-K1_PATH: str | None = os.environ.get("K1_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
 
 
 @unittest.skipIf(

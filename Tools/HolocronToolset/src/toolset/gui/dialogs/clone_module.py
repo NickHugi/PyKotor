@@ -8,6 +8,7 @@ from qtpy.QtWidgets import QDialog, QMessageBox
 
 from pykotor.common.module import Module
 from pykotor.tools import module
+from toolset.gui.common.localization import translate as tr, trf
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
@@ -63,6 +64,11 @@ class CloneModuleDialog(QDialog):
         from toolset.uic.qtpy.dialogs.clone_module import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         self._active: HTInstallation = active
         self._installations: dict[str, HTInstallation] = {active.name: active}
@@ -124,8 +130,8 @@ class CloneModuleDialog(QDialog):
         if copy_textures:
             QMessageBox(
                 QMessageBox.Icon.Information,
-                "This may take a while",
-                "You have selected to create copies of the " "texture. This process may add a few extra minutes to the waiting time.",
+                tr("This may take a while"),
+                tr("You have selected to create copies of the texture. This process may add a few extra minutes to the waiting time."),
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec()
 
@@ -134,8 +140,8 @@ class CloneModuleDialog(QDialog):
 
         QMessageBox(
             QMessageBox.Icon.Information,
-            "Clone Successful",
-            f"You can now warp to the cloned module '{identifier}'.",
+            tr("Clone Successful"),
+            trf("You can now warp to the cloned module '{identifier}'.", identifier=identifier),
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         ).exec()
 

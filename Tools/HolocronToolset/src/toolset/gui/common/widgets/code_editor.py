@@ -6,16 +6,17 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import qtpy
 
-from loggerplus import RobustLogger
 from qtpy.QtCore import (
     QRect,
     QSettings,
     QSize,
     QStringListModel,
     Qt,
+    QTimer,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
 )
-from qtpy.QtGui import QColor, QPainter, QPalette, QTextCharFormat, QTextCursor, QTextDocument, QTextFormat
+from qtpy.QtCore import QPoint
+from qtpy.QtGui import QColor, QMouseEvent, QPainter, QPalette, QTextCharFormat, QTextCursor, QTextDocument, QTextFormat
 from qtpy.QtWidgets import (
     QCheckBox,
     QCompleter,
@@ -38,6 +39,7 @@ elif qtpy.QT6:
     from qtpy.QtCore import QRegularExpression  # pyright: ignore[reportAttributeAccessIssue]
 
 from pykotor.resource.formats.ncs.compiler.classes import FunctionDefinition
+from toolset.gui.common.localization import translate as tr
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.ui_libraries.qt.widgets.itemviews.treewidget import RobustTreeWidget
 
@@ -74,6 +76,12 @@ class CodeEditor(QPlainTextEdit):
         self.blockCountChanged.connect(self._update_line_number_area_width)
         self.updateRequest.connect(self._update_line_number_area)
         self.cursorPositionChanged.connect(self._highlight_current_line)
+        self.cursorPositionChanged.connect(self._match_brackets)
+        
+        # Connect text changes to update foldable regions
+        document = self.document()
+        if document is not None:
+            document.contentsChange.connect(self._on_contents_changed)
 
         self._update_line_number_area_width(0)
         self._highlight_current_line()
@@ -100,6 +108,22 @@ class CodeEditor(QPlainTextEdit):
         self.update_completer_model()
 
         self.modified_lines: set[int] = set()
+        self.bookmark_lines: set[int] = set()  # Line numbers with bookmarks (1-indexed)
+        self.error_lines: set[int] = set()  # Line numbers with errors (1-indexed)
+        self.warning_lines: set[int] = set()  # Line numbers with warnings (1-indexed)
+        self.breakpoint_lines: set[int] = set()  # Line numbers with breakpoints (1-indexed)
+        self.current_debug_line: int | None = None  # Current line being debugged (1-indexed)
+        
+        # Column selection state
+        self._column_selection_mode: bool = False
+        self._column_selection_anchor: QPoint | None = None
+        
+        # Multiple cursor/selection state for Ctrl+D
+        self._multiple_selections: list[tuple[int, int]] = []  # List of (start, end) positions
+        
+        # Code folding state
+        self._folded_block_numbers: set[int] = set()  # Block numbers that are folded (blocks that start foldable regions)
+        self._foldable_regions: dict[int, int] = {}  # Map start block number to end block number for foldable regions
 
     def toggle_comment(self):
         """Toggle comment for the current line or selected lines."""
@@ -173,9 +197,90 @@ class CodeEditor(QPlainTextEdit):
                 number: str = str(block_number + 1)
                 painter.drawText(0, int(top), line_number_area_width, font_height, Qt.AlignmentFlag.AlignRight, number)
 
-                # Draw modification indicator
-                if block_number in self.modified_lines:
-                    painter.fillRect(0, int(top), 2, font_height, QColor(0, 0, 255))
+                # Draw error/warning indicators first (left edge, most important)
+                line_num_1_indexed = block_number + 1
+                if line_num_1_indexed in self.error_lines:
+                    # Use palette color for errors - use a contrasting color that stands out
+                    error_color = self.palette().color(QPalette.ColorRole.WindowText)
+                    error_size = 10
+                    error_x = 2
+                    error_y = int(top + (font_height - error_size) / 2)
+                    painter.setBrush(error_color)
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    painter.drawEllipse(error_x, error_y, error_size, error_size)
+                elif line_num_1_indexed in self.warning_lines:
+                    # Use palette color for warnings - use mid color for visibility
+                    warning_color = self.palette().color(QPalette.ColorRole.Mid)
+                    warning_size = 10
+                    warning_x = 2
+                    warning_y = int(top + (font_height - warning_size) / 2)
+                    painter.setBrush(warning_color)
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    # Draw triangle
+                    from qtpy.QtGui import QPolygon
+                    triangle = QPolygon()
+                    triangle.append(QPoint(warning_x + warning_size // 2, warning_y))
+                    triangle.append(QPoint(warning_x, warning_y + warning_size))
+                    triangle.append(QPoint(warning_x + warning_size, warning_y + warning_size))
+                    painter.drawPolygon(triangle)
+                
+                # Draw breakpoint indicator (red circle on left side, before error/warning)
+                if line_num_1_indexed in self.breakpoint_lines:
+                    breakpoint_color = self.palette().color(QPalette.ColorRole.WindowText)
+                    breakpoint_size = 12
+                    breakpoint_x = 0
+                    breakpoint_y = int(top + (font_height - breakpoint_size) / 2)
+                    painter.setBrush(breakpoint_color)
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    # Draw filled circle for breakpoint
+                    painter.drawEllipse(breakpoint_x, breakpoint_y, breakpoint_size, breakpoint_size)
+                
+                # Draw current debug line indicator (highlighted background)
+                if line_num_1_indexed == self.current_debug_line:
+                    debug_color = self.palette().color(QPalette.ColorRole.Highlight)
+                    painter.fillRect(0, int(top), line_number_area_width, font_height, debug_color)
+                
+                # Draw bookmark indicator (small circle on right side of line numbers)
+                if line_num_1_indexed in self.bookmark_lines and line_num_1_indexed not in self.breakpoint_lines:
+                    bookmark_color = self.palette().color(QPalette.ColorRole.Highlight)  # Use highlight color for bookmarks
+                    # Draw a small filled circle for bookmark
+                    bookmark_size = 8
+                    bookmark_x = line_number_area_width - bookmark_size - 2
+                    bookmark_y = int(top + (font_height - bookmark_size) / 2)
+                    painter.setBrush(bookmark_color)
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    # Draw filled circle
+                    painter.drawEllipse(bookmark_x, bookmark_y, bookmark_size, bookmark_size)
+                
+                # Draw modification indicator (thin line on left edge, below errors/warnings)
+                if block_number in self.modified_lines and line_num_1_indexed not in self.error_lines and line_num_1_indexed not in self.warning_lines:
+                    mod_color = self.palette().color(QPalette.ColorRole.Mid)
+                    painter.fillRect(0, int(top), 2, font_height, mod_color)
+                
+                # Draw folding indicator (arrow/collapse icon) if this line starts a foldable region
+                if block_number in self._foldable_regions:
+                    is_folded = block_number in self._folded_block_numbers
+                    fold_x = line_number_area_width - 20
+                    fold_y = int(top + (font_height - 10) / 2)
+                    
+                    # Draw triangle arrow (pointing right if folded, down if unfolded)
+                    from qtpy.QtGui import QPolygon
+                    triangle = QPolygon()
+                    if is_folded:
+                        # Pointing right (folded)
+                        triangle.append(QPoint(fold_x, fold_y))
+                        triangle.append(QPoint(fold_x, fold_y + 10))
+                        triangle.append(QPoint(fold_x + 6, fold_y + 5))
+                    else:
+                        # Pointing down (unfolded)
+                        triangle.append(QPoint(fold_x, fold_y))
+                        triangle.append(QPoint(fold_x + 10, fold_y))
+                        triangle.append(QPoint(fold_x + 5, fold_y + 6))
+                    
+                    fold_color = self.palette().color(QPalette.ColorRole.WindowText)
+                    painter.setBrush(fold_color)
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    painter.drawPolygon(triangle)
 
             block = block.next()
             top = bottom
@@ -189,9 +294,26 @@ class CodeEditor(QPlainTextEdit):
             maximum //= 10
             digits += 1
         space: int = 3 + self.fontMetrics().horizontalAdvance("9") * digits
+        # Add extra space for bookmark indicators and folding arrows
+        space += 25
         return space
+    
+    def set_bookmark_lines(self, bookmark_lines: set[int]):
+        """Set the lines that have bookmarks (1-indexed line numbers)."""
+        self.bookmark_lines = bookmark_lines
+        self._line_number_area.update()  # Trigger repaint
+    
+    def set_error_lines(self, error_lines: set[int]):
+        """Set the lines that have errors (1-indexed line numbers)."""
+        self.error_lines = error_lines
+        self._line_number_area.update()  # Trigger repaint
+    
+    def set_warning_lines(self, warning_lines: set[int]):
+        """Set the lines that have warnings (1-indexed line numbers)."""
+        self.warning_lines = warning_lines
+        self._line_number_area.update()  # Trigger repaint
 
-    def resizeEvent(
+    def resizeEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         e: QResizeEvent,
     ):
@@ -204,6 +326,103 @@ class CodeEditor(QPlainTextEdit):
         new_block_count: int,
     ):
         self.setViewportMargins(self.line_number_area_width(), 0, 0, 0)
+    
+    def _on_contents_changed(self, position: int, chars_removed: int, chars_added: int):
+        """Handle document contents change to update foldable regions."""
+        # Only update if significant change occurred
+        if chars_removed > 0 or chars_added > 0:
+            # Delay update slightly to avoid too frequent updates
+            QTimer.singleShot(100, self._update_foldable_regions)
+    
+    def _update_foldable_regions(self):
+        """Update the foldable regions based on braces in the document."""
+        document: QTextDocument | None = self.document()
+        if document is None:
+            return
+        
+        # Preserve existing folded state
+        old_folded = self._folded_block_numbers.copy()
+        self._foldable_regions.clear()
+        
+        # Track brace pairs to find foldable regions
+        brace_stack: list[tuple[int, int]] = []  # List of (block_number, brace_count) tuples
+        brace_count = 0
+        
+        block = document.firstBlock()
+        block_number = 0
+        
+        while block.isValid():
+            text = block.text()
+            
+            # Count braces in this line (ignore braces in strings/comments)
+            open_braces = 0
+            close_braces = 0
+            in_string = False
+            in_single_line_comment = False
+            
+            i = 0
+            while i < len(text):
+                char = text[i]
+                
+                # Handle string literals
+                if char == '"' and (i == 0 or text[i-1] != '\\'):
+                    in_string = not in_string
+                elif not in_string:
+                    # Handle comments
+                    if i < len(text) - 1 and text[i:i+2] == '//':
+                        in_single_line_comment = True
+                        break
+                    elif not in_single_line_comment:
+                        if char == '{':
+                            open_braces += 1
+                        elif char == '}':
+                            close_braces += 1
+                i += 1
+            
+            # Track when we enter a new brace level
+            for _ in range(open_braces):
+                brace_count += 1
+                brace_stack.append((block_number, brace_count))
+            
+            # When closing braces, match with opening braces
+            for _ in range(close_braces):
+                brace_count -= 1
+                if brace_count < 0:
+                    brace_count = 0
+                    continue
+                
+                # Find matching opening brace
+                while brace_stack:
+                    start_block, start_count = brace_stack[-1]
+                    if start_count == brace_count + 1:
+                        # Found matching brace pair
+                        brace_stack.pop()
+                        # Only create foldable region if there are multiple lines
+                        if block_number > start_block + 1:
+                            self._foldable_regions[start_block] = block_number
+                        break
+                    brace_stack.pop()
+            
+            block = block.next()
+            block_number += 1
+        
+        # Restore folded state for regions that still exist
+        self._folded_block_numbers.clear()
+        for start_block in old_folded:
+            if start_block in self._foldable_regions:
+                self._folded_block_numbers.add(start_block)
+                # Re-apply folding if it was folded before
+                end_block = self._foldable_regions[start_block]
+                block = document.findBlockByNumber(start_block)
+                if block.isValid():
+                    block = block.next()
+                    block_num = start_block + 1
+                    while block.isValid() and block_num <= end_block:
+                        block.setVisible(False)
+                        block = block.next()
+                        block_num += 1
+        
+        self._line_number_area.update()
 
     def _highlight_current_line(self):
         """Highlights the current line in the text editor.
@@ -216,7 +435,8 @@ class CodeEditor(QPlainTextEdit):
 
         if not self.isReadOnly():
             selection = QTextEdit.ExtraSelection()
-            line_color: QColor = QColor(255, 255, 220)
+            # Use palette color for current line highlight
+            line_color: QColor = self.palette().color(QPalette.ColorRole.AlternateBase)
             if not hasattr(selection, "format"):
                 selection.format = QTextCharFormat()  # type: ignore[attr-value]
             selection.format.setBackground(line_color)  # type: ignore[attr-value]
@@ -226,6 +446,103 @@ class CodeEditor(QPlainTextEdit):
             selection.cursor.clearSelection()  # type: ignore[attr-value]
             extra_selections.append(selection)
 
+        self.setExtraSelections(extra_selections)
+    
+    def _match_brackets(self):
+        """Highlight matching brackets (VS Code feature)."""
+        cursor: QTextCursor = self.textCursor()
+        document: QTextDocument | None = self.document()
+        if document is None:
+            return
+        
+        # Get character at cursor position
+        pos = cursor.position()
+        if pos >= document.characterCount():
+            return
+        
+        char = document.characterAt(pos)
+        
+        # Define bracket pairs
+        brackets = {
+            '(': ')',
+            '[': ']',
+            '{': '}',
+        }
+        closing_brackets = {v: k for k, v in brackets.items()}
+        
+        bracket = None
+        direction = 0
+        
+        # Check if cursor is at an opening bracket
+        if char in brackets:
+            bracket = char
+            direction = 1
+        # Check if cursor is before a closing bracket
+        elif pos > 0 and document.characterAt(pos - 1) in closing_brackets:
+            bracket = document.characterAt(pos - 1)
+            direction = -1
+            pos -= 1
+        
+        if bracket is None:
+            return
+        
+        # Find matching bracket
+        matching_bracket = brackets.get(bracket) or closing_brackets.get(bracket)
+        if matching_bracket is None:
+            return
+        
+        # Search for matching bracket
+        depth = 0
+        search_pos = pos + direction
+        found_pos = -1
+        
+        while 0 <= search_pos < document.characterCount():
+            char_at_pos = document.characterAt(search_pos)
+            
+            if char_at_pos == bracket:
+                depth += 1
+            elif char_at_pos == matching_bracket:
+                if depth == 0:
+                    found_pos = search_pos
+                    break
+                depth -= 1
+            
+            search_pos += direction
+        
+        # Highlight both brackets if match found
+        extra_selections: list[QTextEdit.ExtraSelection] = []
+        
+        if found_pos >= 0:
+            # Highlight opening bracket
+            cursor1 = QTextCursor(document)
+            cursor1.setPosition(pos)
+            cursor1.setPosition(pos + 1, QTextCursor.MoveMode.KeepAnchor)
+            selection1 = QTextEdit.ExtraSelection()
+            selection1.cursor = cursor1  # type: ignore[attr-value]
+            selection1.format = QTextCharFormat()  # type: ignore[attr-value]
+            highlight_color = self.palette().color(QPalette.ColorRole.Highlight)
+            selection1.format.setBackground(highlight_color.lighter(120))  # type: ignore[attr-value]
+            selection1.format.setForeground(self.palette().color(QPalette.ColorRole.HighlightedText))  # type: ignore[attr-value]
+            extra_selections.append(selection1)
+            
+            # Highlight closing bracket
+            cursor2 = QTextCursor(document)
+            cursor2.setPosition(found_pos)
+            cursor2.setPosition(found_pos + 1, QTextCursor.MoveMode.KeepAnchor)
+            selection2 = QTextEdit.ExtraSelection()
+            selection2.cursor = cursor2  # type: ignore[attr-value]
+            selection2.format = QTextCharFormat()  # type: ignore[attr-value]
+            selection2.format.setBackground(highlight_color.lighter(120))  # type: ignore[attr-value]
+            selection2.format.setForeground(self.palette().color(QPalette.ColorRole.HighlightedText))  # type: ignore[attr-value]
+            extra_selections.append(selection2)
+        
+        # Get existing selections (for current line highlight) - preserve them
+        existing_selections = self.extraSelections()
+        for sel in existing_selections:
+            # Keep the current line highlight selection
+            if hasattr(sel, "format") and sel.format.property(QTextFormat.Property.FullWidthSelection):  # type: ignore[attr-value]
+                extra_selections.insert(0, sel)  # Insert at beginning to preserve order
+        
         self.setExtraSelections(extra_selections)
 
     def insert_text_at_cursor(
@@ -349,11 +666,11 @@ class CodeEditor(QPlainTextEdit):
 
     def undo(self):
         """Undo the last action in the code editor."""
-        self.undo()
+        super().undo()
 
     def redo(self):
         """Redo the last undone action in the code editor."""
-        self.redo()
+        super().redo()
 
     def find_and_replace_dialog(self):
         """Open a dialog to replace text in the code editor."""
@@ -365,7 +682,7 @@ class CodeEditor(QPlainTextEdit):
         self.find_dialog = QDialog(self)
         self.find_dialog.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint)
         self.find_dialog.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.find_dialog.setWindowTitle("Find and Replace")
+        self.find_dialog.setWindowTitle(tr("Find and Replace"))
         layout = QVBoxLayout(self.find_dialog)
 
         self.find_dialog.setStyleSheet("""
@@ -437,27 +754,94 @@ class CodeEditor(QPlainTextEdit):
         self.find_dialog.setMinimumWidth(400)
         self.find_dialog.show()
 
-    def find_next(self):
-        flags = QTextDocument.FindFlag.FindWholeWords
-        flags &= ~QTextDocument.FindFlag.FindWholeWords
-        if self.case_sensitive.isChecked():
+    def find_next(self, find_text: str | None = None, case_sensitive: bool = False, whole_words: bool = False, regex: bool = False, backward: bool = False):
+        """Find next occurrence with optional parameters for inline find widget."""
+        flags = QTextDocument.FindFlag(0)
+        if case_sensitive or (hasattr(self, 'case_sensitive') and self.case_sensitive.isChecked()):
             flags |= QTextDocument.FindFlag.FindCaseSensitively
-        if self.whole_words.isChecked():
+        if whole_words or (hasattr(self, 'whole_words') and self.whole_words.isChecked()):
             flags |= QTextDocument.FindFlag.FindWholeWords
+        
+        if backward:
+            flags |= QTextDocument.FindFlag.FindBackward
 
-        find_text: str = self.find_edit.text()
-        if self.regex.isChecked():
-            find_text = QRegExp(find_text) if qtpy.QT5 else QRegularExpression(find_text)  # pyright: ignore[reportAssignmentType, reportAttributeAccessIssue]
+        if find_text is None:
+            if hasattr(self, 'find_edit'):
+                find_text = self.find_edit.text()
+            else:
+                return False
+
+        search_pattern = find_text
+        if regex or (hasattr(self, 'regex') and self.regex.isChecked()):
+            search_pattern = QRegExp(find_text) if qtpy.QT5 else QRegularExpression(find_text)  # pyright: ignore[reportPossiblyUnboundVariable, reportAssignmentType, reportAttributeAccessIssue]
 
         cursor: QTextCursor = self.textCursor()
         document: QTextDocument | None = self.document()
         if document is None:
-            return
-        new_cursor: QTextCursor = document.find(find_text, cursor, flags)  # pyright: ignore[reportArgumentType, reportCallIssue]
+            return False
+        
+        # If we have a selection, start search from cursor position, otherwise wrap around
+        if not backward:
+            new_cursor: QTextCursor = document.find(search_pattern, cursor, flags)  # pyright: ignore[reportArgumentType, reportCallIssue]
+            if new_cursor.isNull():
+                # Wrap around - start from beginning
+                cursor.setPosition(0)
+                new_cursor = document.find(search_pattern, cursor, flags)  # pyright: ignore[reportArgumentType, reportCallIssue]
+        else:
+            new_cursor = document.find(search_pattern, cursor, flags)  # pyright: ignore[reportArgumentType, reportCallIssue]
+            if new_cursor.isNull():
+                # Wrap around - start from end
+                cursor.movePosition(QTextCursor.MoveOperation.End)
+                new_cursor = document.find(search_pattern, cursor, flags)  # pyright: ignore[reportArgumentType, reportCallIssue]
+        
         if not new_cursor.isNull():
             self.setTextCursor(new_cursor)
-        else:
-            QMessageBox.information(self, "Find", "Text not found")
+            return True
+        return False
+    
+    def find_previous(self, find_text: str | None = None, case_sensitive: bool = False, whole_words: bool = False, regex: bool = False):
+        """Find previous occurrence."""
+        return self.find_next(find_text, case_sensitive, whole_words, regex, backward=True)
+    
+    def replace_current(self, find_text: str, replace_text: str):
+        """Replace currently selected text."""
+        cursor = self.textCursor()
+        if cursor.hasSelection():
+            cursor.insertText(replace_text)
+            return True
+        return False
+    
+    def replace_all_occurrences(self, find_text: str, replace_text: str, case_sensitive: bool = False, whole_words: bool = False, regex: bool = False):
+        """Replace all occurrences in document."""
+        flags = QTextDocument.FindFlag(0)
+        if case_sensitive:
+            flags |= QTextDocument.FindFlag.FindCaseSensitively
+        if whole_words:
+            flags |= QTextDocument.FindFlag.FindWholeWords
+
+        search_pattern = find_text
+        if regex:
+            search_pattern = QRegExp(find_text) if qtpy.QT5 else QRegularExpression(find_text)  # pyright: ignore[reportPossiblyUnboundVariable, reportAssignmentType, reportAttributeAccessIssue]
+
+        document: QTextDocument | None = self.document()
+        if document is None:
+            return 0
+
+        count = 0
+        cursor = QTextCursor(document)
+        cursor.beginEditBlock()
+        cursor.setPosition(0)
+        
+        while True:
+            new_cursor = document.find(search_pattern, cursor, flags)  # pyright: ignore[reportArgumentType, reportCallIssue]
+            if new_cursor.isNull() or new_cursor.position() <= cursor.position():
+                break
+            new_cursor.insertText(replace_text)
+            cursor.setPosition(new_cursor.position())
+            count += 1
+        
+        cursor.endEditBlock()
+        return count
 
     def replace_next(self):
         cursor: QTextCursor = self.textCursor()
@@ -477,35 +861,75 @@ class CodeEditor(QPlainTextEdit):
             self.textCursor().insertText(self.replace_edit.text())
             count += 1
         cursor.endEditBlock()
-        QMessageBox.information(self, "Replace All", f"Replaced {count} occurrences")
+        QMessageBox.information(self, tr("Replace All"), trf("Replaced {count} occurrences", count=count))
 
     def on_outline_item_clicked(
         self,
         item: QTreeWidgetItem,
         column: int,
     ):
-        obj: FunctionDefinition | None = item.data(0, Qt.ItemDataRole.UserRole)
+        """Handle single click on outline item - preview location."""
+        obj = item.data(0, Qt.ItemDataRole.UserRole)
         if obj is None:
-            RobustLogger().error(f"Outline item '{item.text(0)}' has no function definition")
             return
-        cursor: QTextCursor = self.textCursor()
-        cursor.setPosition(obj.line_num)
-        self.setTextCursor(cursor)
-        self.ensureCursorVisible()
+        
+        # Get line number from object
+        line_num = getattr(obj, 'line_num', None)
+        if line_num is None:
+            # Try to find line number from identifier
+            identifier = getattr(obj, 'identifier', '')
+            if identifier:
+                # Search for the identifier in the document
+                text = self.toPlainText()
+                lines = text.split('\n')
+                for i, line in enumerate(lines, 1):
+                    if identifier in line and (f"void {identifier}" in line or f"struct {identifier}" in line or f"{identifier}(" in line):
+                        line_num = i
+                        break
+        
+        if line_num:
+            document: QTextDocument | None = self.document()
+            if document is not None:
+                block = document.findBlockByLineNumber(line_num - 1)
+                if block.isValid():
+                    cursor: QTextCursor = self.textCursor()
+                    cursor.setPosition(block.position())
+                    self.setTextCursor(cursor)
+                    self.ensureCursorVisible()
 
     def on_outline_item_double_clicked(
         self,
         item: QTreeWidgetItem,
         column: int,
     ):
-        obj: FunctionDefinition | None = item.data(0, Qt.ItemDataRole.UserRole)
+        """Handle double click on outline item - go to definition."""
+        obj = item.data(0, Qt.ItemDataRole.UserRole)
         if obj is None:
             return
-        assert isinstance(obj, FunctionDefinition)
-        cursor: QTextCursor = self.textCursor()
-        cursor.setPosition(obj.line_num)
-        self.setTextCursor(cursor)
-        self.centerCursor()
+        
+        # Get line number from object
+        line_num = getattr(obj, 'line_num', None)
+        if line_num is None:
+            # Try to find line number from identifier
+            identifier = getattr(obj, 'identifier', '')
+            if identifier:
+                # Search for the identifier in the document
+                text = self.toPlainText()
+                lines = text.split('\n')
+                for i, line in enumerate(lines, 1):
+                    if identifier in line and (f"void {identifier}" in line or f"struct {identifier}" in line or f"{identifier}(" in line):
+                        line_num = i
+                        break
+        
+        if line_num:
+            document: QTextDocument | None = self.document()
+            if document is not None:
+                block = document.findBlockByLineNumber(line_num - 1)
+                if block.isValid():
+                    cursor: QTextCursor = self.textCursor()
+                    cursor.setPosition(block.position())
+                    self.setTextCursor(cursor)
+                    self.centerCursor()
 
     def go_to_line(self):
         line, ok = QInputDialog.getInt(self, "Go to Line", "Enter line number:", 1, step=1)
@@ -521,6 +945,89 @@ class CodeEditor(QPlainTextEdit):
         self.setTextCursor(cursor)
         self.centerCursor()
 
+    def select_next_occurrence(self):
+        """Select next occurrence of current word (VS Code Ctrl+D behavior)."""
+        cursor: QTextCursor = self.textCursor()
+        document: QTextDocument | None = self.document()
+        if document is None:
+            return
+        
+        # Get the word to search for
+        search_text: str
+        if cursor.hasSelection():
+            search_text = cursor.selectedText()
+        else:
+            # Select word under cursor
+            temp_cursor = QTextCursor(cursor)
+            temp_cursor.select(QTextCursor.SelectionType.WordUnderCursor)
+            search_text = temp_cursor.selectedText()
+            if not search_text:
+                return
+        
+        # Remove any Unicode paragraph separators
+        search_text = search_text.replace("\u2029", "\n").strip()
+        if not search_text:
+            return
+        
+        # Find all selections we already have
+        existing_selections = []
+        for sel in self.extraSelections():
+            if hasattr(sel, "cursor") and sel.cursor.hasSelection():  # type: ignore[attr-value]
+                existing_selections.append(sel)
+        
+        # Find next occurrence starting from cursor position
+        search_cursor = QTextCursor(cursor)
+        search_cursor.setPosition(cursor.selectionEnd() if cursor.hasSelection() else cursor.position())
+        
+        # Search forward
+        found = document.find(search_text, search_cursor, QTextDocument.FindFlag.FindCaseSensitively | QTextDocument.FindFlag.FindWholeWords)
+        
+        if not found.isNull():
+            # Add this to our selections
+            new_selection = QTextEdit.ExtraSelection()
+            new_selection.cursor = found  # type: ignore[attr-value]
+            new_selection.format = QTextCharFormat()  # type: ignore[attr-value]
+            highlight_color = self.palette().color(QPalette.ColorRole.Highlight)
+            new_selection.format.setBackground(highlight_color.lighter(130))  # type: ignore[attr-value]
+            
+            # Also select the original if not already selected
+            main_cursor = QTextCursor(cursor)
+            if not cursor.hasSelection():
+                main_cursor.select(QTextCursor.SelectionType.WordUnderCursor)
+            else:
+                main_cursor.setPosition(cursor.selectionStart())
+                main_cursor.setPosition(cursor.selectionEnd(), QTextCursor.MoveMode.KeepAnchor)
+            
+            # Create selections list with all occurrences
+            all_selections = []
+            
+            # Add original selection if not in existing
+            orig_selection = QTextEdit.ExtraSelection()
+            orig_selection.cursor = main_cursor  # type: ignore[attr-value]
+            orig_selection.format = QTextCharFormat()  # type: ignore[attr-value]
+            orig_selection.format.setBackground(highlight_color.lighter(130))  # type: ignore[attr-value]
+            all_selections.append(orig_selection)
+            all_selections.append(new_selection)
+            
+            # Set the cursor to the new selection
+            self.setTextCursor(found)
+            
+            # Update extra selections to show all highlighted occurrences
+            extra_selections = []
+            extra_selections.extend(all_selections)
+            
+            # Preserve current line highlight
+            line_selection = QTextEdit.ExtraSelection()
+            line_selection.cursor = QTextCursor(cursor)  # type: ignore[attr-value]
+            line_selection.cursor.clearSelection()  # type: ignore[attr-value]
+            line_selection.format = QTextCharFormat()  # type: ignore[attr-value]
+            line_color = self.palette().color(QPalette.ColorRole.AlternateBase)
+            line_selection.format.setBackground(line_color)  # type: ignore[attr-value]
+            line_selection.format.setProperty(QTextFormat.Property.FullWidthSelection, True)  # type: ignore[attr-value]
+            extra_selections.append(line_selection)
+            
+            self.setExtraSelections(extra_selections)
+    
     def duplicate_line(self):
         """Duplicate the current line or selected lines."""
         cursor: QTextCursor = self.textCursor()
@@ -596,7 +1103,7 @@ class CodeEditor(QPlainTextEdit):
         cursor.endEditBlock()
         self.setTextCursor(cursor)
 
-    def keyPressEvent(
+    def keyPressEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QKeyEvent,
     ):
@@ -653,13 +1160,290 @@ class CodeEditor(QPlainTextEdit):
         cr.setWidth(self.completer.popup().sizeHintForColumn(0) + self.completer.popup().verticalScrollBar().sizeHint().width())  # pyright: ignore[reportOptionalMemberAccess]
         self.completer.complete(cr)
 
-    def focusInEvent(
+    def focusInEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QFocusEvent,
     ):
         if self.completer:
             self.completer.setWidget(self)
         super().focusInEvent(event)
+    
+    def select_all_occurrences(self):
+        """Select all occurrences of current word (VS Code Ctrl+Shift+L behavior)."""
+        cursor: QTextCursor = self.textCursor()
+        document: QTextDocument | None = self.document()
+        if document is None:
+            return
+        
+        # Get the word to search for
+        search_text: str
+        if cursor.hasSelection():
+            search_text = cursor.selectedText()
+        else:
+            temp_cursor = QTextCursor(cursor)
+            temp_cursor.select(QTextCursor.SelectionType.WordUnderCursor)
+            search_text = temp_cursor.selectedText()
+            if not search_text:
+                return
+        
+        search_text = search_text.replace("\u2029", "\n").strip()
+        if not search_text:
+            return
+        
+        # Find all occurrences
+        all_selections = []
+        search_cursor = QTextCursor(document)
+        highlight_color = self.palette().color(QPalette.ColorRole.Highlight)
+        
+        while True:
+            found = document.find(search_text, search_cursor, QTextDocument.FindFlag.FindCaseSensitively | QTextDocument.FindFlag.FindWholeWords)
+            if found.isNull():
+                break
+            
+            selection = QTextEdit.ExtraSelection()
+            selection.cursor = found  # type: ignore[attr-value]
+            selection.format = QTextCharFormat()  # type: ignore[attr-value]
+            selection.format.setBackground(highlight_color.lighter(130))  # type: ignore[attr-value]
+            all_selections.append(selection)
+            
+            search_cursor = QTextCursor(found)
+            search_cursor.setPosition(found.selectionEnd())
+        
+        if all_selections:
+            # Set cursor to first selection
+            self.setTextCursor(all_selections[0].cursor)  # type: ignore[attr-value]
+            
+            # Add current line highlight
+            line_selection = QTextEdit.ExtraSelection()
+            line_selection.cursor = QTextCursor(cursor)  # type: ignore[attr-value]
+            line_selection.cursor.clearSelection()  # type: ignore[attr-value]
+            line_selection.format = QTextCharFormat()  # type: ignore[attr-value]
+            line_color = self.palette().color(QPalette.ColorRole.AlternateBase)
+            line_selection.format.setBackground(line_color)  # type: ignore[attr-value]
+            line_selection.format.setProperty(QTextFormat.Property.FullWidthSelection, True)  # type: ignore[attr-value]
+            all_selections.append(line_selection)
+            
+            self.setExtraSelections(all_selections)
+    
+    def select_line(self):
+        """Select entire current line (VS Code Ctrl+L behavior)."""
+        cursor: QTextCursor = self.textCursor()
+        cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
+        self.setTextCursor(cursor)
+    
+    def _find_foldable_region_at_cursor(self) -> tuple[int, int] | None:
+        """Find the foldable region that contains or starts at the current cursor position."""
+        cursor = self.textCursor()
+        current_block_number = cursor.blockNumber()
+        
+        # Check if cursor is on a foldable region start
+        if current_block_number in self._foldable_regions:
+            return (current_block_number, self._foldable_regions[current_block_number])
+        
+        # Find the closest foldable region that contains this line
+        for start_block, end_block in self._foldable_regions.items():
+            if start_block <= current_block_number <= end_block:
+                return (start_block, end_block)
+        
+        return None
+    
+    def fold_region(self):
+        """Fold current code region (VS Code Ctrl+Shift+[ behavior)."""
+        region = self._find_foldable_region_at_cursor()
+        if region is None:
+            return
+        
+        start_block, end_block = region
+        if start_block in self._folded_block_numbers:
+            return  # Already folded
+        
+        document: QTextDocument | None = self.document()
+        if document is None:
+            return
+        
+        # Hide all blocks from start_block+1 to end_block
+        block = document.findBlockByNumber(start_block)
+        if not block.isValid():
+            return
+        
+        block = block.next()  # Skip the starting line
+        block_number = start_block + 1
+        
+        while block.isValid() and block_number <= end_block:
+            block.setVisible(False)
+            block = block.next()
+            block_number += 1
+        
+        # Mark as folded
+        self._folded_block_numbers.add(start_block)
+        self._line_number_area.update()
+    
+    def unfold_region(self):
+        """Unfold current code region (VS Code Ctrl+Shift+] behavior)."""
+        region = self._find_foldable_region_at_cursor()
+        if region is None:
+            return
+        
+        start_block, end_block = region
+        if start_block not in self._folded_block_numbers:
+            return  # Not folded
+        
+        document: QTextDocument | None = self.document()
+        if document is None:
+            return
+        
+        # Show all blocks from start_block+1 to end_block
+        block = document.findBlockByNumber(start_block)
+        if not block.isValid():
+            return
+        
+        block = block.next()  # Skip the starting line
+        block_number = start_block + 1
+        
+        while block.isValid() and block_number <= end_block:
+            block.setVisible(True)
+            block = block.next()
+            block_number += 1
+        
+        # Mark as unfolded
+        self._folded_block_numbers.discard(start_block)
+        self._line_number_area.update()
+    
+    def fold_all(self):
+        """Fold all code regions (VS Code Ctrl+K Ctrl+0 behavior)."""
+        for start_block in self._foldable_regions:
+            if start_block not in self._folded_block_numbers:
+                # Temporarily set cursor to this block to reuse fold logic
+                document: QTextDocument | None = self.document()
+                if document is None:
+                    continue
+                block = document.findBlockByNumber(start_block)
+                if block.isValid():
+                    cursor = self.textCursor()
+                    cursor.setPosition(block.position())
+                    self.setTextCursor(cursor)
+                    self.fold_region()
+    
+    def unfold_all(self):
+        """Unfold all code regions (VS Code Ctrl+K Ctrl+J behavior)."""
+        document: QTextDocument | None = self.document()
+        if document is None:
+            return
+        
+        # Show all blocks
+        block = document.firstBlock()
+        while block.isValid():
+            block.setVisible(True)
+            block = block.next()
+        
+        # Clear folded blocks
+        self._folded_block_numbers.clear()
+        self._line_number_area.update()
+    
+    def mousePressEvent(self, event: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Handle mouse press events for column selection and folding."""
+        # Check for clicks in the line number area for folding
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Check if click is in line number area (left side of editor)
+            line_number_area_width = self.line_number_area_width()
+            if event.pos().x() < line_number_area_width:
+                # Check if click is on a folding indicator
+                cursor = self.cursorForPosition(event.pos())
+                block_number = cursor.blockNumber()
+                
+                if block_number in self._foldable_regions:
+                    # Toggle fold/unfold
+                    if block_number in self._folded_block_numbers:
+                        self.unfold_region()
+                    else:
+                        self.fold_region()
+                    event.accept()
+                    return
+        
+        # Check if Alt+Shift is pressed for column selection
+        if event.modifiers() & Qt.KeyboardModifier.AltModifier and event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+            self._column_selection_mode = True
+            pos = event.pos()
+            self._column_selection_anchor = pos
+            # Get character position at click
+            cursor = self.cursorForPosition(pos)
+            cursor.setPosition(cursor.position(), QTextCursor.MoveMode.MoveAnchor)
+            self.setTextCursor(cursor)
+            event.accept()
+            return
+        
+        self._column_selection_mode = False
+        self._column_selection_anchor = None
+        super().mousePressEvent(event)
+    
+    def mouseMoveEvent(self, event: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Handle mouse move events for column selection."""
+        if self._column_selection_mode and self._column_selection_anchor is not None:
+            # Perform column/block selection
+            anchor_pos = self._column_selection_anchor
+            current_pos = event.pos()
+            
+            # Get cursors at both positions
+            anchor_cursor = self.cursorForPosition(anchor_pos)
+            current_cursor = self.cursorForPosition(current_pos)
+            
+            # Calculate column bounds
+            anchor_line = anchor_cursor.blockNumber()
+            anchor_col = anchor_cursor.columnNumber()
+            current_line = current_cursor.blockNumber()
+            current_col = current_cursor.columnNumber()
+            
+            # Determine selection bounds
+            start_line = min(anchor_line, current_line)
+            end_line = max(anchor_line, current_line)
+            start_col = min(anchor_col, current_col)
+            end_col = max(anchor_col, current_col)
+            
+            # Create column selection by selecting same column range across all lines
+            document: QTextDocument | None = self.document()
+            if document is None:
+                super().mouseMoveEvent(event)
+                return
+            
+            # Use QTextEdit's block selection mode if available, otherwise create manual selection
+            cursor = QTextCursor(document)
+            
+            # Start from first line
+            start_block = document.findBlockByNumber(start_line)
+            if not start_block.isValid():
+                super().mouseMoveEvent(event)
+                return
+            
+            cursor.setPosition(start_block.position())
+            cursor.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.MoveAnchor, start_col)
+            
+            # Move to end position
+            end_block = document.findBlockByNumber(end_line)
+            if not end_block.isValid():
+                super().mouseMoveEvent(event)
+                return
+            
+            end_pos = end_block.position() + min(end_col, len(end_block.text()))
+            
+            # Create selection spanning the column
+            cursor.setPosition(end_pos, QTextCursor.MoveMode.KeepAnchor)
+            
+            self.setTextCursor(cursor)
+            event.accept()
+            return
+        
+        super().mouseMoveEvent(event)
+    
+    def mouseReleaseEvent(self, event: QMouseEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Handle mouse release events."""
+        if self._column_selection_mode:
+            self._column_selection_mode = False
+            # Don't reset anchor yet - user might want to extend selection
+            event.accept()
+            return
+        
+        self._column_selection_anchor = None
+        super().mouseReleaseEvent(event)
 
 
 class LineNumberArea(QWidget):
@@ -670,7 +1454,7 @@ class LineNumberArea(QWidget):
     def sizeHint(self) -> QSize:
         return QSize(self._editor.line_number_area_width(), 0)
 
-    def paintEvent(self, event: QPaintEvent):
+    def paintEvent(self, event: QPaintEvent):  # pyright: ignore[reportIncompatibleMethodOverride]
         self._editor.line_number_area_paint_event(event)
 
 
@@ -689,7 +1473,7 @@ class NSSCodeEditor(CodeEditor):
     def save_settings(self):
         QSettings().setValue("NSSCodeEditor/geometry", self.saveGeometry())
 
-    def dragEnterEvent(
+    def dragEnterEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QDragEnterEvent,
     ):
@@ -699,7 +1483,7 @@ class NSSCodeEditor(CodeEditor):
         if mime_data.hasText():
             event.acceptProposedAction()
 
-    def dropEvent(
+    def dropEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QDropEvent,
     ):
@@ -716,16 +1500,36 @@ class NSSCodeEditor(CodeEditor):
         cursor: QTextCursor = self.cursorForPosition(pos)
         cursor.insertText(text)
 
-    def resizeEvent(
+    def resizeEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QResizeEvent,
     ):
         super().resizeEvent(event)
         self.save_settings()
 
-    def moveEvent(
+    def moveEvent(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         event: QMoveEvent,
     ):
         super().moveEvent(event)
         self.save_settings()
+    
+    def set_breakpoint_lines(self, lines: set[int]):
+        """Set the lines with breakpoints.
+        
+        Args:
+        ----
+            lines: set[int]: Set of line numbers (1-indexed) with breakpoints
+        """
+        self.breakpoint_lines = lines.copy()
+        self.update()
+    
+    def set_current_debug_line(self, line: int | None):
+        """Set the current debug line.
+        
+        Args:
+        ----
+            line: int | None: Line number (1-indexed) currently being debugged, or None
+        """
+        self.current_debug_line = line
+        self.update()

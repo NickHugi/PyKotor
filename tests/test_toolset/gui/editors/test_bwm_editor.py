@@ -39,8 +39,8 @@ if (
         add_sys_path(toolset_path.parent)
 
 
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+K2_PATH = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
 
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.bwm.bwm_auto import read_bwm
@@ -155,6 +155,46 @@ if __name__ == "__main__":
 import pytest
 from toolset.gui.editors.bwm import BWMEditor
 from toolset.data.installation import HTInstallation
+
+def test_bwm_editor_headless_ui_load_build(qtbot, installation: HTInstallation, test_files_dir: pathlib.Path):
+    """Test BWM Editor in headless UI - loads real file and builds data."""
+    editor = BWMEditor(None, installation)
+    qtbot.addWidget(editor)
+    
+    # Try to find a BWM/WOK file
+    bwm_file = test_files_dir / "zio006j.wok"
+    if not bwm_file.exists():
+        # Try to get one from installation
+        bwm_resources = list(installation.resources(ResourceType.WOK))[:1]
+        if not bwm_resources:
+            bwm_resources = list(installation.resources(ResourceType.DWK))[:1]
+        if not bwm_resources:
+            pytest.skip("No BWM files available for testing")
+        bwm_resource = bwm_resources[0]
+        bwm_data = installation.resource(bwm_resource.identifier)
+        if not bwm_data:
+            pytest.skip(f"Could not load BWM data for {bwm_resource.identifier}")
+        editor.load(
+            bwm_resource.filepath if hasattr(bwm_resource, 'filepath') else pathlib.Path("module.wok"),
+            bwm_resource.resname,
+            bwm_resource.restype,
+            bwm_data
+        )
+    else:
+        original_data = bwm_file.read_bytes()
+        editor.load(bwm_file, "zio006j", ResourceType.WOK, original_data)
+    
+    # Verify editor loaded the data
+    assert editor is not None
+    
+    # Build and verify it works
+    data, _ = editor.build()
+    assert len(data) > 0
+    
+    # Verify we can read it back
+    from pykotor.resource.formats.bwm.bwm_auto import read_bwm
+    loaded_bwm = read_bwm(data)
+    assert loaded_bwm is not None
 
 def test_bwm_editor(qtbot, installation: HTInstallation):
     """Test BWM Editor."""

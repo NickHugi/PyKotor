@@ -43,12 +43,18 @@ class SSFEditor(Editor):
         super().__init__(parent, "Soundset Editor", "soundset", supported, supported, installation)
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         from toolset.uic.qtpy.editors.ssf import Ui_MainWindow
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()
         self._setup_signals()
 
         self.new()

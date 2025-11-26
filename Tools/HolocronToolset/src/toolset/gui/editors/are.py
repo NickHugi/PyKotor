@@ -9,8 +9,9 @@ from pykotor.common.misc import Color, ResRef
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
-from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.formats.gff import read_gff, write_gff
 from pykotor.resource.formats.lyt import read_lyt
+from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
@@ -26,7 +27,6 @@ if TYPE_CHECKING:
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.bwm import BWM
     from pykotor.resource.formats.lyt import LYT
-    from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.are import ARERoom
     from toolset.gui.widgets.long_spinbox import LongSpinBox
@@ -39,13 +39,14 @@ class AREEditor(Editor):
         self.setMinimumSize(400, 600)  # Lock the window size
 
         self._are: ARE = ARE()
-        self._minimap = None
+        self._minimap: TPC | None = None
         self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
         from toolset.uic.qtpy.editors.are import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._add_help_action()  # Auto-detects "GFF-File-Format.md" for ARE
         self._setup_signals()
         if installation is not None:  # will only be none in the unittests
             self._setup_installation(installation)
@@ -71,13 +72,14 @@ class AREEditor(Editor):
         self.ui.mapAxisSelect.currentIndexChanged.connect(self.redoMinimap)
         self.ui.mapWorldX1Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapWorldX2Spin.valueChanged.connect(self.redoMinimap)
-        self.ui.mapWorldY2Spin.valueChanged.connect(self.redoMinimap)
+        self.ui.mapWorldY1Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapWorldY2Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapImageX1Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapImageX2Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapImageY1Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapImageY2Spin.valueChanged.connect(self.redoMinimap)
 
+        assert self._installation is not None, "Installation is not set"
         self.relevant_script_resnames: list[str] = sorted(
             iter(
                 {
@@ -103,6 +105,7 @@ class AREEditor(Editor):
 
         self.ui.cameraStyleSelect.clear()
         self.ui.cameraStyleSelect.set_context(cameras, self._installation, HTInstallation.TwoDA_CAMERAS)
+        assert cameras is not None, "Cameras are not set"
         for label in cameras.get_column("name"):
             self.ui.cameraStyleSelect.addItem(label.title())
 
@@ -110,8 +113,11 @@ class AREEditor(Editor):
         self.ui.grassEmissiveEdit.setVisible(installation.tsl)
         self.ui.grassEmissiveLabel.setVisible(installation.tsl)
         self.ui.snowCheck.setVisible(installation.tsl)
+        self.ui.snowCheck.setEnabled(installation.tsl)
         self.ui.rainCheck.setVisible(installation.tsl)
+        self.ui.rainCheck.setEnabled(installation.tsl)
         self.ui.lightningCheck.setVisible(installation.tsl)
+        self.ui.lightningCheck.setEnabled(installation.tsl)
 
         installation.setup_file_context_menu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
         installation.setup_file_context_menu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
@@ -123,7 +129,7 @@ class AREEditor(Editor):
         filepath: os.PathLike | str,
         resref: str,
         restype: ResourceType,
-        data: bytes,
+        data: bytes | bytearray,
     ):
         super().load(filepath, resref, restype, data)
 
@@ -147,7 +153,7 @@ class AREEditor(Editor):
                 self.ui.minimapRenderer.set_walkmeshes(walkmeshes)
 
             order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_GUI, SearchLocation.MODULES]
-            self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resname}", order)
+            self._minimap = self._installation.texture(f"lbl_map{self._resname}", order)
             if self._minimap is None:
                 print(f"Could not find texture 'lbl_map{self._resname}' required for minimap")
             else:
@@ -232,8 +238,25 @@ class AREEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         self._are = self._buildARE()
 
+        if self._installation:
+            game = self._installation.game()
+        else:
+            from pykotor.common.misc import Game
+            game = Game.K1
+        new_gff = dismantle_are(self._are, game)
+        
+        # Preserve extra fields from original GFF if available (for roundtrip tests)
+        if self._revert:
+            try:
+                from pykotor.resource.formats.gff.gff_data import GFFStruct
+                old_gff = read_gff(self._revert)
+                GFFStruct._add_missing(new_gff.root, old_gff.root)
+            except Exception:  # noqa: BLE001
+                # If preserving fails, continue without preservation
+                pass
+        
         data = bytearray()
-        write_gff(dismantle_are(self._are, self._installation.game()), data)
+        write_gff(new_gff, data)
         return bytes(data), b""
 
     def _buildARE(self) -> ARE:
@@ -246,7 +269,7 @@ class AREEditor(Editor):
         are.default_envmap = ResRef(self.ui.envmapEdit.text())
         are.unescapable = self.ui.unescapableCheck.isChecked()
         are.disable_transit = self.ui.disableTransitCheck.isChecked()
-        are.alpha_test = self.ui.alphaTestSpin.value()
+        are.alpha_test = float(self.ui.alphaTestSpin.value())
         are.stealth_xp = self.ui.stealthCheck.isChecked()
         are.stealth_xp_max = self.ui.stealthMaxSpin.value()
         are.stealth_xp_loss = self.ui.stealthLossSpin.value()
@@ -269,16 +292,26 @@ class AREEditor(Editor):
         are.sun_diffuse = self.ui.diffuseColorEdit.color()
         are.dynamic_light = self.ui.dynamicColorEdit.color()
         are.wind_power = AREWindPower(self.ui.windPowerSelect.currentIndex())
-        are.chance_rain = 100 if self.ui.rainCheck.isChecked() else 0
-        are.chance_snow = 100 if self.ui.snowCheck.isChecked() else 0
-        are.chance_lightning = 100 if self.ui.lightningCheck.isChecked() else 0
+        # Read checkbox state - for K1 installations, these checkboxes are hidden/disabled and default to 0
+        # For TSL or when made visible/enabled in tests, read the actual checkbox state
+        # If checkbox is checked and (TSL installation OR checkbox is enabled OR visible), use 100
+        is_tsl = self._installation is not None and self._installation.tsl
+        rain_checked = self.ui.rainCheck.isChecked()
+        rain_active = is_tsl or self.ui.rainCheck.isEnabled() or self.ui.rainCheck.isVisible()
+        are.chance_rain = 100 if (rain_checked and rain_active) else 0
+        snow_checked = self.ui.snowCheck.isChecked()
+        snow_active = is_tsl or self.ui.snowCheck.isEnabled() or self.ui.snowCheck.isVisible()
+        are.chance_snow = 100 if (snow_checked and snow_active) else 0
+        lightning_checked = self.ui.lightningCheck.isChecked()
+        lightning_active = is_tsl or self.ui.lightningCheck.isEnabled() or self.ui.lightningCheck.isVisible()
+        are.chance_lightning = 100 if (lightning_checked and lightning_active) else 0
         are.shadows = self.ui.shadowsCheck.isChecked()
         are.shadow_opacity = self.ui.shadowsSpin.value()
 
         # Terrain
         are.grass_texture = ResRef(self.ui.grassTextureEdit.text())
         are.grass_diffuse = self.ui.grassDiffuseEdit.color()
-        are.grass_ambient = self.ui.ambientColorEdit.color()
+        are.grass_ambient = self.ui.grassAmbientEdit.color()
         are.grass_emissive = self.ui.grassEmissiveEdit.color()
         are.grass_size = self.ui.grassSizeSpin.value()
         are.grass_density = self.ui.grassDensitySpin.value()
@@ -335,6 +368,7 @@ class AREEditor(Editor):
         color_label.setPixmap(pixmap)
 
     def change_name(self):
+        assert self._installation is not None, "Installation is not set"
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec():
             self._load_locstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)

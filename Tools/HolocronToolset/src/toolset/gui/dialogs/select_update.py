@@ -87,11 +87,17 @@ class UpdateDialog(QDialog):
         self.remote_info: dict[str, Any] = {}
         self.releases: list[GithubRelease] = []
         self.forks_cache: dict[str, list[GithubRelease]] = {}
-        self.setWindowTitle("Update Application")
+        from toolset.gui.common.localization import translate as tr
+        self.setWindowTitle(tr("Update Application"))
         self.setGeometry(100, 100, 800, 600)
         self.setFixedSize(800, 600)
         self.init_ui()
         self.init_config()
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def include_prerelease(self) -> bool:
         return self.pre_release_checkbox.isChecked()
@@ -109,7 +115,8 @@ class UpdateDialog(QDialog):
         self.pre_release_checkbox.stateChanged.connect(self.on_pre_release_changed)
 
         # Fetch Releases Button
-        fetch_releases_button = QPushButton("Fetch Releases")
+        from toolset.gui.common.localization import translate as tr
+        fetch_releases_button = QPushButton(tr("Fetch Releases"))
         fetch_releases_button.clicked.connect(self.init_config)
         fetch_releases_button.setFixedSize(780, 50)
         main_layout.addWidget(fetch_releases_button)
@@ -281,7 +288,8 @@ class UpdateDialog(QDialog):
     def on_install_selected(self):
         release = self.release_combo_box.currentData()
         if not release:
-            QMessageBox(QMessageBox.Icon.Information, "Select a release", "No release selected, select one first.").exec()
+            from toolset.gui.common.localization import translate as tr
+            QMessageBox(QMessageBox.Icon.Information, tr("Select a release"), tr("No release selected, select one first.")).exec()
             return
         self.start_update(release)
 
@@ -304,8 +312,8 @@ class UpdateDialog(QDialog):
             return
             result = QMessageBox(  # noqa: F841
                 QMessageBox.Icon.Question,
-                "No asset found for this release.",
-                f"There are no binaries available for download for release '{release.tag_name}'.",  # Would you like to compile this release from source instead?",
+                tr("No asset found for this release."),
+                trf("There are no binaries available for download for release '{tag}'.", tag=release.tag_name),  # Would you like to compile this release from source instead?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,

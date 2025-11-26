@@ -44,15 +44,17 @@ class LocalizedStringLineEdit(QWidget):
 
         self.ui.editButton.clicked.connect(self.edit_locstring)
         self.ui.locstringText.mouseDoubleClickEvent = lambda a0: self.edit_locstring()  # noqa: ARG005  # pyright: ignore[reportAttributeAccessIssue]
-        self.setToolTip("Double-click to edit this Localized String.<br><br><i>Right-click for more options</i>")
+        from toolset.gui.common.localization import translate as tr
+        self.setToolTip(tr("Double-click to edit this Localized String.<br><br><i>Right-click for more options</i>"))
 
     def set_installation(self, installation: HTInstallation):
         self._installation: HTInstallation = installation
 
     def on_context_menu(self, pos: QPoint):
         menu: QMenu = self.ui.locstringText.createStandardContextMenu()
-        menu.addAction("Edit with TLK").triggered.connect(self.edit_locstring)
-        menu.addAction("Copy").triggered.connect(self.copy_text)
+        from toolset.gui.common.localization import translate as tr
+        menu.addAction(tr("Edit with TLK")).triggered.connect(self.edit_locstring)
+        menu.addAction(tr("Copy")).triggered.connect(self.copy_text)
         menu.exec(self.ui.locstringText.mapToGlobal(pos))
 
     def copy_text(self):
@@ -106,9 +108,9 @@ if __name__ == "__main__":
     main_window = QMainWindow()
 
     # Create a mock installation for testing
-    k_path = os.environ.get("K1_PATH")
+    k_path = os.environ.get("K1_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
     if k_path is None:
-        k_path = os.environ.get("K2_PATH")
+        k_path = os.environ.get("K2_PATH", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II")
         if k_path is None:
             raise RuntimeError("KOTOR installation not found")
 

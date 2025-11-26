@@ -94,6 +94,11 @@ class InventoryEditor(QDialog):
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         self.ui.contentsTable.is_store = is_store
 
@@ -639,6 +644,11 @@ class ItemBuilderDialog(QDialog):
 
         self._progress_bar: QProgressBar = QProgressBar(self)
         self._progress_bar.setMaximum(0)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
         self._progress_bar.setValue(0)
         self._progress_bar.setTextVisible(False)
 
@@ -647,7 +657,8 @@ class ItemBuilderDialog(QDialog):
         self.setLayout(main_layout)
         main_layout.addWidget(self._progress_bar)
 
-        self.setWindowTitle("Building Item Lists...")
+        from toolset.gui.common.localization import translate as tr
+        self.setWindowTitle(tr("Building Item Lists..."))
         self.core_model: ItemModel = ItemModel(parent)
         self.modules_model: ItemModel = ItemModel(parent)
         self.override_model: ItemModel = ItemModel(parent)
@@ -826,6 +837,11 @@ class SetItemResRefDialog(QDialog):
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def resref(self) -> str:
         return self.ui.resrefEdit.text()

@@ -367,7 +367,8 @@ class FilterComboBox(QComboBox):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("FilterComboBox Test")
+        from toolset.gui.common.localization import translate as tr
+        self.setWindowTitle(tr("FilterComboBox Test"))
         self.setGeometry(100, 100, 300, 200)
 
         # Create a central widget

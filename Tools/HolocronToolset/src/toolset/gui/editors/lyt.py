@@ -11,7 +11,7 @@ from qtpy.QtGui import QColor, QPainter, QPen, QTransform
 from qtpy.QtWidgets import QFileDialog, QGraphicsEllipseItem, QGraphicsItem, QGraphicsLineItem, QGraphicsRectItem, QGraphicsScene, QListView, QMessageBox
 
 from pykotor.common.misc import Color
-from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack, LYTTrackType, bytes_lyt, read_lyt
+from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack, bytes_lyt, read_lyt
 from pykotor.resource.type import ResourceType
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
@@ -19,6 +19,8 @@ from toolset.gui.widgets.settings.editor_settings.lyt import LYTEditorSettings
 from utility.common.geometry import SurfaceMaterial, Vector3, Vector4
 
 if TYPE_CHECKING:
+    import os
+
     from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
@@ -64,6 +66,8 @@ class LYTEditor(Editor):
 
         self.material_colors: dict[SurfaceMaterial, QColor] = self._setup_material_colors()
 
+        self._setup_menus()
+        self._add_help_action()
         self._setup_connections()
         self._setup_graphics_view()
         self._setup_sidebar()
@@ -138,9 +142,9 @@ class LYTEditor(Editor):
         path: list[LYTRoom] | None = self.find_path(start_room, end_room)
 
         if path:
-            track.start_room = path[0]
-            track.end_room = path[-1]
-            track.track_type = LYTTrackType.AI_PREFERRED
+            # Note: LYTTrack doesn't have start_room, end_room, or track_type attributes
+            # These would need to be added to the LYTTrack class if needed
+            # For now, just add the track
             self._lyt.tracks.append(track)
 
         self.update_scene()
@@ -240,7 +244,19 @@ class LYTEditor(Editor):
         # TODO: Update texture browser with imported textures
         pass
 
-    def load(self, data: bytes, resref: str, restype: ResourceType, filepath: str) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+        """Load a LYT file.
+        
+        Args:
+        ----
+            filepath: Filepath to load resource from
+            resref: Resource reference
+            restype: ResourceType
+            data: Resource data
+            
+        Note: LYT files are GFF files, so they need save game detection and field preservation.
+        """
+        super().load(filepath, resref, restype, data)
         try:
             self._lyt = read_lyt(data)
             self.update_scene()

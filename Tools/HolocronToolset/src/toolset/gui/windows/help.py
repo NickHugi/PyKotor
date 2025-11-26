@@ -51,6 +51,11 @@ class HelpWindow(QMainWindow):
         self._setup_signals()
         self._setup_contents()
         self.starting_page: str | None = startingPage
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
     def showEvent(self, a0: QShowEvent):
         super().showEvent(a0)
@@ -129,9 +134,10 @@ class HelpWindow(QMainWindow):
                 return
         except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            from toolset.gui.common.localization import translate as tr
             errMsgBox = QMessageBox(
                 QMessageBox.Icon.Information,
-                "An unexpected error occurred while parsing the help booklet.",
+                tr("An unexpected error occurred while parsing the help booklet."),
                 error_msg,
                 QMessageBox.StandardButton.Ok,
                 parent=None,
@@ -181,10 +187,11 @@ class HelpWindow(QMainWindow):
             html: str = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.suffix.lower() == ".md" else text
             self.ui.textDisplay.setHtml(html)
         except OSError as e:
+            from toolset.gui.common.localization import translate as tr, trf
             QMessageBox(
                 QMessageBox.Icon.Critical,
-                "Failed to open help file",
-                f"Could not access '{filepath}'.\n{universal_simplify_exception(e)}",
+                tr("Failed to open help file"),
+                trf("Could not access '{filepath}'.\n{error}", filepath=str(filepath), error=str(universal_simplify_exception(e))),
             ).exec()
 
     def on_contents_clicked(self):

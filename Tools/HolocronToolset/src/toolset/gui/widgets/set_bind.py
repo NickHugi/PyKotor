@@ -40,11 +40,13 @@ class SetBindWidget(QWidget):
         self.record_bind = True
         self.keybind.clear()
         self.update_keybind_text()
-        self.ui.setKeysEdit.setPlaceholderText("Enter a key...")
+        from toolset.gui.common.localization import translate as tr
+        self.ui.setKeysEdit.setPlaceholderText(tr("Enter a key..."))
 
     def clear_keybind(self):
         self.keybind.clear()
-        self.ui.setKeysEdit.setPlaceholderText("none")
+        from toolset.gui.common.localization import translate as tr
+        self.ui.setKeysEdit.setPlaceholderText(tr("none"))
         self.update_keybind_text()
 
     def keyPressEvent(self, a0: QKeyEvent):

@@ -43,7 +43,7 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
-from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file, is_sav_file
 from pykotor.tools.path import CaseAwarePath
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
@@ -331,6 +331,7 @@ class Editor(QMainWindow):
         self._resname: str | None = None
         self._restype: ResourceType | None = None
         self._revert: bytes | None = None
+        self._is_save_game_resource: bool = False  # Flag to track if resource is from a save game
         self._global_settings: GlobalSettings = GlobalSettings()
 
         self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self)
@@ -382,6 +383,76 @@ class Editor(QMainWindow):
         QShortcut("Ctrl+Shift+S", self).activated.connect(self.saveAs)
         QShortcut("Ctrl+R", self).activated.connect(self.revert)
         QShortcut("Ctrl+Q", self).activated.connect(self.exit)
+    
+    def _setup_menus(self):
+        """Alias for _setupMenus() to match snake_case naming convention."""
+        self._setupMenus()
+    
+    def _add_help_action(self, wiki_filename: str | None = None):
+        """Add a help action to the menu bar with question mark icon.
+        
+        Args:
+            wiki_filename: Name of the markdown file in the wiki directory (e.g., "GFF-File-Format.md").
+                          If None, will try to auto-detect from editor class name.
+        """
+        from toolset.gui.dialogs.editor_help import EditorHelpDialog
+        from toolset.gui.editors.editor_wiki_mapping import EDITOR_WIKI_MAP
+        
+        # Auto-detect wiki file if not provided
+        if wiki_filename is None:
+            editor_class_name = self.__class__.__name__
+            wiki_filename = EDITOR_WIKI_MAP.get(editor_class_name)
+            if wiki_filename is None:
+                # No wiki file for this editor, skip adding help
+                return
+        
+        menubar = self.menuBar()
+        help_menu = None
+        
+        # Check if Help menu already exists
+        for action in menubar.actions():
+            if action.text() == "Help":
+                help_menu = action.menu()
+                break
+        
+        # Create Help menu if it doesn't exist
+        if help_menu is None:
+            help_menu = QMenu("Help", self)
+            menubar.addMenu(help_menu)
+        
+        # Check if Documentation action already exists (idempotent)
+        doc_action = None
+        for action in help_menu.actions():
+            if action.text() == "Documentation":
+                doc_action = action
+                break
+        
+        # Only add if it doesn't exist
+        if doc_action is None:
+            # Add help action with question mark icon
+            style: QStyle | None = self.style()
+            if style is not None:
+                help_icon = style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxQuestion)
+            else:
+                help_icon = QIcon()
+            
+            help_action = help_menu.addAction(help_icon, "Documentation")
+            help_action.setShortcut("F1")
+            help_action.triggered.connect(lambda: self._show_help_dialog(wiki_filename))
+            
+            QShortcut("F1", self).activated.connect(lambda: self._show_help_dialog(wiki_filename))
+    
+    def _show_help_dialog(self, wiki_filename: str):
+        """Show the help dialog for this editor.
+        
+        Args:
+            wiki_filename: Name of the markdown file in the wiki directory
+        """
+        from toolset.gui.dialogs.editor_help import EditorHelpDialog
+        
+        # Create non-blocking dialog
+        dialog = EditorHelpDialog(self, wiki_filename)
+        dialog.show()  # Non-blocking show
 
     def _setupIcon(self, iconName: str):
         iconVersion = "x" if self._installation is None else "2" if self._installation.tsl else "1"
@@ -519,14 +590,24 @@ class Editor(QMainWindow):
                 return
             from toolset.gui.editors.gff import GFFEditor
 
+            # CRITICAL: For save game resources, ALWAYS preserve extra fields
+            # Save game GFF files contain undocumented fields that must be preserved
+            # to prevent save corruption. This is more important than the user setting.
+            should_preserve_fields = (
+                self._is_save_game_resource or self._global_settings.attemptKeepOldGFFFields
+            )
+            
             if (  # HACK: we need a proper save editor, but this is better than nothing.
-                self._global_settings.attemptKeepOldGFFFields
+                should_preserve_fields
                 and self._restype is not None
                 and self._restype.is_gff()
                 and not isinstance(self, GFFEditor)
                 and self._revert is not None
             ):
-                print("Adding deleted fields from original gff into final gff.")
+                if self._is_save_game_resource:
+                    print("Save game resource detected: Preserving all extra GFF fields to prevent save corruption.")
+                else:
+                    print("Adding deleted fields from original gff into final gff.")
                 old_gff = read_gff(self._revert)
                 new_gff = read_gff(data)
                 new_gff.root.add_missing(old_gff.root)
@@ -828,6 +909,7 @@ class Editor(QMainWindow):
         ----------------
             - Convert filepath to Path object if string
             - Set internal properties like filepath, resref, restype, data
+            - Detect if resource is from a save game (for field preservation)
             - Enable "Revert" menu item
             - Refresh window title
             - Emit loadedFile signal with load details.
@@ -836,12 +918,45 @@ class Editor(QMainWindow):
         self._resname = resref
         self._restype = restype
         self._revert = data
+        
+        # Detect if this resource is from a save game
+        # Check if any parent in the filepath is a .sav file
+        self._is_save_game_resource = self._detect_save_game_resource(self._filepath)
+        
         for action in self.menuBar().actions()[0].menu().actions():
             if action.text() == "Revert":
                 action.setEnabled(True)
                 break
         self.refreshWindowTitle()
         self.loadedFile.emit(str(self._filepath), self._resname, self._restype, data)
+    
+    def _detect_save_game_resource(self, filepath: Path) -> bool:
+        """Detect if a resource is from a save game by checking the filepath.
+        
+        Save game resources are nested inside SAVEGAME.sav or cached module .sav files.
+        This method checks if any parent in the path is a .sav file.
+        
+        Args:
+        ----
+            filepath: Path to check
+            
+        Returns:
+        -------
+            bool: True if resource is from a save game, False otherwise
+        """
+        current_path = filepath
+        while current_path != current_path.parent:
+            # Check if current path component is a .sav file
+            if is_sav_file(current_path):
+                return True
+            # Check if parent is a .sav file (for nested resources)
+            if is_sav_file(current_path.parent):
+                return True
+            current_path = current_path.parent
+            # Stop if we've reached the root
+            if not current_path.parts:
+                break
+        return False
 
     def exit(self):
         self.close()
@@ -849,6 +964,7 @@ class Editor(QMainWindow):
     def new(self):
         self._revert = None
         self._filepath = None
+        self._is_save_game_resource = False
         for action in self.menuBar().actions()[0].menu().actions():
             if action.text() != "Revert":
                 continue

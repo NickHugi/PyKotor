@@ -51,9 +51,10 @@ class ProgressDialog(QDialog):
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
 
-        self.status_label: QLabel = QLabel("Initializing...", self)
+        from toolset.gui.common.localization import translate as tr
+        self.status_label: QLabel = QLabel(tr("Initializing..."), self)
         self.bytes_label: QLabel = QLabel("")
-        self.time_label: QLabel = QLabel("Time remaining: --/--")
+        self.time_label: QLabel = QLabel(tr("Time remaining: --/--"))
         self.progress_bar: QProgressBar = QProgressBar(self)
         self.progress_bar.setMaximum(100)
 
@@ -78,9 +79,10 @@ class ProgressDialog(QDialog):
                 downloaded: int = data["downloaded"]
                 progress: int = int((downloaded / total) * 100) if total else 0
                 self.progress_bar.setValue(progress)
-                self.status_label.setText(f"Downloading... {progress}%")
-                time_remaining: str = data.get("time", self.time_label.text().replace("Time remaining: ", ""))
-                self.time_label.setText(f"Time remaining: {time_remaining}")
+                from toolset.gui.common.localization import translate as tr, trf
+                self.status_label.setText(trf("Downloading... {progress}%", progress=progress))
+                time_remaining: str = data.get("time", self.time_label.text().replace(tr("Time remaining: "), ""))
+                self.time_label.setText(trf("Time remaining: {time}", time=time_remaining))
                 self.bytes_label.setText(f"{human_readable_size(downloaded)} / {human_readable_size(total)}")
             elif message["action"] == "update_status":
                 # Handle status text updates

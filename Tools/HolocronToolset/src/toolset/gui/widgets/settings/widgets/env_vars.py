@@ -184,7 +184,8 @@ ENV_VARS: list[EnvVar] = sorted(
 class EnvVariableDialog(QDialog):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setWindowTitle("Edit Qt Environment Variable")
+        from toolset.gui.common.localization import translate as tr
+        self.setWindowTitle(tr("Edit Qt Environment Variable"))
 
         # Layouts
         main_layout = QVBoxLayout(self)
@@ -206,6 +207,11 @@ class EnvVariableDialog(QDialog):
             self.name_edit.addItem(env_var.name)
             self.name_edit.setItemData(self.name_edit.count() - 1, env_var.description, Qt.ToolTipRole)
         name_layout.addWidget(self.name_edit)
+        
+        # Setup scrollbar event filter to prevent scrollbar interaction with controls
+        from toolset.gui.common.filters import NoScrollEventFilter
+        self._no_scroll_filter = NoScrollEventFilter(self)
+        self._no_scroll_filter.setup_filter(parent_widget=self)
 
         self.value_edit = QLineEdit()
         self.value_completer = QCompleter()

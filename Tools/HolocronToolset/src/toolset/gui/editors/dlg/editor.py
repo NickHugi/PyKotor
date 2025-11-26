@@ -140,6 +140,7 @@ class DLGEditor(Editor):
         self.setup_extra_widgets()
         self._setup_signals()
         self._setup_menus()
+        self._add_help_action()
         if installation:
             self._setup_installation(installation)
 
@@ -242,7 +243,8 @@ class DLGEditor(Editor):
         checked: bool = False,  # noqa: FBT001, FBT002
     ):
         dialog: QDialog = QDialog(self)
-        dialog.setWindowTitle("All Tips")
+        from toolset.gui.common.localization import translate as tr
+        dialog.setWindowTitle(tr("All Tips"))
         layout: QVBoxLayout = QVBoxLayout(dialog)
 
         text_edit: QTextEdit = QTextEdit(dialog)
@@ -1352,14 +1354,70 @@ Should return 1 or 0, representing a boolean.
             if item.link is None:
                 continue
 
-            dialog = LocalizedStringDialog(self, self._installation, item.link.node.text)
-            if not dialog.exec():
+            # Check if parent widget is valid before creating dialog
+            if self._installation is None:
+                RobustLogger().error("Cannot edit text: installation is not set")
                 continue
-            item.link.node.text = dialog.locstring
-            if isinstance(item, DLGStandardItem):
-                self.model.update_item_display_text(item)
-            elif isinstance(source_widget, DLGListWidget):
-                source_widget.update_item(item)
+            
+            try:
+                # Validate parent widget before creating dialog to prevent access violations
+                # Check if parent is valid and not being destroyed
+                parent_widget: QWidget | None = self
+                if parent_widget is not None:
+                    # Check if widget is valid (not None, not being destroyed)
+                    try:
+                        # Try to access a property to ensure widget is valid
+                        _ = parent_widget.isVisible()
+                        # If we get here, widget is likely valid, but use activeWindow as safer fallback
+                        if not parent_widget.isVisible() or not parent_widget.isEnabled():
+                            # Use active window as fallback if parent is not in a good state
+                            active_window = QApplication.activeWindow()
+                            if active_window is not None:
+                                parent_widget = active_window
+                    except (RuntimeError, AttributeError):
+                        RobustLogger().exception(f"Widget is being destroyed or invalid, use active window or None: {e.__class__.__name__}: {e}")
+                        parent_widget = QApplication.activeWindow()
+                else:
+                    parent_widget = QApplication.activeWindow()
+                assert parent_widget is not None, "Parent widget is None in edit_text after all attempts to find a valid parent"
+                
+                dialog = LocalizedStringDialog(parent_widget, self._installation, item.link.node.text)
+                dialog_result: bool | int = False
+                try:
+                    RobustLogger().debug(f"Executing LocalizedStringDialog: {dialog.__class__.__name__} ({dialog})")
+                    assert dialog is not None, "Dialog is None in edit_text after all attempts to find a valid parent"
+                    dialog_result = dialog.exec()
+                except Exception as exc:
+                    RobustLogger().exception(f"Error executing LocalizedStringDialog: {exc.__class__.__name__}: {exc}")
+                    try:
+                        dialog.deleteLater()
+                    except Exception:
+                        pass
+                    continue
+                
+                if not dialog_result:
+                    try:
+                        dialog.deleteLater()
+                    except Exception:
+                        pass
+                    continue
+                
+                # Access dialog.locstring before cleanup
+                item.link.node.text = dialog.locstring
+                
+                # Clean up dialog
+                try:
+                    dialog.deleteLater()
+                except Exception:
+                    pass
+                
+                if isinstance(item, DLGStandardItem):
+                    self.model.update_item_display_text(item)
+                elif isinstance(source_widget, DLGListWidget):
+                    source_widget.update_item(item)
+            except Exception as exc:
+                RobustLogger().exception(f"Error creating LocalizedStringDialog: {exc.__class__.__name__}: {exc}")
+                continue
 
     def copy_path(
         self,
@@ -1371,13 +1429,13 @@ Should return 1 or 0, representing a boolean.
         paths: list[PureWindowsPath] = self.core_dlg.find_paths(node_or_link)  # pyright: ignore[reportArgumentType]
 
         if not paths:
-            print("No paths available.")
+            RobustLogger().error("No paths available.")
             self.blink_window()
             return
 
         if len(paths) == 1:
             path: str = str(paths[0])
-            print("<SDM> [copyPath scope] path: ", path)
+            RobustLogger().debug(f"Copying path: {path}")
 
         else:
             path = "\n".join(f"  {i + 1}. {p}" for i, p in enumerate(paths))
