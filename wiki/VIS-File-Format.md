@@ -17,7 +17,7 @@ VIS (Visibility) files describe which module rooms can be seen from other rooms.
 
 ## Format Overview
 
-- VIS files are plain ASCII text; each parent room line lists how many child rooms follow.  
+- VIS files are plain [ASCII](https://en.wikipedia.org/wiki/ASCII) text; each parent room line lists how many child rooms follow.  
 - Child room lines are indented by two spaces. Empty lines are ignored and names are case-insensitive.  
 - Files usually ship as `moduleXXX.vis` pairs; the `moduleXXXs.vis` (or `.vis` appended inside ERF) uses the same syntax.  
 
@@ -30,7 +30,7 @@ VIS (Visibility) files describe which module rooms can be seen from other rooms.
 
 ### Parent Lines
 
-```
+```vis
 ROOM_NAME CHILD_COUNT
 ```
 
@@ -41,7 +41,7 @@ ROOM_NAME CHILD_COUNT
 
 Example:
 
-```
+```vis
 room012 3
   room013
   room014

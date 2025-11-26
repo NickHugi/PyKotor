@@ -31,7 +31,7 @@ from utility.common.misc_string.mutable_str import WrappedStr
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
+    from typing_extensions import Self  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.stream import BinaryWriterBytearray, BinaryWriterFile
 

@@ -378,7 +378,7 @@ def _parse_model_data(  # noqa: C901, PLR0915, PLR0912
 class AsyncResourceLoader:
     """Manages asynchronous resource loading using ProcessPoolExecutor.
     
-    CRITICAL: ALL IO happens in child processes, NEVER in the main thread.
+    CRITICAL: ALL IO happens in child processes, NEVER in the main process.
     
     NOTE: This class does NOT use Installation directly. The caller provides
     loader functions that handle resource loading using whatever mechanism they want
@@ -395,8 +395,8 @@ class AsyncResourceLoader:
         
         Args:
         ----
-            texture_location_resolver: Function that resolves texture name to (filepath, offset, size) in MAIN thread
-            model_location_resolver: Function that resolves model name to ((mdl_path, offset, size), (mdx_path, offset, size)) in MAIN thread
+            texture_location_resolver: Function that resolves texture name to (filepath, offset, size) in MAIN process
+            model_location_resolver: Function that resolves model name to ((mdl_path, offset, size), (mdx_path, offset, size)) in MAIN process
             max_workers: Max workers for process pool (default: CPU count)
         """
         self.texture_location_resolver = texture_location_resolver
@@ -453,7 +453,7 @@ class AsyncResourceLoader:
     ) -> Future[tuple[str, IntermediateTexture | None, str | None]]:
         """Load and parse texture asynchronously.
         
-        Main thread: Resolve file location
+        Main process: Resolve file location
         Child process: Do raw file IO + parsing
         
         Returns:
@@ -473,11 +473,11 @@ class AsyncResourceLoader:
             self.logger.debug("Process pool is None, starting...")
             self.start()
         
-        # Resolve file location in main thread
+        # Resolve file location in main process
         result_future: Future = Future()
         
         try:
-            self.logger.debug(f"Resolving texture location in main thread: {name}")
+            self.logger.debug(f"Resolving texture location in main process: {name}")
             location = self.texture_location_resolver(name)
             
             if location is None:
@@ -512,7 +512,7 @@ class AsyncResourceLoader:
     ) -> Future[tuple[str, IntermediateModel | None, str | None]]:
         """Load and parse model asynchronously.
         
-        Main thread: Resolve file locations
+        Main process: Resolve file locations
         Child process: Do raw file IO + parsing
         
         Returns:
@@ -528,11 +528,11 @@ class AsyncResourceLoader:
         if self.process_pool is None:
             self.start()
         
-        # Resolve file locations in main thread
+        # Resolve file locations in main process
         result_future: Future = Future()
         
         try:
-            self.logger.debug(f"Resolving model locations in main thread: {name}")
+            self.logger.debug(f"Resolving model locations in main process: {name}")
             mdl_loc, mdx_loc = self.model_location_resolver(name)
             
             if mdl_loc is None or mdx_loc is None:

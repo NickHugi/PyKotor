@@ -1,13 +1,15 @@
 # TSLPatcher HACKList Syntax Documentation
 
+This guide explains how to modify NCS files directly using TSLPatcher syntax. For the complete NCS file format specification, see [NCS File Format](NCS-File-Format). For general TSLPatcher information, see [TSLPatcher's Official Readme](TSLPatcher's-Official-Readme). For HoloPatcher-specific information, see [HoloPatcher README for Mod Developers](HoloPatcher-README-for-mod-developers.#hacklist-editing-ncs-directly).
+
 ## Overview
 
-The `[HACKList]` section in TSLPatcher's changes.ini file enables you to modify compiled NCS (Neverwinter Compiled Script) bytecode files directly at the binary level. This advanced feature allows precise byte-level modifications to script files without recompiling from NSS source code, making it ideal for:
+The `[HACKList]` section in TSLPatcher's changes.ini file enables you to modify compiled NCS (Neverwinter Compiled Script) [bytecode](https://en.wikipedia.org/wiki/Bytecode) files directly at the binary level. This advanced feature allows precise byte-level modifications to script files without recompiling from NSS source code, making it ideal for:
 
 - Patching numerical values in existing compiled scripts
 - Injecting dynamically-generated string references (StrRefs) and 2DA memory values
 - Performing surgical modifications to hardcoded constants
-- Updating scripts to reference new TLK entries or 2DA row numbers
+- Updating scripts to reference new [TLK entries](TSLPatcher-TLKList-Syntax) or [2DA row numbers](TSLPatcher-2DAList-Syntax)
 
 **Important:** HACKList is executed **after** `[CompileList]` during patcher execution, allowing compiled scripts to be modified after compilation if needed.
 

@@ -1,6 +1,6 @@
 # KotOR TXI File Format Documentation
 
-TXI (Texture Info) files are compact ASCII descriptors that attach metadata to TPC textures. They control mipmap usage, filtering, flipbook animation, environment mapping, font atlases, and platform-specific downsampling. Every TXI file is parsed at runtime to configure how a TPC image is rendered.
+TXI (Texture Info) files are compact [ASCII](https://en.wikipedia.org/wiki/ASCII) descriptors that attach metadata to TPC textures. They control [mipmap](https://en.wikipedia.org/wiki/Mipmap) usage, filtering, [flipbook animation](https://en.wikipedia.org/wiki/Flip_book), [environment mapping](https://en.wikipedia.org/wiki/Reflection_mapping), [font atlases](https://en.wikipedia.org/wiki/Texture_atlas), and platform-specific downsampling. Every TXI file is parsed at runtime to configure how a TPC image is rendered.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ TXI (Texture Info) files are compact ASCII descriptors that attach metadata to T
 
 ## Format Overview
 
-- TXI files are plain-text key/value lists; each command modifies a field in the TPC runtime metadata.  
+- TXI files are plain-text [key/value](https://en.wikipedia.org/wiki/Associative_array) lists; each command modifies a field in the TPC runtime metadata.  
 - Commands are case-insensitive but conventionally lowercase. Values can be integers, floats, booleans (`0`/`1`), ResRefs, or multi-line coordinate tables.  
 - A single TXI can be appended to the end of a `.tpc` file (as Bioware does) or shipped as a sibling `.txi` file; the parser treats both identically.  
 
@@ -68,8 +68,8 @@ Each line encodes a UV triplet; UV coordinates follow standard [UV mapping](http
 
 | Command | Accepted Values | Description |
 | ------- | ---------------- | ----------- |
-| `mipmap` | `0`/`1` | Toggles engine mipmap usage (KotOR’s sampler mishandles secondary mips; Bioware textures usually set `0`). |
-| `filter` | `0`/`1` | Enables simple bilinear filtering of font atlases; `<1>` applies a blur. |
+| `mipmap` | `0`/`1` | Toggles engine [mipmap](https://en.wikipedia.org/wiki/Mipmap) usage (KotOR's sampler mishandles secondary mips; Bioware textures usually set `0`). |
+| `filter` | `0`/`1` | Enables simple [bilinear filtering](https://en.wikipedia.org/wiki/Bilinear_filtering) of font atlases; `<1>` applies a blur. |
 | `clamp` | `0`/`1` | Forces address mode clamp instead of wrap. |
 | `candownsample`, `downsamplemin`, `downsamplemax`, `downsamplefactor` | ints/floats | Hints used by Xbox texture reduction. |
 | `priority` | integer | Streaming priority for on-demand textures (higher loads earlier). |
@@ -89,7 +89,7 @@ Each line encodes a UV triplet; UV coordinates follow standard [UV mapping](http
 
 ### Animation and Flipbooks
 
-Texture [flipbook animation](https://en.wikipedia.org/wiki/Flip_book) relies on sprite sheets that tile frames across the atlas:
+Texture [flipbook animation](https://en.wikipedia.org/wiki/Flip_book) relies on [sprite sheets](https://en.wikipedia.org/wiki/Sprite_(computer_graphics)) that tile frames across the atlas:
 
 | Command | Description |
 | ------- | ----------- |

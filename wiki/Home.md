@@ -50,6 +50,7 @@
 - [LTR File Format](LTR-File-Format) ← Letter format
 - [LYT File Format](LYT-File-Format) ← Layout format
 - [NCS File Format](NCS-File-Format) ← NwScript Compiled Script format
+- [NSS File Format](NSS-File-Format) ← NwScript Source format (nwscript.nss, function/constant definitions)
 - [RIM File Format](RIM-File-Format) ← Resource Index Manifest format
 - [SSF File Format](SSF-File-Format) ← Sound Set File format
 - [TLK File Format](TLK-File-Format) ← Talk Table format

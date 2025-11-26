@@ -1,6 +1,6 @@
 # KotOR TPC File Format Documentation
 
-TPC (Texture Pack Container) is KotOR’s native texture format. It supports paletteless RGB/RGBA, Greyscale, and block-compressed DXT1/DXT3/DXT5 data, optional mipmaps, cube maps, and flipbook animations controlled by companion TXI files.
+TPC (Texture Pack Container) is KotOR's native texture format. It supports paletteless [RGB](https://en.wikipedia.org/wiki/RGB_color_model)/[RGBA](https://en.wikipedia.org/wiki/RGBA_color_space), [Greyscale](https://en.wikipedia.org/wiki/Grayscale), and block-compressed [DXT1/DXT3/DXT5](https://en.wikipedia.org/wiki/S3_Texture_Compression) data, optional [mipmaps](https://en.wikipedia.org/wiki/Mipmap), [cube maps](https://en.wikipedia.org/wiki/Cube_mapping), and [flipbook animations](https://en.wikipedia.org/wiki/Flip_book) controlled by companion TXI files.
 
 ## Table of Contents
 
@@ -28,7 +28,7 @@ TPC (Texture Pack Container) is KotOR’s native texture format. It supports pal
 | 0x0D   | 1    | Mipmap count |
 | 0x0E   | 0x72 | Reserved / padding |
 | 0x80   | —    | Texture data (per layer, per mipmap) |
-| ...    | —    | Optional ASCII TXI footer |
+| ...    | —    | Optional [ASCII](https://en.wikipedia.org/wiki/ASCII) TXI footer |
 
 This layout is identical across PyKotor, Reone, Xoreos, KotOR.js, and the original Bioware tools; KotOR-Unity and NorthernLights consume the same header.
 
@@ -41,8 +41,8 @@ This layout is identical across PyKotor, Reone, Xoreos, KotOR.js, and the origin
 | Field | Description |
 | ----- | ----------- |
 | `data_size` | If non-zero, specifies total compressed payload size; uncompressed textures set this to 0 and derive size from format/width/height. |
-| `alpha_test` | Float threshold used by punch-through rendering (commonly `0.0` or `0.5`). |
-| `pixel_encoding` | Bitfield describing format (see next section). |
+| `alpha_test` | [Float](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) threshold used by [punch-through rendering](https://en.wikipedia.org/wiki/Alpha_testing) (commonly `0.0` or `0.5`). |
+| `pixel_encoding` | [Bitfield](https://en.wikipedia.org/wiki/Bit_field) describing format (see next section). |
 | `mipmap_count` | Number of mip levels per layer (minimum 1). |
 | Reserved | 0x72 bytes reserved; KotOR stores platform hints here but all implementations skip them. |
 
@@ -90,7 +90,7 @@ TPC supports the following encodings (documented in `TPCTextureFormat`):
 ## TXI Metadata
 
 - If bytes remain after the texture payload, they are treated as ASCII TXI content.  
-- TXI commands drive animations, environment mapping, font metrics, downsampling directives, etc. See the [TXI File Format](TXI-File-Format) document for exhaustive command descriptions.  
+- TXI commands drive animations, [environment mapping](https://en.wikipedia.org/wiki/Reflection_mapping), font metrics, downsampling directives, etc. See the [TXI File Format](TXI-File-Format) document for exhaustive command descriptions.  
 - PyKotor automatically parses the TXI footer and exposes `TPC.txi` plus convenience flags (`is_animated`, `is_cube_map`).  
 
 **Reference:** [`Libraries/PyKotor/src/pykotor/resource/formats/tpc/io_tpc.py:159-188`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/tpc/io_tpc.py#L159-L188)

@@ -6,7 +6,11 @@ import io
 import mmap
 import os
 
+from types import TracebackType
+from typing import Any, IO
+
 from pathlib import Path
+from typing_extensions import Self
 
 from pykotor.common.language import LocalizedString
 from utility.common.stream import ArrayHead as _ArrayHead, RawBinaryReader, RawBinaryWriter, RawBinaryWriterBytearray, RawBinaryWriterFile
@@ -42,6 +46,19 @@ class BinaryReader(RawBinaryReader):
 
 
 class BinaryWriter(RawBinaryWriter):
+    def __enter__(
+        self,
+    ) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.close()
+
     def write_locstring(
         self,
         value: LocalizedString,
@@ -159,6 +176,9 @@ if __name__ == "__main__":
         assert FILE_DATA is not None
         instantiation_times: list[float] = []
         operation_times: list[float] = []
+        stream: BinaryReader | io.BytesIO | io.FileIO | io.BufferedReader | io.BufferedRandom | None = None
+        raw_raw_stream: io.RawIOBase | io.BufferedIOBase | mmap.mmap | None = None
+        raw_stream: IO[Any] | mmap.mmap | None = None
 
         for i in range(NUM_INSTANTIATIONS):
             try:
@@ -176,19 +196,20 @@ if __name__ == "__main__":
                         stream = BinaryReader(raw_stream)
                     elif mode == "stream(io.BufferedReader)":
                         raw_raw_stream = open(TEST_FILE, "rb")  # noqa: PTH123, SIM115
-                        raw_stream = io.BufferedReader(raw_raw_stream)  # pyright: ignore[reportArgumentType]
+                        raw_stream = io.BufferedReader(raw_raw_stream)
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_stream(raw_stream)
                     elif mode == "stream(io.BufferedRandom)":
                         raw_raw_stream = open(TEST_FILE, "r+b")  # noqa: PTH123, SIM115
-                        raw_stream = io.BufferedRandom(raw_raw_stream)  # pyright: ignore[reportArgumentType]
+                        assert isinstance(raw_raw_stream, io.RawIOBase), "raw_raw_stream must be a RawIOBase"
+                        raw_stream = io.BufferedRandom(raw_raw_stream)
                         instantiation_start_time = time.time()
                         stream = BinaryReader.from_stream(raw_stream)
                     elif mode == "stream(io.BytesIO)":
                         # Special handling for BytesIO
-                        stream = io.BytesIO(FILE_DATA)
+                        raw_stream = io.BytesIO(FILE_DATA)
                         instantiation_start_time = time.time()
-                        stream = BinaryReader.from_stream(stream)
+                        stream = BinaryReader.from_stream(raw_stream)
                     elif mode == "stream(io.FileIO)":
                         raw_stream = io.FileIO(TEST_FILE, "rb")
                         instantiation_start_time = time.time()
@@ -201,30 +222,37 @@ if __name__ == "__main__":
                         raise ValueError(f"cannot test mode: {mode}")
                 elif stream_class is io.BytesIO:
                     # Special handling for BytesIO
-                    stream = io.BytesIO(FILE_DATA)
+                    raw_stream = io.BytesIO(FILE_DATA)
+                    instantiation_start_time = time.time()
+                    stream = BinaryReader.from_stream(raw_stream)
                 else:
                     raw_stream = open(TEST_FILE, mode)  # noqa: PTH123, SIM115
                     if stream_class is io.BufferedReader:
-                        stream = io.BufferedReader(raw_stream)  # pyright: ignore[reportArgumentType]
+                        assert isinstance(raw_stream, io.RawIOBase), "raw_stream must be a RawIOBase"
+                        stream = io.BufferedReader(raw_stream)
                     elif stream_class is io.BufferedRandom:
-                        stream = io.BufferedRandom(raw_stream)  # pyright: ignore[reportArgumentType]
+                        assert isinstance(raw_stream, io.RawIOBase), "raw_stream must be a RawIOBase"
+                        stream = io.BufferedRandom(raw_stream)
                     else:
                         stream = stream_class(TEST_FILE, mode)  # pyright: ignore[reportArgumentType, reportCallIssue]
                 instantiation_end_time: float = time.time()
                 instantiation_times.append(instantiation_end_time - instantiation_start_time)
             finally:
                 if i != NUM_INSTANTIATIONS - 1:
+                    assert stream is not None, "stream is None"
                     stream.close()
 
         try:
             operation_start_time: float = time.time()
             for _ in range(NUM_OPERATIONS):
                 seek_position: int = random.randint(0, os.path.getsize(TEST_FILE) - 1)  # noqa: S311, PTH202
+                assert stream is not None, "stream is None"
                 stream.seek(seek_position)
                 stream.read(1)
             operation_end_time: float = time.time()
             operation_times.append(operation_end_time - operation_start_time)
         finally:
+            assert stream is not None, "stream is None"
             stream.close()
 
         total_instantiation_time: float = sum(instantiation_times)

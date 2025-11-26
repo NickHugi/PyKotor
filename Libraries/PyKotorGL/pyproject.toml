@@ -1,45 +1,46 @@
 [build-system]
-requires = ["setuptools>=42,<70", "wheel"]
+requires = ["setuptools>=67.8.0,<70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "PyKotorGL"
-version = "1.7"
-description = "A Python library that can render most modules from the game Knights of the Old Republic and its sequel."
-authors = [
-    { name = "NickHugi" },
-    { name = "Benjamin Auquite", email = "halomastar@gmail.com" },
-]
-maintainers = [{ name = "th3w1zard1", email = "halomastar@gmail.com" }]
-readme = { file = "README.md", content-type = "text/markdown" }
-license = { text = "LGPL-3.0-or-later License" }
-keywords = [
-    "kotor",
-    "library",
-    "holocron",
-    "toolset",
-    "pykotor",
-    "editor",
-    "holopatcher",
-    "tslpatcher",
-    "opengl",
-    "3d",
-    "rendering",
-    "mdl",
-    "mdx",
-]
-requires-python = ">= 3.8"
+name = "pykotorgl"
+version = "1.8.0"
+description = "OpenGL rendering module for PyKotor - renders KotOR modules and scenes."
+authors = [{name = "NickHugi"}]
+maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "LGPL-3.0-or-later License"}
+keywords = ["kotor", "opengl", "rendering", "pykotor", "gl", "3d", "mdl", "mdx"]
+requires-python = ">=3.8"
 dependencies = [
-    "numpy>=1.21",
-    "PyOpenGL>=3.1.10",
+    "pykotor>=1.8.0",
+    "numpy>=1.22",
+    "PyOpenGL~=3.1",
     "PyGLM>=2.0,<2.8; python_implementation == 'CPython'",
-    "ply>=3.11,<4",                                        # required for the NSS compiler lexer
 ]
 
-# Optional Poetry configuration
+[project.optional-dependencies]
+gl_accel = ["PyOpenGL-accelerate>=3.1.10"]
+dev = [
+    "pytest>=7.0.0,<8.0.0; python_version>=\"3.8\"",
+]
+
+[project.urls]
+homepage = "https://github.com/th3w1zard1/PyKotor"
+documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
+repository = "https://github.com/th3w1zard1/PyKotor.git"
+issues = "https://github.com/th3w1zard1/PyKotor/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
 [tool.poetry]
 name = "pykotorgl"
-version = "1.7"
+version = "1.8.0"
 description = "OpenGL rendering extension for PyKotor"
 authors = ["NickHugi", "Benjamin Auquite <halomastar@gmail.com>"]
 maintainers = ["Benjamin Auquite <halomastar@gmail.com>"]
@@ -48,41 +49,19 @@ packages = [{ include = "pykotor", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pykotor = "^1.7"
-utility = "^0.0.1"
-numpy = ">=1.21"
-PyOpenGL = ">=3.1.10"
+pykotor = "^1.8.0"
+numpy = ">=1.22"
+PyOpenGL = "~3.1"
 PyGLM = ">=2.0,<2.8; python_implementation == 'CPython'"
-ply = ">=3.11,<4"
-
-[project.optional-dependencies]
-gl_accel = ["PyOpenGL-accelerate>=3.1.10"]
-font = [
-    "pillow>=9.5; python_implementation == 'CPython'",    # required for TXI/TGA fonts (CPython)
-    "pillow>10,<11.1.0; python_implementation == 'PyPy'", # required for TXI/TGA fonts (PyPy)
-]
-secure_xml = ["defusedxml~=0.7"] # secure XML parsing
-encodings = [
-    "charset-normalizer>=2.0,<3.4",
-] # used for localized string decodings
 
 [tool.poetry.optional-dependencies]
 PyOpenGL_accelerate = ">=3.1.10"
 
-[project.urls]
-Homepage = "https://github.com/th3w1zard1/PyKotor"
-Documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
-Repository = "https://github.com/th3w1zard1/PyKotor.git"
-Issues = "https://github.com/th3w1zard1/PyKotor/issues"
-#Changelog = "https://github.com/th3w1zard1/PyKotor/blob/master/CHANGELOG.md"
-
 [tool.poetry.urls]
-Homepage = "https://github.com/th3w1zard1/PyKotor"
-Documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
-Repository = "https://github.com/th3w1zard1/PyKotor.git"
-Issues = "https://github.com/th3w1zard1/PyKotor/issues"
-#Changelog = "https://github.com/th3w1zard1/PyKotor/blob/master/CHANGELOG.md"
-
+homepage = "https://github.com/th3w1zard1/PyKotor"
+documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
+repository = "https://github.com/th3w1zard1/PyKotor.git"
+issues = "https://github.com/th3w1zard1/PyKotor/issues"
 
 ########################################################
 ## define only linter configurations below this point ##
@@ -93,7 +72,7 @@ extend = "../../pyproject.toml"
 
 [tool.ruff.lint]
 ignore = [
-    "N", # disable snake_case vs PascalCase/camelCase checks
+    "N",
 ]
 
 [tool.ruff.lint.per-file-ignores]

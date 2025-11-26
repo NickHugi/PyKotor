@@ -21,10 +21,10 @@ from __future__ import annotations
 import difflib
 import math
 
+from contextlib import contextmanager
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
 from pathlib import PureWindowsPath
-from pathlib import PureWindowsPath  # pyright: ignore[reportMissingImports]
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from loggerplus import RobustLogger  # type: ignore[import-untyped]  # pyright: ignore[reportMissingTypeStubs]
@@ -1497,6 +1497,202 @@ class GFFStruct(ComparableMixin):
             return copy(self._fields[label].value())
         except KeyError:
             return default
+
+    @contextmanager
+    def batch_update(self):
+        """Context manager for batch updates with validation and rollback on error.
+
+        If an exception occurs during the batch update, all changes are rolled back.
+
+        Example:
+        -------
+            with struct.batch_update():
+                struct.set_string("Name", "New Value")
+                struct.set_int32("Level", 10)
+                # If any error occurs, all changes are rolled back
+        """
+        original_fields = deepcopy(self._fields)
+        try:
+            yield self
+        except Exception:
+            # Rollback on error
+            self._fields = original_fields
+            raise
+
+    def get_nested_struct(
+        self,
+        *path: str,
+        default: T = None,
+    ) -> GFFStruct | T:
+        """Safely navigate nested struct paths.
+
+        Args:
+        ----
+            *path: Variable-length path of field labels to navigate.
+            default: Default value to return if path doesn't exist.
+
+        Returns:
+        -------
+            The nested GFFStruct at the path, or default if path is invalid.
+
+        Example:
+        -------
+            # Navigate: root -> Appearance -> Model
+            model_struct = struct.get_nested_struct("Appearance", "Model")
+        """
+        current: GFFStruct | Any = self
+        for segment in path:
+            if not isinstance(current, GFFStruct):
+                return default
+            if not current.exists(segment) or current.what_type(segment) != GFFFieldType.Struct:
+                return default
+            current = current.get_struct(segment)
+        return current if isinstance(current, GFFStruct) else default
+
+    def get_nested_string(
+        self,
+        *path: str,
+        default: str = "",
+    ) -> str:
+        """Get string value from nested path.
+
+        Args:
+        ----
+            *path: Variable-length path ending with a String field label.
+            default: Default value to return if path doesn't exist.
+
+        Returns:
+        -------
+            The string value at the path, or default if path is invalid.
+
+        Example:
+        -------
+            # Get: root -> Appearance -> ModelName
+            model_name = struct.get_nested_string("Appearance", "ModelName", default="unknown")
+        """
+        if not path:
+            return default
+        if len(path) == 1:
+            return self.get_string(path[0], default)
+
+        parent_path = path[:-1]
+        field_name = path[-1]
+
+        parent = self.get_nested_struct(*parent_path)
+        if parent is None:
+            return default
+
+        return parent.get_string(field_name, default)
+
+    def get_nested_int32(
+        self,
+        *path: str,
+        default: int = 0,
+    ) -> int:
+        """Get Int32 value from nested path.
+
+        Args:
+        ----
+            *path: Variable-length path ending with an Int32 field label.
+            default: Default value to return if path doesn't exist.
+
+        Returns:
+        -------
+            The Int32 value at the path, or default if path is invalid.
+
+        Example:
+        -------
+            # Get: root -> Stats -> Level
+            level = struct.get_nested_int32("Stats", "Level", default=1)
+        """
+        if not path:
+            return default
+        if len(path) == 1:
+            return self.get_int32(path[0], default)
+
+        parent_path = path[:-1]
+        field_name = path[-1]
+
+        parent = self.get_nested_struct(*parent_path)
+        if parent is None:
+            return default
+
+        return parent.get_int32(field_name, default)
+
+    def get_nested_uint32(
+        self,
+        *path: str,
+        default: int = 0,
+    ) -> int:
+        """Get UInt32 value from nested path.
+
+        Args:
+        ----
+            *path: Variable-length path ending with a UInt32 field label.
+            default: Default value to return if path doesn't exist.
+
+        Returns:
+        -------
+            The UInt32 value at the path, or default if path is invalid.
+        """
+        if not path:
+            return default
+        if len(path) == 1:
+            return self.get_uint32(path[0], default)
+
+        parent_path = path[:-1]
+        field_name = path[-1]
+
+        parent = self.get_nested_struct(*parent_path)
+        if parent is None:
+            return default
+
+        return parent.get_uint32(field_name, default)
+
+    def find_fields(
+        self,
+        field_name: str,
+        field_type: GFFFieldType | None = None,
+    ) -> list[tuple[str, Any]]:
+        """Find all fields matching the given name and optionally type, recursively.
+
+        Args:
+        ----
+            field_name: The field label to search for.
+            field_type: Optional field type to filter by.
+
+        Returns:
+        -------
+            List of (path, value) tuples where path is the dot-separated path to the field.
+
+        Example:
+        -------
+            # Find all "ModelName" fields in the struct tree
+            results = struct.find_fields("ModelName")
+            # Returns: [("Appearance.ModelName", "model_001"), ("Alternate.ModelName", "model_002")]
+        """
+        results: list[tuple[str, Any]] = []
+
+        def _search_recursive(
+            current: GFFStruct | GFFList,
+            current_path: str = "",
+        ) -> None:
+            if isinstance(current, GFFStruct):
+                for label, ftype, value in current:
+                    full_path = f"{current_path}.{label}" if current_path else label
+                    if label == field_name and (field_type is None or ftype == field_type):
+                        results.append((full_path, value))
+                    if ftype == GFFFieldType.Struct and isinstance(value, GFFStruct):
+                        _search_recursive(value, full_path)
+                    elif ftype == GFFFieldType.List and isinstance(value, GFFList):
+                        _search_recursive(value, full_path)
+            elif isinstance(current, GFFList):
+                for idx, struct in enumerate(current):
+                    list_path = f"{current_path}[{idx}]" if current_path else f"[{idx}]"
+                    _search_recursive(struct, list_path)
+
+        _search_recursive(self)
+        return results
 
 
 class GFFList(ComparableMixin):

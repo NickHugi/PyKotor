@@ -3,6 +3,8 @@ from __future__ import annotations
 import pathlib
 import sys
 import unittest
+from pathlib import PureWindowsPath
+from typing import TYPE_CHECKING, cast
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -21,28 +23,24 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from typing import TYPE_CHECKING, cast
-
-from pathlib import PureWindowsPath
-
-from utility.common.geometry import Vector3, Vector4
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
-from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf, read_ssf
-from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
-from pykotor.resource.formats.tlk.tlk_data import TLK
-from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
-from pykotor.resource.formats.twoda.twoda_data import TwoDA
-from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.memory import (
+from utility.common.geometry import Vector3, Vector4  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.common.language import LocalizedString  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.common.misc import Game, ResRef  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf, read_ssf  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.resource.formats.tlk.tlk_data import TLK  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.resource.formats.twoda.twoda_data import TwoDA  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.tslpatcher.logger import PatchLogger  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.tslpatcher.memory import (  # pyright: ignore[reportMissingImports]  # noqa: E402
     NoTokenUsage,
     PatcherMemory,
     TokenUsage2DA,
     TokenUsageTLK,
 )
-from pykotor.tslpatcher.mods.gff import (
+from pykotor.tslpatcher.mods.gff import (  # pyright: ignore[reportMissingImports]  # noqa: E402
     AddFieldGFF,
     AddStructToListGFF,
     FieldValue2DAMemory,
@@ -52,9 +50,9 @@ from pykotor.tslpatcher.mods.gff import (
     ModificationsGFF,
     ModifyFieldGFF,
 )
-from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
-from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
-from pykotor.tslpatcher.mods.twoda import (
+from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK  # pyright: ignore[reportMissingImports]  # noqa: E402
+from pykotor.tslpatcher.mods.twoda import (  # pyright: ignore[reportMissingImports]  # noqa: E402
     AddColumn2DA,
     AddRow2DA,
     ChangeRow2DA,
@@ -72,7 +70,7 @@ from pykotor.tslpatcher.mods.twoda import (
 )
 
 if TYPE_CHECKING:
-    from pykotor.tslpatcher.mods.gff import (
+    from pykotor.tslpatcher.mods.gff import (  # pyright: ignore[reportMissingImports]  # noqa: E402
         ModifyGFF,
     )
 

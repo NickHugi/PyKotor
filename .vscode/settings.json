@@ -20,7 +20,8 @@
     },
     "mypy-type-checker.args": [
         "--check-untyped-defs",
-        "--explicit-package-bases"
+        "--explicit-package-bases",
+        "--namespace-packages"
     ],
     "mypy-type-checker.importStrategy": "fromEnvironment",
     "mypy-type-checker.preferDaemon": true,
@@ -34,6 +35,7 @@
     ],
     "mypy.runUsingActiveInterpreter": true,
     "python.envFile": "${workspaceFolder}/.env",
+    "python.terminal.activateEnvironment": true,
     "python.missingPackage.severity": "Information",
     "python.terminal.launchArgs": [
         "-i",

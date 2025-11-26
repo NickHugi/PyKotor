@@ -2,15 +2,16 @@ __pycache__/
 .*
 !.cursorrules
 !.cursorrules.txt
+!.env
 !.gitignore
 !.gitmodules
+!.github
 !.vscode
 *.cpuprofile
 *.egg-info*
 *.exe.manifest
 *.heapsnapshot
 *.pkg
-*.prof
 *.pstat
 *.pyc
 *.spec
@@ -28,7 +29,6 @@ base_library.zip
 build
 build-windows.ps1
 build/
-compile/
 dist
 dist-lin
 dist-mac

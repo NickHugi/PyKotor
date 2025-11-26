@@ -145,10 +145,14 @@ class TPCTextureFormat(IntEnum):
         fmt = cls.Invalid
         if qimage_format == QImage.Format.Format_Grayscale8:
             fmt = cls.Greyscale
-        if qimage_format == QImage.Format.Format_RGB888:
+        elif qimage_format == QImage.Format.Format_RGB888:
             fmt = cls.RGB
-        if qimage_format == QImage.Format.Format_RGBA8888:
+        elif qimage_format == QImage.Format.Format_BGR888:
+            fmt = cls.BGR
+        elif qimage_format == QImage.Format.Format_RGBA8888:
             fmt = cls.RGBA
+        elif qimage_format == QImage.Format.Format_ARGB32:
+            fmt = cls.BGRA
         return fmt  # type: ignore[return-value]
 
     def to_pil_mode(self) -> str:

@@ -1,5 +1,7 @@
 # TSLPatcher TLKList Syntax Documentation
 
+This guide explains how to modify TLK files using TSLPatcher syntax. For the complete TLK file format specification, see [TLK File Format](TLK-File-Format). For general TSLPatcher information, see [TSLPatcher's Official Readme](TSLPatcher's-Official-Readme). For HoloPatcher-specific information, see [HoloPatcher README for Mod Developers](HoloPatcher-README-for-mod-developers.).
+
 ## Overview
 
 The `[TLKList]` section in TSLPatcher's changes.ini file enables you to modify TLK (Talk Table) files used throughout KotOR. TLK files store all in-game text strings and their associated voiceover sound references. The most important TLK file is `dialog.tlk`, which contains all dialog, item descriptions, conversations, and other text displayed in the game.

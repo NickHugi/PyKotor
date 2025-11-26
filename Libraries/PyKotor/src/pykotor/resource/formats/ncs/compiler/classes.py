@@ -29,7 +29,7 @@ class CompileError(Exception):
     """Base exception for NSS compilation errors.
 
     Provides detailed error messages to help debug script issues.
-    
+
     References:
     ----------
         vendor/HoloLSP/server/src/nwscript-parser.ts (NSS parser error handling)
@@ -37,7 +37,9 @@ class CompileError(Exception):
         vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (TypeScript compiler errors)
     """
 
-    def __init__(self, message: str, line_num: int | None = None, context: str | None = None):
+    def __init__(
+        self, message: str, line_num: int | None = None, context: str | None = None
+    ):
         full_message = message
         if line_num is not None:
             full_message = f"Line {line_num}: {message}"
@@ -93,7 +95,9 @@ class GlobalVariableInitialization(TopLevelObject):
         # Global storage resides on the stack before base pointer is saved, so use stack-pointer-relative copy.
         stack_index = scoped.offset - scoped.datatype.size(root)
         ncs.instructions.append(
-            NCSInstruction(NCSInstructionType.CPDOWNSP, [stack_index, scoped.datatype.size(root)]),
+            NCSInstruction(
+                NCSInstructionType.CPDOWNSP, [stack_index, scoped.datatype.size(root)]
+            ),
         )
         # Remove the initializer value from the stack
         ncs.add(NCSInstructionType.MOVSP, args=[-scoped.datatype.size(root)])
@@ -322,10 +326,10 @@ class StructMember:
 
 class CodeRoot:
     """Root compilation context for NSS compilation.
-    
+
     Manages global scope, function definitions, constants, and compilation state.
     Provides symbol resolution and type checking during NSS to NCS compilation.
-    
+
     References:
     ----------
         vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (TypeScript compiler architecture)
@@ -334,6 +338,7 @@ class CodeRoot:
         vendor/HoloLSP/server/src/nwscript-lexer.ts (NSS lexer/tokenizer)
         vendor/DeNCS/ (NCS decompiler, reverse reference for compilation)
     """
+
     def __init__(
         self,
         constants: list[ScriptConstant],
@@ -366,21 +371,33 @@ class CodeRoot:
 
         included: list[IncludeScript] = []
         while [obj for obj in self.objects if isinstance(obj, IncludeScript)]:
-            includes: list[IncludeScript] = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
+            includes: list[IncludeScript] = [
+                obj for obj in self.objects if isinstance(obj, IncludeScript)
+            ]
             include: IncludeScript = includes.pop()
             self.objects.remove(include)
             included.append(include)
             include.compile(ncs, self)
 
-        script_globals: list[GlobalVariableDeclaration | GlobalVariableInitialization | StructDefinition] = [
+        script_globals: list[
+            GlobalVariableDeclaration | GlobalVariableInitialization | StructDefinition
+        ] = [
             obj
             for obj in self.objects
             if isinstance(
                 obj,
-                (GlobalVariableDeclaration, GlobalVariableInitialization, StructDefinition),
+                (
+                    GlobalVariableDeclaration,
+                    GlobalVariableInitialization,
+                    StructDefinition,
+                ),
             )
         ]
-        others: list[TopLevelObject] = [obj for obj in self.objects if obj not in included and obj not in script_globals]
+        others: list[TopLevelObject] = [
+            obj
+            for obj in self.objects
+            if obj not in included and obj not in script_globals
+        ]
 
         if script_globals:
             for global_def in script_globals:
@@ -420,7 +437,9 @@ class CodeRoot:
         args_list = list(args)
 
         func_map: FunctionReference = self.function_map[name]
-        definition: FunctionForwardDeclaration | FunctionDefinition = func_map.definition
+        definition: FunctionForwardDeclaration | FunctionDefinition = (
+            func_map.definition
+        )
         start_instruction: NCSInstruction = func_map.instruction
 
         if definition.return_type == DynamicDataType.INT:
@@ -459,7 +478,9 @@ class CodeRoot:
             msg = f"Trying to return unsupported type '{definition.return_type.builtin.name}'"
             raise CompileError(msg)
 
-        required_params = [param for param in definition.parameters if param.default is None]
+        required_params = [
+            param for param in definition.parameters if param.default is None
+        ]
 
         # Make sure the minimal number of arguments were passed through
         if len(required_params) > len(args_list):
@@ -509,7 +530,9 @@ class CodeRoot:
                 break
         else:
             # Provide helpful error with available globals
-            available = [s.identifier.label for s in self._global_scope[:10]]  # Show first 10
+            available = [
+                s.identifier.label for s in self._global_scope[:10]
+            ]  # Show first 10
             more = len(self._global_scope) - 10
             more_text = f" (and {more} more)" if more > 0 else ""
             msg = (
@@ -603,13 +626,17 @@ class CodeBlock:
         for scoped in self.scope:
             offset -= scoped.data_type.size(root)
             if scoped.identifier == identifier:
-                print(f"[DEBUG] local lookup {identifier.label} temp_stack={self.temp_stack} offset={offset} scope_size={scoped.data_type.size(root)}")
+                print(
+                    f"[DEBUG] local lookup {identifier.label} temp_stack={self.temp_stack} offset={offset} scope_size={scoped.data_type.size(root)}"
+                )
                 break
         else:
             if self._parent is not None:
                 return self._parent.get_scoped(identifier, root, offset)
             return root.get_scoped(identifier, root)
-        return GetScopedResult(is_global=False, datatype=scoped.data_type, offset=offset)
+        return GetScopedResult(
+            is_global=False, datatype=scoped.data_type, offset=offset
+        )
 
     def scope_size(self, root: CodeRoot) -> int:
         """Returns size of local scope."""
@@ -706,7 +733,9 @@ class FunctionDefinition(TopLevelObject):
 
         # Make sure params are all constant values
         for param in self.parameters:
-            if isinstance(param.default, IdentifierExpression) and not param.default.is_constant(root):
+            if isinstance(
+                param.default, IdentifierExpression
+            ) and not param.default.is_constant(root):
                 msg = f"Non-constant default value specified for function prototype parameter '{param.identifier}'."
                 raise CompileError(msg)
 
@@ -743,10 +772,12 @@ class FunctionDefinition(TopLevelObject):
                     f"definition has {len(self.parameters)}"
                 )
             else:
-                for i, (def_param, proto_param) in enumerate(zip(self.parameters, prototype.parameters)):
+                for i, (def_param, proto_param) in enumerate(
+                    zip(self.parameters, prototype.parameters)
+                ):
                     if def_param.data_type != proto_param.data_type:
                         details.append(
-                            f"Parameter {i+1} type mismatch: prototype has {proto_param.data_type.builtin.name}, "
+                            f"Parameter {i + 1} type mismatch: prototype has {proto_param.data_type.builtin.name}, "
                             f"definition has {def_param.data_type.builtin.name}"
                         )
 
@@ -765,7 +796,9 @@ class FunctionDefinition(TopLevelObject):
         stub_index: int = ncs.instructions.index(root.function_map[name].instruction)
         ncs.instructions[stub_index + 1 : stub_index + 1] = temp.instructions
 
-    def is_matching_signature(self, prototype: FunctionForwardDeclaration | FunctionDefinition) -> bool:
+    def is_matching_signature(
+        self, prototype: FunctionForwardDeclaration | FunctionDefinition
+    ) -> bool:
         if self.return_type != prototype.return_type:
             return False
         if len(self.parameters) != len(prototype.parameters):
@@ -798,11 +831,23 @@ class IncludeScript(TopLevelObject):
         self.library: dict[str, bytes] = {} if library is None else library
 
     def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
+        """Compile an include script.
+
+        FIXED: Only register symbols (functions, constants, structs) from the include
+        for resolution. Do NOT add all objects from the include to root.objects, as this
+        causes all include content to be compiled regardless of whether it's used.
+        This matches nwnnsscomp behavior where only referenced symbols generate bytecode.
+
+        The bug was: root.objects = t.objects + root.objects
+        This dumped all include objects into compilation, causing incorrect string offsets.
+        """
         from pykotor.resource.formats.ncs.compiler.parser import NssParser  # noqa: PLC0415
 
         lookup_paths = cast(
             list[str] | None,
-            [str(path) for path in root.library_lookup] if root.library_lookup else None,
+            [str(path) for path in root.library_lookup]
+            if root.library_lookup
+            else None,
         )
 
         nss_parser = NssParser(
@@ -815,7 +860,13 @@ class IncludeScript(TopLevelObject):
         nss_parser.constants = root.constants
         source: str = self._get_script(root)
         t: CodeRoot = nss_parser.parser.parse(source, tracking=True)
-        root.objects = t.objects + root.objects
+
+        # FIXED: Only merge symbol tables (function_map, struct_map), not all objects.
+        # This ensures only symbols are available for resolution, but they're only
+        # compiled if actually referenced. This matches nwnnsscomp behavior.
+        root.function_map.update(t.function_map)
+        root.struct_map.update(t.struct_map)
+        # Note: Constants are already shared via root.constants, so no need to merge
 
     def _get_script(self, root: CodeRoot) -> str:
         """Load included script from filesystem or library.
@@ -846,10 +897,13 @@ class IncludeScript(TopLevelObject):
         else:
             # Not found in filesystem, try library
             case_sensitive: bool = not root.library_lookup or all(
-                lookup_path for lookup_path in root.library_lookup
+                lookup_path
+                for lookup_path in root.library_lookup
                 if isinstance(lookup_path, Path)
             )
-            include_filename: str = self.file.value if case_sensitive else self.file.value.lower()
+            include_filename: str = (
+                self.file.value if case_sensitive else self.file.value.lower()
+            )
             if include_filename in self.library:
                 source = self.library[include_filename].decode(errors="ignore")
             else:
@@ -882,15 +936,16 @@ class StructDefinition(TopLevelObject):
 
 class Expression(ABC):
     """Abstract base class for NSS expressions.
-    
+
     Expressions compile to NCS bytecode instructions that evaluate to values.
     All expression types (literals, operators, function calls, etc.) inherit from this.
-    
+
     References:
     ----------
         vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (Expression compilation)
         vendor/HoloLSP/server/src/nwscript-ast.ts (Expression AST nodes)
     """
+
     @abstractmethod
     def compile(
         self,
@@ -902,15 +957,16 @@ class Expression(ABC):
 
 class Statement(ABC):
     """Abstract base class for NSS statements.
-    
+
     Statements compile to NCS bytecode instructions that perform actions (control flow,
     assignments, declarations, etc.). All statement types inherit from this.
-    
+
     References:
     ----------
         vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts (Statement compilation)
         vendor/HoloLSP/server/src/nwscript-ast.ts (Statement AST nodes)
     """
+
     def __init__(self):
         self.line_num: None = None
 
@@ -972,7 +1028,9 @@ class FieldAccess:
                     msg = f"Attempting to access unknown member '{next_ident}' on datatype '{datatype}'."
                     raise CompileError(msg)
             elif datatype.builtin == DataType.STRUCT:
-                assert datatype._struct is not None, "datatype._struct cannot be None in FieldAccess.get_scoped()"  # noqa: SLF001
+                assert datatype._struct is not None, (
+                    "datatype._struct cannot be None in FieldAccess.get_scoped()"
+                )  # noqa: SLF001
                 offset += root.struct_map[datatype._struct].child_offset(  # noqa: SLF001
                     root,
                     next_ident,
@@ -989,7 +1047,9 @@ class FieldAccess:
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         is_global, variable_type, stack_index = self.get_scoped(block, root)
-        instruction_type = NCSInstructionType.CPTOPBP if is_global else NCSInstructionType.CPTOPSP
+        instruction_type = (
+            NCSInstructionType.CPTOPBP if is_global else NCSInstructionType.CPTOPSP
+        )
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
         return variable_type
 
@@ -1026,13 +1086,19 @@ class IdentifierExpression(Expression):
             return DynamicDataType(constant.datatype)
 
         is_global, datatype, stack_index = block.get_scoped(self.identifier, root)
-        instruction_type = NCSInstructionType.CPTOPBP if is_global else NCSInstructionType.CPTOPSP
+        instruction_type = (
+            NCSInstructionType.CPTOPBP if is_global else NCSInstructionType.CPTOPSP
+        )
         ncs.add(instruction_type, args=[stack_index, datatype.size(root)])
         return datatype
 
     def get_constant(self, root: CodeRoot) -> ScriptConstant | None:
         return next(
-            (constant for constant in root.constants if constant.name == self.identifier.label),
+            (
+                constant
+                for constant in root.constants
+                if constant.name == self.identifier.label
+            ),
             None,
         )
 
@@ -1047,7 +1113,11 @@ class FieldAccessExpression(Expression):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         scoped = self.field_access.get_scoped(block, root)
-        instruction_type = NCSInstructionType.CPTOPBP if scoped.is_global else NCSInstructionType.CPTOPSP
+        instruction_type = (
+            NCSInstructionType.CPTOPBP
+            if scoped.is_global
+            else NCSInstructionType.CPTOPSP
+        )
         ncs.instructions.append(
             NCSInstruction(
                 instruction_type,
@@ -1222,7 +1292,9 @@ class EngineCallExpression(Expression):
         for i, param in enumerate(self._function.params):
             if i >= arg_count:
                 if param.default is None:
-                    required_params = [p.name for p in self._function.params if p.default is None]
+                    required_params = [
+                        p.name for p in self._function.params if p.default is None
+                    ]
                     msg = (
                         f"Missing required arguments for '{self._function.name}'\n"
                         f"  Required parameters: {', '.join(required_params)}\n"
@@ -1230,7 +1302,11 @@ class EngineCallExpression(Expression):
                     )
                     raise CompileError(msg)
                 constant: ScriptConstant | None = next(
-                    (constant for constant in root.constants if constant.name == param.default),
+                    (
+                        constant
+                        for constant in root.constants
+                        if constant.name == param.default
+                    ),
                     None,
                 )
                 if constant is None:
@@ -1355,8 +1431,10 @@ class BinaryOperatorExpression(Expression):
                 break
         else:
             # Build helpful error showing what operations are supported
-            supported = [f"{m.lhs.name.lower()} {m.instruction.name} {m.rhs.name.lower()}"
-                        for m in self.compatibility[:3]]
+            supported = [
+                f"{m.lhs.name.lower()} {m.instruction.name} {m.rhs.name.lower()}"
+                for m in self.compatibility[:3]
+            ]
             msg = (
                 f"Incompatible types for binary operation: {type1.builtin.name.lower()} and {type2.builtin.name.lower()}\n"
                 f"  Supported combinations: {', '.join(supported)}"
@@ -1452,7 +1530,9 @@ class Assignment(Expression):
             block,
             root,
         )
-        instruction_type = NCSInstructionType.CPDOWNBP if is_global else NCSInstructionType.CPDOWNSP
+        instruction_type = (
+            NCSInstructionType.CPDOWNBP if is_global else NCSInstructionType.CPDOWNSP
+        )
         stack_index -= 0 if is_global else variable_type.size(root)
 
         # Track the value pushed onto the stack by the expression (after resolving scope)
@@ -1494,7 +1574,9 @@ class AdditionAssignment(Expression):
             block,
             root,
         )
-        instruction_type = NCSInstructionType.CPTOPBP if is_global else NCSInstructionType.CPTOPSP
+        instruction_type = (
+            NCSInstructionType.CPTOPBP if is_global else NCSInstructionType.CPTOPSP
+        )
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
         block.temp_stack += variable_type.size(root)
 
@@ -1503,15 +1585,30 @@ class AdditionAssignment(Expression):
         block.temp_stack += expresion_type.size(root)
 
         # Determine what instruction to apply to the two values
-        if variable_type == DynamicDataType.INT and expresion_type == DynamicDataType.INT:
+        if (
+            variable_type == DynamicDataType.INT
+            and expresion_type == DynamicDataType.INT
+        ):
             arthimetic_instruction = NCSInstructionType.ADDII
-        elif variable_type == DynamicDataType.INT and expresion_type == DynamicDataType.FLOAT:
+        elif (
+            variable_type == DynamicDataType.INT
+            and expresion_type == DynamicDataType.FLOAT
+        ):
             arthimetic_instruction = NCSInstructionType.ADDIF
-        elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.FLOAT:
+        elif (
+            variable_type == DynamicDataType.FLOAT
+            and expresion_type == DynamicDataType.FLOAT
+        ):
             arthimetic_instruction = NCSInstructionType.ADDFF
-        elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.INT:
+        elif (
+            variable_type == DynamicDataType.FLOAT
+            and expresion_type == DynamicDataType.INT
+        ):
             arthimetic_instruction = NCSInstructionType.ADDFI
-        elif variable_type == DynamicDataType.STRING and expresion_type == DynamicDataType.STRING:
+        elif (
+            variable_type == DynamicDataType.STRING
+            and expresion_type == DynamicDataType.STRING
+        ):
             arthimetic_instruction = NCSInstructionType.ADDSS
         else:
             var_name = ".".join(str(ident) for ident in self.field_access.identifiers)
@@ -1527,8 +1624,12 @@ class AdditionAssignment(Expression):
         ncs.add(arthimetic_instruction, args=[])
 
         # Copy the result to the original variable in the stack
-        ins_cpdown = NCSInstructionType.CPDOWNBP if is_global else NCSInstructionType.CPDOWNSP
-        offset_cpdown = stack_index if is_global else stack_index - expresion_type.size(root)
+        ins_cpdown = (
+            NCSInstructionType.CPDOWNBP if is_global else NCSInstructionType.CPDOWNSP
+        )
+        offset_cpdown = (
+            stack_index if is_global else stack_index - expresion_type.size(root)
+        )
         ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
 
         block.temp_stack -= variable_type.size(root)
@@ -1545,7 +1646,9 @@ class SubtractionAssignment(Expression):
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         # Copy the variable to the top of the stack
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
-        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        instruction_type = (
+            NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        )
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
         block.temp_stack += variable_type.size(root)
 
@@ -1554,13 +1657,25 @@ class SubtractionAssignment(Expression):
         block.temp_stack += expresion_type.size(root)
 
         # Determine what instruction to apply to the two values
-        if variable_type == DynamicDataType.INT and expresion_type == DynamicDataType.INT:
+        if (
+            variable_type == DynamicDataType.INT
+            and expresion_type == DynamicDataType.INT
+        ):
             arthimetic_instruction = NCSInstructionType.SUBII
-        elif variable_type == DynamicDataType.INT and expresion_type == DynamicDataType.FLOAT:
+        elif (
+            variable_type == DynamicDataType.INT
+            and expresion_type == DynamicDataType.FLOAT
+        ):
             arthimetic_instruction = NCSInstructionType.SUBIF
-        elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.FLOAT:
+        elif (
+            variable_type == DynamicDataType.FLOAT
+            and expresion_type == DynamicDataType.FLOAT
+        ):
             arthimetic_instruction = NCSInstructionType.SUBFF
-        elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.INT:
+        elif (
+            variable_type == DynamicDataType.FLOAT
+            and expresion_type == DynamicDataType.INT
+        ):
             arthimetic_instruction = NCSInstructionType.SUBFI
         else:
             var_name = ".".join(str(ident) for ident in self.field_access.identifiers)
@@ -1576,8 +1691,12 @@ class SubtractionAssignment(Expression):
         ncs.add(arthimetic_instruction)
 
         # Copy the result to the original variable in the stack
-        ins_cpdown = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
-        offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
+        ins_cpdown = (
+            NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
+        )
+        offset_cpdown = (
+            stack_index if isglobal else stack_index - expresion_type.size(root)
+        )
         ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
 
         block.temp_stack -= expresion_type.size(root)
@@ -1594,7 +1713,9 @@ class MultiplicationAssignment(Expression):
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         # Copy the variable to the top of the stack
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
-        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        instruction_type = (
+            NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        )
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
         block.temp_stack += variable_type.size(root)
 
@@ -1603,13 +1724,25 @@ class MultiplicationAssignment(Expression):
         block.temp_stack += expresion_type.size(root)
 
         # Determine what instruction to apply to the two values
-        if variable_type == DynamicDataType.INT and expresion_type == DynamicDataType.INT:
+        if (
+            variable_type == DynamicDataType.INT
+            and expresion_type == DynamicDataType.INT
+        ):
             arthimetic_instruction = NCSInstructionType.MULII
-        elif variable_type == DynamicDataType.INT and expresion_type == DynamicDataType.FLOAT:
+        elif (
+            variable_type == DynamicDataType.INT
+            and expresion_type == DynamicDataType.FLOAT
+        ):
             arthimetic_instruction = NCSInstructionType.MULIF
-        elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.FLOAT:
+        elif (
+            variable_type == DynamicDataType.FLOAT
+            and expresion_type == DynamicDataType.FLOAT
+        ):
             arthimetic_instruction = NCSInstructionType.MULFF
-        elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.INT:
+        elif (
+            variable_type == DynamicDataType.FLOAT
+            and expresion_type == DynamicDataType.INT
+        ):
             arthimetic_instruction = NCSInstructionType.MULFI
         else:
             var_name = ".".join(str(ident) for ident in self.field_access.identifiers)
@@ -1625,8 +1758,12 @@ class MultiplicationAssignment(Expression):
         ncs.add(arthimetic_instruction)
 
         # Copy the result to the original variable in the stack
-        ins_cpdown = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
-        offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
+        ins_cpdown = (
+            NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
+        )
+        offset_cpdown = (
+            stack_index if isglobal else stack_index - expresion_type.size(root)
+        )
         ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
 
         block.temp_stack -= expresion_type.size(root)
@@ -1643,7 +1780,9 @@ class DivisionAssignment(Expression):
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         # Copy the variable to the top of the stack
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
-        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        instruction_type = (
+            NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        )
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
         block.temp_stack += variable_type.size(root)
 
@@ -1652,13 +1791,25 @@ class DivisionAssignment(Expression):
         block.temp_stack += expresion_type.size(root)
 
         # Determine what instruction to apply to the two values
-        if variable_type == DynamicDataType.INT and expresion_type == DynamicDataType.INT:
+        if (
+            variable_type == DynamicDataType.INT
+            and expresion_type == DynamicDataType.INT
+        ):
             arthimetic_instruction = NCSInstructionType.DIVII
-        elif variable_type == DynamicDataType.INT and expresion_type == DynamicDataType.FLOAT:
+        elif (
+            variable_type == DynamicDataType.INT
+            and expresion_type == DynamicDataType.FLOAT
+        ):
             arthimetic_instruction = NCSInstructionType.DIVIF
-        elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.FLOAT:
+        elif (
+            variable_type == DynamicDataType.FLOAT
+            and expresion_type == DynamicDataType.FLOAT
+        ):
             arthimetic_instruction = NCSInstructionType.DIVFF
-        elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.INT:
+        elif (
+            variable_type == DynamicDataType.FLOAT
+            and expresion_type == DynamicDataType.INT
+        ):
             arthimetic_instruction = NCSInstructionType.DIVFI
         else:
             var_name = ".".join(str(ident) for ident in self.field_access.identifiers)
@@ -1674,8 +1825,12 @@ class DivisionAssignment(Expression):
         ncs.add(arthimetic_instruction)
 
         # Copy the result to the original variable in the stack
-        ins_cpdown = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
-        offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
+        ins_cpdown = (
+            NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
+        )
+        offset_cpdown = (
+            stack_index if isglobal else stack_index - expresion_type.size(root)
+        )
         ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
 
         block.temp_stack -= expresion_type.size(root)
@@ -1866,7 +2021,9 @@ class ConditionalBlock(Statement):
         continue_instruction: NCSInstruction | None,
     ):
         jump_count: int = 1 + len(self.if_blocks)
-        jump_tos: list[NCSInstruction] = [NCSInstruction(NCSInstructionType.NOP, args=[]) for _ in range(jump_count)]
+        jump_tos: list[NCSInstruction] = [
+            NCSInstruction(NCSInstructionType.NOP, args=[]) for _ in range(jump_count)
+        ]
 
         for i, else_if in enumerate(self.if_blocks):
             else_if.condition.compile(ncs, root, block)
@@ -2393,7 +2550,9 @@ class DynamicDataType:
             return True
         if isinstance(other, DynamicDataType):
             if self.builtin == other.builtin:
-                return self.builtin != DataType.STRUCT or (self.builtin == DataType.STRUCT and self._struct == other._struct)
+                return self.builtin != DataType.STRUCT or (
+                    self.builtin == DataType.STRUCT and self._struct == other._struct
+                )
             return False
         if isinstance(other, DataType):
             return self.builtin == other and self.builtin != DataType.STRUCT

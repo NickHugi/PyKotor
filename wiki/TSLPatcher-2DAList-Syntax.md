@@ -1,10 +1,12 @@
 # TSLPatcher 2DAList Syntax - Complete Guide
 
+This guide explains how to modify 2DA files using TSLPatcher syntax. For the complete 2DA file format specification, see [2DA File Format](2DA-File-Format). For general TSLPatcher information, see [TSLPatcher's Official Readme](TSLPatcher's-Official-Readme). For HoloPatcher-specific information, see [HoloPatcher README for Mod Developers](HoloPatcher-README-for-mod-developers.).
+
 ## Overview
 
 The `[2DAList]` section in TSLPatcher's `changes.ini` enables you to modify 2DA (Two-Dimensional Array) files used throughout KotOR and TSL. 2DA files are tabular data structures that store game information such as appearances, classes, feats, items, spells, and more. You can change existing rows, add new rows, copy rows, and add columns using various targeting methods and value types.
 
-The `[2DAList]` section is processed **after** `[TLKList]` but **before** `[GFFList]` in HoloPatcher, meaning you can use `StrRef#` tokens from TLKList, and any `2DAMEMORY#` tokens you create will be available to GFFList and other sections.
+The `[2DAList]` section is processed **after** `[TLKList]` but **before** `[GFFList]` in HoloPatcher, meaning you can use `StrRef#` tokens from [TLKList](TSLPatcher-TLKList-Syntax), and any `2DAMEMORY#` tokens you create will be available to [GFFList](TSLPatcher-GFFList-Syntax) and other sections.
 
 ## Table of Contents
 

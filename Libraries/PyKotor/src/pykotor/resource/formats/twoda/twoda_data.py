@@ -60,7 +60,8 @@ ASCII Format (Version V2.0):
 
 from __future__ import annotations
 
-from contextlib import suppress
+import copy as copy_module
+from contextlib import contextmanager, suppress
 from copy import copy
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -142,6 +143,10 @@ class TwoDA(ComparableMixin):
         # vendor/TSLPatcher/lib/site/Bioware/TwoDA.pm:133
         # Row labels (usually "0", "1", "2"... but can be arbitrary strings)
         self._labels: list[str] = []  # for rows
+        
+        # Performance optimization: O(1) lookup for row labels
+        # Maps label string to row index for fast find_row() operations
+        self._label_to_index: dict[str, int] = {}
 
     def __eq__(self, other):
         if not isinstance(other, TwoDA):
@@ -170,6 +175,101 @@ class TwoDA(ComparableMixin):
         """Iterates through each row yielding a new linked TwoDARow instance."""
         for i, row in enumerate(self._rows):
             yield TwoDARow(self.get_label(i), row)
+
+    def __len__(
+        self,
+    ) -> int:
+        """Returns the number of rows in the 2DA.
+
+        Returns:
+        -------
+            The number of rows.
+        """
+        return self.get_height()
+
+    def __contains__(
+        self,
+        label: str,
+    ) -> bool:
+        """Checks if a row label exists in the 2DA.
+
+        Args:
+        ----
+            label: The row label to check.
+
+        Returns:
+        -------
+            True if the label exists, False otherwise.
+        """
+        return label in self._label_to_index
+
+    def __getitem__(
+        self,
+        key: int | str | slice,
+    ) -> TwoDARow | list[TwoDARow]:
+        """Pythonic access to rows by index, label, or slice.
+
+        Args:
+        ----
+            key: Row index (int), label (str), or slice.
+
+        Returns:
+        -------
+            TwoDARow for single access, list[TwoDARow] for slice.
+
+        Raises:
+        ------
+            KeyError: If label not found.
+            IndexError: If index out of range.
+        """
+        if isinstance(key, int):
+            return self.get_row(key)
+        if isinstance(key, str):
+            result = self.find_row(key)
+            if result is None:
+                raise KeyError(f"Row label '{key}' not found")
+            return result
+        if isinstance(key, slice):
+            indices = range(len(self._rows))[key]
+            return [self.get_row(i) for i in indices]
+        msg = f"Invalid key type: {type(key).__name__}. Expected int, str, or slice."
+        raise TypeError(msg)
+
+    @property
+    def shape(
+        self,
+    ) -> tuple[int, int]:
+        """Returns the dimensions of the 2DA as (rows, columns).
+
+        Returns:
+        -------
+            Tuple of (row_count, column_count).
+        """
+        return (self.get_height(), self.get_width())
+
+    @property
+    def columns(
+        self,
+    ) -> list[str]:
+        """Returns a copy of the column headers.
+
+        Returns:
+        -------
+            List of column header names.
+        """
+        return copy(self._headers)
+
+    @property
+    def index(
+        self,
+    ) -> list[str]:
+        """Returns a copy of the row labels.
+
+        Returns:
+        -------
+            List of row labels.
+        """
+        return copy(self._labels)
 
     def get_headers(
         self,
@@ -307,12 +407,42 @@ class TwoDA(ComparableMixin):
     ):
         """Sets the row label at the given index.
 
+        Updates the label lookup dictionary for O(1) find_row performance.
+
         Args:
         ----
             row_index: The index of the row to change.
             value: The new row label.
         """
+        old_label = self._labels[row_index]
         self._labels[row_index] = value
+        # Update lookup dictionary
+        if old_label in self._label_to_index:
+            del self._label_to_index[old_label]
+        self._label_to_index[value] = row_index
+
+    def _rebuild_label_lookup(self):
+        """Rebuilds the label-to-index lookup dictionary.
+
+        Should be called after bulk operations that modify labels.
+        """
+        self._label_to_index = {label: idx for idx, label in enumerate(self._labels)}
+
+    def has_row(
+        self,
+        row_index: int,
+    ) -> bool:
+        """Checks if a row exists at the given index.
+
+        Args:
+        ----
+            row_index: The row index to check.
+
+        Returns:
+        -------
+            True if the row exists, False otherwise.
+        """
+        return 0 <= row_index < len(self._rows)
 
     def get_row(
         self,
@@ -346,6 +476,8 @@ class TwoDA(ComparableMixin):
     ) -> TwoDARow | None:
         """Find a row in a 2D array by its label.
 
+        Uses O(1) lookup via label_to_index dictionary for performance.
+
         Args:
         ----
             row_label: The label of the row to find
@@ -356,11 +488,14 @@ class TwoDA(ComparableMixin):
 
         Processing Logic:
         ----------------
-            - Iterate through each row in the 2D array
-            - Check if the row's label matches the given label
-            - If a match is found, return the row
-            - If no match is found after iterating all rows, return None.
+            - Use O(1) lookup dictionary if available
+            - Fallback to O(n) search for compatibility
         """
+        # Use O(1) lookup if available, fallback to O(n) search for compatibility
+        if row_label in self._label_to_index:
+            row_index = self._label_to_index[row_label]
+            return self.get_row(row_index)
+        # Fallback for cases where lookup dict might be out of sync
         return next((row for row in self if row.label() == row_label), None)
 
     def row_index(
@@ -407,7 +542,12 @@ class TwoDA(ComparableMixin):
             The id of the new row.
         """
         self._rows.append({})
-        self._labels.append(str(len(self._rows)) if row_label is None else row_label)
+        label = str(len(self._rows)) if row_label is None else row_label
+        self._labels.append(label)
+        
+        # Update lookup dictionary for O(1) find_row performance
+        row_index = len(self._rows) - 1
+        self._label_to_index[label] = row_index
 
         if cells is None:
             cells = {}
@@ -418,7 +558,7 @@ class TwoDA(ComparableMixin):
         for header in self._headers:
             self._rows[-1][header] = cells.get(header, "")
 
-        return len(self._rows) - 1
+        return row_index
 
     def copy_row(
         self,
@@ -440,7 +580,12 @@ class TwoDA(ComparableMixin):
         source_index = self.row_index(source_row)
 
         self._rows.append({})
-        self._labels.append(str(len(self._rows)) if row_label is None else row_label)
+        label = str(len(self._rows)) if row_label is None else row_label
+        self._labels.append(label)
+        
+        # Update lookup dictionary for O(1) find_row performance
+        row_index = len(self._rows) - 1
+        self._label_to_index[label] = row_index
 
         if override_cells is None:
             override_cells = {}
@@ -451,12 +596,13 @@ class TwoDA(ComparableMixin):
         for header in self._headers:
             self._rows[-1][header] = override_cells[header] if header in override_cells else self.get_cell(source_index, header)  # FIXME: source_index cannot be None
 
-        return len(self._rows) - 1
+        return row_index
 
     def get_cell(
         self,
         row_index: int,
         column: str,
+        context: str | None = None,
     ) -> str:
         """Returns the value of the cell at the specified row under the specified column.
 
@@ -464,6 +610,7 @@ class TwoDA(ComparableMixin):
         ----
             row_index: The row index.
             column: The column header.
+            context: Optional context string for better error messages.
 
         Raises:
         ------
@@ -474,7 +621,44 @@ class TwoDA(ComparableMixin):
         -------
             The cell value.
         """
-        return self._rows[row_index][column]
+        try:
+            return self._rows[row_index][column]
+        except KeyError as e:
+            available = [h for h in self._headers if h in self._rows[row_index]]
+            msg = f"Column '{column}' not found in row {row_index}."
+            if available:
+                msg += f" Available columns: {available}"
+            if context:
+                msg += f" | Context: {context}"
+            raise KeyError(msg) from e
+        except IndexError as e:
+            msg = f"Row index {row_index} out of range [0, {len(self._rows)})"
+            if context:
+                msg += f" | Context: {context}"
+            raise IndexError(msg) from e
+
+    def get_cell_safe(
+        self,
+        row_index: int,
+        column: str,
+        default: str = "",
+    ) -> str:
+        """Safe cell access with default value - perfect for model loading and similar use cases.
+
+        Args:
+        ----
+            row_index: The row index.
+            column: The column header.
+            default: Default value to return if row/column doesn't exist.
+
+        Returns:
+        -------
+            The cell value, or default if row/column doesn't exist.
+        """
+        try:
+            return self.get_cell(row_index, column)
+        except (KeyError, IndexError):
+            return default
 
     def set_cell(
         self,
@@ -544,6 +728,9 @@ class TwoDA(ComparableMixin):
         if row_count < current_height:
             # trim the _rows list
             self._rows = self._rows[:row_count]
+            self._labels = self._labels[:row_count]
+            # Rebuild lookup dictionary after trimming
+            self._rebuild_label_lookup()
         else:
             # insert the new rows with each cell filled in blank
             for _ in range(row_count - current_height):
@@ -592,6 +779,76 @@ class TwoDA(ComparableMixin):
                 max_found = max(int(label), max_found)
 
         return max_found + 1
+
+    def update_cells(
+        self,
+        updates: dict[tuple[int, str], Any],
+    ):
+        """Batch update multiple cells efficiently.
+
+        Args:
+        ----
+            updates: Dictionary mapping (row_index, column) tuples to new values.
+
+        Example:
+        -------
+            twoda.update_cells({
+                (0, "name"): "New Name",
+                (1, "value"): 42,
+                (2, "description"): "Updated"
+            })
+        """
+        for (row_idx, col), value in updates.items():
+            self.set_cell(row_idx, col, value)
+
+    def filter_rows(
+        self,
+        predicate: Callable[[TwoDARow], bool],
+    ) -> TwoDA:
+        """Return new TwoDA with filtered rows.
+
+        Args:
+        ----
+            predicate: Function that takes a TwoDARow and returns True to keep it.
+
+        Returns:
+        -------
+            New TwoDA instance with filtered rows.
+
+        Example:
+        -------
+            filtered = twoda.filter_rows(lambda row: row.get_string("type") == "weapon")
+        """
+        result = TwoDA(self._headers)
+        for row in self:
+            if predicate(row):
+                result.add_row(row.label(), row._data)
+        return result
+
+    @contextmanager
+    def batch_update(self):
+        """Context manager for batch updates with validation and rollback on error.
+
+        If an exception occurs during the batch update, all changes are rolled back.
+
+        Example:
+        -------
+            with twoda.batch_update():
+                twoda.set_cell(0, "name", "new_value")
+                twoda.add_row("new_label")
+                # If any error occurs, all changes are rolled back
+        """
+        original_rows = copy_module.deepcopy(self._rows)
+        original_labels = copy(self._labels)
+        original_label_to_index = copy(self._label_to_index)
+        try:
+            yield self
+        except Exception:
+            # Rollback on error
+            self._rows = original_rows
+            self._labels = original_labels
+            self._label_to_index = original_label_to_index
+            raise
 
     def compare(
         self,
@@ -733,6 +990,22 @@ class TwoDARow(ComparableMixin):
             The label for the row.
         """
         return self._row_label
+
+    def has_string(
+        self,
+        header: str,
+    ) -> bool:
+        """Checks if a header exists in this row.
+
+        Args:
+        ----
+            header: The column header to check.
+
+        Returns:
+        -------
+            True if the header exists, False otherwise.
+        """
+        return header in self._data
 
     def update_values(
         self,

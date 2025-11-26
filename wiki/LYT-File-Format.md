@@ -19,7 +19,7 @@ LYT (Layout) files define how area room models are positioned inside a module. T
 
 ## Format Overview
 
-- LYT files are ASCII text with a deterministic order: `beginlayout`, optional sections, then `donelayout`.  
+- LYT files are [ASCII](https://en.wikipedia.org/wiki/ASCII) text with a deterministic order: `beginlayout`, optional sections, then `donelayout`.  
 - Every section declares a count and then lists entries on subsequent lines.  
 - All implementations (`vendor/reone`, `vendor/xoreos`, `vendor/KotOR.js`, `vendor/Kotor.NET`) parse identical tokens; KotOR-Unity mirrors the same structure.  
 

@@ -87,12 +87,31 @@ class SceneCache:
 
         for door in scene.git.doors:
             if door not in scene.objects:
-                model_name = "unknown"  # If failed to load door models, use an empty model instead
-                utd = None
+                model_name: str = "unknown"  # If failed to load door models, use an empty model instead
+                utd: UTD | None = None
                 try:
-                    utd: UTD | None = scene._resource_from_gitinstance(door, scene._module.door)
+                    utd = scene._resource_from_gitinstance(door, scene._module.door)
                     if utd is not None:
-                        model_name: str = scene.table_doors.get_row(utd.appearance_id).get_string("modelname")
+                        # Check if the row exists before accessing it to avoid IndexError
+                        if scene.table_doors.has_row(utd.appearance_id):
+                            row = scene.table_doors.get_row(utd.appearance_id)
+                            if row.has_string("modelname"):
+                                model_name = row.get_string("modelname")
+                            else:
+                                RobustLogger().warning(
+                                    f"Door '{door.resref}.utd' references appearance_id {utd.appearance_id} "
+                                    f"which exists in doors.2da but lacks 'modelname' header. Using default model 'unknown'."
+                                )
+                        else:
+                            RobustLogger().warning(
+                                f"Door '{door.resref}.utd' references appearance_id {utd.appearance_id} "
+                                f"which does not exist in doors.2da. Using default model 'unknown'."
+                            )
+                except (IndexError, KeyError) as e:
+                    RobustLogger().warning(
+                        f"Could not get the model name from the UTD '{door.resref}.utd' "
+                        f"and/or the doors.2da: {e}. Using default model 'unknown'."
+                    )
                 except Exception:  # noqa: BLE001
                     RobustLogger().exception(f"Could not get the model name from the UTD '{door.resref}.utd' and/or the appearance.2da")
                 if utd is None:
@@ -111,11 +130,30 @@ class SceneCache:
         for placeable in scene.git.placeables:
             if placeable not in scene.objects:
                 model_name = "unknown"  # If failed to load a placeable models, use an empty model instead
-                utp = None
+                utp: UTP | None = None
                 try:
-                    utp: UTP | None = scene._resource_from_gitinstance(placeable, scene._module.placeable)
+                    utp = scene._resource_from_gitinstance(placeable, scene._module.placeable)
                     if utp is not None:
-                        model_name: str = scene.table_placeables.get_row(utp.appearance_id).get_string("modelname")
+                        # Check if the row exists before accessing it to avoid IndexError
+                        if scene.table_placeables.has_row(utp.appearance_id):
+                            row = scene.table_placeables.get_row(utp.appearance_id)
+                            if row.has_string("modelname"):
+                                model_name = row.get_string("modelname")
+                            else:
+                                RobustLogger().warning(
+                                    f"Placeable '{placeable.resref}.utp' references appearance_id {utp.appearance_id} "
+                                    f"which exists in placeables.2da but lacks 'modelname' header. Using default model 'unknown'."
+                                )
+                        else:
+                            RobustLogger().warning(
+                                f"Placeable '{placeable.resref}.utp' references appearance_id {utp.appearance_id} "
+                                f"which does not exist in placeables.2da. Using default model 'unknown'."
+                            )
+                except (IndexError, KeyError) as e:
+                    RobustLogger().warning(
+                        f"Could not get the model name from the UTP '{placeable.resref}.utp' "
+                        f"and/or the placeables.2da: {e}. Using default model 'unknown'."
+                    )
                 except Exception:  # noqa: BLE001
                     RobustLogger().exception(f"Could not get the model name from the UTP '{placeable.resref}.utp' and/or the appearance.2da")
                 if utp is None:

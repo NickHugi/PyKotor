@@ -21,7 +21,7 @@ LTR (Letter) resources store third-order [Markov chain](https://en.wikipedia.org
 ## File Structure Overview
 
 - KotOR always uses the **28-character alphabet** (`a–z` plus `'` and `-`). NWN used 26 characters; the header explicitly stores the count.  
-- LTR files are binary and consist of a short header followed by three probability tables (singles, doubles, triples) stored as contiguous float arrays.  
+- LTR files are [binary](https://en.wikipedia.org/wiki/Binary_file) and consist of a short header followed by three probability tables (singles, doubles, triples) stored as contiguous [float](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) arrays.  
 - Field offsets below trace directly to the reader implementations in [`vendor/reone/src/libs/resource/format/ltrreader.cpp`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/ltrreader.cpp#L27-L74), [`vendor/xoreos/src/aurora/ltrfile.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/aurora/ltrfile.cpp#L135-L168), and [`vendor/KotOR.js/src/resource/LTRObject.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/resource/LTRObject.ts#L61-L117).  
 
 **Implementation:** [`Libraries/PyKotor/src/pykotor/resource/formats/ltr/`](https://github.com/th3w1zard1/PyKotor/tree/master/Libraries/PyKotor/src/pykotor/resource/formats/ltr)

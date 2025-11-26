@@ -1,60 +1,56 @@
 [build-system]
-requires = ["setuptools>=42,<70", "wheel"]
+requires = ["setuptools>=67.8.0,<70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "PyKotorFont"
-description = "Work with KOTOR's font textures and txi files."
-version = "1.7"
-requires-python = ">= 3.8"
+name = "pykotorfont"
+version = "1.8.0"
+description = "Font rendering module for PyKotor - handles TXI/TGA font generation."
+authors = [{name = "NickHugi"}]
+maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
+readme = {file = "../../README.md", content-type = "text/markdown"}
+license = {text = "LGPL-3.0-or-later License"}
+keywords = ["kotor", "font", "txi", "tga", "pykotor"]
+requires-python = ">=3.8"
 dependencies = [
-  "ply>=3.11,<4",                 # required for the nss compiler lexer
-  "numpy~=1.22",                  # probably required by PyKotorGL
-  "charset-normalizer>=2.0,<3.4", # used for localized string decodings
-  "defusedxml~=0.7",              # secure XML parsing
-  "Pillow>=9.5",
-]
-authors = [{ name = "NickHugi" }]
-maintainers = [{ name = "th3w1zard1", email = "halomastar@gmail.com" }]
-readme = { file = "README.md", content-type = "text/markdown" }
-license = { text = "LGPL-3.0-or-later License" }
-keywords = [
-  "kotor",
-  "library",
-  "holocron",
-  "toolset",
-  "pykotor",
-  "editor",
-  "holopatcher",
-  "tslpatcher",
+    "pykotor>=1.8.0",
+    "pillow>=9.5; python_implementation == 'CPython'",
+    "pillow>10,<11.1.0; python_implementation == 'PyPy'",
 ]
 
 [project.optional-dependencies]
-font_writer = [
-  "pillow>=9.5; python_implementation == 'CPython'",    # required for TXI/TGA fonts (CPython)
-  "pillow>10,<11.1.0; python_implementation == 'PyPy'", # required for TXI/TGA fonts (PyPy)
-]
-xml = [
-  "defusedxml~=0.7", # secure XML parsing
-]
-gl = [
-  "PyGLM>=2.0,<2.8",
-  "PyOpenGL>=3.1.10",
-  "django>2.1; os_name != 'nt'",
-  "django>2.0; os_name == 'nt'",
+dev = [
+    "pytest>=7.0.0,<8.0.0; python_version>=\"3.8\"",
 ]
 
 [project.urls]
-Homepage = "https://github.com/NickHugi/PyKotor"
-Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
-Repository = "https://github.com/NickHugi/PyKotor.git"
-Issues = "https://github.com/NickHugi/PyKotor/issues"
-#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"
+homepage = "https://github.com/th3w1zard1/PyKotor"
+documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
+repository = "https://github.com/th3w1zard1/PyKotor.git"
+issues = "https://github.com/th3w1zard1/PyKotor/issues"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+[tool.poetry]
+name = "pykotorfont"
+version = "1.8.0"
+description = "Font rendering extension for PyKotor"
+authors = ["NickHugi"]
+maintainers = ["Benjamin Auquite <halomastar@gmail.com>"]
+readme = "../../README.md"
+packages = [{ include = "pykotor", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pykotor = "^1.8.0"
 
 [tool.poetry.urls]
-Homepage = "https://github.com/NickHugi/PyKotor"
-Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
-Repository = "https://github.com/NickHugi/PyKotor.git"
-Issues = "https://github.com/NickHugi/PyKotor/issues"
-#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"
+homepage = "https://github.com/th3w1zard1/PyKotor"
+documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
+repository = "https://github.com/th3w1zard1/PyKotor.git"
+issues = "https://github.com/th3w1zard1/PyKotor/issues"

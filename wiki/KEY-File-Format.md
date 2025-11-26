@@ -49,7 +49,7 @@ The KEY file only manages BIF resources (step 4). Higher-priority locations can 
 
 ---
 
-## Binary Format
+## [Binary Format](https://en.wikipedia.org/wiki/Binary_file)
 
 ### File Header
 
@@ -126,6 +126,12 @@ Each key entry is 22 bytes:
 | ResRef      | char[16] | 0      | 16   | Resource filename (null-padded, max 16 chars)                   |
 | Resource Type | uint16 | 16   | 2    | Resource type identifier                                         |
 | Resource ID | uint32   | 18     | 4    | Encoded resource location (see [Resource ID Encoding](#resource-id-encoding)) |
+
+**Critical Structure Packing Note:**
+
+The key entry structure must use **byte or word alignment** (1-byte or 2-byte packing). If the structure is packed with 4-byte or 8-byte alignment, the `uint32` at offset 0x0012 (18) will be incorrectly placed at offset 0x0014 (20), causing incorrect resource ID decoding.
+
+On non-Intel platforms, this alignment requirement may cause alignment faults unless the compiler provides an "unaligned" type or special care is taken when accessing the `uint32` field. The structure should be explicitly packed to ensure the `uint32` starts at offset 18 rather than being aligned to a 4-byte boundary.
 
 **Reference**: [`vendor/reone/src/libs/resource/format/keyreader.cpp:72-100`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/keyreader.cpp#L72-L100)
 

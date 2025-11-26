@@ -1,6 +1,10 @@
 # KotOR TLK File Format Documentation
 
-This document provides a detailed description of the TLK (Talk Table) file format used in Knights of the Old Republic (KotOR) games. TLK files contain all text strings used in the game, both written and spoken, enabling easy localization by providing a lookup table from string reference numbers (StrRef) to localized text and associated voice-over audio files.
+This document provides a detailed description of the TLK (Talk Table) file format used in Knights of the Old Republic (KotOR) games. TLK files contain all text strings used in the game, both written and spoken, enabling easy [localization](https://en.wikipedia.org/wiki/Internationalization_and_localization) by providing a [lookup table](https://en.wikipedia.org/wiki/Lookup_table) from string reference numbers (StrRef) to localized text and associated voice-over audio files.
+
+**For mod developers:** To modify TLK files in your mods, see the [TSLPatcher TLKList Syntax Guide](TSLPatcher-TLKList-Syntax). For general modding information, see [HoloPatcher README for Mod Developers](HoloPatcher-README-for-mod-developers.).
+
+**Related formats:** TLK files are referenced by [GFF files](GFF-File-Format) (especially DLG dialogue files), [2DA files](2DA-File-Format) for item names and descriptions, and [SSF files](SSF-File-Format) for character sound sets.
 
 ## Table of Contents
 
@@ -21,7 +25,7 @@ This document provides a detailed description of the TLK (Talk Table) file forma
 
 ## File Structure Overview
 
-TLK files store localized strings in a binary format. The game loads `dialog.tlk` at startup and references strings throughout the game using StrRef numbers (array indices).
+TLK files store localized strings in a [binary format](https://en.wikipedia.org/wiki/Binary_file). The game loads `dialog.tlk` at startup and references strings throughout the game using StrRef numbers ([array indices](https://en.wikipedia.org/wiki/Array_data_structure)).
 
 **Implementation:** [`Libraries/PyKotor/src/pykotor/resource/formats/tlk/`](https://github.com/th3w1zard1/PyKotor/tree/master/Libraries/PyKotor/src/pykotor/resource/formats/tlk/)
 
@@ -51,8 +55,8 @@ The string data table contains metadata for each string entry. Each entry is 40 
 
 | Name              | Type      | Offset | Size | Description                                                      |
 | ----------------- | --------- | ------ | ---- | ---------------------------------------------------------------- |
-| Flags             | uint32    | 0      | 4    | Bit flags: bit 0=text present, bit 1=sound present, bit 2=sound length present |
-| Sound ResRef      | char[16]  | 4      | 16   | Voice-over audio filename (null-terminated, max 16 chars)        |
+| Flags             | uint32    | 0      | 4    | [Bit flags](https://en.wikipedia.org/wiki/Bit_field): bit 0=text present, bit 1=sound present, bit 2=sound length present |
+| Sound ResRef      | char[16]  | 4      | 16   | Voice-over audio filename ([null-terminated](https://en.wikipedia.org/wiki/Null-terminated_string), max 16 chars)        |
 | Volume Variance   | uint32    | 20     | 4    | Unused in KotOR (always 0)                                      |
 | Pitch Variance    | uint32    | 24     | 4    | Unused in KotOR (always 0)                                      |
 | Offset to String  | uint32    | 28     | 4    | Offset to string text (relative to String Entries Offset)       |
@@ -92,7 +96,7 @@ String entries follow the string data table:
 
 | Name         | Type   | Description                                                      |
 | ------------ | ------ | ---------------------------------------------------------------- |
-| String Text  | char[] | Null-terminated string data (UTF-8 or Windows-1252 encoded)     |
+| String Text  | char[] | [Null-terminated](https://en.wikipedia.org/wiki/Null-terminated_string) string data ([UTF-8](https://en.wikipedia.org/wiki/UTF-8) or [Windows-1252](https://en.wikipedia.org/wiki/Windows-1252) encoded)     |
 
 String text is stored at the offset specified in the string data table entry. The encoding depends on the language ID (see [Localization](#localization)).
 
@@ -111,7 +115,7 @@ Each TLK entry contains:
 | `text_present`   | bool   | Whether text content exists                                      |
 | `sound_present`  | bool   | Whether voice-over audio exists                                  |
 | `soundlength_present` | bool | Whether sound length is valid                                    |
-| `sound_length`   | float  | Duration of voice-over audio in seconds                         |
+| `sound_length`   | [float](https://en.wikipedia.org/wiki/Single-precision_floating-point_format)  | Duration of voice-over audio in seconds                         |
 
 ---
 

@@ -8,6 +8,8 @@ description = "A translator/font creator tool useful for patching/working with m
 version = "2.2.0"
 requires-python = ">= 3.8" # 64-bit, 3.7 might be compatible
 dependencies = [
+  "pykotor>=1.8.0",
+  "pykotorfont>=1.8.0",
   "setuptools>=67.8.0,<70",
   "deep_translator==1.9.2",
   "deepl-cli==0.3.0",

@@ -21,6 +21,29 @@ if TYPE_CHECKING:
 # Key: (filepath, offset, size) -> Value: (data, mtime)
 _FILE_DATA_CACHE: dict[tuple[Path, int, int], tuple[bytes, float]] = {}
 
+# Cache valid ResourceTypes sorted by extension length (longest first) for efficient matching
+# This avoids iterating through all ResourceTypes for every file (massive performance improvement)
+_RESOURCE_TYPE_CACHE: list[tuple[ResourceType, str]] | None = None
+
+
+def _get_cached_resource_types() -> list[tuple[ResourceType, str]]:
+    """Get cached list of valid ResourceTypes with extensions, sorted by extension length (longest first).
+    
+    This cache is computed once and reused for all file parsing operations.
+    """
+    global _RESOURCE_TYPE_CACHE  # noqa: PLW0603
+    if _RESOURCE_TYPE_CACHE is None:
+        _RESOURCE_TYPE_CACHE = sorted(
+            [
+                (rt, f".{rt.extension}")
+                for rt in ResourceType.__members__.values()
+                if not rt.is_invalid and rt.extension
+            ],
+            key=lambda x: len(x[1]),
+            reverse=True,  # Longest extensions first (handles multi-part extensions like "res.xml")
+        )
+    return _RESOURCE_TYPE_CACHE
+
 
 def clear_file_data_cache() -> None:
     """Clear the global file data cache to free memory."""
@@ -83,11 +106,16 @@ class FileResource:
             else self._filepath
         )
 
-        self._internal: bool = False
-        self._path_ident_obj: Path = self._filepath / str(self._identifier) if self.inside_capsule or self.inside_bif else self._filepath
-
     def __repr__(self):
-        return f"{self.__class__.__name__}(resname='{self._resname}', restype={self._restype!r}, size={self._size}, offset={self._offset}, filepath={self._filepath!r})"
+        return (
+            f"{self.__class__.__name__}("
+            f"resname='{self._resname}', "
+            f"restype={self._restype!r}, "
+            f"size={self._size}, "
+            f"offset={self._offset}, "
+            f"filepath={self._filepath!r}"
+            ")"
+        )
 
     def __hash__(self):
         return hash(self._path_ident_obj)
@@ -244,35 +272,6 @@ class FileResource:
     def as_file_resource(self) -> Self:
         """For unifying use with LocationResult and ResourceResult."""
         return self
-
-    def __repr__(self):
-        return (
-            f"{self.__class__.__name__}("
-            f"resname='{self._resname}', "
-            f"restype={self._restype!r}, "
-            f"size={self._size}, "
-            f"offset={self._offset}, "
-            f"filepath={self._filepath!r}"
-            ")"
-        )
-
-    def __hash__(self):
-        return hash(self._path_ident_obj)
-
-    def __str__(self):
-        return str(self._identifier)
-
-    def __eq__(
-        self,
-        other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
-    ):
-        if self is other:
-            return True
-        if isinstance(other, ResourceIdentifier):
-            return self.identifier() == other
-        if isinstance(other, FileResource):
-            return True if self is other else self._path_ident_obj == other._path_ident_obj
-        return NotImplemented
 
 
 @dataclass(frozen=True)
@@ -489,18 +488,24 @@ class ResourceIdentifier:
             filename = p.name
             lower_filename = filename.lower()
 
+            # Use cached ResourceTypes sorted by extension length (longest first)
+            # This is much faster than iterating through all ResourceType.__members__.values() every time
             chosen_restype: ResourceType | None = None
             chosen_suffix_length = 0
-            for candidate in ResourceType.__members__.values():
-                if candidate.is_invalid:
+            for candidate, suffix in _get_cached_resource_types():
+                # Early exit optimization: if suffix is longer than filename, skip
+                if len(suffix) > len(lower_filename):
                     continue
-                extension = candidate.extension
-                if not extension:
-                    continue
-                suffix = f".{extension}"
-                if lower_filename.endswith(suffix) and len(suffix) > chosen_suffix_length:
+                # Early exit: if we already found a match longer than remaining candidates, we're done
+                # (since we're sorted longest-first, any remaining matches would be shorter)
+                if chosen_suffix_length > 0 and len(suffix) <= chosen_suffix_length:
+                    break
+                if lower_filename.endswith(suffix):
                     chosen_restype = candidate
                     chosen_suffix_length = len(suffix)
+                    # Perfect match - filename ends with this extension, can't get better
+                    if len(suffix) == len(lower_filename):
+                        break
 
             if chosen_restype is not None and chosen_suffix_length > 0:
                 resname_candidate = filename[:-chosen_suffix_length]

@@ -1,0 +1,2869 @@
+# KotOR NSS File Format Documentation
+
+NSS (NWScript Source) files contain human-readable NWScript source code that compiles to [NCS bytecode](NCS-File-Format). The `nwscript.nss` file defines all engine-exposed functions and constants available to scripts. KotOR 1 and KotOR 2 each have their own `nwscript.nss` with game-specific functions and constants.
+
+## Table of Contents
+
+- [KotOR NSS File Format Documentation](#kotor-nss-file-format-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [nwscript.nss Format](#nwscriptnss-format)
+    - [Function Declaration Format](#function-declaration-format)
+    - [Constant Declaration Format](#constant-declaration-format)
+    - [Include Files](#include-files)
+  - [PyKotor Implementation](#pykotor-implementation)
+    - [Data Structures](#data-structures)
+    - [Compilation Integration](#compilation-integration)
+  - [KotOR-Specific Functions](#kotor-specific-functions)
+    - [Party Management](#party-management)
+    - [Global Variables](#global-variables)
+    - [Player Character Functions](#player-character-functions)
+    - [Alignment System](#alignment-system)
+    - [Class System](#class-system)
+    - [Effects System](#effects-system)
+    - [Item Properties](#item-properties)
+    - [Actions](#actions)
+    - [Skills and Feats](#skills-and-feats)
+    - [Abilities and Stats](#abilities-and-stats)
+    - [Object Query and Manipulation](#object-query-and-manipulation)
+    - [Item Management](#item-management)
+    - [Local Variables](#local-variables)
+    - [Module and Area Functions](#module-and-area-functions)
+    - [Waypoint Functions](#waypoint-functions)
+    - [Encounter Functions](#encounter-functions)
+    - [Trap Functions](#trap-functions)
+    - [Position and Orientation Functions](#position-and-orientation-functions)
+    - [String and Conversion Functions](#string-and-conversion-functions)
+    - [Object Property Functions](#object-property-functions)
+    - [Hit Points and Vitality Functions](#hit-points-and-vitality-functions)
+    - [Gold and Economy Functions](#gold-and-economy-functions)
+    - [Creature Query Functions](#creature-query-functions)
+    - [Object Type Checking Functions](#object-type-checking-functions)
+    - [Item Property Functions](#item-property-functions)
+    - [Alignment Functions](#alignment-functions)
+    - [Conversation Action Functions](#conversation-action-functions)
+    - [Effect Functions](#effect-functions)
+    - [Action Functions (Extended)](#action-functions-extended)
+    - [Spell and Magic Functions](#spell-and-magic-functions)
+    - [Camera Functions](#camera-functions)
+    - [Sound Functions](#sound-functions)
+    - [Distance Functions](#distance-functions)
+    - [Vector and Location Functions](#vector-and-location-functions)
+    - [Saving Throw Functions](#saving-throw-functions)
+    - [AC (Armor Class) Functions](#ac-armor-class-functions)
+    - [Reputation Functions](#reputation-functions)
+    - [Event Handling Functions](#event-handling-functions)
+    - [Script Execution Functions](#script-execution-functions)
+    - [Level and Experience Functions](#level-and-experience-functions)
+    - [Effect Subtype Functions](#effect-subtype-functions)
+    - [Combat Functions](#combat-functions)
+    - [Dialog and Conversation Functions](#dialog-and-conversation-functions)
+    - [Sound and Music Functions](#sound-and-music-functions)
+    - [Damage Types](#damage-types)
+    - [Planet Constants](#planet-constants)
+    - [NPC Constants](#npc-constants)
+    - [Inventory System](#inventory-system)
+    - [Visual Effects (VFX)](#visual-effects-vfx)
+  - [KotOR-Specific Constants](#kotor-specific-constants)
+    - [Alignment Constants](#alignment-constants)
+    - [Class Type Constants](#class-type-constants)
+    - [Damage Type Constants](#damage-type-constants)
+    - [Saving Throw Types](#saving-throw-types)
+    - [Racial Types](#racial-types)
+    - [Conversation Types](#conversation-types)
+    - [Party AI Styles](#party-ai-styles)
+    - [NPC AI Styles](#npc-ai-styles)
+    - [Disguise Types](#disguise-types)
+    - [Effect Type Constants](#effect-type-constants)
+    - [Item Property Constants](#item-property-constants)
+    - [Skill Constants](#skill-constants)
+    - [Feat Constants](#feat-constants)
+    - [Body Node Constants](#body-node-constants)
+    - [Area Transition Constants](#area-transition-constants)
+    - [Object Type Constants](#object-type-constants)
+    - [Ability Constants](#ability-constants)
+    - [Talk Volume Constants](#talk-volume-constants)
+    - [Special Ability Constants](#special-ability-constants)
+    - [Poison Constants](#poison-constants)
+    - [Direction Constants](#direction-constants)
+    - [Combat Mode Constants](#combat-mode-constants)
+    - [Special Attack Constants](#special-attack-constants)
+    - [Damage Power Constants](#damage-power-constants)
+    - [Damage Bonus Constants](#damage-bonus-constants)
+    - [AC (Armor Class) Constants](#ac-armor-class-constants)
+    - [Attack Bonus Constants](#attack-bonus-constants)
+    - [Animation Constants](#animation-constants)
+    - [Creature Type Constants](#creature-type-constants)
+    - [Perception Constants](#perception-constants)
+    - [Reputation Type Constants](#reputation-type-constants)
+    - [Immunity Type Constants](#immunity-type-constants)
+    - [Invisibility Type Constants](#invisibility-type-constants)
+    - [Movement Speed Constants](#movement-speed-constants)
+    - [Door Action Constants](#door-action-constants)
+    - [Placeable Action Constants](#placeable-action-constants)
+    - [Player Character Constants](#player-character-constants)
+    - [Shape Type Constants](#shape-type-constants)
+    - [Projectile Path Type Constants](#projectile-path-type-constants)
+    - [Metamagic Constants](#metamagic-constants)
+    - [Associate Command Constants](#associate-command-constants)
+    - [Print and Debug Functions](#print-and-debug-functions)
+    - [Gender Constants](#gender-constants)
+    - [Base Item Type Constants](#base-item-type-constants)
+    - [Subrace Constants](#subrace-constants)
+    - [Encounter Difficulty Constants](#encounter-difficulty-constants)
+    - [Trap Base Type Constants](#trap-base-type-constants)
+    - [Module Functions](#module-functions)
+  - [Compilation Process](#compilation-process)
+  - [Reference Implementations](#reference-implementations)
+  - [Cross-References](#cross-references)
+
+---
+
+## Overview
+
+The `nwscript.nss` file serves as the **actions data** file that defines:
+
+- **Function Signatures**: All engine-exposed functions with return types, parameter types, and parameter names
+- **Constants**: Predefined integer, float, and string constants used throughout the game
+- **Function Index Mapping**: The order of functions in the file determines their routine number (index) used by the `ACTION` opcode in [NCS bytecode](NCS-File-Format#engine-function-calls)
+
+**Key Points:**
+
+- KotOR 1 and KotOR 2 have **different** `nwscript.nss` files with different function tables
+- Function routine numbers differ between K1 and K2 (same function name may have different indices)
+- The file is stored in the game's `chitin.key` as resource `nwscript` with type `NSS`
+- During compilation, the parser uses this file to validate function calls and resolve routine numbers
+- During decompilation, this file maps routine numbers back to function names
+
+**Reference:** [`vendor/reone/src/apps/dataminer/routines.cpp:382-427`](https://github.com/th3w1zard1/reone/blob/master/src/apps/dataminer/routines.cpp#L382-L427) (parsing nwscript.nss from chitin.key), [`vendor/NorthernLights/Assets/Scripts/ncs/control.cs:10-55`](https://github.com/th3w1zard1/NorthernLights/blob/master/Assets/Scripts/ncs/control.cs#L10-L55) (ACTION instruction using nwscript.nss lookup), [`vendor/KotOR.js/src/nwscript/NWScript.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScript.ts) (TypeScript function definitions)
+
+---
+
+## nwscript.nss Format
+
+The `nwscript.nss` file uses standard NWScript syntax:
+
+### Function Declaration Format
+
+```nss
+// Routine Number: Description
+return_type function_name(param_type1 param1, param_type2 param2 = default_value);
+```
+
+**Example:**
+
+```nss
+// 0: Get an integer between 0 and nMaxInteger-1.
+// Return value on error: 0
+int Random(int nMaxInteger);
+
+// 11: Switches the main character to a specified NPC
+//     -1 specifies to switch back to the original PC
+int SwitchPlayerCharacter(int nNPC);
+```
+
+**Format Rules:**
+
+- Comments start with `//` and describe the function's behavior
+- Routine number comments (`// 0:`, `// 11:`) indicate the function's index in the table
+- Function signatures follow C-style syntax
+- Optional parameters use `= default_value` syntax
+- Return type can be `void`, `int`, `float`, `string`, `object`, `vector`, `location`, `effect`, `event`, `talent`, `action`, or `itemproperty`
+
+### Constant Declaration Format
+
+```nss
+const type CONSTANT_NAME = value;
+```
+
+**Example:**
+
+```nss
+const int TRUE = 1;
+const int FALSE = 0;
+const int PLANET_TARIS = 1;
+const int NPC_BASTILA = 0;
+const float PI = 3.141592653589793;
+```
+
+**Format Rules:**
+
+- Constants use `const` keyword
+- Type must match the value (int, float, or string)
+- Integer constants are decimal values
+- Float constants use decimal notation
+- String constants use double quotes
+
+### Include Files
+
+The `nwscript.nss` file may include library files using `#include`:
+
+```nss
+#include "k_inc_generic"
+#include "k_inc_utility"
+```
+
+These library files contain helper functions and additional constants specific to KotOR.
+
+**Reference:** [`vendor/Vanilla_KOTOR_Script_Source`](https://github.com/th3w1zard1/Vanilla_KOTOR_Script_Source) (original KotOR script sources), [`vendor/KotOR-Scripting-Tool/NWN Script/k1/nwscript.nss`](https://github.com/th3w1zard1/KotOR-Scripting-Tool/blob/master/NWN%20Script/k1/nwscript.nss), [`vendor/KotOR-Scripting-Tool/NWN Script/k2/nwscript.nss`](https://github.com/th3w1zard1/KotOR-Scripting-Tool/blob/master/NWN%20Script/k2/nwscript.nss)
+
+---
+
+## PyKotor Implementation
+
+PyKotor implements `nwscript.nss` definitions in three Python modules:
+
+### Data Structures
+
+**`Libraries/PyKotor/src/pykotor/common/script.py`:**
+
+- `ScriptFunction`: Represents a function signature with return type, name, parameters, description, and raw string
+- `ScriptParam`: Represents a function parameter with type, name, and optional default value
+- `ScriptConstant`: Represents a constant with type, name, and value
+- `DataType`: Enumeration of all NWScript data types (INT, FLOAT, STRING, OBJECT, VECTOR, etc.)
+
+**`Libraries/PyKotor/src/pykotor/common/scriptdefs.py`:**
+
+- `KOTOR_FUNCTIONS`: List of 772 `ScriptFunction` objects for KotOR 1
+- `TSL_FUNCTIONS`: List of functions for KotOR 2 (The Sith Lords)
+- `KOTOR_CONSTANTS`: List of 1489 `ScriptConstant` objects for KotOR 1
+- `TSL_CONSTANTS`: List of constants for KotOR 2
+
+**`Libraries/PyKotor/src/pykotor/common/scriptlib.py`:**
+
+- `KOTOR_LIBRARY`: Dictionary mapping library file names to their source code content (e.g., `"k_inc_generic"`, `"k_inc_utility"`)
+- `TSL_LIBRARY`: Dictionary for KotOR 2 library files
+
+### Compilation Integration
+
+During NSS compilation (see [`Libraries/PyKotor/src/pykotor/resource/formats/ncs/ncs_auto.py:126-205`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/ncs/ncs_auto.py#L126-L205)):
+
+1. **Parser Initialization**: The `NssParser` is created with game-specific functions and constants:
+
+   ```python
+   nss_parser = NssParser(
+       functions=KOTOR_FUNCTIONS if game.is_k1() else TSL_FUNCTIONS,
+       constants=KOTOR_CONSTANTS if game.is_k1() else TSL_CONSTANTS,
+       library=KOTOR_LIBRARY if game.is_k1() else TSL_LIBRARY,
+       library_lookup=lookup_arg,
+   )
+   ```
+
+2. **Function Resolution**: When the parser encounters a function call, it:
+   - Looks up the function name in the functions list
+   - Validates parameter types and counts
+   - Resolves the routine number (index in the functions list)
+   - Generates an `ACTION` instruction with the routine number
+
+3. **Constant Resolution**: When the parser encounters a constant:
+   - Looks up the constant name in the constants list
+   - Replaces the constant with its value
+   - Generates appropriate `CONSTx` instruction
+
+4. **Library Inclusion**: When the parser encounters `#include`:
+   - Looks up the library name in the library dictionary
+   - Parses the included source code
+   - Merges functions and constants into the current scope
+
+**Reference:** [`Libraries/PyKotor/src/pykotor/common/script.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/common/script.py) (data structures), [`Libraries/PyKotor/src/pykotor/common/scriptdefs.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/common/scriptdefs.py) (function/constant definitions), [`Libraries/PyKotor/src/pykotor/common/scriptlib.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/common/scriptlib.py) (library files)
+
+---
+
+## KotOR-Specific Functions
+
+KotOR adds many functions beyond the base NWN set. Key KotOR-specific functions include:
+
+### Party Management
+
+**`SwitchPlayerCharacter(int nNPC)`** - Routine 11
+
+- Switches the main character to a specified NPC
+- `-1` switches back to the original PC
+- Returns success status
+- **KotOR-specific**: Not available in NWN
+
+**`GetPartyMemberCount()`** - Routine 126
+
+- Returns count of party members including the player character
+- Used for party size checks
+- **KotOR-specific**: KotOR's party system differs from NWN
+
+**`AddAvailableNPCByTemplate(int nNPC, string sTemplate)`**
+
+- Makes an NPC available to join the party
+- `nNPC` uses `NPC_*` constants (e.g., `NPC_BASTILA`, `NPC_CARTH`)
+- **KotOR-specific**: Party member management system
+
+### Global Variables
+
+**`GetGlobalNumber(string sIdentifier)`** - Routine 159
+
+- Retrieves a global integer variable by identifier
+- Globals persist across modules and save games
+- Used extensively for quest tracking and game state
+
+**`SetGlobalNumber(string sIdentifier, int nValue)`** - Routine 160
+
+- Sets a global integer variable
+- Creates the global if it doesn't exist
+- Critical for quest progression tracking
+
+**`GetGlobalString(string sIdentifier)`** - Routine 194
+
+- Retrieves a global string variable
+- **EXTREMELY restricted** - requires explicit permission to use
+- Used for special game state tracking
+
+**`SetGlobalString(string sIdentifier, string sValue)`** - Routine 160
+
+- Sets a global string variable
+- **EXTREMELY restricted** - requires explicit permission to use
+- Used for special game state tracking
+
+### Player Character Functions
+
+**`GetIsPC(object oCreature)`** - Routine 217
+
+- Returns `TRUE` if the creature is player-controlled
+- Distinguishes PC from NPCs
+- Used in conditional logic
+
+**`GetPCSpeaker()`** - Routine 238
+
+- Returns the PC involved in the current conversation
+- Returns `OBJECT_INVALID` on error
+- Used in dialogue scripts
+
+### Alignment System
+
+KotOR uses a Light Side/Dark Side alignment system instead of D&D alignment:
+
+**`GetAlignmentGoodEvil(object oCreature)`**
+
+- Returns alignment on good/evil axis
+- Values: `ALIGNMENT_NEUTRAL`, `ALIGNMENT_LIGHT_SIDE`, `ALIGNMENT_DARK_SIDE`
+
+**`SetAlignmentGoodEvil(object oCreature, int nAlignment)`**
+
+- Sets creature's alignment
+- Affects Force power availability and story outcomes
+
+### Class System
+
+KotOR uses a different class system than NWN:
+
+**`GetClassByPosition(int nClassPosition, object oCreature)`**
+
+- Gets class at specified position (0 = base class, 1 = prestige class)
+- KotOR classes: `CLASS_TYPE_SOLDIER`, `CLASS_TYPE_SCOUT`, `CLASS_TYPE_SCOUNDREL`, `CLASS_TYPE_JEDIGUARDIAN`, `CLASS_TYPE_JEDICONSULAR`, `CLASS_TYPE_JEDISENTINEL`
+
+**`GetLevelByClass(int nClassType, object oCreature)`**
+
+- Gets creature's level in a specific class
+- Used for class-specific calculations
+
+### Effects System
+
+KotOR uses an effects system for Force powers, spells, and item properties:
+
+**Effect Creation Functions:**
+
+**`EffectDamage(int nDamageAmount, int nDamageType = DAMAGE_TYPE_UNIVERSAL, int nDamagePower = DAMAGE_POWER_NORMAL)`** - Routine 79
+
+- Creates a damage effect
+- `nDamageType`: `DAMAGE_TYPE_*` constants (Light Side, Dark Side, Ion, Blaster, etc.)
+- `nDamagePower`: `DAMAGE_POWER_*` constants (Normal, Plus One through Plus Five, Energy)
+- Used for Force powers, spells, and weapon damage
+
+**`EffectAbilityIncrease(int nAbilityToIncrease, int nModifyBy)`** - Routine 80
+
+- Creates an ability score increase effect
+- `nAbilityToIncrease`: `ABILITY_*` constants (Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma)
+- Used for temporary stat boosts
+
+**`EffectAbilityDecrease(int nAbility, int nModifyBy)`** - Routine 446
+
+- Creates an ability score decrease effect
+- Used for stat penalties and debuffs
+
+**`EffectACIncrease(int nValue, int nModifyType = AC_DODGE_BONUS, int nDamageType = AC_VS_DAMAGE_TYPE_ALL)`** - Routine 115
+
+- Creates an Armor Class increase effect
+- `nModifyType`: `AC_*_BONUS` constants (Dodge, Natural, Armor Enchantment, Shield Enchantment, Deflection)
+- `nDamageType`: Specific damage type or `AC_VS_DAMAGE_TYPE_ALL` for all types
+
+**`EffectACDecrease(int nValue, int nModifyType = AC_DODGE_BONUS, int nDamageType = AC_VS_DAMAGE_TYPE_ALL)`** - Routine 450
+
+- Creates an Armor Class decrease effect
+- Used for AC penalties
+
+**`EffectDamageIncrease(int nBonus, int nDamageType = DAMAGE_TYPE_UNIVERSAL)`** - Routine 120
+
+- Creates a damage bonus effect
+- `nBonus`: `DAMAGE_BONUS_*` constants (1-5, 1d4, 1d6, 1d8, 1d10, 2d6)
+
+**`EffectDamageDecrease(int nPenalty, int nDamageType = DAMAGE_TYPE_UNIVERSAL)`** - Routine 448
+
+- Creates a damage penalty effect
+
+**`EffectForceResistanceIncrease(int nValue)`** - Routine 212
+
+- Creates a Force Resistance increase effect
+- **KotOR-specific**: Force Resistance is unique to KotOR's Force system
+
+**`EffectForceResistanceDecrease(int nValue)`** - Routine 454
+
+- Creates a Force Resistance decrease effect
+
+**`EffectForceJump(object oTarget, int nAdvanced = 0)`** - Routine 153
+
+- Creates a Force Jump effect
+- **KotOR-specific**: Force Jump is a unique KotOR ability
+
+**`EffectForcePushTargeted(location lCentre, int nIgnoreTestDirectLine = 0)`** - Routine 269
+
+- Creates a targeted Force Push effect
+- **KotOR-specific**: Targeted Force Push with location parameter
+
+**Effect Application:**
+
+**`ApplyEffectToObject(int nDurationType, effect eEffect, object oTarget, float fDuration = 0.0)`** - Routine 220
+
+- Applies an effect to an object
+- `nDurationType`: `DURATION_TYPE_INSTANT`, `DURATION_TYPE_TEMPORARY`, `DURATION_TYPE_PERMANENT`
+- `fDuration`: Duration in seconds (for temporary effects)
+
+**`ApplyEffectAtLocation(int nDurationType, effect eEffect, location lLocation, float fDuration = 0.0)`** - Routine 216
+
+- Applies an effect at a specific location
+- Used for area-of-effect Force powers
+
+**Effect Query:**
+
+**`GetFirstEffect(object oCreature)`** - Routine 85
+
+- Gets the first effect on a creature
+- Returns `effect` object or invalid effect if none
+
+**`GetNextEffect(object oCreature)`** - Routine 86
+
+- Gets the next effect on a creature (used in loops)
+
+**`GetEffectDurationType(effect eEffect)`** - Routine 89
+
+- Gets the duration type of an effect
+- Returns `DURATION_TYPE_*` constant
+
+**`GetEffectSubType(effect eEffect)`** - Routine 90
+
+- Gets the subtype of an effect
+- Returns `SUBTYPE_*` constant (Magical, Supernatural, Extraordinary)
+
+**`GetEffectCreator(effect eEffect)`** - Routine 91
+
+- Gets the object that created the effect
+- Returns `OBJECT_INVALID` if effect is invalid
+
+**`RemoveEffect(object oCreature, effect eEffect)`** - Routine 87
+
+- Removes an effect from a creature
+
+**`GetIsEffectValid(effect eEffect)`** - Routine 88
+
+- Checks if an effect is valid
+- Returns `TRUE` if valid, `FALSE` otherwise
+
+### Item Properties
+
+KotOR uses item properties to modify item behavior:
+
+**`CreateItemProperty(int nProperty, int nSubType = 0, int nParam1 = 0, int nParam2 = 0, int nCostTable = -1, int nCostValue = -1)`**
+
+- Creates an item property
+- `nProperty`: `ITEM_PROPERTY_*` constant
+- `nSubType`: Property-specific subtype (e.g., ability type for ability bonus)
+- `nParam1`, `nParam2`: Property-specific parameters
+- `nCostTable`, `nCostValue`: Cost table and value (for pricing)
+
+**`GetItemProperty(int nProperty, object oItem, int nIndex = 0)`**
+
+- Gets an item property from an item
+- `nIndex`: Index if multiple properties of same type exist
+- Returns `itemproperty` object
+
+**`GetItemPropertyType(itemproperty ip)`**
+
+- Gets the type of an item property
+- Returns `ITEM_PROPERTY_*` constant
+
+**`RemoveItemProperty(object oItem, itemproperty ip)`**
+
+- Removes an item property from an item
+
+### Actions
+
+Actions are queued commands for creatures:
+
+**`ActionMoveToLocation(location lDestination, int bRun = FALSE)`** - Routine 21
+
+- Action to move to a location
+- `bRun`: `TRUE` to run, `FALSE` to walk
+
+**`ActionMoveToObject(object oMoveTo, int bRun = FALSE, float fRange = 1.0)`** - Routine 22
+
+- Action to move to an object
+- `fRange`: Desired distance from target
+
+**`ActionMoveAwayFromObject(object oFleeFrom, int bRun = FALSE, float fMoveAwayRange = 40.0)`** - Routine 23
+
+- Action to move away from an object
+- `fMoveAwayRange`: Distance to maintain
+
+**`ActionEquipItem(object oItem, int nInventorySlot, int bInstant = FALSE)`** - Routine 32
+
+- Action to equip an item
+- `nInventorySlot`: `INVENTORY_SLOT_*` constant
+
+**`ActionUnequipItem(object oItem, int bInstant = FALSE)`** - Routine 33
+
+- Action to unequip an item
+
+**`ActionInteractObject(object oPlaceable)`** - Routine 329
+
+- Action to interact with a placeable object
+
+**`ActionStartConversation(object oObjectToConverse, string sDialogResRef = "", int bPrivateConversation = FALSE, int nConversationType = CONVERSATION_TYPE_CINEMATIC, ...)`** - Routine 204
+
+- Action to start a conversation
+- `sDialogResRef`: Dialog file (blank = creature's default)
+- `nConversationType`: `CONVERSATION_TYPE_CINEMATIC` or `CONVERSATION_TYPE_COMPUTER`
+
+**`ActionWait(float fSeconds)`** - Routine 202
+
+- Action to wait for specified seconds
+
+**`ActionJumpToLocation(location lLocation)`** - Routine 214
+
+- Action to instantly jump to a location (even between areas)
+
+**`ActionRandomWalk()`** - Routine 20
+
+- Action to randomly walk around current location
+
+### Skills and Feats
+
+**`GetSkillRank(int nSkill, object oTarget = OBJECT_SELF)`** - Routine 315
+
+- Gets skill rank for a creature
+- `nSkill`: `SKILL_*` constant
+- Returns -1 if creature doesn't have skill, 0 if untrained
+
+**`GetHasSkill(int nSkill, object oTarget = OBJECT_SELF)`**
+
+- Checks if creature has a skill
+- Returns `TRUE` if has skill, `FALSE` otherwise
+
+**`GetHasFeat(int nFeat, object oTarget = OBJECT_SELF)`**
+
+- Checks if creature has a feat
+- `nFeat`: `FEAT_*` constant
+- Returns `TRUE` if has feat, `FALSE` otherwise
+
+**`GetFeatCount(object oTarget = OBJECT_SELF)`**
+
+- Gets total number of feats a creature has
+
+### Abilities and Stats
+
+**`GetAbilityScore(int nAbility, object oCreature, int nBaseAbilityScore = 0)`**
+
+- Gets ability score for a creature
+- `nAbility`: `ABILITY_*` constant
+- `nBaseAbilityScore`: `TRUE` for base score, `FALSE` for modified score
+
+**`GetAbilityModifier(int nAbility, object oCreature = OBJECT_SELF)`** - Routine 331
+
+- Gets ability modifier (ability score - 10) / 2
+- Used for skill checks, saving throws, etc.
+
+**`GetStat(int nStat, object oCreature = OBJECT_SELF)`**
+
+- Gets a stat value for a creature
+- `nStat`: Stat constant (varies by stat type)
+
+### Object Query and Manipulation
+
+**`GetObjectType(object oTarget)`** - Routine 106
+
+- Gets the object type of an object
+- Returns `OBJECT_TYPE_*` constant
+- Returns -1 if object is invalid
+
+**`GetObjectByTag(string sTag, int nNth = 0)`** - Routine 200
+
+- Gets the nth object with a specific tag
+- `sTag`: Object tag to search for
+- `nNth`: Index of object (0 = first, 1 = second, etc.)
+- Returns `OBJECT_INVALID` if not found
+
+**`GetArea(object oTarget)`** - Routine 24
+
+- Gets the area that an object is currently in
+- Returns `OBJECT_INVALID` on error
+
+**`GetModule()`** - Routine 242
+
+- Gets the module object
+- Returns `OBJECT_INVALID` on error
+
+**`GetModuleFileName()`** - Routine 210
+
+- Gets the actual file name of the current module
+- Returns module filename as string
+
+**`CreateObject(int nObjectType, string sTemplate, location lLocation, int bUseAppearAnimation = FALSE)`** - Routine 243
+
+- Creates an object of specified type at a location
+- `nObjectType`: `OBJECT_TYPE_*` constant (ITEM, CREATURE, PLACEABLE, STORE, WAYPOINT)
+- `sTemplate`: Template resource name
+- `lLocation`: Location to create object
+- `bUseAppearAnimation`: Whether to use appear animation
+- Returns created object or `OBJECT_INVALID` on error
+
+**`DestroyObject(object oDestroy, float fDelay = 0.0, int bNoFade = FALSE, float fDelayUntilFade = 0.0)`** - Routine 241
+
+- Destroys an object irrevocably
+- Does not work on modules and areas
+- `fDelay`: Delay before destruction
+- `bNoFade`: Skip fade effect
+- `fDelayUntilFade`: Delay until fade starts
+
+**`GetPosition(object oTarget)`** - Routine 27
+
+- Gets the position of an object
+- Returns vector (x, y, z)
+- Returns (0.0, 0.0, 0.0) on error
+
+**`GetFacing(object oTarget)`** - Routine 28
+
+- Gets the direction an object is facing
+- Returns float between 0.0 and 360.0
+- Returns -1.0 on error
+
+**`SetFacing(float fDirection)`** - Routine 10
+
+- Causes the caller to face a direction
+- `fDirection`: Anticlockwise degrees from Due East (0.0 = East, 90.0 = North, 180.0 = West, 270.0 = South)
+
+**`GetDistanceBetween2D(object oObjectA, object oObjectB)`** - Routine 319
+
+- Gets the 2D distance between two objects in meters
+- Returns 0.0 if either object is invalid
+
+**`GetDistanceToObject2D(object oObject)`** - Routine 335
+
+- Gets the 2D distance from caller to object
+- Returns -1.0 on error
+
+**`GetDistanceBetweenLocations2D(location lLocationA, location lLocationB)`** - Routine 334
+
+- Gets the 2D distance between two locations
+
+### Item Management
+
+**`CreateItemOnObject(string sItemTemplate, object oTarget = OBJECT_SELF, int nStackSize = 1)`** - Routine 31
+
+- Creates an item in an object's inventory
+- `sItemTemplate`: Item template resource name
+- `oTarget`: Target object (creature or container)
+- `nStackSize`: Stack size of item
+- Returns created item or `OBJECT_INVALID` on error
+
+**`GetItemPossessor(object oItem)`** - Routine 29
+
+- Gets the possessor of an item
+- Returns `OBJECT_INVALID` on error
+
+**`GetItemPossessedBy(object oCreature, string sItemTag)`** - Routine 30
+
+- Gets an item possessed by a creature with a specific tag
+- Returns `OBJECT_INVALID` on error
+
+**`GetItemInSlot(int nInventorySlot, object oCreature = OBJECT_SELF)`** - Routine 155
+
+- Gets the item in a creature's inventory slot
+- `nInventorySlot`: `INVENTORY_SLOT_*` constant
+- Returns `OBJECT_INVALID` if no item in slot
+
+**`GetItemStackSize(object oItem)`** - Routine 138
+
+- Gets the stack size of an item
+- Returns stack size as integer
+
+**`GetIdentified(object oItem)`** - Routine 332
+
+- Determines whether an item has been identified
+- Returns `TRUE` if identified, `FALSE` otherwise
+
+**`SetIdentified(object oItem, int bIdentified)`** - Routine 333
+
+- Sets whether an item has been identified
+- `bIdentified`: `TRUE` to identify, `FALSE` to unidentify
+
+**`GetHasInventory(object oObject)`** - Routine 570
+
+- Determines whether an object has an inventory
+- Returns `TRUE` for creatures and stores, checks containers for items/placeables
+- Returns `FALSE` for other object types
+
+### Local Variables
+
+KotOR uses local variables stored on objects for script state:
+
+**`GetLocalBoolean(object oObject, int nIndex)`** - Routine 679
+
+- Gets a boolean flag on an object
+- `nIndex`: Index range 0-63
+- Returns `TRUE` or `FALSE`
+
+**`SetLocalBoolean(object oObject, int nIndex, int nValue)`** - Routine 680
+
+- Sets a boolean flag on an object
+- `nIndex`: Index range 0-63
+- `nValue`: `TRUE` or `FALSE`
+
+**`GetLocalNumber(object oObject, int nIndex)`** - Routine 681
+
+- Gets a number stored on an object
+- `nIndex`: Index range 0-0 (limited in KotOR)
+- Returns value in range -128 to +127 (stored as unsigned byte)
+
+**`SetLocalNumber(object oObject, int nIndex, int nValue)`** - Routine 682
+
+- Sets a number on an object
+- `nIndex`: Index range 0-0 (limited in KotOR)
+- `nValue`: Value in range -128 to +127 (stored as unsigned byte with wrapping)
+
+### Module and Area Functions
+
+**`GetAreaUnescapable()`** - Routine 15
+
+- Returns whether the current area is escapable
+- Returns `TRUE` if cannot escape, `FALSE` if can escape
+
+**`SetAreaUnescapable(int bUnescapable)`** - Routine 14
+
+- Sets whether the current area is escapable
+- `bUnescapable`: `TRUE` to prevent escape, `FALSE` to allow escape
+
+**`GetFirstObjectInArea(object oArea = OBJECT_INVALID, int nObjectFilter = OBJECT_TYPE_CREATURE)`** - Routine 93
+
+- Gets the first object in an area
+- `oArea`: Area object (defaults to caller's area)
+- `nObjectFilter`: `OBJECT_TYPE_*` constant to filter by
+- Returns `OBJECT_INVALID` on error
+
+**`GetNextObjectInArea(object oArea = OBJECT_INVALID, int nObjectFilter = OBJECT_TYPE_CREATURE)`** - Routine 94
+
+- Gets the next object in an area (used in loops)
+- Must be called after `GetFirstObjectInArea`
+
+**`GetTransitionTarget(object oTransition)`** - Routine 198
+
+- Gets the destination (waypoint or door) for a trigger or door
+- Used for area transitions
+- Returns `OBJECT_INVALID` if oTransition is not a valid trigger or door
+
+**`SetAreaTransitionBMP(int nPredefinedAreaTransition, string sCustomAreaTransitionBMP = "")`** - Routine 203
+
+- Sets the transition bitmap for a player
+- Should only be called in area transition scripts
+- Action should be run by person "clicking" the area transition via AssignCommand
+- `nPredefinedAreaTransition`: `AREA_TRANSITION_*` constant or `AREA_TRANSITION_USER_DEFINED`
+- `sCustomAreaTransitionBMP`: Filename for custom transition bitmap (if using USER_DEFINED)
+
+**`SetAreaFogColor(object oArea, float fRed, float fGreen, float fBlue)`** - Routine 746
+
+- Sets the fog color for an area
+- `fRed`, `fGreen`, `fBlue`: Color components (0.0 to 1.0)
+
+**`GetAreaOfEffectCreator(object oAreaOfEffectObject = OBJECT_SELF)`** - Routine 264
+
+- Gets the creator of an Area of Effect object
+- Returns `OBJECT_INVALID` if oAreaOfEffectObject is not a valid Area of Effect object
+
+### Waypoint Functions
+
+**`GetWaypointByTag(string sWaypointTag)`** - Routine 197
+
+- Gets the first waypoint with the specified tag
+- Used for area transitions and teleportation
+- Returns `OBJECT_INVALID` if waypoint cannot be found
+
+### Encounter Functions
+
+**`GetEncounterActive(object oEncounter = OBJECT_SELF)`** - Routine 276
+
+- Determines whether an encounter is active
+- Returns `TRUE` if active, `FALSE` if inactive
+
+**`SetEncounterActive(int nNewValue, object oEncounter = OBJECT_SELF)`** - Routine 277
+
+- Sets an encounter's active state
+- `nNewValue`: `TRUE` to activate, `FALSE` to deactivate
+
+**`GetEncounterSpawnsMax(object oEncounter = OBJECT_SELF)`** - Routine 278
+
+- Gets the maximum number of times an encounter will spawn
+- Returns maximum spawn count
+
+**`GetEncounterSpawnsCurrent(object oEncounter = OBJECT_SELF)`** - Routine 280
+
+- Gets the number of times an encounter has spawned so far
+- Returns current spawn count
+
+**`GetEncounterDifficulty(object oEncounter = OBJECT_SELF)`** - Routine 297
+
+- Gets the difficulty level of an encounter
+- Returns `ENCOUNTER_DIFFICULTY_*` constant
+
+**`SetEncounterDifficulty(int nEncounterDifficulty, object oEncounter = OBJECT_SELF)`** - Routine 296
+
+- Sets the difficulty level of an encounter
+- `nEncounterDifficulty`: `ENCOUNTER_DIFFICULTY_*` constant
+
+**`SetEncounterSpawnsMax(int nNewValue, object oEncounter = OBJECT_SELF)`** - Routine 279
+
+- Sets the maximum number of times an encounter can spawn
+- `nNewValue`: New maximum spawn count
+
+**`SetEncounterSpawnsCurrent(int nNewValue, object oEncounter = OBJECT_SELF)`** - Routine 281
+
+- Sets the number of times an encounter has spawned so far
+- `nNewValue`: New current spawn count
+
+### Trap Functions
+
+**`GetTrapDisarmable(object oTrapObject)`** - Routine 527
+
+- Determines if a trap object is disarmable
+- `oTrapObject`: Placeable, door, or trigger
+- Returns `TRUE` if disarmable, `FALSE` otherwise
+
+**`GetTrapDetectable(object oTrapObject)`** - Routine 528
+
+- Determines if a trap object is detectable
+- `oTrapObject`: Placeable, door, or trigger
+- Returns `TRUE` if detectable, `FALSE` otherwise
+
+**`GetTrapDetectedBy(object oTrapObject, object oCreature)`** - Routine 529
+
+- Determines if a creature has detected a trap
+- Returns `TRUE` if detected, `FALSE` otherwise
+
+**`GetTrapFlagged(object oTrapObject)`** - Routine 530
+
+- Determines if a trap has been flagged as visible to all creatures
+- Returns `TRUE` if flagged, `FALSE` otherwise
+
+**`GetTrapBaseType(object oTrapObject)`** - Routine 531
+
+- Gets the trap base type of a trap object
+- Returns `TRAP_BASE_TYPE_*` constant
+
+**`GetTrapOneShot(object oTrapObject)`** - Routine 532
+
+- Determines if a trap is one-shot (does not reset after firing)
+- Returns `TRUE` if one-shot, `FALSE` otherwise
+
+**`GetTrapCreator(object oTrapObject)`** - Routine 533
+
+- Gets the creator of a trap (creature that set it)
+- Returns `OBJECT_INVALID` if trap was created in toolset
+
+**`GetTrapKeyTag(object oTrapObject)`** - Routine 534
+
+- Gets the tag of the key that will disarm a trap
+- Returns key tag as string
+
+**`GetTrapDisarmDC(object oTrapObject)`** - Routine 535
+
+- Gets the DC (Difficulty Class) for disarming a trap
+- Returns disarm DC as integer
+
+**`GetTrapDetectDC(object oTrapObject)`** - Routine 536
+
+- Gets the DC (Difficulty Class) for detecting a trap
+- Returns detect DC as integer
+
+**`SetTrapDetectedBy(object oTrap, object oDetector)`** - Routine 550
+
+- Sets a detector to have detected a trap
+- Marks the trap as detected by the specified creature
+- Returns success status
+
+### Position and Orientation Functions
+
+**`GetPosition(object oTarget)`** - Routine 27
+
+- Gets the position vector of an object
+- Returns vector (x, y, z)
+- Returns (0.0, 0.0, 0.0) on error
+
+**`GetFacing(object oTarget)`** - Routine 28
+
+- Gets the direction an object is facing
+- Returns float between 0.0 and 360.0 (anticlockwise degrees from Due East)
+- Returns -1.0 on error
+
+**`SetFacing(float fDirection)`** - Routine 10
+
+- Causes the caller to face a direction
+- `fDirection`: Anticlockwise degrees from Due East (0.0 = East, 90.0 = North, 180.0 = West, 270.0 = South)
+- Can use `DIRECTION_*` constants
+
+**`SetFacingPoint(vector vTarget)`** - Routine 143
+
+- Causes the caller to face a target vector
+- `vTarget`: Target position vector
+
+**`GetPositionFromLocation(location lLocation)`** - Routine 223
+
+- Gets the position vector from a location
+- Returns vector (x, y, z)
+
+**`GetFacingFromLocation(location lLocation)`** - Routine 225
+
+- Gets the orientation value from a location
+- Returns float between 0.0 and 360.0
+
+### String and Conversion Functions
+
+**`IntToString(int nInteger)`** - Routine 92
+
+- Converts an integer to a string
+- Returns empty string on error
+
+**`StringToInt(string sNumber)`**
+
+- Converts a string to an integer
+- Returns 0 on error
+
+**`FloatToString(float fFloat)`**
+
+- Converts a float to a string
+- Returns empty string on error
+
+**`StringToFloat(string sNumber)`**
+
+- Converts a string to a float
+- Returns 0.0 on error
+
+**`GetStringLength(string sString)`** - Routine 59
+
+- Gets the length of a string
+- Returns -1 on error
+
+**`GetStringUpperCase(string sString)`** - Routine 60
+
+- Converts a string to upper case
+- Returns empty string on error
+
+**`GetStringLowerCase(string sString)`** - Routine 61
+
+- Converts a string to lower case
+- Returns empty string on error
+
+**`GetStringRight(string sString, int nCount)`** - Routine 62
+
+- Gets nCount characters from the right end of a string
+- Returns empty string on error
+
+**`GetStringLeft(string sString, int nCount)`** - Routine 63
+
+- Gets nCount characters from the left end of a string
+- Returns empty string on error
+
+**`GetStringByStrRef(int nStrRef)`** - Routine 239
+
+- Gets a string from the talk table using a string reference
+- `nStrRef`: String reference ID from TLK file
+- Returns the localized string
+
+### Object Property Functions
+
+**`GetTag(object oObject)`** - Routine 168
+
+- Gets the tag of an object
+- Returns empty string if object is invalid
+
+**`GetName(object oObject)`** - Routine 253
+
+- Gets the name of an object
+- Returns object's display name
+
+**`GetObjectSeen(object oTarget, object oSource = OBJECT_SELF)`** - Routine 289
+
+- Determines whether oSource sees oTarget
+- Returns `TRUE` if seen, `FALSE` otherwise
+
+**`GetObjectHeard(object oTarget, object oSource = OBJECT_SELF)`** - Routine 290
+
+- Determines whether oSource hears oTarget
+- Returns `TRUE` if heard, `FALSE` otherwise
+
+**`GetIsObjectValid(object oObject)`** - Routine 42
+
+- Returns `TRUE` if object is valid
+- Returns `FALSE` if object is invalid or `OBJECT_INVALID`
+
+### Hit Points and Vitality Functions
+
+**`GetCurrentHitPoints(object oObject = OBJECT_SELF)`** - Routine 49
+
+- Gets the current hit points of an object
+- Returns 0 on error
+
+**`GetMaxHitPoints(object oObject = OBJECT_SELF)`** - Routine 50
+
+- Gets the maximum hit points of an object
+- Returns 0 on error
+
+### Gold and Economy Functions
+
+**`GetGoldPieceValue(object oItem)`** - Routine 311
+
+- Gets the gold piece value of an item
+- Returns 0 if item is invalid
+
+**`GiveGoldToCreature(object oCreature, int nGP)`** - Routine 322
+
+- Gives gold pieces to a creature
+- `nGP`: Amount of gold to give
+
+**`TakeGoldFromCreature(int nAmount, object oCreatureToTakeFrom, int bDestroy = FALSE)`** - Routine 444
+
+- Takes gold from a creature
+- `nAmount`: Amount to take
+- `bDestroy`: If `TRUE`, gold is destroyed instead of given to caller
+
+### Creature Query Functions
+
+**`GetNearestCreature(int nFirstCriteriaType, int nFirstCriteriaValue, object oTarget = OBJECT_SELF, int nNth = 1, ...)`** - Routine 38
+
+- Gets the creature nearest to oTarget matching specified criteria
+- `nFirstCriteriaType`: `CREATURE_TYPE_*` constant
+- `nFirstCriteriaValue`: Value based on criteria type (CLASS_TYPE_*, RACIAL_TYPE_*, etc.)
+- `nNth`: Nth nearest creature (1 = nearest, 2 = second nearest, etc.)
+- Supports up to three criteria types and values
+- Returns `OBJECT_INVALID` on error
+
+**`GetNearestObject(int nObjectType = OBJECT_TYPE_ALL, object oTarget = OBJECT_SELF, int nNth = 1)`** - Routine 227
+
+- Gets the nth object nearest to oTarget of specified type
+- `nObjectType`: `OBJECT_TYPE_*` constant
+- `nNth`: Nth nearest object (1 = nearest, 2 = second nearest, etc.)
+- Returns `OBJECT_INVALID` on error
+
+**`GetNearestObjectToLocation(int nObjectType, location lLocation, int nNth = 1)`** - Routine 228
+
+- Gets the nth object nearest to a location of specified type
+- `nObjectType`: `OBJECT_TYPE_*` constant
+- `lLocation`: Location to search from
+- `nNth`: Nth nearest object
+- Returns `OBJECT_INVALID` on error
+
+**`GetNearestObjectByTag(string sTag, object oTarget = OBJECT_SELF, int nNth = 1)`** - Routine 229
+
+- Gets the nth object nearest to oTarget with a specific tag
+- `sTag`: Object tag to search for
+- `nNth`: Nth nearest object
+- Returns `OBJECT_INVALID` on error
+
+**`GetFirstObjectInShape(int nShape, float fSize, location lTarget, int bLineOfSight = FALSE, int nObjectFilter = OBJECT_TYPE_CREATURE, vector vOrigin = [0.0, 0.0, 0.0])`** - Routine 236
+
+- Gets the first object in a shape (sphere, cone, etc.)
+- `nShape`: `SHAPE_TYPE_*` constant
+- `fSize`: Size of the shape
+- `lTarget`: Target location
+- `bLineOfSight`: Whether to check line of sight
+- `nObjectFilter`: `OBJECT_TYPE_*` constant
+- `vOrigin`: Origin vector for shape
+- Returns `OBJECT_INVALID` on error
+
+**`GetNextObjectInShape(int nShape, float fSize, location lTarget, int bLineOfSight = FALSE, int nObjectFilter = OBJECT_TYPE_CREATURE, vector vOrigin = [0.0, 0.0, 0.0])`** - Routine 237
+
+- Gets the next object in a shape (used in loops)
+- Must be called after `GetFirstObjectInShape`
+
+**`GetLastAttacker(object oAttackee = OBJECT_SELF)`** - Routine 36
+
+- Gets the last attacker of oAttackee
+- Should only be used in OnAttacked events
+- Returns `OBJECT_INVALID` on error
+
+**`GetRacialType(object oCreature)`** - Routine 107
+
+- Gets the racial type of a creature
+- Returns `RACIAL_TYPE_*` constant
+- Returns `RACIAL_TYPE_INVALID` if creature is invalid
+
+**`GetGender(object oCreature)`** - Routine 358
+
+- Gets the gender of a creature
+- Returns `GENDER_*` constant
+
+**`GetSubRace(object oCreature)`** - Routine 497
+
+- Gets the subrace of a creature
+- Returns `SUBRACE_*` constant
+
+**`GetHitDice(object oCreature)`** - Routine 166
+
+- Gets the number of hit dice for a creature
+- Returns 0 if creature is invalid
+
+### Object Type Checking Functions
+
+**`GetIsDead(object oCreature)`** - Routine 140
+
+- Returns `TRUE` if creature is a dead NPC, dead PC, or dying PC
+- Returns `FALSE` otherwise
+
+**`GetIsPC(object oCreature)`** - Routine 217
+
+- Returns `TRUE` if creature is a Player Controlled character
+- Returns `FALSE` otherwise
+
+**`GetIsObjectValid(object oObject)`** - Routine 42
+
+- Returns `TRUE` if object is valid
+- Returns `FALSE` if object is invalid or `OBJECT_INVALID`
+
+**`GetIsDoorActionPossible(object oTargetDoor, int nDoorAction)`** - Routine 337
+
+- Returns `TRUE` if door action can be performed on door
+- `nDoorAction`: `DOOR_ACTION_*` constant
+
+**`GetIsPlaceableObjectActionPossible(object oPlaceable, int nPlaceableAction)`** - Routine 546
+
+- Returns `TRUE` if placeable action is valid for placeable
+- `nPlaceableAction`: `PLACEABLE_ACTION_*` constant
+
+### Item Property Functions
+
+**`GetBaseItemType(object oItem)`** - Routine 397
+
+- Gets the base item type of an item
+- Returns `BASE_ITEM_*` constant
+- Returns `BASE_ITEM_INVALID` if item is invalid
+
+**`GetNumStackedItems(object oItem)`** - Routine 475
+
+- Gets the number of stacked items that an item comprises
+- Returns stack size as integer
+
+### Alignment Functions
+
+**`AdjustAlignment(object oSubject, int nAlignment, int nShift)`** - Routine 201
+
+- Adjusts the alignment of a subject
+- `nAlignment`: `ALIGNMENT_LIGHT_SIDE`, `ALIGNMENT_DARK_SIDE`, or `ALIGNMENT_NEUTRAL`
+- `nShift`: Desired shift in alignment
+- For Light/Dark Side: Shifts alignment in specified direction
+- For Neutral: Shifts toward neutrality (max shift to 50)
+
+### Conversation Action Functions
+
+**`ActionPauseConversation()`** - Routine 205
+
+- Pauses the current conversation
+- Used in conversation scripts
+
+**`ActionResumeConversation()`** - Routine 206
+
+- Resumes a conversation after it has been paused
+- Used in conversation scripts
+
+### Effect Functions
+
+**`EffectBeam(int nBeamVisualEffect, object oEffector, int nBodyPart, int bMissEffect = FALSE)`** - Routine 207
+
+- Creates a Beam effect
+- `nBeamVisualEffect`: `VFX_BEAM_*` constant
+- `oEffector`: Creature emitting the beam
+- `nBodyPart`: `BODY_NODE_*` constant
+- `bMissEffect`: If `TRUE`, beam fires to random vector near/past target
+- Returns invalid effect if nBeamVisualEffect is not valid
+
+**`SpeakString(string sStringToSpeak, int nTalkVolume = TALKVOLUME_TALK)`** - Routine 221
+
+- Immediately speaks a string (different from ActionSpeakString)
+- `nTalkVolume`: `TALKVOLUME_*` constant
+- Executes immediately, not queued as action
+
+### Action Functions (Extended)
+
+**`ActionPickUpItem(object oItem)`** - Routine 34
+
+- Action to pick up an item from the ground
+- Item must be on the ground and within range
+
+**`ActionPutDownItem(object oItem)`** - Routine 35
+
+- Action to put down an item on the ground
+- Item is placed at creature's feet
+
+**`ActionAttack(object oAttackee, int bPassive = FALSE)`** - Routine 37
+
+- Action to attack a target
+- `bPassive`: If `TRUE`, attack is in passive mode (defensive)
+
+**`ActionSpeakString(string sStringToSpeak, int nTalkVolume = TALKVOLUME_TALK)`** - Routine 39
+
+- Action to speak a string
+- `nTalkVolume`: `TALKVOLUME_*` constant
+
+**`ActionPlayAnimation(int nAnimation, float fSpeed = 1.0, float fDurationSeconds = 0.0)`** - Routine 40
+
+- Action to play an animation
+- `nAnimation`: `ANIMATION_*` constant
+- `fSpeed`: Animation speed multiplier
+- `fDurationSeconds`: Duration for looping animations (-1.0 = loop until next animation)
+
+**`ActionOpenDoor(object oDoor)`** - Routine 43
+
+- Action to open a door
+- Creature must be near the door
+
+**`ActionCloseDoor(object oDoor)`** - Routine 44
+
+- Action to close a door
+- Creature must be near the door
+
+**`ActionCastSpellAtObject(int nSpell, object oTarget, int nMetaMagic = 0, int bCheat = FALSE, ...)`** - Routine 48
+
+- Action to cast a spell at an object
+- `nSpell`: `SPELL_*` constant
+- `nMetaMagic`: `METAMAGIC_*` constant
+- `bCheat`: If `TRUE`, caster doesn't need to know the spell
+- `nProjectilePathType`: `PROJECTILE_PATH_TYPE_*` constant
+- `bInstantSpell`: If `TRUE`, spell is cast immediately
+
+### Spell and Magic Functions
+
+**`GetSpellTargetObject()`** - Routine 47
+
+- Gets the object at which the caller last cast a spell
+- Used in spell scripts
+- Returns `OBJECT_INVALID` on error
+
+**`GetCasterLevel(object oCreature)`** - Routine 84
+
+- Gets the caster level of a creature
+- Returns 0 on error
+
+**`GetMetaMagicFeat()`** - Routine 105
+
+- Gets the metamagic type of the last spell cast by the caller
+- Returns `METAMAGIC_*` constant
+- Returns -1 if caster is not valid
+
+### Camera Functions
+
+**`SetCameraFacing(float fDirection)`** - Routine 45
+
+- Changes the direction the camera is facing
+- `fDirection`: Anticlockwise degrees from Due East (0.0 = East, 90.0 = North, 180.0 = West, 270.0 = South)
+- Used after area transitions
+
+### Sound Functions
+
+**`PlaySound(string sSoundName)`** - Routine 46
+
+- Plays a sound effect
+- `sSoundName`: Sound resource name
+
+### Distance Functions
+
+**`GetDistanceToObject(object oObject)`** - Routine 41
+
+- Gets the 3D distance from caller to object in meters
+- Returns -1.0 on error
+
+### Vector and Location Functions
+
+**`VectorMagnitude(vector vVector)`** - Routine 104
+
+- Gets the magnitude (length) of a vector
+- Can be used to determine distance between two points
+- Returns 0.0 on error
+
+**`Location(vector vPosition, float fOrientation)`** - Routine 215
+
+- Creates a location from position and orientation
+- `vPosition`: Vector position (x, y, z)
+- `fOrientation`: Facing direction in degrees
+
+**`GetLocation(object oObject)`** - Routine 213
+
+- Gets the location of an object
+- Returns location object
+
+**`GetSpellTargetLocation()`** - Routine 199
+
+- Gets the target location of the last spell cast
+- Used in spell scripts
+- Returns location object
+
+### Saving Throw Functions
+
+**`FortitudeSave(object oCreature, int nDC, int nSaveType = SAVING_THROW_TYPE_NONE, object oSaveVersus = OBJECT_SELF)`** - Routine 108
+
+- Performs a Fortitude saving throw check
+- `nDC`: Difficulty class
+- `nSaveType`: `SAVING_THROW_TYPE_*` constant
+- Returns 0 if failed, 1 if succeeded, 2 if immune
+
+**`ReflexSave(object oCreature, int nDC, int nSaveType = SAVING_THROW_TYPE_NONE, object oSaveVersus = OBJECT_SELF)`** - Routine 109
+
+- Performs a Reflex saving throw check
+- `nDC`: Difficulty class
+- `nSaveType`: `SAVING_THROW_TYPE_*` constant
+- Returns 0 if failed, 1 if succeeded, 2 if immune
+
+**`WillSave(object oCreature, int nDC, int nSaveType = SAVING_THROW_TYPE_NONE, object oSaveVersus = OBJECT_SELF)`** - Routine 110
+
+- Performs a Will saving throw check
+- `nDC`: Difficulty class
+- `nSaveType`: `SAVING_THROW_TYPE_*` constant
+- Returns 0 if failed, 1 if succeeded, 2 if immune
+
+**`GetSpellSaveDC()`** - Routine 111
+
+- Gets the DC to save against for a spell
+- Formula: 10 + spell level + relevant ability bonus
+- Can be called by a creature or Area of Effect object
+
+### AC (Armor Class) Functions
+
+**`GetAC(object oObject, int nForFutureUse = 0)`** - Routine 116
+
+- Gets the Armor Class of an object
+- If oObject is a creature, returns creature's AC
+- If oObject is an item, door, or placeable, returns 0
+- Returns -1 if object is invalid
+
+### Reputation Functions
+
+**`GetReputation(object oSource, object oTarget)`** - Routine 208
+
+- Gets an integer between 0 and 100 representing how oSource feels about oTarget
+- 0-10: Hostile
+- 11-89: Neutral
+- 90-100: Friendly
+- Returns -1 if either object is invalid
+
+**`AdjustReputation(object oTarget, object oSourceFactionMember, int nAdjustment)`** - Routine 209
+
+- Adjusts how oSourceFactionMember's faction feels about oTarget
+- Adjusts Faction Reputation (entire faction's opinion)
+- `nAdjustment`: Amount to adjust (positive or negative)
+
+**`GetFactionLeader(object oMemberOfFaction)`** - Routine 562
+
+- Gets the leader of the faction of which oMemberOfFaction is a member
+- Returns `OBJECT_INVALID` if oMemberOfFaction is not a valid creature
+
+### Event Handling Functions
+
+**`GetEnteringObject()`** - Routine 25
+
+- Gets the object that last entered/triggered the caller
+- For doors/placeables: Returns object that last triggered it
+- For triggers/areas/encounters: Returns object that last entered it
+- Returns `OBJECT_INVALID` on error
+
+**`GetExitingObject()`** - Routine 26
+
+- Gets the object that last left the caller
+- Works on triggers, areas of effect, modules, areas, and encounters
+- Returns `OBJECT_INVALID` on error
+
+**`GetClickingObject()`** - Routine 326
+
+- Gets the object that last clicked on the caller
+- Used in trigger OnClick event scripts
+- Identical to `GetEnteringObject()`
+
+**`GetLastUsedBy()`** - Routine 330
+
+- Gets the last object that used the placeable/door calling this function
+- Returns `OBJECT_INVALID` if called by something other than a placeable or door
+
+**`GetItemActivated()`** - Routine 439
+
+- Gets the item that was activated
+- Used in OnItemActivated module scripts
+
+**`GetItemActivator()`** - Routine 440
+
+- Gets the creature that activated the item
+- Used in OnItemActivated module scripts
+
+**`GetItemActivatedTargetLocation()`** - Routine 441
+
+- Gets the location of the item's target
+- Used in OnItemActivated module scripts
+
+**`GetItemActivatedTarget()`** - Routine 442
+
+- Gets the item's target object
+- Used in OnItemActivated module scripts
+
+### Script Execution Functions
+
+**`AssignCommand(object oActionSubject, action aActionToAssign)`** - Routine 6
+
+- Assigns an action to an object
+- Action is queued and executed by the object
+- No return value, but logs "AssignCommand failed." on error
+
+**`DelayCommand(float fSeconds, action aActionToDelay)`** - Routine 7
+
+- Delays an action by specified seconds
+- Action is executed after the delay
+- No return value, but logs "DelayCommand failed." on error
+
+**`ExecuteScript(string sScript, object oTarget, int nScriptVar = -1)`** - Routine 8
+
+- Makes oTarget run a script and return execution to calling script
+- `sScript`: Compiled script name (without .ncs extension)
+- `nScriptVar`: Value returned by `GetRunScriptVar()` in the executed script
+- Nothing happens if script doesn't exist
+
+**`GetRunScriptVar()`** - Routine 565
+
+- Gets the variable passed when calling ExecuteScript
+- Returns the nScriptVar value from ExecuteScript call
+- Returns -1 if not called from ExecuteScript
+
+**`ClearAllActions()`** - Routine 9
+
+- Clears all actions of the caller
+- Only works on creatures
+- No return value, but logs "ClearAllActions failed." on error
+
+### Level and Experience Functions
+
+**`GetLevelByPosition(int nClassPosition, object oCreature = OBJECT_SELF)`** - Routine 342
+
+- Gets the class level at specified position (1, 2, or 3)
+- A creature can have up to three classes
+- Returns 0 if creature doesn't have a class at that position
+
+**`GetLevelByClass(int nClassType, object oCreature = OBJECT_SELF)`** - Routine 343
+
+- Gets the level in a specific class type
+- `nClassType`: `CLASS_TYPE_*` constant
+- Returns total levels in that class
+
+**`GetXP(object oCreature)`** - Routine 395
+
+- Gets a creature's experience points
+- Returns XP as integer
+
+**`SetXP(object oCreature, int nXpAmount)`** - Routine 394
+
+- Sets a creature's experience points
+- `nXpAmount`: New XP value
+
+### Effect Subtype Functions
+
+**`MagicalEffect(effect eEffect)`** - Routine 112
+
+- Sets the subtype of an effect to Magical
+- Returns the modified effect
+- Effects default to magical if subtype is not set
+
+**`SupernaturalEffect(effect eEffect)`** - Routine 113
+
+- Sets the subtype of an effect to Supernatural
+- Returns the modified effect
+
+**`ExtraordinaryEffect(effect eEffect)`** - Routine 114
+
+- Sets the subtype of an effect to Extraordinary
+- Returns the modified effect
+
+### Combat Functions
+
+**`GetIsInCombat(object oCreature = OBJECT_SELF)`** - Routine 320
+
+- Returns `TRUE` if creature is in combat
+- Returns `FALSE` otherwise
+- **K2 variant**: `GetIsInCombat(object oCreature = OBJECT_SELF, int bOnlyCountReal = FALSE)` - If `bOnlyCountReal` is `TRUE`, only returns `TRUE` for real combat
+
+**`GetIsInConversation(object oObject)`** - Routine 445
+
+- Determines whether an object is in conversation
+- Returns `TRUE` if in conversation, `FALSE` otherwise
+
+**`GetAttackTarget(object oCreature = OBJECT_SELF)`** - Routine 316
+
+- Gets the attack target of a creature
+- Only works when creature is in combat
+- Returns `OBJECT_INVALID` if not in combat
+
+**`GetLastAttackType(object oCreature = OBJECT_SELF)`** - Routine 317
+
+- Gets the attack type of creature's last attack
+- Returns `SPECIAL_ATTACK_*` constant
+- Only works when creature is in combat
+
+**`GetLastAttackMode(object oCreature = OBJECT_SELF)`** - Routine 318
+
+- Gets the attack mode of creature's last attack
+- Returns `COMBAT_MODE_*` constant
+- Only works when creature is in combat
+
+**`GetLastWeaponUsed(object oCreature)`** - Routine 328
+
+- Gets the last weapon used by a creature in an attack
+- Returns `OBJECT_INVALID` if creature did not attack or has no weapon
+
+**`GetGoingToBeAttackedBy(object oTarget)`** - Routine 211
+
+- Gets the creature that is going to attack a target
+- Value is cleared at end of every combat round
+- Should only be used for "going to be attacked" shouts from master creature
+
+**`GetLastKiller()`** - Routine 437
+
+- Gets the object that killed the caller
+- Used in death scripts
+
+### Dialog and Conversation Functions
+
+**`GetPCSpeaker()`** - Routine 238
+
+- Returns the PC involved in the current conversation
+- Returns `OBJECT_INVALID` on error
+- Used in dialogue scripts
+
+**`GetIsInConversation(object oObject)`** - Routine 445
+
+- Determines whether an object is in conversation
+- Returns `TRUE` if in conversation, `FALSE` otherwise
+
+**`GetIsConversationActive()`** - Routine 701
+
+- Checks if any conversations are currently taking place
+- Returns `TRUE` if active, `FALSE` otherwise
+
+**`ActionBarkString(int strRef)`** - Routine 700
+
+- Action to cause a creature to bark a string reference from the talk table
+- `strRef`: String reference ID from TLK file
+
+### Sound and Music Functions
+
+**`AmbientSoundChangeDay(object oArea, int nTrack)`** - Routine 435
+
+- Changes the ambient day track for an area
+- `nTrack`: Track number
+
+**`AmbientSoundChangeNight(object oArea, int nTrack)`** - Routine 436
+
+- Changes the ambient night track for an area
+- `nTrack`: Track number
+
+**`AmbientSoundSetDayVolume(object oArea, int nVolume)`** - Routine 567
+
+- Sets the ambient day volume for an area
+- `nVolume`: Volume 0-100
+
+**`AmbientSoundSetNightVolume(object oArea, int nVolume)`** - Routine 568
+
+- Sets the ambient night volume for an area
+- `nVolume`: Volume 0-100
+
+**`MusicBackgroundGetBattleTrack(object oArea)`** - Routine 569
+
+- Gets the Battle Track for an area
+- Returns track number
+
+**`SoundObjectGetVolume(object oSound)`** - Routine 691
+
+- Gets the volume of a placeable sound object
+- Returns volume value
+
+**`SoundObjectGetPitchVariance(object oSound)`** - Routine 689
+
+- Gets the pitch variance of a placeable sound object
+- Returns pitch variance as float
+
+**`SoundObjectSetPitchVariance(object oSound, float fVariance)`** - Routine 690
+
+- Sets the pitch variance of a placeable sound object
+- `fVariance`: Pitch variance value
+
+**`GetStrRefSoundDuration(int nStrRef)`** - Routine 571
+
+- Gets the duration (in seconds) of the sound attached to a string reference
+- Returns 0.0 if no duration stored or no sound attached
+
+### Damage Types
+
+KotOR adds Force-related damage types:
+
+- `DAMAGE_TYPE_LIGHT_SIDE` (64): Light Side Force damage
+- `DAMAGE_TYPE_DARK_SIDE` (512): Dark Side Force damage
+- `DAMAGE_TYPE_ION` (2048): Ion damage (effective against droids)
+- `DAMAGE_TYPE_BLASTER` (4096): Blaster damage
+
+### Planet Constants
+
+KotOR-specific planet identifiers:
+
+- `PLANET_ENDAR_SPIRE` (0): Starting area
+- `PLANET_TARIS` (1): First major planet
+- `PLANET_EBON_HAWK` (2): Player's ship
+- `PLANET_DANTOOINE` (3): Jedi Enclave
+- `PLANET_TATOOINE` (4): Desert planet
+- `PLANET_KASHYYYK` (5): Wookiee homeworld
+- `PLANET_MANAAN` (6): Ocean planet
+- `PLANET_KORRIBAN` (7): Sith academy
+- `PLANET_LEVIATHAN` (8): Sith ship
+- `PLANET_UNKNOWN_WORLD` (9): Rakata world
+- `PLANET_STAR_FORGE` (10): Final area
+
+### NPC Constants
+
+KotOR 1 party member identifiers:
+
+- `NPC_PLAYER` (-1): Player character
+- `NPC_BASTILA` (0): Bastila Shan
+- `NPC_CANDEROUS` (1): Canderous Ordo
+- `NPC_CARTH` (2): Carth Onasi
+- `NPC_HK_47` (3): HK-47 droid
+- `NPC_JOLEE` (4): Jolee Bindo
+- `NPC_JUHANI` (5): Juhani
+- `NPC_MISSION` (6): Mission Vao
+- `NPC_T3_M4` (7): T3-M4 droid
+- `NPC_ZAALBAR` (8): Zaalbar
+
+### Inventory System
+
+KotOR uses a different inventory system:
+
+- `NUM_INVENTORY_SLOTS` (18): Total inventory slots
+- `INVENTORY_SLOT_HEAD` (0): Head equipment slot
+- `INVENTORY_SLOT_BODY` (1): Body armor slot
+- `INVENTORY_SLOT_HANDS` (3): Gloves slot
+- `INVENTORY_SLOT_RIGHTWEAPON` (4): Right hand weapon
+- `INVENTORY_SLOT_LEFTWEAPON` (5): Left hand weapon
+- `INVENTORY_SLOT_IMPLANT` (9): Implant slot
+- `INVENTORY_SLOT_BELT` (10): Belt slot
+- `INVENTORY_SLOT_CWEAPON_L` (14): Concealed weapon left
+- `INVENTORY_SLOT_CWEAPON_R` (15): Concealed weapon right
+- `INVENTORY_SLOT_CWEAPON_B` (16): Concealed weapon back
+- `INVENTORY_SLOT_CARMOUR` (17): Concealed armor
+
+### Visual Effects (VFX)
+
+KotOR adds many Force power visual effects:
+
+**Force Powers:**
+
+- `VFX_IMP_FORCE_PUSH` (1014): Force Push impact
+- `VFX_IMP_FORCE_WAVE` (1017): Force Wave impact
+- `VFX_IMP_FORCE_WHIRLWIND` (1018): Force Whirlwind impact
+- `VFX_IMP_FORCE_BREACH` (1012): Force Breach impact
+- `VFX_PRO_FORCE_ARMOR` (1010): Force Armor protection
+- `VFX_PRO_FORCE_SHIELD` (1015): Force Shield protection
+- `VFX_PRO_LIGHTNING_L` (1021): Large Lightning projectile
+- `VFX_PRO_LIGHTNING_S` (1028): Small Lightning projectile
+- `VFX_PRO_LIGHTNING_JEDI` (1035): Jedi Lightning projectile
+
+**Combat Effects:**
+
+- `VFX_COM_SPARKS_LIGHTSABER` (4004): Lightsaber spark effects
+- `VFX_COM_BLASTER_DEFLECTION` (4023): Blaster deflection
+- `VFX_COM_BLASTER_IMPACT` (4024): Blaster impact
+- `VFX_COM_CRITICAL_STRIKE_IMPROVED_SABER` (4025): Improved critical strike (saber)
+- `VFX_COM_POWER_ATTACK_IMPROVED_SABER` (4027): Improved power attack (saber)
+
+**Duration Effects:**
+
+- `VFX_DUR_INVISIBILITY` (2001): Invisibility effect
+- `VFX_DUR_SPEED` (2004): Speed boost effect
+- `VFX_DUR_KNIGHTS_SPEED` (2031): Knight Speed effect
+- `VFX_DUR_SHIELD_BLUE_01` (2040): Blue shield effect
+- `VFX_DUR_SHIELD_RED_01` (2045): Red shield effect
+
+**Reference:** [`Libraries/PyKotor/src/pykotor/common/scriptdefs.py:3312-9771`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/common/scriptdefs.py#L3312-L9771) (KOTOR_FUNCTIONS), [`Libraries/PyKotor/src/pykotor/common/scriptdefs.py:8-1500`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/common/scriptdefs.py#L8-L1500) (KOTOR_CONSTANTS)
+
+---
+
+## KotOR-Specific Constants
+
+### Alignment Constants
+
+- `ALIGNMENT_ALL` (0): All alignments
+- `ALIGNMENT_NEUTRAL` (1): Neutral alignment
+- `ALIGNMENT_LIGHT_SIDE` (2): Light Side alignment
+- `ALIGNMENT_DARK_SIDE` (3): Dark Side alignment
+
+### Class Type Constants
+
+- `CLASS_TYPE_SOLDIER` (0): Soldier base class
+- `CLASS_TYPE_SCOUT` (1): Scout base class
+- `CLASS_TYPE_SCOUNDREL` (2): Scoundrel base class
+- `CLASS_TYPE_JEDIGUARDIAN` (3): Jedi Guardian prestige class
+- `CLASS_TYPE_JEDICONSULAR` (4): Jedi Consular prestige class
+- `CLASS_TYPE_JEDISENTINEL` (5): Jedi Sentinel prestige class
+- `CLASS_TYPE_COMBATDROID` (6): Combat Droid class
+- `CLASS_TYPE_EXPERTDROID` (7): Expert Droid class
+- `CLASS_TYPE_MINION` (8): Minion class (weak enemies)
+- `CLASS_TYPE_INVALID` (0xFF): Invalid class type
+
+### Damage Type Constants
+
+**Force Damage:**
+
+- `DAMAGE_TYPE_LIGHT_SIDE` (64): Light Side Force damage
+- `DAMAGE_TYPE_DARK_SIDE` (512): Dark Side Force damage
+
+**Energy Damage:**
+
+- `DAMAGE_TYPE_ION` (2048): Ion damage (effective vs droids)
+- `DAMAGE_TYPE_BLASTER` (4096): Blaster damage
+- `DAMAGE_TYPE_ELECTRICAL` (128): Electrical damage
+- `DAMAGE_TYPE_FIRE` (256): Fire damage
+- `DAMAGE_TYPE_COLD` (32): Cold damage
+- `DAMAGE_TYPE_ACID` (16): Acid damage
+- `DAMAGE_TYPE_SONIC` (1024): Sonic damage
+
+**Physical Damage:**
+
+- `DAMAGE_TYPE_BLUDGEONING` (1): Bludgeoning damage
+- `DAMAGE_TYPE_PIERCING` (2): Piercing damage
+- `DAMAGE_TYPE_SLASHING` (4): Slashing damage
+- `DAMAGE_TYPE_UNIVERSAL` (8): Universal damage
+
+### Saving Throw Types
+
+KotOR-specific saving throw types:
+
+- `SAVING_THROW_TYPE_LIGHT_SIDE` (6): Light Side Force powers
+- `SAVING_THROW_TYPE_DARK_SIDE` (11): Dark Side Force powers
+- `SAVING_THROW_TYPE_FORCE_POWER` (15): General Force powers
+- `SAVING_THROW_TYPE_ION` (16): Ion effects
+- `SAVING_THROW_TYPE_BLASTER` (17): Blaster effects
+
+### Racial Types
+
+- `RACIAL_TYPE_DROID` (5): Droid racial type (KotOR-specific)
+- `RACIAL_TYPE_HUMAN` (6): Human racial type
+- `RACIAL_TYPE_ALL` (7): All racial types
+
+### Conversation Types
+
+- `CONVERSATION_TYPE_CINEMATIC` (0): Cinematic conversation
+- `CONVERSATION_TYPE_COMPUTER` (1): Computer/terminal conversation
+
+### Party AI Styles
+
+- `PARTY_AISTYLE_AGGRESSIVE` (0): Aggressive party AI
+- `PARTY_AISTYLE_DEFENSIVE` (1): Defensive party AI
+- `PARTY_AISTYLE_PASSIVE` (2): Passive party AI
+
+### NPC AI Styles
+
+- `NPC_AISTYLE_DEFAULT_ATTACK` (0): Default attack style
+- `NPC_AISTYLE_RANGED_ATTACK` (1): Ranged attack preference
+- `NPC_AISTYLE_MELEE_ATTACK` (2): Melee attack preference
+- `NPC_AISTYLE_AID` (3): Support/healing focus
+- `NPC_AISTYLE_GRENADE_THROWER` (4): Grenade usage
+- `NPC_AISTYLE_JEDI_SUPPORT` (5): Jedi support role
+
+### Disguise Types
+
+KotOR-specific disguise system constants (used for party member disguises):
+
+- `DISGUISE_TYPE_P_T3M3` (2): T3-M4 disguise
+- `DISGUISE_TYPE_P_HK47` (3): HK-47 disguise
+- `DISGUISE_TYPE_P_BASTILLA` (4): Bastila disguise
+- `DISGUISE_TYPE_P_CAND` (5): Canderous disguise
+- `DISGUISE_TYPE_P_CARTH` (6): Carth disguise
+- `DISGUISE_TYPE_P_JOLEE` (7): Jolee disguise
+- `DISGUISE_TYPE_P_JUHANI` (8): Juhani disguise
+- `DISGUISE_TYPE_P_ZAALBAR` (9): Zaalbar disguise
+- `DISGUISE_TYPE_P_MISSION` (10): Mission disguise
+
+### Effect Type Constants
+
+KotOR uses effect types to categorize different effects:
+
+**Status Effects:**
+
+- `EFFECT_TYPE_CHARMED` (23): Charmed status
+- `EFFECT_TYPE_CONFUSED` (24): Confused status
+- `EFFECT_TYPE_FRIGHTENED` (25): Frightened status
+- `EFFECT_TYPE_DOMINATED` (26): Dominated status
+- `EFFECT_TYPE_PARALYZE` (27): Paralyzed status
+- `EFFECT_TYPE_DAZED` (28): Dazed status
+- `EFFECT_TYPE_STUNNED` (29): Stunned status
+- `EFFECT_TYPE_SLEEP` (30): Sleep status
+- `EFFECT_TYPE_POISON` (31): Poisoned status
+- `EFFECT_TYPE_DISEASE` (32): Diseased status
+- `EFFECT_TYPE_CURSE` (33): Cursed status
+- `EFFECT_TYPE_SILENCE` (34): Silenced status
+- `EFFECT_TYPE_BLINDNESS` (67): Blinded status
+
+**Combat Effects:**
+
+- `EFFECT_TYPE_ABILITY_INCREASE` (38): Ability score increase
+- `EFFECT_TYPE_ABILITY_DECREASE` (39): Ability score decrease
+- `EFFECT_TYPE_ATTACK_INCREASE` (40): Attack bonus increase
+- `EFFECT_TYPE_ATTACK_DECREASE` (41): Attack bonus decrease
+- `EFFECT_TYPE_DAMAGE_INCREASE` (42): Damage bonus increase
+- `EFFECT_TYPE_DAMAGE_DECREASE` (43): Damage penalty
+- `EFFECT_TYPE_AC_INCREASE` (46): Armor Class increase
+- `EFFECT_TYPE_AC_DECREASE` (47): Armor Class decrease
+- `EFFECT_TYPE_MOVEMENT_SPEED_INCREASE` (48): Movement speed increase
+- `EFFECT_TYPE_MOVEMENT_SPEED_DECREASE` (49): Movement speed decrease
+- `EFFECT_TYPE_SAVING_THROW_INCREASE` (50): Saving throw bonus
+- `EFFECT_TYPE_SAVING_THROW_DECREASE` (51): Saving throw penalty
+
+**Force Effects (KotOR-specific):**
+
+- `EFFECT_TYPE_FORCE_RESISTANCE_INCREASE` (52): Force Resistance increase
+- `EFFECT_TYPE_FORCE_RESISTANCE_DECREASE` (53): Force Resistance decrease
+- `EFFECT_TYPE_LIGHTSABERTHROW` (76): Lightsaber throw effect
+- `EFFECT_TYPE_FORCEJUMP` (77): Force Jump effect
+- `EFFECT_TYPE_ASSUREDDEFLECTION` (78): Assured blaster deflection
+
+**Defensive Effects:**
+
+- `EFFECT_TYPE_DAMAGE_RESISTANCE` (1): Damage resistance
+- `EFFECT_TYPE_DAMAGE_REDUCTION` (7): Damage reduction
+- `EFFECT_TYPE_TEMPORARY_HITPOINTS` (9): Temporary hit points
+- `EFFECT_TYPE_INVULNERABLE` (12): Invulnerability
+- `EFFECT_TYPE_IMMUNITY` (15): Immunity to specific effects
+- `EFFECT_TYPE_DAMAGE_IMMUNITY_INCREASE` (44): Damage immunity increase
+- `EFFECT_TYPE_DAMAGE_IMMUNITY_DECREASE` (45): Damage immunity decrease
+
+**Utility Effects:**
+
+- `EFFECT_TYPE_REGENERATE` (3): Regeneration
+- `EFFECT_TYPE_HASTE` (36): Haste effect
+- `EFFECT_TYPE_SLOW` (37): Slow effect
+- `EFFECT_TYPE_INVISIBILITY` (56): Invisibility
+- `EFFECT_TYPE_IMPROVEDINVISIBILITY` (57): Improved invisibility
+- `EFFECT_TYPE_DARKNESS` (58): Darkness effect
+- `EFFECT_TYPE_SANCTUARY` (63): Sanctuary effect
+- `EFFECT_TYPE_TRUESEEING` (64): True seeing
+- `EFFECT_TYPE_SEEINVISIBLE` (65): See invisible
+- `EFFECT_TYPE_TIMESTOP` (66): Time stop
+- `EFFECT_TYPE_ULTRAVISION` (70): Ultravision
+- `EFFECT_TYPE_CONCEALMENT` (72): Concealment (miss chance)
+- `EFFECT_TYPE_SPELL_IMMUNITY` (73): Spell immunity
+- `EFFECT_TYPE_ASSUREDHIT` (74): Assured hit
+- `EFFECT_TYPE_VISUAL` (75): Visual effect only
+
+**Area Effects:**
+
+- `EFFECT_TYPE_AREA_OF_EFFECT` (20): Area of effect
+- `EFFECT_TYPE_BEAM` (21): Beam effect
+- `EFFECT_TYPE_ENTANGLE` (11): Entangle effect
+
+**Duration Types:**
+
+- `DURATION_TYPE_INSTANT` (0): Instant effect (applied immediately)
+- `DURATION_TYPE_TEMPORARY` (1): Temporary effect (lasts for specified duration)
+- `DURATION_TYPE_PERMANENT` (2): Permanent effect (lasts until removed)
+
+**Subtypes:**
+
+- `SUBTYPE_MAGICAL` (8): Magical effect subtype
+- `SUBTYPE_SUPERNATURAL` (16): Supernatural effect subtype
+- `SUBTYPE_EXTRAORDINARY` (24): Extraordinary effect subtype
+
+### Item Property Constants
+
+KotOR uses item properties to modify item behavior:
+
+**Combat Properties:**
+
+- `ITEM_PROPERTY_ABILITY_BONUS` (0): Ability score bonus
+- `ITEM_PROPERTY_AC_BONUS` (1): Armor Class bonus
+- `ITEM_PROPERTY_ENHANCEMENT_BONUS` (5): Enhancement bonus (weapon/armor)
+- `ITEM_PROPERTY_ATTACK_BONUS` (38): Attack bonus
+- `ITEM_PROPERTY_DAMAGE_BONUS` (11): Damage bonus
+- `ITEM_PROPERTY_DAMAGE_REDUCTION` (16): Damage reduction
+- `ITEM_PROPERTY_DAMAGE_RESISTANCE` (17): Damage resistance
+- `ITEM_PROPERTY_KEEN` (28): Keen property (increased critical threat range)
+- `ITEM_PROPERTY_MIGHTY` (30): Mighty property (strength bonus to ranged damage)
+
+**Defensive Properties:**
+
+- `ITEM_PROPERTY_AC_BONUS_VS_ALIGNMENT_GROUP` (2): AC bonus vs alignment
+- `ITEM_PROPERTY_AC_BONUS_VS_DAMAGE_TYPE` (3): AC bonus vs damage type
+- `ITEM_PROPERTY_AC_BONUS_VS_RACIAL_GROUP` (4): AC bonus vs racial group
+- `ITEM_PROPERTY_IMMUNITY_DAMAGE_TYPE` (14): Immunity to damage type
+- `ITEM_PROPERTY_DECREASED_DAMAGE` (15): Decreased damage taken
+- `ITEM_PROPERTY_DAMAGE_VULNERABILITY` (18): Damage vulnerability
+
+**Force Properties (KotOR-specific):**
+
+- `ITEM_PROPERTY_IMPROVED_FORCE_RESISTANCE` (25): Improved Force Resistance
+- `ITEM_PROPERTY_REGENERATION_FORCE_POINTS` (54): Regeneration of Force Points
+- `ITEM_PROPERTY_BLASTER_BOLT_DEFLECT_INCREASE` (55): Increased blaster deflection
+
+**Skill and Feat Properties:**
+
+- `ITEM_PROPERTY_SKILL_BONUS` (36): Skill bonus
+- `ITEM_PROPERTY_BONUS_FEAT` (9): Bonus feat
+- `ITEM_PROPERTY_DECREASED_SKILL_MODIFIER` (21): Decreased skill modifier
+
+**Saving Throw Properties:**
+
+- `ITEM_PROPERTY_IMPROVED_SAVING_THROW` (26): Improved saving throw
+- `ITEM_PROPERTY_IMPROVED_SAVING_THROW_SPECIFIC` (27): Improved saving throw vs specific type
+- `ITEM_PROPERTY_DECREASED_SAVING_THROWS` (33): Decreased saving throws
+- `ITEM_PROPERTY_DECREASED_SAVING_THROWS_SPECIFIC` (34): Decreased saving throws vs specific type
+
+**Utility Properties:**
+
+- `ITEM_PROPERTY_LIGHT` (29): Light property (item emits light)
+- `ITEM_PROPERTY_NO_DAMAGE` (31): No damage property
+- `ITEM_PROPERTY_UNLIMITED_AMMUNITION` (42): Unlimited ammunition
+- `ITEM_PROPERTY_REGENERATION` (35): Regeneration property
+- `ITEM_PROPERTY_TRUE_SEEING` (47): True seeing property
+- `ITEM_PROPERTY_FREEDOM_OF_MOVEMENT` (50): Freedom of movement
+- `ITEM_PROPERTY_SPECIAL_WALK` (52): Special walk animation
+
+**Use Limitations:**
+
+- `ITEM_PROPERTY_USE_LIMITATION_ALIGNMENT_GROUP` (43): Use limited by alignment
+- `ITEM_PROPERTY_USE_LIMITATION_CLASS` (44): Use limited by class
+- `ITEM_PROPERTY_USE_LIMITATION_RACIAL_TYPE` (45): Use limited by racial type
+
+**Special Properties:**
+
+- `ITEM_PROPERTY_ACTIVATE_ITEM` (10): Item activation property
+- `ITEM_PROPERTY_ON_HIT_PROPERTIES` (32): On-hit properties
+- `ITEM_PROPERTY_ON_MONSTER_HIT` (48): On monster hit properties
+- `ITEM_PROPERTY_MASSIVE_CRITICALS` (49): Massive criticals
+- `ITEM_PROPERTY_MONSTER_DAMAGE` (51): Monster damage property
+- `ITEM_PROPERTY_TRAP` (46): Trap property
+- `ITEM_PROPERTY_SECURITY_SPIKE` (37): Security spike (lockpicking)
+- `ITEM_PROPERTY_COMPUTER_SPIKE` (53): Computer spike (computer use)
+
+### Skill Constants
+
+KotOR uses skills for various character abilities:
+
+- `SKILL_COMPUTER_USE` (0): Computer Use skill
+- `SKILL_DEMOLITIONS` (1): Demolitions skill
+- `SKILL_STEALTH` (2): Stealth skill
+- `SKILL_AWARENESS` (3): Awareness skill
+- `SKILL_PERSUADE` (4): Persuade skill
+- `SKILL_REPAIR` (5): Repair skill
+- `SKILL_SECURITY` (6): Security skill
+- `SKILL_TREAT_INJURY` (7): Treat Injury skill
+
+### Feat Constants
+
+KotOR uses feats for character abilities and combat techniques:
+
+**Combat Feats:**
+
+- `FEAT_POWER_ATTACK` (0): Power Attack feat
+- `FEAT_IMPROVED_POWER_ATTACK` (1): Improved Power Attack
+- `FEAT_MASTERY_POWER_ATTACK` (2): Mastery Power Attack
+- `FEAT_CRITICAL_STRIKE` (3): Critical Strike feat
+- `FEAT_IMPROVED_CRITICAL_STRIKE` (4): Improved Critical Strike
+- `FEAT_MASTERY_CRITICAL_STRIKE` (5): Mastery Critical Strike
+- `FEAT_FLURRY` (6): Flurry feat
+- `FEAT_IMPROVED_FLURRY` (7): Improved Flurry
+- `FEAT_MASTERY_FLURRY` (8): Mastery Flurry
+- `FEAT_RAPID_SHOT` (9): Rapid Shot feat
+- `FEAT_IMPROVED_RAPID_SHOT` (10): Improved Rapid Shot
+- `FEAT_MASTERY_RAPID_SHOT` (11): Mastery Rapid Shot
+- `FEAT_SNIPER_SHOT` (12): Sniper Shot feat
+- `FEAT_IMPROVED_SNIPER_SHOT` (13): Improved Sniper Shot
+- `FEAT_MASTERY_SNIPER_SHOT` (14): Mastery Sniper Shot
+
+**Force Feats (KotOR-specific):**
+
+- `FEAT_FORCE_SENSITIVE` (15): Force Sensitive feat
+- `FEAT_FORCE_AFFINITY_DARK_SIDE` (16): Dark Side affinity
+- `FEAT_FORCE_AFFINITY_LIGHT_SIDE` (17): Light Side affinity
+
+**Weapon Feats:**
+
+- `FEAT_WEAPON_PROFICIENCY_MELEE_WEAPONS` (18): Melee weapon proficiency
+- `FEAT_WEAPON_PROFICIENCY_RANGED_WEAPONS` (19): Ranged weapon proficiency
+- `FEAT_WEAPON_PROFICIENCY_LIGHTSABER` (20): Lightsaber proficiency
+- `FEAT_WEAPON_PROFICIENCY_BLASTER_PISTOL` (21): Blaster pistol proficiency
+- `FEAT_WEAPON_PROFICIENCY_BLASTER_RIFLE` (22): Blaster rifle proficiency
+
+**Armor Feats:**
+
+- `FEAT_ARMOR_PROFICIENCY_LIGHT` (23): Light armor proficiency
+- `FEAT_ARMOR_PROFICIENCY_MEDIUM` (24): Medium armor proficiency
+- `FEAT_ARMOR_PROFICIENCY_HEAVY` (25): Heavy armor proficiency
+
+### Body Node Constants
+
+Used for effect targeting and body part references:
+
+- `BODY_NODE_HAND` (0): Hand body node
+- `BODY_NODE_CHEST` (1): Chest body node
+- `BODY_NODE_HEAD` (2): Head body node
+- `BODY_NODE_HAND_LEFT` (3): Left hand body node
+- `BODY_NODE_HAND_RIGHT` (4): Right hand body node
+
+### Area Transition Constants
+
+Used for area transition visual effects:
+
+- `AREA_TRANSITION_RANDOM` (0): Random transition
+- `AREA_TRANSITION_USER_DEFINED` (1): User-defined custom transition
+- `AREA_TRANSITION_CITY_01` through `AREA_TRANSITION_CITY_05` (2-6): City transitions
+- `AREA_TRANSITION_CRYPT_01` through `AREA_TRANSITION_CRYPT_05` (7-11): Crypt transitions
+- `AREA_TRANSITION_DUNGEON_01` through `AREA_TRANSITION_DUNGEON_08` (12-19): Dungeon transitions
+- `AREA_TRANSITION_MINES_01` through `AREA_TRANSITION_MINES_09` (20-28): Mine transitions
+- `AREA_TRANSITION_SEWER_01` through `AREA_TRANSITION_SEWER_05` (29-33): Sewer transitions
+- `AREA_TRANSITION_CASTLE_01` through `AREA_TRANSITION_CASTLE_08` (34-41): Castle transitions
+- `AREA_TRANSITION_INTERIOR_01` through `AREA_TRANSITION_INTERIOR_16` (42-57): Interior transitions
+- `AREA_TRANSITION_FOREST_01` through `AREA_TRANSITION_FOREST_05` (58-62): Forest transitions
+- `AREA_TRANSITION_RURAL_01` through `AREA_TRANSITION_RURAL_05` (63-67): Rural transitions
+
+### Object Type Constants
+
+Used to identify and filter object types:
+
+- `OBJECT_TYPE_CREATURE` (1): Creature object type
+- `OBJECT_TYPE_ITEM` (2): Item object type
+- `OBJECT_TYPE_TRIGGER` (4): Trigger object type
+- `OBJECT_TYPE_DOOR` (8): Door object type
+- `OBJECT_TYPE_AREA_OF_EFFECT` (16): Area of effect object type
+- `OBJECT_TYPE_WAYPOINT` (32): Waypoint object type
+- `OBJECT_TYPE_PLACEABLE` (64): Placeable object type
+- `OBJECT_TYPE_STORE` (128): Store object type
+- `OBJECT_TYPE_ENCOUNTER` (256): Encounter object type
+- `OBJECT_TYPE_SOUND` (512): Sound object type
+- `OBJECT_TYPE_ALL` (32767): All object types (filter)
+- `OBJECT_TYPE_INVALID` (32767): Invalid object type
+
+**Special Object Constants:**
+
+- `OBJECT_INVALID` (0x7F000000): Invalid object reference
+- `OBJECT_SELF` (0x7F000001): Reference to the calling object
+
+### Ability Constants
+
+Used for ability scores and modifiers:
+
+- `ABILITY_STRENGTH` (0): Strength ability
+- `ABILITY_DEXTERITY` (1): Dexterity ability
+- `ABILITY_CONSTITUTION` (2): Constitution ability
+- `ABILITY_INTELLIGENCE` (3): Intelligence ability
+- `ABILITY_WISDOM` (4): Wisdom ability
+- `ABILITY_CHARISMA` (5): Charisma ability
+
+### Talk Volume Constants
+
+Used for speech volume levels:
+
+- `TALKVOLUME_TALK` (0): Normal talking volume
+- `TALKVOLUME_WHISPER` (1): Whisper volume
+- `TALKVOLUME_SHOUT` (2): Shout volume
+- `TALKVOLUME_SILENT_TALK` (3): Silent talk (no sound, text only)
+- `TALKVOLUME_SILENT_SHOUT` (4): Silent shout (no sound, text only)
+
+### Special Ability Constants
+
+KotOR-specific special abilities:
+
+- `SPECIAL_ABILITY_BATTLE_MEDITATION` (51): Battle Meditation ability
+- `SPECIAL_ABILITY_BODY_FUEL` (52): Body Fuel ability
+- `SPECIAL_ABILITY_COMBAT_REGENERATION` (53): Combat Regeneration ability
+- `SPECIAL_ABILITY_WARRIOR_STANCE` (54): Warrior Stance ability
+- `SPECIAL_ABILITY_SENTINEL_STANCE` (55): Sentinel Stance ability
+- `SPECIAL_ABILITY_DOMINATE_MIND` (56): Dominate Mind ability
+- `SPECIAL_ABILITY_PSYCHIC_STANCE` (57): Psychic Stance ability
+- `SPECIAL_ABILITY_CATHAR_REFLEXES` (58): Cathar Reflexes ability
+- `SPECIAL_ABILITY_ENHANCED_SENSES` (59): Enhanced Senses ability
+- `SPECIAL_ABILITY_CAMOFLAGE` (60): Camouflage ability
+- `SPECIAL_ABILITY_TAUNT` (61): Taunt ability
+- `SPECIAL_ABILITY_WHIRLING_DERVISH` (62): Whirling Dervish ability
+- `SPECIAL_ABILITY_RAGE` (63): Rage ability
+
+### Poison Constants
+
+Used for poison effects:
+
+- `POISON_ABILITY_SCORE_MILD` (0): Mild ability score poison
+- `POISON_ABILITY_SCORE_AVERAGE` (1): Average ability score poison
+- `POISON_ABILITY_SCORE_VIRULENT` (2): Virulent ability score poison
+
+### Direction Constants
+
+Used for facing directions:
+
+- `DIRECTION_EAST` (0.0): East direction (0.0 degrees)
+- `DIRECTION_NORTH` (90.0): North direction (90.0 degrees)
+- `DIRECTION_WEST` (180.0): West direction (180.0 degrees)
+- `DIRECTION_SOUTH` (270.0): South direction (270.0 degrees)
+
+### Combat Mode Constants
+
+Used for attack modes:
+
+- `COMBAT_MODE_MELEE` (0): Melee combat mode
+- `COMBAT_MODE_RANGED` (1): Ranged combat mode
+
+### Special Attack Constants
+
+Used for special attack types:
+
+- `SPECIAL_ATTACK_NONE` (0): No special attack
+- `SPECIAL_ATTACK_CALLED_SHOT_LEG` (1): Called shot to leg
+- `SPECIAL_ATTACK_CALLED_SHOT_ARM` (2): Called shot to arm
+- `SPECIAL_ATTACK_SAP` (3): Sap attack
+- `SPECIAL_ATTACK_DISARM` (4): Disarm attack
+- `SPECIAL_ATTACK_IMPROVED_DISARM` (5): Improved disarm attack
+- `SPECIAL_ATTACK_KNOCKDOWN` (6): Knockdown attack
+- `SPECIAL_ATTACK_IMPROVED_KNOCKDOWN` (7): Improved knockdown attack
+- `SPECIAL_ATTACK_STUN` (8): Stun attack
+- `SPECIAL_ATTACK_DEATH_ATTACK` (9): Death attack
+- `SPECIAL_ATTACK_CRITICAL_STRIKE` (10): Critical strike
+- `SPECIAL_ATTACK_IMPROVED_CRITICAL_STRIKE` (11): Improved critical strike
+- `SPECIAL_ATTACK_MASTERY_CRITICAL_STRIKE` (12): Mastery critical strike
+- `SPECIAL_ATTACK_DODGE` (13): Dodge
+- `SPECIAL_ATTACK_PARRY` (14): Parry
+- `SPECIAL_ATTACK_IMPROVED_PARRY` (15): Improved parry
+- `SPECIAL_ATTACK_MASTERY_PARRY` (16): Mastery parry
+- `SPECIAL_ATTACK_ELECTRICITY` (17): Electricity attack
+- `SPECIAL_ATTACK_WHIRLWIND` (18): Whirlwind attack
+- `SPECIAL_ATTACK_IMPROVED_WHIRLWIND` (19): Improved whirlwind attack
+- `SPECIAL_ATTACK_MASTERY_WHIRLWIND` (20): Mastery whirlwind attack
+- `SPECIAL_ATTACK_FLURRY_OF_BLOWS` (21): Flurry of blows
+- `SPECIAL_ATTACK_IMPROVED_FLURRY_OF_BLOWS` (22): Improved flurry of blows
+- `SPECIAL_ATTACK_MASTERY_FLURRY_OF_BLOWS` (23): Mastery flurry of blows
+- `SPECIAL_ATTACK_RAPID_SHOT` (24): Rapid shot
+- `SPECIAL_ATTACK_IMPROVED_RAPID_SHOT` (25): Improved rapid shot
+- `SPECIAL_ATTACK_MASTERY_RAPID_SHOT` (26): Mastery rapid shot
+- `SPECIAL_ATTACK_SNIPER_SHOT` (27): Sniper shot
+- `SPECIAL_ATTACK_IMPROVED_SNIPER_SHOT` (28): Improved sniper shot
+- `SPECIAL_ATTACK_MASTERY_SNIPER_SHOT` (29): Mastery sniper shot
+- `SPECIAL_ATTACK_POWER_ATTACK` (30): Power attack
+- `SPECIAL_ATTACK_IMPROVED_POWER_ATTACK` (31): Improved power attack
+- `SPECIAL_ATTACK_MASTERY_POWER_ATTACK` (32): Mastery power attack
+
+### Damage Power Constants
+
+Used for damage power levels:
+
+- `DAMAGE_POWER_NORMAL` (0): Normal damage power
+- `DAMAGE_POWER_PLUS_ONE` (1): Plus one damage power
+- `DAMAGE_POWER_PLUS_TWO` (2): Plus two damage power
+- `DAMAGE_POWER_PLUS_THREE` (3): Plus three damage power
+- `DAMAGE_POWER_PLUS_FOUR` (4): Plus four damage power
+- `DAMAGE_POWER_PLUS_FIVE` (5): Plus five damage power
+- `DAMAGE_POWER_ENERGY` (6): Energy damage power
+
+### Damage Bonus Constants
+
+Used for damage bonus effects:
+
+- `DAMAGE_BONUS_1` (1): +1 damage bonus
+- `DAMAGE_BONUS_2` (2): +2 damage bonus
+- `DAMAGE_BONUS_3` (3): +3 damage bonus
+- `DAMAGE_BONUS_4` (4): +4 damage bonus
+- `DAMAGE_BONUS_5` (5): +5 damage bonus
+- `DAMAGE_BONUS_1D4` (6): 1d4 damage bonus
+- `DAMAGE_BONUS_1D6` (7): 1d6 damage bonus
+- `DAMAGE_BONUS_1D8` (8): 1d8 damage bonus
+- `DAMAGE_BONUS_1D10` (9): 1d10 damage bonus
+- `DAMAGE_BONUS_2D6` (10): 2d6 damage bonus
+
+### AC (Armor Class) Constants
+
+Used for AC modification types:
+
+- `AC_DODGE_BONUS` (0): Dodge bonus to AC
+- `AC_NATURAL_BONUS` (1): Natural bonus to AC
+- `AC_ARMOR_ENCHANTMENT_BONUS` (2): Armor enchantment bonus to AC
+- `AC_SHIELD_ENCHANTMENT_BONUS` (3): Shield enchantment bonus to AC
+- `AC_DEFLECTION_BONUS` (4): Deflection bonus to AC
+- `AC_VS_DAMAGE_TYPE_ALL` (8199): AC vs all damage types
+
+### Attack Bonus Constants
+
+Used for attack bonus modification types:
+
+- `ATTACK_BONUS_MISC` (0): Miscellaneous attack bonus
+- `ATTACK_BONUS_ONHAND` (1): On-hand weapon attack bonus
+- `ATTACK_BONUS_OFFHAND` (2): Off-hand weapon attack bonus
+
+### Animation Constants
+
+Used for animation playback:
+
+**Looping Animations:**
+
+- `ANIMATION_LOOPING_PAUSE` (0): Pause animation
+- `ANIMATION_LOOPING_PAUSE2` (1): Pause animation variant 2
+- `ANIMATION_LOOPING_LISTEN` (2): Listen animation
+- `ANIMATION_LOOPING_MEDITATE` (3): Meditate animation
+- `ANIMATION_LOOPING_WORSHIP` (4): Worship animation
+- `ANIMATION_LOOPING_TALK_NORMAL` (5): Normal talking animation
+- `ANIMATION_LOOPING_TALK_PLEADING` (6): Pleading talking animation
+- `ANIMATION_LOOPING_TALK_FORCEFUL` (7): Forceful talking animation
+- `ANIMATION_LOOPING_TALK_LAUGHING` (8): Laughing talking animation
+- `ANIMATION_LOOPING_TALK_SAD` (9): Sad talking animation
+- `ANIMATION_LOOPING_GET_LOW` (10): Get low animation
+- `ANIMATION_LOOPING_GET_MID` (11): Get mid animation
+- `ANIMATION_LOOPING_PAUSE_TIRED` (12): Tired pause animation
+- `ANIMATION_LOOPING_PAUSE_DRUNK` (13): Drunk pause animation
+- `ANIMATION_LOOPING_FLIRT` (14): Flirt animation
+- `ANIMATION_LOOPING_USE_COMPUTER` (15): Use computer animation
+- `ANIMATION_LOOPING_DANCE` (16): Dance animation
+- `ANIMATION_LOOPING_DANCE1` (17): Dance animation variant 1
+- `ANIMATION_LOOPING_HORROR` (18): Horror animation
+- `ANIMATION_LOOPING_READY` (19): Ready animation
+- `ANIMATION_LOOPING_DEACTIVATE` (20): Deactivate animation
+- `ANIMATION_LOOPING_SPASM` (21): Spasm animation
+- `ANIMATION_LOOPING_SLEEP` (22): Sleep animation
+- `ANIMATION_LOOPING_PRONE` (23): Prone animation
+- `ANIMATION_LOOPING_PAUSE3` (24): Pause animation variant 3
+- `ANIMATION_LOOPING_WELD` (25): Weld animation
+- `ANIMATION_LOOPING_DEAD` (26): Dead animation
+- `ANIMATION_LOOPING_TALK_INJURED` (27): Injured talking animation
+
+### Creature Type Constants
+
+Used for creature queries:
+
+- `CREATURE_TYPE_RACIAL_TYPE` (0): Filter by racial type
+- `CREATURE_TYPE_PLAYER_CHAR` (1): Filter by player character status
+- `CREATURE_TYPE_CLASS` (2): Filter by class type
+- `CREATURE_TYPE_REPUTATION` (3): Filter by reputation
+- `CREATURE_TYPE_IS_ALIVE` (4): Filter by alive status
+- `CREATURE_TYPE_HAS_SPELL_EFFECT` (5): Filter by spell effect presence
+- `CREATURE_TYPE_DOES_NOT_HAVE_SPELL_EFFECT` (6): Filter by spell effect absence
+- `CREATURE_TYPE_PERCEPTION` (7): Filter by perception
+
+### Perception Constants
+
+Used for perception filtering:
+
+- `PERCEPTION_SEEN_AND_HEARD` (0): Seen and heard
+- `PERCEPTION_NOT_SEEN_AND_NOT_HEARD` (1): Not seen and not heard
+- `PERCEPTION_HEARD_AND_NOT_SEEN` (2): Heard and not seen
+- `PERCEPTION_SEEN_AND_NOT_HEARD` (3): Seen and not heard
+- `PERCEPTION_NOT_HEARD` (4): Not heard
+- `PERCEPTION_HEARD` (5): Heard
+- `PERCEPTION_NOT_SEEN` (6): Not seen
+- `PERCEPTION_SEEN` (7): Seen
+
+### Reputation Type Constants
+
+Used for reputation filtering:
+
+- `REPUTATION_TYPE_FRIEND` (0): Friendly reputation
+- `REPUTATION_TYPE_ENEMY` (1): Enemy reputation
+- `REPUTATION_TYPE_NEUTRAL` (2): Neutral reputation
+
+### Immunity Type Constants
+
+Used for immunity effects:
+
+- `IMMUNITY_TYPE_NONE` (0): No immunity
+- `IMMUNITY_TYPE_MIND_SPELLS` (1): Immunity to mind spells
+- `IMMUNITY_TYPE_POISON` (2): Immunity to poison
+- `IMMUNITY_TYPE_DISEASE` (3): Immunity to disease
+- `IMMUNITY_TYPE_FEAR` (4): Immunity to fear
+- `IMMUNITY_TYPE_TRAP` (5): Immunity to traps
+- `IMMUNITY_TYPE_PARALYSIS` (6): Immunity to paralysis
+- `IMMUNITY_TYPE_BLINDNESS` (7): Immunity to blindness
+- `IMMUNITY_TYPE_DEAFNESS` (8): Immunity to deafness
+- `IMMUNITY_TYPE_SLOW` (9): Immunity to slow
+- `IMMUNITY_TYPE_ENTANGLE` (10): Immunity to entangle
+- `IMMUNITY_TYPE_SILENCE` (11): Immunity to silence
+- `IMMUNITY_TYPE_STUN` (12): Immunity to stun
+- `IMMUNITY_TYPE_SLEEP` (13): Immunity to sleep
+- `IMMUNITY_TYPE_CHARM` (14): Immunity to charm
+- `IMMUNITY_TYPE_DOMINATE` (15): Immunity to dominate
+- `IMMUNITY_TYPE_CONFUSED` (16): Immunity to confusion
+- `IMMUNITY_TYPE_CURSED` (17): Immunity to curse
+- `IMMUNITY_TYPE_DAZED` (18): Immunity to daze
+- `IMMUNITY_TYPE_ABILITY_DECREASE` (19): Immunity to ability decrease
+- `IMMUNITY_TYPE_ATTACK_DECREASE` (20): Immunity to attack decrease
+- `IMMUNITY_TYPE_DAMAGE_DECREASE` (21): Immunity to damage decrease
+- `IMMUNITY_TYPE_DAMAGE_IMMUNITY_DECREASE` (22): Immunity to damage immunity decrease
+- `IMMUNITY_TYPE_AC_DECREASE` (23): Immunity to AC decrease
+- `IMMUNITY_TYPE_MOVEMENT_SPEED_DECREASE` (24): Immunity to movement speed decrease
+- `IMMUNITY_TYPE_SAVING_THROW_DECREASE` (25): Immunity to saving throw decrease
+- `IMMUNITY_TYPE_FORCE_RESISTANCE_DECREASE` (26): Immunity to Force Resistance decrease
+- `IMMUNITY_TYPE_SKILL_DECREASE` (27): Immunity to skill decrease
+- `IMMUNITY_TYPE_KNOCKDOWN` (28): Immunity to knockdown
+- `IMMUNITY_TYPE_NEGATIVE_LEVEL` (29): Immunity to negative level
+- `IMMUNITY_TYPE_SNEAK_ATTACK` (30): Immunity to sneak attack
+- `IMMUNITY_TYPE_CRITICAL_HIT` (31): Immunity to critical hits
+- `IMMUNITY_TYPE_DEATH` (32): Immunity to death
+
+### Invisibility Type Constants
+
+Used for invisibility effects:
+
+- `INVISIBILITY_TYPE_NORMAL` (1): Normal invisibility
+- `INVISIBILITY_TYPE_DARKNESS` (2): Darkness invisibility
+- `INVISIBILITY_TYPE_IMPROVED` (4): Improved invisibility
+
+### Movement Speed Constants
+
+Used for movement speed types:
+
+- `MOVEMENT_SPEED_PC` (0): Player character speed
+- `MOVEMENT_SPEED_IMMOBILE` (1): Immobile (cannot move)
+- `MOVEMENT_SPEED_VERYSLOW` (2): Very slow speed
+- `MOVEMENT_SPEED_SLOW` (3): Slow speed
+- `MOVEMENT_SPEED_NORMAL` (4): Normal speed
+- `MOVEMENT_SPEED_FAST` (5): Fast speed
+- `MOVEMENT_SPEED_VERYFAST` (6): Very fast speed
+- `MOVEMENT_SPEED_DEFAULT` (7): Default speed
+- `MOVEMENT_SPEED_DMFAST` (8): DM fast speed
+
+### Door Action Constants
+
+Used for door actions:
+
+- `DOOR_ACTION_OPEN` (0): Open door action
+- `DOOR_ACTION_UNLOCK` (1): Unlock door action
+- `DOOR_ACTION_BASH` (2): Bash door action
+- `DOOR_ACTION_IGNORE` (3): Ignore door action
+- `DOOR_ACTION_KNOCK` (4): Knock on door action
+
+### Placeable Action Constants
+
+Used for placeable actions:
+
+- `PLACEABLE_ACTION_USE` (0): Use placeable action
+- `PLACEABLE_ACTION_UNLOCK` (1): Unlock placeable action
+- `PLACEABLE_ACTION_BASH` (2): Bash placeable action
+- `PLACEABLE_ACTION_KNOCK` (4): Knock on placeable action
+
+### Player Character Constants
+
+Used for player character filtering:
+
+- `PLAYER_CHAR_IS_PC` (0): Is a player character
+- `PLAYER_CHAR_NOT_PC` (1): Is not a player character
+
+### Shape Type Constants
+
+Used for area-of-effect shapes:
+
+- `SHAPE_TYPE_SPHERE` (0): Sphere shape
+- `SHAPE_TYPE_CONE` (1): Cone shape
+- `SHAPE_TYPE_CUBE` (2): Cube shape
+- `SHAPE_TYPE_SPELLCYLINDER` (3): Spell cylinder shape
+
+### Projectile Path Type Constants
+
+Used for spell projectiles:
+
+- `PROJECTILE_PATH_TYPE_DEFAULT` (0): Default projectile path
+- `PROJECTILE_PATH_TYPE_HOMING` (1): Homing projectile path
+- `PROJECTILE_PATH_TYPE_BALLISTIC` (2): Ballistic projectile path
+- `PROJECTILE_PATH_TYPE_HIGH_BALLISTIC` (3): High ballistic projectile path
+- `PROJECTILE_PATH_TYPE_ACCELERATING` (4): Accelerating projectile path
+
+### Metamagic Constants
+
+Used for metamagic feats:
+
+- `METAMAGIC_NONE` (0): No metamagic
+- `METAMAGIC_EMPOWER` (1): Empower metamagic
+- `METAMAGIC_EXTEND` (2): Extend metamagic
+- `METAMAGIC_MAXIMIZE` (4): Maximize metamagic
+- `METAMAGIC_QUICKEN` (8): Quicken metamagic
+- `METAMAGIC_SILENT` (16): Silent metamagic
+- `METAMAGIC_STILL` (32): Still metamagic
+
+### Associate Command Constants
+
+Used for party member commands:
+
+- `ASSOCIATE_COMMAND_STAND_GROUND` (0): Stand ground command
+- `ASSOCIATE_COMMAND_ATTACK_NEAREST` (1): Attack nearest command
+- `ASSOCIATE_COMMAND_GUARD_MASTER` (2): Guard master command
+- `ASSOCIATE_COMMAND_FOLLOW_MASTER` (3): Follow master command
+- `ASSOCIATE_COMMAND_MASTER_FAILING` (4): Master failing command
+- `ASSOCIATE_COMMAND_MASTER_ATTACKED` (5): Master attacked command
+- `ASSOCIATE_COMMAND_MASTER_GOING_TO_BE_ATTACKED` (6): Master going to be attacked command
+- `ASSOCIATE_COMMAND_LEAVE_MASTER` (7): Leave master command
+- `ASSOCIATE_COMMAND_PICK_LOCK` (8): Pick lock command
+- `ASSOCIATE_COMMAND_INVENTORY` (9): Inventory command
+- `ASSOCIATE_COMMAND_DISARM_TRAP` (10): Disarm trap command
+- `ASSOCIATE_COMMAND_UNLOCK` (11): Unlock command
+- `ASSOCIATE_COMMAND_FOLLOW` (12): Follow command
+- `ASSOCIATE_COMMAND_MASTER_FAILED` (13): Master failed command
+- `ASSOCIATE_COMMAND_MASTER_SAW_ENEMY` (14): Master saw enemy command
+- `ASSOCIATE_COMMAND_MASTER_GOING_TO_ATTACK` (15): Master going to attack command
+- `ASSOCIATE_COMMAND_MASTER_ATTACKING` (16): Master attacking command
+- `ASSOCIATE_COMMAND_MASTER_UNDER_ATTACK` (17): Master under attack command
+
+### Print and Debug Functions
+
+**`PrintString(string sString)`** - Routine 1
+
+- Outputs a string to the log file
+- Used for debugging and logging
+
+**`PrintInteger(int nInteger)`** - Routine 4
+
+- Outputs an integer to the log file
+- Used for debugging
+
+**`PrintFloat(float fFloat, int nWidth = 18, int nDecimals = 9)`** - Routine 2
+
+- Outputs a formatted float to the log file
+- `nWidth`: Width from 0 to 18
+- `nDecimals`: Decimal places from 0 to 9
+
+**`PrintObject(object oObject)`** - Routine 5
+
+- Outputs an object's ID to the log file
+- Used for debugging object references
+
+### Gender Constants
+
+Used for creature gender:
+
+- `GENDER_MALE` (0): Male gender
+- `GENDER_FEMALE` (1): Female gender
+- `GENDER_BOTH` (2): Both genders
+- `GENDER_OTHER` (3): Other gender
+- `GENDER_NONE` (4): No gender
+
+### Base Item Type Constants
+
+Used for item base types (KotOR-specific items):
+
+**Melee Weapons:**
+
+- `BASE_ITEM_QUARTER_STAFF` (0): Quarter staff
+- `BASE_ITEM_STUN_BATON` (1): Stun baton
+- `BASE_ITEM_LONG_SWORD` (2): Long sword
+- `BASE_ITEM_VIBRO_SWORD` (3): Vibro sword
+- `BASE_ITEM_SHORT_SWORD` (4): Short sword
+- `BASE_ITEM_VIBRO_BLADE` (5): Vibro blade
+- `BASE_ITEM_DOUBLE_BLADED_SWORD` (6): Double-bladed sword
+- `BASE_ITEM_VIBRO_DOUBLE_BLADE` (7): Vibro double blade
+- `BASE_ITEM_GHAFFI_STICK` (78): Ghaaffi stick
+- `BASE_ITEM_WOOKIE_WARBLADE` (79): Wookiee warblade
+- `BASE_ITEM_GAMMOREAN_BATTLEAXE` (80): Gamorrean battleaxe
+
+**Lightsabers:**
+
+- `BASE_ITEM_LIGHTSABER` (8): Single lightsaber
+- `BASE_ITEM_DOUBLE_BLADED_LIGHTSABER` (9): Double-bladed lightsaber
+- `BASE_ITEM_SHORT_LIGHTSABER` (10): Short lightsaber
+- `BASE_ITEM_LIGHTSABER_CRYSTALS` (11): Lightsaber crystals
+
+**Blasters (Pistols):**
+
+- `BASE_ITEM_BLASTER_PISTOL` (12): Blaster pistol
+- `BASE_ITEM_HEAVY_BLASTER` (13): Heavy blaster
+- `BASE_ITEM_HOLD_OUT_BLASTER` (14): Hold-out blaster
+- `BASE_ITEM_ION_BLASTER` (15): Ion blaster
+- `BASE_ITEM_DISRUPTER_PISTOL` (16): Disruptor pistol
+- `BASE_ITEM_SONIC_PISTOL` (17): Sonic pistol
+
+**Blasters (Rifles):**
+
+- `BASE_ITEM_ION_RIFLE` (18): Ion rifle
+- `BASE_ITEM_BOWCASTER` (19): Bowcaster
+- `BASE_ITEM_BLASTER_CARBINE` (20): Blaster carbine
+- `BASE_ITEM_DISRUPTER_RIFLE` (21): Disruptor rifle
+- `BASE_ITEM_SONIC_RIFLE` (22): Sonic rifle
+- `BASE_ITEM_REPEATING_BLASTER` (23): Repeating blaster
+- `BASE_ITEM_HEAVY_REPEATING_BLASTER` (24): Heavy repeating blaster
+- `BASE_ITEM_BLASTER_RIFLE` (77): Blaster rifle
+
+**Grenades:**
+
+- `BASE_ITEM_FRAGMENTATION_GRENADES` (25): Fragmentation grenades
+- `BASE_ITEM_STUN_GRENADES` (26): Stun grenades
+- `BASE_ITEM_THERMAL_DETONATOR` (27): Thermal detonator
+- `BASE_ITEM_POISON_GRENADE` (28): Poison grenade
+- `BASE_ITEM_FLASH_GRENADE` (29): Flash grenade
+- `BASE_ITEM_SONIC_GRENADE` (30): Sonic grenade
+- `BASE_ITEM_ADHESIVE_GRENADE` (31): Adhesive grenade
+- `BASE_ITEM_CRYOBAN_GRENADE` (32): Cryoban grenade
+- `BASE_ITEM_FIRE_GRENADE` (33): Fire grenade
+- `BASE_ITEM_ION_GRENADE` (34): Ion grenade
+
+**Armor:**
+
+- `BASE_ITEM_JEDI_ROBE` (35): Jedi robe
+- `BASE_ITEM_JEDI_KNIGHT_ROBE` (36): Jedi Knight robe
+- `BASE_ITEM_JEDI_MASTER_ROBE` (37): Jedi Master robe
+- `BASE_ITEM_ARMOR_CLASS_4` (38): Armor class 4
+- `BASE_ITEM_ARMOR_CLASS_5` (39): Armor class 5
+- `BASE_ITEM_ARMOR_CLASS_6` (40): Armor class 6
+- `BASE_ITEM_ARMOR_CLASS_7` (41): Armor class 7
+- `BASE_ITEM_ARMOR_CLASS_8` (42): Armor class 8
+- `BASE_ITEM_ARMOR_CLASS_9` (43): Armor class 9
+
+**Accessories:**
+
+- `BASE_ITEM_MASK` (44): Mask
+- `BASE_ITEM_GAUNTLETS` (45): Gauntlets
+- `BASE_ITEM_FOREARM_BANDS` (46): Forearm bands
+- `BASE_ITEM_BELT` (47): Belt
+- `BASE_ITEM_IMPLANT_1` (48): Implant level 1
+- `BASE_ITEM_IMPLANT_2` (49): Implant level 2
+- `BASE_ITEM_IMPLANT_3` (50): Implant level 3
+
+**Consumables and Equipment:**
+
+- `BASE_ITEM_DATA_PAD` (52): Data pad
+- `BASE_ITEM_ADRENALINE` (53): Adrenaline
+- `BASE_ITEM_COMBAT_SHOTS` (54): Combat shots
+- `BASE_ITEM_MEDICAL_EQUIPMENT` (55): Medical equipment
+- `BASE_ITEM_DROID_REPAIR_EQUIPMENT` (56): Droid repair equipment
+- `BASE_ITEM_CREDITS` (57): Credits
+- `BASE_ITEM_TRAP_KIT` (58): Trap kit
+- `BASE_ITEM_SECURITY_SPIKES` (59): Security spikes
+- `BASE_ITEM_PROGRAMMING_SPIKES` (60): Programming spikes
+- `BASE_ITEM_GLOW_ROD` (61): Glow rod
+- `BASE_ITEM_COLLAR_LIGHT` (62): Collar light
+- `BASE_ITEM_TORCH` (63): Torch
+- `BASE_ITEM_PLOT_USEABLE_ITEMS` (64): Plot usable items
+- `BASE_ITEM_AESTHETIC_ITEM` (65): Aesthetic item
+
+**Droid Equipment:**
+
+- `BASE_ITEM_DROID_LIGHT_PLATING` (66): Droid light plating
+- `BASE_ITEM_DROID_MEDIUM_PLATING` (67): Droid medium plating
+- `BASE_ITEM_DROID_HEAVY_PLATING` (68): Droid heavy plating
+- `BASE_ITEM_DROID_SEARCH_SCOPE` (69): Droid search scope
+- `BASE_ITEM_DROID_MOTION_SENSORS` (70): Droid motion sensors
+- `BASE_ITEM_DROID_SONIC_SENSORS` (71): Droid sonic sensors
+- `BASE_ITEM_DROID_TARGETING_COMPUTERS` (72): Droid targeting computers
+- `BASE_ITEM_DROID_COMPUTER_SPIKE_MOUNT` (73): Droid computer spike mount
+- `BASE_ITEM_DROID_SECURITY_SPIKE_MOUNT` (74): Droid security spike mount
+- `BASE_ITEM_DROID_SHIELD` (75): Droid shield
+- `BASE_ITEM_DROID_UTILITY_DEVICE` (76): Droid utility device
+
+**Creature Items:**
+
+- `BASE_ITEM_CREATURE_ITEM_SLASH` (81): Creature item (slash)
+- `BASE_ITEM_CREATURE_ITEM_PIERCE` (82): Creature item (pierce)
+- `BASE_ITEM_CREATURE_WEAPON_SL_PRC` (83): Creature weapon (slash/pierce)
+- `BASE_ITEM_CREATURE_HIDE_ITEM` (84): Creature hide item
+
+**Miscellaneous:**
+
+- `BASE_ITEM_BASIC_CLOTHING` (85): Basic clothing
+- `BASE_ITEM_INVALID` (256): Invalid base item type
+
+### Subrace Constants
+
+Used for creature subraces:
+
+- `SUBRACE_NONE` (0): No subrace
+- `SUBRACE_WOOKIE` (1): Wookiee subrace
+
+### Encounter Difficulty Constants
+
+Used for encounter difficulty levels:
+
+- `ENCOUNTER_DIFFICULTY_VERY_EASY` (0): Very easy difficulty
+- `ENCOUNTER_DIFFICULTY_EASY` (1): Easy difficulty
+- `ENCOUNTER_DIFFICULTY_NORMAL` (2): Normal difficulty
+- `ENCOUNTER_DIFFICULTY_HARD` (3): Hard difficulty
+- `ENCOUNTER_DIFFICULTY_IMPOSSIBLE` (4): Impossible difficulty
+
+### Trap Base Type Constants
+
+Used for trap types (KotOR-specific):
+
+**Flash Stun Traps:**
+
+- `TRAP_BASE_TYPE_FLASH_STUN_MINOR` (0): Minor flash stun trap
+- `TRAP_BASE_TYPE_FLASH_STUN_AVERAGE` (1): Average flash stun trap
+- `TRAP_BASE_TYPE_FLASH_STUN_DEADLY` (2): Deadly flash stun trap
+- `TRAP_BASE_TYPE_FLASH_STUN_STRONG` (17): Strong flash stun trap (K2)
+- `TRAP_BASE_TYPE_FLASH_STUN_DEVASTATING` (18): Devastating flash stun trap (K2)
+
+**Fragmentation Mine Traps:**
+
+- `TRAP_BASE_TYPE_FRAGMENTATION_MINE_MINOR` (3): Minor fragmentation mine
+- `TRAP_BASE_TYPE_FRAGMENTATION_MINE_AVERAGE` (4): Average fragmentation mine
+- `TRAP_BASE_TYPE_FRAGMENTATION_MINE_DEADLY` (5): Deadly fragmentation mine
+- `TRAP_BASE_TYPE_FRAGMENTATION_MINE_STRONG` (19): Strong fragmentation mine (K2)
+- `TRAP_BASE_TYPE_FRAGMENTATION_MINE_DEVASTATING` (20): Devastating fragmentation mine (K2)
+
+**Laser Slicing Traps:**
+
+- `TRAP_BASE_TYPE_LASER_SLICING_MINOR` (6): Minor laser slicing trap
+- `TRAP_BASE_TYPE_LASER_SLICING_AVERAGE` (7): Average laser slicing trap
+- `TRAP_BASE_TYPE_LASER_SLICING_DEADLY` (8): Deadly laser slicing trap
+- `TRAP_BASE_TYPE_LASER_SLICING_STRONG` (21): Strong laser slicing trap (K2)
+- `TRAP_BASE_TYPE_LASER_SLICING_DEVASTATING` (22): Devastating laser slicing trap (K2)
+
+**Poison Gas Traps:**
+
+- `TRAP_BASE_TYPE_POISON_GAS_MINOR` (9): Minor poison gas trap
+- `TRAP_BASE_TYPE_POISON_GAS_AVERAGE` (10): Average poison gas trap
+- `TRAP_BASE_TYPE_POISON_GAS_DEADLY` (11): Deadly poison gas trap
+- `TRAP_BASE_TYPE_POISON_GAS_STRONG` (23): Strong poison gas trap (K2)
+- `TRAP_BASE_TYPE_POISON_GAS_DEVASTATING` (24): Devastating poison gas trap (K2)
+
+**Sonic Charge Traps (K2 only):**
+
+- `TRAP_BASE_TYPE_SONIC_CHARGE_MINOR` (14): Minor sonic charge trap
+- `TRAP_BASE_TYPE_SONIC_CHARGE_AVERAGE` (15): Average sonic charge trap
+- `TRAP_BASE_TYPE_SONIC_CHARGE_DEADLY` (16): Deadly sonic charge trap
+- `TRAP_BASE_TYPE_SONIC_CHARGE_STRONG` (25): Strong sonic charge trap
+- `TRAP_BASE_TYPE_SONIC_CHARGE_DEVASTATING` (26): Devastating sonic charge trap
+
+### Module Functions
+
+**`GetModuleFileName()`** - Routine 210
+
+- Gets the actual file name of the current module
+- Returns module filename as string
+
+**Reference:** [`Libraries/PyKotor/src/pykotor/common/scriptdefs.py:8-1500`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/common/scriptdefs.py#L8-L1500) (complete constant list)
+
+---
+
+## Compilation Process
+
+When compiling NSS to NCS (see [`Libraries/PyKotor/src/pykotor/resource/formats/ncs/ncs_auto.py:126-205`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/ncs/ncs_auto.py#L126-L205)):
+
+1. **Parser Creation**: `NssParser` initialized with game-specific functions/constants
+2. **Source Parsing**: NSS source code parsed into Abstract Syntax Tree (AST)
+3. **Function Resolution**: Function calls resolved to routine numbers via function list lookup
+4. **Constant Substitution**: Constants replaced with their literal values
+5. **Bytecode Generation**: AST compiled to NCS bytecode instructions
+6. **Optimization**: Post-compilation optimizers applied (NOP removal, etc.)
+
+**Function Call Resolution:**
+
+```nss
+// Source code
+int result = GetGlobalNumber("K_QUEST_COMPLETED");
+```
+
+```nss
+// Compiler looks up "GetGlobalNumber" in KOTOR_FUNCTIONS
+// Finds it at index 159 (routine number)
+// Generates: ACTION 159 with 1 argument (string "K_QUEST_COMPLETED")
+```
+
+**Constant Resolution:**
+
+```nss
+// Source code
+if (nPlanet == PLANET_TARIS) { ... }
+```
+
+```nss
+// Compiler looks up PLANET_TARIS in KOTOR_CONSTANTS
+// Finds value: 1
+// Generates: CONSTI 1 (pushes integer 1 onto stack)
+```
+
+**Reference:** [`Libraries/PyKotor/src/pykotor/resource/formats/ncs/ncs_auto.py:126-205`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/ncs/ncs_auto.py#L126-L205), [`wiki/NCS-File-Format.md#engine-function-calls`](NCS-File-Format#engine-function-calls)
+
+---
+
+## Reference Implementations
+
+**Parsing nwscript.nss:**
+
+- [`vendor/reone/src/apps/dataminer/routines.cpp:149-184`](https://github.com/th3w1zard1/reone/blob/master/src/apps/dataminer/routines.cpp#L149-L184) - Parses nwscript.nss using regex patterns for constants and functions
+- [`vendor/reone/src/apps/dataminer/routines.cpp:382-427`](https://github.com/th3w1zard1/reone/blob/master/src/apps/dataminer/routines.cpp#L382-L427) - Extracts functions from nwscript.nss in chitin.key for K1 and K2
+- [`vendor/xoreos-tools/src/nwscript/actions.cpp`](https://github.com/th3w1zard1/xoreos-tools/blob/master/src/nwscript/actions.cpp) - Actions data parsing for decompilation
+- [`vendor/xoreos-tools/src/nwscript/ncsfile.cpp`](https://github.com/th3w1zard1/xoreos-tools/blob/master/src/nwscript/ncsfile.cpp) - NCS file parsing with actions data integration
+- [`vendor/NorthernLights/Assets/Scripts/ncs/nwscript_actions.cs`](https://github.com/th3w1zard1/NorthernLights/blob/master/Assets/Scripts/ncs/nwscript_actions.cs) - Unity C# actions table
+- [`vendor/NorthernLights/Assets/Scripts/ncs/nwscript.cs`](https://github.com/th3w1zard1/NorthernLights/blob/master/Assets/Scripts/ncs/nwscript.cs) - Unity C# NWScript class
+- [`vendor/KotOR-Scripting-Tool/NWN Script/NWScriptParser.cs`](https://github.com/th3w1zard1/KotOR-Scripting-Tool/blob/master/NWN%20Script/NWScriptParser.cs) - C# parser for nwscript.nss
+
+**Function Definitions:**
+
+- [`vendor/KotOR.js/src/nwscript/NWScript.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScript.ts) - TypeScript function definitions
+- [`vendor/KotOR.js/src/nwscript/NWScriptDefK1.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptDefK1.ts) - KotOR 1 definitions
+- [`vendor/KotOR.js/src/nwscript/NWScriptDefK2.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptDefK2.ts) - KotOR 2 definitions
+- [`vendor/KotOR.js/src/nwscript/NWScriptParser.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptParser.ts) - TypeScript parser for nwscript.nss
+- [`vendor/KotOR.js/src/nwscript/NWScriptCompiler.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptCompiler.ts) - TypeScript NSS compiler
+- [`vendor/KotOR.js/src/nwscript/NWScriptInstructionSet.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptInstructionSet.ts) - Instruction set definitions
+- [`vendor/KotOR.js/src/nwscript/NWScriptConstants.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptConstants.ts) - Constant definitions
+- [`vendor/HoloLSP/server/src/nwscript/`](https://github.com/th3w1zard1/HoloLSP/blob/master/server/src/nwscript/) - Language server definitions
+- [`vendor/HoloLSP/server/src/nwscript-parser.ts`](https://github.com/th3w1zard1/HoloLSP/blob/master/server/src/nwscript-parser.ts) - Language server parser
+- [`vendor/HoloLSP/server/src/nwscript-lexer.ts`](https://github.com/th3w1zard1/HoloLSP/blob/master/server/src/nwscript-lexer.ts) - Language server lexer
+- [`vendor/HoloLSP/server/src/nwscript-ast.ts`](https://github.com/th3w1zard1/HoloLSP/blob/master/server/src/nwscript-ast.ts) - Language server AST
+- [`vendor/HoloLSP/syntaxes/nwscript.tmLanguage.json`](https://github.com/th3w1zard1/HoloLSP/blob/master/syntaxes/nwscript.tmLanguage.json) - TextMate syntax definition
+- [`vendor/nwscript-mode.el/nwscript-mode.el`](https://github.com/th3w1zard1/nwscript-mode.el/blob/master/nwscript-mode.el) - Emacs mode for NWScript
+- [`vendor/nwscript-ts-mode/`](https://github.com/th3w1zard1/nwscript-ts-mode) - TypeScript mode for NWScript
+
+**Original Sources:**
+
+- [`vendor/Vanilla_KOTOR_Script_Source`](https://github.com/th3w1zard1/Vanilla_KOTOR_Script_Source) - Original KotOR script sources including nwscript.nss
+- [`vendor/Vanilla_KOTOR_Script_Source/K1/Data/scripts.bif/`](https://github.com/th3w1zard1/Vanilla_KOTOR_Script_Source/tree/master/K1/Data/scripts.bif) - KotOR 1 script sources from BIF
+- [`vendor/Vanilla_KOTOR_Script_Source/TSL/Vanilla/Data/Scripts/`](https://github.com/th3w1zard1/Vanilla_KOTOR_Script_Source/tree/master/TSL/Vanilla/Data/Scripts) - KotOR 2 script sources
+- [`vendor/KotOR-Scripting-Tool/NWN Script/k1/nwscript.nss`](https://github.com/th3w1zard1/KotOR-Scripting-Tool/blob/master/NWN%20Script/k1/nwscript.nss) - KotOR 1 nwscript.nss
+- [`vendor/KotOR-Scripting-Tool/NWN Script/k2/nwscript.nss`](https://github.com/th3w1zard1/KotOR-Scripting-Tool/blob/master/NWN%20Script/k2/nwscript.nss) - KotOR 2 nwscript.nss
+- [`vendor/NorthernLights/Scripts/k1_nwscript.nss`](https://github.com/th3w1zard1/NorthernLights/blob/master/Scripts/k1_nwscript.nss) - KotOR 1 nwscript.nss (NorthernLights)
+- [`vendor/NorthernLights/Scripts/k2_nwscript.nss`](https://github.com/th3w1zard1/NorthernLights/blob/master/Scripts/k2_nwscript.nss) - KotOR 2 nwscript.nss (NorthernLights)
+
+**PyKotor Implementation:**
+
+- [`Libraries/PyKotor/src/pykotor/common/script.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/common/script.py) - Data structures (ScriptFunction, ScriptConstant, DataType)
+- [`Libraries/PyKotor/src/pykotor/common/scriptdefs.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/common/scriptdefs.py) - Function and constant definitions (772 K1 functions, 1489 K1 constants)
+- [`Libraries/PyKotor/src/pykotor/common/scriptlib.py`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/common/scriptlib.py) - Library file definitions (k_inc_generic, k_inc_utility, etc.)
+- [`Libraries/PyKotor/src/pykotor/resource/formats/ncs/ncs_auto.py:126-205`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/ncs/ncs_auto.py#L126-L205) - Compilation integration
+
+**Other Implementations:**
+
+- [`vendor/Kotor.NET/Kotor.NET/Formats/KotorNCS/NCS.cs`](https://github.com/th3w1zard1/Kotor.NET/blob/master/Kotor.NET/Formats/KotorNCS/NCS.cs) - C# NCS format with actions data support
+- [`vendor/KotORModSync/KOTORModSync.Core/Data/NWScriptHeader.cs`](https://github.com/th3w1zard1/KotORModSync/blob/master/KOTORModSync.Core/Data/NWScriptHeader.cs) - C# NWScript header parser
+- [`vendor/KotORModSync/KOTORModSync.Core/Data/NWScriptFileReader.cs`](https://github.com/th3w1zard1/KotORModSync/blob/master/KOTORModSync.Core/Data/NWScriptFileReader.cs) - C# NWScript file reader
+
+**NWScript VM and Execution:**
+
+- [`vendor/reone/src/libs/script/routine/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine) - Routine implementations for engine functions
+- [`vendor/reone/src/libs/script/format/ncsreader.cpp`](https://github.com/th3w1zard1/reone/blob/master/src/libs/script/format/ncsreader.cpp) - NCS bytecode reader
+- [`vendor/reone/src/libs/script/format/ncswriter.cpp`](https://github.com/th3w1zard1/reone/blob/master/src/libs/script/format/ncswriter.cpp) - NCS bytecode writer
+- [`vendor/xoreos/src/aurora/nwscript/`](https://github.com/th3w1zard1/xoreos/tree/master/src/aurora/nwscript) - NWScript VM implementation
+- [`vendor/xoreos/src/aurora/nwscript/ncsfile.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/aurora/nwscript/ncsfile.cpp) - NCS file parsing and execution
+- [`vendor/xoreos/src/aurora/nwscript/object.h`](https://github.com/th3w1zard1/xoreos/blob/master/src/aurora/nwscript/object.h) - NWScript object type definitions
+- [`vendor/xoreos/src/engines/kotorbase/object.h`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/kotorbase/object.h) - KotOR object implementation
+- [`vendor/NorthernLights/Assets/Scripts/ncs/control.cs`](https://github.com/th3w1zard1/NorthernLights/blob/master/Assets/Scripts/ncs/control.cs) - Unity C# NCS VM control
+- [`vendor/NorthernLights/Assets/Scripts/ncs/NCSReader.cs`](https://github.com/th3w1zard1/NorthernLights/blob/master/Assets/Scripts/ncs/NCSReader.cs) - Unity C# NCS reader
+- [`vendor/KotOR.js/src/odyssey/controllers/NWScriptController.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/odyssey/controllers/NWScriptController.ts) - TypeScript NWScript VM controller
+- [`vendor/KotOR.js/src/nwscript/NWScriptInstance.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptInstance.ts) - TypeScript NWScript instance
+- [`vendor/KotOR.js/src/nwscript/NWScriptStack.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptStack.ts) - TypeScript stack implementation
+- [`vendor/KotOR.js/src/nwscript/NWScriptSubroutine.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptSubroutine.ts) - TypeScript subroutine handling
+
+**Documentation and Specifications:**
+
+- [`vendor/xoreos-docs/`](https://github.com/th3w1zard1/xoreos-docs) - xoreos documentation including format specifications
+- [`vendor/xoreos-docs/specs/torlack/ncs.html`](https://github.com/th3w1zard1/xoreos-docs/blob/master/specs/torlack/ncs.html) - NCS format specification (if available)
+
+**NWScript Language Support:**
+
+- [`vendor/HoloLSP/server/src/kotor-definitions.ts`](https://github.com/th3w1zard1/HoloLSP/blob/master/server/src/kotor-definitions.ts) - KotOR function and constant definitions for language server
+- [`vendor/HoloLSP/server/src/nwscript-runtime.ts`](https://github.com/th3w1zard1/HoloLSP/blob/master/server/src/nwscript-runtime.ts) - NWScript runtime definitions
+- [`vendor/HoloLSP/server/src/server.ts`](https://github.com/th3w1zard1/HoloLSP/blob/master/server/src/server.ts) - Language server implementation with NWScript support
+
+**NWScript Parsing and Compilation:**
+
+- [`vendor/reone/src/libs/script/parser/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/parser) - NSS parser implementation
+- [`vendor/reone/src/libs/script/compiler/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/compiler) - NSS to NCS compiler
+- [`vendor/xoreos-tools/src/nwscript/compiler.cpp`](https://github.com/th3w1zard1/xoreos-tools/blob/master/src/nwscript/compiler.cpp) - NSS compiler implementation
+- [`vendor/xoreos-tools/src/nwscript/decompiler.cpp`](https://github.com/th3w1zard1/xoreos-tools/blob/master/src/nwscript/decompiler.cpp) - NCS decompiler implementation
+
+**NWScript Execution:**
+
+- [`vendor/reone/src/libs/script/execution/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/execution) - NWScript VM execution engine
+- [`vendor/reone/src/libs/script/vm/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/vm) - Virtual machine implementation
+- [`vendor/xoreos/src/aurora/nwscript/execution.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/aurora/nwscript/execution.cpp) - NWScript execution engine
+- [`vendor/xoreos/src/aurora/nwscript/variable.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/aurora/nwscript/variable.cpp) - Variable handling
+- [`vendor/xoreos/src/aurora/nwscript/function.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/aurora/nwscript/function.cpp) - Function call handling
+- [`vendor/NorthernLights/Assets/Scripts/ncs/control.cs`](https://github.com/th3w1zard1/NorthernLights/blob/master/Assets/Scripts/ncs/control.cs) - Unity C# NCS VM control and execution
+- [`vendor/KotOR.js/src/nwscript/NWScriptController.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptController.ts) - TypeScript NWScript controller and execution
+
+**Routine Implementations:**
+
+- [`vendor/reone/src/libs/script/routine/main/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine/main) - Main routine implementations
+- [`vendor/reone/src/libs/script/routine/action/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine/action) - Action routine implementations
+- [`vendor/reone/src/libs/script/routine/effect/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine/effect) - Effect routine implementations
+- [`vendor/xoreos/src/aurora/nwscript/routines.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/aurora/nwscript/routines.cpp) - Routine implementations
+- [`vendor/xoreos/src/engines/kotorbase/script/routines.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/kotorbase/script/routines.cpp) - KotOR-specific routine implementations
+
+**NWScript Type System:**
+
+- [`vendor/xoreos/src/aurora/nwscript/types.h`](https://github.com/th3w1zard1/xoreos/blob/master/src/aurora/nwscript/types.h) - NWScript type definitions
+- [`vendor/xoreos/src/aurora/nwscript/types.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/aurora/nwscript/types.cpp) - Type system implementation
+- [`vendor/KotOR.js/src/enums/nwscript/NWScriptDataType.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/enums/nwscript/NWScriptDataType.ts) - TypeScript data type enumerations
+- [`vendor/KotOR.js/src/enums/nwscript/NWScriptTypes.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/enums/nwscript/NWScriptTypes.ts) - TypeScript type definitions
+
+**NWScript Events:**
+
+- [`vendor/KotOR.js/src/nwscript/events/NWScriptEvent.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/events/NWScriptEvent.ts) - Event handling
+- [`vendor/KotOR.js/src/nwscript/events/NWScriptEventFactory.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/events/NWScriptEventFactory.ts) - Event factory
+- [`vendor/KotOR.js/src/enums/nwscript/NWScriptEventType.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/enums/nwscript/NWScriptEventType.ts) - Event type enumerations
+
+**NWScript Bytecode:**
+
+- [`vendor/KotOR.js/src/nwscript/NWScriptOPCodes.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptOPCodes.ts) - Opcode definitions
+- [`vendor/KotOR.js/src/nwscript/NWScriptInstruction.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptInstruction.ts) - Instruction handling
+- [`vendor/KotOR.js/src/nwscript/NWScriptInstructionInfo.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptInstructionInfo.ts) - Instruction information
+- [`vendor/KotOR.js/src/enums/nwscript/NWScriptByteCode.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/enums/nwscript/NWScriptByteCode.ts) - Bytecode enumerations
+
+**NWScript Stack:**
+
+- [`vendor/KotOR.js/src/nwscript/NWScriptStack.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptStack.ts) - Stack implementation
+- [`vendor/KotOR.js/src/nwscript/NWScriptStackVariable.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/NWScriptStackVariable.ts) - Stack variable handling
+
+**NWScript Interface Definitions:**
+
+- [`vendor/KotOR.js/src/interface/nwscript/INWScriptStoreState.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/interface/nwscript/INWScriptStoreState.ts) - Store state interface
+- [`vendor/KotOR.js/src/interface/nwscript/INWScriptDefAction.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/interface/nwscript/INWScriptDefAction.ts) - Action definition interface
+
+**NWScript AST and Parsing:**
+
+- [`vendor/KotOR.js/src/nwscript/AST/nwscript.jison.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/nwscript/AST/nwscript.jison.ts) - Jison parser grammar
+- [`vendor/HoloLSP/server/src/nwscript-ast.ts`](https://github.com/th3w1zard1/HoloLSP/blob/master/server/src/nwscript-ast.ts) - Abstract syntax tree definitions
+
+**Game-Specific NWScript Extensions:**
+
+- [`vendor/xoreos/src/engines/kotorbase/script/routines.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/kotorbase/script/routines.cpp) - KotOR-specific routine implementations
+- [`vendor/reone/src/libs/script/routine/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine) - Routine implementations for K1 and K2
+- [`vendor/xoreos/src/engines/nwn/script/functions_action.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/nwn/script/functions_action.cpp) - NWN action function implementations
+- [`vendor/NorthernLights/Assets/Scripts/ncs/constants.cs`](https://github.com/th3w1zard1/NorthernLights/blob/master/Assets/Scripts/ncs/constants.cs) - NWScript constant definitions
+- [`vendor/reone/src/libs/script/routine.cpp`](https://github.com/th3w1zard1/reone/blob/master/src/libs/script/routine.cpp) - Routine base class implementation
+- [`vendor/reone/src/libs/game/script/routines.cpp`](https://github.com/th3w1zard1/reone/blob/master/src/libs/game/script/routines.cpp) - Game-specific routine implementations
+- [`vendor/reone/include/reone/script/routines.h`](https://github.com/th3w1zard1/reone/blob/master/include/reone/script/routines.h) - Routine header definitions
+- [`vendor/reone/include/reone/script/routine.h`](https://github.com/th3w1zard1/reone/blob/master/include/reone/script/routine.h) - Routine base class header
+- [`vendor/reone/include/reone/game/script/routines.h`](https://github.com/th3w1zard1/reone/blob/master/include/reone/game/script/routines.h) - Game routine header
+- [`vendor/xoreos-tools/src/nwscript/subroutine.cpp`](https://github.com/th3w1zard1/xoreos-tools/blob/master/src/nwscript/subroutine.cpp) - Subroutine handling
+- [`vendor/xoreos-tools/src/nwscript/subroutine.h`](https://github.com/th3w1zard1/xoreos-tools/blob/master/src/nwscript/subroutine.h) - Subroutine header
+- [`vendor/xoreos/src/engines/kotorbase/types.h`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/kotorbase/types.h) - KotOR type definitions including base item types
+- [`vendor/KotOR.js/src/module/Module.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/module/Module.ts) - Module loading and management
+- [`vendor/KotOR.js/src/module/ModuleArea.ts`](https://github.com/th3w1zard1/KotOR.js/blob/master/src/module/ModuleArea.ts) - Area management and transitions
+- [`vendor/xoreos/src/engines/nwn/module.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/nwn/module.cpp) - NWN module implementation
+- [`vendor/xoreos/src/engines/nwn2/module.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/nwn2/module.cpp) - NWN2 module implementation
+- [`vendor/xoreos/src/engines/nwn2/module.h`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/nwn2/module.h) - NWN2 module header
+- [`vendor/xoreos/src/engines/dragonage2/script/functions_module.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/dragonage2/script/functions_module.cpp) - Dragon Age 2 module functions
+- [`vendor/xoreos/src/engines/nwn/script/functions_effect.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/nwn/script/functions_effect.cpp) - NWN effect function implementations
+- [`vendor/xoreos/src/engines/nwn/script/functions_object.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/nwn/script/functions_object.cpp) - NWN object function implementations
+- [`vendor/xoreos/src/engines/nwn2/script/functions.cpp`](https://github.com/th3w1zard1/xoreos/blob/master/src/engines/nwn2/script/functions.cpp) - NWN2 function implementations
+- [`vendor/reone/src/libs/script/routine/action/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine/action) - Action routine implementations
+- [`vendor/reone/src/libs/script/routine/effect/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine/effect) - Effect routine implementations
+- [`vendor/reone/src/libs/script/routine/object/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine/object) - Object routine implementations
+- [`vendor/reone/src/libs/script/routine/party/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine/party) - Party routine implementations
+- [`vendor/reone/src/libs/script/routine/combat/`](https://github.com/th3w1zard1/reone/tree/master/src/libs/script/routine/combat) - Combat routine implementations
+- [`vendor/NorthernLights/Assets/Scripts/ncs/nwscript_actions.cs`](https://github.com/th3w1zard1/NorthernLights/blob/master/Assets/Scripts/ncs/nwscript_actions.cs) - Complete actions table mapping routine numbers to function names
+- [`vendor/NorthernLights/Assets/Scripts/Systems/AuroraActions/AuroraAction.cs`](https://github.com/th3w1zard1/NorthernLights/blob/master/Assets/Scripts/Systems/AuroraActions/AuroraAction.cs) - Action system implementation
+
+---
+
+## Cross-References
+
+- **[NCS File Format](NCS-File-Format.md)**: Compiled bytecode format that NSS compiles to
+- **[GFF File Format](GFF-File-Format.md)**: Scripts are stored in GFF files (UTC, UTD, etc.)
+- **[KEY File Format](KEY-File-Format.md)**: nwscript.nss is stored in chitin.key

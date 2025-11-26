@@ -1,10 +1,12 @@
 # TSLPatcher InstallList Syntax Documentation
 
+This guide explains how to install files using TSLPatcher syntax. For general TSLPatcher information, see [TSLPatcher's Official Readme](TSLPatcher's-Official-Readme). For HoloPatcher-specific information, see [HoloPatcher README for Mod Developers](HoloPatcher-README-for-mod-developers.).
+
 ## Overview
 
 The `[InstallList]` section in TSLPatcher's changes.ini file enables you to copy files from your mod's `tslpatchdata` folder to their proper location in the game installation. This includes installing files to folders (such as `Override`, `Modules`, `StreamVoice`, etc.) or directly into ERF/RIM/MOD archive files. Unlike other patch lists, InstallList is designed for copying files that haven't been modified by other sections.
 
-**Important:** Do **not** add any files that have been modified by any of the other sections (GFFList, CompileList, 2DAList, etc.) to the InstallList, or the modified files might be overwritten! The other sections already handle saving files to their proper locations. The only exception to this is ERF files which have had files added to them by those sections. They must still be added to the InstallList to be put in their proper places.
+**Important:** Do **not** add any files that have been modified by any of the other sections ([GFFList](TSLPatcher-GFFList-Syntax), CompileList, [2DAList](TSLPatcher-2DAList-Syntax), etc.) to the InstallList, or the modified files might be overwritten! The other sections already handle saving files to their proper locations. The only exception to this is ERF files which have had files added to them by those sections. They must still be added to the InstallList to be put in their proper places.
 
 ## Table of Contents
 

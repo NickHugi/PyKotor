@@ -1,10 +1,12 @@
-deep_translator == 1.9.2
-deepl-cli == 0.3.0
-requests >= 2.28.2
-opencv-contrib-python == 4.7.0.68
+pykotor>=1.8.0
+pykotorfont>=1.8.0
+setuptools>=67.8.0,<70
+deep_translator==1.9.2
+deepl-cli==0.3.0
+requests>=2.25.0,<2.32.0; python_version<"3.9"
+requests>=2.25.0; python_version>="3.9"
+opencv-contrib-python==4.7.0.68
 notify-py==0.3.42
 playwright>=1.30.0,<1.40
 pyquery==1.4.3
 arabic-reshaper==3.0.0
-pillow>=9.5; python_implementation == 'CPython'         # required for TXI/TGA fonts (CPython)
-pillow>10,<11.1.0; python_implementation == 'PyPy'      # required for TXI/TGA fonts (PyPy)

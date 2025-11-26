@@ -1194,6 +1194,22 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
                 # A closest match is defined, in this context, as the file/folder's name that contains the most case-sensitive positional character matches
                 # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's probably random.
                 last_part: bool = i == len(parts) - 1
+                
+                # Cache directory listings to avoid repeated iterdir() calls - massive performance improvement
+                base_path_str = str(base_path)
+                if base_path_str not in cls._dir_cache:
+                    # Clear cache if it gets too large (FIFO eviction)
+                    if len(cls._dir_cache) >= cls._dir_cache_max_size:
+                        # Remove oldest 10% of entries
+                        keys_to_remove = list(cls._dir_cache.keys())[: cls._dir_cache_max_size // 10]
+                        for key in keys_to_remove:
+                            cls._dir_cache.pop(key, None)
+                    try:
+                        cls._dir_cache[base_path_str] = tuple(base_path.iterdir())
+                    except (OSError, PermissionError):
+                        cls._dir_cache[base_path_str] = ()
+                
+                cached_items = cls._dir_cache[base_path_str]
                 parts[i] = cls.find_closest_match(
                     parts[i],
                     (item for item in base_path.iterdir() if last_part or item.is_dir()),
@@ -1360,6 +1376,8 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
 if os.name == "posix":
     create_case_insensitive_pathlib_class(CaseAwarePath)
+else:
+    CaseAwarePath = InternalWindowsPath  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def get_default_paths() -> dict[str, dict[Game, list[str]]]:  # TODO(th3w1zard1): Many of these paths are incomplete and need community input.  # noqa: TD003

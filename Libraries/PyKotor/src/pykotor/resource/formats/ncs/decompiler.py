@@ -167,7 +167,7 @@ class NCSDecompiler:
 
     Based on DeNCS implementation, this decompiler reconstructs NSS source
     from NCS bytecode using control flow analysis and expression reconstruction.
-    
+
     References:
     ----------
         vendor/xoreos-tools/src/nwscript/decompiler.cpp (NCS decompilation algorithm)
@@ -214,6 +214,59 @@ class NCSDecompiler:
                 elif routine_id not in self.function_map:
                     # Generate generic name if not found
                     self.function_map[routine_id] = f"Function_{routine_id}"
+
+    def decompile_dencs(self) -> str:
+        """Decompile NCS bytecode using DeNCS algorithm (1:1 port from Java).
+
+        This method uses the comprehensive DeNCS decompilation approach which:
+        1. Decodes NCS binary to command string
+        2. Parses command string to AST
+        3. Performs analysis passes (positions, destinations, dead code)
+        4. Splits subroutines
+        5. Flattens subroutines
+        6. Handles global variables
+        7. Performs type inference
+        8. Generates final code
+
+        Returns:
+        -------
+            Decompiled NSS source code string
+
+        Raises:
+        ------
+            DecompileError: If decompilation fails
+        """
+        try:
+            from pykotor.resource.formats.ncs.dencs.decompile_ncs import decompile_ncs
+            from pykotor.resource.formats.ncs.dencs.actions_data import ActionsData
+            import io
+
+            # Convert NCS to bytes for Decoder
+            from pykotor.resource.formats.ncs.io_ncs import NCSBinaryWriter
+            ncs_bytes = bytearray()
+            writer = NCSBinaryWriter(self.ncs, ncs_bytes)
+            writer.write()
+
+            # Create ActionsData from functions
+            # For now, create a simple adapter - full implementation would read from nwscript.nss
+            actions_reader = io.StringIO()
+            # Write function definitions in DeNCS format
+            for i, func in enumerate(self.functions):
+                params_str = ", ".join(f"{param.type.name} {param.name}" for param in func.parameters)
+                actions_reader.write(f"{func.return_type.name} {func.name}({params_str});\n")
+            actions_reader.seek(0)
+            actions = ActionsData(actions_reader)
+
+            # Use DeNCS decompilation
+            stream = io.BytesIO(bytes(ncs_bytes))
+            result = decompile_ncs(stream, actions)
+            if result is None:
+                raise DecompileError("DeNCS decompilation returned None")
+            return result.get_code() if hasattr(result, 'get_code') else str(result)
+        except Exception as e:
+            logger.exception("DeNCS decompilation failed")
+            msg = f"DeNCS decompilation failed: {e}"
+            raise DecompileError(msg) from e
 
     def decompile(self) -> str:
         """Decompile NCS bytecode to NSS source code.

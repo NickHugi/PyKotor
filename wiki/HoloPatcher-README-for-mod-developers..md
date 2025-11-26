@@ -22,7 +22,7 @@ StrRef0=2
 
 This will replace StrRef0 in dialog.tlk with StrRef2 from `tlk_modifications_file.tlk`.
 
-[See our tests](https://github.com/NickHugi/PyKotor/blob/e16485b023edb0678fad45afffe5b6ef6e5ba479/tests/tslpatcher/test_reader.py#L463) for more examples.
+[See our tests](https://github.com/NickHugi/PyKotor/blob/92f5fb81a7b9642085c67b7b48ddd50f2df4378d/tests/test_tslpatcher/test_reader.py#L463) for more examples.
 Don't use the 'ignore' syntax or the 'range' syntax, these won't be documented or supported until further notice.
 
 ### HACKList (Editing NCS directly)
@@ -52,6 +52,6 @@ In summary, HACKList writes unsigned WORDs (sized at two bytes) to offsets in th
 
 ### For more information on HoloPatcher's implementation, please see the following links
 
-#### [pykotor.tslpatcher.reader](https://github.com/NickHugi/PyKotor/blob/e16485b023edb0678fad45afffe5b6ef6e5ba479/Libraries/PyKotor/src/pykotor/tslpatcher/reader.py#L697)
+#### [pykotor.tslpatcher.reader](https://github.com/NickHugi/PyKotor/blob/92f5fb81a7b9642085c67b7b48ddd50f2df4378d/Libraries/PyKotor/src/pykotor/tslpatcher/reader.py#L697)
 
-#### [pykotor.tslpatcher.mods.ncs](https://github.com/NickHugi/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/tslpatcher/mods/ncs.py)
+#### [pykotor.tslpatcher.mods.ncs](https://github.com/NickHugi/PyKotor/blob/92f5fb81a7b9642085c67b7b48ddd50f2df4378d/Libraries/PyKotor/src/pykotor/tslpatcher/mods/ncs.py)

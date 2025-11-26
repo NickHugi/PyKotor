@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.resource.formats.wav.io_wav import WAVBinaryReader, WAVBinaryWriter
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.wav.io_wav import WAVBinaryReader, WAVBinaryWriter  # type: ignore[import-not-found, note]
+from pykotor.resource.formats.wav.io_wav_standard import WAVStandardWriter  # type: ignore[import-not-found, note]
+from pykotor.resource.type import ResourceType  # type: ignore[import-not-found, note]
 
 if TYPE_CHECKING:
-    from pykotor.resource.formats.wav.wav_data import WAV
+    from pykotor.resource.formats.wav.wav_data import WAV  # type: ignore[import-not-found, note]
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
@@ -15,7 +16,10 @@ def read_wav(
     offset: int = 0,
     size: int | None = None,
 ) -> WAV:
-    """Returns a WAV instance from the source.
+    """Returns a WAV instance from the source with automatic deobfuscation.
+
+    The function automatically detects and removes obfuscation headers if present.
+    The returned WAV object contains clean, deobfuscated data.
 
     Args:
     ----
@@ -32,7 +36,7 @@ def read_wav(
 
     Returns:
     -------
-        A WAV instance.
+        A WAV instance (automatically deobfuscated if needed).
     """
     return WAVBinaryReader(source, offset, size or 0).load()
 
@@ -42,13 +46,16 @@ def write_wav(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.WAV,
 ):
-    """Writes the WAV data to the target location.
+    """Writes the WAV data to the target location with automatic obfuscation.
+
+    If file_format is ResourceType.WAV, the data will be automatically obfuscated
+    based on the WAV's type (SFX or VO). Otherwise, writes standard RIFF/WAVE format.
 
     Args:
     ----
         wav: The WAV file being written.
         target: The location to write the data to.
-        file_format: The file format.
+        file_format: The file format (WAV for obfuscated, any other for standard).
 
     Raises:
     ------
@@ -59,20 +66,22 @@ def write_wav(
     if file_format is ResourceType.WAV:
         WAVBinaryWriter(wav, target).write()
     else:
-        msg = f"Unsupported format specified: '{file_format!r}'; expected ResourceType.WAV"
-        raise ValueError(msg)
+        WAVStandardWriter(wav, target).write()
 
 
 def bytes_wav(
     wav: WAV,
     file_format: ResourceType = ResourceType.WAV,
 ) -> bytes:
-    """Returns the WAV data as a bytes object.
+    """Returns the WAV data as a bytes object with automatic obfuscation handling.
+
+    If file_format is ResourceType.WAV, the data will be automatically obfuscated
+    based on the WAV's type (SFX or VO). Otherwise, returns standard RIFF/WAVE format.
 
     Args:
     ----
         wav: The target WAV object.
-        file_format: The file format.
+        file_format: The file format (WAV for obfuscated, any other for standard).
 
     Raises:
     ------
@@ -80,7 +89,7 @@ def bytes_wav(
 
     Returns:
     -------
-        The WAV data.
+        The WAV data (automatically obfuscated if file_format is WAV).
     """
     data = bytearray()
     write_wav(wav, data, file_format)

@@ -1,6 +1,6 @@
 # KotOR LIP File Format Documentation
 
-LIP (Lip Synchronization) files drive mouth animation for voiced dialogue. Each file contains a compact series of keyframes that map timestamps to discrete viseme (mouth shape) indices so that the engine can interpolate character lip movement while playing the companion WAV line.
+LIP (Lip Synchronization) files drive mouth animation for voiced dialogue. Each file contains a compact series of [keyframes](https://en.wikipedia.org/wiki/Key_frame) that map timestamps to discrete [viseme](https://en.wikipedia.org/wiki/Viseme) (mouth shape) indices so that the engine can [interpolate](https://en.wikipedia.org/wiki/Interpolation) character lip movement while playing the companion WAV line.
 
 ## Table of Contents
 
@@ -18,9 +18,9 @@ LIP (Lip Synchronization) files drive mouth animation for voiced dialogue. Each 
 
 ## File Structure Overview
 
-- LIP files are always **binary** (`"LIP V1.0"` signature) and contain only animation data.  
+- LIP files are always **[binary](https://en.wikipedia.org/wiki/Binary_file)** (`"LIP V1.0"` signature) and contain only animation data.  
 - They are paired with WAV voice-over resources of identical duration; the LIP `length` field must match the WAV `data` playback time for glitch-free animation.  
-- Keyframes are sorted chronologically and store a timestamp (float seconds) plus a 1-byte viseme index (0–15).  
+- [Keyframes](https://en.wikipedia.org/wiki/Key_frame) are sorted chronologically and store a timestamp ([float](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) seconds) plus a 1-byte [viseme](https://en.wikipedia.org/wiki/Viseme) index (0–15).  
 - The layout is identical across `vendor/reone`, `vendor/xoreos`, `vendor/Kotor.NET`, `vendor/KotOR.js`, and `vendor/mdlops`, so the header/keyframe offsets below are cross-confirmed against those implementations.  
 
 **Implementation:** [`Libraries/PyKotor/src/pykotor/resource/formats/lip/`](https://github.com/th3w1zard1/PyKotor/tree/master/Libraries/PyKotor/src/pykotor/resource/formats/lip)
@@ -35,8 +35,8 @@ LIP (Lip Synchronization) files drive mouth animation for voiced dialogue. Each 
 | ------------- | ------- | ------ | ---- | ----------- |
 | File Type     | char[4] | 0x00   | 4    | Always `"LIP "` |
 | File Version  | char[4] | 0x04   | 4    | Always `"V1.0"` |
-| Sound Length  | float32 | 0x08   | 4    | Duration in seconds (must equal WAV length) |
-| Entry Count   | uint32  | 0x0C   | 4    | Number of keyframes immediately following |
+| Sound Length  | [float32](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) | 0x08   | 4    | Duration in seconds (must equal WAV length) |
+| Entry Count   | [uint32](https://en.wikipedia.org/wiki/Integer_(computer_science))  | 0x0C   | 4    | Number of keyframes immediately following |
 
 **Reference:** [`vendor/reone/src/libs/graphics/format/lipreader.cpp:27-42`](https://github.com/th3w1zard1/reone/blob/master/src/libs/graphics/format/lipreader.cpp#L27-L42)
 
@@ -46,8 +46,8 @@ Keyframes follow immediately after the header; there is no padding.
 
 | Name       | Type    | Offset (per entry) | Size | Description |
 | ---------- | ------- | ------------------ | ---- | ----------- |
-| Timestamp  | float32 | 0x00               | 4    | Seconds from animation start |
-| Shape      | uint8   | 0x04               | 1    | Viseme index (`0–15`) |
+| Timestamp  | [float32](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) | 0x00               | 4    | Seconds from animation start |
+| Shape      | [uint8](https://en.wikipedia.org/wiki/Integer_(computer_science))   | 0x04               | 1    | [Viseme](https://en.wikipedia.org/wiki/Viseme) index (`0–15`) |
 
 - Entries are stored sequentially and **must** be sorted ascending by timestamp.  
 - Libraries average multiple implementations to validate this layout (`vendor/reone`, `vendor/xoreos`, `vendor/KotOR.js`, `vendor/Kotor.NET`).  
@@ -58,7 +58,7 @@ Keyframes follow immediately after the header; there is no padding.
 
 ## Mouth Shapes (Viseme Table)
 
-KotOR reuses the 16-shape Preston Blair phoneme set. Every implementation agrees on the byte value assignments; KotOR.js only renames a few labels but the indices match.
+KotOR reuses the 16-shape Preston Blair [phoneme](https://en.wikipedia.org/wiki/Phoneme) set. Every implementation agrees on the byte value assignments; KotOR.js only renames a few labels but the indices match.
 
 | Value | Shape | Description |
 | ----- | ----- | ----------- |
@@ -85,7 +85,7 @@ KotOR reuses the 16-shape Preston Blair phoneme set. Every implementation agrees
 
 ## Animation Rules
 
-- **Interpolation:** The engine interpolates between consecutive keyframes; PyKotor exposes `LIP.get_shapes()` to compute the left/right visemes plus blend factor.  
+- **[Interpolation](https://en.wikipedia.org/wiki/Interpolation):** The engine interpolates between consecutive [keyframes](https://en.wikipedia.org/wiki/Key_frame); PyKotor exposes `LIP.get_shapes()` to compute the left/right [visemes](https://en.wikipedia.org/wiki/Viseme) plus blend factor.  
   **Reference:** [`Libraries/PyKotor/src/pykotor/resource/formats/lip/lip_data.py:342-385`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/lip/lip_data.py#L342-L385)
 - **Sorting:** When adding frames, PyKotor removes existing entries at the same timestamp and keeps the list sorted.  
   **Reference:** [`Libraries/PyKotor/src/pykotor/resource/formats/lip/lip_data.py:305-323`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/lip/lip_data.py#L305-L323)

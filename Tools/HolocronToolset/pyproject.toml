@@ -8,6 +8,8 @@ description = "A PyQt5-backed program with a collection of tools and editors tha
 version = "3.1.1"
 requires-python = ">= 3.8"
 dependencies = [
+  "pykotor>=1.8.0",
+  "pykotorgl>=1.8.0",
   "certifi>=2021.10.8",
   "idna>=3.11",                                           # Tested with 3.3
   "jsmin>=3.0.1",
@@ -78,13 +80,14 @@ packages = [{ include = "toolset", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
+pykotor = "^1.8.0"
+pykotorgl = "^1.8.0"
 idna = "*"
 urllib3 = "~1.26"
 Markdown = ">=3.3,<3.6"
 jsmin = "~3.0"
 qtpy = "*"
 send2trash = "*"
-pykotor = "^1.0.0"      # Will be replaced by PyPI version when split
 
 # Optional dependencies
 pycryptodome = { version = "^3.19.0", optional = true }

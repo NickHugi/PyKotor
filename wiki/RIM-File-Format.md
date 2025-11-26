@@ -54,7 +54,7 @@ Files with '_s' suffix (e.g., `module001_s.rim`) are "extended" RIM files:
 
 ---
 
-## Binary Format
+## [Binary Format](https://en.wikipedia.org/wiki/Binary_file)
 
 ### File Header
 

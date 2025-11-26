@@ -1,5 +1,7 @@
 # TSLPatcher GFFList Syntax Documentation
 
+This guide explains how to modify GFF files using TSLPatcher syntax. For the complete GFF file format specification, see [GFF File Format](GFF-File-Format). For general TSLPatcher information, see [TSLPatcher's Official Readme](TSLPatcher's-Official-Readme). For HoloPatcher-specific information, see [HoloPatcher README for Mod Developers](HoloPatcher-README-for-mod-developers.).
+
 ## Overview
 
 The `[GFFList]` section in TSLPatcher's `changes.ini` lets you edit or add data inside GFF (Generic File Format) files used across KotOR. You will use this to change items (.UTI), creatures (.UTC), dialogs (.DLG), placeables (.UTP), triggers (.UTT), waypoints (.UTW), modules (.MOD), areas (.ARE), journal entries (.JRL), paths (.PTH), module info (.IFO), and scripts data (.GIT).

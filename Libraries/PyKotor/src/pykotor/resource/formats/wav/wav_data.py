@@ -10,7 +10,7 @@ References:
     vendor/xoreos-tools/src/sound/audiostream.cpp - Audio stream handling
     vendor/KotOR.js/src/audio/AudioEngine.ts - Audio playback
     vendor/reone/src/libs/audio/ - Audio system implementation
-    Note: KotOR WAV files may have obfuscation headers requiring deobfuscation (see tools.sound)
+    Note: KotOR WAV files may have obfuscation headers requiring deobfuscation (see wav_obfuscation)
 """
 
 from __future__ import annotations

@@ -1,4 +1,8 @@
-# Common Workaround Strategies
+# Mod Creation Best Practices
+
+This page provides common workaround strategies for mod creation. For modding tools and syntax guides, see [HoloPatcher README for Mod Developers](HoloPatcher-README-for-mod-developers.) and [TSLPatcher's Official Readme](TSLPatcher's-Official-Readme).
+
+## Common Workaround Strategies
 
 A common problem you may encounter when creating a mod, is the inability to remove a gff struct. Let's say you want to remove a GIT instance to be compatible with another mod. Both HoloPatcher and TSLPatcher do not support this. However, you can work around it.
 

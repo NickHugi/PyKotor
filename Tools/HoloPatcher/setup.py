@@ -1,29 +1,32 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from setuptools import find_packages, setup
+
+
+def read_requirements() -> list[str]:
+    """Read requirements from requirements.txt file."""
+    requirements_path = Path(__file__).parent / "requirements.txt"
+    if not requirements_path.exists():
+        return []
+    
+    requirements = []
+    with open(requirements_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            # Skip empty lines and comments
+            if line and not line.startswith("#"):
+                requirements.append(line)
+    return requirements
+
 
 setup(
     name="holopatcher",
-    version="1.0.0",
-    description="Holo Patcher",
+    version="1.5.3",
+    description="A faster, cross-platform alternative to TSLPatcher written in Python.",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    install_requires=[
-        "pykotor",
-        "utility",
-        # Add any other dependencies here
-    ],
-)
-from setuptools import find_packages, setup
-
-setup(
-    name="holopatcher",
-    version="1.0.0",
-    description="Holo Patcher",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
-    install_requires=[
-        "pykotor",
-        "utility",
-    ],
+    install_requires=read_requirements(),
+    python_requires=">=3.8",
 )

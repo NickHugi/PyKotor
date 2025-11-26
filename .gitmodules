@@ -303,3 +303,11 @@
 [submodule "vendor/ds-kotor-modding-wiki"]
 	path = vendor/ds-kotor-modding-wiki
 	url = https://github.com/th3w1zard1/ds-kotor-modding-wiki.git
+
+
+# ===============================
+# Toolset Data
+# ===============================
+[submodule "Tools/HolocronToolset/src/toolset/kits"]
+	path = Tools/HolocronToolset/src/toolset/kits
+	url = https://github.com/th3w1zard1/ToolsetData.git

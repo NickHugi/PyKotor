@@ -1,21 +1,20 @@
-idna  # Tested with 3.3
-qtpy
-PyQt5>=5.15; python_implementation == 'CPython'
+pykotor>=1.8.0
+pykotorgl>=1.8.0
+certifi>=2021.10.8
+idna>=3.11
+jsmin>=3.0.1
+Markdown>=3.4.4,<3.9; python_version<"3.9"
+Markdown>=3.4.4; python_version>="3.9"
+numpy>=1.19.0,<1.25.0; python_version<"3.9"
+numpy>=1.19.0,<2; python_version>="3.9"
 PyQt5-Qt5>=5.15; python_implementation == 'CPython'
 PyQt5-sip>=12.10; python_implementation == 'CPython'
-PySide6>=6.0; python_implementation == 'PyPy'
-urllib3<=2  # Tested with 1.26.18
-Markdown>=3.3 #,<3.6
-jsmin>=3
-requests>=2.27 #,<2.32
-certifi>=2021.10.8
-setuptools>=40.0,<70.0; python_version<'3.9'  # 70.0.0 and higher breaks pyinstaller
-setuptools>=40.0; python_version>='3.9'       # 70.0.0 and higher breaks pyinstaller
-pillow>=9.5,<11.0.0; python_implementation == 'CPython' and python_version>='3.9'    # required for TXI/TGA fonts (CPython)
-pillow>=9.5; python_implementation == 'CPython' and python_version>='3.9'           # required for TXI/TGA fonts (CPython)
-pillow>10,<11.0.0; python_implementation == 'PyPy' and python_version>='3.9'         # required for TXI/TGA fonts (PyPy)
-pillow>10,<11.1.0; python_implementation == 'PyPy' and python_version>='3.9'        # required for TXI/TGA fonts (PyPy)
-pycryptodome
-jsonpickle
-send2trash
-loggerplus
+PyQt5>=5.15; python_implementation == 'CPython'
+PySide6; python_implementation == 'PyPy'
+qtpy>=2.4.3
+requests>=2.25.0,<2.32.0; python_version<"3.9"
+requests>=2.25.0; python_version>="3.9"
+urllib3>=1.26.0,<2.0.0; python_version<"3.9"
+urllib3>=1.26.0; python_version>="3.9"
+jsonpickle>=4.1.1
+send2trash>=1.8.3

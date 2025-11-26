@@ -21,7 +21,7 @@ This document provides a detailed description of the BIF (BioWare Index File) fi
 
 ## File Structure Overview
 
-BIF files work in tandem with KEY files which provide the filename-to-resource mappings. BIF files contain only resource IDs, types, and data - the actual filenames (ResRefs) are stored in the KEY file.
+BIF files work in tandem with KEY files which provide the filename-to-resource mappings. BIF files contain only resource IDs, types, and data - the actual filenames (ResRefs) are stored in the KEY file. BIF files are [archive containers](https://en.wikipedia.org/wiki/Archive_file) that store the bulk of game resources.
 
 ### BIF Usage in KotOR
 
@@ -36,7 +36,7 @@ BIF archives are the primary storage mechanism for game assets. The game organiz
 - `data/lips.bif`: Lip-sync animation data (LIP)
 - Additional platform-specific BIFs (e.g., `dataxbox/`, `data_mac/`)
 
-The modular structure allows for efficient loading and potential platform-specific optimizations. Resources in BIF files are read-only at runtime; mods override them via the `override/` directory or custom ERF/MOD files.
+The [modular structure](https://en.wikipedia.org/wiki/Modular_programming) allows for efficient loading and potential platform-specific optimizations. Resources in BIF files are read-only at runtime; mods override them via the `override/` directory or custom ERF/MOD files.
 
 **Implementation:** [`Libraries/PyKotor/src/pykotor/resource/formats/bif/`](https://github.com/th3w1zard1/PyKotor/tree/master/Libraries/PyKotor/src/pykotor/resource/formats/bif/)
 
@@ -44,7 +44,7 @@ The modular structure allows for efficient loading and potential platform-specif
 
 ---
 
-## Binary Format
+## [Binary Format](https://en.wikipedia.org/wiki/Binary_file)
 
 ### File Header
 
@@ -60,6 +60,8 @@ The file header is 20 bytes in size:
 
 **Note on Fixed Resources:** The "Fixed Resource Count" field is a legacy holdover from Neverwinter Nights where some resource types had predetermined sizes. In KotOR, this field is always `0` and fixed resource tables are never used. All resources are stored in the variable resource table regardless of their size.
 
+**Reference**: [`vendor/xoreos/src/aurora/biffile.cpp:64-67`](https://github.com/xoreos/xoreos/blob/master/src/aurora/biffile.cpp#L64-L67) explicitly checks that fixed resource count is 0 and throws an exception if it's not. [`vendor/reone/src/libs/resource/format/bifreader.cpp:34`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/bifreader.cpp#L34) reads the fixed resource count but does not use it.
+
 **Reference**: [`vendor/Kotor.NET/Kotor.NET/Formats/KotorBIF/BIFBinaryStructure.cs:13-67`](https://github.com/th3w1zard1/Kotor.NET/blob/master/Kotor.NET/Formats/KotorBIF/BIFBinaryStructure.cs#L13-L67)
 
 ### Variable Resource Table
@@ -68,12 +70,16 @@ Each variable resource entry is 16 bytes:
 
 | Name        | Type   | Offset | Size | Description                                                      |
 | ----------- | ------ | ------ | ---- | ---------------------------------------------------------------- |
-| Resource ID | uint32 | 0      | 4    | Resource ID (matches KEY file entry)                             |
-| Offset      | uint32 | 4      | 4    | Offset to resource data in file                                  |
-| File Size   | uint32 | 8      | 4    | Uncompressed size of resource data                              |
-| Resource Type | uint32 | 12   | 4    | Resource type identifier                                         |
+| Resource ID | uint32 | 0      | 4    | Resource ID (matches KEY file entry, encodes BIF index and resource index) |
+| Offset      | uint32 | 4      | 4    | Offset to resource data in file (absolute file offset)                    |
+| File Size   | uint32 | 8      | 4    | Uncompressed size of resource data (bytes)                                 |
+| Resource Type | uint32 | 12   | 4    | Resource type identifier (see ResourceType enum)                          |
 
-**Reference**: [`vendor/reone/src/libs/resource/format/bifreader.cpp:35-50`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/bifreader.cpp#L35-L50)
+**Entry Reading Order:**
+
+Entries are read sequentially from the variable resource table. The table is located at the offset specified in the file header. Each entry is exactly 16 bytes, allowing efficient sequential reading.
+
+**Reference**: [`vendor/reone/src/libs/resource/format/bifreader.cpp:50-63`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/bifreader.cpp#L50-L63) shows the exact reading order: Resource ID, Offset, File Size, Resource Type. [`vendor/Kotor.NET/Kotor.NET/Formats/KotorBIF/BIFBinaryStructure.cs:51-65`](https://github.com/th3w1zard1/Kotor.NET/blob/master/Kotor.NET/Formats/KotorBIF/BIFBinaryStructure.cs#L51-L65) confirms the same structure. [`vendor/xoreos/src/aurora/biffile.cpp:84-96`](https://github.com/xoreos/xoreos/blob/master/src/aurora/biffile.cpp#L84-L96) shows reading with version-specific handling (V1.1 includes an additional flags field that KotOR does not use).
 
 ### Resource Data
 
@@ -85,23 +91,42 @@ Resource data is stored at the offsets specified in the resource table:
 
 **Resource Storage Details:**
 
-- Resources are stored sequentially but not necessarily contiguously (gaps may exist)
+- Resources are stored sequentially but not necessarily contiguously (gaps may exist between resources)
 - Each resource's size is specified in the variable resource table entry
-- Resource data is stored in its native format (no additional BIF-specific wrapping)
-- The engine reads resources by:
-  1. Looking up the ResRef in the KEY file to get the Resource ID
-  2. Extracting the BIF index and resource index from the Resource ID
-  3. Reading the BIF file header to find the variable resource table
-  4. Finding the resource entry by index
-  5. Seeking to the offset and reading the specified number of bytes
+- Resource data is stored in its native format (no additional BIF-specific wrapping or metadata)
+- Offsets in the variable resource table are absolute file offsets (relative to start of file)
+- Resource data begins immediately at the specified offset
+
+**Resource Access Flow:**
+
+The engine reads resources through the following process:
+
+1. **KEY Lookup**: Look up the ResRef (and optionally ResourceType) in the KEY file to get the Resource ID
+2. **ID Decoding**: Extract the BIF index (upper 12 bits) and resource index (lower 20 bits) from the Resource ID
+3. **BIF Selection**: Use the BIF index to identify which BIF file contains the resource
+4. **Table Access**: Read the BIF file header to find the offset to the variable resource table
+5. **Entry Lookup**: Find the resource entry at the specified index in the variable resource table
+6. **Data Reading**: Seek to the offset specified in the entry and read the number of bytes specified by the file size
+
+**Reference**: [`vendor/xoreos/src/aurora/biffile.cpp:84-96`](https://github.com/xoreos/xoreos/blob/master/src/aurora/biffile.cpp#L84-L96) shows how variable resource entries are read. [`vendor/reone/src/libs/resource/format/bifreader.cpp:41-48`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/bifreader.cpp#L41-L48) demonstrates resource table loading. [`vendor/xoreos/src/aurora/biffile.cpp:99-123`](https://github.com/xoreos/xoreos/blob/master/src/aurora/biffile.cpp#L99-L123) shows the mergeKEY process that combines KEY and BIF information.
 
 **Resource IDs:**
 
-The Resource ID in the BIF file's variable resource table must match the Resource ID stored in the KEY file. The KEY file encodes both the BIF index (top 12 bits) and resource index within the BIF (bottom 20 bits) into a single 32-bit value.
+The Resource ID in the BIF file's variable resource table must match the Resource ID stored in the KEY file. The Resource ID is a 32-bit value that encodes two pieces of information:
+
+- **Lower 20 bits (bits 0-19)**: Resource index within the BIF file (0-based index into the variable resource table)
+- **Upper 12 bits (bits 20-31)**: BIF index in the KEY file's BIF table (identifies which BIF file contains this resource)
+
+**Example:** A Resource ID of `0x00400029` decodes as:
+
+- Resource index: `0x29` (41st resource in the BIF)
+- BIF index: `0x004` (4th BIF file in the KEY's BIF table)
+
+**Reference**: [`vendor/xoreos-docs/specs/torlack/key.html:154-168`](https://github.com/xoreos/xoreos-docs/blob/master/specs/torlack/key.html#L154-L168) provides detailed explanation of Resource ID encoding. [`vendor/reone/src/libs/resource/format/bifreader.cpp:50-54`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/bifreader.cpp#L50-L54) shows how Resource IDs are read from BIF entries.
 
 ---
 
-## BZF Compression
+## BZF [Compression](https://en.wikipedia.org/wiki/Data_compression)
 
 BZF files are LZMA-compressed BIF files used primarily in iOS (and maybe Android) ports of KotOR. The BZF header contains `"BZF "` + `"V1.0"`, followed by LZMA-compressed BIF data. Decompression reveals a standard BIF structure.
 
@@ -113,10 +138,18 @@ The BZF format wraps a complete BIF file in LZMA compression:
 2. **LZMA Stream**: Compressed BIF file data using LZMA algorithm
 3. **Decompressed Result**: Standard BIF file structure (as described above)
 
+**Compression Details:**
+
+- The entire BIF file (after the 8-byte header) is compressed using LZMA (Lempel-Ziv-Markov chain Algorithm)
+- LZMA provides high compression ratios with good decompression speed
+- The compressed stream follows immediately after the BZF header
+- Decompression yields a standard BIF file that can be read normally
+
 **Benefits of BZF:**
 
 - Significantly reduced file sizes (typically 40-60% compression ratio)
 - Faster download times for mobile platforms
+- Reduced storage requirements
 - Identical resource access after decompression
 - No performance penalty during gameplay (decompressed once at load time)
 
@@ -126,9 +159,11 @@ The BZF format wraps a complete BIF file in LZMA compression:
 - Mobile releases (iOS/Android) use BZF for storage efficiency
 - Modding tools can (and should) convert between BIF and BZF formats freely
 
-The BZF wrapper is completely transparent to the game engine - once decompressed in memory, the resource access patterns are identical to standard BIF files.
+**Implementation Notes:**
 
-**Reference**: [`vendor/reone/src/libs/resource/format/bifreader.cpp:48-76`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/bifreader.cpp#L48-L76)
+The BZF wrapper is completely transparent to the game engine - once decompressed in memory, the resource access patterns are identical to standard BIF files. Tools should decompress BZF files before reading resource entries, as the variable resource table offsets are relative to the decompressed BIF structure.
+
+**Reference**: [`vendor/xoreos/src/aurora/biffile.h:56-60`](https://github.com/xoreos/xoreos/blob/master/src/aurora/biffile.h#L56-L60) documents BZF as compressed BIF files found exclusively in Android and iOS versions. [`vendor/reone/src/libs/resource/format/bifreader.cpp:27-30`](https://github.com/th3w1zard1/reone/blob/master/src/libs/resource/format/bifreader.cpp#L27-L30) shows BIF signature detection. [`Libraries/PyKotor/src/pykotor/resource/formats/bif/bif_data.py:45-52`](https://github.com/th3w1zard1/PyKotor/blob/master/Libraries/PyKotor/src/pykotor/resource/formats/bif/bif_data.py#L45-L52) documents BZF compression details.
 
 ---
 

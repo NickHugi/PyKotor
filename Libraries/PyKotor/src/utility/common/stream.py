@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, cast
 from loggerplus import RobustLogger
 
 from pykotor.common.language import LocalizedString
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
+# decode_bytes_with_fallbacks is imported lazily in the function that uses it to avoid circular imports
 from utility.common.geometry import Vector2, Vector3, Vector4
 
 if TYPE_CHECKING:
@@ -746,6 +746,8 @@ class RawBinaryReader:
         string_byte_data: bytes = self._stream.read(length) or b""
         self._position += len(string_byte_data)
         if encoding is None:
+            # Lazy import to avoid circular dependency
+            from pykotor.tools.encoding import decode_bytes_with_fallbacks
             string: str = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
             RobustLogger().warning(f"decode_bytes_with_fallbacks called and returned '{string}'")
         else:

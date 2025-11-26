@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Sequence
 if TYPE_CHECKING:
     from ctypes import Array, _CData, _Pointer as PointerType
 
-    from comtypes import CoClass  # pyright: ignore[reportMissingTypeStubs, reportAttributeAccessIssue]
+    from comtypes import CoClass  # pyright: ignore[reportMissingImports, reportMissingTypeStubs, reportAttributeAccessIssue]
     from comtypes.GUID import GUID as COMTYPE_GUID  # pyright: ignore[reportMissingTypeStubs, reportMissingImports]
     from typing_extensions import Self
 if not TYPE_CHECKING:
@@ -27,7 +27,7 @@ class FDE_SHAREVIOLATION_RESPONSE(c_int):  # noqa: N801
 FDE_OVERWRITE_RESPONSE = FDE_SHAREVIOLATION_RESPONSE
 
 try:
-    from comtypes import GUID as COMTYPE_GUID  # pyright: ignore[reportMissingTypeStubs, reportAttributeAccessIssue]
+    from comtypes import GUID as COMTYPE_GUID  # pyright: ignore[reportMissingImports, reportMissingTypeStubs, reportAttributeAccessIssue]
     inherit = (COMTYPE_GUID,)
 except ImportError:
     inherit = (Structure,)

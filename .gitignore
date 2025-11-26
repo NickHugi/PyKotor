@@ -42,9 +42,7 @@ __pycache__
 /Libraries/Utility/src/utility/ui_libraries/qt/filesystem/common/untested
 /pyglm-2.8.2
 /pykotor/gl/window.py
-/Tools/HolocronToolset/toolset/kits/
 /toolset/help/
-/toolset/kits/
 /vendor/DeNCS
 Analysis-*.toc
 analyze_profile_comprehensive.py
@@ -100,9 +98,6 @@ tests/tmp/*
 tests/tslpatcher/tmp/*
 this file has no permissions.txt
 Tools/HolocronToolset/src/toolset/32d802b_extract
-Tools/HolocronToolset/src/toolset/kits
-Tools/HolocronToolset/src/toolset/kits/*/*
-Tools/HolocronToolset/src/toolset/kits/*/door0_k1.utd
 Tools/HolocronToolset/src/toolset/uic
 Tools/HoloPatcher/src/holopatcher/node_modules
 Tools/HoloPatcher/src/holopatcher/package-lock.json

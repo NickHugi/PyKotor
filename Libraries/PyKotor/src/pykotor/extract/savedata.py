@@ -2253,13 +2253,16 @@ class SaveFolderEntry:
         
         This method loads all components for complete save access.
         """
-        print("Loading nested save capsule...")
+        from loggerplus import RobustLogger
+        logger = RobustLogger()
+        
+        logger.debug("Loading nested save capsule...")
         self.sav.load()
-        print("Loading party table...")
+        logger.debug("Loading party table...")
         self.partytable.load()
-        print("Loading save info...")
+        logger.debug("Loading save info...")
         self.save_info.load()
-        print("Loading save globals...")
+        logger.debug("Loading save globals...")
         self.globals.load()
         
         # Infer game version for nested capsule serialization heuristics
@@ -2272,7 +2275,7 @@ class SaveFolderEntry:
         # Vendor ref: All implementations preserve this for save menu display
         screenshot_path = self.save_path / str(self.SCREENSHOT_NAME)
         if screenshot_path.exists():
-            print("Loading screenshot...")
+            logger.debug("Loading screenshot...")
             with open(screenshot_path, "rb") as f:
                 self.screenshot = f.read()
 
@@ -2354,77 +2357,79 @@ class SaveFolderEntry:
         - Failures in later stages don't corrupt earlier writes
         - Vendor ref: KSE uses temp files + rename for atomicity
         """
+        from loggerplus import RobustLogger
         from pykotor.resource.formats.erf.erf_auto import write_erf
         
-        print("=== Beginning Save Process ===")
-        print(f"Save folder: {self.save_path}")
+        logger = RobustLogger()
+        logger.info("=== Beginning Save Process ===")
+        logger.info(f"Save folder: {self.save_path}")
         
         # ============================================================================
         # STEP 1: SAVE SAVENFO.RES - Save metadata for load/save menu
         # ============================================================================
-        print("\n[1/5] Saving SAVENFO.res (Save Info)...")
-        print(f"  - Save Name: {self.save_info.savegame_name}")
-        print(f"  - Area: {self.save_info.area_name}")
-        print(f"  - Last Module: {self.save_info.last_module}")
-        print(f"  - Time Played: {self.save_info.time_played}s ({self.save_info.time_played // 3600}h {(self.save_info.time_played % 3600) // 60}m)")
-        print(f"  - Portraits: {self.save_info.portrait0}, {self.save_info.portrait1}, {self.save_info.portrait2}")
+        logger.debug("[1/5] Saving SAVENFO.res (Save Info)...")
+        logger.debug(f"  - Save Name: {self.save_info.savegame_name}")
+        logger.debug(f"  - Area: {self.save_info.area_name}")
+        logger.debug(f"  - Last Module: {self.save_info.last_module}")
+        logger.debug(f"  - Time Played: {self.save_info.time_played}s ({self.save_info.time_played // 3600}h {(self.save_info.time_played % 3600) // 60}m)")
+        logger.debug(f"  - Portraits: {self.save_info.portrait0}, {self.save_info.portrait1}, {self.save_info.portrait2}")
         if self.save_info.pc_name:
-            print(f"  - PC Name (K2): {self.save_info.pc_name}")
+            logger.debug(f"  - PC Name (K2): {self.save_info.pc_name}")
         
         # Write SAVENFO.res to disk
         # Vendor ref: KSE/Functions/Saves.pm SaveSave() line ~450
         self.save_info.save()
-        print(f"  ✓ Written to: {self.save_info.save_info_path}")
+        logger.debug(f"  ✓ Written to: {self.save_info.save_info_path}")
         
         # ============================================================================
         # STEP 2: SAVE PARTYTABLE.RES - Party composition and game state
         # ============================================================================
-        print("\n[2/5] Saving PARTYTABLE.res (Party Table)...")
-        print(f"  - Party Members: {len(self.partytable.pt_members)}")
-        print(f"  - Available NPCs: {len(self.partytable.pt_avail_npcs)}")
-        print(f"  - Gold: {self.partytable.pt_gold}")
-        print(f"  - XP Pool: {self.partytable.pt_xp_pool}")
-        print(f"  - Journal Entries: {len(self.partytable.jnl_entries)}")
-        print(f"  - Pazaak Cards: {len(self.partytable.pt_pazaakcards)}")
-        print(f"  - Pazaak Decks: {len(self.partytable.pt_pazaakdecks)}")
+        logger.debug("[2/5] Saving PARTYTABLE.res (Party Table)...")
+        logger.debug(f"  - Party Members: {len(self.partytable.pt_members)}")
+        logger.debug(f"  - Available NPCs: {len(self.partytable.pt_avail_npcs)}")
+        logger.debug(f"  - Gold: {self.partytable.pt_gold}")
+        logger.debug(f"  - XP Pool: {self.partytable.pt_xp_pool}")
+        logger.debug(f"  - Journal Entries: {len(self.partytable.jnl_entries)}")
+        logger.debug(f"  - Pazaak Cards: {len(self.partytable.pt_pazaakcards)}")
+        logger.debug(f"  - Pazaak Decks: {len(self.partytable.pt_pazaakdecks)}")
         if self.partytable.pt_influence:
-            print(f"  - Influence Values (K2): {len(self.partytable.pt_influence)}")
+            logger.debug(f"  - Influence Values (K2): {len(self.partytable.pt_influence)}")
         if self.partytable.pt_item_componen > 0:
-            print(f"  - Components (K2): {self.partytable.pt_item_componen}")
+            logger.debug(f"  - Components (K2): {self.partytable.pt_item_componen}")
         if self.partytable.pt_item_chemical > 0:
-            print(f"  - Chemicals (K2): {self.partytable.pt_item_chemical}")
+            logger.debug(f"  - Chemicals (K2): {self.partytable.pt_item_chemical}")
         if self.partytable.additional_fields:
-            print(f"  - Additional Fields Preserved: {len(self.partytable.additional_fields)}")
+            logger.debug(f"  - Additional Fields Preserved: {len(self.partytable.additional_fields)}")
         
         # Write PARTYTABLE.res to disk
         # Vendor ref: KSE/Functions/Saves.pm SaveSave() line ~480
         # Note: PT_NUM_MEMBERS is now a property that automatically returns len(pt_members)
         self.partytable.save()
-        print(f"  ✓ Written to: {self.partytable.party_table_path}")
+        logger.debug(f"  ✓ Written to: {self.partytable.party_table_path}")
         
         # ============================================================================
         # STEP 3: SAVE GLOBALVARS.RES - Global script variables
         # ============================================================================
-        print("\n[3/5] Saving GLOBALVARS.res (Global Variables)...")
-        print(f"  - Boolean Variables: {len(self.globals.global_bools)}")
-        print(f"  - Number Variables: {len(self.globals.global_numbers)}")
-        print(f"  - String Variables: {len(self.globals.global_strings)}")
-        print(f"  - Location Variables: {len(self.globals.global_locs)}")
+        logger.debug("[3/5] Saving GLOBALVARS.res (Global Variables)...")
+        logger.debug(f"  - Boolean Variables: {len(self.globals.global_bools)}")
+        logger.debug(f"  - Number Variables: {len(self.globals.global_numbers)}")
+        logger.debug(f"  - String Variables: {len(self.globals.global_strings)}")
+        logger.debug(f"  - Location Variables: {len(self.globals.global_locs)}")
         
         # Write GLOBALVARS.res to disk
         # Vendor ref: KSE/Functions/Globals.pm SaveGlobals() line ~200
         self.globals.save()
-        print(f"  ✓ Written to: {self.globals.globals_filepath}")
+        logger.debug(f"  ✓ Written to: {self.globals.globals_filepath}")
         
         # ============================================================================
         # STEP 4: SAVE SAVEGAME.SAV - Nested ERF with all dynamic resources
         # ============================================================================
-        print("\n[4/5] Saving SAVEGAME.sav (Nested Capsule)...")
+        logger.debug("[4/5] Saving SAVEGAME.sav (Nested Capsule)...")
         
         # First, serialize all nested resources (modules, characters, inventory, etc.)
         # This updates self.sav.resource_data with serialized bytes for all resources
         # Vendor ref: KSE/Functions/Saves.pm SaveSave() line ~520
-        print("  - Serializing nested resources...")
+        logger.debug("  - Serializing nested resources...")
         self.sav.save()
         
         # Count resources by type for status display
@@ -2434,17 +2439,17 @@ class SaveFolderEntry:
         other_count = len(self.sav.other_resources)
         total_resources = len(self.sav.resource_data)
         
-        print(f"    • Cached Modules: {module_count}")
-        print(f"    • Companion Characters: {character_count}")
-        print(f"    • Inventory Items: {inventory_count}")
+        logger.debug(f"    • Cached Modules: {module_count}")
+        logger.debug(f"    • Companion Characters: {character_count}")
+        logger.debug(f"    • Inventory Items: {inventory_count}")
         if self.sav.repute is not None:
-            print("    • Faction Reputation: Yes")
-        print(f"    • Other Resources: {other_count}")
-        print(f"    • Total Resources: {total_resources}")
+            logger.debug("    • Faction Reputation: Yes")
+        logger.debug(f"    • Other Resources: {other_count}")
+        logger.debug(f"    • Total Resources: {total_resources}")
         
         # Create new ERF and populate with all serialized resources
         # Vendor ref: KSE/Functions/Saves.pm SaveSave() line ~550
-        print("  - Repacking ERF archive...")
+        logger.debug("  - Repacking ERF archive...")
         nested_erf: ERF = ERF(ERFType.from_extension(self.sav.nested_capsule_path.suffix))
         
         for identifier, payload in self.sav.iter_serialized_resources():
@@ -2452,12 +2457,12 @@ class SaveFolderEntry:
         
         # Write SAVEGAME.sav to disk
         write_erf(nested_erf, self.sav.nested_capsule_path, ResourceType.SAV)
-        print(f"  ✓ Written to: {self.sav.nested_capsule_path}")
+        logger.debug(f"  ✓ Written to: {self.sav.nested_capsule_path}")
         
         # ============================================================================
         # STEP 5: SAVE SCREEN.TGA - Save screenshot thumbnail
         # ============================================================================
-        print("\n[5/5] Saving Screen.tga (Screenshot)...")
+        logger.debug("[5/5] Saving Screen.tga (Screenshot)...")
         screenshot_path = self.save_path / str(self.SCREENSHOT_NAME)
         
         if self.screenshot is not None:
@@ -2465,27 +2470,27 @@ class SaveFolderEntry:
             # Vendor ref: All implementations preserve this for save menu display
             with open(screenshot_path, "wb") as f:
                 f.write(self.screenshot)
-            print(f"  ✓ Written screenshot ({len(self.screenshot)} bytes) to: {screenshot_path}")
+            logger.debug(f"  ✓ Written screenshot ({len(self.screenshot)} bytes) to: {screenshot_path}")
         elif screenshot_path.exists():
             # Remove screenshot if it was deleted from memory
             screenshot_path.unlink()
-            print(f"  ✓ Removed screenshot (no longer present): {screenshot_path}")
+            logger.debug(f"  ✓ Removed screenshot (no longer present): {screenshot_path}")
         else:
-            print("  ⚠ No screenshot present")
+            logger.debug("  ⚠ No screenshot present")
         
         # ============================================================================
         # SAVE COMPLETE
         # ============================================================================
-        print("\n=== Save Complete ===")
-        print(f"All components written successfully to: {self.save_path}")
-        print("\nSaved files:")
-        print(f"  • {self.save_info.save_info_path.name}")
-        print(f"  • {self.partytable.party_table_path.name}")
-        print(f"  • {self.globals.globals_filepath.name}")
-        print(f"  • {self.sav.nested_capsule_path.name} ({total_resources} resources)")
+        logger.info("=== Save Complete ===")
+        logger.info(f"All components written successfully to: {self.save_path}")
+        logger.debug("Saved files:")
+        logger.debug(f"  • {self.save_info.save_info_path.name}")
+        logger.debug(f"  • {self.partytable.party_table_path.name}")
+        logger.debug(f"  • {self.globals.globals_filepath.name}")
+        logger.debug(f"  • {self.sav.nested_capsule_path.name} ({total_resources} resources)")
         if self.screenshot is not None:
-            print(f"  • {self.SCREENSHOT_NAME}")
-        print("\n✓ Save game is ready to load in KOTOR")
+            logger.debug(f"  • {self.SCREENSHOT_NAME}")
+        logger.info("✓ Save game is ready to load in KOTOR")
 
 
 if __name__ == "__main__":

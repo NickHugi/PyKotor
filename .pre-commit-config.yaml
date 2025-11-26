@@ -1,23 +1,38 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+# To install: pip install pre-commit && pre-commit install
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
+      - id: trailing-whitespace
+        exclude: ^(vendor/|\.venv/)
+      - id: end-of-file-fixer
+        exclude: ^(vendor/|\.venv/)
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-json
+      - id: check-toml
       - id: check-added-large-files
-#      - id: trailing-whitespace
-#      - id: end-of-file-fixer
-#      - id: mixed-line-ending
-#        args: ["--fix=crlf"]
+        args: [--maxkb=5000]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.1
+    rev: v0.1.9
     hooks:
       - id: ruff
-        args: ["--fix", "--fix-only"]
-  - repo: https://github.com/google/yapf
-    rev: fcd79bcc07c435ad6b94f84c92766ff88ad3fab7
+        args: [--fix, --exit-non-zero-on-fix]
+        exclude: ^(vendor/|\.venv/)
+      - id: ruff-format
+        exclude: ^(vendor/|\.venv/)
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.20.4
     hooks:
-      - id: yapf
-        name: yapf
-        language: python
-        entry: yapf
-        args: ["-i", "-p"]
-        types: [python]
+      - id: typos
+        args: [--config, .typos.toml]

@@ -1,0 +1,4 @@
+pykotor>=1.8.0
+requests>=2.25.0,<2.32.0; python_version<"3.9"
+requests>=2.25.0; python_version>="3.9"
+charset-normalizer>=2.0,<3.4

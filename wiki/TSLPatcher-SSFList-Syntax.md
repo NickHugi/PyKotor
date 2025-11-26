@@ -1,5 +1,7 @@
 # TSLPatcher SSFList Syntax Documentation
 
+This guide explains how to modify SSF files using TSLPatcher syntax. For the complete SSF file format specification, see [SSF File Format](SSF-File-Format). For general TSLPatcher information, see [TSLPatcher's Official Readme](TSLPatcher's-Official-Readme). For HoloPatcher-specific information, see [HoloPatcher README for Mod Developers](HoloPatcher-README-for-mod-developers.).
+
 ## Overview
 
 The `[SSFList]` section in TSLPatcher's changes.ini file enables you to modify SSF (Sound Set File) files that define sound string references for characters. SSF files contain 28 predefined sound slots that map to specific character audio cues such as battle cries, select sounds, attack grunts, pain reactions, and various action-based sound effects.

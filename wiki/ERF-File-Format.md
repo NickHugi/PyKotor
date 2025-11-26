@@ -24,7 +24,7 @@ This document provides a detailed description of the ERF (Encapsulated Resource 
 
 ## File Structure Overview
 
-ERF files are self-contained archives that store both resource names (ResRefs) and data in the same file. Unlike BIF files which require a KEY file for filename lookups, ERF files include ResRef information directly in the archive.
+ERF files are self-contained [archives](https://en.wikipedia.org/wiki/Archive_file) that store both resource names (ResRefs) and data in the same file. Unlike BIF files which require a KEY file for filename lookups, ERF files include ResRef information directly in the archive.
 
 **Implementation:** [`Libraries/PyKotor/src/pykotor/resource/formats/erf/`](https://github.com/th3w1zard1/PyKotor/tree/master/Libraries/PyKotor/src/pykotor/resource/formats/erf/)
 
@@ -32,7 +32,7 @@ ERF files are self-contained archives that store both resource names (ResRefs) a
 
 ---
 
-## Binary Format
+## [Binary Format](https://en.wikipedia.org/wiki/Binary_file)
 
 ### File Header
 

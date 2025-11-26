@@ -1594,6 +1594,106 @@ class Module:  # noqa: PLR0904
         """
         return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTS]
 
+    def loadscreen(
+        self,
+    ) -> FileResource | None:
+        """Returns a FileResource object representing the loadscreen texture for this module.
+
+        The loadscreen is determined by:
+        1. Getting the LoadScreenID from the module's ARE file
+        2. Looking up the bmpresref in loadscreens.2da using the LoadScreenID
+        3. Finding the texture resource (TGA or TPC) with that ResRef
+
+        References:
+        ----------
+            wiki/2DA-loadscreens.md - loadscreens.2da structure and bmpresref column
+            vendor/reone/src/libs/resource/parser/gff/are.cpp:339 - LoadScreenID field parsing
+            vendor/reone/src/libs/game/gui/loadscreen.cpp:49-50 - loadscreen image loading
+
+        Returns:
+        -------
+            FileResource | None: The loadscreen texture FileResource, or None if not found.
+
+        Processing Logic:
+        ----------------
+            1. Get the ARE resource from the module
+            2. Read the ARE to get LoadScreenID
+            3. Load loadscreens.2da from the installation
+            4. Get the bmpresref from loadscreens.2da using LoadScreenID as row index
+            5. Search for the texture (TGA or TPC) using installation.locations()
+            6. Return the FileResource from the first location found, or None if not found.
+        """
+        from pykotor.resource.formats.twoda.twoda_auto import read_2da
+
+        # Get the ARE resource
+        are_resource = self.are()
+        if are_resource is None:
+            RobustLogger().warning(f"Module '{self._root}' has no ARE resource, cannot determine loadscreen")
+            return None
+
+        # Read the ARE to get LoadScreenID
+        are_data = are_resource.resource()
+        if are_data is None:
+            RobustLogger().warning(f"Failed to read ARE resource for module '{self._root}'")
+            return None
+
+        loadscreen_id = are_data.loadscreen_id
+        if loadscreen_id == 0:
+            RobustLogger().debug(f"Module '{self._root}' has LoadScreenID=0, no loadscreen specified")
+            return None
+
+        # Load loadscreens.2da from installation
+        loadscreens_result = self._installation.resource(
+            "loadscreens",
+            ResourceType.TwoDA,
+            [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
+        )
+        if loadscreens_result is None:
+            RobustLogger().warning("loadscreens.2da not found in installation")
+            return None
+
+        loadscreens_2da = read_2da(loadscreens_result.data)
+
+        # Get the bmpresref from loadscreens.2da using LoadScreenID as row index
+        try:
+            loadscreen_row = loadscreens_2da.get_row(loadscreen_id)
+            bmpresref = loadscreen_row.get_string("bmpresref")
+            if not bmpresref or bmpresref == "****":
+                RobustLogger().debug(f"Module '{self._root}' loadscreen row {loadscreen_id} has no bmpresref")
+                return None
+        except (IndexError, KeyError) as e:
+            RobustLogger().warning(f"Failed to get bmpresref from loadscreens.2da row {loadscreen_id}: {e}")
+            return None
+
+        # Search for the texture (TGA or TPC) using installation.locations()
+        texture_queries = [
+            ResourceIdentifier(bmpresref, ResourceType.TPC),
+            ResourceIdentifier(bmpresref, ResourceType.TGA),
+        ]
+        texture_locations = self._installation.locations(
+            texture_queries,
+            [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES, SearchLocation.CHITIN, SearchLocation.TEXTURES_TPA],
+        )
+
+        # Return the FileResource from the first location found
+        for query in texture_queries:
+            if query in texture_locations and texture_locations[query]:
+                location: LocationResult = texture_locations[query][0]
+                try:
+                    return location.as_file_resource()
+                except RuntimeError:
+                    # If FileResource wasn't set, create one from the location
+                    return FileResource(
+                        resname=bmpresref,
+                        restype=query.restype,
+                        size=location.size,
+                        offset=location.offset,
+                        filepath=location.filepath,
+                    )
+
+        RobustLogger().debug(f"Loadscreen texture '{bmpresref}' not found for module '{self._root}'")
+        return None
+
 
 class ModuleResource(Generic[T]):
     """Represents a single resource within a module with multiple possible locations.

@@ -4,3 +4,29 @@ requires = [
     "wheel",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "gui-converter"
+version = "1.0.0"
+description = "GUI Converter Tool for KotOR"
+authors = [{name = "NickHugi"}]
+maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "LGPL-3.0-or-later License"}
+keywords = ["kotor", "gui", "converter", "pykotor"]
+requires-python = ">=3.8"
+dependencies = [
+    "pykotor>=1.8.0",
+]
+
+[project.urls]
+homepage = "https://github.com/th3w1zard1/PyKotor"
+documentation = "https://github.com/th3w1zard1/PyKotor/blob/master/README.md"
+repository = "https://github.com/th3w1zard1/PyKotor.git"
+issues = "https://github.com/th3w1zard1/PyKotor/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

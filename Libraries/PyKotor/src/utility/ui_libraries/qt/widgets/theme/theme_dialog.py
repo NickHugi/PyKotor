@@ -121,14 +121,18 @@ class ThemeDialog(QDialog):
         palette: QPalette | None = None,
     ):
         """Apply the style, sheet, and palette to the application."""
-        style = style or ""
-        app.setStyleSheet(sheet or "")
-        app.setStyle(style)
+        # Set style first (before stylesheet) for proper rendering
+        if style:
+            style_obj = QStyleFactory.create(style)
+            if style_obj:
+                app.setStyle(style_obj)
         app_style: QStyle | None = app.style()
         if palette is None and app_style is not None:
             palette = app_style.standardPalette()
         if palette is not None:
             app.setPalette(palette)
+        # Set stylesheet last (can override style appearance)
+        app.setStyleSheet(sheet or "")
 
     def get_theme(self) -> str:
         """

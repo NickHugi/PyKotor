@@ -685,6 +685,10 @@ class NCSInstruction(ComparableMixin):
         # vendor/reone/src/libs/script/format/ncsreader.cpp:49
         # Byte offset of instruction in NCS file (set during loading, -1 if not determined)
         self.offset: int = -1
+        
+        # Source line number for debugging (set during compilation, -1 if not tracked)
+        # Used by debugger to map bytecode instructions back to source code lines
+        self.line_number: int = -1
 
     def __str__(self):
         """Returns a human-readable string representation of the instruction."""
